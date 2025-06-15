@@ -16,26 +16,20 @@ import io.restassured.RestAssured;
 public class SwaggerOptionsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(getPropertyAsString()), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset(getPropertyAsString()), "application.properties"));
 
     @Test
     public void customOptions() {
-        RestAssured.when().get("/q/swagger-ui").then().log().all().and().statusCode(200)
-                .body(
-                        containsString("Testing title"),
-                        containsString("/openapi"),
-                        containsString("https://petstore.swagger.io/v2/swagger.json"),
-                        containsString("theme-newspaper.css"),
-                        containsString("docExpansion: 'full'"),
-                        containsString("var oar = \"/somesecure/page/oauth.html\";"),
-                        containsString("validatorUrl: 'localhost'"),
-                        containsString("displayRequestDuration: true"),
-                        containsString("supportedSubmitMethods: ['get', 'post']"),
-                        containsString("plugins: [Plugin1, Plugin2]"),
-                        containsString("https://unpkg.com/swagger-ui-plugin-hierarchical-tags"),
-                        containsString("/some/local/script.js"));
+        RestAssured.when().get("/q/swagger-ui").then().log().all().and().statusCode(200).body(
+                containsString("Testing title"), containsString("/openapi"),
+                containsString("https://petstore.swagger.io/v2/swagger.json"), containsString("theme-newspaper.css"),
+                containsString("docExpansion: 'full'"), containsString("var oar = \"/somesecure/page/oauth.html\";"),
+                containsString("validatorUrl: 'localhost'"), containsString("displayRequestDuration: true"),
+                containsString("supportedSubmitMethods: ['get', 'post']"),
+                containsString("plugins: [Plugin1, Plugin2]"),
+                containsString("https://unpkg.com/swagger-ui-plugin-hierarchical-tags"),
+                containsString("/some/local/script.js"));
 
     }
 

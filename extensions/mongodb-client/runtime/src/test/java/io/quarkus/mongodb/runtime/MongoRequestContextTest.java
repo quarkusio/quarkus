@@ -65,7 +65,8 @@ public class MongoRequestContextTest {
         requestContext.put("testKey1", "testValue1");
         requestContext.put("testKey2", "testValue2");
 
-        Map<Object, Object> map = requestContext.stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<Object, Object> map = requestContext.stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         assertThat(map).containsExactlyInAnyOrderEntriesOf(new ConcurrentHashMap<>() {
             {

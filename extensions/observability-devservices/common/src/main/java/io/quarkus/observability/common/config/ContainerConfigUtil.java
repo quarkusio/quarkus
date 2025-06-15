@@ -9,8 +9,7 @@ import java.util.Optional;
 
 public class ContainerConfigUtil {
     /**
-     * We need a per config method equals,
-     * so that we know when the config changes.
+     * We need a per config method equals, so that we know when the config changes.
      */
     public static boolean isEqual(ContainerConfig cc1, ContainerConfig cc2) {
         Class<?> c1 = cc1.getClass();
@@ -33,7 +32,9 @@ public class ContainerConfigUtil {
     /**
      * Get all properties to override from container config instance.
      *
-     * @param config the container config
+     * @param config
+     *        the container config
+     *
      * @return map of properties to override
      */
     public static Map<String, Object> propertiesToOverride(ContainerConfig config) {
@@ -55,9 +56,7 @@ public class ContainerConfigUtil {
     }
 
     private static Method[] getMethods(Class<?> c1) {
-        Class<?> i = Arrays.stream(c1.getInterfaces())
-                .filter(ContainerConfig.class::isAssignableFrom)
-                .findFirst()
+        Class<?> i = Arrays.stream(c1.getInterfaces()).filter(ContainerConfig.class::isAssignableFrom).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Missing ContainerConfig based interface"));
         return i.getMethods();
     }

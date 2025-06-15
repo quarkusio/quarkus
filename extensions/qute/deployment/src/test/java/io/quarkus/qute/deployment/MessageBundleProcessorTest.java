@@ -11,7 +11,8 @@ class MessageBundleProcessorTest {
     void bundleNameMatchesFileName() {
         assertTrue(MessageBundleProcessor.bundleNameMatchesFileName("messages.properties", "messages"));
         assertTrue(MessageBundleProcessor.bundleNameMatchesFileName("started.properties", "started"));
-        assertTrue(MessageBundleProcessor.bundleNameMatchesFileName("startedValidation.properties", "startedValidation"));
+        assertTrue(
+                MessageBundleProcessor.bundleNameMatchesFileName("startedValidation.properties", "startedValidation"));
         assertTrue(MessageBundleProcessor.bundleNameMatchesFileName("EmailBundles_startedValidation.properties",
                 "EmailBundles_startedValidation"));
         assertTrue(MessageBundleProcessor.bundleNameMatchesFileName("EmailBundles_startedValidation_pt_BR.properties",

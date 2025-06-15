@@ -14,8 +14,7 @@ public class DuplicateIdEntityTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
             .setExpectedException(BuildException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DuplicateIdEntity.class));
+            .withApplicationRoot((jar) -> jar.addClasses(DuplicateIdEntity.class));
 
     @Test
     void shouldThrow() {

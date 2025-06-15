@@ -22,20 +22,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidTypeForPersistenceUnitExtensionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .assertException(t -> {
-                assertThat(t)
-                        .isInstanceOf(DeploymentException.class)
-                        .hasMessageContainingAll(
-                                "A @PersistenceUnitExtension bean must implement one or more of the following types:",
-                                TenantResolver.class.getName(),
-                                TenantConnectionResolver.class.getName(),
-                                Interceptor.class.getName(),
-                                "Invalid bean:",
-                                InvalidExtension.class.getName());
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, InvalidExtension.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().assertException(t -> {
+        assertThat(t).isInstanceOf(DeploymentException.class).hasMessageContainingAll(
+                "A @PersistenceUnitExtension bean must implement one or more of the following types:",
+                TenantResolver.class.getName(), TenantConnectionResolver.class.getName(), Interceptor.class.getName(),
+                "Invalid bean:", InvalidExtension.class.getName());
+    }).withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, InvalidExtension.class))
             .withConfigurationResource("application.properties");
 
     @Test

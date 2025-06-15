@@ -35,7 +35,8 @@ public class ArcJsonRPCService {
     }
 
     public Multi<Boolean> streamSkipContextEvents() {
-        return eventsMonitor.isResolvable() ? eventsMonitor.get().streamSkipContextEvents() : Multi.createFrom().empty();
+        return eventsMonitor.isResolvable() ? eventsMonitor.get().streamSkipContextEvents()
+                : Multi.createFrom().empty();
     }
 
     @NonBlocking
@@ -92,8 +93,8 @@ public class ArcJsonRPCService {
 
     private InvocationInfo toInvocationInfo(Invocation invocation) {
         InvocationInfo info = new InvocationInfo();
-        info.setStartTime(
-                timeString(LocalDateTime.ofInstant(Instant.ofEpochMilli(invocation.getStart()), ZoneId.systemDefault())));
+        info.setStartTime(timeString(
+                LocalDateTime.ofInstant(Instant.ofEpochMilli(invocation.getStart()), ZoneId.systemDefault())));
         info.setMethodName(invocation.getDeclaringClassName() + "#" + invocation.getMethod().getName());
         info.setDuration(invocation.getDurationMillis());
         info.setKind(invocation.getKind().toString());

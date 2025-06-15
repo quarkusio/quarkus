@@ -21,7 +21,9 @@ public class XTrimArgs implements RedisCommandExtraArguments {
     /**
      * Sets the max length of the stream.
      *
-     * @param maxlen the max length of the stream, must be positive
+     * @param maxlen
+     *        the max length of the stream, must be positive
+     *
      * @return the current {@code XAddArgs}
      */
     public XTrimArgs maxlen(long maxlen) {
@@ -30,8 +32,8 @@ public class XTrimArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * When set, prefix the {@link #maxlen} with {@code ~} to enable the <em>almost exact trimming</em>.
-     * This is recommended when using {@link #maxlen(long)}.
+     * When set, prefix the {@link #maxlen} with {@code ~} to enable the <em>almost exact trimming</em>. This is
+     * recommended when using {@link #maxlen(long)}.
      *
      * @return the current {@code XAddArgs}
      */
@@ -43,7 +45,9 @@ public class XTrimArgs implements RedisCommandExtraArguments {
     /**
      * Evicts entries from the stream having IDs lower to the specified one.
      *
-     * @param minid the min id, must not be {@code null}, must be a valid stream id
+     * @param minid
+     *        the min id, must not be {@code null}, must be a valid stream id
+     *
      * @return the current {@code XAddArgs}
      */
     public XTrimArgs minid(String minid) {
@@ -54,7 +58,9 @@ public class XTrimArgs implements RedisCommandExtraArguments {
     /**
      * Sets the maximum entries that can get evicted.
      *
-     * @param limit the limit, must be positive
+     * @param limit
+     *        the limit, must be positive
+     *
      * @return the current {@code XAddArgs}
      */
     public XTrimArgs limit(long limit) {

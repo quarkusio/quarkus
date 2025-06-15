@@ -19,8 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DevServicesPostgresqlDatasourceWithVolumeTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.datasource.db-kind", "postgresql")
+    static QuarkusUnitTest test = new QuarkusUnitTest().overrideConfigKey("quarkus.datasource.db-kind", "postgresql")
             // The official postgres image will execute all the scripts in the folder "docker-entrypoint-initdb.d"
             .overrideConfigKey("quarkus.datasource.devservices.volumes.\"classpath:./init-db.sql\"",
                     "/docker-entrypoint-initdb.d/init-db.sql");

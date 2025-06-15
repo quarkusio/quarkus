@@ -9,8 +9,8 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * A type of build item that contains only declaring classes, methods and fields that have been annotated with
- * unsuccessful build time conditions. It aims to be used to manage the exclusion of the annotations thanks to the
- * build time conditions also known as {@code IfBuildProfile}, {@code UnlessBuildProfile}, {@code IfBuildProperty} and
+ * unsuccessful build time conditions. It aims to be used to manage the exclusion of the annotations thanks to the build
+ * time conditions also known as {@code IfBuildProfile}, {@code UnlessBuildProfile}, {@code IfBuildProperty} and
  * {@code UnlessBuildProperty}
  *
  * @see io.quarkus.arc.deployment.PreAdditionalBeanBuildTimeConditionBuildItem
@@ -25,8 +25,7 @@ public final class BuildExclusionsBuildItem extends SimpleBuildItem {
     private final Set<String> excludedMethods;
     private final Set<String> excludedFields;
 
-    public BuildExclusionsBuildItem(Set<String> excludedDeclaringClasses,
-            Set<String> excludedMethods,
+    public BuildExclusionsBuildItem(Set<String> excludedDeclaringClasses, Set<String> excludedMethods,
             Set<String> excludedFields) {
         this.excludedDeclaringClasses = excludedDeclaringClasses;
         this.excludedMethods = excludedMethods;
@@ -50,15 +49,18 @@ public final class BuildExclusionsBuildItem extends SimpleBuildItem {
      * <p>
      * <ul>
      * <li>In case of a class it will check if it is part of the excluded classes</li>
-     * <li>In case of a method it will check if it is part of the excluded methods and if its declaring class
-     * is excluded</li>
-     * <li>In case of a method parameter it will check if its corresponding method is part of the excluded methods
-     * and if its declaring class is excluded</li>
-     * <li>In case of a field it will check if it is part of the excluded field and if its declaring class is excluded</li>
+     * <li>In case of a method it will check if it is part of the excluded methods and if its declaring class is
+     * excluded</li>
+     * <li>In case of a method parameter it will check if its corresponding method is part of the excluded methods and
+     * if its declaring class is excluded</li>
+     * <li>In case of a field it will check if it is part of the excluded field and if its declaring class is
+     * excluded</li>
      * <li>In all other cases, it is not excluded</li>
      * </ul>
      *
-     * @param target the target to check.
+     * @param target
+     *        the target to check.
+     *
      * @return {@code true} if the target is excluded, {@code false} otherwise.
      */
     public boolean isExcluded(AnnotationTarget target) {
@@ -66,15 +68,15 @@ public final class BuildExclusionsBuildItem extends SimpleBuildItem {
             case CLASS:
                 return excludedDeclaringClasses.contains(targetMapper(target));
             case METHOD:
-                return excludedMethods.contains(targetMapper(target)) ||
-                        excludedDeclaringClasses.contains(targetMapper(target.asMethod().declaringClass()));
+                return excludedMethods.contains(targetMapper(target))
+                        || excludedDeclaringClasses.contains(targetMapper(target.asMethod().declaringClass()));
             case METHOD_PARAMETER:
                 final MethodInfo method = target.asMethodParameter().method();
-                return excludedMethods.contains(targetMapper(method)) ||
-                        excludedDeclaringClasses.contains(targetMapper(method.declaringClass()));
+                return excludedMethods.contains(targetMapper(method))
+                        || excludedDeclaringClasses.contains(targetMapper(method.declaringClass()));
             case FIELD:
-                return excludedFields.contains(targetMapper(target)) ||
-                        excludedDeclaringClasses.contains(targetMapper(target.asField().declaringClass()));
+                return excludedFields.contains(targetMapper(target))
+                        || excludedDeclaringClasses.contains(targetMapper(target.asField().declaringClass()));
             default:
                 return false;
         }
@@ -83,7 +85,9 @@ public final class BuildExclusionsBuildItem extends SimpleBuildItem {
     /**
      * Converts the given target into a String unique representation.
      *
-     * @param target the target to convert.
+     * @param target
+     *        the target to convert.
+     *
      * @return a unique representation as a {@code String} of the target
      */
     public static String targetMapper(AnnotationTarget target) {

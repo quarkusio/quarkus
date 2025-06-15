@@ -21,10 +21,8 @@ import io.vertx.core.eventbus.EventBus;
 /**
  * Expose the Vert.x event bus and produces Mutiny instances.
  * <p>
- * The original Vert.x instance is coming from the core artifact.
- *
- * IMPL NOTE: There is no need to cache the mutiny locally because the bean instances are stored in the
- * singleton context, i.e. the producer method is only called once.
+ * The original Vert.x instance is coming from the core artifact. IMPL NOTE: There is no need to cache the mutiny
+ * locally because the bean instances are stored in the singleton context, i.e. the producer method is only called once.
  */
 @ApplicationScoped
 public class VertxProducer {
@@ -50,8 +48,8 @@ public class VertxProducer {
     }
 
     /**
-     * Undeploy verticles backed by contextual instances of {@link ApplicationScoped} beans before the application context is
-     * destroyed. Otherwise, Vertx may attempt to stop the verticles after the CDI container is shut down.
+     * Undeploy verticles backed by contextual instances of {@link ApplicationScoped} beans before the application
+     * context is destroyed. Otherwise, Vertx may attempt to stop the verticles after the CDI container is shut down.
      *
      * @param event
      * @param beanManager

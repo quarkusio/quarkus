@@ -60,112 +60,82 @@ public class SseParserTest {
 
         // two events
         testParser(Collections.singletonList("data:foo\n\ndata:bar\n\n"),
-                Arrays.asList(new InboundSseEventImpl(null, null)
-                        .setData("foo"),
-                        new InboundSseEventImpl(null, null)
-                                .setData("bar")));
+                Arrays.asList(new InboundSseEventImpl(null, null).setData("foo"),
+                        new InboundSseEventImpl(null, null).setData("bar")));
         // two events with data
-        testParser(Collections.singletonList("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n"
-                + "data:DATA2\nid:ID2\n:COMMENT2\nretry:232\nevent:NAME2\n\n"),
-                Arrays.asList(new InboundSseEventImpl(null, null)
-                        .setData("DATA")
-                        .setId("ID")
-                        .setComment("COMMENT")
-                        .setReconnectDelay(23)
-                        .setName("NAME"),
-                        new InboundSseEventImpl(null, null)
-                                .setData("DATA2")
-                                .setId("ID2")
-                                .setComment("COMMENT2")
-                                .setReconnectDelay(232)
-                                .setName("NAME2")));
+        testParser(
+                Collections.singletonList("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n"
+                        + "data:DATA2\nid:ID2\n:COMMENT2\nretry:232\nevent:NAME2\n\n"),
+                Arrays.asList(
+                        new InboundSseEventImpl(null, null).setData("DATA").setId("ID").setComment("COMMENT")
+                                .setReconnectDelay(23).setName("NAME"),
+                        new InboundSseEventImpl(null, null).setData("DATA2").setId("ID2").setComment("COMMENT2")
+                                .setReconnectDelay(232).setName("NAME2")));
         // two events with data, only ID is persistent
-        testParser(Collections.singletonList("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n"
-                + "data:DATA2\n\n"),
-                Arrays.asList(new InboundSseEventImpl(null, null)
-                        .setData("DATA")
-                        .setId("ID")
-                        .setComment("COMMENT")
-                        .setReconnectDelay(23)
-                        .setName("NAME"),
-                        new InboundSseEventImpl(null, null)
-                                .setData("DATA2")
-                                .setId("ID")));
+        testParser(Collections.singletonList("data:DATA\nid:ID\n:COMMENT\nretry:23\nevent:NAME\n\n" + "data:DATA2\n\n"),
+                Arrays.asList(
+                        new InboundSseEventImpl(null, null).setData("DATA").setId("ID").setComment("COMMENT")
+                                .setReconnectDelay(23).setName("NAME"),
+                        new InboundSseEventImpl(null, null).setData("DATA2").setId("ID")));
 
         // two events in two buffers
         testParser(Arrays.asList("data:foo\n\n", "data:bar\n\n"),
-                Arrays.asList(new InboundSseEventImpl(null, null)
-                        .setData("foo"),
-                        new InboundSseEventImpl(null, null)
-                                .setData("bar")));
+                Arrays.asList(new InboundSseEventImpl(null, null).setData("foo"),
+                        new InboundSseEventImpl(null, null).setData("bar")));
         // two events in two buffers at awkward places
         testParser(Arrays.asList("data:foo\n\ndata:b", "ar\n\n"),
-                Arrays.asList(new InboundSseEventImpl(null, null)
-                        .setData("foo"),
-                        new InboundSseEventImpl(null, null)
-                                .setData("bar")));
+                Arrays.asList(new InboundSseEventImpl(null, null).setData("foo"),
+                        new InboundSseEventImpl(null, null).setData("bar")));
         // one event in two buffers
         testParser(Arrays.asList("data:f", "oo\n\n"),
-                Collections.singletonList(new InboundSseEventImpl(null, null)
-                        .setData("foo")));
+                Collections.singletonList(new InboundSseEventImpl(null, null).setData("foo")));
         testParser(Arrays.asList("dat", "a:foo\n\n"),
-                Collections.singletonList(new InboundSseEventImpl(null, null)
-                        .setData("foo")));
+                Collections.singletonList(new InboundSseEventImpl(null, null).setData("foo")));
         testParser(Arrays.asList("data", ":foo\n\n"),
-                Collections.singletonList(new InboundSseEventImpl(null, null)
-                        .setData("foo")));
+                Collections.singletonList(new InboundSseEventImpl(null, null).setData("foo")));
         testParser(Arrays.asList("data:", "foo\n\n"),
-                Collections.singletonList(new InboundSseEventImpl(null, null)
-                        .setData("foo")));
+                Collections.singletonList(new InboundSseEventImpl(null, null).setData("foo")));
         // chunk at the worst possible place, make sure we don't drop events
         testParser(Arrays.asList("data:foo\n", "\n"),
-                Collections.singletonList(new InboundSseEventImpl(null, null)
-                        .setData("foo")));
+                Collections.singletonList(new InboundSseEventImpl(null, null).setData("foo")));
         testParser(Arrays.asList("data:foo\n", "data:bar\n", "\n"),
-                Collections.singletonList(new InboundSseEventImpl(null, null)
-                        .setData("foo\nbar")));
+                Collections.singletonList(new InboundSseEventImpl(null, null).setData("foo\nbar")));
         // one event in two buffers within a UTF-8 char
         testParserWithBytes(
                 Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b11000010 },
                         new byte[] { (byte) 0b10100010, '\n', '\n' }),
-                Collections.singletonList(new InboundSseEventImpl(null, null)
-                        .setData("¢")));
+                Collections.singletonList(new InboundSseEventImpl(null, null).setData("¢")));
 
         // BOM
         testParserWithBytes(
                 Collections.singletonList(
                         new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' }),
-                Collections.singletonList(new InboundSseEventImpl(null, null)
-                        .setData("foo")));
+                Collections.singletonList(new InboundSseEventImpl(null, null).setData("foo")));
 
         // invalid BOM location
-        Assertions
-                .assertThrows(IllegalStateException.class,
-                        () -> testParserWithBytes(
-                                Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' },
-                                        new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n',
-                                                '\n' }),
-                                Collections.singletonList(new InboundSseEventImpl(null, null)
-                                        .setData("foo"))));
-        // invalid UTF-8
         Assertions.assertThrows(IllegalStateException.class,
                 () -> testParserWithBytes(
-                        Collections.singletonList(
+                        Arrays.asList(new byte[] { 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n', '\n' },
+                                new byte[] { (byte) 0xFE, (byte) 0xFF, 'd', 'a', 't', 'a', ':', 'f', 'o', 'o', '\n',
+                                        '\n' }),
+                        Collections.singletonList(new InboundSseEventImpl(null, null).setData("foo"))));
+        // invalid UTF-8
+        Assertions
+                .assertThrows(IllegalStateException.class,
+                        () -> testParserWithBytes(Collections.singletonList(
                                 new byte[] { 'd', 'a', 't', 'a', ':', (byte) 0b1111_1000, 'f', 'o', 'o', '\n', '\n' }),
-                        Collections.emptyList()));
+                                Collections.emptyList()));
     }
 
-    private void testParser(String event, String data, String comment, String lastId, String name, long reconnectDelay) {
+    private void testParser(String event, String data, String comment, String lastId, String name,
+            long reconnectDelay) {
         testParser(Collections.singletonList(event), Collections.singletonList(new InboundSseEventImpl(null, null)
-                .setData(data)
-                .setComment(comment)
-                .setId(lastId)
-                .setName(name)
-                .setReconnectDelay(reconnectDelay)));
+                .setData(data).setComment(comment).setId(lastId).setName(name).setReconnectDelay(reconnectDelay)));
     }
 
     private void testParser(List<String> events, List<InboundSseEvent> expectedEvents) {
-        testParserWithBytes(events.stream().map(str -> str.getBytes(StandardCharsets.UTF_8)).collect(Collectors.toList()),
+        testParserWithBytes(
+                events.stream().map(str -> str.getBytes(StandardCharsets.UTF_8)).collect(Collectors.toList()),
                 expectedEvents);
     }
 

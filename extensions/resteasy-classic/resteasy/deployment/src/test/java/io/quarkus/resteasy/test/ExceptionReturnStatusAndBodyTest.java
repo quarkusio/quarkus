@@ -25,8 +25,7 @@ public class ExceptionReturnStatusAndBodyTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ExceptionReturnStatusAndBodyResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ExceptionReturnStatusAndBodyResource.class));
 
     @Test
     public void testDelete() {

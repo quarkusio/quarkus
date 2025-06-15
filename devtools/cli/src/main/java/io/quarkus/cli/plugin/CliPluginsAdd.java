@@ -36,10 +36,8 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
 
             return addPlugin();
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to add plugin(s): " + nameOrLocation + " of type: " + type.map(PluginType::name).orElse("<any>")
-                            + "."
-                            + e.getMessage());
+            return output.handleCommandException(e, "Unable to add plugin(s): " + nameOrLocation + " of type: "
+                    + type.map(PluginType::name).orElse("<any>") + "." + e.getMessage());
         }
     }
 
@@ -81,10 +79,7 @@ public class CliPluginsAdd extends CliPluginsBase implements Callable<Integer> {
     }
 
     void dryRunAdd(CommandLine.Help help) {
-        output.printText(new String[] {
-                "\nAdd plugin to the CLI\n",
-                "\t" + projectRoot().toString()
-        });
+        output.printText(new String[] { "\nAdd plugin to the CLI\n", "\t" + projectRoot().toString() });
         Map<String, String> dryRunOutput = new TreeMap<>();
         dryRunOutput.put("Name or Location", nameOrLocation);
         type.ifPresent(t -> dryRunOutput.put("Type", t.name()));

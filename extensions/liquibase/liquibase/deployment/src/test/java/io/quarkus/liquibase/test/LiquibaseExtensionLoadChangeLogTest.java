@@ -19,12 +19,9 @@ public class LiquibaseExtensionLoadChangeLogTest {
     LiquibaseFactory liquibaseFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/xml/changeLog.xml")
-                    .addAsResource("db/xml/create-tables.xml")
-                    .addAsResource("db/xml/create-views.xml")
-                    .addAsResource("db/xml/test/test.xml")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource("db/xml/changeLog.xml").addAsResource("db/xml/create-tables.xml")
+                    .addAsResource("db/xml/create-views.xml").addAsResource("db/xml/test/test.xml")
                     .addAsResource("load-change-log-config.properties", "application.properties"));
 
     @Test

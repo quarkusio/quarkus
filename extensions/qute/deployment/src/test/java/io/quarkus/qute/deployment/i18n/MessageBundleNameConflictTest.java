@@ -12,8 +12,7 @@ public class MessageBundleNameConflictTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AppMessages.class, BravoMessages.class))
+            .withApplicationRoot((jar) -> jar.addClasses(AppMessages.class, BravoMessages.class))
             .setExpectedException(MessageBundleException.class);
 
     @Test

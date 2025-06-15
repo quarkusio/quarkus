@@ -19,11 +19,9 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class ClientCallFromBlockingServiceTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(Greeter3Grpc.class.getPackage())
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addClass(HelloService.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(Greeter3Grpc.class.getPackage())
+                    .addPackage(GreeterGrpc.class.getPackage()).addClass(HelloService.class)
                     .addClass(GrpcCallWithinBlockingService.class))
             .withConfigurationResource("call-from-blocking-service.properties");
 

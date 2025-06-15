@@ -118,8 +118,7 @@ public class MailerTruststoreTest extends FakeSmtpTestBase {
         startServer(SERVER_JKS);
         ReactiveMailer mailer = getMailer(mailersConfig);
         Assertions.assertThatThrownBy(() -> mailer.send(getMail()).await().indefinitely())
-                .isInstanceOf(CompletionException.class)
-                .hasCauseInstanceOf(SSLHandshakeException.class);
+                .isInstanceOf(CompletionException.class).hasCauseInstanceOf(SSLHandshakeException.class);
     }
 
 }

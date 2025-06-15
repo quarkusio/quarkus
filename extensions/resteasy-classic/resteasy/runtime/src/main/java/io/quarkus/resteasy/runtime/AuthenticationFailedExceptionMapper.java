@@ -38,8 +38,7 @@ public class AuthenticationFailedExceptionMapper implements ExceptionMapper<Auth
             HttpAuthenticator authenticator = context.get(HttpAuthenticator.class.getName());
             if (authenticator != null) {
                 addAuthenticationFailureToEvent(exception, currentVertxRequest.getCurrent());
-                ChallengeData challengeData = authenticator.getChallenge(context)
-                        .await().indefinitely();
+                ChallengeData challengeData = authenticator.getChallenge(context).await().indefinitely();
                 int statusCode = challengeData == null ? 401 : challengeData.status;
                 Response.ResponseBuilder responseBuilder = Response.status(statusCode);
                 if (challengeData != null && challengeData.headerName != null) {

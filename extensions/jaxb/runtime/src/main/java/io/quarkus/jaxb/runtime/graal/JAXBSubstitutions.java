@@ -78,7 +78,8 @@ final class Target_org_glassfish_jaxb_runtime_v2_model_annotation_RuntimeInlineA
     @Substitute
     public <A extends Annotation> A getClassAnnotation(Class<A> a, Class clazz, Locatable srcPos) {
         A ann = ((Class<?>) clazz).getAnnotation(a);
-        return (ann != null && ann.annotationType() == XmlSeeAlso.class) ? LocatableAnnotation.create(ann, srcPos) : ann;
+        return (ann != null && ann.annotationType() == XmlSeeAlso.class) ? LocatableAnnotation.create(ann, srcPos)
+                : ann;
     }
 
     @Substitute

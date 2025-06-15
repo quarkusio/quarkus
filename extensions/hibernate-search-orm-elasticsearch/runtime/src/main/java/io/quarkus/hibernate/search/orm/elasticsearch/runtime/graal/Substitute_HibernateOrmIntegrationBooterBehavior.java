@@ -13,7 +13,8 @@ final class Substitute_HibernateOrmIntegrationBooterBehavior {
 
     @Substitute
     public static <T> T bootFirstPhase(HibernateOrmIntegrationBooterBehavior.BootPhase<T> phase) {
-        throw new IllegalStateException("The first phase of Hibernate Search's boot should have occurred during static init.");
+        throw new IllegalStateException(
+                "The first phase of Hibernate Search's boot should have occurred during static init.");
     }
 
 }

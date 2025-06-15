@@ -119,16 +119,16 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         return permissionCheckers;
     }
 
-    private Uni<CheckResult> doPermissionCheck(RoutingContext routingContext,
-            Uni<SecurityIdentity> identity, int index, SecurityIdentity augmentedIdentity,
-            List<HttpSecurityPolicy> permissionCheckers, AuthorizationRequestContext requestContext) {
+    private Uni<CheckResult> doPermissionCheck(RoutingContext routingContext, Uni<SecurityIdentity> identity, int index,
+            SecurityIdentity augmentedIdentity, List<HttpSecurityPolicy> permissionCheckers,
+            AuthorizationRequestContext requestContext) {
         if (index == permissionCheckers.size()) {
             if (index > 0) {
                 routingContext.put(PATH_MATCHING_POLICY_FOUND, true);
             }
             return Uni.createFrom().item(new CheckResult(true, augmentedIdentity));
         }
-        //get the current checker
+        // get the current checker
         HttpSecurityPolicy res = permissionCheckers.get(index);
         return res.checkPermission(routingContext, identity, requestContext)
                 .flatMap(new Function<CheckResult, Uni<? extends CheckResult>>() {
@@ -138,22 +138,20 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                             if (checkResult.getAugmentedIdentity() == null) {
                                 return CheckResult.deny();
                             } else {
-                                return Uni.createFrom().item(new CheckResult(false, checkResult.getAugmentedIdentity()));
+                                return Uni.createFrom()
+                                        .item(new CheckResult(false, checkResult.getAugmentedIdentity()));
                             }
                         } else {
                             if (checkResult.getAugmentedIdentity() != null) {
 
-                                //attempt to run the next checker
-                                return doPermissionCheck(routingContext,
-                                        checkResult.getAugmentedIdentityAsUni(), index + 1,
-                                        checkResult.getAugmentedIdentity(),
-                                        permissionCheckers,
+                                // attempt to run the next checker
+                                return doPermissionCheck(routingContext, checkResult.getAugmentedIdentityAsUni(),
+                                        index + 1, checkResult.getAugmentedIdentity(), permissionCheckers,
                                         requestContext);
                             } else {
-                                //attempt to run the next checker
+                                // attempt to run the next checker
                                 return doPermissionCheck(routingContext, identity, index + 1, augmentedIdentity,
-                                        permissionCheckers,
-                                        requestContext);
+                                        permissionCheckers, requestContext);
                             }
                         }
                     }
@@ -215,7 +213,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         } else if (!noMethod.isEmpty()) {
             result.addAll(noMethod);
         } else {
-            //we deny if we did not match due to method filtering
+            // we deny if we did not match due to method filtering
             result.add(DenySecurityPolicy.INSTANCE);
         }
         return result;
@@ -266,7 +264,8 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                     var permissions = new HashSet<Permission>();
                     for (PermissionToActions helper : cache.values()) {
                         if (StringPermission.class.getName().equals(policyConfig.permissionClass())) {
-                            permissions.add(new StringPermission(helper.permissionName, helper.actions.toArray(new String[0])));
+                            permissions.add(
+                                    new StringPermission(helper.permissionName, helper.actions.toArray(new String[0])));
                         } else {
                             permissions.add(customPermissionCreator(policyConfig, helper));
                         }
@@ -319,8 +318,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                 if (constructor.getParameterTypes()[1] != String[].class) {
                     throw new ConfigurationException(
                             String.format("Permission class '%s' constructor second parameter must be '%s' array",
-                                    permissionClass,
-                                    String.class.getName()));
+                                    permissionClass, String.class.getName()));
                 }
             } else {
                 throw new ConfigurationException(String.format(
@@ -332,7 +330,8 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         return acceptsActions;
     }
 
-    private static void addPermissionToAction(Map<String, PermissionToActions> cache, String role, String permissionToAction) {
+    private static void addPermissionToAction(Map<String, PermissionToActions> cache, String role,
+            String permissionToAction) {
         final String permissionName;
         final String action;
         // incoming value is either in format perm1:action1 or perm1 (with or withot action)
@@ -340,9 +339,9 @@ public class AbstractPathMatchingHttpSecurityPolicy {
             // perm1:action1
             var permToActions = permissionToAction.split(PERMISSION_TO_ACTION_SEPARATOR);
             if (permToActions.length != 2) {
-                throw new ConfigurationException(
-                        String.format("Invalid permission format '%s', please use exactly one permission to action separator",
-                                permissionToAction));
+                throw new ConfigurationException(String.format(
+                        "Invalid permission format '%s', please use exactly one permission to action separator",
+                        permissionToAction));
             }
             permissionName = permToActions[0].trim();
             action = permToActions[1].trim();
@@ -377,14 +376,15 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         try {
             var constructor = loadClass(policyConfig.permissionClass()).getConstructors()[0];
             if (acceptsActions(policyConfig.permissionClass())) {
-                return (Permission) constructor.newInstance(helper.permissionName, helper.actions.toArray(new String[0]));
+                return (Permission) constructor.newInstance(helper.permissionName,
+                        helper.actions.toArray(new String[0]));
             } else {
                 return (Permission) constructor.newInstance(helper.permissionName);
             }
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(String.format("Failed to create Permission - class '%s', name '%s', actions '%s'",
-                    policyConfig.permissionClass(), helper.permissionName,
-                    Arrays.toString(helper.actions.toArray(new String[0]))), e);
+            throw new RuntimeException(String.format(
+                    "Failed to create Permission - class '%s', name '%s', actions '%s'", policyConfig.permissionClass(),
+                    helper.permissionName, Arrays.toString(helper.actions.toArray(new String[0]))), e);
         }
     }
 
@@ -404,11 +404,12 @@ public class AbstractPathMatchingHttpSecurityPolicy {
         }
     }
 
-    static ConfigurationException duplicateNamedPoliciesNotAllowedEx(HttpSecurityPolicy policy1, HttpSecurityPolicy policy2) {
+    static ConfigurationException duplicateNamedPoliciesNotAllowedEx(HttpSecurityPolicy policy1,
+            HttpSecurityPolicy policy2) {
         String policyClassName1 = ClientProxy.unwrap(policy1).getClass().getName();
         String policyClassName2 = ClientProxy.unwrap(policy2).getClass().getName();
-        return new ConfigurationException("Only one HttpSecurityPolicy with the name '"
-                + policy1.name() + "' is allowed, but found: " + policyClassName1 + " and " + policyClassName2);
+        return new ConfigurationException("Only one HttpSecurityPolicy with the name '" + policy1.name()
+                + "' is allowed, but found: " + policyClassName1 + " and " + policyClassName2);
     }
 
     record HttpMatcher(String authMechanism, Set<String> methods, HttpSecurityPolicy checker) {

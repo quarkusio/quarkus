@@ -34,7 +34,8 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final CodeAuthenticationMechanism codeAuth;
     private final DefaultTenantConfigResolver resolver;
 
-    public OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver, BlockingSecurityExecutor blockingExecutor) {
+    public OidcAuthenticationMechanism(DefaultTenantConfigResolver resolver,
+            BlockingSecurityExecutor blockingExecutor) {
         this.resolver = resolver;
         this.codeAuth = new CodeAuthenticationMechanism(blockingExecutor);
         this.bearerAuth.init(this, resolver);
@@ -42,15 +43,15 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         return resolve(context).chain(new Function<>() {
             @Override
             public Uni<? extends SecurityIdentity> apply(OidcTenantConfig oidcConfig) {
                 if (!oidcConfig.tenantEnabled()) {
                     return Uni.createFrom().nullItem();
                 }
-                return isWebApp(context, oidcConfig) ? codeAuth.authenticate(context, identityProviderManager, oidcConfig)
+                return isWebApp(context, oidcConfig)
+                        ? codeAuth.authenticate(context, identityProviderManager, oidcConfig)
                         : bearerAuth.authenticate(context, identityProviderManager, oidcConfig);
             }
         });
@@ -117,8 +118,8 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
                     return null;
                 }
                 return isWebApp(context, oidcTenantConfig) ? OIDC_WEB_APP_TRANSPORT
-                        : new HttpCredentialTransport(
-                                HttpCredentialTransport.Type.AUTHORIZATION, oidcTenantConfig.token().authorizationScheme());
+                        : new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION,
+                                oidcTenantConfig.token().authorizationScheme());
             }
         });
     }
@@ -144,7 +145,8 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
         context.put(OidcUtils.TENANT_ID_ATTRIBUTE, tenantId);
         context.put(sessionCookie ? OidcUtils.TENANT_ID_SET_BY_SESSION_COOKIE : OidcUtils.TENANT_ID_SET_BY_STATE_COOKIE,
                 tenantId);
-        LOG.debugf("%s cookie set a '%s' tenant id on the %s request path", cookieName, tenantId, context.request().path());
+        LOG.debugf("%s cookie set a '%s' tenant id on the %s request path", cookieName, tenantId,
+                context.request().path());
     }
 
     @Override

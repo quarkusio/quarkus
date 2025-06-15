@@ -15,8 +15,7 @@ import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
- * Handler that negotiates the content type for endpoints that
- * only produce a single type.
+ * Handler that negotiates the content type for endpoints that only produce a single type.
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class FixedProducesHandler implements ServerRestHandler {
@@ -32,22 +31,22 @@ public class FixedProducesHandler implements ServerRestHandler {
         // we want to avoid the small startup cost incurred by JEP 280 and that shows up in the startup cpu flamegraph
         this.mediaTypeString = new StringBuilder(mediaType.getType().length() + 1 + mediaType.getSubtype().length())
                 .append(mediaType.getType()).append("/").append(mediaType.getSubtype()).toString();
-        this.mediaTypeSubstring = new StringBuilder(mediaType.getType().length() + 2).append(mediaType.getType()).append("/*")
-                .toString();
+        this.mediaTypeSubstring = new StringBuilder(mediaType.getType().length() + 2).append(mediaType.getType())
+                .append("/*").toString();
     }
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         List<String> acceptValues;
-        if (requestContext.isProducesChecked() ||
-                (acceptValues = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false)).isEmpty()) {
+        if (requestContext.isProducesChecked()
+                || (acceptValues = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false)).isEmpty()) {
             requestContext.setResponseContentType(mediaType);
             requestContext.setEntityWriter(writer);
         } else {
             boolean handled = false;
             for (int i = 0; i < acceptValues.size(); i++) {
                 String accept = acceptValues.get(i);
-                //TODO: this needs to be optimised
+                // TODO: this needs to be optimised
                 if (accept.contains(mediaTypeString) || accept.contains("*/*") || accept.contains(mediaTypeSubstring)) {
                     requestContext.setResponseContentType(mediaType);
                     requestContext.setEntityWriter(writer);

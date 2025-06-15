@@ -21,10 +21,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 public class JwtAuthUnitTest {
-    private static Class<?>[] testClasses = {
-            JsonValuejectionEndpoint.class,
-            TokenUtils.class
-    };
+    private static Class<?>[] testClasses = { JsonValuejectionEndpoint.class, TokenUtils.class };
     /**
      * The test generated JWT token string
      */
@@ -33,13 +30,9 @@ public class JwtAuthUnitTest {
     private Long authTimeClaim;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("publicKey.pem")
-                    .addAsResource("privateKey.pem")
-                    .addAsResource("Token1.json")
-                    .addAsResource("application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(testClasses).addAsResource("publicKey.pem").addAsResource("privateKey.pem")
+                    .addAsResource("Token1.json").addAsResource("application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {
@@ -50,23 +43,18 @@ public class JwtAuthUnitTest {
 
     @Test()
     public void testSecureAccessFailure() {
-        RestAssured.when().get("/endp/verifyInjectedIssuer").then()
-                .statusCode(401)
-                .header("WWW-Authenticate", equalTo("Bearer"));
+        RestAssured.when().get("/endp/verifyInjectedIssuer").then().statusCode(401).header("WWW-Authenticate",
+                equalTo("Bearer"));
     }
 
     /**
      * Verify that the injected token issuer claim is as expected
-     *
      */
     @Test()
     public void verifyIssuerClaim() {
-        Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
+        Response response = RestAssured.given().auth().oauth2(token).when()
                 .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyInjectedIssuer").andReturn();
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyInjectedIssuer").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();

@@ -6,7 +6,8 @@ final class Produce {
     private final Constraint constraint;
     private final ProduceFlags flags;
 
-    Produce(final BuildStepBuilder stepBuilder, final ItemId itemId, final Constraint constraint, final ProduceFlags flags) {
+    Produce(final BuildStepBuilder stepBuilder, final ItemId itemId, final Constraint constraint,
+            final ProduceFlags flags) {
         this.stepBuilder = stepBuilder;
         this.itemId = itemId;
         this.constraint = constraint;

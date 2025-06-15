@@ -35,10 +35,11 @@ public class SpringCacheProcessor {
 
     private static final List<DotName> CACHE_ANNOTATIONS = List.of(CACHEABLE, CACHE_PUT, CACHE_EVICT);
 
-    // some of these restrictions can probably be lifted by us doing additional work on caching after https://github.com/quarkusio/quarkus/pull/8631 lands
+    // some of these restrictions can probably be lifted by us doing additional work on caching after
+    // https://github.com/quarkusio/quarkus/pull/8631 lands
     private static final Set<String> CURRENTLY_UNSUPPORTED_ANNOTATION_VALUES = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList("key", "keyGenerator", "cacheManager", "cacheResolver", "condition",
-                    "unless", "sync", "beforeInvocation")));
+            .unmodifiableSet(new HashSet<>(Arrays.asList("key", "keyGenerator", "cacheManager", "cacheResolver",
+                    "condition", "unless", "sync", "beforeInvocation")));
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature) {
@@ -84,8 +85,7 @@ public class SpringCacheProcessor {
             }
         }
         if (!unsupportedValues.isEmpty()) {
-            throw new IllegalArgumentException("Annotation '" +
-                    instance + "' on '" + instance.target()
+            throw new IllegalArgumentException("Annotation '" + instance + "' on '" + instance.target()
                     + "' contains the following currently unsupported annotation values: "
                     + String.join(", ", unsupportedValues));
         }

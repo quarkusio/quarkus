@@ -5,8 +5,8 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * This build item is used to specify resource annotations that makes it possible to resolve non-CDI injection points, such as
- * Java EE resources.
+ * This build item is used to specify resource annotations that makes it possible to resolve non-CDI injection points,
+ * such as Java EE resources.
  */
 public final class ResourceAnnotationBuildItem extends MultiBuildItem {
 

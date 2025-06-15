@@ -13,8 +13,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 /**
- * A helper class that reload the TLS certificates at a configured interval.
- * When the certificate is reloaded, a {@link CertificateUpdatedEvent} is fired.
+ * A helper class that reload the TLS certificates at a configured interval. When the certificate is reloaded, a
+ * {@link CertificateUpdatedEvent} is fired.
  */
 public class TlsCertificateUpdater {
 

@@ -18,14 +18,11 @@ public class CustomExceptionMapperTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, CustomExceptionMappers.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, CustomExceptionMappers.class));
 
     @Test
     public void shouldDenyUnannotated() {
-        when().get("hello")
-                .then()
-                .statusCode(999);
+        when().get("hello").then().statusCode(999);
     }
 
     @Path("hello")

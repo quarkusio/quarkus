@@ -17,9 +17,7 @@ public class SinglePersistenceUnitCdiMetamodelTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addAsResource("application.properties"));
 
     @Inject
     Metamodel metamodel;
@@ -29,9 +27,7 @@ public class SinglePersistenceUnitCdiMetamodelTest {
         assertNotNull(metamodel);
         EntityType<DefaultEntity> entityType = metamodel.entity(DefaultEntity.class);
         assertNotNull(entityType);
-        assertTrue(
-                metamodel.getEntities().stream()
-                        .anyMatch(et -> et.getJavaType().equals(DefaultEntity.class)),
+        assertTrue(metamodel.getEntities().stream().anyMatch(et -> et.getJavaType().equals(DefaultEntity.class)),
                 "Metamodel should contain DefaultEntity");
         assertEquals(DefaultEntity.class.getSimpleName(), entityType.getName());
     }

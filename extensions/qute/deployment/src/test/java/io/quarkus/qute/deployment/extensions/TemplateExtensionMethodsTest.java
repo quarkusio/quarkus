@@ -23,22 +23,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateExtensionMethodsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Extensions.class, PrioritizedExtensions.class)
-                    .addAsResource(
-                            new StringAsset("{foo.name.toLower} {foo.name.ignored ?: 'NOT_FOUND'} {foo.callMe(1)} {foo.baz}"),
-                            "templates/foo.txt")
-                    .addAsResource(new StringAsset("{baz.setScale(baz.defaultScale,roundingMode)}"),
-                            "templates/baz.txt")
-                    .addAsResource(new StringAsset("{anyInt.foo('bing')}"),
-                            "templates/any.txt")
-                    .addAsResource(new StringAsset("{foo.pong}::{foo.name}"),
-                            "templates/priority.txt")
-                    .addAsResource(new StringAsset("{num.twice}"),
-                            "templates/assignability.txt")
-                    .addAsResource(new StringAsset("{myArray.getLast}"),
-                            "templates/arrays.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Foo.class, Extensions.class, PrioritizedExtensions.class)
+            .addAsResource(
+                    new StringAsset("{foo.name.toLower} {foo.name.ignored ?: 'NOT_FOUND'} {foo.callMe(1)} {foo.baz}"),
+                    "templates/foo.txt")
+            .addAsResource(new StringAsset("{baz.setScale(baz.defaultScale,roundingMode)}"), "templates/baz.txt")
+            .addAsResource(new StringAsset("{anyInt.foo('bing')}"), "templates/any.txt")
+            .addAsResource(new StringAsset("{foo.pong}::{foo.name}"), "templates/priority.txt")
+            .addAsResource(new StringAsset("{num.twice}"), "templates/assignability.txt")
+            .addAsResource(new StringAsset("{myArray.getLast}"), "templates/arrays.txt"));
 
     @Inject
     Template foo;
@@ -48,27 +42,23 @@ public class TemplateExtensionMethodsTest {
 
     @Test
     public void testTemplateExtensions() {
-        assertEquals("fantomas NOT_FOUND 11 baz",
-                foo.data("foo", new Foo("Fantomas", 10l)).render());
+        assertEquals("fantomas NOT_FOUND 11 baz", foo.data("foo", new Foo("Fantomas", 10l)).render());
     }
 
     @Test
     public void testMethodParameters() {
-        assertEquals("123.46",
-                engine.getTemplate("baz.txt").data("roundingMode", RoundingMode.HALF_UP).data("baz", new BigDecimal("123.4563"))
-                        .render());
+        assertEquals("123.46", engine.getTemplate("baz.txt").data("roundingMode", RoundingMode.HALF_UP)
+                .data("baz", new BigDecimal("123.4563")).render());
     }
 
     @Test
     public void testMatchAnyWithParameter() {
-        assertEquals("10=bing",
-                engine.getTemplate("any.txt").data("anyInt", 10).render());
+        assertEquals("10=bing", engine.getTemplate("any.txt").data("anyInt", 10).render());
     }
 
     @Test
     public void testMatchRegex() {
-        assertEquals("BRAVO=BAR",
-                engine.parse("{foo.bravo}={foo.bar}").data("foo", new Foo("pong", 10l)).render());
+        assertEquals("BRAVO=BAR", engine.parse("{foo.bravo}={foo.bar}").data("foo", new Foo("pong", 10l)).render());
     }
 
     @Test
@@ -77,10 +67,9 @@ public class TemplateExtensionMethodsTest {
         map.put("alpha", "1");
         map.put("bravo", "2");
         map.put("charlie", "3");
-        assertEquals("3:1:NOT_FOUND:1:false:true",
-                engine.parse(
-                        "{myMap.size}:{myMap.alpha}:{myMap.missing ?: 'NOT_FOUND'}:{myMap.get(key)}:{myMap.empty}:{myMap.containsKey('charlie')}")
-                        .data("myMap", map).data("key", "alpha").render());
+        assertEquals("3:1:NOT_FOUND:1:false:true", engine.parse(
+                "{myMap.size}:{myMap.alpha}:{myMap.missing ?: 'NOT_FOUND'}:{myMap.get(key)}:{myMap.empty}:{myMap.containsKey('charlie')}")
+                .data("myMap", map).data("key", "alpha").render());
 
     }
 
@@ -91,8 +80,7 @@ public class TemplateExtensionMethodsTest {
 
     @Test
     public void testMatchTypeAssignability() {
-        assertEquals("20",
-                engine.getTemplate("assignability").data("num", 10.1).render());
+        assertEquals("20", engine.getTemplate("assignability").data("num", 10.1).render());
     }
 
     @Test

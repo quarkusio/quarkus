@@ -34,9 +34,9 @@ public class MRangeArgs implements RedisCommandExtraArguments {
 
     /**
      * Used when a time series is a compaction. With LATEST, TS.MRANGE also reports the compacted value of the latest
-     * possibly partial bucket, given that this bucket's start time falls within [fromTimestamp, toTimestamp].
-     * Without LATEST, TS.MRANGE does not report the latest possibly partial bucket. When a time series is not a
-     * compaction, LATEST is ignored.
+     * possibly partial bucket, given that this bucket's start time falls within [fromTimestamp, toTimestamp]. Without
+     * LATEST, TS.MRANGE does not report the latest possibly partial bucket. When a time series is not a compaction,
+     * LATEST is ignored.
      *
      * @return the current {@code MRangeArgs}
      */
@@ -46,10 +46,12 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Filters samples by a list of specific timestamps.
-     * A sample passes the filter if its exact timestamp is specified and falls within [fromTimestamp, toTimestamp].
+     * Filters samples by a list of specific timestamps. A sample passes the filter if its exact timestamp is specified
+     * and falls within [fromTimestamp, toTimestamp].
      *
-     * @param timestamps the timestamps
+     * @param timestamps
+     *        the timestamps
+     *
      * @return the current {@code MRangeArgs}
      */
     public MRangeArgs filterByTimestamp(long... timestamps) {
@@ -68,8 +70,11 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     /**
      * Filters samples by minimum and maximum values.
      *
-     * @param min the min value of the sample
-     * @param max the max value of the sample
+     * @param min
+     *        the min value of the sample
+     * @param max
+     *        the max value of the sample
+     *
      * @return the current {@code MRangeArgs}
      */
     public MRangeArgs filterByValue(double min, double max) {
@@ -81,8 +86,8 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Includes in the reply all label-value pairs representing metadata labels of the time series.
-     * If WITHLABELS or SELECTED_LABELS are not specified, by default, an empty list is reported as label-value pairs.
+     * Includes in the reply all label-value pairs representing metadata labels of the time series. If WITHLABELS or
+     * SELECTED_LABELS are not specified, by default, an empty list is reported as label-value pairs.
      *
      * @return the current {@code MRangeArgs}
      */
@@ -92,12 +97,14 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Returns a subset of the label-value pairs that represent metadata labels of the time series.
-     * Use when a large number of labels exists per series, but only the values of some of the labels are required.
+     * Returns a subset of the label-value pairs that represent metadata labels of the time series. Use when a large
+     * number of labels exists per series, but only the values of some of the labels are required.
      * <p>
      * If WITHLABELS or SELECTED_LABELS are not specified, by default, an empty list is reported as label-value pairs.
      *
-     * @param labels the set of labels to select
+     * @param labels
+     *        the set of labels to select
+     *
      * @return the current {@code MRangeArgs}
      */
     public MRangeArgs selectedLabels(String... labels) {
@@ -109,7 +116,9 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     /**
      * Limits the number of returned samples.
      *
-     * @param count the max number of samples to return
+     * @param count
+     *        the max number of samples to return
+     *
      * @return the current {@code MRangeArgs}
      */
     public MRangeArgs count(int count) {
@@ -118,10 +127,12 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the time bucket alignment control for AGGREGATION.
-     * It controls the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
+     * Set the time bucket alignment control for AGGREGATION. It controls the time bucket timestamps by changing the
+     * reference timestamp on which a bucket is defined.
      *
-     * @param timestamp the timestamp
+     * @param timestamp
+     *        the timestamp
+     *
      * @return the current {@code MRangeArgs}
      */
     public MRangeArgs align(long timestamp) {
@@ -130,8 +141,8 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the time bucket alignment control for AGGREGATION to the query start interval time (fromTimestamp).
-     * It controls the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
+     * Set the time bucket alignment control for AGGREGATION to the query start interval time (fromTimestamp). It
+     * controls the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
      *
      * @return the current {@code MRangeArgs}
      */
@@ -141,8 +152,8 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the time bucket alignment control for AGGREGATION to the query end interval time (toTimestamp).
-     * It controls the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
+     * Set the time bucket alignment control for AGGREGATION to the query end interval time (toTimestamp). It controls
+     * the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
      *
      * @return the current {@code MRangeArgs}
      */
@@ -154,8 +165,11 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     /**
      * Aggregates results into time buckets.
      *
-     * @param aggregation the aggregation function, must not be {@code null}
-     * @param bucketDuration the duration of each bucket, must not be {@code null}
+     * @param aggregation
+     *        the aggregation function, must not be {@code null}
+     * @param bucketDuration
+     *        the duration of each bucket, must not be {@code null}
+     *
      * @return the current {@code MRangeArgs}
      */
     public MRangeArgs aggregation(Aggregation aggregation, Duration bucketDuration) {
@@ -167,7 +181,9 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     /**
      * Controls how bucket timestamps are reported.
      *
-     * @param ts the bucket timestamp configuration, must not be {@code null}
+     * @param ts
+     *        the bucket timestamp configuration, must not be {@code null}
+     *
      * @return the current {@code MRangeArgs}
      */
     public MRangeArgs bucketTimestamp(BucketTimestamp ts) {
@@ -186,14 +202,17 @@ public class MRangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Aggregates results across different time series, grouped by the provided label name.
-     * When combined with AGGREGATION the groupby/reduce is applied post aggregation stage.
+     * Aggregates results across different time series, grouped by the provided label name. When combined with
+     * AGGREGATION the groupby/reduce is applied post aggregation stage.
      * <p>
-     * {@code label} is label name to group a series by. A new series for each value is produced.
-     * {@code reducer} is the reducer type used to aggregate series that share the same label value.
+     * {@code label} is label name to group a series by. A new series for each value is produced. {@code reducer} is the
+     * reducer type used to aggregate series that share the same label value.
      *
-     * @param label the label, must not be {@code null}
-     * @param reducer the reducer function, must not be {@code null}
+     * @param label
+     *        the label, must not be {@code null}
+     * @param reducer
+     *        the reducer function, must not be {@code null}
+     *
      * @return the current {@code MRangeArgs}
      */
     public MRangeArgs groupBy(String label, Reducer reducer) {

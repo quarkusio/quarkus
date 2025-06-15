@@ -64,29 +64,19 @@ public class DevClusterHelper {
     public static final String DEFAULT_HASH_ALGORITHM = "SHA-256";
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
-    public static List<DecoratorBuildItem> createDecorators(String clusterKind,
-            String deploymentTarget,
-            ApplicationInfoBuildItem applicationInfo,
-            OutputTargetBuildItem outputTarget,
-            KubernetesConfig config,
-            PackageConfig packageConfig,
-            Optional<MetricsCapabilityBuildItem> metricsConfiguration,
+    public static List<DecoratorBuildItem> createDecorators(String clusterKind, String deploymentTarget,
+            ApplicationInfoBuildItem applicationInfo, OutputTargetBuildItem outputTarget, KubernetesConfig config,
+            PackageConfig packageConfig, Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
-            List<KubernetesNamespaceBuildItem> namespaces,
-            List<KubernetesInitContainerBuildItem> initContainers,
-            List<KubernetesJobBuildItem> jobs,
-            List<KubernetesAnnotationBuildItem> annotations,
-            List<KubernetesLabelBuildItem> labels,
-            List<KubernetesEnvBuildItem> envs,
-            @Deprecated Optional<BaseImageInfoBuildItem> baseImage,
-            Optional<ContainerImageInfoBuildItem> image,
-            Optional<KubernetesCommandBuildItem> command,
-            List<KubernetesPortBuildItem> ports,
+            List<KubernetesNamespaceBuildItem> namespaces, List<KubernetesInitContainerBuildItem> initContainers,
+            List<KubernetesJobBuildItem> jobs, List<KubernetesAnnotationBuildItem> annotations,
+            List<KubernetesLabelBuildItem> labels, List<KubernetesEnvBuildItem> envs,
+            @Deprecated Optional<BaseImageInfoBuildItem> baseImage, Optional<ContainerImageInfoBuildItem> image,
+            Optional<KubernetesCommandBuildItem> command, List<KubernetesPortBuildItem> ports,
             Optional<KubernetesProbePortNameBuildItem> portName,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
-            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
-            List<KubernetesRoleBuildItem> roles,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath, List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
@@ -94,41 +84,34 @@ public class DevClusterHelper {
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        final var namespace = Targetable.filteredByTarget(namespaces, deploymentTarget, true)
-                .findFirst();
+        final var namespace = Targetable.filteredByTarget(namespaces, deploymentTarget, true).findFirst();
 
-        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
-                packageConfig);
+        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot,
+                outputTarget, packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
 
-        List<DecoratorBuildItem> result = new ArrayList<>(
-                KubernetesCommonHelper.createDecorators(project, clusterKind, name, namespace, config,
-                        metricsConfiguration, kubernetesClientConfiguration,
-                        annotations, labels, image, command,
-                        port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
-                        clusterRoleBindings));
+        List<DecoratorBuildItem> result = new ArrayList<>(KubernetesCommonHelper.createDecorators(project, clusterKind,
+                name, namespace, config, metricsConfiguration, kubernetesClientConfiguration, annotations, labels,
+                image, command, port, livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts,
+                roleBindings, clusterRoleBindings));
 
-        image.ifPresent(
-                i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
+        image.ifPresent(i -> result
+                .add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
 
         Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES))
                 .forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                        new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
-                                .withName(EnvConverter.convertName(e.getName()))
-                                .withValue(e.getValue())
-                                .withSecret(e.getSecret())
-                                .withConfigmap(e.getConfigMap())
-                                .withField(e.getField())
-                                .withPrefix(e.getPrefix())
-                                .build()))));
+                        new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
+                                new EnvBuilder().withName(EnvConverter.convertName(e.getName())).withValue(e.getValue())
+                                        .withSecret(e.getSecret()).withConfigmap(e.getConfigMap())
+                                        .withField(e.getField()).withPrefix(e.getPrefix()).build()))));
 
         result.add(new DecoratorBuildItem(clusterKind, new ApplyImagePullPolicyDecorator(name, "IfNotPresent")));
 
-        //Service handling
-        result.add(new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, ServiceType.NodePort.name())));
+        // Service handling
+        result.add(
+                new DecoratorBuildItem(clusterKind, new ApplyServiceTypeDecorator(name, ServiceType.NodePort.name())));
         List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
-                .filter(e -> e.getValue().nodePort().isPresent())
-                .toList();
+                .filter(e -> e.getValue().nodePort().isPresent()).toList();
         if (!nodeConfigPorts.isEmpty()) {
             for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
                 result.add(new DecoratorBuildItem(KUBERNETES,
@@ -142,22 +125,13 @@ public class DevClusterHelper {
                             config.ingress().targetPort())));
         }
 
-        //Probe port handling
-        result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, LIVENESS_PROBE, config.livenessProbe(),
-                        portName,
-                        ports,
-                        config.ports()));
-        result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, READINESS_PROBE, config.readinessProbe(),
-                        portName,
-                        ports,
-                        config.ports()));
-        result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, STARTUP_PROBE, config.startupProbe(),
-                        portName,
-                        ports,
-                        config.ports()));
+        // Probe port handling
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, LIVENESS_PROBE,
+                config.livenessProbe(), portName, ports, config.ports()));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, READINESS_PROBE,
+                config.readinessProbe(), portName, ports, config.ports()));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, clusterKind, STARTUP_PROBE,
+                config.startupProbe(), portName, ports, config.ports()));
 
         for (Map.Entry<String, String> annotation : config.ingress().annotations().entrySet()) {
             result.add(new DecoratorBuildItem(clusterKind,
@@ -165,15 +139,12 @@ public class DevClusterHelper {
         }
 
         for (IngressConfig.IngressRuleConfig rule : config.ingress().rules().values()) {
-            result.add(new DecoratorBuildItem(clusterKind, new AddIngressRuleDecorator(name, port,
-                    new IngressRuleBuilder()
-                            .withHost(rule.host())
-                            .withPath(rule.path())
-                            .withPathType(rule.pathType())
-                            .withServiceName(rule.serviceName().orElse(null))
-                            .withServicePortName(rule.servicePortName().orElse(null))
-                            .withServicePortNumber(rule.servicePortNumber().orElse(-1))
-                            .build())));
+            result.add(new DecoratorBuildItem(clusterKind,
+                    new AddIngressRuleDecorator(name, port,
+                            new IngressRuleBuilder().withHost(rule.host()).withPath(rule.path())
+                                    .withPathType(rule.pathType()).withServiceName(rule.serviceName().orElse(null))
+                                    .withServicePortName(rule.servicePortName().orElse(null))
+                                    .withServicePortNumber(rule.servicePortNumber().orElse(-1)).build())));
         }
 
         // Handle init Containers
@@ -181,20 +152,18 @@ public class DevClusterHelper {
         result.addAll(KubernetesCommonHelper.createInitJobDecorators(clusterKind, name, jobs, result));
 
         // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
-        if (managementPortIsEnabled()
-                && (config.ingress() == null
-                        || !config.ingress().expose()
-                        || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
-            result.add(new DecoratorBuildItem(clusterKind, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+        if (managementPortIsEnabled() && (config.ingress() == null || !config.ingress().expose()
+                || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
+            result.add(new DecoratorBuildItem(clusterKind,
+                    new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
         }
         return result;
     }
 
     /**
-     * Given a string, generate a port number within the supplied range
-     * The output is always the same (between {@code min} and {@code max})
-     * given the same input and it's useful when we need to generate a port number
-     * which needs to stay the same but we don't care about the exact value
+     * Given a string, generate a port number within the supplied range The output is always the same (between
+     * {@code min} and {@code max}) given the same input and it's useful when we need to generate a port number which
+     * needs to stay the same but we don't care about the exact value
      */
     private static int getStablePortNumberInRange(String input, int min, int max) {
         if (min < MIN_PORT_NUMBER || max > MAX_PORT_NUMBER) {
@@ -203,7 +172,8 @@ public class DevClusterHelper {
         }
 
         try {
-            byte[] hash = MessageDigest.getInstance(DEFAULT_HASH_ALGORITHM).digest(input.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = MessageDigest.getInstance(DEFAULT_HASH_ALGORITHM)
+                    .digest(input.getBytes(StandardCharsets.UTF_8));
             return min + new BigInteger(hash).mod(BigInteger.valueOf(max - min)).intValue();
         } catch (Exception e) {
             throw new RuntimeException("Unable to generate stable port number from input string: '" + input + "'", e);

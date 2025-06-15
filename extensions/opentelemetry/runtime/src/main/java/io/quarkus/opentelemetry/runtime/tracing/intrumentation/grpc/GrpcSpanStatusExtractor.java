@@ -7,10 +7,7 @@ import io.opentelemetry.instrumentation.api.instrumenter.SpanStatusExtractor;
 
 class GrpcSpanStatusExtractor implements SpanStatusExtractor<GrpcRequest, Status> {
     @Override
-    public void extract(
-            final SpanStatusBuilder spanStatusBuilder,
-            final GrpcRequest grpcRequest,
-            final Status status,
+    public void extract(final SpanStatusBuilder spanStatusBuilder, final GrpcRequest grpcRequest, final Status status,
             final Throwable error) {
         if (status != null && status.isOk()) {
             spanStatusBuilder.setStatus(StatusCode.UNSET);

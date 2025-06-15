@@ -26,10 +26,8 @@ public class GraphqlMethodsProcessor {
             @Override
             public boolean test(MethodInfo method) {
                 // maybe just look for `@GraphQLApi` on the declaring class?
-                return method.hasDeclaredAnnotation(QUERY)
-                        || method.hasDeclaredAnnotation(MUTATION)
-                        || method.hasDeclaredAnnotation(NAME)
-                        || method.hasDeclaredAnnotation(SUBSCRIPTION)
+                return method.hasDeclaredAnnotation(QUERY) || method.hasDeclaredAnnotation(MUTATION)
+                        || method.hasDeclaredAnnotation(NAME) || method.hasDeclaredAnnotation(SUBSCRIPTION)
                         || method.hasDeclaredAnnotation(RESOLVER);
             }
         });

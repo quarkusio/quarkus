@@ -16,29 +16,18 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
 public class ScopingUnitTest {
-    private static Class<?>[] testClasses = {
-            DefaultScopedEndpoint.class,
-            RequestScopedEndpoint.class,
-            TokenUtils.class
-    };
+    private static Class<?>[] testClasses = { DefaultScopedEndpoint.class, RequestScopedEndpoint.class,
+            TokenUtils.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("publicKey.pem")
-                    .addAsResource("privateKey.pem")
-                    .addAsResource("Token1.json")
-                    .addAsResource("Token2.json")
-                    .addAsResource("application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(testClasses).addAsResource("publicKey.pem").addAsResource("privateKey.pem")
+                    .addAsResource("Token1.json").addAsResource("Token2.json").addAsResource("application.properties"));
 
     @Test
     public void verifyUsernameClaim() throws Exception {
         String token = TokenUtils.generateTokenString("/Token1.json");
-        Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
-                .queryParam("username", "jdoe")
+        Response response = RestAssured.given().auth().oauth2(token).when().queryParam("username", "jdoe")
                 .get("/endp-defaultscoped/validateUsername").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
@@ -49,12 +38,9 @@ public class ScopingUnitTest {
 
         String token2 = TokenUtils.generateTokenString("/Token2.json");
 
-        Response response3 = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
+        Response response3 = RestAssured.given().auth().oauth2(token).when()
                 // We expect
-                .queryParam("username", "jdoe")
-                .get("/endp-requestscoped/validateUsername").andReturn();
+                .queryParam("username", "jdoe").get("/endp-requestscoped/validateUsername").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response3.getStatusCode());
         String replyString3 = response3.body().asString();
@@ -62,12 +48,9 @@ public class ScopingUnitTest {
         JsonObject reply3 = jsonReader3.readObject();
         Assertions.assertTrue(reply3.getBoolean("pass"), reply3.getString("msg"));
 
-        Response response4 = RestAssured.given().auth()
-                .oauth2(token2)
-                .when()
+        Response response4 = RestAssured.given().auth().oauth2(token2).when()
                 // Now we expect the injected claim to match the current caller
-                .queryParam("username", "jdoe2")
-                .get("/endp-requestscoped/validateUsername").andReturn();
+                .queryParam("username", "jdoe2").get("/endp-requestscoped/validateUsername").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response4.getStatusCode());
         String replyString4 = response4.body().asString();

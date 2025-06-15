@@ -36,17 +36,24 @@ class ElytronSecurityJdbcProcessor {
 
     /**
      * Check to see if a JdbcRealmConfig was specified and enabled and create a
-     * {@linkplain org.wildfly.security.auth.realm.JdbcSecurityRealmBuildTimeConfig}
-     * runtime value to process the user/roles properties files. This also registers the names of the user/roles properties
-     * files to include the build artifact.
+     * {@linkplain org.wildfly.security.auth.realm.JdbcSecurityRealmBuildTimeConfig} runtime value to process the
+     * user/roles properties files. This also registers the names of the user/roles properties files to include the
+     * build artifact.
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureJdbcRealmAuthConfig(JdbcRecorder recorder,
             JdbcSecurityRealmBuildTimeConfig jdbcSecurityRealmBuildTimeConfig,
             JdbcSecurityRealmRuntimeConfig jdbcSecurityRealmRuntimeConfig,
-            BuildProducer<SecurityRealmBuildItem> securityRealm,
-            BeanContainerBuildItem beanContainerBuildItem, //we need this to make sure ArC is initialized
+            BuildProducer<SecurityRealmBuildItem> securityRealm, BeanContainerBuildItem beanContainerBuildItem, // we
+            // need
+            // this
+            // to
+            // make
+            // sure
+            // ArC
+            // is
+            // initialized
             List<JdbcDataSourceBuildItem> dataSourcesConfigured) throws Exception {
         if (!jdbcSecurityRealmBuildTimeConfig.enabled()) {
             return;

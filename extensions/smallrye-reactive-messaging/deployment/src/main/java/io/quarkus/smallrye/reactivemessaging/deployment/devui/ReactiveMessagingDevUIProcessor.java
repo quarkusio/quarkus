@@ -24,19 +24,19 @@ public class ReactiveMessagingDevUIProcessor {
 
     @io.quarkus.deployment.annotations.Record(STATIC_INIT)
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    public void collectInjectionInfo(DevConsoleRecorder recorder, BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
+    public void collectInjectionInfo(DevConsoleRecorder recorder,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
         Map<String, String> emitters = new HashMap<>();
         Map<String, String> channels = new HashMap<>();
         for (InjectionPointInfo injectionPoint : beanDiscoveryFinished.getInjectionPoints()) {
-            AnnotationInstance channelAnnotation = injectionPoint.getRequiredQualifier(ReactiveMessagingDotNames.CHANNEL);
+            AnnotationInstance channelAnnotation = injectionPoint
+                    .getRequiredQualifier(ReactiveMessagingDotNames.CHANNEL);
             if (channelAnnotation == null) {
                 channelAnnotation = injectionPoint.getRequiredQualifier(ReactiveMessagingDotNames.LEGACY_CHANNEL);
             }
             boolean isEmitter = injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.EMITTER)
-                    || injectionPoint.getRequiredType().name()
-                            .equals(ReactiveMessagingDotNames.MUTINY_EMITTER)
-                    || injectionPoint.getRequiredType().name()
-                            .equals(ReactiveMessagingDotNames.LEGACY_EMITTER);
+                    || injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.MUTINY_EMITTER)
+                    || injectionPoint.getRequiredType().name().equals(ReactiveMessagingDotNames.LEGACY_EMITTER);
             if (channelAnnotation != null) {
                 if (isEmitter) {
                     emitters.put(channelAnnotation.value().asString(), injectionPoint.getTargetInfo());
@@ -56,8 +56,7 @@ public class ReactiveMessagingDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     CardPageBuildItem create() {
         CardPageBuildItem card = new CardPageBuildItem();
-        card.addPage(Page.webComponentPageBuilder()
-                .title("Channels")
+        card.addPage(Page.webComponentPageBuilder().title("Channels")
                 .componentLink("qwc-smallrye-reactive-messaging-channels.js")
                 .icon("font-awesome-solid:diagram-project"));
 

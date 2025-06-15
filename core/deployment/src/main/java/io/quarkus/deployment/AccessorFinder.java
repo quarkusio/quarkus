@@ -27,7 +27,8 @@ public final class AccessorFinder {
         final String accessorName = declaringClass + "$$accessor";
         final String rawFieldType = fieldDescriptor.getType();
         final boolean primitive = isPrimitive(rawFieldType);
-        final String fieldType = primitive ? rawFieldType : DescriptorUtils.getTypeStringFromDescriptorFormat(rawFieldType);
+        final String fieldType = primitive ? rawFieldType
+                : DescriptorUtils.getTypeStringFromDescriptorFormat(rawFieldType);
         final String publicType = primitive ? fieldType : JLO;
         methodDescriptor = MethodDescriptor.ofMethod(accessorName, "set_" + fieldDescriptor.getName(), void.class, JLO,
                 publicType);
@@ -43,7 +44,8 @@ public final class AccessorFinder {
         final String accessorName = declaringClass + "$$accessor";
         final String rawFieldType = fieldDescriptor.getType();
         final boolean primitive = isPrimitive(rawFieldType);
-        final String fieldType = primitive ? rawFieldType : DescriptorUtils.getTypeStringFromDescriptorFormat(rawFieldType);
+        final String fieldType = primitive ? rawFieldType
+                : DescriptorUtils.getTypeStringFromDescriptorFormat(rawFieldType);
         final String publicType = primitive ? fieldType : JLO;
         methodDescriptor = MethodDescriptor.ofMethod(accessorName, "get_" + fieldDescriptor.getName(), publicType, JLO);
         getters.put(fieldDescriptor, methodDescriptor);

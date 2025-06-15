@@ -22,9 +22,8 @@ import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
 import io.netty.util.internal.StringUtil;
 
 /**
- * A copy of Netty's HttpPostBodyUtil which is not public
- *
- * Shared Static object between HttpMessageDecoder, HttpPostRequestDecoder and HttpPostRequestEncoder
+ * A copy of Netty's HttpPostBodyUtil which is not public Shared Static object between HttpMessageDecoder,
+ * HttpPostRequestDecoder and HttpPostRequestEncoder
  */
 final class QuarkusHttpPostBodyUtil {
 
@@ -39,12 +38,8 @@ final class QuarkusHttpPostBodyUtil {
     public static final String DEFAULT_TEXT_CONTENT_TYPE = "text/plain";
 
     /**
-     * Allowed mechanism for multipart
-     * mechanism := "7bit"
-     * / "8bit"
-     * / "binary"
-     * Not allowed: "quoted-printable"
-     * / "base64"
+     * Allowed mechanism for multipart mechanism := "7bit" / "8bit" / "binary" Not allowed: "quoted-printable" /
+     * "base64"
      */
     public enum TransferEncodingMechanism {
         /**
@@ -80,8 +75,7 @@ final class QuarkusHttpPostBodyUtil {
     }
 
     /**
-     * This class intends to decrease the CPU in seeking ahead some bytes in
-     * HttpPostRequestDecoder
+     * This class intends to decrease the CPU in seeking ahead some bytes in HttpPostRequestDecoder
      */
     static class SeekAheadOptimize {
         byte[] bytes;
@@ -92,7 +86,8 @@ final class QuarkusHttpPostBodyUtil {
         ByteBuf buffer;
 
         /**
-         * @param buffer buffer with a backing byte array
+         * @param buffer
+         *        buffer with a backing byte array
          */
         SeekAheadOptimize(ByteBuf buffer) {
             if (!buffer.hasArray()) {
@@ -106,9 +101,8 @@ final class QuarkusHttpPostBodyUtil {
         }
 
         /**
-         *
-         * @param minus this value will be used as (currentPos - minus) to set
-         *        the current readerIndex in the buffer.
+         * @param minus
+         *        this value will be used as (currentPos - minus) to set the current readerIndex in the buffer.
          */
         void setReadPosition(int minus) {
             pos -= minus;
@@ -117,8 +111,9 @@ final class QuarkusHttpPostBodyUtil {
         }
 
         /**
+         * @param index
+         *        raw index of the array (pos in general)
          *
-         * @param index raw index of the array (pos in general)
          * @return the value equivalent of raw index to be used in readerIndex(value)
          */
         int getReadPosition(int index) {
@@ -159,10 +154,12 @@ final class QuarkusHttpPostBodyUtil {
     /**
      * Try to find first LF or CRLF as Line Breaking
      *
-     * @param buffer the buffer to search in
-     * @param index the index to start from in the buffer
-     * @return a relative position from index > 0 if LF or CRLF is found
-     *         or < 0 if not found
+     * @param buffer
+     *        the buffer to search in
+     * @param index
+     *        the index to start from in the buffer
+     *
+     * @return a relative position from index > 0 if LF or CRLF is found or < 0 if not found
      */
     static int findLineBreak(ByteBuf buffer, int index) {
         int toRead = buffer.readableBytes() - (index - buffer.readerIndex());
@@ -180,10 +177,12 @@ final class QuarkusHttpPostBodyUtil {
     /**
      * Try to find last LF or CRLF as Line Breaking
      *
-     * @param buffer the buffer to search in
-     * @param index the index to start from in the buffer
-     * @return a relative position from index > 0 if LF or CRLF is found
-     *         or < 0 if not found
+     * @param buffer
+     *        the buffer to search in
+     * @param index
+     *        the index to start from in the buffer
+     *
+     * @return a relative position from index > 0 if LF or CRLF is found or < 0 if not found
      */
     static int findLastLineBreak(ByteBuf buffer, int index) {
         int candidate = findLineBreak(buffer, index);
@@ -212,13 +211,18 @@ final class QuarkusHttpPostBodyUtil {
     /**
      * Try to find the delimiter, with LF or CRLF in front of it (added as delimiters) if needed
      *
-     * @param buffer the buffer to search in
-     * @param index the index to start from in the buffer
-     * @param delimiter the delimiter as byte array
-     * @param precededByLineBreak true if it must be preceded by LF or CRLF, else false
-     * @return a relative position from index > 0 if delimiter found designing the start of it
-     *         (including LF or CRLF is asked)
-     *         or a number < 0 if delimiter is not found
+     * @param buffer
+     *        the buffer to search in
+     * @param index
+     *        the index to start from in the buffer
+     * @param delimiter
+     *        the delimiter as byte array
+     * @param precededByLineBreak
+     *        true if it must be preceded by LF or CRLF, else false
+     *
+     * @return a relative position from index > 0 if delimiter found designing the start of it (including LF or CRLF is
+     *         asked) or a number < 0 if delimiter is not found
+     *
      * @throws IndexOutOfBoundsException
      *         if {@code offset + delimiter.length} is greater than {@code buffer.capacity}
      */
@@ -276,6 +280,7 @@ final class QuarkusHttpPostBodyUtil {
      * copied from {@link HttpPostRequestDecoder}
      *
      * @param contentType
+     *
      * @return
      */
     public static String[] getMultipartDataBoundary(String contentType) {

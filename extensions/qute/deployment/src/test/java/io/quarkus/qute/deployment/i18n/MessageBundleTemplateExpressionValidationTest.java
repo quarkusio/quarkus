@@ -16,12 +16,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MessageBundleTemplateExpressionValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBundle.class, Item.class)
-                    .addAsResource(new StringAsset(
-                            "{@java.util.List<java.lang.Integer> names} {msg:hello('foo')} {msg:hello_and_bye} {msg:hello(1,2)} {#each names}{msg:helloName(it)}{/each}"),
-                            "templates/hello.html"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyBundle.class, Item.class)
+            .addAsResource(new StringAsset(
+                    "{@java.util.List<java.lang.Integer> names} {msg:hello('foo')} {msg:hello_and_bye} {msg:hello(1,2)} {#each names}{msg:helloName(it)}{/each}"),
+                    "templates/hello.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

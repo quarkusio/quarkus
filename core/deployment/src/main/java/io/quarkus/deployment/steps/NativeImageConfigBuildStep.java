@@ -35,10 +35,8 @@ class NativeImageConfigBuildStep {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void build(NativeConfig nativeConfig,
-            SslContextConfigurationRecorder sslContextConfigurationRecorder,
-            List<NativeImageConfigBuildItem> nativeImageConfigBuildItems,
-            SslNativeConfigBuildItem sslNativeConfig,
+    void build(NativeConfig nativeConfig, SslContextConfigurationRecorder sslContextConfigurationRecorder,
+            List<NativeImageConfigBuildItem> nativeImageConfigBuildItems, SslNativeConfigBuildItem sslNativeConfig,
             List<JniBuildItem> jniBuildItems,
             List<NativeImageEnableAllCharsetsBuildItem> nativeImageEnableAllCharsetsBuildItems,
             List<ExtensionSslNativeSupportBuildItem> extensionSslNativeSupport,
@@ -77,17 +75,19 @@ class NativeImageConfigBuildStep {
         nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.ssl.native", sslNativeEnabled.toString()));
 
         if (!enableAllSecurityServicesBuildItems.isEmpty()) {
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
+            nativeImage.produce(
+                    new NativeImageSystemPropertyBuildItem("quarkus.native.enable-all-security-services", "true"));
         }
 
         if (!inlineBeforeAnalysisBuildItems.isEmpty()) {
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.inline-before-analysis", "true"));
+            nativeImage
+                    .produce(new NativeImageSystemPropertyBuildItem("quarkus.native.inline-before-analysis", "true"));
         }
 
         if (nativeConfig.monitoring().isPresent()) {
-            nativeImage.produce(new NativeImageSystemPropertyBuildItem("quarkus.native.monitoring",
-                    nativeConfig.monitoring().get().stream().map(x -> x.toString().toLowerCase())
-                            .collect(Collectors.joining(","))));
+            nativeImage.produce(
+                    new NativeImageSystemPropertyBuildItem("quarkus.native.monitoring", nativeConfig.monitoring().get()
+                            .stream().map(x -> x.toString().toLowerCase()).collect(Collectors.joining(","))));
         }
 
         for (JniBuildItem jniBuildItem : jniBuildItems) {
@@ -120,8 +120,8 @@ class NativeImageConfigBuildStep {
         } else if (!sslNativeConfig.isExplicitlyDisabled() && !extensionSslNativeSupport.isEmpty()) {
             // we have extensions desiring the SSL support and it's not explicitly disabled
             if (log.isDebugEnabled()) {
-                log.debugf("Native SSL support enabled due to extensions [%s] requiring it",
-                        extensionSslNativeSupport.stream().map(s -> s.getExtension()).collect(Collectors.joining(", ")));
+                log.debugf("Native SSL support enabled due to extensions [%s] requiring it", extensionSslNativeSupport
+                        .stream().map(s -> s.getExtension()).collect(Collectors.joining(", ")));
             }
             return Boolean.TRUE;
         }

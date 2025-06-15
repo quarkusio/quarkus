@@ -42,7 +42,8 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                     Map.Entry<String, String> req = null;
                     while (req == null) {
                         req = LambdaClient.REQUEST_QUEUE.poll(100, TimeUnit.MILLISECONDS);
-                        if (!started || undertow == null || undertow.getWorker() == null || undertow.getWorker().isShutdown()) {
+                        if (!started || undertow == null || undertow.getWorker() == null
+                                || undertow.getWorker().isShutdown()) {
                             exchange.setStatusCode(StatusCodes.SERVICE_UNAVAILABLE);
                             exchange.setPersistent(false);
                             exchange.getOutputStream().close();
@@ -120,8 +121,7 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
                 }
             }
         });
-        undertow = Undertow.builder().addHttpListener(PORT, "localhost")
-                .setHandler(new BlockingHandler(routingHandler))
+        undertow = Undertow.builder().addHttpListener(PORT, "localhost").setHandler(new BlockingHandler(routingHandler))
                 .build();
         undertow.start();
         System.setProperty(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, "localhost:" + PORT);
@@ -133,8 +133,8 @@ public class LambdaResourceManager implements QuarkusTestResourceLifecycleManage
         started = false;
         while (currentPollCount.get() > 0) {
             try {
-                //wait for all the responses to be sent
-                //before we shutdown
+                // wait for all the responses to be sent
+                // before we shutdown
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

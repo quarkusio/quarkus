@@ -68,6 +68,7 @@ public final class Events {
      * @param <E>
      * @param event
      * @param payload
+     *
      * @return the completion stage from the asynchronous notification
      */
     public static <E> CompletionStage<E> fire(Event<E> event, E payload) {
@@ -77,7 +78,8 @@ public final class Events {
             event.fire(payload);
         } catch (Exception e) {
             // Intentionally do no re-throw the exception
-            LOG.warnf("Error occurred while notifying observers of %s: %s", payload.getClass().getName(), e.getMessage());
+            LOG.warnf("Error occurred while notifying observers of %s: %s", payload.getClass().getName(),
+                    e.getMessage());
         }
         return cs;
     }

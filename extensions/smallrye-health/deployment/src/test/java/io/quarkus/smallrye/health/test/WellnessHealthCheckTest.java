@@ -18,17 +18,14 @@ class WellnessHealthCheckTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WellnessHC.class));
+            .withApplicationRoot((jar) -> jar.addClasses(WellnessHC.class));
 
     @Test
     void testWellness() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            when().get("/q/health/well").then()
-                    .body("status", is("UP"),
-                            "checks.status", contains("UP"),
-                            "checks.name", contains(WellnessHC.class.getName()));
+            when().get("/q/health/well").then().body("status", is("UP"), "checks.status", contains("UP"), "checks.name",
+                    contains(WellnessHC.class.getName()));
         } finally {
             RestAssured.reset();
         }

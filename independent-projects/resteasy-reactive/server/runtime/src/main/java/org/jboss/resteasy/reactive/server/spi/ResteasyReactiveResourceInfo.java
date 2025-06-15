@@ -9,10 +9,8 @@ import jakarta.ws.rs.container.ResourceInfo;
 import org.jboss.resteasy.reactive.server.util.MethodId;
 
 /**
- * A lazy representation of a Method
- *
- * Only loaded if actually needed, which should not be the case generally
- * unless custom Serialization is in use.
+ * A lazy representation of a Method Only loaded if actually needed, which should not be the case generally unless
+ * custom Serialization is in use.
  */
 public class ResteasyReactiveResourceInfo implements ResourceInfo {
 
@@ -24,7 +22,8 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
      */
     public final boolean isNonBlocking;
     /**
-     * This class name will only differ from {@link this#declaringClass} name when the {@link this#method} was inherited.
+     * This class name will only differ from {@link this#declaringClass} name when the {@link this#method} was
+     * inherited.
      */
     private final String actualDeclaringClassName;
     private volatile Method method;
@@ -33,8 +32,7 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
     private volatile String methodId;
 
     public ResteasyReactiveResourceInfo(String name, Class<?> declaringClass, Class[] parameterTypes,
-            boolean isNonBlocking,
-            String actualDeclaringClassName) {
+            boolean isNonBlocking, String actualDeclaringClassName) {
         this.name = name;
         this.declaringClass = declaringClass;
         this.parameterTypes = parameterTypes;
@@ -106,6 +104,7 @@ public class ResteasyReactiveResourceInfo implements ResourceInfo {
 
     /**
      * @return declaring class of a method that returns endpoint response
+     *
      * @deprecated if you need the method, please open an issue so that we can document and test your use case
      */
     @Deprecated

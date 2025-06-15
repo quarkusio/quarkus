@@ -33,8 +33,7 @@ public class MailerRecorder {
     }
 
     public Function<SyntheticCreationalContext<io.vertx.mutiny.ext.mail.MailClient>, io.vertx.mutiny.ext.mail.MailClient> reactiveMailClientFunction(
-            String name,
-            @SuppressWarnings("unused") MailersRuntimeConfig mailersRuntimeConfig) {
+            String name, @SuppressWarnings("unused") MailersRuntimeConfig mailersRuntimeConfig) {
         return new Function<SyntheticCreationalContext<io.vertx.mutiny.ext.mail.MailClient>, io.vertx.mutiny.ext.mail.MailClient>() {
             @Override
             public io.vertx.mutiny.ext.mail.MailClient apply(

@@ -22,21 +22,16 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class StreamingOutputTestCase {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class);
+        }
+    });
 
     @Test
     public void testWith() {
-        get("/test")
-                .then()
-                .statusCode(200)
-                .body(equalTo("hello world"));
+        get("/test").then().statusCode(200).body(equalTo("hello world"));
     }
 
     @Path("test")

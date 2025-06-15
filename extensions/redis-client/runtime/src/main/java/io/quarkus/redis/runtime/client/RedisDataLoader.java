@@ -108,8 +108,8 @@ public class RedisDataLoader {
                     state = State.ARGUMENTS;
                 }
             } else {
-                throw new IllegalStateException("Unexpected character at " + lineNumber + ":" + pos
-                        + ", current state is " + state.name());
+                throw new IllegalStateException(
+                        "Unexpected character at " + lineNumber + ":" + pos + ", current state is " + state.name());
             }
         }
 

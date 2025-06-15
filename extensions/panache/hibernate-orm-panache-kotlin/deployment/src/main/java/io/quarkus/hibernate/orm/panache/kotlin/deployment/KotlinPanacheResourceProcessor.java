@@ -61,8 +61,7 @@ public final class KotlinPanacheResourceProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
-    void build(PanacheKotlinHibernateOrmRecorder recorder,
-            CombinedIndexBuildItem index,
+    void build(PanacheKotlinHibernateOrmRecorder recorder, CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
@@ -119,14 +118,10 @@ public final class KotlinPanacheResourceProcessor {
         return new FeatureBuildItem(Feature.HIBERNATE_ORM_PANACHE_KOTLIN);
     }
 
-    private void processEntities(CombinedIndexBuildItem index,
-            BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            PanacheKotlinHibernateOrmRecorder recorder,
+    private void processEntities(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, PanacheKotlinHibernateOrmRecorder recorder,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            PanacheEntityEnhancer entityEnhancer,
-            ByteCodeType baseType,
-            ByteCodeType type) {
+            PanacheEntityEnhancer entityEnhancer, ByteCodeType baseType, ByteCodeType type) {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
@@ -164,10 +159,8 @@ public final class KotlinPanacheResourceProcessor {
 
     private void processRepositories(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            PanacheRepositoryEnhancer enhancer,
-            ByteCodeType baseType,
-            ByteCodeType type) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, PanacheRepositoryEnhancer enhancer,
+            ByteCodeType baseType, ByteCodeType type) {
 
         Set<Type> typeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(baseType.dotName())) {
@@ -178,7 +171,8 @@ public final class KotlinPanacheResourceProcessor {
             typeParameters.addAll(resolveTypeParameters(classInfo.name(), baseType.dotName(), index.getIndex()));
         }
         for (Type parameterType : typeParameters) {
-            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
+            // Register for reflection the type parameters of the repository: this should be the entity class and the ID
+            // class
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder(parameterType.name().toString()).methods().fields().build());
         }
@@ -186,10 +180,8 @@ public final class KotlinPanacheResourceProcessor {
 
     private void processCompanions(CombinedIndexBuildItem index,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            KotlinPanacheCompanionEnhancer enhancer,
-            ByteCodeType baseType,
-            ByteCodeType type) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, KotlinPanacheCompanionEnhancer enhancer,
+            ByteCodeType baseType, ByteCodeType type) {
 
         Set<Type> typeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(baseType.dotName())) {
@@ -201,7 +193,8 @@ public final class KotlinPanacheResourceProcessor {
         }
 
         for (Type parameterType : typeParameters) {
-            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
+            // Register for reflection the type parameters of the repository: this should be the entity class and the ID
+            // class
             reflectiveClass.produce(
                     ReflectiveClassBuildItem.builder(parameterType.name().toString()).methods().fields().build());
         }
@@ -221,9 +214,9 @@ public final class KotlinPanacheResourceProcessor {
         for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_ID)) {
             ClassInfo info = JandexUtil.getEnclosingClass(annotationInstance);
             if (JandexUtil.isSubclassOf(index.getIndex(), info, DOTNAME_PANACHE_ENTITY)) {
-                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name() +
-                        "' but one is already provided by PanacheEntity, " +
-                        "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
+                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name()
+                        + "' but one is already provided by PanacheEntity, "
+                        + "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
                         Collections.emptyList());
                 return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
             }

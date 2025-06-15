@@ -9,8 +9,8 @@ import io.vertx.core.Future;
 import io.vertx.core.buffer.Buffer;
 
 /**
- * {@link WebSocketEndpoint} wrapper that delegates all methods to {@link #delegate}.
- * This way, subclasses can only override methods they need to intercept.
+ * {@link WebSocketEndpoint} wrapper that delegates all methods to {@link #delegate}. This way, subclasses can only
+ * override methods they need to intercept.
  */
 abstract class ForwardingWebSocketEndpoint implements WebSocketEndpoint {
 

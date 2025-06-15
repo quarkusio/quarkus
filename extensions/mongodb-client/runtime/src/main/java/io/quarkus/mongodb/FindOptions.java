@@ -37,7 +37,9 @@ public class FindOptions {
     /**
      * Sets the query filter to apply to the query.
      *
-     * @param filter the filter, which may be null.
+     * @param filter
+     *        the filter, which may be null.
+     *
      * @return this
      */
     public FindOptions filter(Bson filter) {
@@ -48,7 +50,9 @@ public class FindOptions {
     /**
      * Sets the limit to apply.
      *
-     * @param limit the limit, which may be null
+     * @param limit
+     *        the limit, which may be null
+     *
      * @return this
      */
     public FindOptions limit(int limit) {
@@ -59,7 +63,9 @@ public class FindOptions {
     /**
      * Sets the number of documents to skip.
      *
-     * @param skip the number of documents to skip
+     * @param skip
+     *        the number of documents to skip
+     *
      * @return this
      */
     public FindOptions skip(int skip) {
@@ -70,8 +76,11 @@ public class FindOptions {
     /**
      * Sets the maximum execution time on the server for this operation.
      *
-     * @param maxTime the max time
-     * @param timeUnit the time unit, which may not be null
+     * @param maxTime
+     *        the max time
+     * @param timeUnit
+     *        the time unit, which may not be null
+     *
      * @return this
      */
     public FindOptions maxTime(long maxTime, TimeUnit timeUnit) {
@@ -81,19 +90,22 @@ public class FindOptions {
     }
 
     /**
-     * The maximum amount of time for the server to wait on new documents to satisfy a tailable cursor
-     * query. This only applies to a TAILABLE_AWAIT cursor. When the cursor is not a TAILABLE_AWAIT cursor,
-     * this option is ignored.
+     * The maximum amount of time for the server to wait on new documents to satisfy a tailable cursor query. This only
+     * applies to a TAILABLE_AWAIT cursor. When the cursor is not a TAILABLE_AWAIT cursor, this option is ignored.
      * <p>
-     * On servers &gt;= 3.2, this option will be specified on the getMore command as "maxTimeMS". The default
-     * is no value: no "maxTimeMS" is sent to the server with the getMore command.
+     * On servers &gt;= 3.2, this option will be specified on the getMore command as "maxTimeMS". The default is no
+     * value: no "maxTimeMS" is sent to the server with the getMore command.
      * <p>
-     * On servers &lt; 3.2, this option is ignored, and indicates that the driver should respect the server's default value
+     * On servers &lt; 3.2, this option is ignored, and indicates that the driver should respect the server's default
+     * value
      * <p>
      * A zero value will be ignored.
      *
-     * @param maxAwaitTime the max await time
-     * @param timeUnit the time unit to return the result in
+     * @param maxAwaitTime
+     *        the max await time
+     * @param timeUnit
+     *        the time unit to return the result in
+     *
      * @return the maximum await execution time in the given time unit
      */
     public FindOptions maxAwaitTime(long maxAwaitTime, TimeUnit timeUnit) {
@@ -105,7 +117,9 @@ public class FindOptions {
     /**
      * Sets a document describing the fields to return for all matching documents.
      *
-     * @param projection the project document, which may be null.
+     * @param projection
+     *        the project document, which may be null.
+     *
      * @return this
      */
     public FindOptions projection(Bson projection) {
@@ -116,7 +130,9 @@ public class FindOptions {
     /**
      * Sets the sort criteria to apply to the query.
      *
-     * @param sort the sort criteria, which may be null.
+     * @param sort
+     *        the sort criteria, which may be null.
+     *
      * @return this
      */
     public FindOptions sort(Bson sort) {
@@ -125,10 +141,12 @@ public class FindOptions {
     }
 
     /**
-     * The server normally times out idle cursors after an inactivity period (10 minutes)
-     * to prevent excess memory use. Set this option to prevent that.
+     * The server normally times out idle cursors after an inactivity period (10 minutes) to prevent excess memory use.
+     * Set this option to prevent that.
      *
-     * @param noCursorTimeout true if cursor timeout is disabled
+     * @param noCursorTimeout
+     *        true if cursor timeout is disabled
+     *
      * @return this
      */
     public FindOptions noCursorTimeout(boolean noCursorTimeout) {
@@ -139,7 +157,9 @@ public class FindOptions {
     /**
      * Get partial results from a sharded cluster if one or more shards are unreachable (instead of throwing an error).
      *
-     * @param partial if partial results for sharded clusters is enabled
+     * @param partial
+     *        if partial results for sharded clusters is enabled
+     *
      * @return this
      */
     public FindOptions partial(boolean partial) {
@@ -150,7 +170,9 @@ public class FindOptions {
     /**
      * Sets the cursor type.
      *
-     * @param cursorType the cursor type
+     * @param cursorType
+     *        the cursor type
+     *
      * @return this
      */
     public FindOptions cursorType(CursorType cursorType) {
@@ -160,12 +182,13 @@ public class FindOptions {
 
     /**
      * Sets the collation options
-     *
      * <p>
      * A null value represents the server default.
      * </p>
      *
-     * @param collation the collation options to use
+     * @param collation
+     *        the collation options to use
+     *
      * @return this
      */
     public FindOptions collation(Collation collation) {
@@ -176,7 +199,9 @@ public class FindOptions {
     /**
      * Sets the comment to the query. A null value means no comment is set.
      *
-     * @param comment the comment
+     * @param comment
+     *        the comment
+     *
      * @return this
      */
     public FindOptions comment(String comment) {
@@ -187,7 +212,9 @@ public class FindOptions {
     /**
      * Sets the hint for which index to use. A null value means no hint is set.
      *
-     * @param hint the hint
+     * @param hint
+     *        the hint
+     *
      * @return this
      */
     public FindOptions hint(Bson hint) {
@@ -198,7 +225,9 @@ public class FindOptions {
     /**
      * Sets the exclusive upper bound for a specific index. A null value means no max is set.
      *
-     * @param max the max
+     * @param max
+     *        the max
+     *
      * @return this
      */
     public FindOptions max(Bson max) {
@@ -209,7 +238,9 @@ public class FindOptions {
     /**
      * Sets the minimum inclusive lower bound for a specific index. A null value means no max is set.
      *
-     * @param min the min
+     * @param min
+     *        the min
+     *
      * @return this
      */
     public FindOptions min(Bson min) {
@@ -220,7 +251,9 @@ public class FindOptions {
     /**
      * Sets the returnKey. If true the find operation will return only the index keys in the resulting documents.
      *
-     * @param returnKey the returnKey
+     * @param returnKey
+     *        the returnKey
+     *
      * @return this
      */
     public FindOptions returnKey(boolean returnKey) {
@@ -231,7 +264,9 @@ public class FindOptions {
     /**
      * Sets the showRecordId. Set to true to add a field {@code $recordId} to the returned documents.
      *
-     * @param showRecordId the showRecordId
+     * @param showRecordId
+     *        the showRecordId
+     *
      * @return this
      */
     public FindOptions showRecordId(boolean showRecordId) {
@@ -241,14 +276,14 @@ public class FindOptions {
 
     /**
      * Sets the number of documents to return per batch.
-     *
      * <p>
-     * Overrides the {@link org.reactivestreams.Subscription#request(long)} value for setting the batch size, allowing for fine
-     * grained
-     * control over the underlying cursor.
+     * Overrides the {@link org.reactivestreams.Subscription#request(long)} value for setting the batch size, allowing
+     * for fine grained control over the underlying cursor.
      * </p>
      *
-     * @param size the batch size
+     * @param size
+     *        the batch size
+     *
      * @return this
      */
     public FindOptions batchSize(int size) {

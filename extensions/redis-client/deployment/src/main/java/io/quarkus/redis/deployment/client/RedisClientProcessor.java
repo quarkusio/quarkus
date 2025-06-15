@@ -102,10 +102,7 @@ public class RedisClientProcessor {
     @BuildStep
     List<AdditionalBeanBuildItem> registerRedisClientName() {
         List<AdditionalBeanBuildItem> list = new ArrayList<>();
-        list.add(AdditionalBeanBuildItem
-                .builder()
-                .addBeanClass(RedisClientName.class)
-                .build());
+        list.add(AdditionalBeanBuildItem.builder().addBeanClass(RedisClientName.class).build());
         return list;
     }
 
@@ -116,16 +113,10 @@ public class RedisClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void init(
-            List<RequestedRedisClientBuildItem> clients,
-            RedisClientRecorder recorder,
-            RedisBuildTimeConfig buildTimeConfig,
-            BeanArchiveIndexBuildItem indexBuildItem,
-            BeanDiscoveryFinishedBuildItem beans,
-            ShutdownContextBuildItem shutdown,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            RedisConfig config,
-            VertxBuildItem vertxBuildItem,
+    public void init(List<RequestedRedisClientBuildItem> clients, RedisClientRecorder recorder,
+            RedisBuildTimeConfig buildTimeConfig, BeanArchiveIndexBuildItem indexBuildItem,
+            BeanDiscoveryFinishedBuildItem beans, ShutdownContextBuildItem shutdown,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans, RedisConfig config, VertxBuildItem vertxBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchModeBuildItem launchMode,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
@@ -147,14 +138,11 @@ public class RedisClientProcessor {
 
         // Check if the application use the default Redis client.
         beans.getInjectionPoints().stream().filter(InjectionPointInfo::hasDefaultedQualifier)
-                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
-                .findAny()
+                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name())).findAny()
                 .ifPresent(x -> names.add(DEFAULT_CLIENT_NAME));
 
-        beans.getInjectionPoints().stream()
-                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
-                .filter(InjectionPointInfo::isProgrammaticLookup)
-                .findAny()
+        beans.getInjectionPoints().stream().filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
+                .filter(InjectionPointInfo::isProgrammaticLookup).findAny()
                 .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
 
         // Inject the creation of the client when the application starts.
@@ -175,8 +163,8 @@ public class RedisClientProcessor {
                     recorder.getBareRedisAPI(name)));
 
             // Legacy clients
-            syntheticBeans
-                    .produce(configureAndCreateSyntheticBean(name, RedisClient.class, recorder.getLegacyRedisClient(name)));
+            syntheticBeans.produce(
+                    configureAndCreateSyntheticBean(name, RedisClient.class, recorder.getLegacyRedisClient(name)));
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisClient.class,
                     recorder.getLegacyReactiveRedisClient(name)));
         }
@@ -185,13 +173,12 @@ public class RedisClientProcessor {
 
         // Handle data import
         preloadRedisData(DEFAULT_CLIENT_NAME, buildTimeConfig.defaultRedisClient(), applicationArchivesBuildItem,
-                launchMode.getLaunchMode(),
-                nativeImageResources, hotDeploymentWatchedFiles, recorder);
+                launchMode.getLaunchMode(), nativeImageResources, hotDeploymentWatchedFiles, recorder);
 
         if (buildTimeConfig.namedRedisClients() != null) {
             for (Map.Entry<String, RedisClientBuildTimeConfig> entry : buildTimeConfig.namedRedisClients().entrySet()) {
-                preloadRedisData(entry.getKey(), entry.getValue(), applicationArchivesBuildItem, launchMode.getLaunchMode(),
-                        nativeImageResources, hotDeploymentWatchedFiles, recorder);
+                preloadRedisData(entry.getKey(), entry.getValue(), applicationArchivesBuildItem,
+                        launchMode.getLaunchMode(), nativeImageResources, hotDeploymentWatchedFiles, recorder);
             }
         }
     }
@@ -217,15 +204,10 @@ public class RedisClientProcessor {
         return names;
     }
 
-    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,
-            Class<T> type,
+    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name, Class<T> type,
             Supplier<T> supplier) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(type)
-                .supplier(supplier)
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .setRuntimeInit();
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(type)
+                .supplier(supplier).scope(ApplicationScoped.class).unremovable().setRuntimeInit();
 
         if (DEFAULT_CLIENT_NAME.equalsIgnoreCase(name)) {
             configurator.addQualifier(Default.class);
@@ -237,8 +219,8 @@ public class RedisClientProcessor {
     }
 
     private void preloadRedisData(String name, RedisClientBuildTimeConfig clientConfig,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            LaunchMode launchMode, BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchMode launchMode,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles, RedisClientRecorder recorder) {
         List<String> importFiles = getRedisLoadScript(clientConfig, launchMode);
         List<String> paths = new ArrayList<>();
@@ -248,20 +230,17 @@ public class RedisClientProcessor {
                 loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
             } catch (RuntimeException e) {
                 throw new ConfigurationException(
-                        "Unable to interpret path referenced in '"
-                                + RedisConfig.propertyKey(name, "redis-load-script") + "="
-                                + String.join(",", importFiles)
-                                + "': " + e.getMessage());
+                        "Unable to interpret path referenced in '" + RedisConfig.propertyKey(name, "redis-load-script")
+                                + "=" + String.join(",", importFiles) + "': " + e.getMessage());
             }
 
             if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
                 // enlist resource if present
                 nativeImageResources.produce(new NativeImageResourceBuildItem(importFile));
             } else if (clientConfig != null && clientConfig.loadScript().isPresent()) {
-                //raise exception if explicit file is not present (i.e. not the default)
+                // raise exception if explicit file is not present (i.e. not the default)
                 throw new ConfigurationException(
-                        "Unable to find file referenced in '"
-                                + RedisConfig.propertyKey(name, "redis-load-script") + "="
+                        "Unable to find file referenced in '" + RedisConfig.propertyKey(name, "redis-load-script") + "="
                                 + String.join(", ", clientConfig.loadScript().get())
                                 + "'. Remove property or add file to your path.");
             }
@@ -298,8 +277,7 @@ public class RedisClientProcessor {
         }
         var scripts = config.loadScript();
         if (scripts.isPresent()) {
-            return scripts.get().stream()
-                    .filter(s -> !NO_REDIS_SCRIPT_FILE.equalsIgnoreCase(s))
+            return scripts.get().stream().filter(s -> !NO_REDIS_SCRIPT_FILE.equalsIgnoreCase(s))
                     .collect(Collectors.toList());
         } else if (launchMode == LaunchMode.NORMAL) {
             return Collections.emptyList();

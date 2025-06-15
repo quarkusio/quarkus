@@ -25,8 +25,8 @@ public class MultipartResourceWithAllUploads {
             throw new RuntimeException("should not have dispatched");
         }
         FileUpload txtFile = formData.getUploads().stream().filter(f -> f.name().equals("txtFile")).findFirst().get();
-        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - " + formData.getStatus()
-                + " - " + formData.getUploads().size() + " - " + txtFile.contentType();
+        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - "
+                + formData.getStatus() + " - " + formData.getUploads().size() + " - " + txtFile.contentType();
     }
 
 }

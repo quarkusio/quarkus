@@ -15,15 +15,12 @@ public class HibernateOrmDisabledRecorder {
                 var puName = entry.getKey();
                 String enabledPropertyKey = HibernateOrmRuntimeConfig.extensionPropertyKey("enabled");
                 String activePropertyKey = HibernateOrmRuntimeConfig.puPropertyKey(puName, "active");
-                throw new ConfigurationException(
-                        "Hibernate ORM activated explicitly for persistence unit '" + puName
-                                + "', but the Hibernate ORM extension was disabled at build time."
-                                + " If you want Hibernate ORM to be active for this persistence unit, you must set '"
-                                + enabledPropertyKey
-                                + "' to 'true' at build time."
-                                + " If you don't want Hibernate ORM to be active for this persistence unit, you must leave '"
-                                + activePropertyKey
-                                + "' unset or set it to 'false'.",
+                throw new ConfigurationException("Hibernate ORM activated explicitly for persistence unit '" + puName
+                        + "', but the Hibernate ORM extension was disabled at build time."
+                        + " If you want Hibernate ORM to be active for this persistence unit, you must set '"
+                        + enabledPropertyKey + "' to 'true' at build time."
+                        + " If you don't want Hibernate ORM to be active for this persistence unit, you must leave '"
+                        + activePropertyKey + "' unset or set it to 'false'.",
                         Set.of(enabledPropertyKey, activePropertyKey));
             }
         }

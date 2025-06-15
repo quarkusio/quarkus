@@ -22,17 +22,20 @@ public class ThresholdConverter implements Converter<Threshold>, Serializable {
 
     public static final Threshold NONE = Threshold.of(-1L, SizeUnit.BYTE);
     public static final Threshold DEFAULT = Threshold.of(512L, SizeUnit.KILOBYTE);
-    private static final Pattern PATTERN = Pattern.compile("(?<size>-?(?!0)\\d+)\\s*(?<unit>(?:ZB|EB|TB|PB|GB|MB|KB|B)\\b)?");
+    private static final Pattern PATTERN = Pattern
+            .compile("(?<size>-?(?!0)\\d+)\\s*(?<unit>(?:ZB|EB|TB|PB|GB|MB|KB|B)\\b)?");
 
     public ThresholdConverter() {
     }
 
     /**
-     * The converter accepts a value which start with a number by implicitly appending `PT` to it.
-     * If the value consists only of a number, it implicitly treats the value as seconds.
-     * Otherwise, tries to convert the value assuming that it is in the accepted ISO-8601 duration format.
+     * The converter accepts a value which start with a number by implicitly appending `PT` to it. If the value consists
+     * only of a number, it implicitly treats the value as seconds. Otherwise, tries to convert the value assuming that
+     * it is in the accepted ISO-8601 duration format.
      *
-     * @param value duration as String
+     * @param value
+     *        duration as String
+     *
      * @return {@link Duration}
      */
     @Override

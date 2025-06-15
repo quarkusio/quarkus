@@ -20,9 +20,7 @@ public class SinglePersistenceUnitCdiCacheTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addClass(TransactionTestUtils.class)
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addClass(TransactionTestUtils.class)
                     .addAsResource("application.properties"))
             .overrideRuntimeConfigKey("quarkus.hibernate-orm.second-level-caching-enabled", "true");
 

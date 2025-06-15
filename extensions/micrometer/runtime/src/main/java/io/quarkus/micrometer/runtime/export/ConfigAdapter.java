@@ -21,8 +21,7 @@ public class ConfigAdapter {
     }
 
     /**
-     * Accept the Quarkus config object and a prefix, e.g. {@code quarkus.micrometer.export.prometheus.}.
-     * This will:
+     * Accept the Quarkus config object and a prefix, e.g. {@code quarkus.micrometer.export.prometheus.}. This will:
      * <ul>
      * <li>Lift all properties from the global config map whose keys start with the prefix</li>
      * <li>Trim {@code quarkus.micrometer.export.} from the beginning of the relevant key</li>
@@ -30,8 +29,11 @@ public class ConfigAdapter {
      * <li>Insert the transformed key and the original value into a new map</li>
      * </ul>
      *
-     * @param config Quarkus Config
-     * @param prefix A String prefix beginning with {@code quarkus.} and ending with {@code .}.
+     * @param config
+     *        Quarkus Config
+     * @param prefix
+     *        A String prefix beginning with {@code quarkus.} and ending with {@code .}.
+     *
      * @return A map containing transformed keys and associated values
      */
     public static Map<String, String> captureProperties(Config config, String prefix) {
@@ -49,17 +51,18 @@ public class ConfigAdapter {
     }
 
     /**
-     * Accept a <String, String> map and a prefix, e.g. {@code prometheus.}.
-     * This will:
+     * Accept a <String, String> map and a prefix, e.g. {@code prometheus.}. This will:
      * <ul>
      * <li>Replace kebab-case with camelCase in each key</li>
      * <li>Add the prefix to each key</li>
      * <li>Insert the transformed key and the original value into a new map</li>
      * </ul>
      *
-     * @param config A Runtime config map of string keys and properties, e.g.
-     *        {@link PrometheusRuntimeConfig#prometheus}
-     * @param prefix A String prefix ending with {@code .}, e.g. {@code prometheus.}
+     * @param config
+     *        A Runtime config map of string keys and properties, e.g. {@link PrometheusRuntimeConfig#prometheus}
+     * @param prefix
+     *        A String prefix ending with {@code .}, e.g. {@code prometheus.}
+     *
      * @return A map containing transformed keys and associated values
      */
     public static Map<String, String> captureProperties(Map<String, String> config, String prefix) {

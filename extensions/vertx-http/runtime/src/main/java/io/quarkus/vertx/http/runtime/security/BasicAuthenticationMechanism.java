@@ -46,7 +46,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The authentication handler responsible for BASIC authentication as described by RFC2617
- *
  */
 public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism {
 
@@ -83,8 +82,8 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
         this(realmName, silent, StandardCharsets.UTF_8, Collections.emptyMap());
     }
 
-    public BasicAuthenticationMechanism(final String realmName, final boolean silent,
-            Charset charset, Map<Pattern, Charset> userAgentCharsets) {
+    public BasicAuthenticationMechanism(final String realmName, final boolean silent, Charset charset,
+            Map<Pattern, Charset> userAgentCharsets) {
         this.challenge = realmName == null ? BASIC : BASIC_PREFIX + "realm=\"" + realmName + "\"";
         this.silent = silent;
         this.charset = charset;
@@ -92,8 +91,7 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         List<String> authHeaders = context.request().headers().getAll(HttpHeaderNames.AUTHORIZATION);
         if (authHeaders != null) {
             for (String current : authHeaders) {
@@ -123,8 +121,8 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
                         char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
                         log.debugf("Found basic auth header %s:***** (decoded using charset %s)", userName, charset);
 
-                        UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(userName,
-                                new PasswordCredential(password));
+                        UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(
+                                userName, new PasswordCredential(password));
                         HttpSecurityUtils.setRoutingContextAttribute(credential, context);
                         context.put(HttpAuthenticationMechanism.class.getName(), this);
 
@@ -145,17 +143,15 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
         if (silent) {
-            //if this is silent we only send a challenge if the request contained auth headers
-            //otherwise we assume another method will send the challenge
+            // if this is silent we only send a challenge if the request contained auth headers
+            // otherwise we assume another method will send the challenge
             String authHeader = context.request().headers().get(HttpHeaderNames.AUTHORIZATION);
             if (authHeader == null) {
                 return Uni.createFrom().optional(Optional.empty());
             }
         }
-        ChallengeData result = new ChallengeData(
-                HttpResponseStatus.UNAUTHORIZED.code(),
-                HttpHeaderNames.WWW_AUTHENTICATE,
-                challenge);
+        ChallengeData result = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+                HttpHeaderNames.WWW_AUTHENTICATE, challenge);
         return Uni.createFrom().item(result);
     }
 

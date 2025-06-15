@@ -11,8 +11,7 @@ import io.smallrye.config.WithName;
 public interface ReactiveMessagingConfiguration {
 
     /**
-     * Whether Reactive Messaging metrics are published in case a metrics extension is present
-     * (default to false).
+     * Whether Reactive Messaging metrics are published in case a metrics extension is present (default to false).
      */
     @WithName("metrics.enabled")
     @WithDefault("false")
@@ -25,8 +24,8 @@ public interface ReactiveMessagingConfiguration {
     boolean strict();
 
     /**
-     * Execution mode for the Messaging signatures considered "blocking", defaults to "worker".
-     * For the previous behaviour set to "event-loop".
+     * Execution mode for the Messaging signatures considered "blocking", defaults to "worker". For the previous
+     * behaviour set to "event-loop".
      */
     @WithName("blocking.signatures.execution.mode")
     @WithDefault("worker")

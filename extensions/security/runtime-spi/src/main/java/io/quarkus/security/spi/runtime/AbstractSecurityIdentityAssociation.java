@@ -48,15 +48,15 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
                     identity = deferredIdentity.await().indefinitely();
                 } else {
                     throw new BlockingOperationNotAllowedException(
-                            "Cannot call getIdentity() from the IO thread when lazy authentication " +
-                                    "is in use, as resolving the identity may block the thread. Instead you should inject the "
-                                    +
-                                    "CurrentIdentityAssociation, call CurrentIdentityAssociation#getDeferredIdentity() and " +
-                                    "subscribe to the Uni.");
+                            "Cannot call getIdentity() from the IO thread when lazy authentication "
+                                    + "is in use, as resolving the identity may block the thread. Instead you should inject the "
+                                    + "CurrentIdentityAssociation, call CurrentIdentityAssociation#getDeferredIdentity() and "
+                                    + "subscribe to the Uni.");
                 }
             }
             if (identity == null) {
-                identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await().indefinitely();
+                identity = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE).await()
+                        .indefinitely();
             }
         }
         return identity;

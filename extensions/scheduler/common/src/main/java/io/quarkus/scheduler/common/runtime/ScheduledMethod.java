@@ -6,7 +6,6 @@ import io.quarkus.scheduler.Scheduled;
 
 /**
  * Scheduled method metadata.
- *
  */
 public interface ScheduledMethod {
 

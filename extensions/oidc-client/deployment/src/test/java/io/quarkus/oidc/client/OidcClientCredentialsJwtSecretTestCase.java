@@ -27,28 +27,19 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KeycloakRealmClientCredentialsJwtSecretManager.class)
 public class OidcClientCredentialsJwtSecretTestCase {
 
-    private static Class<?>[] testClasses = {
-            OidcClientsResource.class,
-            ProtectedResource.class,
-            RuntimeSecretProvider.class,
-            TestRecorder.class,
-            OidcClientCredentialsJwtSecretTestCase.class
-    };
+    private static Class<?>[] testClasses = { OidcClientsResource.class, ProtectedResource.class,
+            RuntimeSecretProvider.class, TestRecorder.class, OidcClientCredentialsJwtSecretTestCase.class };
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-oidc-client-credentials-jwt-secret.properties", "application.properties"))
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addAsResource(
+                    "application-oidc-client-credentials-jwt-secret.properties", "application.properties"))
             .addBuildChainCustomizer(buildCustomizer());
 
     @Test
     public void testGetTokenJwtClient() {
         String token = RestAssured.when().get("/clients/token/jwt").body().asString();
-        RestAssured.given().auth().oauth2(token)
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(token).when().get("/protected").then().statusCode(200)
                 .body(equalTo("service-account-quarkus-app"));
     }
 
@@ -57,10 +48,7 @@ public class OidcClientCredentialsJwtSecretTestCase {
         String[] tokens = RestAssured.when().get("/clients/tokens/jwt").body().asString().split(" ");
         assertTokensNotNull(tokens);
 
-        RestAssured.given().auth().oauth2(tokens[0])
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(tokens[0]).when().get("/protected").then().statusCode(200)
                 .body(equalTo("service-account-quarkus-app"));
     }
 
@@ -99,14 +87,9 @@ public class OidcClientCredentialsJwtSecretTestCase {
                             Method creator = recorderProxy.getClass().getDeclaredMethod("createRuntimeSecretProvider");
                             Object proxy1 = creator.invoke(recorderProxy, new Object[] {});
 
-                            context.produce(SyntheticBeanBuildItem
-                                    .configure(RuntimeSecretProvider.class)
-                                    .types(CredentialsProvider.class)
-                                    .scope(ApplicationScoped.class)
-                                    .setRuntimeInit()
-                                    .unremovable()
-                                    .runtimeProxy(proxy1)
-                                    .done());
+                            context.produce(SyntheticBeanBuildItem.configure(RuntimeSecretProvider.class)
+                                    .types(CredentialsProvider.class).scope(ApplicationScoped.class).setRuntimeInit()
+                                    .unremovable().runtimeProxy(proxy1).done());
 
                         } catch (Exception e) {
                             throw new RuntimeException(e);

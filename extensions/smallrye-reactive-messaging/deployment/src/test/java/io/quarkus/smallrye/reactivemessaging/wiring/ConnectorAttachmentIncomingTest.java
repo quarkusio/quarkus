@@ -27,9 +27,8 @@ import mutiny.zero.flow.adapters.AdaptersToReactiveStreams;
 public class ConnectorAttachmentIncomingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyDummyConnector.class, MySink.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(MyDummyConnector.class, MySink.class));
 
     @Inject
     MySink sink;
@@ -45,8 +44,8 @@ public class ConnectorAttachmentIncomingTest {
 
         @Override
         public PublisherBuilder<? extends Message<?>> getPublisherBuilder(Config config) {
-            return ReactiveStreams
-                    .fromPublisher(AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
+            return ReactiveStreams.fromPublisher(
+                    AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
         }
     }
 

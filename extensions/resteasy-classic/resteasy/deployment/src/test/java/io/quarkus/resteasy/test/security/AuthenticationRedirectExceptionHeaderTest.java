@@ -32,25 +32,18 @@ import io.vertx.ext.web.RoutingContext;
 
 public class AuthenticationRedirectExceptionHeaderTest {
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.auth.permission.default.paths=/*\n" +
-            "quarkus.http.auth.permission.default.policy=authenticated";
+    private static final String APP_PROPS = "" + "quarkus.http.auth.permission.default.paths=/*\n"
+            + "quarkus.http.auth.permission.default.policy=authenticated";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @Test
     public void testHeaders() {
         // case-insensitive test that Pragma, cache-control and location headers are only present once
         // there were duplicate headers when both default auth failure handler and auth ex mapper set headers
-        var response = RestAssured
-                .given()
-                .redirects()
-                .follow(false)
-                .when()
-                .get("/secured-route");
+        var response = RestAssured.given().redirects().follow(false).when().get("/secured-route");
         response.then().statusCode(302);
         assertEquals(1, getHeaderCount(response, LOCATION.toString()));
         assertEquals(1, getHeaderCount(response, CACHE_CONTROL.toString()));
@@ -75,7 +68,8 @@ public class AuthenticationRedirectExceptionHeaderTest {
     public static class RedirectingAuthenticator implements HttpAuthenticationMechanism {
 
         @Override
-        public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             return Uni.createFrom().failure(new AuthenticationRedirectException(302, "https://quarkus.io/"));
         }
 
@@ -100,8 +94,7 @@ public class AuthenticationRedirectExceptionHeaderTest {
         }
 
         @Override
-        public Uni<SecurityIdentity> authenticate(
-                BaseAuthenticationRequest simpleAuthenticationRequest,
+        public Uni<SecurityIdentity> authenticate(BaseAuthenticationRequest simpleAuthenticationRequest,
                 AuthenticationRequestContext authenticationRequestContext) {
             return Uni.createFrom().nothing();
         }

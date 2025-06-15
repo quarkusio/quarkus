@@ -26,8 +26,7 @@ public class RequestScopeLeakTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class, Identity.class, Greeting.class, MyFunction.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, Identity.class, Greeting.class, MyFunction.class)
                     .addAsResource("greeting-uni.properties", "application.properties"));
 
     @BeforeEach
@@ -37,12 +36,8 @@ public class RequestScopeLeakTest {
 
     @Test
     public void testRequestScope() {
-        RestAssured.given().contentType("application/json")
-                .body("{\"name\": \"Roxanne\"}")
-                .post("/")
-                .then().statusCode(200)
-                .header("ce-id", nullValue())
-                .body("name", equalTo("Roxanne"))
+        RestAssured.given().contentType("application/json").body("{\"name\": \"Roxanne\"}").post("/").then()
+                .statusCode(200).header("ce-id", nullValue()).body("name", equalTo("Roxanne"))
                 .body("message", equalTo("Hello Roxanne!"));
 
         Assertions.assertEquals(1, MyBean.DISPOSED.get());
@@ -50,28 +45,22 @@ public class RequestScopeLeakTest {
 
     @Test
     public void testRequestScopeWithSyncFailure() {
-        RestAssured.given().contentType("application/json")
-                .body("{\"name\": \"sync-failure\"}")
-                .post("/")
-                .then().statusCode(500);
+        RestAssured.given().contentType("application/json").body("{\"name\": \"sync-failure\"}").post("/").then()
+                .statusCode(500);
         Assertions.assertEquals(1, MyBean.DISPOSED.get());
     }
 
     @Test
     public void testRequestScopeWithSyncFailureInPipeline() {
-        RestAssured.given().contentType("application/json")
-                .body("{\"name\": \"sync-failure-pipeline\"}")
-                .post("/")
+        RestAssured.given().contentType("application/json").body("{\"name\": \"sync-failure-pipeline\"}").post("/")
                 .then().statusCode(500);
         Assertions.assertEquals(1, MyBean.DISPOSED.get());
     }
 
     @Test
     public void testRequestScopeWithASyncFailure() {
-        RestAssured.given().contentType("application/json")
-                .body("{\"name\": \"async-failure\"}")
-                .post("/")
-                .then().statusCode(500);
+        RestAssured.given().contentType("application/json").body("{\"name\": \"async-failure\"}").post("/").then()
+                .statusCode(500);
         Assertions.assertEquals(1, MyBean.DISPOSED.get());
     }
 
@@ -112,33 +101,27 @@ public class RequestScopeLeakTest {
                 throw new IllegalArgumentException("expected sync-failure");
             }
 
-            return Uni.createFrom().item("Hello " + name.getName() + "!")
-                    .invoke(() -> {
-                        Assertions.assertEquals(0, bean.inc());
-                        Assertions.assertSame(context, Vertx.currentContext());
-                    })
-                    .chain(this::nap)
-                    .invoke(() -> {
-                        Assertions.assertEquals(1, bean.inc());
-                        Assertions.assertSame(context, Vertx.currentContext());
-                    })
-                    .invoke(() -> {
-                        if (name.getName().equals("sync-failure-pipeline")) {
-                            throw new IllegalArgumentException("expected sync-failure-in-pipeline");
-                        }
-                    })
-                    .map(s -> {
-                        Greeting greeting = new Greeting();
-                        greeting.setName(name.getName());
-                        greeting.setMessage(s);
-                        return greeting;
-                    })
-                    .chain(greeting -> {
-                        if (greeting.getName().equals("async-failure")) {
-                            return Uni.createFrom().failure(() -> new IllegalArgumentException("expected async-failure"));
-                        }
-                        return Uni.createFrom().item(greeting);
-                    });
+            return Uni.createFrom().item("Hello " + name.getName() + "!").invoke(() -> {
+                Assertions.assertEquals(0, bean.inc());
+                Assertions.assertSame(context, Vertx.currentContext());
+            }).chain(this::nap).invoke(() -> {
+                Assertions.assertEquals(1, bean.inc());
+                Assertions.assertSame(context, Vertx.currentContext());
+            }).invoke(() -> {
+                if (name.getName().equals("sync-failure-pipeline")) {
+                    throw new IllegalArgumentException("expected sync-failure-in-pipeline");
+                }
+            }).map(s -> {
+                Greeting greeting = new Greeting();
+                greeting.setName(name.getName());
+                greeting.setMessage(s);
+                return greeting;
+            }).chain(greeting -> {
+                if (greeting.getName().equals("async-failure")) {
+                    return Uni.createFrom().failure(() -> new IllegalArgumentException("expected async-failure"));
+                }
+                return Uni.createFrom().item(greeting);
+            });
         }
 
         public Uni<String> nap(String s) {

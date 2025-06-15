@@ -19,12 +19,13 @@ public class JsonObjectProcessor {
         if (capabilities.isPresent(Capability.VERTX)) {
             beans.produce(new AdditionalBeanBuildItem("io.quarkus.qute.runtime.jsonobject.JsonObjectValueResolver"));
             DotName jsonObjectName = DotName.createSimple("io.vertx.core.json.JsonObject");
-            typeCheckExcludes.produce(new TypeCheckExcludeBuildItem(new Predicate<TypeCheckExcludeBuildItem.TypeCheck>() {
-                @Override
-                public boolean test(TypeCheck tc) {
-                    return tc.classNameEquals(jsonObjectName);
-                }
-            }));
+            typeCheckExcludes
+                    .produce(new TypeCheckExcludeBuildItem(new Predicate<TypeCheckExcludeBuildItem.TypeCheck>() {
+                        @Override
+                        public boolean test(TypeCheck tc) {
+                            return tc.classNameEquals(jsonObjectName);
+                        }
+                    }));
         }
     }
 }

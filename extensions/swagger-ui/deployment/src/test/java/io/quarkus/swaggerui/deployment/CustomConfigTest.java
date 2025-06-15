@@ -12,9 +12,8 @@ import io.restassured.RestAssured;
 public class CustomConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.swagger-ui.path=/custom"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.swagger-ui.path=/custom"), "application.properties"));
 
     @Test
     public void shouldUseCustomConfig() {

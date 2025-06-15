@@ -24,26 +24,22 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SubResourcesAsBeansTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .addBuildChainCustomizer(new Consumer<>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().addBuildChainCustomizer(new Consumer<>() {
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep(new BuildStep() {
                 @Override
-                public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            context.produce(new SubResourcesAsBeansBuildItem());
-                        }
-                    }).produces(SubResourcesAsBeansBuildItem.class).build();
+                public void execute(BuildContext context) {
+                    context.produce(new SubResourcesAsBeansBuildItem());
                 }
-            })
-            .withApplicationRoot((jar) -> jar.addClasses(RestResource.class, MiddleRestResource.class, RestSubResource.class));
+            }).produces(SubResourcesAsBeansBuildItem.class).build();
+        }
+    }).withApplicationRoot(
+            (jar) -> jar.addClasses(RestResource.class, MiddleRestResource.class, RestSubResource.class));
 
     @Test
     public void testSubResource() {
-        get("/sub-resource/Bob/Builder")
-                .then()
-                .body(Matchers.equalTo("Bob Builder"))
-                .statusCode(200);
+        get("/sub-resource/Bob/Builder").then().body(Matchers.equalTo("Bob Builder")).statusCode(200);
     }
 
     @Path("/")

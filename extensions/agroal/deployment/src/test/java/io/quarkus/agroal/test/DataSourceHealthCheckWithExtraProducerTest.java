@@ -24,16 +24,14 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 /**
- * Check that if an application code contains an extra CDI bean that implements javax.sql.DataSource,
- * but it is not a data source configured through regular configuration means, then it is not included in
- * health checks.
+ * Check that if an application code contains an extra CDI bean that implements javax.sql.DataSource, but it is not a
+ * data source configured through regular configuration means, then it is not included in health checks.
  */
 public class DataSourceHealthCheckWithExtraProducerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ExtraDataSourceProducer.class, ExtraDataSource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(ExtraDataSourceProducer.class, ExtraDataSource.class))
             .withConfigurationResource("application-datasources-with-health.properties");
 
     static class ExtraDataSourceProducer {
@@ -97,9 +95,7 @@ public class DataSourceHealthCheckWithExtraProducerTest {
 
     @Test
     public void testDataSourceHealthCheckExclusion() {
-        RestAssured.when().get("/q/health/ready")
-                .then()
-                .body("status", CoreMatchers.equalTo("UP"));
+        RestAssured.when().get("/q/health/ready").then().body("status", CoreMatchers.equalTo("UP"));
     }
 
 }

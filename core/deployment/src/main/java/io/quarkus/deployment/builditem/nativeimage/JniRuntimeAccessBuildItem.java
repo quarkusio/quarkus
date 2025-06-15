@@ -16,8 +16,7 @@ public final class JniRuntimeAccessBuildItem extends MultiBuildItem {
     private final boolean methods;
     private final boolean fields;
 
-    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields,
-            Class<?>... classes) {
+    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields, Class<?>... classes) {
         List<String> names = new ArrayList<>();
         for (Class<?> i : classes) {
             if (i == null) {
@@ -31,8 +30,7 @@ public final class JniRuntimeAccessBuildItem extends MultiBuildItem {
         this.fields = fields;
     }
 
-    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields,
-            String... className) {
+    public JniRuntimeAccessBuildItem(boolean constructors, boolean methods, boolean fields, String... className) {
         for (String i : className) {
             if (i == null) {
                 throw new NullPointerException();

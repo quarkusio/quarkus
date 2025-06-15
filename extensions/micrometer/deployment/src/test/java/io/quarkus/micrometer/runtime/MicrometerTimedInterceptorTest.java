@@ -22,16 +22,12 @@ import io.smallrye.mutiny.Uni;
 
 public class MicrometerTimedInterceptorTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClass(CountedResource.class)
-                    .addClass(TimedResource.class)
-                    .addClass(GuardedResult.class));
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withApplicationRoot((jar) -> jar
+                    .addClass(CountedResource.class).addClass(TimedResource.class).addClass(GuardedResult.class));
 
     @Inject
     MeterRegistry registry;
@@ -47,11 +43,9 @@ public class MicrometerTimedInterceptorTest {
     @Test
     void testTimeMethod() {
         timed.call(false);
-        Timer timer = registry.get("call")
-                .tag("method", "call")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag").timer();
+        Timer timer = registry.get("call").tag("method", "call")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("exception", "none").tag("extra", "tag")
+                .timer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(1, timer.count());
     }
@@ -60,10 +54,8 @@ public class MicrometerTimedInterceptorTest {
     void testTimeMethod_Failed() {
         Assertions.assertThrows(NullPointerException.class, () -> timed.call(true));
 
-        Timer timer = registry.get("call")
-                .tag("method", "call")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "NullPointerException")
+        Timer timer = registry.get("call").tag("method", "call")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("exception", "NullPointerException")
                 .tag("extra", "tag").timer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(1, timer.count());
@@ -76,11 +68,9 @@ public class MicrometerTimedInterceptorTest {
         guardedResult.complete();
         completableFuture.join();
 
-        Timer timer = registry.get("async.call")
-                .tag("method", "asyncCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag").timer();
+        Timer timer = registry.get("async.call").tag("method", "asyncCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("exception", "none").tag("extra", "tag")
+                .timer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(1, timer.count());
     }
@@ -92,10 +82,8 @@ public class MicrometerTimedInterceptorTest {
         guardedResult.complete(new NullPointerException());
         Assertions.assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
 
-        Timer timer = registry.get("async.call")
-                .tag("method", "asyncCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "NullPointerException")
+        Timer timer = registry.get("async.call").tag("method", "asyncCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("exception", "NullPointerException")
                 .tag("extra", "tag").timer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(1, timer.count());
@@ -108,11 +96,9 @@ public class MicrometerTimedInterceptorTest {
         guardedResult.complete();
         uni.subscribe().asCompletionStage().join();
 
-        Timer timer = registry.get("uni.call")
-                .tag("method", "uniCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag").timer();
+        Timer timer = registry.get("uni.call").tag("method", "uniCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("exception", "none").tag("extra", "tag")
+                .timer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(1, timer.count());
     }
@@ -125,10 +111,8 @@ public class MicrometerTimedInterceptorTest {
         Assertions.assertThrows(java.util.concurrent.CompletionException.class,
                 () -> uni.subscribe().asCompletionStage().join());
 
-        Timer timer = registry.get("uni.call")
-                .tag("method", "uniCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "NullPointerException")
+        Timer timer = registry.get("uni.call").tag("method", "uniCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("exception", "NullPointerException")
                 .tag("extra", "tag").timer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(1, timer.count());
@@ -137,10 +121,8 @@ public class MicrometerTimedInterceptorTest {
     @Test
     void testTimeMethod_LongTaskTimer() {
         timed.longCall(false);
-        LongTaskTimer timer = registry.get("longCall")
-                .tag("method", "longCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("extra", "tag").longTaskTimer();
+        LongTaskTimer timer = registry.get("longCall").tag("method", "longCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("extra", "tag").longTaskTimer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(0, timer.activeTasks());
     }
@@ -149,10 +131,8 @@ public class MicrometerTimedInterceptorTest {
     void testTimeMethod_LongTaskTimer_Failed() {
         Assertions.assertThrows(NullPointerException.class, () -> timed.longCall(true));
 
-        LongTaskTimer timer = registry.get("longCall")
-                .tag("method", "longCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("extra", "tag").longTaskTimer();
+        LongTaskTimer timer = registry.get("longCall").tag("method", "longCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("extra", "tag").longTaskTimer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(0, timer.activeTasks());
     }
@@ -164,10 +144,8 @@ public class MicrometerTimedInterceptorTest {
         guardedResult.complete();
         completableFuture.join();
 
-        LongTaskTimer timer = registry.get("async.longCall")
-                .tag("method", "longAsyncCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("extra", "tag").longTaskTimer();
+        LongTaskTimer timer = registry.get("async.longCall").tag("method", "longAsyncCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("extra", "tag").longTaskTimer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(0, timer.activeTasks());
     }
@@ -179,10 +157,8 @@ public class MicrometerTimedInterceptorTest {
         guardedResult.complete(new NullPointerException());
         Assertions.assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
 
-        LongTaskTimer timer = registry.get("async.longCall")
-                .tag("method", "longAsyncCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("extra", "tag").longTaskTimer();
+        LongTaskTimer timer = registry.get("async.longCall").tag("method", "longAsyncCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("extra", "tag").longTaskTimer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(0, timer.activeTasks());
     }
@@ -194,10 +170,8 @@ public class MicrometerTimedInterceptorTest {
         guardedResult.complete();
         uni.subscribe().asCompletionStage().join();
 
-        LongTaskTimer timer = registry.get("uni.longCall")
-                .tag("method", "longUniCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("extra", "tag").longTaskTimer();
+        LongTaskTimer timer = registry.get("uni.longCall").tag("method", "longUniCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("extra", "tag").longTaskTimer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(0, timer.activeTasks());
     }
@@ -210,10 +184,8 @@ public class MicrometerTimedInterceptorTest {
         Assertions.assertThrows(java.util.concurrent.CompletionException.class,
                 () -> uni.subscribe().asCompletionStage().join());
 
-        LongTaskTimer timer = registry.get("uni.longCall")
-                .tag("method", "longUniCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("extra", "tag").longTaskTimer();
+        LongTaskTimer timer = registry.get("uni.longCall").tag("method", "longUniCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("extra", "tag").longTaskTimer();
         Assertions.assertNotNull(timer);
         Assertions.assertEquals(0, timer.activeTasks());
     }
@@ -221,18 +193,14 @@ public class MicrometerTimedInterceptorTest {
     @Test
     void testTimeMethod_repeatable() {
         timed.repeatableCall(false);
-        Timer alphaTimer = registry.get("alpha")
-                .tag("method", "repeatableCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag").timer();
+        Timer alphaTimer = registry.get("alpha").tag("method", "repeatableCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("exception", "none").tag("extra", "tag")
+                .timer();
         Assertions.assertNotNull(alphaTimer);
         Assertions.assertEquals(1, alphaTimer.count());
-        Timer bravoTimer = registry.get("bravo")
-                .tag("method", "repeatableCall")
-                .tag("class", "io.quarkus.micrometer.test.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag").timer();
+        Timer bravoTimer = registry.get("bravo").tag("method", "repeatableCall")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource").tag("exception", "none").tag("extra", "tag")
+                .timer();
         Assertions.assertNotNull(bravoTimer);
         Assertions.assertEquals(1, bravoTimer.count());
     }

@@ -15,10 +15,8 @@ import io.restassured.RestAssured;
 public class RootPathTestHTTPResourceTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.http.root-path", "app/")
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().overrideConfigKey("quarkus.http.root-path", "app/")
+            .withApplicationRoot((jar) -> jar.addClass(HelloResource.class));
 
     @TestHTTPEndpoint(HelloResource.class)
     @TestHTTPResource

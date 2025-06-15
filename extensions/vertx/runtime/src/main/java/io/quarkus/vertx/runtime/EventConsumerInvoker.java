@@ -21,9 +21,8 @@ public class EventConsumerInvoker {
     private final Invoker<Object, Object> invoker;
 
     /**
-     * Whether this event consumer method declares 2 parameters, where the first
-     * is the event headers and the second is the event body. In this case,
-     * we have to split the headers and body parameters explicitly.
+     * Whether this event consumer method declares 2 parameters, where the first is the event headers and the second is
+     * the event body. In this case, we have to split the headers and body parameters explicitly.
      */
     private final boolean splitHeadersBodyParams;
 
@@ -62,7 +61,8 @@ public class EventConsumerInvoker {
                     // Capture the state, deactivate and destroy the context when the computation completes
                     ContextState endState = requestContext.getState();
                     requestContext.deactivate();
-                    ((CompletionStage<?>) ret).whenComplete(new RequestActivatedConsumer(message, requestContext, endState));
+                    ((CompletionStage<?>) ret)
+                            .whenComplete(new RequestActivatedConsumer(message, requestContext, endState));
                 } else {
                     // No async computation - just terminate and set reply
                     requestContext.terminate();

@@ -15,8 +15,7 @@ import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
 public class ReflectionEndpointInvokerFactory implements EndpointInvokerFactory {
 
     @Override
-    public Supplier<EndpointInvoker> create(ResourceMethod method, ClassInfo currentClass,
-            MethodInfo currentMethod) {
+    public Supplier<EndpointInvoker> create(ResourceMethod method, ClassInfo currentClass, MethodInfo currentMethod) {
         return new Supplier<EndpointInvoker>() {
             @Override
             public EndpointInvoker get() {
@@ -24,7 +23,8 @@ public class ReflectionEndpointInvokerFactory implements EndpointInvokerFactory 
                 try {
                     Class<?> clazz = Class.forName(currentMethod.declaringClass().name().toString(), false,
                             Thread.currentThread().getContextClassLoader());
-                    Method meth = clazz.getDeclaredMethod(currentMethod.name(), toParamArray(currentMethod.parameterTypes()));
+                    Method meth = clazz.getDeclaredMethod(currentMethod.name(),
+                            toParamArray(currentMethod.parameterTypes()));
                     return new EndpointInvoker() {
                         @Override
                         public Object invoke(Object instance, Object[] parameters) throws Exception {
@@ -77,7 +77,8 @@ public class ReflectionEndpointInvokerFactory implements EndpointInvokerFactory 
                     }
                 } else {
                     try {
-                        return Class.forName(type.name().toString(), false, Thread.currentThread().getContextClassLoader());
+                        return Class.forName(type.name().toString(), false,
+                                Thread.currentThread().getContextClassLoader());
                     } catch (ClassNotFoundException e) {
                         throw new RuntimeException(e);
                     }

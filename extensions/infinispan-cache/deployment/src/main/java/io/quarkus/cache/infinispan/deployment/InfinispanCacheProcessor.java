@@ -23,7 +23,8 @@ public class InfinispanCacheProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    CacheManagerInfoBuildItem cacheManagerInfo(BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+    CacheManagerInfoBuildItem cacheManagerInfo(
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             InfinispanCacheBuildRecorder recorder) {
         return new CacheManagerInfoBuildItem(recorder.getCacheManagerSupplier());
     }
@@ -46,8 +47,7 @@ public class InfinispanCacheProcessor {
 
     @BuildStep
     void nativeImage(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(ReflectiveClassBuildItem.builder(CompositeCacheKey.class)
-                .reason(getClass().getName())
+        producer.produce(ReflectiveClassBuildItem.builder(CompositeCacheKey.class).reason(getClass().getName())
                 .methods(true).build());
     }
 

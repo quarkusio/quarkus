@@ -20,7 +20,7 @@ public class ParameterSubResGenericSub {
             }
         };
         Class[] intfs = { ParameterSubResDoubleInterface.class };
-        return (ParameterSubResDoubleInterface) Proxy.newProxyInstance(ParameterSubResGenericSub.class.getClassLoader(), intfs,
-                handler);
+        return (ParameterSubResDoubleInterface) Proxy.newProxyInstance(ParameterSubResGenericSub.class.getClassLoader(),
+                intfs, handler);
     }
 }

@@ -21,8 +21,7 @@ public class MutinyRestClientTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MutinyRestClientTest.class, Client.class, TestEndpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MutinyRestClientTest.class, Client.class, TestEndpoint.class));
 
     @TestHTTPResource
     URL url;

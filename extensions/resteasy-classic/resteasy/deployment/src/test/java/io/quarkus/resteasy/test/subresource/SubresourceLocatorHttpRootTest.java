@@ -11,9 +11,8 @@ import io.restassured.RestAssured;
 public class SubresourceLocatorHttpRootTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PingResource.class, PingsResource.class, MyService.class, SuperPingResource.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(PingResource.class, PingsResource.class, MyService.class, SuperPingResource.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
 
     @Test

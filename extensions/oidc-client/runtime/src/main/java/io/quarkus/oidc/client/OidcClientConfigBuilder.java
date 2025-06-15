@@ -113,9 +113,8 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * {@link OidcClientConfig} with documented defaults.
-     * Cached here so that we avoid building the SmallRye Config again and again when no-args builder constructors
-     * are used.
+     * {@link OidcClientConfig} with documented defaults. Cached here so that we avoid building the SmallRye Config
+     * again and again when no-args builder constructors are used.
      */
     private static volatile OidcClientConfig configWithDefaults = null;
 
@@ -140,7 +139,8 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param config created either by this builder or SmallRye Config; config methods must never return null
+     * @param config
+     *        created either by this builder or SmallRye Config; config methods must never return null
      */
     public OidcClientConfigBuilder(OidcClientConfig config) {
         super(Objects.requireNonNull(config));
@@ -168,8 +168,11 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     /**
      * Adds new headers to the {@link OidcClientConfig#headers()} already set.
      *
-     * @param headerName header name
-     * @param headerValue header value
+     * @param headerName
+     *        header name
+     * @param headerValue
+     *        header value
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder headers(String headerName, String headerValue) {
@@ -182,7 +185,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     /**
      * Adds new headers to the headers already set.
      *
-     * @param headers {@link OidcClientConfig#headers()}
+     * @param headers
+     *        {@link OidcClientConfig#headers()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder headers(Map<String, String> headers) {
@@ -192,7 +197,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param earlyTokensAcquisition {@link OidcClientConfig#earlyTokensAcquisition()}
+     * @param earlyTokensAcquisition
+     *        {@link OidcClientConfig#earlyTokensAcquisition()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder earlyTokensAcquisition(boolean earlyTokensAcquisition) {
@@ -226,7 +233,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param grantOptions {@link OidcClientConfig#grantOptions()}
+     * @param grantOptions
+     *        {@link OidcClientConfig#grantOptions()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder grantOptions(Map<String, Map<String, String>> grantOptions) {
@@ -236,7 +245,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param absoluteExpiresIn {@link OidcClientConfig#absoluteExpiresIn()}
+     * @param absoluteExpiresIn
+     *        {@link OidcClientConfig#absoluteExpiresIn()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder absoluteExpiresIn(boolean absoluteExpiresIn) {
@@ -245,7 +256,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param accessTokenExpiresIn {@link OidcClientConfig#accessTokenExpiresIn()}
+     * @param accessTokenExpiresIn
+     *        {@link OidcClientConfig#accessTokenExpiresIn()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder accessTokenExpiresIn(Duration accessTokenExpiresIn) {
@@ -254,7 +267,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param accessTokenExpirySkew {@link OidcClientConfig#accessTokenExpirySkew()}
+     * @param accessTokenExpirySkew
+     *        {@link OidcClientConfig#accessTokenExpirySkew()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder accessTokenExpirySkew(Duration accessTokenExpirySkew) {
@@ -263,7 +278,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param refreshTokenTimeSkew {@link OidcClientConfig#refreshTokenTimeSkew()}
+     * @param refreshTokenTimeSkew
+     *        {@link OidcClientConfig#refreshTokenTimeSkew()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder refreshTokenTimeSkew(Duration refreshTokenTimeSkew) {
@@ -274,7 +291,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     /**
      * Adds scopes to the {@link OidcClientConfig#scopes()}.
      *
-     * @param scopes {@link OidcClientConfig#scopes()}
+     * @param scopes
+     *        {@link OidcClientConfig#scopes()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder scopes(List<String> scopes) {
@@ -286,7 +305,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     /**
      * Adds scopes to the {@link OidcClientConfig#scopes()}.
      *
-     * @param scopes {@link OidcClientConfig#scopes()}
+     * @param scopes
+     *        {@link OidcClientConfig#scopes()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder scopes(String... scopes) {
@@ -296,7 +317,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param clientEnabled {@link OidcClientConfig#clientEnabled()}
+     * @param clientEnabled
+     *        {@link OidcClientConfig#clientEnabled()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder clientEnabled(boolean clientEnabled) {
@@ -305,7 +328,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param id {@link OidcClientConfig#id()}
+     * @param id
+     *        {@link OidcClientConfig#id()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder id(String id) {
@@ -314,7 +339,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param grant {@link OidcClientConfig#grant()} created either with {@link GrantBuilder} or SmallRye Config
+     * @param grant
+     *        {@link OidcClientConfig#grant()} created either with {@link GrantBuilder} or SmallRye Config
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder grant(Grant grant) {
@@ -323,7 +350,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param type {@link Grant#type()}
+     * @param type
+     *        {@link Grant#type()}
+     *
      * @return this builder
      */
     public OidcClientConfigBuilder grant(Grant.Type type) {
@@ -356,8 +385,8 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
 
     public static final class GrantBuilder {
 
-        private record GrantImpl(Type type, String accessTokenProperty, String refreshTokenProperty, String expiresInProperty,
-                String refreshExpiresInProperty) implements Grant {
+        private record GrantImpl(Type type, String accessTokenProperty, String refreshTokenProperty,
+                String expiresInProperty, String refreshExpiresInProperty) implements Grant {
 
         }
 
@@ -382,7 +411,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param type {@link Grant#type()}
+         * @param type
+         *        {@link Grant#type()}
+         *
          * @return this builder
          */
         public GrantBuilder type(Grant.Type type) {
@@ -391,7 +422,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param refreshTokenProperty {@link Grant#refreshTokenProperty()}
+         * @param refreshTokenProperty
+         *        {@link Grant#refreshTokenProperty()}
+         *
          * @return this builder
          */
         public GrantBuilder refreshTokenProperty(String refreshTokenProperty) {
@@ -400,7 +433,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param expiresInProperty {@link Grant#expiresInProperty()}
+         * @param expiresInProperty
+         *        {@link Grant#expiresInProperty()}
+         *
          * @return this builder
          */
         public GrantBuilder expiresInProperty(String expiresInProperty) {
@@ -409,7 +444,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param refreshExpiresInProperty {@link Grant#refreshExpiresInProperty()}
+         * @param refreshExpiresInProperty
+         *        {@link Grant#refreshExpiresInProperty()}
+         *
          * @return this builder
          */
         public GrantBuilder refreshExpiresInProperty(String refreshExpiresInProperty) {
@@ -418,7 +455,9 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param accessTokenProperty {@link Grant#accessTokenProperty()}
+         * @param accessTokenProperty
+         *        {@link Grant#accessTokenProperty()}
+         *
          * @return this builder
          */
         public GrantBuilder accessTokenProperty(String accessTokenProperty) {
@@ -432,17 +471,15 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         public Grant build() {
-            return new GrantImpl(type, accessTokenProperty, refreshTokenProperty, expiresInProperty, refreshExpiresInProperty);
+            return new GrantImpl(type, accessTokenProperty, refreshTokenProperty, expiresInProperty,
+                    refreshExpiresInProperty);
         }
     }
 
     private static OidcClientConfig getConfigWithDefaults() {
         if (configWithDefaults == null) {
-            final OidcClientsConfig clientsConfig = new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withMapping(OidcClientsConfig.class)
-                    .build()
-                    .getConfigMapping(OidcClientsConfig.class);
+            final OidcClientsConfig clientsConfig = new SmallRyeConfigBuilder().addDiscoveredConverters()
+                    .withMapping(OidcClientsConfig.class).build().getConfigMapping(OidcClientsConfig.class);
             configWithDefaults = OidcClientsConfig.getDefaultClient(clientsConfig);
         }
         return configWithDefaults;

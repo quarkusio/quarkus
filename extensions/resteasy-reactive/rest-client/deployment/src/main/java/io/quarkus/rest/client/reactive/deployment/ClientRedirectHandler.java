@@ -1,20 +1,5 @@
 package io.quarkus.rest.client.reactive.deployment;
 
-import java.lang.reflect.Modifier;
-import java.net.URI;
-import java.util.LinkedHashMap;
-
-import jakarta.ws.rs.Priorities;
-import jakarta.ws.rs.core.Response;
-
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
-
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodCreator;
@@ -22,6 +7,18 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.rest.client.reactive.runtime.ResteasyReactiveResponseRedirectHandler;
 import io.quarkus.runtime.util.HashUtil;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.core.Response;
+import java.lang.reflect.Modifier;
+import java.net.URI;
+import java.util.LinkedHashMap;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 
 /**
  * Generates an implementation of {@link org.jboss.resteasy.reactive.client.handlers.RedirectHandler}

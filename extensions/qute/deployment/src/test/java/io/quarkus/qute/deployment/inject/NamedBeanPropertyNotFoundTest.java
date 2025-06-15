@@ -18,8 +18,7 @@ public class NamedBeanPropertyNotFoundTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(NamedFoo.class)
+            .withApplicationRoot((jar) -> jar.addClass(NamedFoo.class)
                     .addAsResource(new StringAsset("{inject:foo.list.ping}"), "templates/fooping.html"))
             .setExpectedException(TemplateException.class);
 

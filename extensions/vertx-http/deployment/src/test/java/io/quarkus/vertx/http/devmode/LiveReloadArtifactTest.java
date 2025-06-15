@@ -14,11 +14,10 @@ import io.restassured.RestAssured;
 public class LiveReloadArtifactTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.class-loading.reloadable-artifacts=io.vertx:vertx-web-client\n"),
-                            "application.properties")
-                    .addClasses(LiveReloadEndpoint.class));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.class-loading.reloadable-artifacts=io.vertx:vertx-web-client\n"),
+                    "application.properties")
+            .addClasses(LiveReloadEndpoint.class));
 
     @Test
     public void test() {

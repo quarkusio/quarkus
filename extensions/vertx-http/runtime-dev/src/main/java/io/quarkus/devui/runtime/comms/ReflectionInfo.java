@@ -19,8 +19,8 @@ public class ReflectionInfo {
     public Method method;
     public Map<String, Class> params;
 
-    public ReflectionInfo(Class bean, Object instance, Method method, Map<String, Class> params, boolean explicitlyBlocking,
-            boolean explicitlyNonBlocking) {
+    public ReflectionInfo(Class bean, Object instance, Method method, Map<String, Class> params,
+            boolean explicitlyBlocking, boolean explicitlyNonBlocking) {
         this.bean = bean;
         this.instance = instance;
         this.method = method;
@@ -28,8 +28,8 @@ public class ReflectionInfo {
         this.blocking = explicitlyBlocking;
         this.nonBlocking = explicitlyNonBlocking;
         if (blocking && nonBlocking) {
-            throw new IllegalArgumentException("The method " + method.getDeclaringClass().getName() + "." + method.getName()
-                    + " cannot be annotated with @Blocking and @NonBlocking");
+            throw new IllegalArgumentException("The method " + method.getDeclaringClass().getName() + "."
+                    + method.getName() + " cannot be annotated with @Blocking and @NonBlocking");
         }
     }
 
@@ -51,7 +51,7 @@ public class ReflectionInfo {
     }
 
     public boolean isReturningCompletionStage() {
-        return method.getReturnType().getName().equals(CompletionStage.class.getName()) ||
-                method.getReturnType().getName().equals(CompletableFuture.class.getName());
+        return method.getReturnType().getName().equals(CompletionStage.class.getName())
+                || method.getReturnType().getName().equals(CompletableFuture.class.getName());
     }
 }

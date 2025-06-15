@@ -3,8 +3,7 @@ package io.quarkus.narayana.jta;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 
-class TransactionRunnerImpl extends RunOptionsBase
-        implements TransactionRunnerOptions, TransactionRunner {
+class TransactionRunnerImpl extends RunOptionsBase implements TransactionRunnerOptions, TransactionRunner {
     TransactionRunnerImpl(TransactionSemantics semantics) {
         setSemantics(semantics);
     }

@@ -34,17 +34,14 @@ public abstract class AbstractDbTokenStateManagerTest {
 
     protected static QuarkusUnitTest createQuarkusUnitTest(String reactiveSqlClientExtension,
             Consumer<JavaArchive> customizer) {
-        return new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> {
-                    jar
-                            .addClasses(ProtectedResource.class, UnprotectedResource.class, PublicResource.class)
-                            .addAsResource("application.properties");
-                    if (customizer != null) {
-                        customizer.accept(jar);
-                    }
-                })
-                .setForcedDependencies(
-                        List.of(Dependency.of("io.quarkus", reactiveSqlClientExtension, Version.getVersion())));
+        return new QuarkusUnitTest().withApplicationRoot((jar) -> {
+            jar.addClasses(ProtectedResource.class, UnprotectedResource.class, PublicResource.class)
+                    .addAsResource("application.properties");
+            if (customizer != null) {
+                customizer.accept(jar);
+            }
+        }).setForcedDependencies(
+                List.of(Dependency.of("io.quarkus", reactiveSqlClientExtension, Version.getVersion())));
     }
 
     @TestHTTPResource
@@ -89,11 +86,7 @@ public abstract class AbstractDbTokenStateManagerTest {
     }
 
     protected static void assertTokenStateCount(Integer tokenStateCount) {
-        RestAssured
-                .given()
-                .get("public/db-state-manager-table-content")
-                .then()
-                .statusCode(200)
+        RestAssured.given().get("public/db-state-manager-table-content").then().statusCode(200)
                 .body(Matchers.is(tokenStateCount.toString()));
     }
 

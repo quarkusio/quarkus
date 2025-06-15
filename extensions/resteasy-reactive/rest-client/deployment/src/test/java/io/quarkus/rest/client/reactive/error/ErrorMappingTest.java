@@ -20,10 +20,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ErrorMappingTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Dto.class, Client.class, Resource.class).addAsResource(
-                            new StringAsset(setUrlForClass(Client.class)),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(Dto.class, Client.class, Resource.class)
+                    .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties"));
     public static final String ERROR_MESSAGE = "The entity was not found";
 
     @RestClient

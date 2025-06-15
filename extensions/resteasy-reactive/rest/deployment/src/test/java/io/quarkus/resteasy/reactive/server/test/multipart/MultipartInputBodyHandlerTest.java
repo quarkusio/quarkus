@@ -32,34 +32,31 @@ public class MultipartInputBodyHandlerTest extends AbstractMultipartTest {
     private static final Path uploadDir = Paths.get("file-uploads");
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep().produces(RequireBodyHandlerBuildItem.class).setBuildStep(new BuildStep() {
                 @Override
-                public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep().produces(RequireBodyHandlerBuildItem.class).setBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            context.produce(new RequireBodyHandlerBuildItem());
-                        }
-                    }).build();
+                public void execute(BuildContext context) {
+                    context.produce(new RequireBodyHandlerBuildItem());
                 }
-            })
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FormDataBase.class, OtherPackageFormDataBase.class, FormData.class, Status.class,
-                                    OtherFormData.class, FormDataSameFileName.class,
-                                    OtherFormDataBase.class,
-                                    MultipartResource.class, OtherMultipartResource.class)
-                            .addAsResource(new StringAsset(
-                                    // keep the files around so we can assert the outcome
-                                    "quarkus.http.body.delete-uploaded-files-on-end=false\nquarkus.http.body.uploads-directory="
-                                            + uploadDir.toString() + "\n"),
-                                    "application.properties");
-                }
+            }).build();
+        }
+    }).setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap
+                    .create(JavaArchive.class).addClasses(FormDataBase.class, OtherPackageFormDataBase.class,
+                            FormData.class, Status.class, OtherFormData.class, FormDataSameFileName.class,
+                            OtherFormDataBase.class, MultipartResource.class, OtherMultipartResource.class)
+                    .addAsResource(new StringAsset(
+                            // keep the files around so we can assert the outcome
+                            "quarkus.http.body.delete-uploaded-files-on-end=false\nquarkus.http.body.uploads-directory="
+                                    + uploadDir.toString() + "\n"),
+                            "application.properties");
+        }
 
-            });
+    });
 
     private final File HTML_FILE = new File("./src/test/resources/test.html");
     private final File HTML_FILE2 = new File("./src/test/resources/test2.html");
@@ -78,19 +75,10 @@ public class MultipartInputBodyHandlerTest extends AbstractMultipartTest {
 
     @Test
     public void testSimple() {
-        RestAssured.given()
-                .multiPart("name", "Alice")
-                .multiPart("active", "true")
-                .multiPart("num", "25")
-                .multiPart("status", "WORKING")
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .multiPart("xmlFile", XML_FILE, "text/xml")
-                .multiPart("txtFile", TXT_FILE, "text/plain")
-                .accept("text/plain")
-                .when()
-                .post("/multipart/simple/2")
-                .then()
-                .statusCode(200)
+        RestAssured.given().multiPart("name", "Alice").multiPart("active", "true").multiPart("num", "25")
+                .multiPart("status", "WORKING").multiPart("htmlFile", HTML_FILE, "text/html")
+                .multiPart("xmlFile", XML_FILE, "text/xml").multiPart("txtFile", TXT_FILE, "text/plain")
+                .accept("text/plain").when().post("/multipart/simple/2").then().statusCode(200)
                 .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
 
         // ensure that the 3 uploaded files where created on disk
@@ -99,21 +87,13 @@ public class MultipartInputBodyHandlerTest extends AbstractMultipartTest {
 
     @Test
     public void testBlocking() throws IOException {
-        RestAssured.given()
-                .multiPart("name", "Trudy")
-                .multiPart("num", "20")
-                .multiPart("status", "SLEEPING")
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .multiPart("xmlFile", XML_FILE, "text/xml")
-                .multiPart("txtFile", TXT_FILE, "text/plain")
-                .accept("text/plain")
-                .when()
-                .post("/multipart/blocking?times=2")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Trudy - 40 - SLEEPING"))
+        RestAssured.given().multiPart("name", "Trudy").multiPart("num", "20").multiPart("status", "SLEEPING")
+                .multiPart("htmlFile", HTML_FILE, "text/html").multiPart("xmlFile", XML_FILE, "text/xml")
+                .multiPart("txtFile", TXT_FILE, "text/plain").accept("text/plain").when()
+                .post("/multipart/blocking?times=2").then().statusCode(200).body(equalTo("Trudy - 40 - SLEEPING"))
                 .header("html-size", equalTo(fileSizeAsStr(HTML_FILE)))
-                // test that file was actually upload and that the web application isn't sharing the file with the test...
+                // test that file was actually upload and that the web application isn't sharing the file with the
+                // test...
                 .header("html-path", not(equalTo(filePath(HTML_FILE))))
                 .header("xml-size", equalTo(fileSizeAsStr(XML_FILE)))
                 .header("xml-path", not(equalTo(filePath(XML_FILE))))
@@ -126,33 +106,18 @@ public class MultipartInputBodyHandlerTest extends AbstractMultipartTest {
 
     @Test
     public void testOther() {
-        RestAssured.given()
-                .multiPart("first", "foo")
-                .multiPart("last", "bar")
-                .accept("text/plain")
-                .when()
-                .post("/otherMultipart/simple")
-                .then()
-                .statusCode(200)
-                .body(equalTo("foo - bar - final - static"));
+        RestAssured.given().multiPart("first", "foo").multiPart("last", "bar").accept("text/plain").when()
+                .post("/otherMultipart/simple").then().statusCode(200).body(equalTo("foo - bar - final - static"));
 
         Assertions.assertEquals(0, uploadDir.toFile().listFiles().length);
     }
 
     @Test
     public void testSameName() {
-        RestAssured.given()
-                .multiPart("active", "false")
-                .multiPart("status", "EATING")
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .multiPart("htmlFile", HTML_FILE2, "text/html")
-                .multiPart("xmlFile", XML_FILE, "text/xml")
-                .multiPart("txtFile", TXT_FILE, "text/plain")
-                .accept("text/plain")
-                .when()
-                .post("/multipart/same-name")
-                .then()
-                .statusCode(200)
+        RestAssured.given().multiPart("active", "false").multiPart("status", "EATING")
+                .multiPart("htmlFile", HTML_FILE, "text/html").multiPart("htmlFile", HTML_FILE2, "text/html")
+                .multiPart("xmlFile", XML_FILE, "text/xml").multiPart("txtFile", TXT_FILE, "text/plain")
+                .accept("text/plain").when().post("/multipart/same-name").then().statusCode(200)
                 .body(equalTo("EATING - 2 - 1 - 1"));
 
         // ensure that the 3 uploaded files where created on disk

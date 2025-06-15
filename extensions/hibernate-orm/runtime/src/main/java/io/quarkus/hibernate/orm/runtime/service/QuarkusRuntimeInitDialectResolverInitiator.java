@@ -21,7 +21,8 @@ public class QuarkusRuntimeInitDialectResolverInitiator implements StandardServi
     }
 
     @Override
-    public DialectResolver initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
+    public DialectResolver initiateService(Map<String, Object> configurationValues,
+            ServiceRegistryImplementor registry) {
         return new QuarkusRuntimeInitDialectResolver(dialect);
     }
 }

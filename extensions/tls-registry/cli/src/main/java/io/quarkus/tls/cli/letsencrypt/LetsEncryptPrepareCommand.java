@@ -60,12 +60,11 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
         if (!certExistingAndStillValid) {
             // Generate a self-signed certificate (for the challenge
             CertificateGenerator generator = new CertificateGenerator(LETS_ENCRYPT_DIR.toPath(), true);
-            CertificateRequest request = new CertificateRequest()
-                    .withCN(domain)
-                    .withSubjectAlternativeName("DNS:" + domain)
-                    .withDuration(Duration.ofDays(30)) // Should be plenty to run the challenge
-                    .withFormat(Format.PEM)
-                    .withName("lets-encrypt");
+            CertificateRequest request = new CertificateRequest().withCN(domain)
+                    .withSubjectAlternativeName("DNS:" + domain).withDuration(Duration.ofDays(30)) // Should be plenty
+                    // to run the
+                    // challenge
+                    .withFormat(Format.PEM).withName("lets-encrypt");
             generator.generate(request);
         } else {
             LOGGER.log(System.Logger.Level.INFO, "✅ Certificate already exists and is still valid: {0}",
@@ -83,16 +82,17 @@ public class LetsEncryptPrepareCommand implements Callable<Integer> {
             prefix += "." + tlsConfigurationName;
         }
 
-        // We cannot set quarkus.management.enabled and quarkus.tls.lets-encrypt.enabled as they are build time properties.
+        // We cannot set quarkus.management.enabled and quarkus.tls.lets-encrypt.enabled as they are build time
+        // properties.
         addOrReplaceProperty(dotEnvContent, prefix + ".key-store.pem.acme.cert", CERT_FILE.getAbsolutePath());
         addOrReplaceProperty(dotEnvContent, prefix + ".key-store.pem.acme.key", KEY_FILE.getAbsolutePath());
 
         Files.write(DOT_ENV_FILE.toPath(), dotEnvContent);
-        LOGGER.log(System.Logger.Level.INFO, "✅ .env file configured for Let's Encrypt: {0}", DOT_ENV_FILE.getAbsolutePath());
+        LOGGER.log(System.Logger.Level.INFO, "✅ .env file configured for Let's Encrypt: {0}",
+                DOT_ENV_FILE.getAbsolutePath());
         LOGGER.log(System.Logger.Level.INFO,
                 "➡\uFE0F Start the application and run `quarkus tls lets-encrypt issue-certificate --domain={0}{1}` to complete the challenge",
-                domain,
-                tlsConfigurationName != null ? " -tls-configuration-name=" + tlsConfigurationName : "");
+                domain, tlsConfigurationName != null ? " -tls-configuration-name=" + tlsConfigurationName : "");
         return 0;
     }
 

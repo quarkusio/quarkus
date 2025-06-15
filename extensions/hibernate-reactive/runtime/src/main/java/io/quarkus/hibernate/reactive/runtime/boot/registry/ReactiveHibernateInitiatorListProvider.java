@@ -39,29 +39,28 @@ import io.quarkus.hibernate.orm.runtime.service.StandardHibernateORMInitiatorLis
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
 
 /**
- * Defines the initial list of StandardServiceInitiator instances used to initialize the
- * ServiceRegistry of a new Hibernate Reactive instance.
- * This is similar to StandardHibernateORMInitiatorListProvider except it will enable the
+ * Defines the initial list of StandardServiceInitiator instances used to initialize the ServiceRegistry of a new
+ * Hibernate Reactive instance. This is similar to StandardHibernateORMInitiatorListProvider except it will enable the
  * specific customizations to make it Reactive.
  *
  * @see StandardHibernateORMInitiatorListProvider
  */
 public final class ReactiveHibernateInitiatorListProvider implements InitialInitiatorListProvider {
 
-    //N.B. this class is currently constructed via reflection by the ORM core extension
-    //(iif the Hibernate Reactive extension is available)
+    // N.B. this class is currently constructed via reflection by the ORM core extension
+    // (iif the Hibernate Reactive extension is available)
 
     @Override
     public List<StandardServiceInitiator<?>> initialInitiatorList() {
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
-        //This one needs to be replaced after Metadata has been recorded:
+        // This one needs to be replaced after Metadata has been recorded:
         serviceInitiators.add(BootstrapOnlyProxyFactoryFactoryInitiator.INSTANCE);
 
         // Definitely exclusive to Hibernate Reactive, as it marks the registry as Reactive:
         serviceInitiators.add(ReactiveMarkerServiceInitiator.INSTANCE);
 
-        //Custom for Hibernate Reactive:
+        // Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSessionFactoryBuilderInitiator.INSTANCE);
 
         serviceInitiators.add(CfgXmlAccessServiceInitiator.INSTANCE);
@@ -75,11 +74,11 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         // Custom one!
         serviceInitiators.add(QuarkusJndiServiceInitiator.INSTANCE);
 
-        //Custom for Hibernate Reactive:
+        // Custom for Hibernate Reactive:
         serviceInitiators.add(ReactivePersisterClassResolverInitiator.INSTANCE);
         serviceInitiators.add(PersisterFactoryInitiator.INSTANCE);
 
-        //Custom for Hibernate Reactive:
+        // Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSchemaManagementToolInitiator.INSTANCE);
 
         serviceInitiators.add(QuarkusNoJdbcConnectionProviderInitiator.INSTANCE);
@@ -108,10 +107,10 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
 
         serviceInitiators.add(EntityCopyObserverFactoryInitiator.INSTANCE);
 
-        //Custom for Hibernate Reactive:
+        // Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveValuesMappingProducerProviderInitiator.INSTANCE);
 
-        //Custom for Hibernate Reactive:
+        // Custom for Hibernate Reactive:
         serviceInitiators.add(ReactiveSqmMultiTableMutationStrategyProviderInitiator.INSTANCE);
 
         // Custom for Hibernate Reactive: ParameterMarkerStrategy

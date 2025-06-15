@@ -15,7 +15,9 @@ public class XPendingArgs implements RedisCommandExtraArguments {
     /**
      * Sets the specific owner of the message
      *
-     * @param owner the name of the consumer
+     * @param owner
+     *        the name of the consumer
+     *
      * @return the current {@code XPendingArgs}
      */
     public XPendingArgs consumer(String owner) {
@@ -26,7 +28,9 @@ public class XPendingArgs implements RedisCommandExtraArguments {
     /**
      * Filters pending stream entries by their idle-time.
      *
-     * @param idle the duration
+     * @param idle
+     *        the duration
+     *
      * @return the current {@code XPendingArgs}
      */
     public XPendingArgs idle(Duration idle) {

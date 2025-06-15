@@ -24,8 +24,7 @@ public class BouncyCastleFipsEndpoint {
     @GET
     @Path("listProviders")
     public String listProviders() {
-        return Arrays.asList(Security.getProviders()).stream()
-                .filter(p -> p.getName().equals("BCFIPS"))
+        return Arrays.asList(Security.getProviders()).stream().filter(p -> p.getName().equals("BCFIPS"))
                 .map(p -> p.getName()).collect(Collectors.joining());
     }
 
@@ -46,9 +45,7 @@ public class BouncyCastleFipsEndpoint {
         CryptoServicesRegistrar.setApprovedOnlyMode(true);
         // Set Secure Random to be compliant
         EntropySourceProvider entSource = new BasicEntropySourceProvider(new SecureRandom(), true);
-        FipsDRBG.Builder drgbBldr = FipsDRBG.SHA512
-                .fromEntropySource(entSource)
-                .setSecurityStrength(256)
+        FipsDRBG.Builder drgbBldr = FipsDRBG.SHA512.fromEntropySource(entSource).setSecurityStrength(256)
                 .setEntropyBitsRequired(256);
         CryptoServicesRegistrar.setSecureRandom(drgbBldr.build(Strings.toByteArray("axs"), true));
 

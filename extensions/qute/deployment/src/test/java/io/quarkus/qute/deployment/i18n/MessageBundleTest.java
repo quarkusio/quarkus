@@ -21,18 +21,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MessageBundleTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AppMessages.class, OtherMessages.class, AlphaMessages.class, Item.class)
-                    .addAsResource(new StringAsset(
-                            "{msg:hello} {msg:hello_name('Jachym')} {msg:hello_with_if_section(3)} {alpha:hello-alpha} {alpha:hello_alpha} {alpha:hello-with-param('foo')}"),
-                            "templates/foo.html")
-                    .addAsResource(new StringAsset(
-                            "hello=Hallo Welt!\nhello_name=Hallo {name}!"),
-                            "messages/msg_de.properties")
-                    .addAsResource(new StringAsset(
-                            "{msg:message('hello')} {msg:message(key,'Malachi',surname)}"),
-                            "templates/dynamic.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(AppMessages.class, OtherMessages.class, AlphaMessages.class, Item.class)
+            .addAsResource(new StringAsset(
+                    "{msg:hello} {msg:hello_name('Jachym')} {msg:hello_with_if_section(3)} {alpha:hello-alpha} {alpha:hello_alpha} {alpha:hello-with-param('foo')}"),
+                    "templates/foo.html")
+            .addAsResource(new StringAsset("hello=Hallo Welt!\nhello_name=Hallo {name}!"), "messages/msg_de.properties")
+            .addAsResource(new StringAsset("{msg:message('hello')} {msg:message(key,'Malachi',surname)}"),
+                    "templates/dynamic.html"));
 
     @Inject
     AppMessages messages;
@@ -53,18 +49,15 @@ public class MessageBundleTest {
     @Test
     public void testMessageBundles() {
         assertEquals("Hello Jachym!", MessageBundles.get(AppMessages.class).hello_name("Jachym"));
-        assertEquals("Hello you guy!", MessageBundles.get(AppMessages.class, Localized.Literal.of("cs")).helloWithIfSection(1));
-        assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> MessageBundles.get(String.class))
-                .withMessage(
-                        "Not a message bundle interface: java.lang.String");
-        assertThatExceptionOfType(IllegalArgumentException.class)
-                .isThrownBy(() -> MessageBundles.get(Engine.class))
+        assertEquals("Hello you guy!",
+                MessageBundles.get(AppMessages.class, Localized.Literal.of("cs")).helloWithIfSection(1));
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> MessageBundles.get(String.class))
+                .withMessage("Not a message bundle interface: java.lang.String");
+        assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> MessageBundles.get(Engine.class))
                 .withMessage(
                         "Message bundle interface must be annotated either with @MessageBundle or with @Localized: io.quarkus.qute.Engine");
         assertThatExceptionOfType(IllegalStateException.class)
-                .isThrownBy(() -> MessageBundles.get(AppMessages.class, Localized.Literal.of("hu")))
-                .withMessage(
+                .isThrownBy(() -> MessageBundles.get(AppMessages.class, Localized.Literal.of("hu"))).withMessage(
                         "Unable to obtain a message bundle for interface [io.quarkus.qute.deployment.i18n.AppMessages] and locale [hu]");
     }
 
@@ -89,12 +82,9 @@ public class MessageBundleTest {
         assertEquals("Hello world! Hello Malachi Constant!",
                 engine.getTemplate("dynamic").data("key", "hello_fullname").data("surname", "Constant").render());
 
-        assertEquals("There are no files on C.",
-                engine.parse("{msg:files(0,'C')}").render());
-        assertEquals("There is one file on D.",
-                engine.parse("{msg:files(1,'D')}").render());
-        assertEquals("There are 100 files on E.",
-                engine.parse("{msg:files(100,'E')}").render());
+        assertEquals("There are no files on C.", engine.parse("{msg:files(0,'C')}").render());
+        assertEquals("There is one file on D.", engine.parse("{msg:files(1,'D')}").render());
+        assertEquals("There are 100 files on E.", engine.parse("{msg:files(100,'E')}").render());
 
         // Test the convenient Qute class
         assertEquals("There are no files on C.", Qute.fmt("{msg:files(0,'C')}").render());

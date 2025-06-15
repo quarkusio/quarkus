@@ -29,7 +29,7 @@ public class HelloWorldTlsEndpoint {
     @GET
     @Path("/mutiny/{name}")
     public Uni<String> helloMutiny(@PathParam("name") String name) {
-        return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build())
-                .onItem().transform(HelloReply::getMessage);
+        return mutinyHelloService.sayHello(HelloRequest.newBuilder().setName(name).build()).onItem()
+                .transform(HelloReply::getMessage);
     }
 }

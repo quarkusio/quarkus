@@ -49,7 +49,8 @@ public class JsonWebKeySet {
                     }
                     // 'x5t' may not be available but the certificate `x5c` may be so 'x5t' can be calculated early
                     boolean calculateThumbprintIfMissing = true;
-                    String x5t = ((PublicJsonWebKey) jwkKey).getX509CertificateSha1Thumbprint(calculateThumbprintIfMissing);
+                    String x5t = ((PublicJsonWebKey) jwkKey)
+                            .getX509CertificateSha1Thumbprint(calculateThumbprintIfMissing);
                     if (x5t != null && jwkKey.getKey() != null) {
                         keysWithThumbprints.put(x5t, jwkKey.getKey());
                     }

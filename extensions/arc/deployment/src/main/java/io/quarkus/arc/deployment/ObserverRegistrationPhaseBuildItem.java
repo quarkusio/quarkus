@@ -12,11 +12,9 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 
 /**
- * An extension that needs to produce other build items during the "synthetic observer registration" phase should use this build
- * item. The
- * build step should produce a {@link ObserverConfiguratorBuildItem} or at least inject a {@link BuildProducer} for this build
- * item,
- * otherwise it could be ignored or processed at the wrong time, e.g. after
+ * An extension that needs to produce other build items during the "synthetic observer registration" phase should use
+ * this build item. The build step should produce a {@link ObserverConfiguratorBuildItem} or at least inject a
+ * {@link BuildProducer} for this build item, otherwise it could be ignored or processed at the wrong time, e.g. after
  * {@link ArcProcessor#validate(ObserverRegistrationPhaseBuildItem, List)}.
  *
  * @see ObserverConfiguratorBuildItem

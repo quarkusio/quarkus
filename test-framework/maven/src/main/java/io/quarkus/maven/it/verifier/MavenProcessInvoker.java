@@ -75,8 +75,7 @@ public class MavenProcessInvoker extends DefaultInvoker {
         return result;
     }
 
-    private Process executeCommandLine(Commandline cli, InvocationRequest request)
-            throws CommandLineException {
+    private Process executeCommandLine(Commandline cli, InvocationRequest request) throws CommandLineException {
         InvocationOutputHandler outputHandler = request.getOutputHandler(this.outputHandler);
         InvocationOutputHandler errorHandler = request.getErrorHandler(this.errorHandler);
         return executeCommandLine(cli, outputHandler, errorHandler);

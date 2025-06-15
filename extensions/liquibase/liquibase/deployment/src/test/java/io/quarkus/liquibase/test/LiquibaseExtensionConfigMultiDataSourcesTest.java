@@ -38,14 +38,10 @@ public class LiquibaseExtensionConfigMultiDataSourcesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(LiquibaseExtensionConfigFixture.class)
-                    .addAsResource("db/inventory/changeLog.xml")
-                    .addAsResource("db/users/changeLog.xml")
-                    .addAsResource("db/xml/changeLog.xml")
-                    .addAsResource("db/xml/create-tables.xml")
-                    .addAsResource("db/xml/create-views.xml")
-                    .addAsResource("db/xml/test/test.xml")
+            .withApplicationRoot((jar) -> jar.addClass(LiquibaseExtensionConfigFixture.class)
+                    .addAsResource("db/inventory/changeLog.xml").addAsResource("db/users/changeLog.xml")
+                    .addAsResource("db/xml/changeLog.xml").addAsResource("db/xml/create-tables.xml")
+                    .addAsResource("db/xml/create-views.xml").addAsResource("db/xml/test/test.xml")
                     .addAsResource("config-for-multiple-datasources.properties", "application.properties"));
 
     @Test

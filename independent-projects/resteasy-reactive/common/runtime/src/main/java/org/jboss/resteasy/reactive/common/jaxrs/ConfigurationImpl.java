@@ -104,8 +104,7 @@ public class ConfigurationImpl implements Configuration {
             this.contracts = new HashMap<>();
             this.requestFilters = new MultivaluedTreeMap<>();
             // Spec 6.6 makes client/server response filters reversed
-            this.responseFilters = new MultivaluedTreeMap<>(
-                    Collections.reverseOrder());
+            this.responseFilters = new MultivaluedTreeMap<>(Collections.reverseOrder());
             this.readerInterceptors = new MultivaluedTreeMap<>();
             this.writerInterceptors = new MultivaluedTreeMap<>();
             this.resourceReaders = new QuarkusMultivaluedHashMap<>();
@@ -278,8 +277,7 @@ public class ConfigurationImpl implements Configuration {
                 resourceReader.setFactory(new UnmanagedBeanFactory(component));
                 Consumes consumes = componentClass.getAnnotation(Consumes.class);
                 resourceReader
-                        .setMediaTypeStrings(
-                                consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
+                        .setMediaTypeStrings(consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
                 if (priority != null) {
                     resourceReader.setPriority(priority);
                 }
@@ -299,8 +297,7 @@ public class ConfigurationImpl implements Configuration {
                 resourceWriter.setFactory(new UnmanagedBeanFactory(component));
                 Produces produces = componentClass.getAnnotation(Produces.class);
                 resourceWriter
-                        .setMediaTypeStrings(
-                                produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
+                        .setMediaTypeStrings(produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
                 if (priority != null) {
                     resourceWriter.setPriority(priority);
                 }
@@ -326,8 +323,8 @@ public class ConfigurationImpl implements Configuration {
                 throw new IllegalArgumentException("Registering a ContextResolver via a lambda is not supported");
             }
             int effectivePriority = priority != null ? priority : determinePriority(component);
-            contextResolvers.computeIfAbsent(key, k -> new MultivaluedTreeMap<>())
-                    .add(effectivePriority, (ContextResolver<?>) component);
+            contextResolvers.computeIfAbsent(key, k -> new MultivaluedTreeMap<>()).add(effectivePriority,
+                    (ContextResolver<?>) component);
         }
         if (added) {
             allInstances.put(component.getClass(), component);
@@ -405,8 +402,7 @@ public class ConfigurationImpl implements Configuration {
                 resourceReader.setFactory(new UnmanagedBeanFactory(component));
                 Consumes consumes = componentClass.getAnnotation(Consumes.class);
                 resourceReader
-                        .setMediaTypeStrings(
-                                consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
+                        .setMediaTypeStrings(consumes != null ? Arrays.asList(consumes.value()) : WILDCARD_STRING_LIST);
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyReader.class);
                 resourceReaders.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
                         resourceReader);
@@ -421,8 +417,7 @@ public class ConfigurationImpl implements Configuration {
                 resourceWriter.setFactory(new UnmanagedBeanFactory(component));
                 Produces produces = componentClass.getAnnotation(Produces.class);
                 resourceWriter
-                        .setMediaTypeStrings(
-                                produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
+                        .setMediaTypeStrings(produces != null ? Arrays.asList(produces.value()) : WILDCARD_STRING_LIST);
                 Type[] args = Types.findParameterizedTypes(componentClass, MessageBodyWriter.class);
                 resourceWriters.add(args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class,
                         resourceWriter);
@@ -433,8 +428,8 @@ public class ConfigurationImpl implements Configuration {
             Type[] args = Types.findParameterizedTypes(componentClass, ContextResolver.class);
             Class<?> key = args != null && args.length == 1 ? Types.getRawType(args[0]) : Object.class;
             int effectivePriority = priority != null ? priority : determinePriority(component);
-            contextResolvers.computeIfAbsent(key, k -> new MultivaluedTreeMap<>())
-                    .add(effectivePriority, (ContextResolver<?>) component);
+            contextResolvers.computeIfAbsent(key, k -> new MultivaluedTreeMap<>()).add(effectivePriority,
+                    (ContextResolver<?>) component);
         }
         if (added) {
             allInstances.put(componentClass, component);
@@ -444,8 +439,8 @@ public class ConfigurationImpl implements Configuration {
     }
 
     /*
-     * Add some custom methods that allow registering MessageBodyReader and MessageBodyWriter classes with all the necessary
-     * information
+     * Add some custom methods that allow registering MessageBodyReader and MessageBodyWriter classes with all the
+     * necessary information
      */
 
     public void registerMessageBodyReader(MessageBodyReader<?> reader, Class<?> handledType, List<String> consumes,
@@ -463,8 +458,8 @@ public class ConfigurationImpl implements Configuration {
         allInstances.put(reader.getClass(), reader);
     }
 
-    public void registerMessageBodyWriter(MessageBodyWriter<?> messageBodyWriter, Class<?> handledType, List<String> consumes,
-            RuntimeType runtimeType, boolean builtin, Integer priority) {
+    public void registerMessageBodyWriter(MessageBodyWriter<?> messageBodyWriter, Class<?> handledType,
+            List<String> consumes, RuntimeType runtimeType, boolean builtin, Integer priority) {
         if (isRegistered(messageBodyWriter)) {
             return;
         }
@@ -569,7 +564,8 @@ public class ConfigurationImpl implements Configuration {
         return null;
     }
 
-    // TODO: we could generate some kind of index at build time in order to obtain these values without using the annotation
+    // TODO: we could generate some kind of index at build time in order to obtain these values without using the
+    // annotation
     private int determinePriority(Object object) {
         return determinePriority(object.getClass());
     }

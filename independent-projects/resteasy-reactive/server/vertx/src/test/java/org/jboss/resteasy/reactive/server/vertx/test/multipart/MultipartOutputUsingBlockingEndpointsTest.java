@@ -24,18 +24,14 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MultipartOutputResource.class, MultipartOutputResponse.class,
-                            MultipartOutputFileResponse.class,
-                            Status.class, FormDataBase.class, OtherPackageFormDataBase.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MultipartOutputResource.class,
+                    MultipartOutputResponse.class, MultipartOutputFileResponse.class, Status.class, FormDataBase.class,
+                    OtherPackageFormDataBase.class));
 
     @Test
     public void testSimple() {
-        String response = RestAssured.get("/multipart/output/simple")
-                .then()
-                .contentType(ContentType.MULTIPART)
-                .statusCode(200)
-                .extract().asString();
+        String response = RestAssured.get("/multipart/output/simple").then().contentType(ContentType.MULTIPART)
+                .statusCode(200).extract().asString();
 
         assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
         assertContainsValue(response, "custom-surname", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_SURNAME);
@@ -47,11 +43,8 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
 
     @Test
     public void testWithFormData() {
-        ExtractableResponse<?> extractable = RestAssured.get("/multipart/output/with-form-data")
-                .then()
-                .contentType(ContentType.MULTIPART)
-                .statusCode(200)
-                .extract();
+        ExtractableResponse<?> extractable = RestAssured.get("/multipart/output/with-form-data").then()
+                .contentType(ContentType.MULTIPART).statusCode(200).extract();
 
         String body = extractable.asString();
         assertContainsValue(body, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
@@ -65,22 +58,14 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
 
     @Test
     public void testString() {
-        RestAssured.get("/multipart/output/string")
-                .then()
-                .statusCode(200)
+        RestAssured.get("/multipart/output/string").then().statusCode(200)
                 .body(equalTo(MultipartOutputResource.RESPONSE_NAME));
     }
 
     @Test
     public void testWithFiles() {
-        String response = RestAssured
-                .given()
-                .get("/multipart/output/with-file")
-                .then()
-                .contentType(ContentType.MULTIPART)
-                .statusCode(200)
-                .log().all()
-                .extract().asString();
+        String response = RestAssured.given().get("/multipart/output/with-file").then()
+                .contentType(ContentType.MULTIPART).statusCode(200).log().all().extract().asString();
 
         assertContainsValue(response, "name", MediaType.TEXT_PLAIN, MultipartOutputResource.RESPONSE_NAME);
         assertContainsFile(response, "file", MediaType.APPLICATION_OCTET_STREAM, "lorem.txt");
@@ -88,8 +73,9 @@ public class MultipartOutputUsingBlockingEndpointsTest extends AbstractMultipart
 
     private void assertContainsFile(String response, String name, String contentType, String fileName) {
         String[] lines = response.split("--");
-        assertThat(lines).anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_FILE_PART, name, fileName))
-                && line.contains(String.format(EXPECTED_CONTENT_TYPE_PART, contentType)));
+        assertThat(lines)
+                .anyMatch(line -> line.contains(String.format(EXPECTED_CONTENT_DISPOSITION_FILE_PART, name, fileName))
+                        && line.contains(String.format(EXPECTED_CONTENT_TYPE_PART, contentType)));
     }
 
     private void assertContainsValue(String response, String name, String contentType, Object value) {

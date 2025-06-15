@@ -48,34 +48,37 @@ final class ContainerBuilderHelper {
     /**
      * Returns a {@link FileEntriesLayer} for adding the extra directory to the container.
      *
-     * @param sourceDirectory the source extra directory path
-     * @param targetDirectory the root directory on the container to place the files in
-     * @param extraDirectoryPermissions map from path on container to file permissions
-     * @param modificationTimeProvider file modification time provider
+     * @param sourceDirectory
+     *        the source extra directory path
+     * @param targetDirectory
+     *        the root directory on the container to place the files in
+     * @param extraDirectoryPermissions
+     *        map from path on container to file permissions
+     * @param modificationTimeProvider
+     *        file modification time provider
+     *
      * @return a {@link FileEntriesLayer} for adding the extra directory to the container
-     * @throws IOException if walking the extra directory fails
+     *
+     * @throws IOException
+     *         if walking the extra directory fails
      */
-    public static FileEntriesLayer extraDirectoryLayerConfiguration(
-            Path sourceDirectory,
-            AbsoluteUnixPath targetDirectory,
-            Map<String, FilePermissions> extraDirectoryPermissions,
-            BiFunction<Path, AbsoluteUnixPath, Instant> modificationTimeProvider)
-            throws IOException {
+    public static FileEntriesLayer extraDirectoryLayerConfiguration(Path sourceDirectory,
+            AbsoluteUnixPath targetDirectory, Map<String, FilePermissions> extraDirectoryPermissions,
+            BiFunction<Path, AbsoluteUnixPath, Instant> modificationTimeProvider) throws IOException {
         FileEntriesLayer.Builder builder = FileEntriesLayer.builder()
                 .setName(JavaContainerBuilder.LayerType.EXTRA_FILES.getName());
         Map<PathMatcher, FilePermissions> pathMatchers = new LinkedHashMap<>();
         for (Map.Entry<String, FilePermissions> entry : extraDirectoryPermissions.entrySet()) {
-            pathMatchers.put(
-                    FileSystems.getDefault().getPathMatcher("glob:" + entry.getKey()), entry.getValue());
+            pathMatchers.put(FileSystems.getDefault().getPathMatcher("glob:" + entry.getKey()), entry.getValue());
         }
         try (Stream<Path> stream = Files.list(sourceDirectory)) {
             final Iterator<Path> i = stream.iterator();
             while (i.hasNext()) {
                 Files.walkFileTree(i.next(), new SimpleFileVisitor<Path>() {
                     @Override
-                    public FileVisitResult visitFile(Path localPath, BasicFileAttributes attrs)
-                            throws IOException {
-                        AbsoluteUnixPath pathOnContainer = targetDirectory.resolve(sourceDirectory.relativize(localPath));
+                    public FileVisitResult visitFile(Path localPath, BasicFileAttributes attrs) throws IOException {
+                        AbsoluteUnixPath pathOnContainer = targetDirectory
+                                .resolve(sourceDirectory.relativize(localPath));
                         Instant modificationTime = modificationTimeProvider.apply(localPath, pathOnContainer);
                         FilePermissions permissions = extraDirectoryPermissions.get(pathOnContainer.toString());
                         if (permissions == null) {
@@ -83,8 +86,7 @@ final class ContainerBuilderHelper {
                             Path containerPath = Paths.get(pathOnContainer.toString());
                             for (Map.Entry<PathMatcher, FilePermissions> entry : pathMatchers.entrySet()) {
                                 if (entry.getKey().matches(containerPath)) {
-                                    builder.addEntry(
-                                            localPath, pathOnContainer, entry.getValue(), modificationTime);
+                                    builder.addEntry(localPath, pathOnContainer, entry.getValue(), modificationTime);
                                     return FileVisitResult.CONTINUE;
                                 }
                             }

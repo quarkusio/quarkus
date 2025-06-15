@@ -22,14 +22,14 @@ import io.smallrye.config.KeyMap;
 import io.smallrye.config.NameIterator;
 
 /**
- * A class which manages configuration compatibility for the build-time configuration.
- * The mechanism is to keep a matching table of old names and new names.
- * Old names are detected at the front end iterator and mapped to the corresponding new name(s) that replace them.
- * New names are detected at the back end getter, which queries the corresponding old name(s) to determine the new value.
+ * A class which manages configuration compatibility for the build-time configuration. The mechanism is to keep a
+ * matching table of old names and new names. Old names are detected at the front end iterator and mapped to the
+ * corresponding new name(s) that replace them. New names are detected at the back end getter, which queries the
+ * corresponding old name(s) to determine the new value.
  * <p>
- * This is intended to be a temporary and evolutionary solution to be replaced by generative remapping.
- * It is more flexible than fallback remapping, allowing 1:N and N:1 remappings and support for submaps.
- * Unfortunately it is also very verbose.
+ * This is intended to be a temporary and evolutionary solution to be replaced by generative remapping. It is more
+ * flexible than fallback remapping, allowing 1:N and N:1 remappings and support for submaps. Unfortunately it is also
+ * very verbose.
  */
 public final class ConfigCompatibility {
 
@@ -41,12 +41,15 @@ public final class ConfigCompatibility {
     private static final KeyMap<BiFunction<ConfigSourceInterceptorContext, NameIterator, List<String>>> oldNames = keyMap(
             entry(List.of("quarkus", "package", "type"), ConfigCompatibility::quarkusPackageType),
             entry(List.of("quarkus", "package", "create-appcds"), ConfigCompatibility::quarkusPackageCreateAppcds),
-            entry(List.of("quarkus", "package", "appcds-builder-image"), ConfigCompatibility::quarkusPackageAppcdsBuilderImage),
-            entry(List.of("quarkus", "package", "appcds-use-container"), ConfigCompatibility::quarkusPackageAppcdsUseContainer),
+            entry(List.of("quarkus", "package", "appcds-builder-image"),
+                    ConfigCompatibility::quarkusPackageAppcdsBuilderImage),
+            entry(List.of("quarkus", "package", "appcds-use-container"),
+                    ConfigCompatibility::quarkusPackageAppcdsUseContainer),
             entry(List.of("quarkus", "package", "compress-jar"), ConfigCompatibility::quarkusPackageCompressJar),
             entry(List.of("quarkus", "package", "filter-optional-dependencies"),
                     ConfigCompatibility::quarkusFilterOptionalDependencies),
-            entry(List.of("quarkus", "package", "add-runner-suffix"), ConfigCompatibility::quarkusPackageAddRunnerSuffix),
+            entry(List.of("quarkus", "package", "add-runner-suffix"),
+                    ConfigCompatibility::quarkusPackageAddRunnerSuffix),
             entry(List.of("quarkus", "package", "user-configured-ignored-entries"),
                     ConfigCompatibility::quarkusPackageUserConfiguredIgnoredEntries),
             entry(List.of("quarkus", "package", "user-providers-directory"),
@@ -69,8 +72,8 @@ public final class ConfigCompatibility {
                     ConfigCompatibility::quarkusPackageManifestAddImplementationEntries));
 
     /**
-     * When these new name patterns are detected on get, see if legacy values are present and if so,
-     * provide a default based on those value(s).
+     * When these new name patterns are detected on get, see if legacy values are present and if so, provide a default
+     * based on those value(s).
      */
     public static final KeyMap<BiFunction<ConfigSourceInterceptorContext, NameIterator, ConfigValue>> newNames = keyMap(
             entry(List.of("quarkus", "native", "enabled"), ConfigCompatibility::quarkusNativeEnabled),
@@ -161,11 +164,13 @@ public final class ConfigCompatibility {
                         List<String> list = fn.apply(context, new NameIterator(next));
                         subIter = list.iterator();
                         if (logging) {
-                            // todo: print these warnings when mapping the configuration so they cannot appear more than once
+                            // todo: print these warnings when mapping the configuration so they cannot appear more than
+                            // once
                             if (list.isEmpty()) {
                                 log.warnf("Configuration property '%s' has been deprecated and will be ignored", next);
                             } else {
-                                log.warnf("Configuration property '%s' has been deprecated and replaced by: %s", next, list);
+                                log.warnf("Configuration property '%s' has been deprecated and replaced by: %s", next,
+                                        list);
                             }
                         }
                     }
@@ -246,7 +251,8 @@ public final class ConfigCompatibility {
         return List.of("quarkus.package.jar.compress");
     }
 
-    private static List<String> quarkusFilterOptionalDependencies(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static List<String> quarkusFilterOptionalDependencies(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         return List.of("quarkus.package.jar.filter-optional-dependencies");
     }
 
@@ -259,11 +265,13 @@ public final class ConfigCompatibility {
         return List.of("quarkus.package.jar.user-configured-ignored-entries");
     }
 
-    private static List<String> quarkusPackageIncludeDependencyList(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static List<String> quarkusPackageIncludeDependencyList(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         return List.of("quarkus.package.jar.include-dependency-list");
     }
 
-    private static List<String> quarkusPackageUserProvidersDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static List<String> quarkusPackageUserProvidersDirectory(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         return List.of("quarkus.package.jar.user-providers-directory");
     }
 
@@ -282,7 +290,8 @@ public final class ConfigCompatibility {
         return List.of("quarkus.package.jar.decompiler.enabled");
     }
 
-    private static List<String> quarkusPackageDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static List<String> quarkusPackageDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         // simple mapping to a new name
         return List.of("quarkus.package.jar.decompiler.jar-directory");
     }
@@ -320,8 +329,7 @@ public final class ConfigCompatibility {
             return ctxt.proceed(ni.getName());
         } else {
             // map old name to new name
-            return ptVal.withName(ni.getName()).withValue(
-                    Boolean.toString(ANY_NATIVE.contains(ptVal.getValue())));
+            return ptVal.withName(ni.getName()).withValue(Boolean.toString(ANY_NATIVE.contains(ptVal.getValue())));
         }
     }
 
@@ -332,8 +340,7 @@ public final class ConfigCompatibility {
             // on to the default value
             return ctxt.proceed(ni.getName());
         } else {
-            return ptVal.withName(ni.getName()).withValue(
-                    Boolean.toString(!ANY_NATIVE.contains(ptVal.getValue())));
+            return ptVal.withName(ni.getName()).withValue(Boolean.toString(!ANY_NATIVE.contains(ptVal.getValue())));
         }
     }
 
@@ -347,7 +354,8 @@ public final class ConfigCompatibility {
         }
     }
 
-    private static ConfigValue quarkusPackageJarAppcdsBuilderImage(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static ConfigValue quarkusPackageJarAppcdsBuilderImage(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         ConfigValue oldVal = ctxt.restart("quarkus.package.appcds-builder-image");
         if (oldVal == null) {
             // on to the default value
@@ -357,7 +365,8 @@ public final class ConfigCompatibility {
         }
     }
 
-    private static ConfigValue quarkusPackageJarAppcdsUseContainer(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static ConfigValue quarkusPackageJarAppcdsUseContainer(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         ConfigValue oldVal = ctxt.restart("quarkus.package.appcds-use-container");
         if (oldVal == null) {
             // on to the default value
@@ -419,7 +428,8 @@ public final class ConfigCompatibility {
         }
     }
 
-    private static ConfigValue quarkusPackageJarUserProvidersDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static ConfigValue quarkusPackageJarUserProvidersDirectory(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         ConfigValue oldVal = ctxt.restart("quarkus.package.user-providers-directory");
         if (oldVal == null) {
             // on to the default value
@@ -440,7 +450,8 @@ public final class ConfigCompatibility {
         }
     }
 
-    private static ConfigValue quarkusPackageJarIncludeDependencyList(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static ConfigValue quarkusPackageJarIncludeDependencyList(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         ConfigValue oldVal = ctxt.restart("quarkus.package.include-dependency-list");
         if (oldVal == null) {
             // on to the default value
@@ -462,7 +473,8 @@ public final class ConfigCompatibility {
         }
     }
 
-    private static ConfigValue quarkusPackageJarManifestAttributes(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static ConfigValue quarkusPackageJarManifestAttributes(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         // mapping from a legacy name, copying the last segment
         ni.goToEnd();
         ni.previous();
@@ -501,7 +513,8 @@ public final class ConfigCompatibility {
         }
     }
 
-    private static ConfigValue quarkusPackageJarDecompilerEnabled(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static ConfigValue quarkusPackageJarDecompilerEnabled(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         ConfigValue oldVal = ctxt.restart("quarkus.package.decompiler.enabled");
         if (oldVal == null) {
             return ctxt.proceed(ni.getName());
@@ -510,7 +523,8 @@ public final class ConfigCompatibility {
         return oldVal.withName(ni.getName());
     }
 
-    private static ConfigValue quarkusPackageJarDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt, NameIterator ni) {
+    private static ConfigValue quarkusPackageJarDecompilerJarDirectory(ConfigSourceInterceptorContext ctxt,
+            NameIterator ni) {
         ConfigValue oldVal = ctxt.restart("quarkus.package.decompiler.jar-directory");
         if (oldVal == null) {
             return ctxt.proceed(ni.getName());
@@ -522,8 +536,7 @@ public final class ConfigCompatibility {
     // utilities
 
     @SafeVarargs
-    private static <T> KeyMap<T> keyMap(
-            Map.Entry<List<String>, T>... entries) {
+    private static <T> KeyMap<T> keyMap(Map.Entry<List<String>, T>... entries) {
         KeyMap<T> keyMap = new KeyMap<>();
         KeyMap<T> subMap;
         for (Map.Entry<List<String>, T> entry : entries) {

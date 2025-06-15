@@ -8,8 +8,8 @@ public interface HotReplacementSetup {
     void setupHotDeployment(HotReplacementContext context);
 
     /**
-     * This method is called if the app fails to start the first time. This allows for hot deployment
-     * providers to still start, and provide a way for the user to recover their app
+     * This method is called if the app fails to start the first time. This allows for hot deployment providers to still
+     * start, and provide a way for the user to recover their app
      */
     default void handleFailedInitialStart() {
     };

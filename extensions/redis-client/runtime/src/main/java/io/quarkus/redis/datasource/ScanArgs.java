@@ -11,10 +11,11 @@ public class ScanArgs {
     private String match;
 
     /**
-     * Sets the max number of items in each batch.
-     * The default value is 10.
+     * Sets the max number of items in each batch. The default value is 10.
      *
-     * @param count the number of item, must be strictly positive
+     * @param count
+     *        the number of item, must be strictly positive
+     *
      * @return the current {@code ScanArgs}
      */
     public ScanArgs count(long count) {
@@ -28,7 +29,9 @@ public class ScanArgs {
     /**
      * Sets a {@code MATCH} pattern
      *
-     * @param pattern the pattern, must not be {@code null}
+     * @param pattern
+     *        the pattern, must not be {@code null}
+     *
      * @return the current {@code ScanArgs}
      */
     public ScanArgs match(String pattern) {

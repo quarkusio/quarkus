@@ -12,32 +12,23 @@ import io.restassured.response.Response;
 class PanacheEntityResourceHalDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Project.class, ProjectResource.class)
-                    .addAsResource("application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Project.class, ProjectResource.class).addAsResource("application.properties"));
 
     @Test
     void shouldHalNotBeSupported() {
-        given().accept("application/hal+json")
-                .when().get("/group/projects/1")
-                .then().statusCode(406);
+        given().accept("application/hal+json").when().get("/group/projects/1").then().statusCode(406);
     }
 
     @Test
     void shouldNotContainLocationAndLinks() {
-        Response response = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"projectname\"}")
-                .when().post("/group/projects")
-                .thenReturn();
+        Response response = given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"name\": \"projectname\"}").when().post("/group/projects").thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.header("Location")).isBlank();
         assertThat(response.getHeaders().getList("Link")).isEmpty();
 
-        response = given().accept("application/json")
-                .when().get("/group/projects/projectname")
-                .thenReturn();
+        response = given().accept("application/json").when().get("/group/projects/projectname").thenReturn();
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.header("Location")).isBlank();
         assertThat(response.getHeaders().getList("Link")).isEmpty();

@@ -43,39 +43,26 @@ public class KeycloakReflectionBuildStep {
 
     @BuildStep
     public void registerReflectionItems(BuildProducer<ReflectiveClassBuildItem> reflectiveItems) {
-        reflectiveItems.produce(ReflectiveClassBuildItem.builder(JsonWebToken.class.getName(),
-                TokenIntrospectionResponse.class.getName(),
-                JWSHeader.class.getName(),
-                AccessToken.class.getName(),
-                IDToken.class.getName(),
-                RefreshToken.class.getName(),
-                AccessTokenResponse.class.getName(),
-                JSONWebKeySet.class.getName(),
-                JWK.class.getName(),
-                StringOrArrayDeserializer.class.getName(),
-                AccessToken.Access.class.getName(),
-                AccessToken.Authorization.class.getName(),
-                AuthorizationRequest.class.getName(),
-                AuthorizationResponse.class.getName(),
-                PermissionRequest.class.getName(),
-                PermissionResponse.class.getName(),
-                PermissionTicketToken.class.getName(),
-                Permission.class.getName(),
-                ServerConfiguration.class.getName(),
-                ResourceRepresentation.class.getName(),
-                ScopeRepresentation.class.getName(),
-                ResourceOwnerRepresentation.class.getName(),
-                StringListMapDeserializer.class.getName(),
-                StringOrArrayDeserializer.class.getName(),
-                MTLSEndpointAliases.class.getName(),
-                OIDCConfigurationRepresentation.class.getName()).methods().fields().build());
+        reflectiveItems.produce(ReflectiveClassBuildItem
+                .builder(JsonWebToken.class.getName(), TokenIntrospectionResponse.class.getName(),
+                        JWSHeader.class.getName(), AccessToken.class.getName(), IDToken.class.getName(),
+                        RefreshToken.class.getName(), AccessTokenResponse.class.getName(),
+                        JSONWebKeySet.class.getName(), JWK.class.getName(), StringOrArrayDeserializer.class.getName(),
+                        AccessToken.Access.class.getName(), AccessToken.Authorization.class.getName(),
+                        AuthorizationRequest.class.getName(), AuthorizationResponse.class.getName(),
+                        PermissionRequest.class.getName(), PermissionResponse.class.getName(),
+                        PermissionTicketToken.class.getName(), Permission.class.getName(),
+                        ServerConfiguration.class.getName(), ResourceRepresentation.class.getName(),
+                        ScopeRepresentation.class.getName(), ResourceOwnerRepresentation.class.getName(),
+                        StringListMapDeserializer.class.getName(), StringOrArrayDeserializer.class.getName(),
+                        MTLSEndpointAliases.class.getName(), OIDCConfigurationRepresentation.class.getName())
+                .methods().fields().build());
     }
 
     @BuildStep
     public void registerServiceProviders(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         serviceProvider.produce(new ServiceProviderBuildItem(ClientCredentialsProvider.class.getName(),
-                ClientIdAndSecretCredentialsProvider.class.getName(),
-                JWTClientCredentialsProvider.class.getName(),
+                ClientIdAndSecretCredentialsProvider.class.getName(), JWTClientCredentialsProvider.class.getName(),
                 JWTClientSecretCredentialsProvider.class.getName()));
         serviceProvider.produce(new ServiceProviderBuildItem(ClaimInformationPointProviderFactory.class.getName(),
                 HttpClaimInformationPointProviderFactory.class.getName(),

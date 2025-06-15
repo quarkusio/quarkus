@@ -47,11 +47,10 @@ public class AsyncCDISecurityEventTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class,
-                            SecurityTestUtils.class, IdentityMock.class, SecurityEventObserver.class,
-                            AsyncSecurityEventObserver.class, AsyncAuthZFailureEventObserver.class,
-                            AsyncAuthZSuccessEventObserver.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithNoSecurityAnnotations.class,
+                    BeanWithSecurityAnnotations.class, SecurityTestUtils.class, IdentityMock.class,
+                    SecurityEventObserver.class, AsyncSecurityEventObserver.class, AsyncAuthZFailureEventObserver.class,
+                    AsyncAuthZSuccessEventObserver.class));
 
     @BeforeEach
     public void beforeEach() {

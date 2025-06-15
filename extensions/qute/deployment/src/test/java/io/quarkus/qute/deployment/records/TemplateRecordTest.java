@@ -27,16 +27,12 @@ import io.smallrye.mutiny.Multi;
 public class TemplateRecordTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloInt.class, helloWorld.class, hello.class, hello$name.class, hello$top.class)
-                    .addAsResource(new StringAsset("Hello {val}!"),
-                            "templates/TemplateRecordTest/HelloInt.txt")
-                    .addAsResource(new StringAsset("Hello {name}!"),
-                            "templates/hello_world.txt")
-                    .addAsResource(
-                            new StringAsset(
-                                    "Hello {#fragment name}{name}{/fragment}::{#fragment top}{index}{/fragment} and {foo}!"),
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(HelloInt.class, helloWorld.class, hello.class, hello$name.class, hello$top.class)
+                    .addAsResource(new StringAsset("Hello {val}!"), "templates/TemplateRecordTest/HelloInt.txt")
+                    .addAsResource(new StringAsset("Hello {name}!"), "templates/hello_world.txt")
+                    .addAsResource(new StringAsset(
+                            "Hello {#fragment name}{name}{/fragment}::{#fragment top}{index}{/fragment} and {foo}!"),
                             "templates/hello.txt")
                     .addAsResource(new StringAsset("{alpha}:{bravo}:{charlie}"),
                             "templates/TemplateRecordTest/multiParams.txt"));

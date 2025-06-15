@@ -9,7 +9,6 @@ import io.quarkus.arc.AbstractAnnotationLiteral;
 import io.quarkus.arc.ArcInvocationContext;
 
 /**
- *
  * @see ArcInvocationContext#getInterceptorBindings()
  */
 public final class InterceptorBindings {
@@ -20,8 +19,8 @@ public final class InterceptorBindings {
     }
 
     /**
-     * This method is just a convenience for getting a hold of {@link AbstractAnnotationLiteral}.
-     * See the Javadoc of the class for an explanation of the reasons it might be used {@link Annotation}.
+     * This method is just a convenience for getting a hold of {@link AbstractAnnotationLiteral}. See the Javadoc of the
+     * class for an explanation of the reasons it might be used {@link Annotation}.
      */
     @SuppressWarnings("unchecked")
     public static Set<AbstractAnnotationLiteral> getInterceptorBindingLiterals(InvocationContext invocationContext) {

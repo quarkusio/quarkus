@@ -44,12 +44,9 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
             launcher.init(new NativeImageLauncherProvider.DefaultNativeImageInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    testConfig.waitTime(),
-                    testConfig.integrationTestProfile(),
-                    TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
-                    testConfig.env(),
-                    context.devServicesLaunchResult(),
-                    System.getProperty("native.image.path"),
+                    testConfig.waitTime(), testConfig.integrationTestProfile(),
+                    TestConfigUtil.argLineValues(testConfig.argLine().orElse("")), testConfig.env(),
+                    context.devServicesLaunchResult(), System.getProperty("native.image.path"),
                     config.getOptionalValue("quarkus.package.output-directory", String.class).orElse(null),
                     context.testClass()));
             return launcher;
@@ -67,8 +64,8 @@ public class NativeImageLauncherProvider implements ArtifactLauncherProvider {
 
         public DefaultNativeImageInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
                 List<String> argLine, Map<String, String> env,
-                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
-                String nativeImagePath, String configuredOutputDirectory, Class<?> testClass) {
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, String nativeImagePath,
+                String configuredOutputDirectory, Class<?> testClass) {
             super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.nativeImagePath = nativeImagePath;
             this.configuredOutputDirectory = configuredOutputDirectory;

@@ -20,11 +20,8 @@ public class GetterAccessorsContainerRecorder {
             String accessorName) {
         try {
             // Create a new accessor object early
-            GetterAccessor accessor = (GetterAccessor) Thread.currentThread()
-                    .getContextClassLoader()
-                    .loadClass(accessorName)
-                    .getDeclaredConstructor()
-                    .newInstance();
+            GetterAccessor accessor = (GetterAccessor) Thread.currentThread().getContextClassLoader()
+                    .loadClass(accessorName).getDeclaredConstructor().newInstance();
             container.getValue().put(className, fieldName, accessor);
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize " + accessorName + ": " + e.getMessage());

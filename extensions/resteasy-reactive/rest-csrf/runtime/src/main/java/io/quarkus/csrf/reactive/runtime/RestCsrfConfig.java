@@ -51,9 +51,9 @@ public interface RestCsrfConfig {
     Optional<String> cookieDomain();
 
     /**
-     * If enabled the CSRF cookie will have its 'secure' parameter set to 'true'
-     * when HTTP is used. It may be necessary when running behind an SSL terminating reverse proxy.
-     * The cookie will always be secure if HTTPS is used even if this property is set to false.
+     * If enabled the CSRF cookie will have its 'secure' parameter set to 'true' when HTTP is used. It may be necessary
+     * when running behind an SSL terminating reverse proxy. The cookie will always be secure if HTTPS is used even if
+     * this property is set to false.
      */
     @WithDefault("false")
     boolean cookieForceSecure();
@@ -65,9 +65,8 @@ public interface RestCsrfConfig {
     boolean cookieHttpOnly();
 
     /**
-     * Create CSRF token only if the HTTP GET relative request path matches one of the paths configured with this property.
-     * Use a comma to separate multiple path values.
-     *
+     * Create CSRF token only if the HTTP GET relative request path matches one of the paths configured with this
+     * property. Use a comma to separate multiple path values.
      */
     Optional<Set<String>> createTokenPath();
 
@@ -83,27 +82,22 @@ public interface RestCsrfConfig {
     Optional<String> tokenSignatureKey();
 
     /**
-     * Verify CSRF token in the CSRF filter.
-     *
-     * If you prefer then you can disable this property and compare
-     * CSRF form and cookie parameters in the application code using JAX-RS jakarta.ws.rs.FormParam which refers to the
-     * {@link #formFieldName}
-     * form property and jakarta.ws.rs.CookieParam which refers to the {@link RestCsrfConfig#cookieName} cookie.
-     *
-     * Note that even if the CSRF token verification in the CSRF filter is disabled, the filter will still perform checks to
-     * ensure the token
-     * is available, has the correct {@linkplain #tokenSize} in bytes and that the Content-Type HTTP header is
-     * either 'application/x-www-form-urlencoded' or 'multipart/form-data'.
+     * Verify CSRF token in the CSRF filter. If you prefer then you can disable this property and compare CSRF form and
+     * cookie parameters in the application code using JAX-RS jakarta.ws.rs.FormParam which refers to the
+     * {@link #formFieldName} form property and jakarta.ws.rs.CookieParam which refers to the
+     * {@link RestCsrfConfig#cookieName} cookie. Note that even if the CSRF token verification in the CSRF filter is
+     * disabled, the filter will still perform checks to ensure the token is available, has the correct
+     * {@linkplain #tokenSize} in bytes and that the Content-Type HTTP header is either
+     * 'application/x-www-form-urlencoded' or 'multipart/form-data'.
      */
     @WithDefault("true")
     boolean verifyToken();
 
     /**
      * Require that only 'application/x-www-form-urlencoded' or 'multipart/form-data' body is accepted for the token
-     * verification to proceed.
-     * Disable this property for the CSRF filter to avoid verifying the token for POST requests with other content types.
-     * This property is only effective if {@link #verifyToken} property is enabled and {@link #tokenHeaderName} is not
-     * configured.
+     * verification to proceed. Disable this property for the CSRF filter to avoid verifying the token for POST requests
+     * with other content types. This property is only effective if {@link #verifyToken} property is enabled and
+     * {@link #tokenHeaderName} is not configured.
      */
     @WithDefault("true")
     boolean requireFormUrlEncoded();

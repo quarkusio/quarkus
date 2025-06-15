@@ -18,9 +18,7 @@ public class WrongPostConstructPreDestroyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(MySingleton.class))
-            .assertException(t -> {
+            .withApplicationRoot(root -> root.addClasses(MySingleton.class)).assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertTrue(rootCause.getMessage().contains("javax.annotation.PostConstruct"), t.toString());
                 assertTrue(rootCause.getMessage().contains("javax.annotation.PreDestroy"), t.toString());

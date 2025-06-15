@@ -19,9 +19,8 @@ public class LoopTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(template, "templates/loop1.html")
-                    .addAsResource(template, "templates/LoopTest/loopInt.html"));
+            .withApplicationRoot(root -> root.addAsResource(template, "templates/loop1.html").addAsResource(template,
+                    "templates/LoopTest/loopInt.html"));
 
     @CheckedTemplate
     static class Templates {

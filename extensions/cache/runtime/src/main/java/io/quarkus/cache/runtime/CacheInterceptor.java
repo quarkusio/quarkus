@@ -48,13 +48,12 @@ public abstract class CacheInterceptor {
     Instance<CacheKeyGenerator> keyGenerator;
 
     /*
-     * The interception is almost always managed by Arc in a Quarkus application. In such a case, we want to retrieve the
-     * interceptor bindings stored by Arc in the invocation context data (very good performance-wise). But sometimes the
-     * interception is managed by another CDI interceptors implementation. It can happen for example while using caching
-     * annotations on a MicroProfile REST Client method. In that case, we have no other choice but to rely on reflection (with
-     * underlying synchronized blocks which are bad for performances) to retrieve the interceptor bindings.
-     *
-     * IMPORTANT: Normally <T> would be <T extends Annotation>, but that leads to type pollution
+     * The interception is almost always managed by Arc in a Quarkus application. In such a case, we want to retrieve
+     * the interceptor bindings stored by Arc in the invocation context data (very good performance-wise). But sometimes
+     * the interception is managed by another CDI interceptors implementation. It can happen for example while using
+     * caching annotations on a MicroProfile REST Client method. In that case, we have no other choice but to rely on
+     * reflection (with underlying synchronized blocks which are bad for performances) to retrieve the interceptor
+     * bindings. IMPORTANT: Normally <T> would be <T extends Annotation>, but that leads to type pollution
      */
     protected <T> CacheInterceptionContext<T> getInterceptionContext(InvocationContext invocationContext,
             Class<T> interceptorBindingClass, boolean supportsCacheKey) {
@@ -62,7 +61,8 @@ public abstract class CacheInterceptor {
                 .orElseGet(new Supplier<CacheInterceptionContext<T>>() {
                     @Override
                     public CacheInterceptionContext<T> get() {
-                        return getNonArcCacheInterceptionContext(invocationContext, interceptorBindingClass, supportsCacheKey);
+                        return getNonArcCacheInterceptionContext(invocationContext, interceptorBindingClass,
+                                supportsCacheKey);
                     }
                 });
     }
@@ -71,7 +71,8 @@ public abstract class CacheInterceptor {
     private <T> Optional<CacheInterceptionContext<T>> getArcCacheInterceptionContext(
             InvocationContext invocationContext, Class<T> interceptorBindingClass) {
         Set<AbstractAnnotationLiteral> bindings = InterceptorBindings.getInterceptorBindingLiterals(invocationContext);
-        if (bindings == null || bindings.isEmpty() || !(bindings.iterator().next() instanceof AbstractAnnotationLiteral)) {
+        if (bindings == null || bindings.isEmpty()
+                || !(bindings.iterator().next() instanceof AbstractAnnotationLiteral)) {
             // this should only happen when the interception is not managed by ArC
             // a non-`AbstractAnnotationLiteral` can come from RESTEasy Classic's `QuarkusInvocationContextImpl`
             LOGGER.trace("Interceptor bindings not found in ArC or not created by ArC");
@@ -92,8 +93,8 @@ public abstract class CacheInterceptor {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> CacheInterceptionContext<T> getNonArcCacheInterceptionContext(
-            InvocationContext invocationContext, Class<T> interceptorBindingClass, boolean supportsCacheKey) {
+    private <T> CacheInterceptionContext<T> getNonArcCacheInterceptionContext(InvocationContext invocationContext,
+            Class<T> interceptorBindingClass, boolean supportsCacheKey) {
         LOGGER.trace("Retrieving interceptor bindings using reflection");
         List<T> interceptorBindings = new ArrayList<>();
         List<Short> cacheKeyParameterPositions = new ArrayList<>();
@@ -110,9 +111,9 @@ public abstract class CacheInterceptor {
         }
         if (supportsCacheKey && !cacheKeyParameterPositionsFound) {
             /*
-             * This block is a fallback that should ideally never be executed because of the poor performance of reflection
-             * calls. If the following warn message is displayed, then it means that we should update the build time bytecode
-             * generation to cover the missing case. See RestClientMethodEnhancer for more details.
+             * This block is a fallback that should ideally never be executed because of the poor performance of
+             * reflection calls. If the following warn message is displayed, then it means that we should update the
+             * build time bytecode generation to cover the missing case. See RestClientMethodEnhancer for more details.
              */
             LOGGER.warn(PERFORMANCE_WARN_MSG);
             Parameter[] parameters = invocationContext.getMethod().getParameters();
@@ -133,11 +134,13 @@ public abstract class CacheInterceptor {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();
         } else if (cacheKeyParameterPositions.size() == 1) {
-            // If exactly one @CacheKey-annotated parameter was identified for the intercepted method at build time, then this
+            // If exactly one @CacheKey-annotated parameter was identified for the intercepted method at build time,
+            // then this
             // parameter will be used as the cache key.
             return methodParameterValues[cacheKeyParameterPositions.get(0)];
         } else if (cacheKeyParameterPositions.size() >= 2) {
-            // If two or more @CacheKey-annotated parameters were identified for the intercepted method at build time, then a
+            // If two or more @CacheKey-annotated parameters were identified for the intercepted method at build time,
+            // then a
             // composite cache key built from all these parameters will be used.
             List<Object> keyElements = new ArrayList<>();
             for (short position : cacheKeyParameterPositions) {
@@ -148,7 +151,8 @@ public abstract class CacheInterceptor {
             // If the intercepted method has exactly one parameter, then this parameter will be used as the cache key.
             return methodParameterValues[0];
         } else {
-            // If the intercepted method has two or more parameters, then a composite cache key built from all these parameters
+            // If the intercepted method has two or more parameters, then a composite cache key built from all these
+            // parameters
             // will be used.
             return new CompositeCacheKey(methodParameterValues);
         }

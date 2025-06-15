@@ -50,12 +50,10 @@ public class ContainerImageProcessor {
     }
 
     @BuildStep
-    public void publishImageInfo(ApplicationInfoBuildItem app,
-            ContainerImageConfig containerImageConfig,
+    public void publishImageInfo(ApplicationInfoBuildItem app, ContainerImageConfig containerImageConfig,
             Optional<SingleSegmentContainerImageRequestBuildItem> singleSegmentImageRequest,
             Optional<FallbackContainerImageRegistryBuildItem> containerImageRegistry,
-            Optional<ContainerImageCustomNameBuildItem> containerImageCustomName,
-            Capabilities capabilities,
+            Optional<ContainerImageCustomNameBuildItem> containerImageCustomName, Capabilities capabilities,
             BuildProducer<ContainerImageInfoBuildItem> containerImage) {
 
         ensureSingleContainerImageExtension(capabilities);
@@ -89,9 +87,8 @@ public class ContainerImageProcessor {
             return;
         }
 
-        String registry = containerImageConfig.registry()
-                .orElseGet(() -> containerImageRegistry.map(FallbackContainerImageRegistryBuildItem::getRegistry)
-                        .orElse(null));
+        String registry = containerImageConfig.registry().orElseGet(
+                () -> containerImageRegistry.map(FallbackContainerImageRegistryBuildItem::getRegistry).orElse(null));
         if ((registry != null) && !ImageReference.isValidRegistry(registry)) {
             throw new IllegalArgumentException("The supplied container-image registry '" + registry + "' is invalid");
         }
@@ -101,8 +98,8 @@ public class ContainerImageProcessor {
         String group = effectiveGroup.orElse("");
         String repository = group.isBlank() ? effectiveName : group + "/" + effectiveName;
         if (!ImageReference.isValidRepository(repository)) {
-            throw new IllegalArgumentException("The supplied combination of container-image group '"
-                    + group + "' and name '" + effectiveName + "' is invalid");
+            throw new IllegalArgumentException("The supplied combination of container-image group '" + group
+                    + "' and name '" + effectiveName + "' is invalid");
         }
 
         String effectiveTag = containerImageConfig.tag();
@@ -115,10 +112,8 @@ public class ContainerImageProcessor {
         }
 
         containerImage.produce(new ContainerImageInfoBuildItem(Optional.ofNullable(registry),
-                containerImageConfig.username(), containerImageConfig.password(),
-                effectiveGroup,
-                effectiveName, effectiveTag,
-                containerImageConfig.additionalTags().orElse(Collections.emptyList())));
+                containerImageConfig.username(), containerImageConfig.password(), effectiveGroup, effectiveName,
+                effectiveTag, containerImageConfig.additionalTags().orElse(Collections.emptyList())));
     }
 
     private void ensureSingleContainerImageExtension(Capabilities capabilities) {
@@ -126,20 +121,15 @@ public class ContainerImageProcessor {
     }
 
     /**
-     * Since user.name which is default value can be uppercase and uppercase values
-     * are not allowed
-     * in the repository part of image references, we need to make the username
-     * lowercase.
-     * If spaces exist in the user name, we replace them with the dash character.
-     *
-     * We purposely don't change the value of an explicitly set group.
+     * Since user.name which is default value can be uppercase and uppercase values are not allowed in the repository
+     * part of image references, we need to make the username lowercase. If spaces exist in the user name, we replace
+     * them with the dash character. We purposely don't change the value of an explicitly set group.
      */
     static Optional<String> getEffectiveGroup(Optional<String> group, boolean isSingleSegmentRequested) {
-        return group.or(() -> isSingleSegmentRequested || isGroupSpecified()
-                ? Optional.empty()
-                : Optional.ofNullable(System.getProperty("user.name")).map(s -> s.replace(' ', '-')))
-                .map(String::toLowerCase)
-                .filter(Predicate.not(StringUtil::isNullOrEmpty));
+        return group
+                .or(() -> isSingleSegmentRequested || isGroupSpecified() ? Optional.empty()
+                        : Optional.ofNullable(System.getProperty("user.name")).map(s -> s.replace(' ', '-')))
+                .map(String::toLowerCase).filter(Predicate.not(StringUtil::isNullOrEmpty));
     }
 
     static Optional<String> getEffectiveGroup() {
@@ -147,9 +137,8 @@ public class ContainerImageProcessor {
     }
 
     /**
-     * Users are allowed to specify an empty group, however this is mapped to Optional.emtpy().
-     * We need to know if the user has actually specified a group or not.
-     * The only way is to check the property names provided.
+     * Users are allowed to specify an empty group, however this is mapped to Optional.emtpy(). We need to know if the
+     * user has actually specified a group or not. The only way is to check the property names provided.
      **/
     static boolean isGroupSpecified() {
         return StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false)

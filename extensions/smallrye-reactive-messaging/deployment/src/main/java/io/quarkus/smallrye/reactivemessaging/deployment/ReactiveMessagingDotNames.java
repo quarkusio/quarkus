@@ -71,7 +71,8 @@ public final class ReactiveMessagingDotNames {
     static final DotName OUTGOING_CONNECTOR_FACTORY = DotName.createSimple(OutgoingConnectorFactory.class.getName());
     static final DotName OUTBOUND_CONNECTOR = DotName.createSimple(OutboundConnector.class.getName());
 
-    static final DotName SMALLRYE_BLOCKING = DotName.createSimple(io.smallrye.common.annotation.Blocking.class.getName());
+    static final DotName SMALLRYE_BLOCKING = DotName
+            .createSimple(io.smallrye.common.annotation.Blocking.class.getName());
 
     static final DotName MESSAGE_CONVERTER = DotName.createSimple(MessageConverter.class.getName());
     static final DotName KEY_VALUE_EXTRACTOR = DotName.createSimple(KeyValueExtractor.class.getName());
@@ -79,7 +80,8 @@ public final class ReactiveMessagingDotNames {
     static final DotName KEYED = DotName.createSimple(Keyed.class.getName());
     public static final DotName KEYED_MULTI = DotName.createSimple(KeyedMulti.class.getName());
 
-    // Do not directly reference the MetricDecorator (due to its direct references to MP Metrics, which may not be present)
+    // Do not directly reference the MetricDecorator (due to its direct references to MP Metrics, which may not be
+    // present)
     static final DotName METRIC_DECORATOR = DotName
             .createSimple("io.smallrye.reactive.messaging.providers.metrics.MetricDecorator");
     static final DotName MICROMETER_DECORATOR = DotName

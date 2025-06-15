@@ -30,8 +30,7 @@ public class BlockingTransactionalHashCommandsImpl<K, F, V> extends AbstractTran
 
     @Override
     public void hget(K key, F field) {
-        this.reactive.hget(key, field)
-                .await().atMost(this.timeout);
+        this.reactive.hget(key, field).await().atMost(this.timeout);
     }
 
     @Override

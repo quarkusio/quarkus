@@ -13,23 +13,18 @@ import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
 /**
- * Reproduce <a href="https://github.com/quarkusio/quarkus/issues/36234">NullPointerException for request with empty Host
- * header</a>.
+ * Reproduce <a href="https://github.com/quarkusio/quarkus/issues/36234">NullPointerException for request with empty
+ * Host header</a>.
  */
 public class EmptyHostTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanRegisteringRouteUsingObserves.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanRegisteringRouteUsingObserves.class));
 
     @Test
     public void testWithEmptyHost() {
-        assertEquals(RestAssured
-                .given()
-                .header("Host", "")
-                .get("/hello")
-                .asString(), "Hello World! ");
+        assertEquals(RestAssured.given().header("Host", "").get("/hello").asString(), "Hello World! ");
 
     }
 

@@ -12,11 +12,8 @@ public class HibernateOrmRestDataCodestartIT {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("hibernate-orm-rest-data")
-            .extension(ArtifactKey.ga("io.quarkus", "quarkus-jdbc-h2"))
-            .extension(ArtifactKey.ga("io.quarkus", "quarkus-rest-jackson"))
-            .languages(JAVA)
-            .build();
+            .codestarts("hibernate-orm-rest-data").extension(ArtifactKey.ga("io.quarkus", "quarkus-jdbc-h2"))
+            .extension(ArtifactKey.ga("io.quarkus", "quarkus-rest-jackson")).languages(JAVA).build();
 
     @Test
     void testContent() throws Throwable {

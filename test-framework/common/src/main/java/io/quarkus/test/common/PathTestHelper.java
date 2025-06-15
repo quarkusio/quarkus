@@ -37,54 +37,39 @@ public final class PathTestHelper {
     private static final List<String> TEST_DIRS;
 
     static {
-        //region Eclipse
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "bin" + File.separator + "test",
-                "bin" + File.separator + "main");
-        //endregion
+        // region Eclipse
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("bin" + File.separator + "test", "bin" + File.separator + "main");
+        // endregion
 
-        //region Idea
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "out" + File.separator + "test",
-                "out" + File.separator + "production");
-        //endregion
+        // region Idea
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("out" + File.separator + "test", "out" + File.separator + "production");
+        // endregion
 
         // region Gradle
         // region Java
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "java" + File.separator + "native-test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "java" + File.separator + "native-test",
                 "classes" + File.separator + "java" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "java" + File.separator + "test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "java" + File.separator + "test",
                 "classes" + File.separator + "java" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "java" + File.separator + "integration-test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "java" + File.separator + "integration-test",
                 "classes" + File.separator + "java" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "java" + File.separator + "integrationTest",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "java" + File.separator + "integrationTest",
                 "classes" + File.separator + "java" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "java" + File.separator + "native-integrationTest",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "java" + File.separator + "native-integrationTest",
                 "classes" + File.separator + "java" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "java" + File.separator + "native-integration-test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "java" + File.separator + "native-integration-test",
                 "classes" + File.separator + "java" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put( //synthetic tmp dirs when there are multiple outputs
-                "quarkus-app-classes-test",
-                "quarkus-app-classes");
-        //endregion
-        //region Kotlin
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "kotlin" + File.separator + "native-test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put( // synthetic tmp dirs when there are multiple outputs
+                "quarkus-app-classes-test", "quarkus-app-classes");
+        // endregion
+        // region Kotlin
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "kotlin" + File.separator + "native-test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "kotlin" + File.separator + "test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "kotlin" + File.separator + "test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "kotlin" + File.separator + "integration-test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "kotlin" + File.separator + "integration-test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "kotlin" + File.separator + "integrationTest",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "kotlin" + File.separator + "integrationTest",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "kotlin" + File.separator + "native-integrationTest",
@@ -92,47 +77,38 @@ public final class PathTestHelper {
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "kotlin" + File.separator + "native-integration-test",
                 "classes" + File.separator + "kotlin" + File.separator + "main");
-        //endregion
-        //region Scala
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "scala" + File.separator + "native-test",
+        // endregion
+        // region Scala
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "scala" + File.separator + "native-test",
                 "classes" + File.separator + "scala" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "scala" + File.separator + "test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "scala" + File.separator + "test",
                 "classes" + File.separator + "scala" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "scala" + File.separator + "integration-test",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "scala" + File.separator + "integration-test",
                 "classes" + File.separator + "scala" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "scala" + File.separator + "integrationTest",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "scala" + File.separator + "integrationTest",
                 "classes" + File.separator + "scala" + File.separator + "main");
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                "classes" + File.separator + "scala" + File.separator + "native-integrationTest",
+        TEST_TO_MAIN_DIR_FRAGMENTS.put("classes" + File.separator + "scala" + File.separator + "native-integrationTest",
                 "classes" + File.separator + "scala" + File.separator + "main");
         TEST_TO_MAIN_DIR_FRAGMENTS.put(
                 "classes" + File.separator + "scala" + File.separator + "native-integration-test",
                 "classes" + File.separator + "scala" + File.separator + "main");
-        //endregion
-        //endregion
+        // endregion
+        // endregion
 
-        //region Maven
-        TEST_TO_MAIN_DIR_FRAGMENTS.put(
-                File.separator + "test-classes",
-                File.separator + "classes");
-        //endregion
+        // region Maven
+        TEST_TO_MAIN_DIR_FRAGMENTS.put(File.separator + "test-classes", File.separator + "classes");
+        // endregion
 
         String mappings = System.getenv(BootstrapConstants.TEST_TO_MAIN_MAPPINGS);
         if (mappings != null) {
-            Stream.of(mappings.split(","))
-                    .filter(s -> !s.isEmpty())
-                    .forEach(s -> {
-                        String[] entry = s.split(":");
-                        if (entry.length == 2) {
-                            TEST_TO_MAIN_DIR_FRAGMENTS.put(entry[0], entry[1]);
-                        } else {
-                            throw new IllegalStateException("Unable to parse additional test-to-main mapping: " + s);
-                        }
-                    });
+            Stream.of(mappings.split(",")).filter(s -> !s.isEmpty()).forEach(s -> {
+                String[] entry = s.split(":");
+                if (entry.length == 2) {
+                    TEST_TO_MAIN_DIR_FRAGMENTS.put(entry[0], entry[1]);
+                } else {
+                    throw new IllegalStateException("Unable to parse additional test-to-main mapping: " + s);
+                }
+            });
         }
         TEST_DIRS = List.of(TEST_TO_MAIN_DIR_FRAGMENTS.keySet().toArray(new String[0]));
     }
@@ -143,7 +119,9 @@ public final class PathTestHelper {
     /**
      * Resolves the directory or the JAR file containing the test class.
      *
-     * @param testClass the test class
+     * @param testClass
+     *        the test class
+     *
      * @return directory or JAR containing the test class
      */
     public static Path getTestClassesLocation(Class<?> testClass) {
@@ -171,7 +149,8 @@ public final class PathTestHelper {
                 return testLocation;
             }
 
-            // JARs containing tests will most of the time be direct test scoped dependencies (e.g. Quarkus platform testsuite).
+            // JARs containing tests will most of the time be direct test scoped dependencies (e.g. Quarkus platform
+            // testsuite).
             // Look among the direct dependencies first to optimize for the majority of cases.
             // Depending on the amount of dependencies and their ordering, could be ~15-20 times faster.
             testLocation = getTestClassLocationFromDepsOrNull(classFileName, appModel,
@@ -192,7 +171,8 @@ public final class PathTestHelper {
 
         if (!isInTestDir(path) && !path.getParent().getFileName().toString().equals(TARGET)) {
             final StringBuilder msg = new StringBuilder();
-            msg.append("The test class ").append(testClass.getName()).append(" is not located in any of the directories ");
+            msg.append("The test class ").append(testClass.getName())
+                    .append(" is not located in any of the directories ");
             var i = TEST_DIRS.iterator();
             msg.append(i.next());
             while (i.hasNext()) {
@@ -207,12 +187,18 @@ public final class PathTestHelper {
      * Looks for a resource among the dependencies with specific flags. The method will return the first dependency
      * providing the resource of null, if none of the dependencies provide the resource.
      *
-     * @param classFileName classpath resource name
-     * @param appModel application model
-     * @param depFlags dependency flags
-     * @return the first dependency containing the resource or null, if none of the matching dependencies provide the resource
+     * @param classFileName
+     *        classpath resource name
+     * @param appModel
+     *        application model
+     * @param depFlags
+     *        dependency flags
+     *
+     * @return the first dependency containing the resource or null, if none of the matching dependencies provide the
+     *         resource
      */
-    private static Path getTestClassLocationFromDepsOrNull(String classFileName, ApplicationModel appModel, int depFlags) {
+    private static Path getTestClassLocationFromDepsOrNull(String classFileName, ApplicationModel appModel,
+            int depFlags) {
         for (var d : appModel.getDependencies(depFlags)) {
             final Path root = d.getContentTree().apply(classFileName, PathTestHelper::getRootOrNull);
             if (root != null) {
@@ -231,11 +217,14 @@ public final class PathTestHelper {
     }
 
     /**
-     * Looks for a resource in the output directories of a workspace module.
-     * If a directory containing the resource could not be found, the method will return null.
+     * Looks for a resource in the output directories of a workspace module. If a directory containing the resource
+     * could not be found, the method will return null.
      *
-     * @param testClassFileName classpath resource
-     * @param module workspace module
+     * @param testClassFileName
+     *        classpath resource
+     * @param module
+     *        workspace module
+     *
      * @return output directory containing the resource or null, in case the resource could not be found
      */
     private static Path getTestClassesDirOrNull(String testClassFileName, WorkspaceModule module) {
@@ -247,7 +236,8 @@ public final class PathTestHelper {
                 return testClassesDir;
             }
         }
-        // If there were no test sources, this may be an application with multiple source sets; we need to search them all
+        // If there were no test sources, this may be an application with multiple source sets; we need to search them
+        // all
         for (String classifier : module.getSourceClassifiers()) {
             final ArtifactSources sources = module.getSources(classifier);
             if (sources.isOutputAvailable()) {
@@ -260,7 +250,8 @@ public final class PathTestHelper {
         }
         // If we got to this point, fall back to the filesystem search
         // This happens for maven source set scenarios
-        // TODO getSourceClassifiers() should return the source sets in the maven case, but currently does not - see BuildIT.testCustomTestSourceSets test
+        // TODO getSourceClassifiers() should return the source sets in the maven case, but currently does not - see
+        // BuildIT.testCustomTestSourceSets test
         return null;
     }
 
@@ -293,7 +284,9 @@ public final class PathTestHelper {
     /**
      * Resolves the directory or the JAR file containing the application being tested by a test from the given location.
      *
-     * @param testClassLocationPath the test class location
+     * @param testClassLocationPath
+     *        the test class location
+     *
      * @return directory or JAR containing the application being tested by a test from the given location
      */
     public static Path getAppClassLocationForTestLocation(Path testClassLocationPath) {
@@ -302,15 +295,13 @@ public final class PathTestHelper {
         if (testClassLocation.endsWith(".jar")) {
             if (testClassLocation.endsWith("-tests.jar")) {
                 return Path.of(new StringBuilder()
-                        .append(testClassLocation, 0, testClassLocation.length() - "-tests.jar".length())
-                        .append(".jar")
+                        .append(testClassLocation, 0, testClassLocation.length() - "-tests.jar".length()).append(".jar")
                         .toString());
             }
             return testClassLocationPath;
         }
         Optional<Path> mainClassesDir = TEST_TO_MAIN_DIR_FRAGMENTS.entrySet().stream()
-                .filter(e -> testClassLocation.contains(e.getKey()))
-                .map(e -> {
+                .filter(e -> testClassLocation.contains(e.getKey())).map(e -> {
                     // we should replace only the last occurrence of the fragment
                     final int i = testClassLocation.lastIndexOf(e.getKey());
                     final StringBuilder buf = new StringBuilder(testClassLocation.length());
@@ -319,8 +310,7 @@ public final class PathTestHelper {
                         buf.append(testClassLocation.substring(i + e.getKey().length()));
                     }
                     return Path.of(buf.toString());
-                })
-                .findFirst();
+                }).findFirst();
         Path p = null;
         if (mainClassesDir.isPresent()) {
             p = mainClassesDir.get();
@@ -345,12 +335,15 @@ public final class PathTestHelper {
     }
 
     /**
-     * Returns the resources directory that compliments the classes directory.
-     * This is relevant in for Gradle where classes and resources have different output locations.
-     * The method will return null if classesDir is not a directory.
+     * Returns the resources directory that compliments the classes directory. This is relevant in for Gradle where
+     * classes and resources have different output locations. The method will return null if classesDir is not a
+     * directory.
      *
-     * @param classesDir classes directory
-     * @param name 'test' for test resources or 'main' for the main resources
+     * @param classesDir
+     *        classes directory
+     * @param name
+     *        'test' for test resources or 'main' for the main resources
+     *
      * @return resources directory if found or null otherwise
      */
     public static Path getResourcesForClassesDirOrNull(Path classesDir, String name) {
@@ -427,8 +420,11 @@ public final class PathTestHelper {
     /**
      * Returns the build directory of the project given its base dir and the test classes dir.
      *
-     * @param projectRoot project dir
-     * @param testClassLocation test dir
+     * @param projectRoot
+     *        project dir
+     * @param testClassLocation
+     *        test dir
+     *
      * @return project build dir
      */
     public static Path getProjectBuildDir(Path projectRoot, Path testClassLocation) {

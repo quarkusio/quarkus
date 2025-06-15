@@ -66,19 +66,20 @@ public final class PanacheJpaCommonResourceProcessor {
             return;
         }
 
-        //generate the annotated interceptor with gizmo
-        //all the logic is in the parent, but we don't have access to the
-        //binding annotation here
+        // generate the annotated interceptor with gizmo
+        // all the logic is in the parent, but we don't have access to the
+        // binding annotation here
         try (ClassCreator c = ClassCreator.builder()
-                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer)).className(
-                        TestReactiveTransactionalInterceptor.class.getName() + "Generated")
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer))
+                .className(TestReactiveTransactionalInterceptor.class.getName() + "Generated")
                 .superClass(TestReactiveTransactionalInterceptor.class).build()) {
             c.addAnnotation(TEST_REACTIVE_TRANSACTION);
             c.addAnnotation(Interceptor.class.getName());
             c.addAnnotation(Priority.class).addValue("value", Interceptor.Priority.PLATFORM_BEFORE + 200);
         }
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(TestReactiveTransactionalInterceptor.class)
-                .addBeanClass(TEST_REACTIVE_TRANSACTION).build());
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.builder().addBeanClass(TestReactiveTransactionalInterceptor.class)
+                        .addBeanClass(TEST_REACTIVE_TRANSACTION).build());
     }
 
     private static boolean testReactiveTransactionOnClassPath() {
@@ -123,10 +124,9 @@ public final class PanacheJpaCommonResourceProcessor {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             // Custom request method designators are not supported
             List<DotName> designators = List.of(DotName.createSimple("jakarta.ws.rs.GET"),
-                    DotName.createSimple("jakarta.ws.rs.HEAD"),
-                    DotName.createSimple("jakarta.ws.rs.DELETE"), DotName.createSimple("jakarta.ws.rs.OPTIONS"),
-                    DotName.createSimple("jakarta.ws.rs.PATCH"), DotName.createSimple("jakarta.ws.rs.POST"),
-                    DotName.createSimple("jakarta.ws.rs.PUT"));
+                    DotName.createSimple("jakarta.ws.rs.HEAD"), DotName.createSimple("jakarta.ws.rs.DELETE"),
+                    DotName.createSimple("jakarta.ws.rs.OPTIONS"), DotName.createSimple("jakarta.ws.rs.PATCH"),
+                    DotName.createSimple("jakarta.ws.rs.POST"), DotName.createSimple("jakarta.ws.rs.PUT"));
             List<DotName> bindings = List.of(DotNames.REACTIVE_TRANSACTIONAL, DotNames.WITH_SESSION,
                     DotNames.WITH_SESSION_ON_DEMAND, DotNames.WITH_TRANSACTION);
 
@@ -137,7 +137,8 @@ public final class PanacheJpaCommonResourceProcessor {
                     entities.add(subclass.name());
                 }
             }
-            for (ClassInfo implementor : index.getIndex().getAllKnownImplementors(DotNames.PANACHE_KOTLIN_ENTITY_BASE)) {
+            for (ClassInfo implementor : index.getIndex()
+                    .getAllKnownImplementors(DotNames.PANACHE_KOTLIN_ENTITY_BASE)) {
                 if (!implementor.name().equals(DotNames.PANACHE_KOTLIN_ENTITY)) {
                     entities.add(implementor.name());
                 }
@@ -148,7 +149,8 @@ public final class PanacheJpaCommonResourceProcessor {
                     repos.add(subclass.name());
                 }
             }
-            for (ClassInfo implementor : index.getIndex().getAllKnownImplementors(DotNames.PANACHE_KOTLIN_REPOSITORY_BASE)) {
+            for (ClassInfo implementor : index.getIndex()
+                    .getAllKnownImplementors(DotNames.PANACHE_KOTLIN_REPOSITORY_BASE)) {
                 if (!implementor.name().equals(DotNames.PANACHE_KOTLIN_REPOSITORY)) {
                     repos.add(implementor.name());
                 }
@@ -175,10 +177,8 @@ public final class PanacheJpaCommonResourceProcessor {
                 public void transform(TransformationContext context) {
                     MethodInfo method = context.getTarget().asMethod();
                     Collection<AnnotationInstance> annotations = context.getAnnotations();
-                    if (method.isSynthetic()
-                            || Modifier.isStatic(method.flags())
-                            || method.declaringClass().isInterface()
-                            || !method.returnType().name().equals(DotNames.UNI)
+                    if (method.isSynthetic() || Modifier.isStatic(method.flags())
+                            || method.declaringClass().isInterface() || !method.returnType().name().equals(DotNames.UNI)
                             || !entityReposUsers.contains(method.declaringClass().name())
                             || !Annotations.containsAny(annotations, designators)
                             || Annotations.containsAny(annotations, bindings)) {
@@ -190,7 +190,8 @@ public final class PanacheJpaCommonResourceProcessor {
                     // - returns Uni
                     // - is declared in a class that uses a panache entity/repository
                     // - is annotated with @GET, @POST, @PUT, @DELETE ,@PATCH ,@HEAD or @OPTIONS
-                    // - is not annotated with @ReactiveTransactional, @WithSession, @WithSessionOnDemand, or @WithTransaction
+                    // - is not annotated with @ReactiveTransactional, @WithSession, @WithSessionOnDemand, or
+                    // @WithTransaction
                     context.transform().add(DotNames.WITH_SESSION_ON_DEMAND).done();
                 }
             }));
@@ -199,8 +200,7 @@ public final class PanacheJpaCommonResourceProcessor {
 
     @BuildStep
     void lookupNamedQueries(CombinedIndexBuildItem index,
-            BuildProducer<PanacheNamedQueryEntityClassBuildStep> namedQueries,
-            JpaModelBuildItem jpaModel) {
+            BuildProducer<PanacheNamedQueryEntityClassBuildStep> namedQueries, JpaModelBuildItem jpaModel) {
         for (String modelClass : jpaModel.getAllModelClassNames()) {
             // lookup for `@NamedQuery` on the hierarchy and produce NamedQueryEntityClassBuildStep
             Map<String, String> typeNamedQueries = new HashMap<>();
@@ -223,7 +223,8 @@ public final class PanacheJpaCommonResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void shutdown(ShutdownContextBuildItem shutdownContextBuildItem, PanacheHibernateRecorder panacheHibernateRecorder) {
+    public void shutdown(ShutdownContextBuildItem shutdownContextBuildItem,
+            PanacheHibernateRecorder panacheHibernateRecorder) {
         panacheHibernateRecorder.clear(shutdownContextBuildItem);
     }
 
@@ -268,12 +269,10 @@ public final class PanacheJpaCommonResourceProcessor {
             for (AnnotationInstance annotation : entry.getValue()) {
                 if (annotation.name().equals(binding)) {
                     if (annotation.target().kind() == Kind.METHOD) {
-                        errors.produce(new ValidationErrorBuildItem(
-                                new IllegalStateException(
-                                        "A method annotated with @"
-                                                + binding.withoutPackagePrefix()
-                                                + " must return io.smallrye.mutiny.Uni: "
-                                                + entry.getKey() + " declared on " + entry.getKey().declaringClass())));
+                        errors.produce(
+                                new ValidationErrorBuildItem(new IllegalStateException("A method annotated with @"
+                                        + binding.withoutPackagePrefix() + " must return io.smallrye.mutiny.Uni: "
+                                        + entry.getKey() + " declared on " + entry.getKey().declaringClass())));
                     } else {
                         LOG.debugf("Class-level binding %s will be ignored for method %s() declared on %s", binding,
                                 entry.getKey().name(), entry.getKey().declaringClass());

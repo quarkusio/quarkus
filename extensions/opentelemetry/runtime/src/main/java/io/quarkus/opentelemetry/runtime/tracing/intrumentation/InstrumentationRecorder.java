@@ -42,15 +42,14 @@ public class InstrumentationRecorder {
             return vertxOptions -> {
             };
         }
-        TracingOptions tracingOptions = new TracingOptions()
-                .setFactory(FACTORY);
+        TracingOptions tracingOptions = new TracingOptions().setFactory(FACTORY);
         return vertxOptions -> vertxOptions.setTracingOptions(tracingOptions);
     }
 
     /* RUNTIME INIT */
     @RuntimeInit
-    public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable,
-            boolean redisClientAvailable, OTelBuildConfig buildConfig) {
+    public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable, boolean redisClientAvailable,
+            OTelBuildConfig buildConfig) {
 
         if (config.getValue().sdkDisabled()) {
             return;
@@ -76,16 +75,14 @@ public class InstrumentationRecorder {
 
     /* STATIC INIT */
     public Consumer<VertxOptions> getVertxHttpMetricsOptions() {
-        MetricsOptions metricsOptions = new MetricsOptions()
-                .setEnabled(true)
+        MetricsOptions metricsOptions = new MetricsOptions().setEnabled(true)
                 .setFactory(new OpenTelemetryVertxHttpMetricsFactory());
         return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
     }
 
     /* STATIC INIT */
     public Consumer<VertxOptions> getVertxMetricsOptions() {
-        MetricsOptions metricsOptions = new MetricsOptions()
-                .setEnabled(true)
+        MetricsOptions metricsOptions = new MetricsOptions().setEnabled(true)
                 .setFactory(new OpenTelemetryVertxMetricsFactory());
         return vertxOptions -> vertxOptions.setMetricsOptions(metricsOptions);
     }

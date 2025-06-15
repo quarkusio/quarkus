@@ -37,8 +37,7 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
     QuarkusWorkspaceProvider workspaceProvider;
 
     /**
-     * If true, the information will be logged per each relevant module of the project
-     * instead of an overall summary
+     * If true, the information will be logged per each relevant module of the project instead of an overall summary
      */
     @Parameter(property = "perModule", required = false)
     boolean perModule;
@@ -68,11 +67,13 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
 
     protected ApplicationModel resolveApplicationModel() throws MojoExecutionException {
         try {
-            return new BootstrapAppModelResolver(artifactResolver())
-                    .resolveModel(ArtifactCoords.pom(project.getGroupId(), project.getArtifactId(), project.getVersion()));
+            return new BootstrapAppModelResolver(artifactResolver()).resolveModel(
+                    ArtifactCoords.pom(project.getGroupId(), project.getArtifactId(), project.getVersion()));
         } catch (AppModelResolverException e) {
-            throw new MojoExecutionException("Failed to resolve the Quarkus application model for project "
-                    + ArtifactCoords.pom(project.getGroupId(), project.getArtifactId(), project.getVersion()), e);
+            throw new MojoExecutionException(
+                    "Failed to resolve the Quarkus application model for project "
+                            + ArtifactCoords.pom(project.getGroupId(), project.getArtifactId(), project.getVersion()),
+                    e);
         }
     }
 
@@ -103,7 +104,7 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
                     try {
                         Files.createDirectories(classesDir);
                         // We keep the root target dir because it is used to store the update recipes
-                        //createdDirs.add(topDirToCreate);
+                        // createdDirs.add(topDirToCreate);
                     } catch (IOException e) {
                         throw new MojoExecutionException("Failed to create " + classesDir, e);
                     }
@@ -125,12 +126,11 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
                 final DefaultRepositorySystemSession session = new DefaultRepositorySystemSession(
                         baseResolver.getSession());
                 session.setTransferListener(new QuietMavenTransferListener());
-                final BootstrapMavenContext ctx = new BootstrapMavenContext(BootstrapMavenContext.config()
-                        .setRepositorySystem(baseResolver.getSystem())
-                        .setRemoteRepositoryManager(baseResolver.getRemoteRepositoryManager())
-                        .setRemoteRepositories(baseResolver.getRepositories())
-                        .setWorkspaceDiscovery(false)
-                        .setRepositorySystemSession(session));
+                final BootstrapMavenContext ctx = new BootstrapMavenContext(
+                        BootstrapMavenContext.config().setRepositorySystem(baseResolver.getSystem())
+                                .setRemoteRepositoryManager(baseResolver.getRemoteRepositoryManager())
+                                .setRemoteRepositories(baseResolver.getRepositories()).setWorkspaceDiscovery(false)
+                                .setRepositorySystemSession(session));
                 return new MavenArtifactResolver(ctx);
             } catch (BootstrapMavenException e) {
                 throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
@@ -140,20 +140,21 @@ public abstract class QuarkusProjectStateMojoBase extends QuarkusProjectMojoBase
 
     @Override
     protected MavenArtifactResolver initArtifactResolver() throws MojoExecutionException {
-        return workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
-                .setUserSettings(session.getRequest().getUserSettingsFile())
-                .setRemoteRepositoryManager(workspaceProvider.getRemoteRepositoryManager())
-                // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
-                // e.g. -Dquarkus.platform.version=xxx
-                //.setRepositorySystem(workspaceProvider.getRepositorySystem())
-                // The session should be initialized with the loaded workspace
-                //.setRepositorySystemSession(repoSession)
-                .setRemoteRepositories(repos)
-                // To support multi-module projects that haven't been installed
-                .setPreferPomsFromWorkspace(true)
-                // to support profiles
-                .setEffectiveModelBuilder(true)
-                // to initialize WorkspaceModule parents and BOM modules
-                .setWorkspaceModuleParentHierarchy(true));
+        return workspaceProvider.createArtifactResolver(
+                BootstrapMavenContext.config().setUserSettings(session.getRequest().getUserSettingsFile())
+                        .setRemoteRepositoryManager(workspaceProvider.getRemoteRepositoryManager())
+                        // The system needs to be initialized with the bootstrap model builder to properly interpolate
+                        // system properties set on the command line
+                        // e.g. -Dquarkus.platform.version=xxx
+                        // .setRepositorySystem(workspaceProvider.getRepositorySystem())
+                        // The session should be initialized with the loaded workspace
+                        // .setRepositorySystemSession(repoSession)
+                        .setRemoteRepositories(repos)
+                        // To support multi-module projects that haven't been installed
+                        .setPreferPomsFromWorkspace(true)
+                        // to support profiles
+                        .setEffectiveModelBuilder(true)
+                        // to initialize WorkspaceModule parents and BOM modules
+                        .setWorkspaceModuleParentHierarchy(true));
     }
 }

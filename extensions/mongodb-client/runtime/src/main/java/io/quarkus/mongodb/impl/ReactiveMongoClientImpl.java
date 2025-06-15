@@ -181,8 +181,7 @@ public class ReactiveMongoClientImpl implements ReactiveMongoClient {
     }
 
     @Override
-    public Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession,
-            List<? extends Bson> pipeline) {
+    public Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline) {
         return Wrappers.toMulti(client.watch(clientSession, pipeline));
     }
 

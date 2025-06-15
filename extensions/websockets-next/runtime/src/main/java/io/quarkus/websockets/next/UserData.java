@@ -6,9 +6,9 @@ package io.quarkus.websockets.next;
 public interface UserData {
 
     /**
-     *
      * @param <VALUE>
      * @param key
+     *
      * @return the value or {@code null} if no mapping is found
      */
     <VALUE> VALUE get(TypedKey<VALUE> key);
@@ -19,12 +19,12 @@ public interface UserData {
      * @param <ConnectionData.VALUE>
      * @param key
      * @param value
+     *
      * @return the previous value associated with {@code key}, or {@code null} if no mapping exists
      */
     <VALUE> VALUE put(TypedKey<VALUE> key, VALUE value);
 
     /**
-     *
      * @param <VALUE>
      * @param key
      */
@@ -35,7 +35,8 @@ public interface UserData {
     void clear();
 
     /**
-     * @param <TYPE> The type this key is used for.
+     * @param <TYPE>
+     *        The type this key is used for.
      */
     record TypedKey<TYPE>(String value) {
 

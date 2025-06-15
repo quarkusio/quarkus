@@ -52,8 +52,7 @@ class QuarkusErrorHandlerTest {
 
     @Test
     public void json_content_type_hint_should_be_respected_if_not_accepted() {
-        QuarkusErrorHandler errorHandler = new QuarkusErrorHandler(false, false,
-                Optional.of(PayloadHint.JSON));
+        QuarkusErrorHandler errorHandler = new QuarkusErrorHandler(false, false, Optional.of(PayloadHint.JSON));
         Mockito.when(routingContext.failure()).thenReturn(testError);
         Mockito.when(routingContext.parsedHeaders().findBestUserAcceptedIn(any(), any()))
                 .thenReturn(new ParsableMIMEValue("application/foo+json").forceParse());
@@ -64,8 +63,7 @@ class QuarkusErrorHandlerTest {
 
     @Test
     public void json_content_type_hint_should_be_ignored_if_accepted() {
-        QuarkusErrorHandler errorHandler = new QuarkusErrorHandler(false, false,
-                Optional.of(PayloadHint.JSON));
+        QuarkusErrorHandler errorHandler = new QuarkusErrorHandler(false, false, Optional.of(PayloadHint.JSON));
         Mockito.when(routingContext.failure()).thenReturn(testError);
         Mockito.when(routingContext.parsedHeaders().findBestUserAcceptedIn(any(), any()))
                 .thenReturn(new ParsableMIMEValue("text/html").forceParse());
@@ -87,19 +85,18 @@ class QuarkusErrorHandlerTest {
 
     @Test
     public void html_content_type_hint_should_be_respected_if_not_accepted() {
-        QuarkusErrorHandler errorHandler = new QuarkusErrorHandler(false, false,
-                Optional.of(PayloadHint.HTML));
+        QuarkusErrorHandler errorHandler = new QuarkusErrorHandler(false, false, Optional.of(PayloadHint.HTML));
         Mockito.when(routingContext.failure()).thenReturn(testError);
         Mockito.when(routingContext.parsedHeaders().findBestUserAcceptedIn(any(), any()))
                 .thenReturn(new ParsableMIMEValue("application/foo+json").forceParse());
         errorHandler.handle(routingContext);
-        Mockito.verify(routingContext.response().headers()).set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
+        Mockito.verify(routingContext.response().headers()).set(HttpHeaderNames.CONTENT_TYPE,
+                "text/html; charset=utf-8");
     }
 
     @Test
     public void html_content_type_hint_should_be_ignored_if_accepted() {
-        QuarkusErrorHandler errorHandler = new QuarkusErrorHandler(false, false,
-                Optional.of(PayloadHint.HTML));
+        QuarkusErrorHandler errorHandler = new QuarkusErrorHandler(false, false, Optional.of(PayloadHint.HTML));
         Mockito.when(routingContext.failure()).thenReturn(testError);
         Mockito.when(routingContext.parsedHeaders().findBestUserAcceptedIn(any(), any()))
                 .thenReturn(new ParsableMIMEValue("application/json").forceParse());

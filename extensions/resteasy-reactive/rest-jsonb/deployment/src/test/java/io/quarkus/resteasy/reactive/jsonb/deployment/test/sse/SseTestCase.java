@@ -40,8 +40,7 @@ public class SseTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SseResource.class, Message.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SseResource.class, Message.class));
 
     @Test
     public void testSseFromSse() throws Exception {
@@ -57,8 +56,8 @@ public class SseTestCase {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
         // do not reconnect
-        try (SseEventSource eventSource = SseEventSource.target(target).reconnectingEvery(Integer.MAX_VALUE, TimeUnit.SECONDS)
-                .build()) {
+        try (SseEventSource eventSource = SseEventSource.target(target)
+                .reconnectingEvery(Integer.MAX_VALUE, TimeUnit.SECONDS).build()) {
             CompletableFuture<List<String>> res = new CompletableFuture<>();
             List<String> collect = Collections.synchronizedList(new ArrayList<>());
             eventSource.register(new Consumer<InboundSseEvent>() {
@@ -116,9 +115,8 @@ public class SseTestCase {
 
     @Test
     public void testNdJsonMultiFromMulti() {
-        when().get(uri.toString() + "sse/ndjson/multi")
-                .then().statusCode(HttpStatus.SC_OK)
-                // @formatter:off
+        when().get(uri.toString() + "sse/ndjson/multi").then().statusCode(HttpStatus.SC_OK)
+        // @formatter:off
                 .body(is("{\"name\":\"hello\"}\n"
                             + "{\"name\":\"stef\"}\n"))
                 // @formatter:on
@@ -127,9 +125,8 @@ public class SseTestCase {
 
     @Test
     public void testStreamJsonMultiFromMulti() {
-        when().get(uri.toString() + "sse/stream-json/multi")
-                .then().statusCode(HttpStatus.SC_OK)
-                // @formatter:off
+        when().get(uri.toString() + "sse/stream-json/multi").then().statusCode(HttpStatus.SC_OK)
+        // @formatter:off
                 .body(is("{\"name\":\"hello\"}\n"
                         + "{\"name\":\"stef\"}\n"))
                 // @formatter:on
@@ -137,8 +134,21 @@ public class SseTestCase {
     }
 
     private void testJsonMulti(String path) {
-        Client client = ClientBuilder.newBuilder()
-                .register(new JsonbMessageBodyReader(JsonbBuilder.create())) // we need this because registering Jsonb for the server part does not affect the client
+        Client client = ClientBuilder.newBuilder().register(new JsonbMessageBodyReader(JsonbBuilder.create())) // we
+                // need
+                // this
+                // because
+                // registering
+                // Jsonb
+                // for
+                // the
+                // server
+                // part
+                // does
+                // not
+                // affect
+                // the
+                // client
                 .build();
         WebTarget target = client.target(uri.toString() + path);
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);

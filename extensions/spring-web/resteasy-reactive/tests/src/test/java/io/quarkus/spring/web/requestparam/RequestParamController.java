@@ -64,7 +64,8 @@ public class RequestParamController {
     public String updateFoos(@RequestParam MultiValueMap<String, String> allParams) {
         String result = "";
         for (Map.Entry<String, List<String>> entry : allParams.entrySet()) {
-            result = "Parameters are " + entry.getKey() + "=" + entry.getValue().stream().collect(Collectors.joining(", "));
+            result = "Parameters are " + entry.getKey() + "="
+                    + entry.getValue().stream().collect(Collectors.joining(", "));
         }
         return result;
     }

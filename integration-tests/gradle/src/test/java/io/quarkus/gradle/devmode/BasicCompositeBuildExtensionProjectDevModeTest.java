@@ -24,11 +24,8 @@ public class BasicCompositeBuildExtensionProjectDevModeTest extends QuarkusDevGr
 
     protected void testDevMode() throws Exception {
 
-        assertThat(getHttpResponse())
-                .contains("ready")
-                .contains("my-quarkus-project")
-                .contains("org.acme.quarkus.sample")
-                .contains("1.0-SNAPSHOT");
+        assertThat(getHttpResponse()).contains("ready").contains("my-quarkus-project")
+                .contains("org.acme.quarkus.sample").contains("1.0-SNAPSHOT");
 
         assertThat(getHttpResponse("/hello")).contains("hello from LibB and LibA extension enabled: false");
 
@@ -36,8 +33,7 @@ public class BasicCompositeBuildExtensionProjectDevModeTest extends QuarkusDevGr
                 ImmutableMap.of("return \"LibA\";", "return \"modifiedA\";"));
         replace("libraries/libraryB/src/main/java/org/acme/libb/LibB.java",
                 ImmutableMap.of("return \"LibB\";", "return \"modifiedB\";"));
-        replace("application/src/main/resources/application.properties",
-                ImmutableMap.of("false", "true"));
+        replace("application/src/main/resources/application.properties", ImmutableMap.of("false", "true"));
 
         assertThat(getHttpResponse("/hello")).contains("hello from modifiedB and LibA extension enabled: true");
     }

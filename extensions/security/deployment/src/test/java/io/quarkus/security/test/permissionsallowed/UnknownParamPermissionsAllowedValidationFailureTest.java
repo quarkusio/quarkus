@@ -15,14 +15,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnknownParamPermissionsAllowedValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .assertException(t -> {
-                Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
-                Assertions.assertTrue(t.getMessage().contains("Parameter 'id' specified via @PermissionsAllowed#params"));
-                Assertions.assertTrue(t.getMessage().contains("SecuredBean#securedBean"));
-                Assertions.assertTrue(t.getMessage().contains("cannot be matched to any constructor"));
-                Assertions.assertTrue(t.getMessage().contains("OrganizationUnitIdPermission' parameter"));
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().assertException(t -> {
+        Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
+        Assertions.assertTrue(t.getMessage().contains("Parameter 'id' specified via @PermissionsAllowed#params"));
+        Assertions.assertTrue(t.getMessage().contains("SecuredBean#securedBean"));
+        Assertions.assertTrue(t.getMessage().contains("cannot be matched to any constructor"));
+        Assertions.assertTrue(t.getMessage().contains("OrganizationUnitIdPermission' parameter"));
+    });
 
     @Test
     public void test() {

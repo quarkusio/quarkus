@@ -17,7 +17,7 @@ public class HttpSecPolicyGrantingPermissionsLazyAuthTest extends AbstractHttpSe
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
             .addClasses(TestIdentityController.class, TestIdentityProvider.class, PermissionsPathHandler.class,
                     CDIBean.class, CustomPermission.class, CustomPermissionWithActions.class)
-            .addAsResource("conf/http-permission-grant-config.properties", "application.properties")
-            .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"), "META-INF/microprofile-config.properties"));
+            .addAsResource("conf/http-permission-grant-config.properties", "application.properties").addAsResource(
+                    new StringAsset("quarkus.http.auth.proactive=false\n"), "META-INF/microprofile-config.properties"));
 
 }

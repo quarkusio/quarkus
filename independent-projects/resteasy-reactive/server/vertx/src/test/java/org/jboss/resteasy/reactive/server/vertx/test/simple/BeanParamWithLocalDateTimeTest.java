@@ -20,19 +20,16 @@ import io.restassured.RestAssured;
 public class BeanParamWithLocalDateTimeTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(HelloResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        RestAssured.get("/hello?date=2007-12-03T10:15:30")
-                .then().statusCode(200).body(Matchers.equalTo("hello#2007"));
+        RestAssured.get("/hello?date=2007-12-03T10:15:30").then().statusCode(200).body(Matchers.equalTo("hello#2007"));
     }
 
     @Path("hello")

@@ -17,8 +17,7 @@ public interface VertxConfig {
     Optional<List<String>> matchPatterns();
 
     /**
-     * Comma-separated list of regular expressions defining uri paths
-     * that should be ignored (not measured).
+     * Comma-separated list of regular expressions defining uri paths that should be ignored (not measured).
      *
      * @deprecated use {@code quarkus.micrometer.binder.http-server.ignore-patterns}
      */

@@ -29,8 +29,8 @@ public class DisabledConnectorAttachmentIncomingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyDummyConnector.class, MySink.class))
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(MyDummyConnector.class, MySink.class))
             .overrideConfigKey("quarkus.messaging.auto-connector-attachment", "false");
 
     @Inject
@@ -38,9 +38,7 @@ public class DisabledConnectorAttachmentIncomingTest {
 
     @Test
     public void testAutoAttachmentOfIncomingChannel() {
-        await()
-                .pollDelay(Duration.ofMillis(100))
-                .until(() -> sink.items().isEmpty());
+        await().pollDelay(Duration.ofMillis(100)).until(() -> sink.items().isEmpty());
     }
 
     @ApplicationScoped
@@ -49,8 +47,8 @@ public class DisabledConnectorAttachmentIncomingTest {
 
         @Override
         public PublisherBuilder<? extends Message<?>> getPublisherBuilder(Config config) {
-            return ReactiveStreams
-                    .fromPublisher(AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
+            return ReactiveStreams.fromPublisher(
+                    AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
         }
     }
 

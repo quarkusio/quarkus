@@ -23,40 +23,24 @@ class OpenApiBuildTimeExcludedClassTestCase {
     static String quarkusProfile;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IfBuildProfileTest.class,
-                            IfBuildProfileBar.class,
-                            IfBuildPropertyBarBazIsTrue.class,
-                            IfBuildProperyFooBarIsTrue.class,
-                            UnlessBuildProfileBar.class,
-                            UnlessBuildProfileTest.class,
-                            UnlessBuildPropertyBarBazIsFalse.class,
-                            UnlessBuildProperyFooBarIsFalse.class)
-                    .addAsResource(
-                            new StringAsset("%test.foobar=true\n"
-                                    + "%test.barbaz=false\n"
-                                    + "foobar=false\n"
-                                    + "barbaz=true\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(IfBuildProfileTest.class, IfBuildProfileBar.class, IfBuildPropertyBarBazIsTrue.class,
+                    IfBuildProperyFooBarIsTrue.class, UnlessBuildProfileBar.class, UnlessBuildProfileTest.class,
+                    UnlessBuildPropertyBarBazIsFalse.class, UnlessBuildProperyFooBarIsFalse.class)
+            .addAsResource(
+                    new StringAsset(
+                            "%test.foobar=true\n" + "%test.barbaz=false\n" + "foobar=false\n" + "barbaz=true\n"),
+                    "application.properties"));
 
     @Test
     void testAutoSecurityRequirement() {
-        RestAssured.given()
-                .header("Accept", "application/json")
-                .when()
-                .get("/q/openapi")
-                .then()
-                .log().body()
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then().log().body()
                 .body("paths", aMapWithSize(4))
 
-                .body("paths", hasKey("/test-profile-enabled"))
-                .body("paths", not(hasKey("/test-profile-not-enabled")))
-                .body("paths", hasKey("/bar-profile-not-enabled"))
-                .body("paths", not(hasKey("/bar-profile-enabled")))
+                .body("paths", hasKey("/test-profile-enabled")).body("paths", not(hasKey("/test-profile-not-enabled")))
+                .body("paths", hasKey("/bar-profile-not-enabled")).body("paths", not(hasKey("/bar-profile-enabled")))
 
-                .body("paths", hasKey("/foobar-property-true"))
-                .body("paths", hasKey("/foobar-property-not-false"))
+                .body("paths", hasKey("/foobar-property-true")).body("paths", hasKey("/foobar-property-not-false"))
                 .body("paths", not(hasKey("/barbaz-property-true")))
                 .body("paths", not(hasKey("/barbaz-property-not-false")));
     }

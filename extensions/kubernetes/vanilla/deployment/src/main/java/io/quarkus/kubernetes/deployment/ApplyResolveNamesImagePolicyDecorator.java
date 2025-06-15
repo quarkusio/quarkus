@@ -8,6 +8,7 @@ public class ApplyResolveNamesImagePolicyDecorator extends NamedResourceDecorato
 
     @Override
     public void andThenVisit(PodTemplateSpecFluent<?> podTemplate, ObjectMeta meta) {
-        podTemplate.editOrNewMetadata().addToAnnotations("alpha.image.policy.openshift.io/resolve-names", "*").endMetadata();
+        podTemplate.editOrNewMetadata().addToAnnotations("alpha.image.policy.openshift.io/resolve-names", "*")
+                .endMetadata();
     }
 }

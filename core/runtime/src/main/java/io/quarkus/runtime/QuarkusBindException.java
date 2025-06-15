@@ -3,8 +3,8 @@ package io.quarkus.runtime;
 import java.net.BindException;
 
 /**
- * An exception that is meant to stand in for {@link BindException} and provide information
- * about the target which caused the bind exception.
+ * An exception that is meant to stand in for {@link BindException} and provide information about the target which
+ * caused the bind exception.
  */
 public class QuarkusBindException extends BindException {
 

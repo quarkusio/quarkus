@@ -29,7 +29,8 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return File.class.isAssignableFrom(type);
     }
 
@@ -53,8 +54,7 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
             if ((fileRange.getStart() >= 0) && (fileRange.getStart() <= fileRange.getEnd())) {
                 String contentRange = "bytes " + fileRange.getStart() + "-" + fileRange.getEnd() + "/" + fileLength;
                 long length = fileRange.getEnd() - fileRange.getStart() + 1;
-                context.serverResponse()
-                        .setStatusCode(Response.Status.PARTIAL_CONTENT.getStatusCode())
+                context.serverResponse().setStatusCode(Response.Status.PARTIAL_CONTENT.getStatusCode())
                         .setResponseHeader("Content-Range", contentRange)
                         .sendFile(file.getAbsolutePath(), fileRange.getStart(), length);
                 return;
@@ -66,9 +66,7 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
     /**
      * Represents a byte range for a range request
      *
-     * @author Stuart Douglas
-     *
-     *         NOTE: copied from Quarkus HTTP
+     * @author Stuart Douglas NOTE: copied from Quarkus HTTP
      */
     public static class ByteRange {
 
@@ -87,7 +85,9 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
         /**
          * Gets the start of the specified range segment, of -1 if this is a suffix range segment
          *
-         * @param range The range segment to get
+         * @param range
+         *        The range segment to get
+         *
          * @return The range start
          */
         public long getStart(int range) {
@@ -97,7 +97,9 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
         /**
          * Gets the end of the specified range segment, or the number of bytes if this is a suffix range segment
          *
-         * @param range The range segment to get
+         * @param range
+         *        The range segment to get
+         *
          * @return The range end
          */
         public long getEnd(int range) {
@@ -105,10 +107,12 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
         }
 
         /**
-         * Attempts to parse a range request. If the range request is invalid it will just return null so that
-         * it may be ignored.
+         * Attempts to parse a range request. If the range request is invalid it will just return null so that it may be
+         * ignored.
          *
-         * @param rangeHeader The range spec
+         * @param rangeHeader
+         *        The range spec
+         *
          * @return A range spec, or null if the range header could not be parsed
          */
         public static ByteRange parse(String rangeHeader) {
@@ -124,9 +128,9 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
                 try {
                     int index = part.indexOf('-');
                     if (index == 0) {
-                        //suffix range spec
-                        //represents the last N bytes
-                        //internally we represent this using a -1 as the start position
+                        // suffix range spec
+                        // represents the last N bytes
+                        // internally we represent this using a -1 as the start position
                         long val = Long.parseLong(part.substring(1));
                         if (val < 0) {
                             log.debugf("Invalid range spec %s", rangeHeader);

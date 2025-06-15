@@ -23,7 +23,8 @@ abstract class AbstractFormatter implements Formatter {
     protected final JavadocRepository javadocRepository;
     protected final boolean enableEnumTooltips;
 
-    AbstractFormatter(GenerationReport generationReport, JavadocRepository javadocRepository, boolean enableEnumTooltips) {
+    AbstractFormatter(GenerationReport generationReport, JavadocRepository javadocRepository,
+            boolean enableEnumTooltips) {
         this.generationReport = generationReport;
         this.javadocRepository = javadocRepository;
         this.enableEnumTooltips = enableEnumTooltips;
@@ -49,8 +50,8 @@ abstract class AbstractFormatter implements Formatter {
             return null;
         }
 
-        String description = JavadocTransformer.transform(javadocElement.get().description(), javadocElement.get().format(),
-                javadocFormat());
+        String description = JavadocTransformer.transform(javadocElement.get().description(),
+                javadocElement.get().format(), javadocFormat());
         if (description == null || description.isBlank()) {
             generationReport.addError(new ConfigPropertyGenerationViolation(configProperty.getSourceType(),
                     configProperty.getSourceElementName(), configProperty.getSourceElementType(),
@@ -67,23 +68,19 @@ abstract class AbstractFormatter implements Formatter {
 
         if (configProperty.isEnum()) {
             if (enableEnumTooltips) {
-                typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream()
-                        .map(e -> {
-                            Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
-                                    e.getKey());
-                            if (javadocElement.isEmpty()) {
-                                return "`" + e.getValue().configValue() + "`";
-                            }
+                typeContent = configProperty.getEnumAcceptedValues().values().entrySet().stream().map(e -> {
+                    Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
+                            e.getKey());
+                    if (javadocElement.isEmpty()) {
+                        return "`" + e.getValue().configValue() + "`";
+                    }
 
-                            return tooltip(e.getValue().configValue(), JavadocTransformer
-                                    .transform(javadocElement.get().description(), javadocElement.get().format(),
-                                            javadocFormat()));
-                        })
-                        .collect(Collectors.joining(", "));
+                    return tooltip(e.getValue().configValue(), JavadocTransformer.transform(
+                            javadocElement.get().description(), javadocElement.get().format(), javadocFormat()));
+                }).collect(Collectors.joining(", "));
             } else {
                 typeContent = configProperty.getEnumAcceptedValues().values().values().stream()
-                        .map(v -> v.configValue())
-                        .collect(Collectors.joining("`, `", "`", "`"));
+                        .map(v -> v.configValue()).collect(Collectors.joining("`, `", "`", "`"));
             }
         } else {
             typeContent = configProperty.getTypeDescription();
@@ -96,7 +93,8 @@ abstract class AbstractFormatter implements Formatter {
         }
 
         if (Duration.class.getName().equals(configProperty.getType())) {
-            typeContent += " " + moreInformationAboutType(context, "duration-note-anchor", Duration.class.getSimpleName());
+            typeContent += " "
+                    + moreInformationAboutType(context, "duration-note-anchor", Duration.class.getSimpleName());
         } else if (Types.MEMORY_SIZE_TYPE.equals(configProperty.getType())) {
             typeContent += " " + moreInformationAboutType(context, "memory-size-note-anchor", "MemorySize");
         }
@@ -114,9 +112,7 @@ abstract class AbstractFormatter implements Formatter {
 
         if (configProperty.isEnum() && enableEnumTooltips) {
             Optional<String> enumConstant = configProperty.getEnumAcceptedValues().values().entrySet().stream()
-                    .filter(e -> e.getValue().configValue().equals(defaultValue))
-                    .map(e -> e.getKey())
-                    .findFirst();
+                    .filter(e -> e.getValue().configValue().equals(defaultValue)).map(e -> e.getKey()).findFirst();
 
             if (enumConstant.isPresent()) {
                 Optional<JavadocElement> javadocElement = javadocRepository.getElement(configProperty.getType(),
@@ -152,48 +148,20 @@ abstract class AbstractFormatter implements Formatter {
     @Override
     public String toAnchor(String value) {
         // remove accents
-        value = Normalizer.normalize(value, Normalizer.Form.NFKC)
-                .replaceAll("[àáâãäåāąă]", "a")
-                .replaceAll("[çćčĉċ]", "c")
-                .replaceAll("[ďđð]", "d")
-                .replaceAll("[èéêëēęěĕė]", "e")
-                .replaceAll("[ƒſ]", "f")
-                .replaceAll("[ĝğġģ]", "g")
-                .replaceAll("[ĥħ]", "h")
-                .replaceAll("[ìíîïīĩĭįı]", "i")
-                .replaceAll("[ĳĵ]", "j")
-                .replaceAll("[ķĸ]", "k")
-                .replaceAll("[łľĺļŀ]", "l")
-                .replaceAll("[ñńňņŉŋ]", "n")
-                .replaceAll("[òóôõöøōőŏœ]", "o")
-                .replaceAll("[Þþ]", "p")
-                .replaceAll("[ŕřŗ]", "r")
-                .replaceAll("[śšşŝș]", "s")
-                .replaceAll("[ťţŧț]", "t")
-                .replaceAll("[ùúûüūůűŭũų]", "u")
-                .replaceAll("[ŵ]", "w")
-                .replaceAll("[ýÿŷ]", "y")
-                .replaceAll("[žżź]", "z")
-                .replaceAll("[æ]", "ae")
-                .replaceAll("[ÀÁÂÃÄÅĀĄĂ]", "A")
-                .replaceAll("[ÇĆČĈĊ]", "C")
-                .replaceAll("[ĎĐÐ]", "D")
-                .replaceAll("[ÈÉÊËĒĘĚĔĖ]", "E")
-                .replaceAll("[ĜĞĠĢ]", "G")
-                .replaceAll("[ĤĦ]", "H")
-                .replaceAll("[ÌÍÎÏĪĨĬĮİ]", "I")
-                .replaceAll("[Ĵ]", "J")
-                .replaceAll("[Ķ]", "K")
-                .replaceAll("[ŁĽĹĻĿ]", "L")
-                .replaceAll("[ÑŃŇŅŊ]", "N")
-                .replaceAll("[ÒÓÔÕÖØŌŐŎ]", "O")
-                .replaceAll("[ŔŘŖ]", "R")
-                .replaceAll("[ŚŠŞŜȘ]", "S")
-                .replaceAll("[ÙÚÛÜŪŮŰŬŨŲ]", "U")
-                .replaceAll("[Ŵ]", "W")
-                .replaceAll("[ÝŶŸ]", "Y")
-                .replaceAll("[ŹŽŻ]", "Z")
-                .replaceAll("[ß]", "ss");
+        value = Normalizer.normalize(value, Normalizer.Form.NFKC).replaceAll("[àáâãäåāąă]", "a")
+                .replaceAll("[çćčĉċ]", "c").replaceAll("[ďđð]", "d").replaceAll("[èéêëēęěĕė]", "e")
+                .replaceAll("[ƒſ]", "f").replaceAll("[ĝğġģ]", "g").replaceAll("[ĥħ]", "h")
+                .replaceAll("[ìíîïīĩĭįı]", "i").replaceAll("[ĳĵ]", "j").replaceAll("[ķĸ]", "k")
+                .replaceAll("[łľĺļŀ]", "l").replaceAll("[ñńňņŉŋ]", "n").replaceAll("[òóôõöøōőŏœ]", "o")
+                .replaceAll("[Þþ]", "p").replaceAll("[ŕřŗ]", "r").replaceAll("[śšşŝș]", "s").replaceAll("[ťţŧț]", "t")
+                .replaceAll("[ùúûüūůűŭũų]", "u").replaceAll("[ŵ]", "w").replaceAll("[ýÿŷ]", "y")
+                .replaceAll("[žżź]", "z").replaceAll("[æ]", "ae").replaceAll("[ÀÁÂÃÄÅĀĄĂ]", "A")
+                .replaceAll("[ÇĆČĈĊ]", "C").replaceAll("[ĎĐÐ]", "D").replaceAll("[ÈÉÊËĒĘĚĔĖ]", "E")
+                .replaceAll("[ĜĞĠĢ]", "G").replaceAll("[ĤĦ]", "H").replaceAll("[ÌÍÎÏĪĨĬĮİ]", "I").replaceAll("[Ĵ]", "J")
+                .replaceAll("[Ķ]", "K").replaceAll("[ŁĽĹĻĿ]", "L").replaceAll("[ÑŃŇŅŊ]", "N")
+                .replaceAll("[ÒÓÔÕÖØŌŐŎ]", "O").replaceAll("[ŔŘŖ]", "R").replaceAll("[ŚŠŞŜȘ]", "S")
+                .replaceAll("[ÙÚÛÜŪŮŰŬŨŲ]", "U").replaceAll("[Ŵ]", "W").replaceAll("[ÝŶŸ]", "Y")
+                .replaceAll("[ŹŽŻ]", "Z").replaceAll("[ß]", "ss");
 
         // TODO cache the patterns in statics
         // Apostrophes.

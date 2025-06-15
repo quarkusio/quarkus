@@ -19,20 +19,20 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ClientUsingGzipCompressionTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyResource.class, MyClient.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyResource.class, MyClient.class))
             .withConfigurationResource("client-using-gzip-application.properties");
 
     @RestClient
     MyClient client;
 
     /**
-     * Test that covers the property `quarkus.resteasy.gzip.max-input`.
-     * Larger payloads than 10 bytes should return HTTP Request Too Large.
+     * Test that covers the property `quarkus.resteasy.gzip.max-input`. Larger payloads than 10 bytes should return HTTP
+     * Request Too Large.
      */
     @Test
     public void testGzipMaxInput() {
-        WebApplicationException ex = Assertions.assertThrows(WebApplicationException.class, () -> client.gzip(new byte[11]));
+        WebApplicationException ex = Assertions.assertThrows(WebApplicationException.class,
+                () -> client.gzip(new byte[11]));
         assertEquals(HttpStatus.SC_REQUEST_TOO_LONG, ex.getResponse().getStatus());
 
         // verify shorter message works fine

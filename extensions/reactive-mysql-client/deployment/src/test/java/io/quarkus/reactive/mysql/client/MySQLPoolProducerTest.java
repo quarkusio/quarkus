@@ -14,10 +14,8 @@ import io.vertx.sqlclient.Pool;
 public class MySQLPoolProducerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingBareMySQLClient.class)
-                    .addClasses(BeanUsingMutinyMySQLClient.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(BeanUsingBareMySQLClient.class).addClasses(BeanUsingMutinyMySQLClient.class));
 
     @Inject
     BeanUsingBareMySQLClient beanUsingBare;
@@ -27,10 +25,7 @@ public class MySQLPoolProducerTest {
 
     @Test
     public void testVertxInjection() {
-        beanUsingBare.verify()
-                .thenCompose(v -> beanUsingMutiny.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingBare.verify().thenCompose(v -> beanUsingMutiny.verify()).toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -51,8 +46,7 @@ public class MySQLPoolProducerTest {
         io.vertx.mutiny.sqlclient.Pool mysqlClient;
 
         public CompletionStage<Void> verify() {
-            return mysqlClient.query("SELECT 1").execute()
-                    .onItem().ignore().andContinueWithNull()
+            return mysqlClient.query("SELECT 1").execute().onItem().ignore().andContinueWithNull()
                     .subscribeAsCompletionStage();
         }
     }

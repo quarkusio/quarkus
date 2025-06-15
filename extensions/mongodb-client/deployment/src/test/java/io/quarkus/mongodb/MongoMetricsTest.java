@@ -59,11 +59,8 @@ class MongoMetricsTest extends MongoTestBase {
     }
 
     private Double getMetric(String metricName) {
-        Meter metric = meterRegistry.getMeters()
-                .stream()
-                .filter(mtr -> mtr.getId().getName().contains(metricName))
-                .findFirst()
-                .orElse(null);
+        Meter metric = meterRegistry.getMeters().stream().filter(mtr -> mtr.getId().getName().contains(metricName))
+                .findFirst().orElse(null);
         return metric == null ? null : metric.measure().iterator().next().getValue();
     }
 

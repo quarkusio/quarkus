@@ -15,9 +15,7 @@ import io.smallrye.config.ConfigMapping;
 public class RemovedConfigMappingTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(RemovedConfigBean.class)
-                    .addClass(RemovedConfigMapping.class));
+            .withApplicationRoot((jar) -> jar.addClass(RemovedConfigBean.class).addClass(RemovedConfigMapping.class));
 
     @Test
     void skipConfigValidation() {

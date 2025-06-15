@@ -29,7 +29,6 @@ import io.smallrye.config.SmallRyeConfig;
 /**
  * Collect the Quarkus app dependencies, the contents of the {@code quarkus-app/lib} folder, without making the task
  * cache anything, but still provide up-to-date checks.
- *
  * <p>
  * Caching dependency jars is wasted effort and unnecessarily pollutes the Gradle build cache.
  */
@@ -41,8 +40,8 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
 
     @Inject
     public QuarkusBuildDependencies() {
-        super("Collect dependencies for the Quarkus application to be built. " +
-                "Do not use this task directly, use '" + QuarkusPlugin.QUARKUS_BUILD_TASK_NAME + "'", true);
+        super("Collect dependencies for the Quarkus application to be built. " + "Do not use this task directly, use '"
+                + QuarkusPlugin.QUARKUS_BUILD_TASK_NAME + "'", true);
     }
 
     /**
@@ -98,9 +97,8 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
     }
 
     /**
-     * Resolves and copies dependencies for the {@code jar}, {@code fast-jar} and {@code native} package types.
-     * Does not work for {@code mutable-jar} ({@code lib/deployment/} missing).
-     * Unnecessary for {@code uber-jar}.
+     * Resolves and copies dependencies for the {@code jar}, {@code fast-jar} and {@code native} package types. Does not
+     * work for {@code mutable-jar} ({@code lib/deployment/} missing). Unnecessary for {@code uber-jar}.
      */
     private void fastJarDependencies() {
         Path depDir = depBuildDir();
@@ -111,10 +109,9 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
 
     /**
      * Resolves and copies the dependencies for the {@code legacy-jar} package type.
-     *
      * <p>
-     * Side node: Quarkus' {@code legacy-jar} package type produces {@code modified-*.jar} files for some
-     * dependencies, but this implementation has no knowledge of which dependencies will be modified.
+     * Side node: Quarkus' {@code legacy-jar} package type produces {@code modified-*.jar} files for some dependencies,
+     * but this implementation has no knowledge of which dependencies will be modified.
      */
     private void legacyJarDependencies() {
         Path depDir = depBuildDir();
@@ -132,8 +129,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
                 getLogger().info("Placing Quarkus application dependencies for native build in {}", depDir);
             }
         } else {
-            getLogger().info("Placing Quarkus application dependencies for JAR type {} in {}", jarType(),
-                    depDir);
+            getLogger().info("Placing Quarkus application dependencies for JAR type {} in {}", jarType(), depDir);
         }
 
         try {
@@ -144,14 +140,11 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         }
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        SmallRyeConfig config = getExtensionView()
-                .buildEffectiveConfiguration(appModel, new HashMap<>())
-                .getConfig();
+        SmallRyeConfig config = getExtensionView().buildEffectiveConfiguration(appModel, new HashMap<>()).getConfig();
 
         // see https://quarkus.io/guides/class-loading-reference#configuring-class-loading
         Set<ArtifactKey> removedArtifacts = config.getOptionalValue(CLASS_LOADING_REMOVED_ARTIFACTS, String.class)
-                .map(QuarkusBuildDependencies::dependenciesListToArtifactKeySet)
-                .orElse(Collections.emptySet());
+                .map(QuarkusBuildDependencies::dependenciesListToArtifactKeySet).orElse(Collections.emptySet());
         getLogger().info("Removed artifacts: {}",
                 config.getOptionalValue(CLASS_LOADING_REMOVED_ARTIFACTS, String.class).orElse("(none)"));
 
@@ -161,35 +154,32 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         getLogger().info("parent first artifacts: {}",
                 config.getOptionalValue(CLASS_LOADING_PARENT_FIRST_ARTIFACTS, String.class).orElse("(none)"));
 
-        String optionalDependenciesProp = config.getOptionalValue(INCLUDED_OPTIONAL_DEPENDENCIES, String.class).orElse("");
-        boolean filterOptionalDependencies = config.getOptionalValue(FILTER_OPTIONAL_DEPENDENCIES, Boolean.class).orElse(false);
+        String optionalDependenciesProp = config.getOptionalValue(INCLUDED_OPTIONAL_DEPENDENCIES, String.class)
+                .orElse("");
+        boolean filterOptionalDependencies = config.getOptionalValue(FILTER_OPTIONAL_DEPENDENCIES, Boolean.class)
+                .orElse(false);
         Set<ArtifactKey> optionalDependencies = filterOptionalDependencies
                 ? dependenciesListToArtifactKeySet(optionalDependenciesProp)
                 : Collections.emptySet();
 
-        appModel.getRuntimeDependencies().stream()
-                .filter(appDep -> {
-                    // copied from io.quarkus.deployment.pkg.steps.JarResultBuildStep.includeAppDep
-                    if (!appDep.isJar()) {
-                        return false;
-                    }
-                    if (filterOptionalDependencies && appDep.isOptional()) {
-                        return optionalDependencies.contains(appDep.getKey());
-                    }
-                    return !removedArtifacts.contains(appDep.getKey());
-                })
-                .map(dep -> Map.entry(dep.isFlagSet(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST)
-                        || parentFirstArtifacts.contains(dep.getKey()) ? libBoot : libMain, dep))
-                .peek(depAndTarget -> {
+        appModel.getRuntimeDependencies().stream().filter(appDep -> {
+            // copied from io.quarkus.deployment.pkg.steps.JarResultBuildStep.includeAppDep
+            if (!appDep.isJar()) {
+                return false;
+            }
+            if (filterOptionalDependencies && appDep.isOptional()) {
+                return optionalDependencies.contains(appDep.getKey());
+            }
+            return !removedArtifacts.contains(appDep.getKey());
+        }).map(dep -> Map.entry(dep.isFlagSet(DependencyFlags.CLASSLOADER_RUNNER_PARENT_FIRST)
+                || parentFirstArtifacts.contains(dep.getKey()) ? libBoot : libMain, dep)).peek(depAndTarget -> {
                     ResolvedDependency dep = depAndTarget.getValue();
                     Path targetDir = depAndTarget.getKey();
                     dep.getResolvedPaths().forEach(p -> {
                         String file = dep.getGroupId() + '.' + p.getFileName();
                         Path target = targetDir.resolve(file);
                         if (!Files.exists(target)) {
-                            getLogger().debug("Dependency {} : copying {} to {}",
-                                    dep.toGACTVString(),
-                                    p, target);
+                            getLogger().debug("Dependency {} : copying {} to {}", dep.toGACTVString(), p, target);
                             if (Files.isDirectory(p)) {
                                 // This case can happen when we are building a jar from inside the Quarkus repository
                                 // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
@@ -209,16 +199,12 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
                             }
                         }
                     });
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, depAndTarget -> 1, Integer::sum))
+                }).collect(Collectors.toMap(Map.Entry::getKey, depAndTarget -> 1, Integer::sum))
                 .forEach((path, count) -> getLogger().info("Copied {} files into {}", count, path));
     }
 
     private static Set<ArtifactKey> dependenciesListToArtifactKeySet(String optionalDependenciesProp) {
-        return Arrays.stream(optionalDependenciesProp.split(","))
-                .map(String::trim)
-                .filter(gact -> !gact.isEmpty())
-                .map(ArtifactKey::fromString)
-                .collect(Collectors.toSet());
+        return Arrays.stream(optionalDependenciesProp.split(",")).map(String::trim).filter(gact -> !gact.isEmpty())
+                .map(ArtifactKey::fromString).collect(Collectors.toSet());
     }
 }

@@ -44,23 +44,18 @@ public class LetsEncryptFlowWithTlsConfigurationNameTest extends LetsEncryptFlow
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
-                    .addAsResource(new StringAsset((configuration)), "application.properties"))
-            .overrideRuntimeConfigKey("loc", temp.getAbsolutePath())
-            .setBeforeAllCustomizer(() -> {
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class).addAsResource(new StringAsset((configuration)),
+                    "application.properties"))
+            .overrideRuntimeConfigKey("loc", temp.getAbsolutePath()).setBeforeAllCustomizer(() -> {
                 try {
                     // Prepare a random directory to store the certificates.
                     temp.mkdirs();
-                    Files.copy(SELF_SIGNED_CERT.toPath(),
-                            new File(temp, "cert.pem").toPath());
-                    Files.copy(SELF_SIGNED_KEY.toPath(),
-                            new File(temp, "key.pem").toPath());
+                    Files.copy(SELF_SIGNED_CERT.toPath(), new File(temp, "cert.pem").toPath());
+                    Files.copy(SELF_SIGNED_KEY.toPath(), new File(temp, "key.pem").toPath());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            })
-            .setAfterAllCustomizer(() -> {
+            }).setAfterAllCustomizer(() -> {
                 try {
                     Files.deleteIfExists(new File(temp, "cert.pem").toPath());
                     Files.deleteIfExists(new File(temp, "key.pem").toPath());
@@ -97,10 +92,8 @@ public class LetsEncryptFlowWithTlsConfigurationNameTest extends LetsEncryptFlow
     @Override
     void updateCerts() throws IOException {
         // Replace the certs on disk
-        Files.copy(ACME_CERT.toPath(),
-                new File(certs, "cert.pem").toPath(), StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(ACME_KEY.toPath(),
-                new File(certs, "key.pem").toPath(), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(ACME_CERT.toPath(), new File(certs, "cert.pem").toPath(), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(ACME_KEY.toPath(), new File(certs, "key.pem").toPath(), StandardCopyOption.REPLACE_EXISTING);
     }
 
     @Override

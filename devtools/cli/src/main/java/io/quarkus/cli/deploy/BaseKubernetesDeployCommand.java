@@ -42,8 +42,10 @@ public class BaseKubernetesDeployCommand extends BuildToolDelegatingCommand {
         kubernetesOptions.caCertFile.ifPresent(c -> properties.put("quarkus.kubernetes-client.ca-cert-file", c));
         kubernetesOptions.caCertData.ifPresent(c -> properties.put("quarkus.kubernetes-client.ca-cert-data", c));
 
-        kubernetesOptions.clientCertFile.ifPresent(c -> properties.put("quarkus.kubernetes-client.client-cert-file", c));
-        kubernetesOptions.clientCertData.ifPresent(c -> properties.put("quarkus.kubernetes-client.client-cert-data", c));
+        kubernetesOptions.clientCertFile
+                .ifPresent(c -> properties.put("quarkus.kubernetes-client.client-cert-file", c));
+        kubernetesOptions.clientCertData
+                .ifPresent(c -> properties.put("quarkus.kubernetes-client.client-cert-data", c));
 
         kubernetesOptions.clientKeyFile.ifPresent(c -> properties.put("quarkus.kubernetes-client.client-key-file", c));
         kubernetesOptions.clientKeyData.ifPresent(c -> properties.put("quarkus.kubernetes-client.client-key-data", c));
@@ -61,11 +63,10 @@ public class BaseKubernetesDeployCommand extends BuildToolDelegatingCommand {
         }
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, String.valueOf(kubernetesOptions.imageBuilder.isPresent()));
 
-        kubernetesOptions.imageBuilder.or(implicitImageBuilder())
-                .ifPresent(builder -> {
-                    properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
-                    properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, builder);
-                });
+        kubernetesOptions.imageBuilder.or(implicitImageBuilder()).ifPresent(builder -> {
+            properties.put(QUARKUS_CONTAINER_IMAGE_BUILD, "true");
+            properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, builder);
+        });
     }
 
     @Override
@@ -77,8 +78,8 @@ public class BaseKubernetesDeployCommand extends BuildToolDelegatingCommand {
         builder.or(implicitImageBuilder()).ifPresent(b -> {
             context.getParams().add("--image-builder=" + b);
         });
-        boolean imageBuild = Optional.ofNullable(properties.remove(QUARKUS_CONTAINER_IMAGE_BUILD)).map(Boolean::parseBoolean)
-                .orElse(false);
+        boolean imageBuild = Optional.ofNullable(properties.remove(QUARKUS_CONTAINER_IMAGE_BUILD))
+                .map(Boolean::parseBoolean).orElse(false);
         if (imageBuild) {
             context.getParams().add("--image-build");
         }

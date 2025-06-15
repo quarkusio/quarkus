@@ -105,7 +105,7 @@ public class FeatureContextImpl implements FeatureContext {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void doRegister(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority) {
         if (!isAllowed(componentClass)) {
-            //TODO: log a warning
+            // TODO: log a warning
             return;
         }
         if (ExceptionMapper.class.isAssignableFrom(componentClass)) {
@@ -136,7 +136,7 @@ public class FeatureContextImpl implements FeatureContext {
             filtersNeedSorting = true;
         }
 
-        //TODO: log warning if nothing was done
+        // TODO: log warning if nothing was done
     }
 
     protected boolean isFilter(Class<?> componentClass) {
@@ -174,8 +174,7 @@ public class FeatureContextImpl implements FeatureContext {
     private <T> void register(Class<?> componentClass, BeanFactory<?> beanFactory, Integer priority,
             InterceptorContainer<T> interceptorContainer) {
         ResourceInterceptor<T> interceptor = interceptorContainer.create();
-        Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority,
-                interceptor);
+        Set<String> nameBindings = setCommonFilterProperties(componentClass, beanFactory, priority, interceptor);
         if (interceptorContainer instanceof PreMatchInterceptorContainer
                 && componentClass.isAnnotationPresent(PreMatching.class)) {
             ((PreMatchInterceptorContainer<T>) interceptorContainer).addPreMatchInterceptor(interceptor);
@@ -210,7 +209,8 @@ public class FeatureContextImpl implements FeatureContext {
         return nameBindings;
     }
 
-    protected void setFilterPriority(Class<?> componentClass, Integer priority, SettableResourceInterceptor interceptor) {
+    protected void setFilterPriority(Class<?> componentClass, Integer priority,
+            SettableResourceInterceptor interceptor) {
         if (priority == null) {
             if (componentClass.isAnnotationPresent(Priority.class)) {
                 interceptor.setPriority(componentClass.getDeclaredAnnotation(Priority.class).value());

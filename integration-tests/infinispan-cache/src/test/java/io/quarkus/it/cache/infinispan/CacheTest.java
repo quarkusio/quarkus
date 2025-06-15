@@ -26,32 +26,20 @@ public class CacheTest {
 
         when().get("/expensive-resource/invocations").then().statusCode(200).body(is("2"));
 
-        when()
-                .delete("/expensive-resource")
-                .then()
-                .statusCode(204);
+        when().delete("/expensive-resource").then().statusCode(204);
     }
 
     private void runGetExpensiveRequest() {
-        when()
-                .get("/expensive-resource/I/love/Quarkus?foo=bar")
-                .then()
-                .statusCode(200)
-                .body("result", is("I love Quarkus too!"));
+        when().get("/expensive-resource/I/love/Quarkus?foo=bar").then().statusCode(200).body("result",
+                is("I love Quarkus too!"));
     }
 
     private void runGetExpensiveRequestAsync() {
-        when()
-                .get("/expensive-resource/async/I/love/Quarkus?foo=bar")
-                .then()
-                .statusCode(200)
-                .body("result", is("I love Quarkus async too!"));
+        when().get("/expensive-resource/async/I/love/Quarkus?foo=bar").then().statusCode(200).body("result",
+                is("I love Quarkus async too!"));
     }
 
     private void runDeleteExpensiveRequest() {
-        when()
-                .delete("/expensive-resource/I/love/Quarkus?foo=bar")
-                .then()
-                .statusCode(200);
+        when().delete("/expensive-resource/I/love/Quarkus?foo=bar").then().statusCode(200);
     }
 }

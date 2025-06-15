@@ -2,7 +2,6 @@ package io.quarkus.vertx.http.runtime.attribute;
 
 /**
  * An exception that is thrown when an attribute is read only
- *
  */
 public class ReadOnlyAttributeException extends Exception {
 

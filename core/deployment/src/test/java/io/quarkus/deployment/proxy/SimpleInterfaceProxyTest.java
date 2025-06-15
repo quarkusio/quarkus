@@ -11,13 +11,12 @@ public class SimpleInterfaceProxyTest {
     @Test
     public void testProxyCreation() throws InstantiationException, IllegalAccessException {
         FirstArgInvocationHandler invocationHandler = new FirstArgInvocationHandler();
-        ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<>()
-                .setSuperClass(Object.class)
-                .setAnchorClass(SimpleInterface.class)
-                .setProxyNameSuffix("$Proxy2")
+        ProxyConfiguration<Object> proxyConfiguration = new ProxyConfiguration<>().setSuperClass(Object.class)
+                .setAnchorClass(SimpleInterface.class).setProxyNameSuffix("$Proxy2")
                 .setClassLoader(new TestClassLoader(SimpleClass.class.getClassLoader()))
                 .addAdditionalInterface(SimpleInterface.class);
-        SimpleInterface instance = (SimpleInterface) new ProxyFactory<>(proxyConfiguration).newInstance(invocationHandler);
+        SimpleInterface instance = (SimpleInterface) new ProxyFactory<>(proxyConfiguration)
+                .newInstance(invocationHandler);
 
         String result = instance.capitalize("in");
         assertThat(result).isEqualTo("in");

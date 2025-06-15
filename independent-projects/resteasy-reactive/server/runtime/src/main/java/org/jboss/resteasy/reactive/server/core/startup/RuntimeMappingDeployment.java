@@ -55,28 +55,29 @@ class RuntimeMappingDeployment {
         if (nullMethod != null) {
             for (var nm : nullMethod.entrySet()) {
                 if (!perMethodTemplateMap.containsKey(nm.getKey())) {
-                    //resource methods take precedence
-                    //just skip sub resource locators for now
-                    //may need to be revisited if we want to pass the TCK 100%
+                    // resource methods take precedence
+                    // just skip sub resource locators for now
+                    // may need to be revisited if we want to pass the TCK 100%
                     perMethodTemplateMap.put(nm.getKey(), nm.getValue());
                 }
             }
         }
 
-        //now we have all our possible resources
+        // now we have all our possible resources
         currentMapperPerMethodTemplates = new ArrayList<>();
         perMethodTemplateMap.forEach(this::forEachMethodTemplateMap);
 
         classMapper.put(httpMethod, new RequestMapper<>(currentMapperPerMethodTemplates));
     }
 
-    private void forEachMethodTemplateMap(URITemplate path, List<RequestMapper.RequestPath<RuntimeResource>> requestPaths) {
+    private void forEachMethodTemplateMap(URITemplate path,
+            List<RequestMapper.RequestPath<RuntimeResource>> requestPaths) {
         int methodTemplateNameCount = path.countPathParamNames();
         if (methodTemplateNameCount > maxMethodTemplateNameCount) {
             maxMethodTemplateNameCount = methodTemplateNameCount;
         }
         if (requestPaths.size() == 1) {
-            //simple case, only one match
+            // simple case, only one match
             currentMapperPerMethodTemplates.addAll(requestPaths);
         } else {
             List<RuntimeResource> resources = new ArrayList<>(requestPaths.size());
@@ -84,15 +85,13 @@ class RuntimeMappingDeployment {
                 resources.add(requestPaths.get(j).value);
             }
             MediaTypeMapper mapper = new MediaTypeMapper(resources);
-            //now we just create a fake RuntimeResource
-            //we could add another layer of indirection, however this is not a common case
-            //so we don't want to add any extra latency into the common case
+            // now we just create a fake RuntimeResource
+            // we could add another layer of indirection, however this is not a common case
+            // so we don't want to add any extra latency into the common case
 
             RuntimeResource fake = new RuntimeResource(currentHttpMethod, path, null, null, Collections.emptyList(),
-                    null, null,
-                    new ServerRestHandler[] { mapper }, null, new Class[0], null, false,
-                    false, null, null, null, null, null,
-                    Collections.emptyMap());
+                    null, null, new ServerRestHandler[] { mapper }, null, new Class[0], null, false, false, null, null,
+                    null, null, null, Collections.emptyMap());
             currentMapperPerMethodTemplates.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));
         }
     }

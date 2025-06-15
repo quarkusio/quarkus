@@ -24,18 +24,16 @@ public class VertxHttpAsyncClient implements HttpAsyncClient {
 
     @Override
     public CompletionStage<Response> fetch(String uri) throws MDSException {
-        return httpClient
-                .fetch(HttpMethod.GET, uri, null, null)
-                .map(res -> {
-                    Buffer body = res.body();
-                    byte[] bytes;
-                    if (body != null) {
-                        bytes = body.getBytes();
-                    } else {
-                        bytes = NO_BYTES;
-                    }
-                    return new Response(res.statusCode(), new ByteArrayInputStream(bytes));
-                }).toCompletionStage();
+        return httpClient.fetch(HttpMethod.GET, uri, null, null).map(res -> {
+            Buffer body = res.body();
+            byte[] bytes;
+            if (body != null) {
+                bytes = body.getBytes();
+            } else {
+                bytes = NO_BYTES;
+            }
+            return new Response(res.statusCode(), new ByteArrayInputStream(bytes));
+        }).toCompletionStage();
     }
 
 }

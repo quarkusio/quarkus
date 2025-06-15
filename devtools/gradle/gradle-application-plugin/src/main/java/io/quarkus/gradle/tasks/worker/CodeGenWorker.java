@@ -51,8 +51,7 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
             Method initAndRun;
             try {
                 initAndRun = codeGenerator.getMethod(INIT_AND_RUN, QuarkusClassLoader.class, PathCollection.class,
-                        Path.class, Path.class,
-                        Consumer.class, ApplicationModel.class, Properties.class, String.class,
+                        Path.class, Path.class, Consumer.class, ApplicationModel.class, Properties.class, String.class,
                         boolean.class);
             } catch (Exception e) {
                 throw new GradleException("Quarkus code generation phase has failed", e);
@@ -67,8 +66,8 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
                     // QuarkusClassLoader classLoader,
                     deploymentClassLoader,
                     // PathCollection sourceParentDirs,
-                    PathList.from(
-                            params.getSourceDirectories().getFiles().stream().map(File::toPath).collect(Collectors.toList())),
+                    PathList.from(params.getSourceDirectories().getFiles().stream().map(File::toPath)
+                            .collect(Collectors.toList())),
                     // Path generatedSourcesDir,
                     generatedSourceDir,
                     // Path buildDir,
@@ -86,8 +85,8 @@ public abstract class CodeGenWorker extends QuarkusWorker<CodeGenWorkerParams> {
         } catch (BootstrapException | IllegalAccessException | InvocationTargetException | ClassNotFoundException e) {
             // Gradle "abbreviates" the stacktrace to something human-readable, but here the underlying cause might
             // get lost in the error output, so add 'e' to the message.
-            throw new GradleException("Failed to generate sources in the QuarkusGenerateCode task for " + gav + " due to " + e,
-                    e);
+            throw new GradleException(
+                    "Failed to generate sources in the QuarkusGenerateCode task for " + gav + " due to " + e, e);
         }
     }
 }

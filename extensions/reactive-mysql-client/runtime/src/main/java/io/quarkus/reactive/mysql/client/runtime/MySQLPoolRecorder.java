@@ -73,8 +73,8 @@ public class MySQLPoolRecorder {
                     return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
                 }
                 if (reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().url().isEmpty()) {
-                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
-                            "reactive.url"));
+                    return ActiveResult.inactive(
+                            DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName, "reactive.url"));
                 }
                 return ActiveResult.active();
             }
@@ -82,22 +82,16 @@ public class MySQLPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> configureMySQLPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            Supplier<Integer> eventLoopCount, String dataSourceName, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveMySQLConfig dataSourcesReactiveMySQLConfig,
-            ShutdownContext shutdown) {
+            DataSourcesReactiveMySQLConfig dataSourcesReactiveMySQLConfig, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public MySQLPool apply(SyntheticCreationalContext<MySQLPool> context) {
-                MySQLPool pool = initialize((VertxInternal) vertx.getValue(),
-                        eventLoopCount.get(),
-                        dataSourceName,
+                MySQLPool pool = initialize((VertxInternal) vertx.getValue(), eventLoopCount.get(), dataSourceName,
                         dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                         dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactiveMySQLConfig.dataSources().get(dataSourceName).reactive().mysql(),
-                        context);
+                        dataSourcesReactiveMySQLConfig.dataSources().get(dataSourceName).reactive().mysql(), context);
 
                 shutdown.addShutdownTask(pool::close);
                 return pool;
@@ -117,9 +111,7 @@ public class MySQLPoolRecorder {
         };
     }
 
-    private MySQLPool initialize(VertxInternal vertx,
-            Integer eventLoopCount,
-            String dataSourceName,
+    private MySQLPool initialize(VertxInternal vertx, Integer eventLoopCount, String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMySQLConfig dataSourceReactiveMySQLConfig,
@@ -134,8 +126,7 @@ public class MySQLPoolRecorder {
     }
 
     private Supplier<Future<MySQLConnectOptions>> toDatabasesSupplier(Vertx vertx,
-            List<MySQLConnectOptions> mySQLConnectOptions,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+            List<MySQLConnectOptions> mySQLConnectOptions, DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<MySQLConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
@@ -271,7 +262,8 @@ public class MySQLPoolRecorder {
                 mysqlConnectOptions.setHostnameVerificationAlgorithm(algo);
             }
 
-            dataSourceReactiveMySQLConfig.authenticationPlugin().ifPresent(mysqlConnectOptions::setAuthenticationPlugin);
+            dataSourceReactiveMySQLConfig.authenticationPlugin()
+                    .ifPresent(mysqlConnectOptions::setAuthenticationPlugin);
 
             dataSourceReactiveRuntimeConfig.additionalProperties().forEach(mysqlConnectOptions::addProperty);
 
@@ -285,9 +277,9 @@ public class MySQLPoolRecorder {
         return mysqlConnectOptionsList;
     }
 
-    private MySQLPool createPool(Vertx vertx, PoolOptions poolOptions, List<MySQLConnectOptions> mySQLConnectOptionsList,
-            String dataSourceName, Supplier<Future<MySQLConnectOptions>> databases,
-            SyntheticCreationalContext<MySQLPool> context) {
+    private MySQLPool createPool(Vertx vertx, PoolOptions poolOptions,
+            List<MySQLConnectOptions> mySQLConnectOptionsList, String dataSourceName,
+            Supplier<Future<MySQLConnectOptions>> databases, SyntheticCreationalContext<MySQLPool> context) {
         Instance<MySQLPoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
                 qualifier(dataSourceName));
         if (instance.isResolvable()) {

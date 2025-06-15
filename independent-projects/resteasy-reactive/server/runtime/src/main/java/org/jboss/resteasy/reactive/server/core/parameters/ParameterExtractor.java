@@ -7,17 +7,14 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 public interface ParameterExtractor {
 
     /**
-     * Extracts a parameter from the request.
-     *
-     * If this returns a {@link ParameterCallback} then the value must be obtained from the listener
-     *
+     * Extracts a parameter from the request. If this returns a {@link ParameterCallback} then the value must be
+     * obtained from the listener
      */
     Object extractParameter(ResteasyReactiveRequestContext context);
 
     /**
-     * listener class that is used to provide async method parameters.
-     *
-     * This is very simple to reduce the number of required allocations.
+     * listener class that is used to provide async method parameters. This is very simple to reduce the number of
+     * required allocations.
      */
     public class ParameterCallback {
 

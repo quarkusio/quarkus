@@ -14,9 +14,8 @@ public class ConfigPropertyInjectionWithoutInjectAnnotationTest {
     private static final String configValue = "someValue";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ConfigPropertyInjectionWithoutInjectAnnotationTest.class, SomeBeanUsingConfig.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(ConfigPropertyInjectionWithoutInjectAnnotationTest.class, SomeBeanUsingConfig.class)
                     .addAsResource(new StringAsset("something=" + configValue), "application.properties"));
 
     @Inject

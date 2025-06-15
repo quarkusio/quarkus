@@ -101,7 +101,7 @@ class VertxClientInputStream extends InputStream {
                 }
             }
         } catch (IOException | RuntimeException e) {
-            //our exchange is all broken, just end it
+            // our exchange is all broken, just end it
             throw e;
         } finally {
             if (pooled != null) {
@@ -163,7 +163,7 @@ class VertxClientInputStream extends InputStream {
                 });
                 response.fetch(1);
             } catch (IllegalStateException e) {
-                //already ended
+                // already ended
                 eof = true;
             }
         }
@@ -174,8 +174,8 @@ class VertxClientInputStream extends InputStream {
                 while (input1 == null && !eof && readException == null) {
                     long rem = expire - System.currentTimeMillis();
                     if (rem <= 0) {
-                        //everything is broken, if read has timed out we can assume that the underling connection
-                        //is wrecked, so just close it
+                        // everything is broken, if read has timed out we can assume that the underling connection
+                        // is wrecked, so just close it
                         request.netSocket().close();
                         IOException throwable = new IOException("Read timed out");
                         readException = throwable;

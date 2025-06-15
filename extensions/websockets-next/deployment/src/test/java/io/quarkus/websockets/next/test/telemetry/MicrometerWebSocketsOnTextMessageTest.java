@@ -81,12 +81,12 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
         // assert totals for all the path tags
         int serverSentCountBytesDelta = stringToBytes(connection1.expectedResponses());
         int serverReceivedCountBytesDelta = stringToBytes(connection1.messagesToSend());
-        asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta,
-                serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+        asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0, 0,
+                0, 1, 0);
         // assert metric for our path tag only (this is sent from @OnOpen)
         int serverBytesSent1 = stringToBytes(expectedResponse);
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> getMetrics()
-                .body(assertServerMessagesCountBytesSent(path, serverBytesSent1)));
+        Awaitility.await().atMost(Duration.ofSeconds(12))
+                .untilAsserted(() -> getMetrics().body(assertServerMessagesCountBytesSent(path, serverBytesSent1)));
 
         var expectedResponse2 = "amy:macdonald"; // path is /ping/amy/and/macdonald
         var connection2 = Connection.of(testServerPathParam2, expectedResponse2, binaryMode(), "whatever");
@@ -96,12 +96,12 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
         // assert totals for all the path tags
         serverSentCountBytesDelta = stringToBytes(connection2.expectedResponses());
         serverReceivedCountBytesDelta = stringToBytes(connection2.messagesToSend());
-        asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta,
-                serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+        asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0, 0,
+                0, 1, 0);
         // assert metric for our path tag only (this is sent from @OnOpen) (no deltas, so previous bytes + current ones)
         int serverBytesSent2 = stringToBytes(expectedResponse2);
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> getMetrics()
-                .body(assertServerMessagesCountBytesSent(path, serverBytesSent1 + serverBytesSent2)));
+        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(
+                () -> getMetrics().body(assertServerMessagesCountBytesSent(path, serverBytesSent1 + serverBytesSent2)));
     }
 
     @Test
@@ -110,10 +110,7 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
         // client endpoint: void onTextMessage(String message)
         var msg = "Ut enim ad minim veniam";
 
-        var clientConn = clientWithPathParamsConnector
-                .baseUri(baseUri)
-                .pathParam("name", "Lu=")
-                .connectAndAwait();
+        var clientConn = clientWithPathParamsConnector.baseUri(baseUri).pathParam("name", "Lu=").connectAndAwait();
         asserter.serverConnectionOpenedCount += 1;
         asserter.clientConnectionOpenedCount += 1;
         if (binaryMode()) {
@@ -140,17 +137,16 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
                 .body(assertClientConnectionOpenedTotal("/client-endpoint-with-path-param/{name}", 1))
                 .body(assertClientMessagesCountBytesSent("/client-endpoint-with-path-param/{name}", clientBytesSent))
                 .body(assertClientMessagesCountSent("/client-endpoint-with-path-param/{name}", 1))
-                .body(assertClientMessagesCountBytesReceived("/client-endpoint-with-path-param/{name}", clientBytesReceived))
+                .body(assertClientMessagesCountBytesReceived("/client-endpoint-with-path-param/{name}",
+                        clientBytesReceived))
                 .body(assertServerConnectionClosedTotal("/client-endpoint-with-path-param/:name", 1))
                 .body(assertServerMessagesCountReceived("/client-endpoint-with-path-param/:name", 1))
                 .body(assertServerConnectionOpenedTotal("/client-endpoint-with-path-param/:name", 1))
-                .body(assertServerMessagesCountBytesReceived("/client-endpoint-with-path-param/:name", serverBytesReceived))
+                .body(assertServerMessagesCountBytesReceived("/client-endpoint-with-path-param/:name",
+                        serverBytesReceived))
                 .body(assertServerMessagesCountBytesSent("/client-endpoint-with-path-param/:name", serverBytesSent)));
 
-        clientConn = clientWithPathParamsConnector
-                .baseUri(baseUri)
-                .pathParam("name", "Go=Through")
-                .connectAndAwait();
+        clientConn = clientWithPathParamsConnector.baseUri(baseUri).pathParam("name", "Go=Through").connectAndAwait();
         asserter.serverConnectionOpenedCount += 1;
         asserter.clientConnectionOpenedCount += 1;
         if (binaryMode()) {
@@ -165,10 +161,10 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
         // assert metric for our path tag only (prev + current ones, no deltas here)
         clientConn.closeAndAwait();
         Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> {
-            getMetrics()
-                    .body(assertClientConnectionOpenedTotal("/client-endpoint-with-path-param/{name}", 2))
+            getMetrics().body(assertClientConnectionOpenedTotal("/client-endpoint-with-path-param/{name}", 2))
                     .body(assertClientConnectionClosedTotal("/client-endpoint-with-path-param/{name}", 2))
-                    .body(assertClientMessagesCountBytesSent("/client-endpoint-with-path-param/{name}", clientBytesSent * 2))
+                    .body(assertClientMessagesCountBytesSent("/client-endpoint-with-path-param/{name}",
+                            clientBytesSent * 2))
                     .body(assertClientMessagesCountSent("/client-endpoint-with-path-param/{name}", 2))
                     .body(assertClientMessagesCountBytesReceived("/client-endpoint-with-path-param/{name}",
                             clientBytesReceived * 2))
@@ -177,7 +173,8 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
                     .body(assertServerMessagesCountReceived("/client-endpoint-with-path-param/:name", 2))
                     .body(assertServerMessagesCountBytesReceived("/client-endpoint-with-path-param/:name",
                             serverBytesReceived * 2))
-                    .body(assertServerMessagesCountBytesSent("/client-endpoint-with-path-param/:name", serverBytesSent * 2));
+                    .body(assertServerMessagesCountBytesSent("/client-endpoint-with-path-param/:name",
+                            serverBytesSent * 2));
         });
     }
 

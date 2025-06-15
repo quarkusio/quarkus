@@ -40,8 +40,7 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
     final ThreadSetupAction requestContext;
 
     public AsyncInvokerImpl(ClientImpl restClient, HttpClient httpClient, URI uri, RequestSpec requestSpec,
-            ConfigurationImpl configuration,
-            Map<String, Object> properties, HandlerChain handlerChain,
+            ConfigurationImpl configuration, Map<String, Object> properties, HandlerChain handlerChain,
             ThreadSetupAction requestContext) {
         this.restClient = restClient;
         this.httpClient = httpClient;
@@ -238,7 +237,7 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
 
     @Override
     public <T> CompletableFuture<T> method(String name, Entity<?> entity, GenericType<T> responseType) {
-        //we default to String if no return type specified
+        // we default to String if no return type specified
         CompletableFuture<Response> response = performRequestInternal(name, entity,
                 responseType == null ? new GenericType<>(String.class) : responseType);
         return mapResponse(response, responseType == null ? String.class : responseType.getRawType());
@@ -275,11 +274,11 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
         return (CompletableFuture) performRequestInternal(httpMethodName, entity, responseType, true).getResult();
     }
 
-    RestClientRequestContext performRequestInternal(String httpMethodName, Entity<?> entity, GenericType<?> responseType,
-            boolean registerBodyHandler) {
-        RestClientRequestContext restClientRequestContext = new RestClientRequestContext(restClient, httpClient, httpMethodName,
-                uri, requestSpec.configuration, requestSpec.headers,
-                entity, responseType, registerBodyHandler, properties, handlerChain.createHandlerChain(configuration),
+    RestClientRequestContext performRequestInternal(String httpMethodName, Entity<?> entity,
+            GenericType<?> responseType, boolean registerBodyHandler) {
+        RestClientRequestContext restClientRequestContext = new RestClientRequestContext(restClient, httpClient,
+                httpMethodName, uri, requestSpec.configuration, requestSpec.headers, entity, responseType,
+                registerBodyHandler, properties, handlerChain.createHandlerChain(configuration),
                 handlerChain.createAbortHandlerChain(configuration),
                 handlerChain.createAbortHandlerChainWithoutResponseFilters(), requestContext);
         restClientRequestContext.run();

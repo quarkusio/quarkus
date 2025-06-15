@@ -23,29 +23,23 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Tests that shutdown will wait for current requests to finish.
- *
- * This test records the current time, then sends a request to an endpoint that will take 5s to finish.
- *
- * After undeploy we verify that at least 5s has elapsed, which verifies that the shutdown wait time
- * has worked correctly
+ * Tests that shutdown will wait for current requests to finish. This test records the current time, then sends a
+ * request to an endpoint that will take 5s to finish. After undeploy we verify that at least 5s has elapsed, which
+ * verifies that the shutdown wait time has worked correctly
  */
 public class ShutdownTest {
 
     protected static final int HANDLER_WAIT_TIME = 5000;
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setAllowTestClassOutsideDeployment(true)
+    static QuarkusUnitTest test = new QuarkusUnitTest().setAllowTestClassOutsideDeployment(true)
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(ShutdownTest.class)
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(ShutdownTest.class)
                             .addAsResource(new StringAsset("quarkus.shutdown.timeout=60"), "application.properties");
                 }
-            })
-            .setAfterUndeployListener(new Runnable() {
+            }).setAfterUndeployListener(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -53,8 +47,13 @@ public class ShutdownTest {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    Assertions.assertTrue(System.currentTimeMillis() - ShutdownTimer.requestStarted >= HANDLER_WAIT_TIME);
-                    Assertions.assertTrue(System.currentTimeMillis() - ShutdownTimer.requestStarted < 50000); //make sure it did not time out
+                    Assertions
+                            .assertTrue(System.currentTimeMillis() - ShutdownTimer.requestStarted >= HANDLER_WAIT_TIME);
+                    Assertions.assertTrue(System.currentTimeMillis() - ShutdownTimer.requestStarted < 50000); // make
+                                                                                                              // sure it
+                                                                                                              // did not
+                                                                                                              // time
+                                                                                                              // out
                 }
             });
 

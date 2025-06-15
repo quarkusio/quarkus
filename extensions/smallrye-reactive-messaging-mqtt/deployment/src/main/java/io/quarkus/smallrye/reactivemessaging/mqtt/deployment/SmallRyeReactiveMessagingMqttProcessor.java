@@ -14,9 +14,7 @@ public class SmallRyeReactiveMessagingMqttProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem build() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(MqttClientConfigCustomizer.class)
-                .setUnremovable()
+        return AdditionalBeanBuildItem.builder().addBeanClass(MqttClientConfigCustomizer.class).setUnremovable()
                 .build();
     }
 }

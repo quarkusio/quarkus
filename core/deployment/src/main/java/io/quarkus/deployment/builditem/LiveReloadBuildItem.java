@@ -9,9 +9,8 @@ import io.quarkus.bootstrap.app.ClassChangeInformation;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * A build item that can be used to query the live reload state.
- *
- * It can also be used to store context information that is persistent between hot reloads.
+ * A build item that can be used to query the live reload state. It can also be used to store context information that
+ * is persistent between hot reloads.
  */
 public final class LiveReloadBuildItem extends SimpleBuildItem {
 
@@ -39,11 +38,9 @@ public final class LiveReloadBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * If this is a reload of an app in the same JVM then this will return true. If it is the first
-     * time this app has started, or the app is not running in developer mode it will return false.
-     *
-     * Note that unsuccessful attempts to start are not counted, if the app initially failed to start
-     * the next attempt will still return false.
+     * If this is a reload of an app in the same JVM then this will return true. If it is the first time this app has
+     * started, or the app is not running in developer mode it will return false. Note that unsuccessful attempts to
+     * start are not counted, if the app initially failed to start the next attempt will still return false.
      *
      * @return <code>true</code> if this is a live reload
      */
@@ -75,11 +72,8 @@ public final class LiveReloadBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Returns the change information from the last successful restart.
-     *
-     * Will be null if Quarkus has not previously successfully started, or if the
-     * previous attempt to start was a failure.
-     *
+     * Returns the change information from the last successful restart. Will be null if Quarkus has not previously
+     * successfully started, or if the previous attempt to start was a failure.
      */
     public ClassChangeInformation getChangeInformation() {
         return changeInformation;

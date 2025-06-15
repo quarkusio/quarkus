@@ -4,8 +4,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.info.runtime.spi.InfoContributor;
 
 /**
- * Allows for extensions to include their own {@link InfoContributor} implementations that result in inclusion of properties in
- * the info endpoint
+ * Allows for extensions to include their own {@link InfoContributor} implementations that result in inclusion of
+ * properties in the info endpoint
  */
 public final class InfoBuildTimeContributorBuildItem extends MultiBuildItem {
 

@@ -17,8 +17,9 @@ public class InputStreamMessageBodyHandler implements MessageBodyWriter<InputStr
         return true;
     }
 
-    public InputStream readFrom(Class<InputStream> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+    public InputStream readFrom(Class<InputStream> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return entityStream;
     }
 
@@ -28,8 +29,9 @@ public class InputStreamMessageBodyHandler implements MessageBodyWriter<InputStr
     }
 
     @Override
-    public void writeTo(InputStream inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(InputStream inputStream, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         writeTo(inputStream, entityStream);
     }
 

@@ -14,12 +14,9 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 class CustomSpringWebCodestartBuildIT {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("spring-web")
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("spring-web")
             .putData(SPRING_WEB_CODESTART_RESOURCE_CLASS_NAME, "SpringWebEndpoint")
-            .putData(SPRING_WEB_CODESTART_RESOURCE_PATH, "/springweb")
-            .languages(JAVA)
-            .build();
+            .putData(SPRING_WEB_CODESTART_RESOURCE_PATH, "/springweb").languages(JAVA).build();
 
     @Test
     void testBuild() throws IOException {

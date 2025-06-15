@@ -23,19 +23,17 @@ import io.restassured.RestAssured;
 public class RequestScopeExceptionMapperTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(RequestScopeExceptionMapper.class, HelloResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(RequestScopeExceptionMapper.class,
+                    HelloResource.class);
+        }
+    });
 
     @Test
     public void helloTest() {
-        RestAssured.patch("/hello")
-                .then().statusCode(999).header("path", "/hello");
+        RestAssured.patch("/hello").then().statusCode(999).header("path", "/hello");
     }
 
     @Path("hello")

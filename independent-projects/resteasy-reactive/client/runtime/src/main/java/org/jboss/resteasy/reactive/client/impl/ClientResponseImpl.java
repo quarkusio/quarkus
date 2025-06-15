@@ -12,8 +12,8 @@ import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.EmptyInputStream;
 
 /**
- * This is the Response class client response
- * object with more deserialising powers than user-created responses @{link {@link ResponseImpl}.
+ * This is the Response class client response object with more deserialising powers than user-created responses @{link
+ * {@link ResponseImpl}.
  */
 public class ClientResponseImpl extends ResponseImpl {
 
@@ -58,8 +58,8 @@ public class ClientResponseImpl extends ResponseImpl {
         try {
             entity = ClientSerialisers.invokeClientReader(annotations, entityType, genericType, mediaType,
                     restClientRequestContext.properties, restClientRequestContext, getStringHeaders(),
-                    restClientRequestContext.getRestClient().getClientContext().getSerialisers(),
-                    entityStream, restClientRequestContext.getReaderInterceptors(), restClientRequestContext.configuration);
+                    restClientRequestContext.getRestClient().getClientContext().getSerialisers(), entityStream,
+                    restClientRequestContext.getReaderInterceptors(), restClientRequestContext.configuration);
             consumed = true;
             close();
             return (T) entity;

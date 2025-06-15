@@ -4,7 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The request status code
- *
  */
 public class ResponseCodeAttribute implements ExchangeAttribute {
 

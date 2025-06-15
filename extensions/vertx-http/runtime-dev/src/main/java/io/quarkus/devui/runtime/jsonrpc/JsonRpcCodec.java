@@ -23,8 +23,7 @@ public final class JsonRpcCodec {
     }
 
     public void writeResponse(ServerWebSocket socket, int id, Object object, MessageType messageType) {
-        writeResponse(socket, new JsonRpcResponse(id,
-                new JsonRpcResponse.Result(messageType.name(), object)));
+        writeResponse(socket, new JsonRpcResponse(id, new JsonRpcResponse.Result(messageType.name(), object)));
     }
 
     public void writeMethodNotFoundResponse(ServerWebSocket socket, int id, String jsonRpcMethodName) {
@@ -34,9 +33,8 @@ public final class JsonRpcCodec {
 
     public void writeErrorResponse(ServerWebSocket socket, int id, String jsonRpcMethodName, Throwable exception) {
         LOG.error("Error in JsonRPC Call", exception);
-        writeResponse(socket, new JsonRpcResponse(id,
-                new JsonRpcResponse.Error(INTERNAL_ERROR,
-                        "Method [" + jsonRpcMethodName + "] failed: " + exception.getMessage())));
+        writeResponse(socket, new JsonRpcResponse(id, new JsonRpcResponse.Error(INTERNAL_ERROR,
+                "Method [" + jsonRpcMethodName + "] failed: " + exception.getMessage())));
     }
 
     private void writeResponse(ServerWebSocket socket, JsonRpcResponse response) {

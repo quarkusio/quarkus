@@ -7,9 +7,8 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * Register EventLoopGroup suppliers to be used to produce main EventLoopGroup and boss EventLoopGroup annotated beans.
- * If not provided, both will be created from a default supplier.
- *
- * See EventLoopGroupBuildItem for actual supplier instances
+ * If not provided, both will be created from a default supplier. See EventLoopGroupBuildItem for actual supplier
+ * instances
  */
 public final class EventLoopSupplierBuildItem extends SimpleBuildItem {
 

@@ -29,26 +29,17 @@ import io.vertx.ext.web.RoutingContext;
 public class AuthenticationRedirectExceptionMapperTest {
 
     private static final int EXPECTED_STATUS = 409;
-    private static final String APP_PROPS = "" +
-            "quarkus.http.auth.proactive=false\n" +
-            "quarkus.http.auth.permission.default.paths=/*\n" +
-            "quarkus.http.auth.permission.default.policy=authenticated";
+    private static final String APP_PROPS = "" + "quarkus.http.auth.proactive=false\n"
+            + "quarkus.http.auth.permission.default.paths=/*\n"
+            + "quarkus.http.auth.permission.default.policy=authenticated";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @Test
     public void testAuthenticationRedirectExceptionMapper() {
-        RestAssured
-                .given()
-                .redirects()
-                .follow(false)
-                .when()
-                .get("/secured-route")
-                .then()
-                .statusCode(EXPECTED_STATUS);
+        RestAssured.given().redirects().follow(false).when().get("/secured-route").then().statusCode(EXPECTED_STATUS);
     }
 
     public static final class AuthenticationRedirectExceptionMapper {
@@ -63,7 +54,8 @@ public class AuthenticationRedirectExceptionMapperTest {
     public static class RedirectingAuthenticator implements HttpAuthenticationMechanism {
 
         @Override
-        public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             throw new AuthenticationRedirectException(FOUND, "https://quarkus.io/");
         }
 
@@ -88,8 +80,7 @@ public class AuthenticationRedirectExceptionMapperTest {
         }
 
         @Override
-        public Uni<SecurityIdentity> authenticate(
-                BaseAuthenticationRequest simpleAuthenticationRequest,
+        public Uni<SecurityIdentity> authenticate(BaseAuthenticationRequest simpleAuthenticationRequest,
                 AuthenticationRequestContext authenticationRequestContext) {
             return Uni.createFrom().nothing();
         }

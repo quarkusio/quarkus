@@ -75,8 +75,8 @@ public class SSLConfigHelper {
 
     public static void configurePemKeyCertOptions(TCPSSLOptions options,
             GrpcClientConfiguration.TlsClientConfig.PemKeyCertConfiguration configuration) {
-        if (configuration.certs().isPresent() && !configuration.certs().get().isEmpty() && configuration.keys().isPresent()
-                && !configuration.keys().get().isEmpty()) {
+        if (configuration.certs().isPresent() && !configuration.certs().get().isEmpty()
+                && configuration.keys().isPresent() && !configuration.keys().get().isEmpty()) {
             ensureKeyCertOptionsNotSet(options);
             options.setKeyCertOptions(toPemKeyCertOptions(configuration));
         }

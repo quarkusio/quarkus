@@ -13,17 +13,15 @@ import io.smallrye.config.WithDefault;
 public interface OidcRedisTokenStateManagerBuildConfig {
 
     /**
-     * Enables this extension.
-     * Set to 'false' if this extension should be disabled.
+     * Enables this extension. Set to 'false' if this extension should be disabled.
      */
     @WithDefault("true")
     boolean enabled();
 
     /**
-     * Selects Redis client used to store the OIDC token state.
-     * The default Redis client is used if this property is not configured.
-     * Used Redis datasource must only be accessible by trusted parties,
-     * because Quarkus will not encrypt tokens before storing them.
+     * Selects Redis client used to store the OIDC token state. The default Redis client is used if this property is not
+     * configured. Used Redis datasource must only be accessible by trusted parties, because Quarkus will not encrypt
+     * tokens before storing them.
      */
     @WithDefault(RedisConfig.DEFAULT_CLIENT_NAME)
     String redisClientName();

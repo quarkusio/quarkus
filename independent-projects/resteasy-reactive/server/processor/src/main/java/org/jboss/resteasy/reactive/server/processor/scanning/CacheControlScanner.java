@@ -35,7 +35,8 @@ public class CacheControlScanner implements MethodScanner {
         // In this case, allow annotations on the implementation itself to take precedence over annotations on the
         // interface.
         if (!actualEndpointClass.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
-            MethodInfo actualMethod = actualEndpointClass.method(method.name(), method.parameterTypes().toArray(new Type[0]));
+            MethodInfo actualMethod = actualEndpointClass.method(method.name(),
+                    method.parameterTypes().toArray(new Type[0]));
             if (actualMethod == null) {
                 // method from interface not overridden in actual class. Use original method from interface.
                 actualMethod = method;
@@ -55,7 +56,8 @@ public class CacheControlScanner implements MethodScanner {
 
     private List<HandlerChainCustomizer> doScan(MethodInfo methodInfo, ClassInfo classInfo,
             Map<String, Object> methodContext) {
-        AnnotationStore annotationStore = (AnnotationStore) methodContext.get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+        AnnotationStore annotationStore = (AnnotationStore) methodContext
+                .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
         ExtendedCacheControl cacheControl = noCacheToCacheControl(annotationStore.getAnnotation(methodInfo, NO_CACHE));
         if (cacheControl != null) {
             if (methodInfo.annotation(CACHE) != null) {
@@ -158,7 +160,7 @@ public class CacheControlScanner implements MethodScanner {
     private List<HandlerChainCustomizer> cacheControlToCustomizerList(ExtendedCacheControl cacheControl) {
         CacheControlHandler handler = new CacheControlHandler();
         handler.setCacheControl(cacheControl);
-        return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
-                HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
+        return Collections.singletonList(
+                new FixedHandlerChainCustomizer(handler, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
     }
 }

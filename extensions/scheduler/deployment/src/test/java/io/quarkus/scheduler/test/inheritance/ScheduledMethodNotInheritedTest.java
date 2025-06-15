@@ -19,8 +19,7 @@ public class ScheduledMethodNotInheritedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class, MyJobs.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Jobs.class, MyJobs.class));
 
     @Test
     public void testExecution() throws InterruptedException {

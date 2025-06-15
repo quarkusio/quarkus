@@ -21,8 +21,7 @@ public class NoServerEndpointDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest testConfig = new QuarkusDevModeTest()
-            .withApplicationRoot(root -> root
-                    .addClass(MyBean.class));
+            .withApplicationRoot(root -> root.addClass(MyBean.class));
 
     @Test
     public void testConnectorIsInjected() {

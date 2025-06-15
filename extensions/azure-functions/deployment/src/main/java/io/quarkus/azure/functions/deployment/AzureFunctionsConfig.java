@@ -32,17 +32,14 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
 /**
- * Azure Functions configuration.
- * Most options supported and name similarly to azure-functions-maven-plugin config
+ * Azure Functions configuration. Most options supported and name similarly to azure-functions-maven-plugin config
  */
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 @ConfigMapping(prefix = "quarkus.azure-functions")
 public interface AzureFunctionsConfig {
 
     /**
-     * App name for azure function project. This is required setting.
-     *
-     * Defaults to the base artifact name
+     * App name for azure function project. This is required setting. Defaults to the base artifact name
      */
     Optional<String> appName();
 
@@ -53,8 +50,7 @@ public interface AzureFunctionsConfig {
     String resourceGroup();
 
     /**
-     * Specifies the region where your Azure Functions will be hosted; default value is westus.
-     * <a href=
+     * Specifies the region where your Azure Functions will be hosted; default value is westus. <a href=
      * "https://github.com/microsoft/azure-maven-plugins/wiki/Azure-Functions:-Configuration-Details#supported-regions">Valid
      * values</a>
      */
@@ -98,8 +94,7 @@ public interface AzureFunctionsConfig {
     Optional<String> pricingTier();
 
     /**
-     * Port to run azure function in local runtime.
-     * Will default to quarkus.http.test-port or 8081
+     * Port to run azure function in local runtime. Will default to quarkus.http.test-port or 8081
      */
     Optional<Integer> funcPort();
 
@@ -148,19 +143,13 @@ public interface AzureFunctionsConfig {
             appSettings = new HashMap<>();
             appSettings.put("FUNCTIONS_EXTENSION_VERSION", "~4");
         }
-        return (FunctionAppConfig) new FunctionAppConfig()
-                .disableAppInsights(disableAppInsights())
-                .appInsightsKey(appInsightsKey().orElse(null))
-                .appInsightsInstance(appInsightsKey().orElse(null))
-                .subscriptionId(subscriptionId)
-                .resourceGroup(resourceGroup())
-                .appName(appName)
+        return (FunctionAppConfig) new FunctionAppConfig().disableAppInsights(disableAppInsights())
+                .appInsightsKey(appInsightsKey().orElse(null)).appInsightsInstance(appInsightsKey().orElse(null))
+                .subscriptionId(subscriptionId).resourceGroup(resourceGroup()).appName(appName)
                 .servicePlanName(appServicePlanName())
                 .servicePlanResourceGroup(appServicePlanResourceGroup().orElse(null))
-                .pricingTier(getParsedPricingTier(subscriptionId))
-                .region(getParsedRegion())
-                .runtime(getRuntimeConfig(subscriptionId))
-                .appSettings(appSettings);
+                .pricingTier(getParsedPricingTier(subscriptionId)).region(getParsedRegion())
+                .runtime(getRuntimeConfig(subscriptionId)).appSettings(appSettings);
     }
 
     private PricingTier getParsedPricingTier(String subscriptionId) {
@@ -183,13 +172,11 @@ public interface AzureFunctionsConfig {
             return null;
         }
         final OperatingSystem os = Optional.ofNullable(runtime.os()).map(OperatingSystem::fromString)
-                .orElseGet(
-                        () -> Optional.ofNullable(getServicePlan(subscriptionId)).map(AppServicePlan::getOperatingSystem)
-                                .orElse(null));
+                .orElseGet(() -> Optional.ofNullable(getServicePlan(subscriptionId))
+                        .map(AppServicePlan::getOperatingSystem).orElse(null));
         final com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig result = new com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig()
-                .os(os)
-                .javaVersion(runtime.javaVersion())
-                .image(runtime.image().orElse(null)).registryUrl(runtime.registryUrl().orElse(null));
+                .os(os).javaVersion(runtime.javaVersion()).image(runtime.image().orElse(null))
+                .registryUrl(runtime.registryUrl().orElse(null));
         return result;
     }
 
@@ -220,7 +207,6 @@ public interface AzureFunctionsConfig {
          * <li><b>environment</b> if using <i>service_principal</i></li>
          * </ul>
          * </ul>
-         *
          * Defaults to "azure_cli" for authentication
          */
         @WithDefault("azure_cli")
@@ -294,7 +280,8 @@ public interface AzureFunctionsConfig {
                 final AuthConfiguration authConfiguration = new AuthConfiguration(type);
                 authConfiguration.setClient(client().orElse(null));
                 authConfiguration.setTenant(tenant().orElse(null));
-                authConfiguration.setEnvironment(AzureEnvironmentUtils.azureEnvironmentToString(AzureEnvironment.AZURE));
+                authConfiguration
+                        .setEnvironment(AzureEnvironmentUtils.azureEnvironmentToString(AzureEnvironment.AZURE));
                 return authConfiguration;
             } catch (InvalidConfigurationException e) {
                 throw new IllegalArgumentException(e);

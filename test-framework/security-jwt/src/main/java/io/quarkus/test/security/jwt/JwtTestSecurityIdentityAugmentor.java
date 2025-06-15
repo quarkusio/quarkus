@@ -19,12 +19,9 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.quarkus.test.security.TestSecurityIdentityAugmentor;
 
 public class JwtTestSecurityIdentityAugmentor implements TestSecurityIdentityAugmentor {
-    private static Map<String, ClaimType> standardClaimTypes = Map.of(
-            Claims.exp.name(), ClaimType.LONG,
-            Claims.iat.name(), ClaimType.LONG,
-            Claims.nbf.name(), ClaimType.LONG,
-            Claims.auth_time.name(), ClaimType.LONG,
-            Claims.email_verified.name(), ClaimType.BOOLEAN);
+    private static Map<String, ClaimType> standardClaimTypes = Map.of(Claims.exp.name(), ClaimType.LONG,
+            Claims.iat.name(), ClaimType.LONG, Claims.nbf.name(), ClaimType.LONG, Claims.auth_time.name(),
+            ClaimType.LONG, Claims.email_verified.name(), ClaimType.BOOLEAN);
 
     @Override
     public SecurityIdentity augment(final SecurityIdentity identity, final Annotation[] annotations) {

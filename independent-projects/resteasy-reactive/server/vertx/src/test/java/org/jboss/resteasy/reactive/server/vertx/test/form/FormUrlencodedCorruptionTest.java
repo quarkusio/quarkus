@@ -44,14 +44,8 @@ public class FormUrlencodedCorruptionTest {
         String next = "Gnaeus Pompeius Magnus";
         String last = "Marcus Licinius Crassus";
         String body = encode("first", first, "next", next, "last", last);
-        RestAssured
-                .given()
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(body)
-                .post(uri)
-                .then()
-                .statusCode(200)
-                .body(is(String.join("\n", first, next, last)));
+        RestAssured.given().contentType(MediaType.APPLICATION_FORM_URLENCODED).body(body).post(uri).then()
+                .statusCode(200).body(is(String.join("\n", first, next, last)));
     }
 
     private static String encode(String... args) {

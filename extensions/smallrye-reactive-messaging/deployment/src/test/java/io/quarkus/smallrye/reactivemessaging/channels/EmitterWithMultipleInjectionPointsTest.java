@@ -12,8 +12,7 @@ public class EmitterWithMultipleInjectionPointsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ChannelEmitterWithMultipleDefinitions.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ChannelEmitterWithMultipleDefinitions.class));
 
     @Inject
     ChannelEmitterWithMultipleDefinitions bean;

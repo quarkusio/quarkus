@@ -15,10 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class RemovedConfigPropertiesTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(RemovedConfigBean.class)
-                    .addClass(RemovedConfigProperties.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClass(RemovedConfigBean.class).addClass(RemovedConfigProperties.class));
 
     @Test
     void skipConfigValidation() {

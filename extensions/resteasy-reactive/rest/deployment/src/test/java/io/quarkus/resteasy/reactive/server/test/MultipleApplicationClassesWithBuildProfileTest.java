@@ -18,16 +18,11 @@ class MultipleApplicationClassesWithBuildProfileTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            Application1.class, Application2.class, TestResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Application1.class, Application2.class, TestResource.class));
 
     @Test
     public void testNoAnnotation() {
-        get("/1/test")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("test"));
+        get("/1/test").then().statusCode(200).body(Matchers.equalTo("test"));
     }
 
     @ApplicationPath("1")

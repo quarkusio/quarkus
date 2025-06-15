@@ -20,21 +20,17 @@ import io.restassured.RestAssured;
 public class ResponseStringNonAsciiTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        RestAssured.get("/hello")
-                .then().statusCode(200)
-                .and().body(Matchers.equalTo("{\"message\": \"Καλημέρα κόσμε\"}"))
-                .and().contentType("application/json");
+        RestAssured.get("/hello").then().statusCode(200).and()
+                .body(Matchers.equalTo("{\"message\": \"Καλημέρα κόσμε\"}")).and().contentType("application/json");
     }
 
     @Path("hello")

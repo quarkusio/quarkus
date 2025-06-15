@@ -19,15 +19,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Tests that Arc transactional observers work with Narayana-provided Synchronization registry.
- * All observers also make use of Request scoped bean so that we verify that the context is automatically activated.
+ * Tests that Arc transactional observers work with Narayana-provided Synchronization registry. All observers also make
+ * use of Request scoped bean so that we verify that the context is automatically activated.
  */
 public class TransactionalObserversTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ObservingBean.class, Actions.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ObservingBean.class, Actions.class));
 
     public static String AFTER_SUCCESS = "AFTER_SUCCESS";
     public static String AFTER_COMPLETION = "AFTER_COMPLETION";
@@ -84,12 +83,14 @@ public class TransactionalObserversTest {
     @ApplicationScoped
     static class ObservingBean {
 
-        public void observeAfterSuccess(@Observes(during = TransactionPhase.AFTER_SUCCESS) String payload, ReqScopedBean bean) {
+        public void observeAfterSuccess(@Observes(during = TransactionPhase.AFTER_SUCCESS) String payload,
+                ReqScopedBean bean) {
             Actions.add(TransactionalObserversTest.AFTER_SUCCESS);
             bean.ping();
         }
 
-        public void observeAfterFailure(@Observes(during = TransactionPhase.AFTER_FAILURE) String payload, ReqScopedBean bean) {
+        public void observeAfterFailure(@Observes(during = TransactionPhase.AFTER_FAILURE) String payload,
+                ReqScopedBean bean) {
             Actions.add(TransactionalObserversTest.AFTER_FAILURE);
             bean.ping();
         }

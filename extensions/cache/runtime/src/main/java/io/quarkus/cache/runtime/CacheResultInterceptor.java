@@ -28,8 +28,8 @@ public class CacheResultInterceptor extends CacheInterceptor {
     @AroundInvoke
     public Object intercept(InvocationContext invocationContext) throws Throwable {
         /*
-         * io.smallrye.mutiny.Multi values are never cached.
-         * There's already a WARN log entry at build time so we don't need to log anything at run time.
+         * io.smallrye.mutiny.Multi values are never cached. There's already a WARN log entry at build time so we don't
+         * need to log anything at run time.
          */
         if (Multi.class.isAssignableFrom(invocationContext.getMethod().getReturnType())) {
             return invocationContext.proceed();
@@ -95,8 +95,7 @@ public class CacheResultInterceptor extends CacheInterceptor {
                     @Override
                     public Object apply(Object k) {
                         try {
-                            LOGGER.debugf("Adding entry with key [%s] into cache [%s]",
-                                    key, binding.cacheName());
+                            LOGGER.debugf("Adding entry with key [%s] into cache [%s]", key, binding.cacheName());
                             return invocationContext.proceed();
                         } catch (CacheException e) {
                             throw e;
@@ -111,9 +110,8 @@ public class CacheResultInterceptor extends CacheInterceptor {
                 } else {
                     try {
                         /*
-                         * If the current thread started the cache value computation, then the computation is already finished
-                         * since
-                         * it was done synchronously and the following call will never time out.
+                         * If the current thread started the cache value computation, then the computation is already
+                         * finished since it was done synchronously and the following call will never time out.
                          */
                         value = cacheValue.await().atMost(Duration.ofMillis(binding.lockTimeout()));
                     } catch (TimeoutException e) {

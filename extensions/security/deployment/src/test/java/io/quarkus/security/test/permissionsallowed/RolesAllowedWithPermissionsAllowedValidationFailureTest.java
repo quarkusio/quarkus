@@ -13,8 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RolesAllowedWithPermissionsAllowedValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setExpectedException(IllegalStateException.class);
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setExpectedException(IllegalStateException.class);
 
     @Test
     public void test() {

@@ -14,10 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class WithTransactionMethodLevelValidationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(IllegalStateException.class)
-            .withApplicationRoot(root -> root
-                    .addClasses(Bean.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(IllegalStateException.class)
+            .withApplicationRoot(root -> root.addClasses(Bean.class));
 
     @Test
     public void testValidationFailed() {

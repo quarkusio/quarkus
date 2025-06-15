@@ -54,8 +54,8 @@ public class ExtensionDevModeJvmOptionFilter {
 
     boolean isDisabled(ArtifactKey extensionKey) {
         for (var pattern : getDisableForPatterns()) {
-            if (pattern.matches(extensionKey.getGroupId(), extensionKey.getArtifactId(), extensionKey.getClassifier(), "jar",
-                    null)) {
+            if (pattern.matches(extensionKey.getGroupId(), extensionKey.getArtifactId(), extensionKey.getClassifier(),
+                    "jar", null)) {
                 return true;
             }
         }

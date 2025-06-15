@@ -36,9 +36,7 @@ public class MultiModuleUberJarTest extends QuarkusGradleWrapperTestBase {
         try {
             // Wait until server up
             dumpFileContentOnFailure(() -> {
-                await()
-                        .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES)
+                await().pollDelay(1, TimeUnit.SECONDS).atMost(1, TimeUnit.MINUTES)
                         .until(() -> devModeClient.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);

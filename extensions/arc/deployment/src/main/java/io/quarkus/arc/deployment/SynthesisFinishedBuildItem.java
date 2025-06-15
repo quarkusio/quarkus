@@ -7,8 +7,8 @@ import io.quarkus.arc.processor.BeanDeployment;
  * application. Synthetic beans and observers are included. If interested in class-based components only you can use the
  * {@link BeanDiscoveryFinishedBuildItem} instead.
  * <p>
- * Additionally, the bean resolver can be used to apply the type-safe resolution rules, e.g. to find out whether there is a bean
- * that would satisfy certain combination of required type and qualifiers.
+ * Additionally, the bean resolver can be used to apply the type-safe resolution rules, e.g. to find out whether there
+ * is a bean that would satisfy certain combination of required type and qualifiers.
  *
  * @see BeanDiscoveryFinishedBuildItem
  */

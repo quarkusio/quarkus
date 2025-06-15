@@ -15,8 +15,7 @@ import io.quarkus.qute.runtime.cache.UnsupportedRemoteCacheConfigurator;
 public class CacheProcessor {
 
     @BuildStep
-    void initialize(Optional<CacheTypeBuildItem> cacheTypeBuildItem,
-            BuildProducer<AdditionalBeanBuildItem> beans,
+    void initialize(Optional<CacheTypeBuildItem> cacheTypeBuildItem, BuildProducer<AdditionalBeanBuildItem> beans,
             BuildProducer<AdditionalCacheNameBuildItem> cacheNames) {
         Class configuratorClass;
         boolean supported = false;
@@ -33,7 +32,8 @@ public class CacheProcessor {
         }
 
         beans.produce(new AdditionalBeanBuildItem(configuratorClass.getName()));
-        // We need to produce additional cache name because quarkus-cache only considers the CombinedIndexBuildItem and not the bean archive index
+        // We need to produce additional cache name because quarkus-cache only considers the CombinedIndexBuildItem and
+        // not the bean archive index
         if (supported) {
             cacheNames.produce(new AdditionalCacheNameBuildItem(QuteCache.NAME));
         }

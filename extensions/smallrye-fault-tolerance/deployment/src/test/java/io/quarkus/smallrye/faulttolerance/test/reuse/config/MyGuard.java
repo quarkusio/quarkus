@@ -14,7 +14,6 @@ public class MyGuard {
 
     @Produces
     @Identifier("my-guard")
-    public static final Guard GUARD = Guard.create()
-            .withCircuitBreaker().requestVolumeThreshold(10).delay(5000, ChronoUnit.MILLIS).name(NAME).done()
-            .build();
+    public static final Guard GUARD = Guard.create().withCircuitBreaker().requestVolumeThreshold(10)
+            .delay(5000, ChronoUnit.MILLIS).name(NAME).done().build();
 }

@@ -43,8 +43,7 @@ public class OidcClientFilterBuildStep {
 
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(OidcClientRequestFilter.class));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OidcClientRequestFilter.class)
-                .reason(getClass().getName())
-                .methods().fields().build());
+                .reason(getClass().getName()).methods().fields().build());
         final Set<String> namedFilterClientClasses = namedOidcClientFilterBuildItem.namedFilterClientClasses;
 
         // register default request filter provider against the rest of the clients (client != namedFilterClientClasses)
@@ -54,35 +53,36 @@ public class OidcClientFilterBuildStep {
                 jaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(OidcClientRequestFilter.class.getName()));
             } else {
                 // register all clients without @OidcClientFilter("clientName")
-                restPredicateProvider
-                        .produce(new RestClientPredicateProviderBuildItem(OidcClientRequestFilter.class.getName(),
-                                new Predicate<ClassInfo>() {
-                                    // test whether the provider should be added restClientClassInfo
-                                    @Override
-                                    public boolean test(ClassInfo restClientClassInfo) {
-                                        // do not register default request filter as provider against Rest client with named filter
-                                        return !namedFilterClientClasses.contains(restClientClassInfo.name().toString());
-                                    }
-                                }));
+                restPredicateProvider.produce(new RestClientPredicateProviderBuildItem(
+                        OidcClientRequestFilter.class.getName(), new Predicate<ClassInfo>() {
+                            // test whether the provider should be added restClientClassInfo
+                            @Override
+                            public boolean test(ClassInfo restClientClassInfo) {
+                                // do not register default request filter as provider against Rest client with named
+                                // filter
+                                return !namedFilterClientClasses.contains(restClientClassInfo.name().toString());
+                            }
+                        }));
             }
         } else {
             if (namedFilterClientClasses.isEmpty()) {
                 // register default request filter against all the Rest clients annotated with @OidcClientFilter
-                restAnnotationProvider.produce(new RestClientAnnotationProviderBuildItem(OIDC_CLIENT_FILTER,
-                        OidcClientRequestFilter.class));
+                restAnnotationProvider.produce(
+                        new RestClientAnnotationProviderBuildItem(OIDC_CLIENT_FILTER, OidcClientRequestFilter.class));
             } else {
-                // register default request filter against Rest client annotated with @OidcClientFilter without named ones
-                restPredicateProvider
-                        .produce(new RestClientPredicateProviderBuildItem(OidcClientRequestFilter.class.getName(),
-                                new Predicate<ClassInfo>() {
-                                    // test whether the provider should be added restClientClassInfo
-                                    @Override
-                                    public boolean test(ClassInfo restClientClassInfo) {
-                                        // do not register default request filter as provider against Rest client with named filter
-                                        return restClientClassInfo.hasAnnotation(OIDC_CLIENT_FILTER)
-                                                && !namedFilterClientClasses.contains(restClientClassInfo.name().toString());
-                                    }
-                                }));
+                // register default request filter against Rest client annotated with @OidcClientFilter without named
+                // ones
+                restPredicateProvider.produce(new RestClientPredicateProviderBuildItem(
+                        OidcClientRequestFilter.class.getName(), new Predicate<ClassInfo>() {
+                            // test whether the provider should be added restClientClassInfo
+                            @Override
+                            public boolean test(ClassInfo restClientClassInfo) {
+                                // do not register default request filter as provider against Rest client with named
+                                // filter
+                                return restClientClassInfo.hasAnnotation(OIDC_CLIENT_FILTER)
+                                        && !namedFilterClientClasses.contains(restClientClassInfo.name().toString());
+                            }
+                        }));
             }
         }
     }
@@ -112,12 +112,11 @@ public class OidcClientFilterBuildStep {
 
                 // register for reflection
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(generatedProvider).methods()
-                        .reason(getClass().getName())
-                        .fields().serialization(true).build());
+                        .reason(getClass().getName()).fields().serialization(true).build());
 
                 // register named request filter provider against Rest client
-                restPredicateProvider.produce(new RestClientPredicateProviderBuildItem(generatedProvider,
-                        new Predicate<ClassInfo>() {
+                restPredicateProvider.produce(
+                        new RestClientPredicateProviderBuildItem(generatedProvider, new Predicate<ClassInfo>() {
                             // test whether the provider should be added restClientClassInfo
                             @Override
                             public boolean test(ClassInfo restClientClassInfo) {

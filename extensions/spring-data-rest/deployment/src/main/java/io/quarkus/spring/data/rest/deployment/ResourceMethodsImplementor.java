@@ -38,11 +38,10 @@ public interface ResourceMethodsImplementor {
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
                 arcContainer, creator.loadClassFromTCCL(repositoryInterface), creator.newArray(Annotation.class, 0));
-        ResultHandle instance = creator.invokeInterfaceMethod(
-                ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
-        creator.ifNull(instance)
-                .trueBranch()
-                .throwException(RuntimeException.class, repositoryInterface + " instance was not found");
+        ResultHandle instance = creator.invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class),
+                instanceHandle);
+        creator.ifNull(instance).trueBranch().throwException(RuntimeException.class,
+                repositoryInterface + " instance was not found");
 
         return instance;
     }

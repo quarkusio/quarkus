@@ -50,32 +50,29 @@ final class StringPropertyAccessorGenerator {
      * </pre>
      *
      * This generated class is used by
-     * {@link io.quarkus.spring.security.runtime.interceptor.check.PrincipalNameFromParameterObjectSecurityCheck}
-     * to access fields of the object referenced by security expressions
+     * {@link io.quarkus.spring.security.runtime.interceptor.check.PrincipalNameFromParameterObjectSecurityCheck} to
+     * access fields of the object referenced by security expressions
      */
     static String generate(DotName className, Set<FieldInfo> properties, ClassOutput classOutput) {
         String generatedClassName = getAccessorClassName(className);
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedClassName)
-                .interfaces(StringPropertyAccessor.class)
-                .build()) {
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
+                .interfaces(StringPropertyAccessor.class).build()) {
 
             cc.addAnnotation(Singleton.class);
 
-            try (MethodCreator access = cc.getMethodCreator("access", String.class.getName(), Object.class, String.class)) {
+            try (MethodCreator access = cc.getMethodCreator("access", String.class.getName(), Object.class,
+                    String.class)) {
                 ResultHandle objectParam = access.getMethodParam(0);
                 ResultHandle propertyParam = access.getMethodParam(1);
                 ResultHandle castedObjectParam = access.checkCast(objectParam, className.toString());
                 for (FieldInfo fieldInfo : properties) {
                     ResultHandle propertyName = access.load(fieldInfo.name());
                     ResultHandle propertyNameEquals = access.invokeVirtualMethod(
-                            ofMethod(Object.class, "equals", boolean.class, Object.class),
-                            propertyName, propertyParam);
+                            ofMethod(Object.class, "equals", boolean.class, Object.class), propertyName, propertyParam);
                     BranchResult propertyNameEqualsBranch = access.ifNonZero(propertyNameEquals);
                     BytecodeCreator propertyNameEqualsTrue = propertyNameEqualsBranch.trueBranch();
-                    ResultHandle result = propertyNameEqualsTrue.invokeVirtualMethod(
-                            ofMethod(className.toString(), "get" + JavaBeanUtil.capitalize(fieldInfo.name()),
-                                    String.class.getName()),
+                    ResultHandle result = propertyNameEqualsTrue.invokeVirtualMethod(ofMethod(className.toString(),
+                            "get" + JavaBeanUtil.capitalize(fieldInfo.name()), String.class.getName()),
                             castedObjectParam);
                     propertyNameEqualsTrue.returnValue(result);
                 }

@@ -14,10 +14,11 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * {@link Qualifier} to inject the Fabric8 Kubernetes Client specific {@link com.fasterxml.jackson.databind.ObjectMapper}.
+ * {@link Qualifier} to inject the Fabric8 Kubernetes Client specific
+ * {@link com.fasterxml.jackson.databind.ObjectMapper}.
  * <p>
- * Allows users to modify the behavior of the mapper for very specific use cases (such as adding Kotlin-specific modules).
- * Otherwise, it's not recommended to modify the mapper since it might break the Kubernetes Client.
+ * Allows users to modify the behavior of the mapper for very specific use cases (such as adding Kotlin-specific
+ * modules). Otherwise, it's not recommended to modify the mapper since it might break the Kubernetes Client.
  */
 @Qualifier
 @Retention(RUNTIME)

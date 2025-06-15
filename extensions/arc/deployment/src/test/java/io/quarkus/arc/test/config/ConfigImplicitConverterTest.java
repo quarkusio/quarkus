@@ -17,8 +17,7 @@ public class ConfigImplicitConverterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Configured.class, Foo.class, Bar.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Configured.class, Foo.class, Bar.class)
                     .addAsResource(new StringAsset("foo=1\nbar=1"), "application.properties"));
 
     @Inject

@@ -10,8 +10,8 @@ import io.smallrye.config.WithName;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface KubernetesConfigBuildTimeConfig {
     /**
-     * Whether configuration can be read from secrets.
-     * If set to {@code true}, Kubernetes resources allowing access to secrets (role and role binding) will be generated.
+     * Whether configuration can be read from secrets. If set to {@code true}, Kubernetes resources allowing access to
+     * secrets (role and role binding) will be generated.
      */
     @WithName("secrets.enabled")
     @WithDefault("false")

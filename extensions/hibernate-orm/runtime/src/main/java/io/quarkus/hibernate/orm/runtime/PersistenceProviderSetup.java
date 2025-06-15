@@ -24,16 +24,14 @@ public final class PersistenceProviderSetup {
 
         PersistenceProviderResolver persistenceProviderResolver = PersistenceProviderResolverHolder
                 .getPersistenceProviderResolver();
-        if (persistenceProviderResolver == null ||
-                (persistenceProviderResolver != null
-                        && !(persistenceProviderResolver instanceof MultiplePersistenceProviderResolver))) {
+        if (persistenceProviderResolver == null || (persistenceProviderResolver != null
+                && !(persistenceProviderResolver instanceof MultiplePersistenceProviderResolver))) {
             persistenceProviderResolver = new MultiplePersistenceProviderResolver();
             PersistenceProviderResolverHolder.setPersistenceProviderResolver(persistenceProviderResolver);
         }
 
-        ((MultiplePersistenceProviderResolver) persistenceProviderResolver)
-                .addPersistenceProvider(new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig,
-                        integrationRuntimeDescriptors));
+        ((MultiplePersistenceProviderResolver) persistenceProviderResolver).addPersistenceProvider(
+                new FastBootHibernatePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors));
 
     }
 }

@@ -16,9 +16,9 @@ import io.vertx.core.http.ClientAuth;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface ManagementInterfaceBuildTimeConfig {
     /**
-     * Enables / Disables the usage of a separate interface/port to expose the management endpoints.
-     * If sets to {@code true}, the management endpoints will be exposed to a different HTTP server.
-     * This avoids exposing the management endpoints on a y available server(.
+     * Enables / Disables the usage of a separate interface/port to expose the management endpoints. If sets to
+     * {@code true}, the management endpoints will be exposed to a different HTTP server. This avoids exposing the
+     * management endpoints on a y available server(.
      */
     @WithDefault("false")
     boolean enabled();
@@ -29,16 +29,15 @@ public interface ManagementInterfaceBuildTimeConfig {
     ManagementAuthConfig auth();
 
     /**
-     * Configures the engine to require/request client authentication.
-     * NONE, REQUEST, REQUIRED
+     * Configures the engine to require/request client authentication. NONE, REQUEST, REQUIRED
      */
     @WithName("ssl.client-auth")
     @WithDefault("NONE")
     ClientAuth tlsClientAuth();
 
     /**
-     * A common root path for management endpoints. Various extension-provided management endpoints such as metrics
-     * and health are deployed under this path by default.
+     * A common root path for management endpoints. Various extension-provided management endpoints such as metrics and
+     * health are deployed under this path by default.
      */
     @WithDefault("/q")
     String rootPath();
@@ -46,8 +45,8 @@ public interface ManagementInterfaceBuildTimeConfig {
     /**
      * If responses should be compressed.
      * <p>
-     * Note that this will attempt to compress all responses, to avoid compressing
-     * already compressed content (such as images) you need to set the following header:
+     * Note that this will attempt to compress all responses, to avoid compressing already compressed content (such as
+     * images) you need to set the following header:
      * <p>
      * Content-Encoding: identity
      * <p>
@@ -59,8 +58,7 @@ public interface ManagementInterfaceBuildTimeConfig {
     /**
      * When enabled, vert.x will decompress the request's body if it's compressed.
      * <p>
-     * Note that the compression format (e.g., gzip) must be specified in the Content-Encoding header
-     * in the request.
+     * Note that the compression format (e.g., gzip) must be specified in the Content-Encoding header in the request.
      */
     @WithDefault("false")
     boolean enableDecompression();

@@ -18,18 +18,15 @@ import io.quarkus.devui.spi.page.Page;
 class AgroalDevUIProcessor {
 
     @BuildStep
-    void devUI(DataSourcesJdbcBuildTimeConfig config,
-            BuildProducer<CardPageBuildItem> cardPageProducer,
+    void devUI(DataSourcesJdbcBuildTimeConfig config, BuildProducer<CardPageBuildItem> cardPageProducer,
             LaunchModeBuildItem launchMode) {
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
         cardPageBuildItem.setLogo("agroal_logo_dark.png", "agroal_logo_light.png");
         if (launchMode.getDevModeType().isPresent() && launchMode.getDevModeType().get().equals(DevModeType.LOCAL)) {
             if (config.devui().enabled()) {
-                cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                        .icon("font-awesome-solid:database")
-                        .title("Database view")
-                        .componentLink("qwc-agroal-datasource.js")
+                cardPageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:database")
+                        .title("Database view").componentLink("qwc-agroal-datasource.js")
                         .metadata("allowSql", String.valueOf(config.devui().allowSql()))
                         .metadata("appendSql", config.devui().appendToDefaultSelect().orElse(""))
                         .metadata("allowedHost", config.devui().allowedDBHost().orElse(null)));
@@ -43,14 +40,12 @@ class AgroalDevUIProcessor {
     void createBuildTimeActions(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer) {
         BuildTimeActionBuildItem bta = new BuildTimeActionBuildItem();
 
-        // TODO: If currentInsertScript is empty, maybe send tables schema. This might mean we need to move this to runtime
+        // TODO: If currentInsertScript is empty, maybe send tables schema. This might mean we need to move this to
+        // runtime
 
         bta.addAssistantAction("generateMoreData", (a, p) -> {
             Assistant assistant = (Assistant) a;
-            return assistant.assistBuilder()
-                    .userMessage(USER_MESSAGE)
-                    .variables(p)
-                    .assist();
+            return assistant.assistBuilder().userMessage(USER_MESSAGE).variables(p).assist();
         });
         buildTimeActionProducer.produce(bta);
     }

@@ -38,10 +38,8 @@ public class ArcBeanFactory<T> implements BeanFactory<T> {
             };
         } catch (Exception e) {
             if (factory.getClass().getName().contains("DefaultInstanceFactory")) {
-                throw new IllegalArgumentException(
-                        "Unable to create class '" + targetClassName
-                                + "'. To fix the problem, make sure this class is a CDI bean.",
-                        e);
+                throw new IllegalArgumentException("Unable to create class '" + targetClassName
+                        + "'. To fix the problem, make sure this class is a CDI bean.", e);
             }
             throw e;
         }

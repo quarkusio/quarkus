@@ -6,7 +6,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The remote user
- *
  */
 public class RemoteUserAttribute implements ExchangeAttribute {
 

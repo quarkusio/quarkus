@@ -25,8 +25,7 @@ public class RolesSecurityIdentityAugmentor implements SecurityIdentityAugmentor
             AuthenticationRequestContext authenticationRequestContext) {
         if (securityIdentity != null && securityIdentity.getPrincipal() != null
                 && SUPPORTED_USER.equals(securityIdentity.getPrincipal().getName())) {
-            return rolesService
-                    .getRole()
+            return rolesService.getRole()
                     .map(role -> QuarkusSecurityIdentity.builder(securityIdentity).addRole(role).build());
         }
         return Uni.createFrom().item(securityIdentity);

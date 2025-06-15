@@ -82,7 +82,7 @@ public class LoggingSetupRecorder {
         this.consoleRuntimeConfig = consoleRuntimeConfig;
     }
 
-    @SuppressWarnings("unused") //called via reflection, as it is in an isolated CL
+    @SuppressWarnings("unused") // called via reflection, as it is in an isolated CL
     public static void handleFailedStart() {
         handleFailedStart(new RuntimeValue<>(Optional.empty()));
     }
@@ -91,12 +91,9 @@ public class LoggingSetupRecorder {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         // There may be cases where a Config with the mappings is already available, but we can't be sure, so we wrap
         // the original Config and map the logging classes.
-        SmallRyeConfig loggingConfig = new SmallRyeConfigBuilder()
-                .withCustomizers(new QuarkusConfigBuilderCustomizer())
-                .withMapping(LogBuildTimeConfig.class)
-                .withMapping(LogRuntimeConfig.class)
-                .withMapping(ConsoleRuntimeConfig.class)
-                .withSources(new ConfigSource() {
+        SmallRyeConfig loggingConfig = new SmallRyeConfigBuilder().withCustomizers(new QuarkusConfigBuilderCustomizer())
+                .withMapping(LogBuildTimeConfig.class).withMapping(LogRuntimeConfig.class)
+                .withMapping(ConsoleRuntimeConfig.class).withSources(new ConfigSource() {
                     @Override
                     public Set<String> getPropertyNames() {
                         Set<String> properties = new HashSet<>();
@@ -118,17 +115,13 @@ public class LoggingSetupRecorder {
         LogBuildTimeConfig logBuildTimeConfig = loggingConfig.getConfigMapping(LogBuildTimeConfig.class);
         ConsoleRuntimeConfig consoleRuntimeConfig = loggingConfig.getConfigMapping(ConsoleRuntimeConfig.class);
         new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(logRuntimeConfig,
-                logBuildTimeConfig,
-                DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(), emptyList(),
-                emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
+                logBuildTimeConfig, DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(),
+                emptyList(), emptyList(), emptyList(), emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
     }
 
-    public ShutdownListener initializeLogging(
-            final LogRuntimeConfig config,
-            final LogBuildTimeConfig buildConfig,
+    public ShutdownListener initializeLogging(final LogRuntimeConfig config, final LogBuildTimeConfig buildConfig,
             final DiscoveredLogComponents discoveredLogComponents,
-            final Map<String, InheritableLevel> categoryDefaultMinLevels,
-            final boolean enableWebStream,
+            final Map<String, InheritableLevel> categoryDefaultMinLevels, final boolean enableWebStream,
             final RuntimeValue<Optional<Handler>> streamingDevUiConsoleHandler,
             final List<RuntimeValue<Optional<Handler>>> additionalHandlers,
             final List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
@@ -136,8 +129,7 @@ public class LoggingSetupRecorder {
             final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             final List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters,
             final List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters,
-            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
-            final LaunchMode launchMode,
+            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier, final LaunchMode launchMode,
             final boolean includeFilters) {
 
         ShutdownNotifier shutdownNotifier = new ShutdownNotifier();
@@ -164,7 +156,8 @@ public class LoggingSetupRecorder {
             filters.forEach(new BiConsumer<>() {
                 @Override
                 public void accept(String loggerName, CleanupFilterConfig config) {
-                    filterElements.add(new LogCleanupFilterElement(loggerName, config.targetLevel(), config.ifStartsWith()));
+                    filterElements
+                            .add(new LogCleanupFilterElement(loggerName, config.targetLevel(), config.ifStartsWith()));
                 }
             });
         }
@@ -178,9 +171,9 @@ public class LoggingSetupRecorder {
                 3 + additionalHandlers.size() + (config.handlers().isPresent() ? config.handlers().get().size() : 0));
 
         if (config.console().enable()) {
-            Handler consoleHandler = configureConsoleHandler(config.console(), consoleRuntimeConfig.getValue(), errorManager,
-                    cleanupFiler,
-                    namedFilters, possibleConsoleFormatters, possibleBannerSupplier, launchMode, includeFilters);
+            Handler consoleHandler = configureConsoleHandler(config.console(), consoleRuntimeConfig.getValue(),
+                    errorManager, cleanupFiler, namedFilters, possibleConsoleFormatters, possibleBannerSupplier,
+                    launchMode, includeFilters);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
         }
@@ -204,8 +197,8 @@ public class LoggingSetupRecorder {
         }
 
         if (config.file().enable()) {
-            handlers.add(configureFileHandler(config.file(), errorManager, cleanupFiler, namedFilters, possibleFileFormatters,
-                    includeFilters));
+            handlers.add(configureFileHandler(config.file(), errorManager, cleanupFiler, namedFilters,
+                    possibleFileFormatters, includeFilters));
         }
 
         if (config.syslog().enable()) {
@@ -224,8 +217,7 @@ public class LoggingSetupRecorder {
             }
         }
 
-        if ((launchMode.isDevOrTest() || enableWebStream)
-                && streamingDevUiConsoleHandler != null
+        if ((launchMode.isDevOrTest() || enableWebStream) && streamingDevUiConsoleHandler != null
                 && streamingDevUiConsoleHandler.getValue().isPresent()) {
 
             Handler handler = streamingDevUiConsoleHandler.getValue().get();
@@ -242,8 +234,8 @@ public class LoggingSetupRecorder {
 
         Map<String, Handler> namedHandlers = shouldCreateNamedHandlers(config, additionalNamedHandlers)
                 ? createNamedHandlers(config, consoleRuntimeConfig.getValue(), additionalNamedHandlers,
-                        possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters, possibleSocketFormatters,
-                        errorManager, cleanupFiler, namedFilters, launchMode,
+                        possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
+                        possibleSocketFormatters, errorManager, cleanupFiler, namedFilters, launchMode,
                         shutdownNotifier, includeFilters)
                 : emptyMap();
         if (!categories.isEmpty()) {
@@ -253,16 +245,15 @@ public class LoggingSetupRecorder {
             } else {
                 additionalNamedHandlersMap = new HashMap<>();
                 for (RuntimeValue<Map<String, Handler>> runtimeValue : additionalNamedHandlers) {
-                    runtimeValue.getValue().forEach(
-                            new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap, errorManager, filterElements,
-                                    shutdownNotifier));
+                    runtimeValue.getValue().forEach(new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap,
+                            errorManager, filterElements, shutdownNotifier));
                 }
             }
 
             namedHandlers.putAll(additionalNamedHandlersMap);
 
-            setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers,
-                    true);
+            setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager,
+                    namedHandlers, true);
         }
 
         for (RuntimeValue<Optional<Handler>> additionalHandler : additionalHandlers) {
@@ -301,16 +292,12 @@ public class LoggingSetupRecorder {
     }
 
     /**
-     * WARNING: this method is part of the recorder but is actually called statically at build time.
-     * You may not push RuntimeValue's to it.
+     * WARNING: this method is part of the recorder but is actually called statically at build time. You may not push
+     * RuntimeValue's to it.
      */
-    public static void initializeBuildTimeLogging(
-            final LogRuntimeConfig config,
-            final LogBuildTimeConfig buildConfig,
-            final ConsoleRuntimeConfig consoleConfig,
-            final Map<String, InheritableLevel> categoryDefaultMinLevels,
-            final List<LogCleanupFilterElement> additionalLogCleanupFilters,
-            final LaunchMode launchMode) {
+    public static void initializeBuildTimeLogging(final LogRuntimeConfig config, final LogBuildTimeConfig buildConfig,
+            final ConsoleRuntimeConfig consoleConfig, final Map<String, InheritableLevel> categoryDefaultMinLevels,
+            final List<LogCleanupFilterElement> additionalLogCleanupFilters, final LaunchMode launchMode) {
 
         ShutdownNotifier dummy = new ShutdownNotifier();
 
@@ -322,38 +309,39 @@ public class LoggingSetupRecorder {
 
         ErrorManager errorManager = new OnlyOnceErrorManager();
         Map<String, CleanupFilterConfig> filters = config.filters();
-        List<LogCleanupFilterElement> filterElements = new ArrayList<>(filters.size() + additionalLogCleanupFilters.size());
+        List<LogCleanupFilterElement> filterElements = new ArrayList<>(
+                filters.size() + additionalLogCleanupFilters.size());
         for (Entry<String, CleanupFilterConfig> entry : filters.entrySet()) {
             filterElements.add(new LogCleanupFilterElement(entry.getKey(), entry.getValue().targetLevel(),
                     entry.getValue().ifStartsWith()));
         }
         for (LogCleanupFilterElement logCleanupFilter : additionalLogCleanupFilters) {
-            filterElements.add(new LogCleanupFilterElement(logCleanupFilter.getLoggerName(), logCleanupFilter.getTargetLevel(),
-                    logCleanupFilter.getMessageStarts()));
+            filterElements.add(new LogCleanupFilterElement(logCleanupFilter.getLoggerName(),
+                    logCleanupFilter.getTargetLevel(), logCleanupFilter.getMessageStarts()));
         }
         LogCleanupFilter logCleanupFilter = new LogCleanupFilter(filterElements, dummy);
 
         ArrayList<Handler> handlers = new ArrayList<>(3);
         if (config.console().enable()) {
-            Handler consoleHandler = configureConsoleHandler(config.console(), consoleConfig, errorManager, logCleanupFilter,
-                    emptyMap(), emptyList(), new RuntimeValue<>(Optional.empty()), launchMode, false);
+            Handler consoleHandler = configureConsoleHandler(config.console(), consoleConfig, errorManager,
+                    logCleanupFilter, emptyMap(), emptyList(), new RuntimeValue<>(Optional.empty()), launchMode, false);
             errorManager = consoleHandler.getErrorManager();
             handlers.add(consoleHandler);
         }
 
-        Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, emptyList(),
-                emptyList(), emptyList(), emptyList(), emptyList(), errorManager, logCleanupFilter,
-                emptyMap(), launchMode, dummy, false);
+        Map<String, Handler> namedHandlers = createNamedHandlers(config, consoleConfig, emptyList(), emptyList(),
+                emptyList(), emptyList(), emptyList(), errorManager, logCleanupFilter, emptyMap(), launchMode, dummy,
+                false);
 
-        setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers, false);
+        setUpCategoryLoggers(buildConfig, categoryDefaultMinLevels, categories, logContext, errorManager, namedHandlers,
+                false);
 
         addNamedHandlersToRootHandlers(config.handlers(), namedHandlers, handlers, errorManager);
         InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
         InitialConfigurator.DELAYED_HANDLER.setBuildTimeHandlers(handlers.toArray(LogContextInitializer.NO_HANDLERS));
     }
 
-    private boolean shouldCreateNamedHandlers(
-            LogRuntimeConfig logRuntimeConfig,
+    private boolean shouldCreateNamedHandlers(LogRuntimeConfig logRuntimeConfig,
             List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers) {
         if (!logRuntimeConfig.categories().isEmpty()) {
             return true;
@@ -365,7 +353,8 @@ public class LoggingSetupRecorder {
     }
 
     public static <T> Level getLogLevel(String categoryName, Map<String, T> categories,
-            Function<T, InheritableLevel> levelExtractor, Map<String, InheritableLevel> categoryDefaults, Level rootMinLevel) {
+            Function<T, InheritableLevel> levelExtractor, Map<String, InheritableLevel> categoryDefaults,
+            Level rootMinLevel) {
         while (true) {
             InheritableLevel inheritableLevel = getLogLevelNoInheritance(categoryName, categories, levelExtractor,
                     categoryDefaults);
@@ -396,15 +385,13 @@ public class LoggingSetupRecorder {
         return inheritableLevel;
     }
 
-    private static Map<String, Handler> createNamedHandlers(
-            LogRuntimeConfig config, ConsoleRuntimeConfig consoleRuntimeConfig,
-            List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
+    private static Map<String, Handler> createNamedHandlers(LogRuntimeConfig config,
+            ConsoleRuntimeConfig consoleRuntimeConfig, List<RuntimeValue<Map<String, Handler>>> additionalNamedHandlers,
             List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
             List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters,
-            List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters,
-            ErrorManager errorManager, LogCleanupFilter cleanupFilter,
-            Map<String, Filter> namedFilters, LaunchMode launchMode,
+            List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters, ErrorManager errorManager,
+            LogCleanupFilter cleanupFilter, Map<String, Filter> namedFilters, LaunchMode launchMode,
             ShutdownNotifier shutdownHandler, boolean includeFilters) {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers().entrySet()) {
@@ -455,9 +442,8 @@ public class LoggingSetupRecorder {
         } else {
             additionalNamedHandlersMap = new HashMap<>();
             for (RuntimeValue<Map<String, Handler>> runtimeValue : additionalNamedHandlers) {
-                runtimeValue.getValue().forEach(
-                        new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap, errorManager,
-                                cleanupFilter.filterElements.values(), shutdownHandler));
+                runtimeValue.getValue().forEach(new AdditionalNamedHandlersConsumer(additionalNamedHandlersMap,
+                        errorManager, cleanupFilter.filterElements.values(), shutdownHandler));
             }
         }
 
@@ -468,8 +454,8 @@ public class LoggingSetupRecorder {
 
     private static void addToNamedHandlers(Map<String, Handler> namedHandlers, Handler handler, String handlerName) {
         if (namedHandlers.containsKey(handlerName)) {
-            throw new RuntimeException(String.format("Only one handler can be configured with the same name '%s'",
-                    handlerName));
+            throw new RuntimeException(
+                    String.format("Only one handler can be configured with the same name '%s'", handlerName));
         }
         namedHandlers.put(handlerName, handler);
         InitialConfigurator.DELAYED_HANDLER.addLoggingCloseTask(new Runnable() {
@@ -480,11 +466,8 @@ public class LoggingSetupRecorder {
         });
     }
 
-    private static void addNamedHandlersToCategory(
-            CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
-            Logger categoryLogger,
-            ErrorManager errorManager,
-            boolean checkHandlerLinks) {
+    private static void addNamedHandlersToCategory(CategoryConfig categoryConfig, Map<String, Handler> namedHandlers,
+            Logger categoryLogger, ErrorManager errorManager, boolean checkHandlerLinks) {
         for (String categoryNamedHandler : categoryConfig.handlers().get()) {
             Handler handler = namedHandlers.get(categoryNamedHandler);
             if (handler != null) {
@@ -502,13 +485,9 @@ public class LoggingSetupRecorder {
         }
     }
 
-    private static void setUpCategoryLoggers(
-            final LogBuildTimeConfig buildConfig,
-            final Map<String, InheritableLevel> categoryDefaultMinLevels,
-            final Map<String, CategoryConfig> categories,
-            final LogContext logContext,
-            final ErrorManager errorManager,
-            final Map<String, Handler> namedHandlers,
+    private static void setUpCategoryLoggers(final LogBuildTimeConfig buildConfig,
+            final Map<String, InheritableLevel> categoryDefaultMinLevels, final Map<String, CategoryConfig> categories,
+            final LogContext logContext, final ErrorManager errorManager, final Map<String, Handler> namedHandlers,
             final boolean checkHandlerLinks) {
 
         for (Entry<String, CategoryConfig> entry : categories.entrySet()) {
@@ -516,14 +495,14 @@ public class LoggingSetupRecorder {
             CategoryConfig categoryConfig = entry.getValue();
             InheritableLevel categoryLevel = categoryConfig.level();
 
-            Level logLevel = getLogLevel(categoryName, categories, CategoryConfig::level, emptyMap(), buildConfig.minLevel());
+            Level logLevel = getLogLevel(categoryName, categories, CategoryConfig::level, emptyMap(),
+                    buildConfig.minLevel());
             Level minLogLevel = getLogLevel(categoryName, buildConfig.categories(), CategoryBuildTimeConfig::minLevel,
                     categoryDefaultMinLevels, buildConfig.minLevel());
             if (logLevel.intValue() < minLogLevel.intValue()) {
                 String category = entry.getKey();
-                log.warnf(
-                        "Log level %s for category '%s' set below minimum logging level %s, promoting it to %s. " +
-                                "Set the build time configuration property 'quarkus.log.category.\"%s\".min-level' to '%s' to avoid this warning",
+                log.warnf("Log level %s for category '%s' set below minimum logging level %s, promoting it to %s. "
+                        + "Set the build time configuration property 'quarkus.log.category.\"%s\".min-level' to '%s' to avoid this warning",
                         logLevel, category, minLogLevel, minLogLevel, category, logLevel);
 
                 categoryLevel = InheritableLevel.of(minLogLevel.toString());
@@ -535,13 +514,14 @@ public class LoggingSetupRecorder {
             }
             categoryLogger.setUseParentHandlers(categoryConfig.useParentHandlers());
             if (categoryConfig.handlers().isPresent()) {
-                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager, checkHandlerLinks);
+                addNamedHandlersToCategory(categoryConfig, namedHandlers, categoryLogger, errorManager,
+                        checkHandlerLinks);
             }
         }
     }
 
-    private static void addNamedHandlersToRootHandlers(Optional<List<String>> handlerNames, Map<String, Handler> namedHandlers,
-            ArrayList<Handler> effectiveHandlers, ErrorManager errorManager) {
+    private static void addNamedHandlersToRootHandlers(Optional<List<String>> handlerNames,
+            Map<String, Handler> namedHandlers, ArrayList<Handler> effectiveHandlers, ErrorManager errorManager) {
         if (handlerNames.isEmpty()) {
             return;
         }
@@ -561,23 +541,19 @@ public class LoggingSetupRecorder {
 
     public void initializeLoggingForImageBuild() {
         if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
-            final ConsoleHandler handler = new ConsoleHandler(new PatternFormatter(
-                    "%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"));
+            final ConsoleHandler handler = new ConsoleHandler(
+                    new PatternFormatter("%d{HH:mm:ss,SSS} %-5p [%c{1.}] %s%e%n"));
             handler.setLevel(Level.INFO);
             InitialConfigurator.DELAYED_HANDLER.setAutoFlush(false);
             InitialConfigurator.DELAYED_HANDLER.setHandlers(new Handler[] { handler });
         }
     }
 
-    private static Handler configureConsoleHandler(
-            final ConsoleConfig config,
-            final ConsoleRuntimeConfig consoleRuntimeConfig,
-            final ErrorManager defaultErrorManager,
-            final LogCleanupFilter cleanupFilter,
-            final Map<String, Filter> namedFilters,
+    private static Handler configureConsoleHandler(final ConsoleConfig config,
+            final ConsoleRuntimeConfig consoleRuntimeConfig, final ErrorManager defaultErrorManager,
+            final LogCleanupFilter cleanupFilter, final Map<String, Filter> namedFilters,
             final List<RuntimeValue<Optional<Formatter>>> possibleFormatters,
-            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
-            LaunchMode launchMode,
+            final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier, LaunchMode launchMode,
             boolean includeFilters) {
         Formatter formatter = null;
         boolean formatterWarning = false;
@@ -643,7 +619,8 @@ public class LoggingSetupRecorder {
         }
 
         if (formatterWarning) {
-            handler.getErrorManager().error("Multiple console formatters were activated", null, ErrorManager.GENERIC_FAILURE);
+            handler.getErrorManager().error("Multiple console formatters were activated", null,
+                    ErrorManager.GENERIC_FAILURE);
         }
 
         return handler;
@@ -651,8 +628,7 @@ public class LoggingSetupRecorder {
 
     private static Handler configureFileHandler(final FileConfig config, final ErrorManager errorManager,
             final LogCleanupFilter cleanupFilter, Map<String, Filter> namedFilters,
-            final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters,
-            final boolean includeFilters) {
+            final List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters, final boolean includeFilters) {
         FileHandler handler;
         FileConfig.RotationConfig rotationConfig = config.rotation();
         if (!rotationConfig.enabled()) {
@@ -706,7 +682,8 @@ public class LoggingSetupRecorder {
         applyFilter(includeFilters, errorManager, cleanupFilter, config.filter(), namedFilters, handler);
 
         if (formatterWarning) {
-            handler.getErrorManager().error("Multiple file formatters were activated", null, ErrorManager.GENERIC_FAILURE);
+            handler.getErrorManager().error("Multiple file formatters were activated", null,
+                    ErrorManager.GENERIC_FAILURE);
         }
 
         if (config.async().legacyEnable().orElse(config.async().enable())) {
@@ -731,13 +708,13 @@ public class LoggingSetupRecorder {
         }
     }
 
-    private static Handler configureSyslogHandler(final LogRuntimeConfig.SyslogConfig config, final ErrorManager errorManager,
-            final LogCleanupFilter logCleanupFilter,
+    private static Handler configureSyslogHandler(final LogRuntimeConfig.SyslogConfig config,
+            final ErrorManager errorManager, final LogCleanupFilter logCleanupFilter,
             final Map<String, Filter> namedFilters,
-            final List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters,
-            final boolean includeFilters) {
+            final List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters, final boolean includeFilters) {
         try {
-            final SyslogHandler handler = new SyslogHandler(config.endpoint().getHostString(), config.endpoint().getPort());
+            final SyslogHandler handler = new SyslogHandler(config.endpoint().getHostString(),
+                    config.endpoint().getPort());
             handler.setAppName(config.appName().orElse(getProcessName()));
             handler.setHostname(config.hostname().orElse(getQualifiedHostName()));
             handler.setFacility(config.facility());
@@ -751,8 +728,8 @@ public class LoggingSetupRecorder {
                 BigInteger maxLen = config.maxLength().get().asBigInteger();
                 if (maxLen.compareTo(BigInteger.valueOf(Integer.MAX_VALUE)) > 0) {
                     errorManager.error(
-                            "Using 2GB as the value of maxLength for SyslogHandler as it is the maximum allowed value", null,
-                            ErrorManager.GENERIC_FAILURE);
+                            "Using 2GB as the value of maxLength for SyslogHandler as it is the maximum allowed value",
+                            null, ErrorManager.GENERIC_FAILURE);
                     maxLen = BigInteger.valueOf(Integer.MAX_VALUE);
                 } else {
                     BigInteger minimumAllowedMaxLength = BigInteger.valueOf(128);
@@ -802,13 +779,12 @@ public class LoggingSetupRecorder {
     }
 
     private static Handler configureSocketHandler(final LogRuntimeConfig.SocketConfig config,
-            final ErrorManager errorManager,
-            final LogCleanupFilter logCleanupFilter,
+            final ErrorManager errorManager, final LogCleanupFilter logCleanupFilter,
             final Map<String, Filter> namedFilters,
-            final List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters,
-            final boolean includeFilters) {
+            final List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters, final boolean includeFilters) {
         try {
-            final SocketHandler handler = new SocketHandler(config.endpoint().getHostString(), config.endpoint().getPort());
+            final SocketHandler handler = new SocketHandler(config.endpoint().getHostString(),
+                    config.endpoint().getPort());
             handler.setProtocol(config.protocol());
             handler.setBlockOnReconnect(config.blockOnReconnect());
             handler.setLevel(config.level());
@@ -848,7 +824,8 @@ public class LoggingSetupRecorder {
         }
     }
 
-    private static AsyncHandler createAsyncHandler(LogRuntimeConfig.AsyncConfig asyncConfig, Level level, Handler handler) {
+    private static AsyncHandler createAsyncHandler(LogRuntimeConfig.AsyncConfig asyncConfig, Level level,
+            Handler handler) {
         final AsyncHandler asyncHandler = new AsyncHandler(asyncConfig.queueLength());
         asyncHandler.setOverflowAction(asyncConfig.overflow());
         asyncHandler.addHandler(handler);
@@ -873,8 +850,9 @@ public class LoggingSetupRecorder {
 
         private final ShutdownNotifier shutdownNotifier;
 
-        public AdditionalNamedHandlersConsumer(Map<String, Handler> additionalNamedHandlersMap, ErrorManager errorManager,
-                Collection<LogCleanupFilterElement> filterElements, ShutdownNotifier shutdownNotifier) {
+        public AdditionalNamedHandlersConsumer(Map<String, Handler> additionalNamedHandlersMap,
+                ErrorManager errorManager, Collection<LogCleanupFilterElement> filterElements,
+                ShutdownNotifier shutdownNotifier) {
             this.additionalNamedHandlersMap = additionalNamedHandlersMap;
             this.errorManager = errorManager;
             this.filterElements = filterElements;
@@ -885,8 +863,7 @@ public class LoggingSetupRecorder {
         public void accept(String name, Handler handler) {
             Handler previous = additionalNamedHandlersMap.putIfAbsent(name, handler);
             if (previous != null) {
-                throw new IllegalStateException(String.format(
-                        "Duplicate key %s (attempted merging values %s and %s)",
+                throw new IllegalStateException(String.format("Duplicate key %s (attempted merging values %s and %s)",
                         name, previous, handler));
             }
             handler.setErrorManager(errorManager);

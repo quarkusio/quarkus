@@ -93,7 +93,8 @@ public class ElementUtil {
 
     public Map<String, AnnotationMirror> getAnnotations(Element element) {
         return element.getAnnotationMirrors().stream()
-                .collect(Collectors.toMap(a -> ((TypeElement) a.getAnnotationType().asElement()).getQualifiedName().toString(),
+                .collect(Collectors.toMap(
+                        a -> ((TypeElement) a.getAnnotationType().asElement()).getQualifiedName().toString(),
                         Function.identity()));
     }
 
@@ -127,9 +128,7 @@ public class ElementUtil {
     public boolean isAnnotationPresent(Element element, String... annotationNames) {
         Set<String> annotations = Set.of(annotationNames);
         for (AnnotationMirror i : element.getAnnotationMirrors()) {
-            String annotationName = ((TypeElement) i.getAnnotationType()
-                    .asElement()).getQualifiedName()
-                    .toString();
+            String annotationName = ((TypeElement) i.getAnnotationType().asElement()).getQualifiedName().toString();
             if (annotations.contains(annotationName)) {
                 return true;
             }
@@ -140,8 +139,8 @@ public class ElementUtil {
     /**
      * This is less than ideal but it's the only way I found to detect if a class is local or not.
      * <p>
-     * It is important because, while we can scan the annotations of classes in the classpath, we cannot get their javadoc,
-     * which in the case of config doc generation is problematic.
+     * It is important because, while we can scan the annotations of classes in the classpath, we cannot get their
+     * javadoc, which in the case of config doc generation is problematic.
      */
     public boolean isLocalClass(TypeElement clazz) {
         try {
@@ -166,9 +165,7 @@ public class ElementUtil {
 
         // javax.lang.model keeps the leading space after the "*" so we need to remove it.
 
-        return Optional.of(REMOVE_LEADING_SPACE.matcher(docComment)
-                .replaceAll("")
-                .trim());
+        return Optional.of(REMOVE_LEADING_SPACE.matcher(docComment).replaceAll("").trim());
     }
 
     public void addMissingJavadocError(Element e) {

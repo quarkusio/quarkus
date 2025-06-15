@@ -17,16 +17,26 @@ import org.flywaydb.core.internal.scanner.filesystem.FileSystemScanner;
 import org.jboss.logging.Logger;
 
 /**
- * This class is used in order to prevent Flyway from doing classpath scanning which is both slow
- * and won't work in native mode
+ * This class is used in order to prevent Flyway from doing classpath scanning which is both slow and won't work in
+ * native mode
  */
 @SuppressWarnings("rawtypes")
 public final class QuarkusPathLocationScanner implements ResourceAndClassScanner {
     private static final Logger LOGGER = Logger.getLogger(QuarkusPathLocationScanner.class);
     private static final String LOCATION_SEPARATOR = "/";
-    private static Collection<String> applicationMigrationFiles = Collections.emptyList(); // the set default to aid unit tests
-    private static Collection<Class<? extends JavaMigration>> applicationMigrationClasses = Collections.emptyList(); // the set default to aid unit tests
-    private static Map<String, Collection<Callback>> applicationCallbackClasses = Collections.emptyMap(); // the set default to aid unit tests
+    private static Collection<String> applicationMigrationFiles = Collections.emptyList(); // the set default to aid
+                                                                                           // unit tests
+    private static Collection<Class<? extends JavaMigration>> applicationMigrationClasses = Collections.emptyList(); // the
+                                                                                                                     // set
+                                                                                                                     // default
+                                                                                                                     // to
+                                                                                                                     // aid
+                                                                                                                     // unit
+                                                                                                                     // tests
+    private static Map<String, Collection<Callback>> applicationCallbackClasses = Collections.emptyMap(); // the set
+                                                                                                          // default to
+                                                                                                          // aid unit
+                                                                                                          // tests
 
     private final Collection<LoadableResource> scannedResources;
     private final Collection<Class<? extends JavaMigration>> scannedMigrationClasses;
@@ -49,7 +59,8 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
                     fileSystemScanner = new FileSystemScanner(false, configuration);
                 }
                 LOGGER.debugf("Checking %s for migration files", migrationFile);
-                Collection<LoadableResource> resources = fileSystemScanner.scanForResources(new Location(migrationFile));
+                Collection<LoadableResource> resources = fileSystemScanner
+                        .scanForResources(new Location(migrationFile));
                 LOGGER.debugf("%s contains %d migration files", migrationFile, resources.size());
                 scannedResources.addAll(resources);
             }
@@ -73,7 +84,6 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
     }
 
     /**
-     *
      * @return The resources that were found.
      */
     @Override
@@ -114,7 +124,8 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
         QuarkusPathLocationScanner.applicationMigrationFiles = applicationMigrationFiles;
     }
 
-    public static void setApplicationMigrationClasses(Collection<Class<? extends JavaMigration>> applicationMigrationClasses) {
+    public static void setApplicationMigrationClasses(
+            Collection<Class<? extends JavaMigration>> applicationMigrationClasses) {
         QuarkusPathLocationScanner.applicationMigrationClasses = applicationMigrationClasses;
     }
 }

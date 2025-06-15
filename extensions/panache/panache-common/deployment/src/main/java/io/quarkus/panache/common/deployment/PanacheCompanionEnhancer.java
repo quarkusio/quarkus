@@ -6,8 +6,7 @@ import java.util.function.BiFunction;
 import org.jboss.jandex.IndexView;
 import org.objectweb.asm.ClassVisitor;
 
-public abstract class PanacheCompanionEnhancer
-        implements BiFunction<String, ClassVisitor, ClassVisitor> {
+public abstract class PanacheCompanionEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     protected final IndexView indexView;
     protected final List<PanacheMethodCustomizer> methodCustomizers;

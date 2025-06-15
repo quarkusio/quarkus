@@ -12,8 +12,8 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
- * {@link ApplicationModel} implementation that allows overriding the application artifact
- * of another {@link ApplicationModel} instance.
+ * {@link ApplicationModel} implementation that allows overriding the application artifact of another
+ * {@link ApplicationModel} instance.
  */
 class DevModeTestApplicationModel implements ApplicationModel {
 

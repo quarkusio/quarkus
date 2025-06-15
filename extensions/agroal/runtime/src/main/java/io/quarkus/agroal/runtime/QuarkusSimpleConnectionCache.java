@@ -13,11 +13,11 @@ class QuarkusSimpleConnectionCache implements ConnectionCache {
     public Acquirable get() {
         Thread thread = Thread.currentThread();
         if (thread instanceof JBossThread) {
-            //we only want to cache on threads that we control the lifecycle
-            //which are the vert.x and potentially jboss threads
-            //JBossThread still works with FastThreadLocal, it is just slower, and for most apps
-            //this will not be used anyway, as we use VertThread pretty much everywhere if
-            //Vert.x is present
+            // we only want to cache on threads that we control the lifecycle
+            // which are the vert.x and potentially jboss threads
+            // JBossThread still works with FastThreadLocal, it is just slower, and for most apps
+            // this will not be used anyway, as we use VertThread pretty much everywhere if
+            // Vert.x is present
             Acquirable acquirable = connectionCache.get();
             return acquirable != null && acquirable.acquire() ? acquirable : null;
         }

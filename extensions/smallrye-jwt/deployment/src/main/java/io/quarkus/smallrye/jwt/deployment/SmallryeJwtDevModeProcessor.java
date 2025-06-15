@@ -52,14 +52,9 @@ public class SmallryeJwtDevModeProcessor {
 
     private static final int KEY_SIZE = 2048;
 
-    private static final Set<String> JWT_SIGN_KEY_PROPERTIES = Set.of(
-            MP_JWT_VERIFY_KEY_LOCATION,
-            MP_JWT_VERIFY_PUBLIC_KEY,
-            SMALLRYE_JWT_DECRYPT_KEY,
-            MP_JWT_DECRYPT_KEY_LOCATION,
-            SMALLRYE_JWT_SIGN_KEY_LOCATION,
-            SMALLRYE_JWT_SIGN_KEY,
-            SMALLRYE_JWT_ENCRYPT_KEY,
+    private static final Set<String> JWT_SIGN_KEY_PROPERTIES = Set.of(MP_JWT_VERIFY_KEY_LOCATION,
+            MP_JWT_VERIFY_PUBLIC_KEY, SMALLRYE_JWT_DECRYPT_KEY, MP_JWT_DECRYPT_KEY_LOCATION,
+            SMALLRYE_JWT_SIGN_KEY_LOCATION, SMALLRYE_JWT_SIGN_KEY, SMALLRYE_JWT_ENCRYPT_KEY,
             SMALLRYE_JWT_ENCRYPT_KEY_LOCATION);
     public static final String DEV_PRIVATE_KEY_PEM = "dev.privateKey.pem";
     public static final String DEV_PUBLIC_KEY_PEM = "dev.publicKey.pem";
@@ -69,24 +64,23 @@ public class SmallryeJwtDevModeProcessor {
      * <p>
      * The key pair is generated only if the user has not set any of the {@code *.key} or {@code *.location} properties.
      * <p>
-     * Additionally, if the user has not provided the {@code mp.jwt.verify.issuer} and {@code smallrye.jwt.new-token.issuer}
-     * properties,
-     * this build step will add a default issuer, regardless of the above condition.
+     * Additionally, if the user has not provided the {@code mp.jwt.verify.issuer} and
+     * {@code smallrye.jwt.new-token.issuer} properties, this build step will add a default issuer, regardless of the
+     * above condition.
      *
-     * @throws NoSuchAlgorithmException if RSA-256 key generation fails.
-     * @throws IOException if persistent key storage fails
+     * @throws NoSuchAlgorithmException
+     *         if RSA-256 key generation fails.
+     * @throws IOException
+     *         if persistent key storage fails
      */
     @BuildStep(onlyIfNot = { IsNormal.class })
     void generateSignKeys(BuildProducer<DevServicesResultBuildItem> devServices,
-            LiveReloadBuildItem liveReloadBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            LiveReloadBuildItem liveReloadBuildItem, CurateOutcomeBuildItem curateOutcomeBuildItem,
             Optional<GeneratePersistentDevModeJwtKeysBuildItem> generatePersistentDevModeJwtKeysBuildItem,
             Optional<GenerateEncryptedDevModeJwtKeysBuildItem> generateEncryptedDevModeJwtKeysBuildItem)
             throws GeneralSecurityException, IOException {
 
-        Set<String> userProps = JWT_SIGN_KEY_PROPERTIES
-                .stream()
-                .filter(this::isConfigPresent)
+        Set<String> userProps = JWT_SIGN_KEY_PROPERTIES.stream().filter(this::isConfigPresent)
                 .collect(Collectors.toSet());
 
         if (!userProps.isEmpty()) {
@@ -106,11 +100,13 @@ public class SmallryeJwtDevModeProcessor {
 
         KeyPairContext ctx = liveReloadBuildItem.getContextObject(KeyPairContext.class);
 
-        LOGGER.info("The smallrye-jwt extension has configured an in-memory key pair, which is not enabled in production. " +
-                "Please ensure the correct keys/locations are set in production to avoid potential issues.");
+        LOGGER.info(
+                "The smallrye-jwt extension has configured an in-memory key pair, which is not enabled in production. "
+                        + "Please ensure the correct keys/locations are set in production to avoid potential issues.");
         if (ctx == null && !liveReloadBuildItem.isLiveReload()) {
             // first execution
-            KeyPair keyPair = generateOrReloadKeyPair(curateOutcomeBuildItem, generatePersistentDevModeJwtKeysBuildItem);
+            KeyPair keyPair = generateOrReloadKeyPair(curateOutcomeBuildItem,
+                    generatePersistentDevModeJwtKeysBuildItem);
             String publicKey = getStringKey(keyPair.getPublic());
             String privateKey = getStringKey(keyPair.getPrivate());
 
@@ -122,8 +118,7 @@ public class SmallryeJwtDevModeProcessor {
                 devServiceProps.put(SMALLRYE_JWT_NEW_TOKEN_ISSUER, DEFAULT_ISSUER);
             }
 
-            liveReloadBuildItem.setContextObject(KeyPairContext.class, new KeyPairContext(
-                    devServiceProps));
+            liveReloadBuildItem.setContextObject(KeyPairContext.class, new KeyPairContext(devServiceProps));
 
             devServices.produce(smallryeJwtDevServiceWith(devServiceProps));
         }
@@ -204,7 +199,8 @@ public class SmallryeJwtDevModeProcessor {
         }
 
         if (generateEncryptedDevModeJwtKeysBuildItem.isPresent()) {
-            if (!userConfigs.contains(SMALLRYE_JWT_ENCRYPT_KEY) && !userConfigs.contains(SMALLRYE_JWT_ENCRYPT_KEY_LOCATION)) {
+            if (!userConfigs.contains(SMALLRYE_JWT_ENCRYPT_KEY)
+                    && !userConfigs.contains(SMALLRYE_JWT_ENCRYPT_KEY_LOCATION)) {
                 devServiceConfigs.put(SMALLRYE_JWT_ENCRYPT_KEY, NONE);
             }
 
@@ -217,13 +213,11 @@ public class SmallryeJwtDevModeProcessor {
     }
 
     private boolean isConfigPresent(String property) {
-        return ConfigProvider.getConfig().getOptionalValue(property, String.class)
-                .isPresent();
+        return ConfigProvider.getConfig().getOptionalValue(property, String.class).isPresent();
     }
 
     private DevServicesResultBuildItem smallryeJwtDevServiceWith(Map<String, String> properties) {
-        return new DevServicesResultBuildItem(
-                Feature.SMALLRYE_JWT.name(), null, properties);
+        return new DevServicesResultBuildItem(Feature.SMALLRYE_JWT.name(), null, properties);
     }
 
     private static Map<String, String> generateDevServiceProperties(String publicKey, String privateKey,
@@ -239,8 +233,7 @@ public class SmallryeJwtDevModeProcessor {
     }
 
     private static String getStringKey(Key key) {
-        return Base64.getEncoder()
-                .encodeToString(key.getEncoded());
+        return Base64.getEncoder().encodeToString(key.getEncoded());
     }
 
     record KeyPairContext(Map<String, String> properties) {

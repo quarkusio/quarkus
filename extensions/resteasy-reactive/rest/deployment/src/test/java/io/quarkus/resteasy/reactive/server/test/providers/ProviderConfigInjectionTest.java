@@ -22,8 +22,8 @@ import io.smallrye.config.common.MapBackedConfigSource;
 
 public class ProviderConfigInjectionTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
-            jar -> jar.addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
                     StaticConfigSource.class.getName(), RuntimeConfigSource.class.getName()));
 
     @Test

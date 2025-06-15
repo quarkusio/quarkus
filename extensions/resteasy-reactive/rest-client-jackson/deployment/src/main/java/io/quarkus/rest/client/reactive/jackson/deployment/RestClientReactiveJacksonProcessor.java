@@ -54,70 +54,42 @@ public class RestClientReactiveJacksonProcessor {
 
     @BuildStep
     void additionalProviders(BuildProducer<AnnotationToRegisterIntoClientContextBuildItem> annotation) {
-        annotation.produce(new AnnotationToRegisterIntoClientContextBuildItem(DotName.createSimple(ClientObjectMapper.class),
-                ObjectMapper.class));
+        annotation.produce(new AnnotationToRegisterIntoClientContextBuildItem(
+                DotName.createSimple(ClientObjectMapper.class), ObjectMapper.class));
     }
 
     @BuildStep
-    void additionalProviders(
-            List<ResteasyReactiveJacksonProviderDefinedBuildItem> jacksonProviderDefined,
+    void additionalProviders(List<ResteasyReactiveJacksonProviderDefinedBuildItem> jacksonProviderDefined,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
         // make these beans to they can get instantiated with the Quarkus CDI configured Jsonb object
-        additionalBean.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(ClientJacksonMessageBodyReader.class.getName())
-                .addBeanClass(ClientJacksonMessageBodyWriter.class.getName())
-                .setUnremovable().build());
+        additionalBean
+                .produce(AdditionalBeanBuildItem.builder().addBeanClass(ClientJacksonMessageBodyReader.class.getName())
+                        .addBeanClass(ClientJacksonMessageBodyWriter.class.getName()).setUnremovable().build());
 
+        additionalReaders.produce(new MessageBodyReaderBuildItem.Builder(ClientJacksonMessageBodyReader.class.getName(),
+                Object.class.getName()).setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES).setBuiltin(true)
+                .setRuntimeType(RuntimeType.CLIENT).build());
         additionalReaders
-                .produce(
-                        new MessageBodyReaderBuildItem.Builder(ClientJacksonMessageBodyReader.class.getName(),
-                                Object.class.getName())
-                                .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.CLIENT)
-                                .build());
+                .produce(new MessageBodyReaderBuildItem.Builder(VertxJsonArrayBasicMessageBodyReader.class.getName(),
+                        JsonArray.class.getName()).setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES).setBuiltin(true)
+                        .setRuntimeType(RuntimeType.CLIENT).build());
         additionalReaders
-                .produce(
-                        new MessageBodyReaderBuildItem.Builder(VertxJsonArrayBasicMessageBodyReader.class.getName(),
-                                JsonArray.class.getName())
-                                .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.CLIENT)
-                                .build());
-        additionalReaders
-                .produce(
-                        new MessageBodyReaderBuildItem.Builder(VertxJsonObjectBasicMessageBodyReader.class.getName(),
-                                JsonObject.class.getName())
-                                .setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.CLIENT)
-                                .build());
+                .produce(new MessageBodyReaderBuildItem.Builder(VertxJsonObjectBasicMessageBodyReader.class.getName(),
+                        JsonObject.class.getName()).setMediaTypeStrings(HANDLED_READ_MEDIA_TYPES).setBuiltin(true)
+                        .setRuntimeType(RuntimeType.CLIENT).build());
+        additionalWriters.produce(new MessageBodyWriterBuildItem.Builder(ClientJacksonMessageBodyWriter.class.getName(),
+                Object.class.getName()).setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES).setBuiltin(true)
+                .setRuntimeType(RuntimeType.CLIENT).build());
         additionalWriters
-                .produce(
-                        new MessageBodyWriterBuildItem.Builder(ClientJacksonMessageBodyWriter.class.getName(),
-                                Object.class.getName())
-                                .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.CLIENT)
-                                .build());
+                .produce(new MessageBodyWriterBuildItem.Builder(VertxJsonArrayBasicMessageBodyWriter.class.getName(),
+                        JsonArray.class.getName()).setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES).setBuiltin(true)
+                        .setRuntimeType(RuntimeType.CLIENT).build());
         additionalWriters
-                .produce(
-                        new MessageBodyWriterBuildItem.Builder(VertxJsonArrayBasicMessageBodyWriter.class.getName(),
-                                JsonArray.class.getName())
-                                .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.CLIENT)
-                                .build());
-        additionalWriters
-                .produce(
-                        new MessageBodyWriterBuildItem.Builder(VertxJsonObjectBasicMessageBodyWriter.class.getName(),
-                                JsonObject.class.getName())
-                                .setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.CLIENT)
-                                .build());
+                .produce(new MessageBodyWriterBuildItem.Builder(VertxJsonObjectBasicMessageBodyWriter.class.getName(),
+                        JsonObject.class.getName()).setMediaTypeStrings(HANDLED_WRITE_MEDIA_TYPES).setBuiltin(true)
+                        .setRuntimeType(RuntimeType.CLIENT).build());
     }
 
     @BuildStep

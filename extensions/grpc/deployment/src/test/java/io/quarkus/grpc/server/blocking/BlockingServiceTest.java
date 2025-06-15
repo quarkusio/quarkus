@@ -34,13 +34,9 @@ import io.smallrye.mutiny.Multi;
 public class BlockingServiceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addPackage(HealthGrpc.class.getPackage())
-                            .addPackage(GreeterGrpc.class.getPackage())
-                            .addClasses(BlockingMutinyHelloService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(HealthGrpc.class.getPackage())
+                    .addPackage(GreeterGrpc.class.getPackage()).addClasses(BlockingMutinyHelloService.class))
             .withConfigurationResource("reflection-config.properties");
 
     protected ManagedChannel channel;
@@ -53,9 +49,7 @@ public class BlockingServiceTest {
 
     @BeforeEach
     public void init() {
-        channel = ManagedChannelBuilder.forAddress("localhost", 9001)
-                .usePlaintext()
-                .build();
+        channel = ManagedChannelBuilder.forAddress("localhost", 9001).usePlaintext().build();
     }
 
     @AfterEach
@@ -80,19 +74,17 @@ public class BlockingServiceTest {
 
     @Test
     public void testReflection() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
-                .setListServices("").build();
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost").setListServices("")
+                .build();
 
         ServerReflectionResponse response = invoke(request);
         List<ServiceResponse> list = response.getListServicesResponse().getServiceList();
-        assertThat(list).hasSize(2)
-                .anySatisfy(r -> assertThat(r.getName()).isEqualTo("helloworld.Greeter"))
+        assertThat(list).hasSize(2).anySatisfy(r -> assertThat(r.getName()).isEqualTo("helloworld.Greeter"))
                 .anySatisfy(r -> assertThat(r.getName()).isEqualTo("grpc.health.v1.Health"));
     }
 
     private ServerReflectionResponse invoke(ServerReflectionRequest request) {
-        return reflection.serverReflectionInfo(Multi.createFrom().item(request))
-                .collect().first()
-                .await().indefinitely();
+        return reflection.serverReflectionInfo(Multi.createFrom().item(request)).collect().first().await()
+                .indefinitely();
     }
 }

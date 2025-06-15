@@ -20,10 +20,8 @@ import io.smallrye.health.api.HealthGroup;
 class ExpectedBeansUnitTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FailingHealthCheck.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FailingHealthCheck.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
     @Inject
     @Any
     Instance<HealthCheck> checks;
@@ -73,11 +71,8 @@ class ExpectedBeansUnitTest {
         selects = checks.select(HealthGroup.Literal.of("group2"));
         Assertions.assertTrue(isUnique(selects));
 
-        selects = checks.select(Liveness.Literal.INSTANCE,
-                Readiness.Literal.INSTANCE,
-                Startup.Literal.INSTANCE,
-                HealthGroup.Literal.of("group1"),
-                HealthGroup.Literal.of("group2"));
+        selects = checks.select(Liveness.Literal.INSTANCE, Readiness.Literal.INSTANCE, Startup.Literal.INSTANCE,
+                HealthGroup.Literal.of("group1"), HealthGroup.Literal.of("group2"));
         Assertions.assertTrue(isUnique(selects));
 
         Assertions.assertTrue(checks.select(HealthGroup.Literal.of("group3")).isUnsatisfied());

@@ -24,9 +24,11 @@ public class ServerExceptionMappingFeature implements FeatureScanner {
     final Set<String> additionalBeanAnnotations;
 
     /**
-     * @param unwrappableTypes Types that can be unwrapped using
+     * @param unwrappableTypes
+     *        Types that can be unwrapped using
      *        {@link org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext#unwrap(Class)}
-     * @param additionalBeanAnnotations Annotations that should be added to generated beans
+     * @param additionalBeanAnnotations
+     *        Annotations that should be added to generated beans
      */
     public ServerExceptionMappingFeature(Set<DotName> unwrappableTypes, Set<String> additionalBeanAnnotations) {
         this.unwrappableTypes = unwrappableTypes;
@@ -64,21 +66,22 @@ public class ServerExceptionMappingFeature implements FeatureScanner {
             }
         }
 
-        for (AnnotationInstance instance : index
-                .getAnnotations(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER)) {
+        for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
             MethodInfo methodInfo = instance.target().asMethod();
-            if (methodExceptionMapper.contains(methodInfo)) { // methods annotated with @ServerExceptionMapper that exist inside a Resource Class are handled differently
+            if (methodExceptionMapper.contains(methodInfo)) { // methods annotated with @ServerExceptionMapper that
+                                                              // exist inside a Resource Class are handled differently
                 continue;
             }
             // the user class itself is made to be a bean as we want the user to be able to declare dependencies
-            //additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
+            // additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
                     classOutput, unwrappableTypes, additionalBeanAnnotations, (m) -> false);
             for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
-                ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>().setClassName(entry.getValue());
+                ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>()
+                        .setClassName(entry.getValue());
                 scannedApplication.getExceptionMappers().addExceptionMapper(entry.getKey(), mapper);
                 AnnotationValue priorityValue = instance.value("priority");
                 if (priorityValue != null) {

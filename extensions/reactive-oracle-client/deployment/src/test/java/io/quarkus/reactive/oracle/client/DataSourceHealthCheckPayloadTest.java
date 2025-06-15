@@ -11,8 +11,7 @@ import io.restassured.RestAssured;
 public class DataSourceHealthCheckPayloadTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.datasource.health.enabled", "true")
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             // this should make the health check fail
@@ -20,11 +19,9 @@ public class DataSourceHealthCheckPayloadTest {
 
     @Test
     public void testDataSourceHealthCheckPayload() {
-        RestAssured.when().get("/q/health/ready")
-                .then()
-                .body("status", CoreMatchers.equalTo("DOWN"))
-                .body("checks.data", CoreMatchers
-                        .hasItem(Matchers.hasValue(CoreMatchers.containsString("down - connection failed"))));
+        RestAssured.when().get("/q/health/ready").then().body("status", CoreMatchers.equalTo("DOWN")).body(
+                "checks.data",
+                CoreMatchers.hasItem(Matchers.hasValue(CoreMatchers.containsString("down - connection failed"))));
     }
 
 }

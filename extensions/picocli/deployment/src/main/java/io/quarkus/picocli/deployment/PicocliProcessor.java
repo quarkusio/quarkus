@@ -42,30 +42,19 @@ class PicocliProcessor {
         // First add @Dependent to all classes annotated with @Command that:
         // (a) require container services
         autoAddScope.produce(AutoAddScopeBuildItem.builder()
-                .isAnnotatedWith(DotName.createSimple(CommandLine.Command.class.getName()))
-                .requiresContainerServices()
-                .defaultScope(BuiltinScope.DEPENDENT)
-                .priority(20)
-                .unremovable()
-                .build());
+                .isAnnotatedWith(DotName.createSimple(CommandLine.Command.class.getName())).requiresContainerServices()
+                .defaultScope(BuiltinScope.DEPENDENT).priority(20).unremovable().build());
         // (b) or declare a single constructor with at least one parameter
-        autoAddScope.produce(AutoAddScopeBuildItem.builder()
-                .match((clazz, annotations, index) -> {
-                    List<MethodInfo> constructors = clazz.methods().stream().filter(m -> m.name().equals(MethodDescriptor.INIT))
-                            .collect(Collectors.toList());
-                    return constructors.size() == 1 && constructors.get(0).parametersCount() > 0;
-                })
-                .isAnnotatedWith(DotName.createSimple(CommandLine.Command.class.getName()))
-                .defaultScope(BuiltinScope.DEPENDENT)
-                .priority(10)
-                .unremovable()
-                .build());
+        autoAddScope.produce(AutoAddScopeBuildItem.builder().match((clazz, annotations, index) -> {
+            List<MethodInfo> constructors = clazz.methods().stream().filter(m -> m.name().equals(MethodDescriptor.INIT))
+                    .collect(Collectors.toList());
+            return constructors.size() == 1 && constructors.get(0).parametersCount() > 0;
+        }).isAnnotatedWith(DotName.createSimple(CommandLine.Command.class.getName()))
+                .defaultScope(BuiltinScope.DEPENDENT).priority(10).unremovable().build());
         // Also add @Dependent to any class annotated with @TopCommand
-        autoAddScope.produce(AutoAddScopeBuildItem.builder()
-                .isAnnotatedWith(DotName.createSimple(TopCommand.class.getName()))
-                .defaultScope(BuiltinScope.DEPENDENT)
-                .unremovable()
-                .build());
+        autoAddScope.produce(
+                AutoAddScopeBuildItem.builder().isAnnotatedWith(DotName.createSimple(TopCommand.class.getName()))
+                        .defaultScope(BuiltinScope.DEPENDENT).unremovable().build());
     }
 
     @BuildStep
@@ -74,8 +63,7 @@ class PicocliProcessor {
     }
 
     @BuildStep
-    void picocliRunner(ApplicationIndexBuildItem applicationIndex,
-            CombinedIndexBuildItem combinedIndex,
+    void picocliRunner(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndex,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<UnremovableBeanBuildItem> unremovableBean,
             BuildProducer<QuarkusApplicationClassBuildItem> quarkusApplicationClass,
@@ -89,11 +77,9 @@ class PicocliProcessor {
                 // If there is exactly one @Command then make it @TopCommand
                 DotName singleCommandClassName = commands.get(0);
                 annotationsTransformer.produce(new AnnotationsTransformerBuildItem(
-                        AnnotationsTransformer.appliedToClass()
-                                .whenClass(c -> c.name().equals(singleCommandClassName))
+                        AnnotationsTransformer.appliedToClass().whenClass(c -> c.name().equals(singleCommandClassName))
                                 // Make sure the transformation is applied before AutoAddScopeBuildItem is processed
-                                .priority(2000)
-                                .thenTransform(t -> t.add(TopCommand.class))));
+                                .priority(2000).thenTransform(t -> t.add(TopCommand.class))));
             }
         }
         if (index.getAnnotations(DotName.createSimple(QuarkusMain.class.getName())).isEmpty()) {
@@ -104,20 +90,15 @@ class PicocliProcessor {
 
         // Make all classes that can be instantiated by IFactory unremovable
         unremovableBean.produce(UnremovableBeanBuildItem.beanTypes(CommandLine.ITypeConverter.class,
-                CommandLine.IVersionProvider.class,
-                CommandLine.IModelTransformer.class,
-                CommandLine.IModelTransformer.class,
-                CommandLine.IDefaultValueProvider.class,
-                CommandLine.IParameterConsumer.class,
-                CommandLine.IParameterPreprocessor.class,
-                CommandLine.INegatableOptionTransformer.class,
-                CommandLine.IHelpFactory.class));
+                CommandLine.IVersionProvider.class, CommandLine.IModelTransformer.class,
+                CommandLine.IModelTransformer.class, CommandLine.IDefaultValueProvider.class,
+                CommandLine.IParameterConsumer.class, CommandLine.IParameterPreprocessor.class,
+                CommandLine.INegatableOptionTransformer.class, CommandLine.IHelpFactory.class));
     }
 
     private List<DotName> classesAnnotatedWith(IndexView indexView, String annotationClassName) {
-        return indexView.getAnnotations(DotName.createSimple(annotationClassName))
-                .stream().filter(ann -> ann.target().kind() == AnnotationTarget.Kind.CLASS)
-                .map(ann -> ann.target().asClass().name())
-                .collect(Collectors.toList());
+        return indexView.getAnnotations(DotName.createSimple(annotationClassName)).stream()
+                .filter(ann -> ann.target().kind() == AnnotationTarget.Kind.CLASS)
+                .map(ann -> ann.target().asClass().name()).collect(Collectors.toList());
     }
 }

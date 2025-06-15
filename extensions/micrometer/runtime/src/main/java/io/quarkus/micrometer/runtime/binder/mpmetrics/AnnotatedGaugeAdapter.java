@@ -27,8 +27,7 @@ public interface AnnotatedGaugeAdapter extends org.eclipse.microprofile.metrics.
     String getTargetName();
 
     /**
-     * Generic base instance of an AnnotatedGaugeAdapter.
-     * Generated beans extend this base.
+     * Generic base instance of an AnnotatedGaugeAdapter. Generated beans extend this base.
      */
     public static abstract class GaugeAdapterImpl implements AnnotatedGaugeAdapter {
         final MpMetadata metadata;
@@ -52,12 +51,10 @@ public interface AnnotatedGaugeAdapter extends org.eclipse.microprofile.metrics.
         public GaugeAdapterImpl register(MetricDescriptor id, MeterRegistry registry) {
             this.id = id;
             if (gauge == null || metadata.cleanDirtyMetadata()) {
-                gauge = io.micrometer.core.instrument.Gauge.builder(metadata.name, this, g -> g.getValue().doubleValue())
-                        .description(metadata.getDescription())
-                        .tags(id.tags())
-                        .baseUnit(metadata.getUnit())
-                        .strongReference(true)
-                        .register(registry);
+                gauge = io.micrometer.core.instrument.Gauge
+                        .builder(metadata.name, this, g -> g.getValue().doubleValue())
+                        .description(metadata.getDescription()).tags(id.tags()).baseUnit(metadata.getUnit())
+                        .strongReference(true).register(registry);
             }
             return this;
         }
@@ -99,11 +96,8 @@ public interface AnnotatedGaugeAdapter extends org.eclipse.microprofile.metrics.
         }
 
         public String toString() {
-            return this.getClass().getName()
-                    + "[ name=" + id.name
-                    + ", tags=" + Arrays.asList(id.tags)
-                    + ", target=" + targetName
-                    + "]";
+            return this.getClass().getName() + "[ name=" + id.name + ", tags=" + Arrays.asList(id.tags) + ", target="
+                    + targetName + "]";
         }
     }
 }

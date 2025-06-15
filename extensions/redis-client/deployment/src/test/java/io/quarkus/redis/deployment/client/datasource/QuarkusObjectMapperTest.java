@@ -37,10 +37,9 @@ public class QuarkusObjectMapperTest {
 
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClass(CustomCodecTest.Jedi.class).addClass(
-                            CustomCodecTest.Sith.class)
-                            .addClass(CustomCodecTest.CustomJediCodec.class).addClass(CustomCodecTest.CustomSithCodec.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(CustomCodecTest.Jedi.class)
+                    .addClass(CustomCodecTest.Sith.class).addClass(CustomCodecTest.CustomJediCodec.class)
+                    .addClass(CustomCodecTest.CustomSithCodec.class))
             .overrideConfigKey("quarkus.redis.hosts", "${quarkus.redis.tr}");
 
     @Inject

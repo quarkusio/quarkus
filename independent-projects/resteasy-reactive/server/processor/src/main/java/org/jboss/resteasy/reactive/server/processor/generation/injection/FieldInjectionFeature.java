@@ -28,7 +28,8 @@ public class FieldInjectionFeature extends AbstractFeatureScanner {
                 Method theMethod = theClass.getDeclaredMethod(i.getMethodName(), Deployment.class);
                 theMethod.invoke(null, deployment);
             } catch (Exception e) {
-                throw new RuntimeException("Failed to initialize converters for injected class" + i.getInjectedClassName(), e);
+                throw new RuntimeException(
+                        "Failed to initialize converters for injected class" + i.getInjectedClassName(), e);
             }
         }
     }

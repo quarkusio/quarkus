@@ -23,8 +23,8 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Security checks for RBAC annotations on endpoints are done by the {@link EagerSecurityFilter}, this interceptor
- * propagates the information to the SecurityHandler to prevent repeated checks. The {@link DenyAll} security check
- * is performed just once.
+ * propagates the information to the SecurityHandler to prevent repeated checks. The {@link DenyAll} security check is
+ * performed just once.
  */
 public abstract class StandardSecurityCheckInterceptor {
 

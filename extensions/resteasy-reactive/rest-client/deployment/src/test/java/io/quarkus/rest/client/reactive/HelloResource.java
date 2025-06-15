@@ -65,17 +65,15 @@ public class HelloResource {
     @GET
     public Uni<String> something() {
         Thread thread = Thread.currentThread();
-        return client2.delay()
-                .map(foo -> {
-                    Assertions.assertSame(thread, Thread.currentThread());
-                    return foo;
-                });
+        return client2.delay().map(foo -> {
+            Assertions.assertSame(thread, Thread.currentThread());
+            return foo;
+        });
     }
 
     @Path("delay")
     @GET
     public Uni<String> delay() {
-        return Uni.createFrom().item("Hello")
-                .onItem().delayIt().by(Duration.ofMillis(500));
+        return Uni.createFrom().item("Hello").onItem().delayIt().by(Duration.ofMillis(500));
     }
 }

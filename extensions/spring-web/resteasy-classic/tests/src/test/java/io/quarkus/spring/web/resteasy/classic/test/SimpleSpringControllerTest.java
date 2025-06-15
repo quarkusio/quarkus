@@ -11,8 +11,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SimpleSpringControllerTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleSpringController.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleSpringController.class));
 
     @Test
     public void testRootResource() {

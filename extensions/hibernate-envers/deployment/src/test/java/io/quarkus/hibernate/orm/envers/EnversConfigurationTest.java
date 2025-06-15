@@ -18,8 +18,7 @@ public class EnversConfigurationTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyAuditedEntity.class))
             .withConfigurationResource("application-emptysuffixtable.properties");
 
     @Inject
@@ -44,9 +43,7 @@ public class EnversConfigurationTest {
     }
 
     private Configuration getConfiguration() {
-        return ((((SessionFactoryImplementor) emf
-                .unwrap(SessionFactoryImpl.class))
-                .getServiceRegistry()).getParentServiceRegistry())
-                .getService(EnversService.class).getConfig();
+        return ((((SessionFactoryImplementor) emf.unwrap(SessionFactoryImpl.class)).getServiceRegistry())
+                .getParentServiceRegistry()).getService(EnversService.class).getConfig();
     }
 }

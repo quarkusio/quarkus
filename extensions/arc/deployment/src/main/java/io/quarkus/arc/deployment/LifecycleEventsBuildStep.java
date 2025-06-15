@@ -19,11 +19,9 @@ public class LifecycleEventsBuildStep {
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep
     @Record(RUNTIME_INIT)
-    ApplicationStartBuildItem startupEvent(ArcRecorder recorder,
-            List<ServiceStartBuildItem> startList,
-            BeanContainerBuildItem beanContainer,
-            ShutdownContextBuildItem shutdown,
-            LaunchModeBuildItem launchMode, ArcConfig config) {
+    ApplicationStartBuildItem startupEvent(ArcRecorder recorder, List<ServiceStartBuildItem> startList,
+            BeanContainerBuildItem beanContainer, ShutdownContextBuildItem shutdown, LaunchModeBuildItem launchMode,
+            ArcConfig config) {
         recorder.handleLifecycleEvents(shutdown, launchMode.getLaunchMode(),
                 config.test().disableApplicationLifecycleObservers());
         return new ApplicationStartBuildItem();

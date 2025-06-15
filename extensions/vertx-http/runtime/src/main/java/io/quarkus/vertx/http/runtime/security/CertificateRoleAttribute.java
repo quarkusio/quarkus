@@ -72,10 +72,9 @@ public record CertificateRoleAttribute(Function<X509Certificate, Set<String>> ro
 
     private enum SAN {
         /**
-         * Subject Alternative Name field Other Name.
-         * Please note that only simple case of UTF8 identifier mapping is support.
-         * For example, you can map 'other-identifier' to the SecurityIdentity roles.
-         * If you use 'openssl' tool, supported Other name definition would look like this:
+         * Subject Alternative Name field Other Name. Please note that only simple case of UTF8 identifier mapping is
+         * support. For example, you can map 'other-identifier' to the SecurityIdentity roles. If you use 'openssl'
+         * tool, supported Other name definition would look like this:
          * <code>subjectAltName=otherName:1.2.3.4;UTF8:other-identifier</code>
          */
         SAN_ANY(0),

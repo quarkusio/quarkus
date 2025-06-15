@@ -38,10 +38,8 @@ public final class AddMethodImplementor extends StandardMethodImplementor {
     }
 
     /**
-     * Generate JAX-RS POST method.
-     *
-     * The RESTEasy Classic version exposes {@link RestDataResource#add(Object)}.
-     * Generated code looks more or less like this:
+     * Generate JAX-RS POST method. The RESTEasy Classic version exposes {@link RestDataResource#add(Object)}. Generated
+     * code looks more or less like this:
      *
      * <pre>
      * {@code

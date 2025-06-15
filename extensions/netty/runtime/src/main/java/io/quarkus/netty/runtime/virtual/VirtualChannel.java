@@ -44,11 +44,9 @@ import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 /**
- * A {@link Channel} for the local transport. This is a bit different from a LocalChannel in regular Netty
- * as it does not require a client event loop and exposes the client inbound queue directly.
- *
- * The queue exposed is a blocking queue so that local virtual clients can block on this queue and obtain
- * messages directly for processing.
+ * A {@link Channel} for the local transport. This is a bit different from a LocalChannel in regular Netty as it does
+ * not require a client event loop and exposes the client inbound queue directly. The queue exposed is a blocking queue
+ * so that local virtual clients can block on this queue and obtain messages directly for processing.
  */
 public class VirtualChannel extends AbstractChannel {
     private static final InternalLogger logger = InternalLoggerFactory.getInstance(VirtualChannel.class);
@@ -174,8 +172,7 @@ public class VirtualChannel extends AbstractChannel {
 
     @Override
     protected void doBind(SocketAddress localAddress) throws Exception {
-        this.localAddress = VirtualChannelRegistry.register(this, this.localAddress,
-                localAddress);
+        this.localAddress = VirtualChannelRegistry.register(this, this.localAddress, localAddress);
         state = State.BOUND;
     }
 
@@ -330,7 +327,8 @@ public class VirtualChannel extends AbstractChannel {
             // The following situation may cause trouble:
             // 1. Write (with promise X)
             // 2. promise X is completed when in.remove() is called, and a listener on this promise calls close()
-            // 3. Then the close event will be executed for the peer before the sendMessage events, when the sendMessage events
+            // 3. Then the close event will be executed for the peer before the sendMessage events, when the sendMessage
+            // events
             // actually happened before the close event.
             writeInProgress = false;
         }
@@ -349,8 +347,8 @@ public class VirtualChannel extends AbstractChannel {
     private class LocalUnsafe extends AbstractUnsafe {
 
         @Override
-        public void connect(final SocketAddress remoteAddress,
-                SocketAddress localAddress, final ChannelPromise promise) {
+        public void connect(final SocketAddress remoteAddress, SocketAddress localAddress,
+                final ChannelPromise promise) {
             if (!promise.setUncancellable() || !ensureOpen(promise)) {
                 return;
             }

@@ -38,8 +38,8 @@ public final class TypeUtils {
             return Type.classType((Class<?>) object);
         }
 
-        throw new IllegalArgumentException("Unsupported object of type " + object.getClass()
-                + ". Supported types are Type, String and Class");
+        throw new IllegalArgumentException(
+                "Unsupported object of type " + object.getClass() + ". Supported types are Type, String and Class");
     }
 
 }

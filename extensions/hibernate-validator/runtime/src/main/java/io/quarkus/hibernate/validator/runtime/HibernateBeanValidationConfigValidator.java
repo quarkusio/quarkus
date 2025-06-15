@@ -16,13 +16,11 @@ public class HibernateBeanValidationConfigValidator implements BeanValidationCon
 
     public HibernateBeanValidationConfigValidator(Set<String> constraints, Set<Class<?>> classesToBeValidated) {
         PredefinedScopeHibernateValidatorConfiguration configuration = Validation
-                .byProvider(PredefinedScopeHibernateValidator.class)
-                .configure();
+                .byProvider(PredefinedScopeHibernateValidator.class).configure();
 
-        // TODO - There is no way to retrieve locales from configuration here (even manually). We need to add a way to configure the validator from SmallRye Config.
-        configuration
-                .ignoreXmlConfiguration()
-                .builtinConstraints(constraints)
+        // TODO - There is no way to retrieve locales from configuration here (even manually). We need to add a way to
+        // configure the validator from SmallRye Config.
+        configuration.ignoreXmlConfiguration().builtinConstraints(constraints)
                 .initializeBeanMetaData(classesToBeValidated)
                 .constraintValidatorFactory(new DefaultConstraintValidatorFactory())
                 .traversableResolver(new TraverseAllTraversableResolver());

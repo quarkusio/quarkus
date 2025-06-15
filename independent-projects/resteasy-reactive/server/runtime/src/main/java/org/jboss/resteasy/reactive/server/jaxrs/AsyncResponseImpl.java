@@ -143,7 +143,8 @@ public class AsyncResponseImpl implements AsyncResponse, Runnable {
         // FIXME: does this mean we should use CDI to look it up?
         try {
             return register(callback.getDeclaredConstructor().newInstance());
-        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }

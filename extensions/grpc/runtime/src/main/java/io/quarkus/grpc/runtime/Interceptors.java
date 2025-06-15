@@ -32,10 +32,9 @@ public final class Interceptors {
             @SuppressWarnings("unchecked")
             T interceptor = (T) interceptorInstance.get();
             if (interceptor == null) {
-                throw new IllegalArgumentException("Interceptor class " + interceptorClass + " is not a CDI bean. " +
-                        "Only CDI beans can be used as gRPC server/client interceptors. Add one of the scope-defining annotations"
-                        +
-                        " (@Singleton, @ApplicationScoped, @RequestScoped) on the interceptor class.");
+                throw new IllegalArgumentException("Interceptor class " + interceptorClass + " is not a CDI bean. "
+                        + "Only CDI beans can be used as gRPC server/client interceptors. Add one of the scope-defining annotations"
+                        + " (@Singleton, @ApplicationScoped, @RequestScoped) on the interceptor class.");
             }
             interceptors.add(interceptor);
         }
@@ -55,10 +54,9 @@ public final class Interceptors {
             @SuppressWarnings("unchecked")
             T interceptor = (T) interceptorInstance.get();
             if (interceptor == null) {
-                throw new IllegalArgumentException("Interceptor class " + interceptorClass + " is not a CDI bean. " +
-                        "Only CDI beans can be used as gRPC server/client interceptors. Add one of the scope-defining annotations"
-                        +
-                        " (@Singleton, @ApplicationScoped, @RequestScoped) on the interceptor class.");
+                throw new IllegalArgumentException("Interceptor class " + interceptorClass + " is not a CDI bean. "
+                        + "Only CDI beans can be used as gRPC server/client interceptors. Add one of the scope-defining annotations"
+                        + " (@Singleton, @ApplicationScoped, @RequestScoped) on the interceptor class.");
             }
             interceptors.add(interceptor);
         }
@@ -77,10 +75,9 @@ public final class Interceptors {
             @SuppressWarnings("unchecked")
             T serverInterceptor = (T) interceptorInstance.get();
             if (serverInterceptor == null) {
-                throw new IllegalArgumentException("Interceptor class " + interceptorClass + " is not a CDI bean. " +
-                        "Only CDI beans can be used as gRPC server/client interceptors. Add one of the scope-defining annotations"
-                        +
-                        " (@Singleton, @ApplicationScoped, @RequestScoped) on the interceptor class.");
+                throw new IllegalArgumentException("Interceptor class " + interceptorClass + " is not a CDI bean. "
+                        + "Only CDI beans can be used as gRPC server/client interceptors. Add one of the scope-defining annotations"
+                        + " (@Singleton, @ApplicationScoped, @RequestScoped) on the interceptor class.");
             }
             interceptors.add(serverInterceptor);
         }

@@ -12,13 +12,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NonAbsentSerializationTest extends AbstractNonAbsentSerializationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(JsonIncludeTestResource.class, MyObject.class, NonAbsentObjectMapperCustomizer.class)
-                            .addAsResource(new StringAsset(""), "application.properties");
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(JsonIncludeTestResource.class, MyObject.class, NonAbsentObjectMapperCustomizer.class)
+                    .addAsResource(new StringAsset(""), "application.properties");
+        }
+    });
 }

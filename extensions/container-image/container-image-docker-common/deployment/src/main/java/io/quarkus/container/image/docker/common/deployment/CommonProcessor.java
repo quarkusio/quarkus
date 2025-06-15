@@ -43,18 +43,15 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
     protected abstract String createContainerImage(ContainerImageConfig containerImageConfig, C config,
             ContainerImageInfoBuildItem containerImageInfo, OutputTargetBuildItem out, DockerfilePaths dockerfilePaths,
-            boolean buildContainerImage, boolean pushContainerImage, PackageConfig packageConfig, String executableName);
+            boolean buildContainerImage, boolean pushContainerImage, PackageConfig packageConfig,
+            String executableName);
 
-    protected void buildFromJar(C config,
-            ContainerRuntimeStatusBuildItem containerRuntimeStatusBuildItem,
-            ContainerImageConfig containerImageConfig,
-            OutputTargetBuildItem out,
-            ContainerImageInfoBuildItem containerImageInfo,
-            Optional<ContainerImageBuildRequestBuildItem> buildRequest,
+    protected void buildFromJar(C config, ContainerRuntimeStatusBuildItem containerRuntimeStatusBuildItem,
+            ContainerImageConfig containerImageConfig, OutputTargetBuildItem out,
+            ContainerImageInfoBuildItem containerImageInfo, Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
-            PackageConfig packageConfig,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder, PackageConfig packageConfig,
             ContainerRuntime... containerRuntimes) {
 
         var buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
@@ -62,9 +59,8 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
         if (buildContainerImage || pushContainerImage) {
             if (!containerRuntimeStatusBuildItem.isContainerRuntimeAvailable()) {
-                throw new RuntimeException(
-                        "Unable to build container image. Please check your %s installation."
-                                .formatted(getProcessorImplementation()));
+                throw new RuntimeException("Unable to build container image. Please check your %s installation."
+                        .formatted(getProcessorImplementation()));
             }
 
             var dockerfilePaths = getDockerfilePaths(config, false, packageConfig, out);
@@ -74,8 +70,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             if (dockerfileBaseInformation.isPresent() && (dockerfileBaseInformation.get().javaVersion() < 17)) {
                 throw new IllegalStateException(
                         "The project is built with Java 17 or higher, but the selected Dockerfile (%s) is using a lower Java version in the base image (%s). Please ensure you are using the proper base image in the Dockerfile."
-                                .formatted(
-                                        dockerfilePaths.dockerfilePath().toAbsolutePath(),
+                                .formatted(dockerfilePaths.dockerfilePath().toAbsolutePath(),
                                         dockerfileBaseInformation.get().baseImage()));
             }
 
@@ -87,41 +82,31 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             var builtContainerImage = createContainerImage(containerImageConfig, config, containerImageInfo, out,
                     dockerfilePaths, buildContainerImage, pushContainerImage, packageConfig, executableName);
 
-            // a pull is not required when using this image locally because the strategy always builds the container image
+            // a pull is not required when using this image locally because the strategy always builds the container
+            // image
             // locally before pushing it to the registry
-            artifactResultProducer.produce(
-                    new ArtifactResultBuildItem(
-                            null,
-                            "jar-container",
-                            Map.of(
-                                    "container-image", builtContainerImage,
-                                    "pull-required", "false")));
+            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
+                    Map.of("container-image", builtContainerImage, "pull-required", "false")));
 
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(getProcessorImplementation()));
         }
     }
 
-    protected void buildFromNativeImage(C config,
-            ContainerRuntimeStatusBuildItem containerRuntimeStatusBuildItem,
-            ContainerImageConfig containerImageConfig,
-            ContainerImageInfoBuildItem containerImage,
+    protected void buildFromNativeImage(C config, ContainerRuntimeStatusBuildItem containerRuntimeStatusBuildItem,
+            ContainerImageConfig containerImageConfig, ContainerImageInfoBuildItem containerImage,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
-            Optional<ContainerImagePushRequestBuildItem> pushRequest,
-            OutputTargetBuildItem out,
+            Optional<ContainerImagePushRequestBuildItem> pushRequest, OutputTargetBuildItem out,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
-            PackageConfig packageConfig,
-            NativeImageBuildItem nativeImage,
-            ContainerRuntime... containerRuntimes) {
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder, PackageConfig packageConfig,
+            NativeImageBuildItem nativeImage, ContainerRuntime... containerRuntimes) {
 
         var buildContainerImage = buildContainerImageNeeded(containerImageConfig, buildRequest);
         var pushContainerImage = pushContainerImageNeeded(containerImageConfig, pushRequest);
 
         if (buildContainerImage || pushContainerImage) {
             if (!containerRuntimeStatusBuildItem.isContainerRuntimeAvailable()) {
-                throw new RuntimeException(
-                        "Unable to build container image. Please check your %s installation."
-                                .formatted(getProcessorImplementation()));
+                throw new RuntimeException("Unable to build container image. Please check your %s installation."
+                        .formatted(getProcessorImplementation()));
             }
 
             if (!NativeBinaryUtil.nativeIsLinuxBinary(nativeImage)) {
@@ -135,37 +120,31 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
             var executableName = getExecutableName(config, containerRuntimes);
             var dockerfilePaths = getDockerfilePaths(config, true, packageConfig, out);
-            var builtContainerImage = createContainerImage(containerImageConfig, config, containerImage, out, dockerfilePaths,
-                    buildContainerImage, pushContainerImage, packageConfig, executableName);
+            var builtContainerImage = createContainerImage(containerImageConfig, config, containerImage, out,
+                    dockerfilePaths, buildContainerImage, pushContainerImage, packageConfig, executableName);
 
-            // a pull is not required when using this image locally because the strategy always builds the container image
+            // a pull is not required when using this image locally because the strategy always builds the container
+            // image
             // locally before pushing it to the registry
-            artifactResultProducer.produce(
-                    new ArtifactResultBuildItem(
-                            null,
-                            "native-container",
-                            Map.of(
-                                    "container-image", builtContainerImage,
-                                    "pull-required", "false")));
+            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
+                    Map.of("container-image", builtContainerImage, "pull-required", "false")));
 
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(getProcessorImplementation()));
         }
     }
 
     protected void loginToRegistryIfNeeded(ContainerImageConfig containerImageConfig,
-            ContainerImageInfoBuildItem containerImageInfo,
-            String executableName) {
+            ContainerImageInfoBuildItem containerImageInfo, String executableName) {
 
-        var registry = containerImageInfo.getRegistry()
-                .orElseGet(() -> {
-                    LOGGER.info("No container image registry was set, so 'docker.io' will be used");
-                    return "docker.io";
-                });
+        var registry = containerImageInfo.getRegistry().orElseGet(() -> {
+            LOGGER.info("No container image registry was set, so 'docker.io' will be used");
+            return "docker.io";
+        });
 
         // Check if we need to login first
         if (containerImageConfig.username().isPresent() && containerImageConfig.password().isPresent()) {
-            var loginSuccessful = ExecUtil.exec(executableName, "login", registry, "-u", containerImageConfig.username().get(),
-                    "-p", containerImageConfig.password().get());
+            var loginSuccessful = ExecUtil.exec(executableName, "login", registry, "-u",
+                    containerImageConfig.username().get(), "-p", containerImageConfig.password().get());
 
             if (!loginSuccessful) {
                 throw containerRuntimeException(executableName,
@@ -174,19 +153,16 @@ public abstract class CommonProcessor<C extends CommonConfig> {
         }
     }
 
-    protected List<String> getContainerCommonBuildArgs(String image,
-            DockerfilePaths dockerfilePaths,
-            ContainerImageConfig containerImageConfig,
-            C config,
-            boolean addImageAsTag) {
+    protected List<String> getContainerCommonBuildArgs(String image, DockerfilePaths dockerfilePaths,
+            ContainerImageConfig containerImageConfig, C config, boolean addImageAsTag) {
 
-        var args = new ArrayList<String>(6 + config.buildArgs().size() + config.additionalArgs().map(List::size).orElse(0));
+        var args = new ArrayList<String>(
+                6 + config.buildArgs().size() + config.additionalArgs().map(List::size).orElse(0));
         args.addAll(List.of("build", "-f", dockerfilePaths.dockerfilePath().toAbsolutePath().toString()));
 
         config.buildArgs().forEach((k, v) -> args.addAll(List.of("--build-arg", "%s=%s".formatted(k, v))));
         containerImageConfig.labels().forEach((k, v) -> args.addAll(List.of("--label", "%s=%s".formatted(k, v))));
-        config.cacheFrom()
-                .filter(cacheFrom -> !cacheFrom.isEmpty())
+        config.cacheFrom().filter(cacheFrom -> !cacheFrom.isEmpty())
                 .ifPresent(cacheFrom -> args.addAll(List.of("--cache-from", String.join(",", cacheFrom))));
         config.network().ifPresent(network -> args.addAll(List.of("--network", network)));
         config.additionalArgs().ifPresent(args::addAll);
@@ -199,8 +175,7 @@ public abstract class CommonProcessor<C extends CommonConfig> {
     }
 
     protected void createAdditionalTags(String image, List<String> additionalImageTags, String executableName) {
-        additionalImageTags.stream()
-                .map(additionalTag -> new String[] { "tag", image, additionalTag })
+        additionalImageTags.stream().map(additionalTag -> new String[] { "tag", image, additionalTag })
                 .forEach(tagArgs -> {
                     LOGGER.infof("Running '%s %s'", executableName, String.join(" ", tagArgs));
                     var tagSuccessful = ExecUtil.exec(executableName, tagArgs);
@@ -235,14 +210,10 @@ public abstract class CommonProcessor<C extends CommonConfig> {
         return new String[] { "push", image };
     }
 
-    protected void buildImage(ContainerImageInfoBuildItem containerImageInfo,
-            OutputTargetBuildItem out,
-            String executableName,
-            String[] args,
-            boolean createAdditionalTags) {
+    protected void buildImage(ContainerImageInfoBuildItem containerImageInfo, OutputTargetBuildItem out,
+            String executableName, String[] args, boolean createAdditionalTags) {
 
-        LOGGER.infof("Executing the following command to build image: '%s %s'", executableName,
-                String.join(" ", args));
+        LOGGER.infof("Executing the following command to build image: '%s %s'", executableName, String.join(" ", args));
         var buildSuccessful = ExecUtil.exec(out.getOutputDirectory().toFile(), executableName, args);
 
         if (!buildSuccessful) {
@@ -256,29 +227,22 @@ public abstract class CommonProcessor<C extends CommonConfig> {
     }
 
     protected RuntimeException containerRuntimeException(String executableName, String[] args) {
-        return new RuntimeException(
-                "Execution of '%s %s' failed. See %s output for more details"
-                        .formatted(
-                                executableName,
-                                String.join(" ", args),
-                                getProcessorImplementation()));
+        return new RuntimeException("Execution of '%s %s' failed. See %s output for more details"
+                .formatted(executableName, String.join(" ", args), getProcessorImplementation()));
     }
 
     protected String getExecutableName(C config, ContainerRuntime... containerRuntimes) {
-        return config.executableName()
-                .orElseGet(() -> detectContainerRuntime(containerRuntimes).getExecutableName());
+        return config.executableName().orElseGet(() -> detectContainerRuntime(containerRuntimes).getExecutableName());
     }
 
-    private DockerfilePaths getDockerfilePaths(C config,
-            boolean forNative,
-            PackageConfig packageConfig,
+    private DockerfilePaths getDockerfilePaths(C config, boolean forNative, PackageConfig packageConfig,
             OutputTargetBuildItem out) {
 
         var outputDirectory = out.getOutputDirectory();
 
         if (forNative) {
-            return config.dockerfileNativePath()
-                    .map(dockerfileNativePath -> ProvidedDockerfile.get(Paths.get(dockerfileNativePath), outputDirectory))
+            return config.dockerfileNativePath().map(
+                    dockerfileNativePath -> ProvidedDockerfile.get(Paths.get(dockerfileNativePath), outputDirectory))
                     .orElseGet(() -> DockerfileDetectionResult.detect(DOCKERFILE_NATIVE, outputDirectory));
         } else {
             return config.dockerfileJvmPath()
@@ -295,7 +259,9 @@ public abstract class CommonProcessor<C extends CommonConfig> {
         Path dockerExecutionPath();
     }
 
-    protected record DockerfileDetectionResult(Path dockerfilePath, Path dockerExecutionPath) implements DockerfilePaths {
+    protected record DockerfileDetectionResult(Path dockerfilePath, Path dockerExecutionPath)
+            implements
+                DockerfilePaths {
         protected static DockerfilePaths detect(String resource, Path outputDirectory) {
             var dockerfileToExecutionRoot = findDockerfileRoot(outputDirectory);
             if (dockerfileToExecutionRoot == null) {
@@ -305,9 +271,8 @@ public abstract class CommonProcessor<C extends CommonConfig> {
 
             var dockerFilePath = dockerfileToExecutionRoot.getKey().resolve(resource);
             if (!Files.exists(dockerFilePath)) {
-                throw new IllegalStateException(
-                        "Unable to find Dockerfile %s in %s"
-                                .formatted(resource, dockerfileToExecutionRoot.getKey().toAbsolutePath()));
+                throw new IllegalStateException("Unable to find Dockerfile %s in %s".formatted(resource,
+                        dockerfileToExecutionRoot.getKey().toAbsolutePath()));
             }
 
             return new DockerfileDetectionResult(dockerFilePath, dockerfileToExecutionRoot.getValue());
@@ -337,11 +302,12 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             }
 
             var executionPath = mainSourcesRoot.getValue();
-            var effectiveDockerfilePath = dockerfilePath.isAbsolute() ? dockerfilePath : executionPath.resolve(dockerfilePath);
+            var effectiveDockerfilePath = dockerfilePath.isAbsolute() ? dockerfilePath
+                    : executionPath.resolve(dockerfilePath);
 
             if (!effectiveDockerfilePath.toFile().exists()) {
-                throw new IllegalArgumentException(
-                        "Specified Dockerfile path %s does not exist".formatted(effectiveDockerfilePath.toAbsolutePath()));
+                throw new IllegalArgumentException("Specified Dockerfile path %s does not exist"
+                        .formatted(effectiveDockerfilePath.toAbsolutePath()));
             }
 
             return new ProvidedDockerfile(effectiveDockerfilePath, executionPath);

@@ -5,9 +5,8 @@ import java.util.function.BiConsumer;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Allows for a handler to be registered when exceptions are logged.
- *
- * This is intended for use in dev/test mode to allow Quarkus to help the developer handle the issue.
+ * Allows for a handler to be registered when exceptions are logged. This is intended for use in dev/test mode to allow
+ * Quarkus to help the developer handle the issue.
  */
 public final class ExceptionNotificationBuildItem extends MultiBuildItem {
 

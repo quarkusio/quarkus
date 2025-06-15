@@ -10,9 +10,8 @@ import io.restassured.RestAssured;
 public class ReactiveStreamsOperatorsHotReloadTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(io.quarkus.mutiny.reactive.operators.deployment.MyTestResource.class));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClasses(io.quarkus.mutiny.reactive.operators.deployment.MyTestResource.class));
 
     @Test
     public void testHotReload() {

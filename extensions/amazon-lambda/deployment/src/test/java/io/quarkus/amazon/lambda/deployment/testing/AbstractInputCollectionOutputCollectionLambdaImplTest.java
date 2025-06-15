@@ -21,9 +21,8 @@ public class AbstractInputCollectionOutputCollectionLambdaImplTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(AbstractInputCollectionOutputCollectionLambdaImpl.class, AbstractInputCollectionOutputCollection.class,
-                    InputPerson.class, OutputPerson.class));
+            .create(JavaArchive.class).addClasses(AbstractInputCollectionOutputCollectionLambdaImpl.class,
+                    AbstractInputCollectionOutputCollection.class, InputPerson.class, OutputPerson.class));
 
     @Test
     void abstractRequestHandler_InputCollectionInputPerson_OutputCollectionOutputPerson() {
@@ -32,15 +31,20 @@ public class AbstractInputCollectionOutputCollectionLambdaImplTest {
         personList.add(new InputPerson("Chris"));
         personList.add(new InputPerson("Fred"));
 
-        given()
-                .body(personList)
-                .when()
-                .post()
-                .then()
-                .statusCode(200)
-                .body("", hasItem(hasEntry("outputname", "Chris"))) // OutputPerson serializes name with key outputname
-                .body("", hasItem(hasEntry("outputname", "Fred")))
-                .body("", not(hasItem(hasEntry("name", "Chris")))) // make sure that there is no key name
+        given().body(personList).when().post().then().statusCode(200).body("", hasItem(hasEntry("outputname", "Chris"))) // OutputPerson
+                // serializes
+                // name
+                // with
+                // key
+                // outputname
+                .body("", hasItem(hasEntry("outputname", "Fred"))).body("", not(hasItem(hasEntry("name", "Chris")))) // make
+                // sure
+                // that
+                // there
+                // is
+                // no
+                // key
+                // name
                 .body("", not(hasItem(hasEntry("name", "Fred"))));
     }
 }

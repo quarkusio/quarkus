@@ -54,7 +54,8 @@ import io.vertx.core.http.HttpClientResponse;
 /**
  * This is a stateful invocation, you can't invoke it twice.
  */
-public class RestClientRequestContext extends AbstractResteasyReactiveContext<RestClientRequestContext, ClientRestHandler> {
+public class RestClientRequestContext
+        extends AbstractResteasyReactiveContext<RestClientRequestContext, ClientRestHandler> {
 
     public static final String INVOKED_METHOD_PROP = "org.eclipse.microprofile.rest.client.invokedMethod";
     public static final String INVOKED_METHOD_PARAMETERS_PROP = "io.quarkus.rest.client.invokedMethodParameters";
@@ -107,14 +108,11 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private Map<Class<?>, MultipartResponseData> multipartResponsesData;
     private StackTraceElement[] callerStackTrace;
 
-    public RestClientRequestContext(ClientImpl restClient,
-            HttpClient httpClient, String httpMethod, URI uri,
-            ConfigurationImpl configuration, ClientRequestHeaders requestHeaders,
-            Entity<?> entity, GenericType<?> responseType, boolean registerBodyHandler, Map<String, Object> properties,
-            ClientRestHandler[] handlerChain,
-            ClientRestHandler[] abortHandlerChain,
-            ClientRestHandler[] abortHandlerChainWithoutResponseFilters,
-            ThreadSetupAction requestContext) {
+    public RestClientRequestContext(ClientImpl restClient, HttpClient httpClient, String httpMethod, URI uri,
+            ConfigurationImpl configuration, ClientRequestHeaders requestHeaders, Entity<?> entity,
+            GenericType<?> responseType, boolean registerBodyHandler, Map<String, Object> properties,
+            ClientRestHandler[] handlerChain, ClientRestHandler[] abortHandlerChain,
+            ClientRestHandler[] abortHandlerChainWithoutResponseFilters, ThreadSetupAction requestContext) {
         super(handlerChain, abortHandlerChain, requestContext);
         this.restClient = restClient;
         this.httpClient = httpClient;
@@ -196,11 +194,11 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             var invokedMethodObject = properties.get(INVOKED_METHOD_PROP);
             if ((invokedMethodObject instanceof Method invokedMethod) && !disableContextualErrorMessages) {
                 message = "Received: '" + message + "' when invoking REST Client method: '"
-                        + invokedMethod.getDeclaringClass().getName() + "#"
-                        + invokedMethod.getName() + "'";
+                        + invokedMethod.getDeclaringClass().getName() + "#" + invokedMethod.getName() + "'";
             }
             return new ClientWebApplicationException(message,
-                    webApplicationException instanceof ClientWebApplicationException ? webApplicationException.getCause()
+                    webApplicationException instanceof ClientWebApplicationException
+                            ? webApplicationException.getCause()
                             : webApplicationException,
                     webApplicationException.getResponse());
         }
@@ -208,12 +206,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T readEntity(InputStream in,
-            GenericType<T> responseType,
-            MediaType mediaType,
-            Annotation[] annotations,
-            MultivaluedMap<String, Object> metadata)
-            throws IOException {
+    public <T> T readEntity(InputStream in, GenericType<T> responseType, MediaType mediaType, Annotation[] annotations,
+            MultivaluedMap<String, Object> metadata) throws IOException {
         if (in == null)
             return null;
         return (T) ClientSerialisers.invokeClientReader(annotations, responseType.getRawType(), responseType.getType(),
@@ -263,8 +257,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return clientRequestContext;
     }
 
-    public Buffer writeEntity(Entity<?> entity, MultivaluedMap<String, String> headerMap, WriterInterceptor[] interceptors)
-            throws IOException {
+    public Buffer writeEntity(Entity<?> entity, MultivaluedMap<String, String> headerMap,
+            WriterInterceptor[] interceptors) throws IOException {
         Object entityObject = entity.getEntity();
         if (entityObject == null) {
             return AsyncInvokerImpl.EMPTY_BUFFER;
@@ -281,11 +275,10 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             entityType = entityClass = entityObject.getClass();
         }
         List<MessageBodyWriter<?>> writers = restClient.getClientContext().getSerialisers().findWriters(configuration,
-                entityClass, entity.getMediaType(),
-                RuntimeType.CLIENT);
+                entityClass, entity.getMediaType(), RuntimeType.CLIENT);
         for (MessageBodyWriter<?> w : writers) {
-            Buffer ret = ClientSerialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headerMap, w,
-                    interceptors, properties, this, restClient.getClientContext().getSerialisers(), configuration);
+            Buffer ret = ClientSerialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headerMap,
+                    w, interceptors, properties, this, restClient.getClientContext().getSerialisers(), configuration);
             if (ret != null) {
                 return ret;
             }
@@ -364,8 +357,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
                     handlerClassNames[i] = handlers[i].getClass().getName();
                 }
                 log.error("Client was closed, however the result was not completed. Handlers array is: "
-                        + Arrays.toString(handlerClassNames)
-                        + ". Last executed handler is: " + handlers[position - 1].getClass().getName());
+                        + Arrays.toString(handlerClassNames) + ". Last executed handler is: "
+                        + handlers[position - 1].getClass().getName());
             } catch (Exception ignored) {
                 // we don't want some mistake in the code above to compromise the ability to return a result
             }
@@ -591,7 +584,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             } else if (value instanceof String) {
                 return Boolean.parseBoolean((String) value);
             } else {
-                log.warnf("Property '%s' is expected to be of type Boolean. Got '%s'.", name, value.getClass().getSimpleName());
+                log.warnf("Property '%s' is expected to be of type Boolean. Got '%s'.", name,
+                        value.getClass().getSimpleName());
             }
         }
         return defaultValue;

@@ -20,8 +20,7 @@ public class CodeFlowVerifyAccessTokenDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ProtectedResourceWithoutJwtAccessToken.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ProtectedResourceWithoutJwtAccessToken.class)
                     .addAsResource("application-verify-access-token-disabled.properties", "application.properties"));
 
     @Test

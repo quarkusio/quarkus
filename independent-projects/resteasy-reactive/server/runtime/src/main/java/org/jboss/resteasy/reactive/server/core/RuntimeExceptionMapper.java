@@ -30,7 +30,8 @@ import io.smallrye.common.annotation.NonBlocking;
 public class RuntimeExceptionMapper {
 
     private static final Logger log = Logger.getLogger(RuntimeExceptionMapper.class);
-    private static final Logger logWebApplicationExceptions = Logger.getLogger(WebApplicationException.class.getSimpleName());
+    private static final Logger logWebApplicationExceptions = Logger
+            .getLogger(WebApplicationException.class.getSimpleName());
 
     private static Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers;
 
@@ -63,8 +64,8 @@ public class RuntimeExceptionMapper {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void mapException(Throwable throwable, ResteasyReactiveRequestContext context) {
         Class<?> klass = throwable.getClass();
-        //we don't read WebApplicationException's thrown from the client as true 'WebApplicationException'
-        //we consider it a security risk to transparently pass on the result to the calling server
+        // we don't read WebApplicationException's thrown from the client as true 'WebApplicationException'
+        // we consider it a security risk to transparently pass on the result to the calling server
         boolean isWebApplicationException = throwable instanceof WebApplicationException
                 && !(throwable instanceof ResteasyReactiveClientProblem);
         Response response = null;
@@ -78,8 +79,7 @@ public class RuntimeExceptionMapper {
 
         // we match superclasses only if not a WebApplicationException according to spec 3.3.4 Exceptions
         Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> entry = getExceptionMapper(
-                (Class<Throwable>) klass, context,
-                throwable);
+                (Class<Throwable>) klass, context, throwable);
         if (entry != null) {
             jakarta.ws.rs.ext.ExceptionMapper exceptionMapper = entry.getValue();
             Throwable mappedException = entry.getKey();
@@ -129,9 +129,8 @@ public class RuntimeExceptionMapper {
                         + runtimeResource.getResourceClass().getName() + "#" + runtimeResource.getJavaMethodName() + "("
                         + Arrays.stream(runtimeResource.getParameterTypes()).map(Objects::toString)
                                 .collect(Collectors.joining(", "))
-                        + ") with @"
-                        + Blocking.class.getName()
-                        + ". Alternatively you can annotate the class " + runtimeResource.getResourceClass().getName()
+                        + ") with @" + Blocking.class.getName() + ". Alternatively you can annotate the class "
+                        + runtimeResource.getResourceClass().getName()
                         + " to make every method on the class blocking, or annotate your sub class of the "
                         + Application.class.getName() + " class to make the whole application blocking");
             }
@@ -149,13 +148,13 @@ public class RuntimeExceptionMapper {
             } else {
                 log.error(
                         "An operation that needed be run on a Vert.x EventLoop thread was run on a worker pool thread. This likely means you need to annotate "
-                                + runtimeResource.getResourceClass().getName() + "#" + runtimeResource.getJavaMethodName()
-                                + "("
+                                + runtimeResource.getResourceClass().getName() + "#"
+                                + runtimeResource.getJavaMethodName() + "("
                                 + Arrays.stream(runtimeResource.getParameterTypes()).map(Objects::toString)
                                         .collect(Collectors.joining(", "))
-                                + ") with @"
-                                + NonBlocking.class.getName()
-                                + ". Alternatively you can annotate the class " + runtimeResource.getResourceClass().getName()
+                                + ") with @" + NonBlocking.class.getName()
+                                + ". Alternatively you can annotate the class "
+                                + runtimeResource.getResourceClass().getName()
                                 + " to make every method on the class run on a Vert.x EventLoop thread, or annotate your sub class of the "
                                 + Application.class.getName() + " class to affect the entire application");
             }
@@ -187,7 +186,7 @@ public class RuntimeExceptionMapper {
         ResourceExceptionMapper<? extends Throwable> existing = mappers.get(exceptionClass);
         if (existing != null) {
             if (existing.getPriority() < mapper.getPriority()) {
-                //already a higher priority mapper
+                // already a higher priority mapper
                 return;
             }
         }
@@ -195,22 +194,18 @@ public class RuntimeExceptionMapper {
     }
 
     /**
-     * Return the proper Exception that handles {@param clazz} or {@code null}
-     * if none is found.
-     * First checks if the Resource class that contained the Resource method contained class-level exception mappers.
-     * {@param throwable} is optional and is used to when no mapper has been found for the original exception type, but the
-     * application
-     * has been configured to unwrap certain exceptions.
+     * Return the proper Exception that handles {@param clazz} or {@code null} if none is found. First checks if the
+     * Resource class that contained the Resource method contained class-level exception mappers. {@param throwable} is
+     * optional and is used to when no mapper has been found for the original exception type, but the application has
+     * been configured to unwrap certain exceptions.
      */
     public <T extends Throwable> Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> getExceptionMapper(
-            Class<T> clazz,
-            ResteasyReactiveRequestContext context,
-            T throwable) {
+            Class<T> clazz, ResteasyReactiveRequestContext context, T throwable) {
         Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers = getClassExceptionMappers(
                 context);
         if ((classExceptionMappers != null) && !classExceptionMappers.isEmpty()) {
-            Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> result = doGetExceptionMapper(clazz,
-                    classExceptionMappers, throwable);
+            Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> result = doGetExceptionMapper(
+                    clazz, classExceptionMappers, throwable);
             if (result != null) {
                 return result;
             }
@@ -228,15 +223,13 @@ public class RuntimeExceptionMapper {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private <T extends Throwable> Map.Entry<Throwable, jakarta.ws.rs.ext.ExceptionMapper<? extends Throwable>> doGetExceptionMapper(
-            Class<T> clazz,
-            Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers,
+            Class<T> clazz, Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> mappers,
             Throwable throwable) {
         Class<?> klass = clazz;
         do {
             ResourceExceptionMapper<? extends Throwable> mapper = mappers.get(klass);
             if (mapper != null) {
-                return new AbstractMap.SimpleEntry(throwable, mapper.getFactory()
-                        .createInstance().getInstance());
+                return new AbstractMap.SimpleEntry(throwable, mapper.getFactory().createInstance().getInstance());
             }
             klass = klass.getSuperclass();
         } while (klass != null);

@@ -78,8 +78,7 @@ public class DefaultSerdeConfigTest {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static void doTest(Config customConfig, Tuple[] expectations,
-            List<Function<String, Assert>> generatedNames,
+    private static void doTest(Config customConfig, Tuple[] expectations, List<Function<String, Assert>> generatedNames,
             List<Function<String, Assert>> reflectiveNames, Class<?>... classesToIndex) {
         List<RunTimeConfigurationDefaultBuildItem> configs = new ArrayList<>();
         List<GeneratedClassBuildItem> generated = new ArrayList<>();
@@ -101,25 +100,24 @@ public class DefaultSerdeConfigTest {
             }
 
             @Override
-            boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> list, boolean incoming, String channelName) {
+            boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> list, boolean incoming,
+                    String channelName) {
                 return true;
             }
         };
         try {
             new SmallRyeReactiveMessagingKafkaProcessor().discoverDefaultSerdeConfig(discovery, Collections.emptyList(),
-                    configs::add,
-                    (generatedNames == null) ? null : generated::add,
+                    configs::add, (generatedNames == null) ? null : generated::add,
                     (reflectiveNames == null) ? null : reflective::add);
 
             assertThat(configs)
-                    .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
-                    .hasSize(expectations.length)
-                    .allSatisfy(tuple -> {
+                    .extracting(RunTimeConfigurationDefaultBuildItem::getKey,
+                            RunTimeConfigurationDefaultBuildItem::getValue)
+                    .hasSize(expectations.length).allSatisfy(tuple -> {
                         Object[] e = tuple.toArray();
                         String key = (String) e[0];
                         String value = (String) e[1];
-                        assertThat(Arrays.stream(expectations).filter(t -> key.equals(t.toArray()[0])))
-                                .hasSize(1)
+                        assertThat(Arrays.stream(expectations).filter(t -> key.equals(t.toArray()[0]))).hasSize(1)
                                 .satisfiesOnlyOnce(t -> {
                                     Object o = t.toArray()[1];
                                     if (o instanceof String) {
@@ -130,12 +128,10 @@ public class DefaultSerdeConfigTest {
                                 });
                     });
 
-            assertThat(generated)
-                    .extracting(GeneratedClassBuildItem::internalName)
+            assertThat(generated).extracting(GeneratedClassBuildItem::internalName)
                     .allSatisfy(s -> assertThat(generatedNames).satisfiesOnlyOnce(c -> c.apply(s)));
 
-            assertThat(reflective)
-                    .flatExtracting(ReflectiveClassBuildItem::getClassNames)
+            assertThat(reflective).flatExtracting(ReflectiveClassBuildItem::getClassNames)
                     .extracting(n -> n.replace('/', '.'))
                     .allSatisfy(s -> assertThat(reflectiveNames).satisfiesOnlyOnce(c -> c.apply(s)));
         } finally {
@@ -1837,7 +1833,8 @@ public class DefaultSerdeConfigTest {
 
         @Incoming("channel58")
         @Outgoing("channel59")
-        PublisherBuilder<Message<JsonbDto>> method40(PublisherBuilder<Message<org.apache.kafka.common.utils.Bytes>> msg) {
+        PublisherBuilder<Message<JsonbDto>> method40(
+                PublisherBuilder<Message<org.apache.kafka.common.utils.Bytes>> msg) {
             return null;
         }
 
@@ -2222,7 +2219,8 @@ public class DefaultSerdeConfigTest {
 
         @Incoming("channel34")
         @Outgoing("channel35")
-        PublisherBuilder<ProducerRecord<Double, java.nio.ByteBuffer>> method28(ConsumerRecord<Integer, java.util.UUID> msg) {
+        PublisherBuilder<ProducerRecord<Double, java.nio.ByteBuffer>> method28(
+                ConsumerRecord<Integer, java.util.UUID> msg) {
             return null;
         }
 
@@ -2240,7 +2238,8 @@ public class DefaultSerdeConfigTest {
 
         @Incoming("channel46")
         @Outgoing("channel47")
-        CompletionStage<ProducerRecord<Double, java.nio.ByteBuffer>> method34(ConsumerRecord<Integer, java.util.UUID> msg) {
+        CompletionStage<ProducerRecord<Double, java.nio.ByteBuffer>> method34(
+                ConsumerRecord<Integer, java.util.UUID> msg) {
             return null;
         }
 
@@ -2268,7 +2267,8 @@ public class DefaultSerdeConfigTest {
 
         @Incoming("channel62")
         @Outgoing("channel63")
-        Multi<ProducerRecord<Double, java.nio.ByteBuffer>> method42(Multi<ConsumerRecord<Integer, java.util.UUID>> msg) {
+        Multi<ProducerRecord<Double, java.nio.ByteBuffer>> method42(
+                Multi<ConsumerRecord<Integer, java.util.UUID>> msg) {
             return null;
         }
     }
@@ -2590,19 +2590,15 @@ public class DefaultSerdeConfigTest {
         };
         // @formatter:on
 
-        doTest(new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("test", Map.of(
-                        "mp.messaging.connector.smallrye-kafka.key.serializer", "foo.Bar",
-                        "mp.messaging.connector.smallrye-kafka.value.deserializer", "foo.Baz")) {
-                })
-                .build(), expectations1, ConnectorConfigNotOverriden.class);
+        doTest(new SmallRyeConfigBuilder().withSources(
+                new MapBackedConfigSource("test", Map.of("mp.messaging.connector.smallrye-kafka.key.serializer",
+                        "foo.Bar", "mp.messaging.connector.smallrye-kafka.value.deserializer", "foo.Baz")) {
+                }).build(), expectations1, ConnectorConfigNotOverriden.class);
 
-        doTest(new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("test", Map.of(
-                        "mp.messaging.connector.smallrye-kafka.key.deserializer", "foo.Bar",
-                        "mp.messaging.connector.smallrye-kafka.value.serializer", "foo.Baz")) {
-                })
-                .build(), expectations2, ConnectorConfigNotOverriden.class);
+        doTest(new SmallRyeConfigBuilder().withSources(
+                new MapBackedConfigSource("test", Map.of("mp.messaging.connector.smallrye-kafka.key.deserializer",
+                        "foo.Bar", "mp.messaging.connector.smallrye-kafka.value.serializer", "foo.Baz")) {
+                }).build(), expectations2, ConnectorConfigNotOverriden.class);
     }
 
     private static class ConnectorConfigNotOverriden {
@@ -2668,17 +2664,14 @@ public class DefaultSerdeConfigTest {
 
         doTest(null, expectations1, generated1, reflective1, CustomSerdeImplementation.class, CustomDto.class);
 
-        doTest(expectations2, CustomSerdeImplementation.class, CustomDto.class,
-                MySerializer.class,
+        doTest(expectations2, CustomSerdeImplementation.class, CustomDto.class, MySerializer.class,
                 MyDeserializer.class, MyObjectMapperDeserializer.class, CustomDtoDeserializer.class);
 
-        doTest(expectations3, CustomSerdeImplementation.class, CustomDto.class,
-                MySerializer.class,
+        doTest(expectations3, CustomSerdeImplementation.class, CustomDto.class, MySerializer.class,
                 MyDeserializer.class, MyObjectMapperDeserializer.class);
 
-        doTest(expectations4, CustomSerdeImplementation.class, CustomDto.class,
-                MyWrongSerializer.class, CustomInterface.class,
-                MyDeserializer.class, MyObjectMapperDeserializer.class);
+        doTest(expectations4, CustomSerdeImplementation.class, CustomDto.class, MyWrongSerializer.class,
+                CustomInterface.class, MyDeserializer.class, MyObjectMapperDeserializer.class);
     }
 
     private static class CustomDto {

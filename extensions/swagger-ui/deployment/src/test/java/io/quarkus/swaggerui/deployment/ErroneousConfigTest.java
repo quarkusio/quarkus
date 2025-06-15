@@ -11,10 +11,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ErroneousConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.swagger-ui.path=/\n"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("quarkus.swagger-ui.path=/\n"),
+                    "application.properties"));
 
     @Test
     public void shouldNotStartApplicationIfSwaggerPathIsASlash() {

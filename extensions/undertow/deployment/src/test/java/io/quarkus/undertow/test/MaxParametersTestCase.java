@@ -20,26 +20,21 @@ public class MaxParametersTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestServlet.class, TestGreeter.class)
+            .withApplicationRoot((jar) -> jar.addClasses(TestServlet.class, TestGreeter.class)
                     .addAsResource(new StringAsset("quarkus.servlet.max-parameters=10"), "application.properties"));
 
     @Test
     public void testSmallRequest() {
-        RestAssured.given()
-                .params(generateParameters(10))
-                .get("/test")
-                .then().statusCode(200).body(Matchers.equalTo("test servlet"));
+        RestAssured.given().params(generateParameters(10)).get("/test").then().statusCode(200)
+                .body(Matchers.equalTo("test servlet"));
     }
 
     @Test
     public void testLargeRequest() {
         // A throw of io.undertow.util.ParameterLimitException causes Undertow to close the
         // connection immediately without responding to the HTTP request.
-        Assertions.assertThrows(SocketTimeoutException.class, () -> RestAssured.given()
-                .params(generateParameters(11))
-                .get("/test")
-                .then().statusCode(414));
+        Assertions.assertThrows(SocketTimeoutException.class,
+                () -> RestAssured.given().params(generateParameters(11)).get("/test").then().statusCode(414));
     }
 
     private static Map<String, String> generateParameters(int count) {

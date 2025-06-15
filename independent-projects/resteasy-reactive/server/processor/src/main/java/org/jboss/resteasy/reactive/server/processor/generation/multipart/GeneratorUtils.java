@@ -16,12 +16,14 @@ public final class GeneratorUtils {
 
     public static void paramHandleFromReqContextMethod(MethodCreator m, ResultHandle qrReqCtxHandle,
             ResultHandle[] targetMethodParamHandles, int i, String methodName, DotName returnType) {
-        paramHandleFromReqContextMethod(m, qrReqCtxHandle, targetMethodParamHandles, i, methodName, returnType.toString());
+        paramHandleFromReqContextMethod(m, qrReqCtxHandle, targetMethodParamHandles, i, methodName,
+                returnType.toString());
     }
 
     public static void paramHandleFromReqContextMethod(MethodCreator m, ResultHandle qrReqCtxHandle,
             ResultHandle[] targetMethodParamHandles, int i, String methodName, Class<?> returnType) {
-        paramHandleFromReqContextMethod(m, qrReqCtxHandle, targetMethodParamHandles, i, methodName, returnType.getName());
+        paramHandleFromReqContextMethod(m, qrReqCtxHandle, targetMethodParamHandles, i, methodName,
+                returnType.getName());
     }
 
     private static void paramHandleFromReqContextMethod(MethodCreator m, ResultHandle qrReqCtxHandle,
@@ -31,8 +33,9 @@ public final class GeneratorUtils {
     }
 
     public static ResultHandle unwrapObject(MethodCreator m, ResultHandle qrReqCtxHandle, DotName classType) {
-        return m.invokeVirtualMethod(ofMethod(ResteasyReactiveRequestContext.class, "unwrap", Object.class, Class.class),
-                qrReqCtxHandle, m.loadClass(classType.toString()));
+        return m.invokeVirtualMethod(
+                ofMethod(ResteasyReactiveRequestContext.class, "unwrap", Object.class, Class.class), qrReqCtxHandle,
+                m.loadClass(classType.toString()));
     }
 
     public static ResultHandle runtimeResourceHandle(MethodCreator filterMethod, ResultHandle qrReqCtxHandle) {

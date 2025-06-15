@@ -35,125 +35,130 @@ public class Attachment {
     /**
      * Creates a new {@link Attachment}. Disposition is set to {@code attachment}.
      *
-     * @param name the name
-     * @param file the file
-     * @param contentType the content type
+     * @param name
+     *        the name
+     * @param file
+     *        the file
+     * @param contentType
+     *        the content type
      */
     public Attachment(String name, File file, String contentType) {
-        setName(name)
-                .setFile(file)
-                .setContentType(contentType)
-                .setDisposition(DISPOSITION_ATTACHMENT);
+        setName(name).setFile(file).setContentType(contentType).setDisposition(DISPOSITION_ATTACHMENT);
     }
 
     /**
      * Creates a new {@link Attachment}. Disposition is set to {@code inline}.
      *
-     * @param name the name
-     * @param file the file
-     * @param contentType the content type
-     * @param contentId the content id
+     * @param name
+     *        the name
+     * @param file
+     *        the file
+     * @param contentType
+     *        the content type
+     * @param contentId
+     *        the content id
      */
     public Attachment(String name, File file, String contentType, String contentId) {
-        setName(name)
-                .setFile(file)
-                .setContentType(contentType)
-                .setContentId(contentId)
+        setName(name).setFile(file).setContentType(contentType).setContentId(contentId)
                 .setDisposition(DISPOSITION_INLINE);
     }
 
     /**
      * Creates a new {@link Attachment}. Disposition is set to {@code attachment}.
      *
-     * @param name the name
-     * @param data the data
-     * @param contentType the content type
+     * @param name
+     *        the name
+     * @param data
+     *        the data
+     * @param contentType
+     *        the content type
      */
     public Attachment(String name, byte[] data, String contentType) {
-        setName(name)
-                .setData(data)
-                .setContentType(contentType)
-                .setDisposition(DISPOSITION_ATTACHMENT);
+        setName(name).setData(data).setContentType(contentType).setDisposition(DISPOSITION_ATTACHMENT);
     }
 
     /**
      * Creates a new {@link Attachment}. Disposition is set to {@code attachment}.
      *
-     * @param name the name
-     * @param data the data as a stream of {@link Byte}
-     * @param contentType the content type
+     * @param name
+     *        the name
+     * @param data
+     *        the data as a stream of {@link Byte}
+     * @param contentType
+     *        the content type
      */
     public Attachment(String name, Publisher<Byte> data, String contentType) {
-        setName(name)
-                .setData(data)
-                .setContentType(contentType)
-                .setDisposition(DISPOSITION_ATTACHMENT);
+        setName(name).setData(data).setContentType(contentType).setDisposition(DISPOSITION_ATTACHMENT);
     }
 
     /**
      * Creates a new {@link Attachment}. Disposition is set to {@code inline}.
      *
-     * @param name the name
-     * @param data the data
-     * @param contentType the content type
-     * @param contentId the content id
+     * @param name
+     *        the name
+     * @param data
+     *        the data
+     * @param contentType
+     *        the content type
+     * @param contentId
+     *        the content id
      */
     public Attachment(String name, byte[] data, String contentType, String contentId) {
-        setName(name)
-                .setData(data)
-                .setContentType(contentType)
-                .setContentId(contentId)
+        setName(name).setData(data).setContentType(contentType).setContentId(contentId)
                 .setDisposition(DISPOSITION_INLINE);
     }
 
     /**
      * Creates a new {@link Attachment}. Disposition is set to {@code inline}.
      *
-     * @param name the name
-     * @param data the data as a stream of {@link Byte}
-     * @param contentType the content type
-     * @param contentId the content id
+     * @param name
+     *        the name
+     * @param data
+     *        the data as a stream of {@link Byte}
+     * @param contentType
+     *        the content type
+     * @param contentId
+     *        the content id
      */
     public Attachment(String name, Publisher<Byte> data, String contentType, String contentId) {
-        setName(name)
-                .setData(data)
-                .setContentType(contentType)
-                .setContentId(contentId)
+        setName(name).setData(data).setContentType(contentType).setContentId(contentId)
                 .setDisposition(DISPOSITION_INLINE);
     }
 
     /**
      * Creates a new {@link Attachment}.
      *
-     * @param name the name
-     * @param data the data
-     * @param contentType the content type
-     * @param description the description
-     * @param disposition the disposition
+     * @param name
+     *        the name
+     * @param data
+     *        the data
+     * @param contentType
+     *        the content type
+     * @param description
+     *        the description
+     * @param disposition
+     *        the disposition
      */
     public Attachment(String name, byte[] data, String contentType, String description, String disposition) {
-        setName(name)
-                .setData(data)
-                .setContentType(contentType)
-                .setDescription(description)
-                .setDisposition(disposition);
+        setName(name).setData(data).setContentType(contentType).setDescription(description).setDisposition(disposition);
     }
 
     /**
      * Creates a new {@link Attachment}.
      *
-     * @param name the name
-     * @param data the data as a stream of {@link Byte}
-     * @param contentType the content type
-     * @param description the description
-     * @param disposition the disposition
+     * @param name
+     *        the name
+     * @param data
+     *        the data as a stream of {@link Byte}
+     * @param contentType
+     *        the content type
+     * @param description
+     *        the description
+     * @param disposition
+     *        the disposition
      */
     public Attachment(String name, Publisher<Byte> data, String contentType, String description, String disposition) {
-        setName(name)
-                .setData(data)
-                .setContentType(contentType)
-                .setDescription(description)
-                .setDisposition(disposition);
+        setName(name).setData(data).setContentType(contentType).setDescription(description).setDisposition(disposition);
     }
 
     public String getName() {

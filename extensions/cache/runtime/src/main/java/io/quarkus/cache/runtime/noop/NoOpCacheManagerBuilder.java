@@ -21,7 +21,8 @@ public class NoOpCacheManagerBuilder {
                 if (cacheNames.isEmpty()) {
                     return new CacheManagerImpl(Collections.emptyMap());
                 } else {
-                    // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor for the caches map.
+                    // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor
+                    // for the caches map.
                     Map<String, Cache> caches = new HashMap<>(cacheNames.size() + 1, 1.0F);
                     NoOpCache cache = new NoOpCache();
                     for (String cacheName : cacheNames) {

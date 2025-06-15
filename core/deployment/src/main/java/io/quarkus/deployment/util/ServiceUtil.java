@@ -67,9 +67,8 @@ public final class ServiceUtil {
     }
 
     /**
-     * - Lines starting by a # (or white spaces and a #) are ignored. - For
-     * lines containing data before a comment (#) are parsed and only the value
-     * before the comment is used.
+     * - Lines starting by a # (or white spaces and a #) are ignored. - For lines containing data before a comment (#)
+     * are parsed and only the value before the comment is used.
      */
     private static void readStream(final Set<String> classNames, final BufferedReader br) throws IOException {
         String line;

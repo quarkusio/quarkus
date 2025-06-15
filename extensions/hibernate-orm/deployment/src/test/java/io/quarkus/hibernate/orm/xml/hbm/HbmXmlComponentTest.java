@@ -17,11 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HbmXmlComponentTest {
     @RegisterExtension
     final static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(SchemaUtil.class)
-                    .addClass(NonAnnotatedComponentUsingEntity.class)
-                    .addClass(NonAnnotatedComponent.class)
+            .withApplicationRoot(jar -> jar.addClass(SmokeTestUtils.class).addClass(SchemaUtil.class)
+                    .addClass(NonAnnotatedComponentUsingEntity.class).addClass(NonAnnotatedComponent.class)
                     .addAsResource("META-INF/hbm-component.xml", "my-hbm.xml"))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping-files", "my-hbm.xml");
@@ -42,9 +39,8 @@ public class HbmXmlComponentTest {
     @Test
     @Transactional
     public void smokeTest() {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager,
-                NonAnnotatedComponentUsingEntity.class, NonAnnotatedComponentUsingEntity::new,
-                NonAnnotatedComponentUsingEntity::getId,
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager, NonAnnotatedComponentUsingEntity.class,
+                NonAnnotatedComponentUsingEntity::new, NonAnnotatedComponentUsingEntity::getId,
                 (e, name) -> e.getValue().setName(name), e -> e.getValue().getName());
     }
 

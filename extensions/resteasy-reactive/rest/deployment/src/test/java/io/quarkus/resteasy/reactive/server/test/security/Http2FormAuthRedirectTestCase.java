@@ -37,10 +37,12 @@ public class Http2FormAuthRedirectTestCase {
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class)
-                    .addAsResource(new StringAsset("quarkus.http.auth.form.enabled=true\n" +
-                            "quarkus.http.insecure-requests=disabled\n" +
-                            "quarkus.http.ssl.certificate.key-store-file=server-keystore.jks\n" +
-                            "quarkus.http.ssl.certificate.key-store-password=secret"), "application.properties")
+                    .addAsResource(
+                            new StringAsset("quarkus.http.auth.form.enabled=true\n"
+                                    + "quarkus.http.insecure-requests=disabled\n"
+                                    + "quarkus.http.ssl.certificate.key-store-file=server-keystore.jks\n"
+                                    + "quarkus.http.ssl.certificate.key-store-password=secret"),
+                            "application.properties")
                     .addAsResource("server-keystore.jks");
         }
     });
@@ -54,19 +56,12 @@ public class Http2FormAuthRedirectTestCase {
     public void testFormAuthFailure() {
         Vertx vertx = Vertx.vertx();
         try {
-            WebClientOptions options = new WebClientOptions()
-                    .setSsl(true)
-                    .setVerifyHost(false)
-                    .setTrustAll(true)
-                    .setProtocolVersion(HttpVersion.HTTP_2)
-                    .setFollowRedirects(false)
-                    .setUseAlpn(true);
+            WebClientOptions options = new WebClientOptions().setSsl(true).setVerifyHost(false).setTrustAll(true)
+                    .setProtocolVersion(HttpVersion.HTTP_2).setFollowRedirects(false).setUseAlpn(true);
             CompletableFuture<Integer> result = new CompletableFuture<>();
-            MultiMap formParams = new QuarkusHttpHeaders()
-                    .add("j_username", "a d m i n")
-                    .add("j_password", "wrongpassword");
-            WebClient.create(vertx, options)
-                    .post(sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath())
+            MultiMap formParams = new QuarkusHttpHeaders().add("j_username", "a d m i n").add("j_password",
+                    "wrongpassword");
+            WebClient.create(vertx, options).post(sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath())
                     .sendForm(formParams, ar -> {
                         if (ar.succeeded()) {
                             HttpResponse<Buffer> response = ar.result();

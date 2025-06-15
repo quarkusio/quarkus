@@ -33,10 +33,8 @@ public class AvroProcessor {
     }
 
     @BuildStep
-    public void build(CombinedIndexBuildItem indexBuildItem,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageSystemPropertyBuildItem> sys,
-            BuildProducer<NativeImageConfigBuildItem> conf) {
+    public void build(CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<NativeImageSystemPropertyBuildItem> sys, BuildProducer<NativeImageConfigBuildItem> conf) {
 
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
 
@@ -45,8 +43,7 @@ public class AvroProcessor {
         for (AnnotationInstance annotation : annotations) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
                 String className = annotation.target().asClass().name().toString();
-                reflectiveClass.produce(
-                        ReflectiveClassBuildItem.builder(className).methods().fields().build());
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).methods().fields().build());
             }
         }
 
@@ -56,7 +53,8 @@ public class AvroProcessor {
     }
 
     @BuildStep
-    void registerJacksonSerializer(CombinedIndexBuildItem indexBuildItem, BuildProducer<JacksonModuleBuildItem> producer) {
+    void registerJacksonSerializer(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<JacksonModuleBuildItem> producer) {
         Collection<AnnotationInstance> annotations = indexBuildItem.getIndex()
                 .getAnnotations(DotName.createSimple(AvroGenerated.class.getName()));
         JacksonModuleBuildItem.Builder builder = new JacksonModuleBuildItem.Builder("AvroSpecificRecordModule");

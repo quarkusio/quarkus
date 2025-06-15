@@ -28,14 +28,12 @@ class ComposeFilesTest {
         // Verify service1 definition
         ComposeServiceDefinition service1 = services.get("service1");
         assertEquals("service1", service1.getServiceName());
-        assertTrue(service1.getPorts().stream()
-                .anyMatch(p -> p.getPort() == 8080));
+        assertTrue(service1.getPorts().stream().anyMatch(p -> p.getPort() == 8080));
 
         // Verify service2 definition
         ComposeServiceDefinition service2 = services.get("service2");
         assertEquals("service2", service2.getServiceName());
-        assertTrue(service2.getPorts().stream()
-                .anyMatch(p -> p.getPort() == 8081));
+        assertTrue(service2.getPorts().stream().anyMatch(p -> p.getPort() == 8081));
     }
 
     @Test
@@ -56,8 +54,7 @@ class ComposeFilesTest {
         File baseFile = new File(TEST_RESOURCES + "base.yml");
         File overrideFile = new File(TEST_RESOURCES + "override.yml");
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> new ComposeFiles(Arrays.asList(baseFile, overrideFile)));
         assertTrue(exception.getMessage().contains("Service name conflict"));
         assertTrue(exception.getMessage().contains("service1"));
@@ -81,12 +78,10 @@ class ComposeFilesTest {
 
         // Verify a service from each file
         ComposeServiceDefinition service2 = services.get("service2");
-        assertTrue(service2.getPorts().stream()
-                .anyMatch(p -> p.getPort() == 8081));
+        assertTrue(service2.getPorts().stream().anyMatch(p -> p.getPort() == 8081));
 
         ComposeServiceDefinition service3 = services.get("service3");
-        assertTrue(service3.getPorts().stream()
-                .anyMatch(p -> p.getPort() == 8082));
+        assertTrue(service3.getPorts().stream().anyMatch(p -> p.getPort() == 8082));
     }
 
     @Test
@@ -99,8 +94,7 @@ class ComposeFilesTest {
     @Test
     void testNonExistentFile() {
         File nonExistentFile = new File(TEST_RESOURCES + "non-existent.yml");
-        assertThrows(
-                IllegalArgumentException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> new ComposeFiles(Collections.singletonList(nonExistentFile)));
     }
 

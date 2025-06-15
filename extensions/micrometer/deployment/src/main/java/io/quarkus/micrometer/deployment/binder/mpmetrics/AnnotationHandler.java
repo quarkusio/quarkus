@@ -17,9 +17,8 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.DotNames;
 
 /**
- * Create beans to handle MP Metrics API annotations.
- *
- * It is ok to import and use classes that reference MP Metrics classes.
+ * Create beans to handle MP Metrics API annotations. It is ok to import and use classes that reference MP Metrics
+ * classes.
  */
 public class AnnotationHandler {
     private static final Logger log = Logger.getLogger(AnnotationHandler.class);
@@ -28,8 +27,8 @@ public class AnnotationHandler {
         return transformAnnotations(index, meterAnnotation, meterAnnotation);
     }
 
-    static AnnotationsTransformerBuildItem transformAnnotations(final IndexView index,
-            DotName sourceAnnotationName, DotName targetAnnotationName) {
+    static AnnotationsTransformerBuildItem transformAnnotations(final IndexView index, DotName sourceAnnotationName,
+            DotName targetAnnotationName) {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override
             public void transform(TransformationContext ctx) {
@@ -59,27 +58,22 @@ public class AnnotationHandler {
 
                 // Remove the @Counted annotation when both @Counted & @Timed/SimplyTimed
                 // Ignore @Metric with @Produces
-                if (removeCountedWhenTimed(sourceAnnotationName, target, classInfo, methodInfo) ||
-                        removeMetricWhenProduces(sourceAnnotationName, target, methodInfo, fieldInfo)) {
-                    ctx.transform()
-                            .remove(x -> x == annotation)
-                            .done();
+                if (removeCountedWhenTimed(sourceAnnotationName, target, classInfo, methodInfo)
+                        || removeMetricWhenProduces(sourceAnnotationName, target, methodInfo, fieldInfo)) {
+                    ctx.transform().remove(x -> x == annotation).done();
                     return;
                 }
 
                 // Make sure all attributes exist:
-                MetricAnnotationInfo annotationInfo = new MetricAnnotationInfo(annotation, index,
-                        classInfo, methodInfo, fieldInfo);
+                MetricAnnotationInfo annotationInfo = new MetricAnnotationInfo(annotation, index, classInfo, methodInfo,
+                        fieldInfo);
 
                 // preserve the original annotation target, `ctx.getTarget()` is different in case of method parameters
                 AnnotationInstance newAnnotation = AnnotationInstance.create(targetAnnotationName, annotation.target(),
                         annotationInfo.getAnnotationValues());
 
                 // Remove the existing annotation, and add a new one with all the fields
-                ctx.transform()
-                        .remove(x -> x == annotation)
-                        .add(newAnnotation)
-                        .done();
+                ctx.transform().remove(x -> x == annotation).add(newAnnotation).done();
             }
         });
     }
@@ -88,39 +82,43 @@ public class AnnotationHandler {
             MethodInfo methodInfo) {
         if (MetricDotNames.COUNTED_ANNOTATION.equals(sourceAnnotation)) {
             if (methodInfo == null) {
-                if (!Annotations.contains(classInfo.declaredAnnotations(), MetricDotNames.TIMED_ANNOTATION) &&
-                        !Annotations.contains(classInfo.declaredAnnotations(), MetricDotNames.SIMPLY_TIMED_ANNOTATION)) {
+                if (!Annotations.contains(classInfo.declaredAnnotations(), MetricDotNames.TIMED_ANNOTATION)
+                        && !Annotations.contains(classInfo.declaredAnnotations(),
+                                MetricDotNames.SIMPLY_TIMED_ANNOTATION)) {
                     return false;
                 }
-                log.warnf("Bean %s is both counted and timed. The @Counted annotation " +
-                        "will be suppressed in favor of the count emitted by the timer.",
+                log.warnf(
+                        "Bean %s is both counted and timed. The @Counted annotation "
+                                + "will be suppressed in favor of the count emitted by the timer.",
                         classInfo.name().toString());
                 return true;
             } else {
-                if (!methodInfo.hasAnnotation(MetricDotNames.SIMPLY_TIMED_ANNOTATION) &&
-                        !methodInfo.hasAnnotation(MetricDotNames.TIMED_ANNOTATION)) {
+                if (!methodInfo.hasAnnotation(MetricDotNames.SIMPLY_TIMED_ANNOTATION)
+                        && !methodInfo.hasAnnotation(MetricDotNames.TIMED_ANNOTATION)) {
                     return false;
                 }
-                log.warnf("Method %s of bean %s is both counted and timed. The @Counted " +
-                        "annotation will be suppressed in favor of the count emitted by the timer.",
-                        methodInfo.name(),
-                        classInfo.name().toString());
+                log.warnf(
+                        "Method %s of bean %s is both counted and timed. The @Counted "
+                                + "annotation will be suppressed in favor of the count emitted by the timer.",
+                        methodInfo.name(), classInfo.name().toString());
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean removeMetricWhenProduces(DotName sourceAnnotation,
-            AnnotationTarget target, MethodInfo methodInfo, FieldInfo fieldInfo) {
+    private static boolean removeMetricWhenProduces(DotName sourceAnnotation, AnnotationTarget target,
+            MethodInfo methodInfo, FieldInfo fieldInfo) {
         if (MetricDotNames.METRIC_ANNOTATION.equals(sourceAnnotation)) {
-            if ((methodInfo != null && !methodInfo.hasAnnotation(DotNames.PRODUCES)) ||
-                    (fieldInfo != null && !fieldInfo.hasAnnotation(DotNames.PRODUCES))) {
+            if ((methodInfo != null && !methodInfo.hasAnnotation(DotNames.PRODUCES))
+                    || (fieldInfo != null && !fieldInfo.hasAnnotation(DotNames.PRODUCES))) {
                 return false;
             }
-            log.errorf("A declared bean uses the @Metric annotation with a @Producer " +
-                    "field or method, which is not compatible with micrometer support. " +
-                    "The annotation target will be ignored. (%s - %s)", target, System.identityHashCode(target));
+            log.errorf(
+                    "A declared bean uses the @Metric annotation with a @Producer "
+                            + "field or method, which is not compatible with micrometer support. "
+                            + "The annotation target will be ignored. (%s - %s)",
+                    target, System.identityHashCode(target));
             return true;
         }
         return false;

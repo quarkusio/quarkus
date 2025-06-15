@@ -18,6 +18,7 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ *
  * @version $Revision: 1 $
  */
 public class ClientRequestHeaders {
@@ -40,7 +41,7 @@ public class ClientRequestHeaders {
     }
 
     public void setLanguage(Locale language) {
-        //if this already set by HeaderParamProcessor
+        // if this already set by HeaderParamProcessor
         if (this.getHeader(HttpHeaders.CONTENT_LANGUAGE) != null) {
             return;
         }
@@ -112,7 +113,8 @@ public class ClientRequestHeaders {
 
     public void cookie(Cookie cookie) {
         if (!(Cookie.class.equals(cookie.getClass()))) {
-            cookie = new Cookie(cookie.getName(), cookie.getValue(), cookie.getPath(), cookie.getDomain(), cookie.getVersion());
+            cookie = new Cookie(cookie.getName(), cookie.getValue(), cookie.getPath(), cookie.getDomain(),
+                    cookie.getVersion());
         }
         headers.add(HttpHeaders.COOKIE, cookie);
     }

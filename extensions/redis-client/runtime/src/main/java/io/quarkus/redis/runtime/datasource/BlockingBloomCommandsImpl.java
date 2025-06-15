@@ -20,43 +20,36 @@ public class BlockingBloomCommandsImpl<K, V> extends AbstractRedisCommandGroup i
 
     @Override
     public boolean bfadd(K key, V value) {
-        return reactive.bfadd(key, value)
-                .await().atMost(timeout);
+        return reactive.bfadd(key, value).await().atMost(timeout);
     }
 
     @Override
     public boolean bfexists(K key, V value) {
-        return reactive.bfexists(key, value)
-                .await().atMost(timeout);
+        return reactive.bfexists(key, value).await().atMost(timeout);
     }
 
     @Override
     public List<Boolean> bfmadd(K key, V... values) {
-        return reactive.bfmadd(key, values)
-                .await().atMost(timeout);
+        return reactive.bfmadd(key, values).await().atMost(timeout);
     }
 
     @Override
     public List<Boolean> bfmexists(K key, V... values) {
-        return reactive.bfmexists(key, values)
-                .await().atMost(timeout);
+        return reactive.bfmexists(key, values).await().atMost(timeout);
     }
 
     @Override
     public void bfreserve(K key, double errorRate, long capacity) {
-        reactive.bfreserve(key, errorRate, capacity)
-                .await().atMost(timeout);
+        reactive.bfreserve(key, errorRate, capacity).await().atMost(timeout);
     }
 
     @Override
     public void bfreserve(K key, double errorRate, long capacity, BfReserveArgs args) {
-        reactive.bfreserve(key, errorRate, capacity, args)
-                .await().atMost(timeout);
+        reactive.bfreserve(key, errorRate, capacity, args).await().atMost(timeout);
     }
 
     @Override
     public List<Boolean> bfinsert(K key, BfInsertArgs args, V... values) {
-        return reactive.bfinsert(key, args, values)
-                .await().atMost(timeout);
+        return reactive.bfinsert(key, args, values).await().atMost(timeout);
     }
 }

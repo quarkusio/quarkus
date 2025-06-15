@@ -14,11 +14,11 @@ public class CurrentRequestDisabledTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "quarkus.arc.exclude-types=io.quarkus.vertx.http.runtime.CurrentRequestProducer"),
+                    .addAsResource(
+                            new StringAsset(
+                                    "quarkus.arc.exclude-types=io.quarkus.vertx.http.runtime.CurrentRequestProducer"),
                             "application.properties")
-                    .addAsResource(new StringAsset(
-                            "Hello {inject:vertxRequest.getParam('name')}!"),
+                    .addAsResource(new StringAsset("Hello {inject:vertxRequest.getParam('name')}!"),
                             "templates/request.txt"))
             .setExpectedException(TemplateException.class);
 

@@ -11,10 +11,9 @@ public interface OtlpExporterMetricsConfig extends OtlpExporterConfig {
     /**
      * The preferred output aggregation temporality. Options include DELTA, LOWMEMORY, and CUMULATIVE.
      * <p>
-     * If CUMULATIVE, all instruments will have cumulative temporality.
-     * If DELTA, counter (sync and async) and histograms will be delta, up down counters (sync and async) will be cumulative.
-     * If LOWMEMORY, sync counter and histograms will be delta, async counter and up down counters (sync and async) will be
-     * cumulative.
+     * If CUMULATIVE, all instruments will have cumulative temporality. If DELTA, counter (sync and async) and
+     * histograms will be delta, up down counters (sync and async) will be cumulative. If LOWMEMORY, sync counter and
+     * histograms will be delta, async counter and up down counters (sync and async) will be cumulative.
      * <p>
      * Default is CUMULATIVE.
      */

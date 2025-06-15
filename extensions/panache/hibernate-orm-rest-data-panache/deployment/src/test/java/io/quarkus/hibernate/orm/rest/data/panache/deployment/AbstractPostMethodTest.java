@@ -16,10 +16,8 @@ public abstract class AbstractPostMethodTest {
 
     @Test
     void shouldCreateSimpleObject() {
-        Response response = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-simple\", \"collection\": {\"id\": \"full\"}}")
-                .when().post("/items")
+        Response response = given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-simple\", \"collection\": {\"id\": \"full\"}}").when().post("/items")
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.header("Location")).isNotBlank();
@@ -31,10 +29,8 @@ public abstract class AbstractPostMethodTest {
 
     @Test
     void shouldCreateSimpleHalObject() {
-        Response response = given().accept("application/hal+json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-simple-hal\", \"collection\": {\"id\": \"full\"}}")
-                .when().post("/items")
+        Response response = given().accept("application/hal+json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-simple-hal\", \"collection\": {\"id\": \"full\"}}").when().post("/items")
                 .thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
         assertThat(response.header("Location")).isNotBlank();
@@ -51,42 +47,29 @@ public abstract class AbstractPostMethodTest {
 
     @Test
     void shouldCreateComplexObjects() {
-        given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"test-complex\", \"name\": \"test collection\"}")
-                .when().post("/collections")
-                .then().statusCode(201)
-                .and().header("Location", endsWith("/test-complex"))
-                .and().body("id", is(equalTo("test-complex")))
-                .and().body("name", is(equalTo("test collection")))
-                .and().body("items", is(empty()));
-        given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"test-complex\", \"name\": \"test collection\"}")
-                .when().post("/collections")
-                .then().statusCode(409);
+        given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"id\": \"test-complex\", \"name\": \"test collection\"}").when().post("/collections").then()
+                .statusCode(201).and().header("Location", endsWith("/test-complex")).and()
+                .body("id", is(equalTo("test-complex"))).and().body("name", is(equalTo("test collection"))).and()
+                .body("items", is(empty()));
+        given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"id\": \"test-complex\", \"name\": \"test collection\"}").when().post("/collections").then()
+                .statusCode(409);
     }
 
     @Test
     void shouldCreateComplexHalObjects() {
-        given().accept("application/hal+json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"test-complex-hal\", \"name\": \"test collection\"}")
-                .when().post("/collections")
-                .then().statusCode(201)
-                .and().header("Location", endsWith("/test-complex-hal"))
-                .and().body("id", is(equalTo("test-complex-hal")))
-                .and().body("name", is(equalTo("test collection")))
-                .and().body("items", is(empty()))
-                .and().body("_links.add.href", endsWith("/collections"))
-                .and().body("_links.list.href", endsWith("/collections"))
-                .and().body("_links.self.href", endsWith("/collections/test-complex-hal"))
-                .and().body("_links.update.href", endsWith("/collections/test-complex-hal"))
-                .and().body("_links.remove.href", endsWith("/collections/test-complex-hal"));
-        given().accept("application/hal+json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"test-complex-hal\", \"name\": \"test collection\"}")
-                .when().post("/collections")
+        given().accept("application/hal+json").and().contentType("application/json").and()
+                .body("{\"id\": \"test-complex-hal\", \"name\": \"test collection\"}").when().post("/collections")
+                .then().statusCode(201).and().header("Location", endsWith("/test-complex-hal")).and()
+                .body("id", is(equalTo("test-complex-hal"))).and().body("name", is(equalTo("test collection"))).and()
+                .body("items", is(empty())).and().body("_links.add.href", endsWith("/collections")).and()
+                .body("_links.list.href", endsWith("/collections")).and()
+                .body("_links.self.href", endsWith("/collections/test-complex-hal")).and()
+                .body("_links.update.href", endsWith("/collections/test-complex-hal")).and()
+                .body("_links.remove.href", endsWith("/collections/test-complex-hal"));
+        given().accept("application/hal+json").and().contentType("application/json").and()
+                .body("{\"id\": \"test-complex-hal\", \"name\": \"test collection\"}").when().post("/collections")
                 .then().statusCode(409);
     }
 }

@@ -35,14 +35,12 @@ final class TopologyParserContext {
 
     void addSources(String source, String[] topics) {
         currentNode = sanitize(source);
-        Arrays.stream(topics)
-                .map(String::trim).filter(topic -> !topic.isEmpty())
-                .forEachOrdered(topic -> {
-                    final var sanitizedTopic = sanitize(topic);
-                    sources.add(sanitizedTopic);
-                    graphviz.addSource(currentNode, sanitizedTopic);
-                    mermaid.addSource(currentNode, sanitizedTopic);
-                });
+        Arrays.stream(topics).map(String::trim).filter(topic -> !topic.isEmpty()).forEachOrdered(topic -> {
+            final var sanitizedTopic = sanitize(topic);
+            sources.add(sanitizedTopic);
+            graphviz.addSource(currentNode, sanitizedTopic);
+            mermaid.addSource(currentNode, sanitizedTopic);
+        });
     }
 
     void addRegexSource(String source, String regex) {
@@ -57,19 +55,16 @@ final class TopologyParserContext {
 
     void addStores(String[] stores, String processor, boolean join) {
         currentNode = sanitize(processor);
-        Arrays.stream(stores)
-                .map(String::trim).filter(store -> !store.isEmpty())
-                .forEachOrdered(store -> {
-                    final var sanitizedStore = sanitize(store);
-                    this.stores.add(sanitizedStore);
-                    graphviz.addStore(sanitizedStore, currentNode, join);
-                    mermaid.addStore(sanitizedStore, currentNode, join);
-                });
+        Arrays.stream(stores).map(String::trim).filter(store -> !store.isEmpty()).forEachOrdered(store -> {
+            final var sanitizedStore = sanitize(store);
+            this.stores.add(sanitizedStore);
+            graphviz.addStore(sanitizedStore, currentNode, join);
+            mermaid.addStore(sanitizedStore, currentNode, join);
+        });
     }
 
     void addTargets(String[] targets) {
-        Arrays.stream(targets)
-                .map(String::trim).filter(target -> !("none".equals(target) || target.isEmpty()))
+        Arrays.stream(targets).map(String::trim).filter(target -> !("none".equals(target) || target.isEmpty()))
                 .forEachOrdered(target -> {
                     final var sanitizedTarget = sanitize(target);
                     graphviz.addTarget(sanitizedTarget, currentNode);

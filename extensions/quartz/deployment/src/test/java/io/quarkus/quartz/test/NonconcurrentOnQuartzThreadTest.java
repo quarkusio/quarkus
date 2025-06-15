@@ -16,10 +16,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NonconcurrentOnQuartzThreadTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(Jobs.class))
-            .overrideConfigKey("quarkus.quartz.run-blocking-scheduled-method-on-quartz-thread",
-                    "true");
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class))
+            .overrideConfigKey("quarkus.quartz.run-blocking-scheduled-method-on-quartz-thread", "true");
 
     @Test
     public void testExecution() throws InterruptedException {

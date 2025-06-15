@@ -29,9 +29,9 @@ public class NoOpCacheTest {
     private static final String FORCED_EXCEPTION_MESSAGE = "Forced exception";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
-            .addAsResource(new StringAsset("quarkus.cache.enabled=false"), "application.properties")
-            .addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.cache.enabled=false"), "application.properties")
+                    .addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;

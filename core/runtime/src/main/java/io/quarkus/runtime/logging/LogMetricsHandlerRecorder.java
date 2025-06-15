@@ -22,8 +22,8 @@ public class LogMetricsHandlerRecorder {
 
     static final String METRIC_DESCRIPTION = "Number of log events, per log level. Non-standard levels are counted with the lower standard level.";
 
-    static final List<Level> STANDARD_LEVELS = Arrays.asList(Level.FATAL, Level.ERROR, Level.WARN, Level.INFO, Level.DEBUG,
-            Level.TRACE);
+    static final List<Level> STANDARD_LEVELS = Arrays.asList(Level.FATAL, Level.ERROR, Level.WARN, Level.INFO,
+            Level.DEBUG, Level.TRACE);
 
     static final NavigableMap<Integer, LongAdder> COUNTERS = new TreeMap<>();
 

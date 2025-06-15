@@ -17,8 +17,7 @@ public class LookupConditionsCombinedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, ServiceAlpha.class, ServiceBravo.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Foo.class, ServiceAlpha.class, ServiceBravo.class))
             .overrideConfigKey("service.alpha.enabled", "false");
 
     @Inject

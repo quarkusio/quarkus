@@ -17,10 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CustomParserHookRuntimeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    root -> root.addClasses(CustomParserHook.class)
-                            .addAsResource(new StringAsset("{foo}"), "templates/foo.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(CustomParserHook.class).addAsResource(new StringAsset("{foo}"), "templates/foo.html"));
 
     @Inject
     Engine engine;

@@ -19,8 +19,8 @@ public class SScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
     private long cursor;
     private final List<String> extra = new ArrayList<>();
 
-    public <K> SScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller,
-            Type typeOfValue, List<String> extra) {
+    public <K> SScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Type typeOfValue,
+            List<String> extra) {
         super(redis, marshaller);
         this.key = marshaller.encode(key);
         this.cursor = ReactiveCursor.INITIAL_CURSOR_ID;
@@ -41,16 +41,14 @@ public class SScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
         cmd.put(key);
         cmd.put(Long.toString(pos));
         cmd.putAll(extra);
-        return execute(cmd)
-                .invoke(response -> cursor = response.get(0).toLong())
-                .map(response -> {
-                    Response array = response.get(1);
-                    List<V> list = new ArrayList<>();
-                    for (Response nested : array) {
-                        list.add(marshaller.decode(typeOfValue, nested.toBytes()));
-                    }
-                    return list;
-                });
+        return execute(cmd).invoke(response -> cursor = response.get(0).toLong()).map(response -> {
+            Response array = response.get(1);
+            List<V> list = new ArrayList<>();
+            for (Response nested : array) {
+                list.add(marshaller.decode(typeOfValue, nested.toBytes()));
+            }
+            return list;
+        });
     }
 
     @Override
@@ -60,9 +58,7 @@ public class SScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
 
     @Override
     public Multi<V> toMulti() {
-        return Multi.createBy().repeating()
-                .uni(this::next)
-                .whilst(m -> hasNext())
-                .onItem().transformToMultiAndConcatenate(list -> Multi.createFrom().items(list.stream()));
+        return Multi.createBy().repeating().uni(this::next).whilst(m -> hasNext()).onItem()
+                .transformToMultiAndConcatenate(list -> Multi.createFrom().items(list.stream()));
     }
 }

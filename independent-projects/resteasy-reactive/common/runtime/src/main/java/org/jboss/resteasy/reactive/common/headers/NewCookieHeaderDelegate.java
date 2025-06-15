@@ -14,6 +14,7 @@ import org.jboss.resteasy.reactive.common.util.OrderedParameterParser;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ *
  * @version $Revision: 1 $
  */
 public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
@@ -74,17 +75,8 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
             cookieValue = "";
         }
 
-        return new NewCookie.Builder(cookieName)
-                .value(cookieValue)
-                .path(path)
-                .domain(domain)
-                .version(version)
-                .comment(comment)
-                .maxAge(maxAge)
-                .expiry(expiry)
-                .secure(secure)
-                .httpOnly(httpOnly)
-                .sameSite(sameSite)
+        return new NewCookie.Builder(cookieName).value(cookieValue).path(path).domain(domain).version(version)
+                .comment(comment).maxAge(maxAge).expiry(expiry).secure(secure).httpOnly(httpOnly).sameSite(sameSite)
                 .build();
 
     }

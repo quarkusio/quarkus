@@ -31,11 +31,9 @@ public class ContinuousTestingProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    public void continuousTestingState(
-            ContinuousTestingRecorder recorder,
-            LaunchModeBuildItem launchModeBuildItem,
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            BeanContainerBuildItem beanContainer) throws IOException {
+    public void continuousTestingState(ContinuousTestingRecorder recorder, LaunchModeBuildItem launchModeBuildItem,
+            ShutdownContextBuildItem shutdownContextBuildItem, BeanContainerBuildItem beanContainer)
+            throws IOException {
 
         DevModeType devModeType = launchModeBuildItem.getDevModeType().orElse(null);
         if (devModeType == null || !devModeType.isContinuousTestingSupported()) {
@@ -55,11 +53,8 @@ public class ContinuousTestingProcessor {
         InternalPageBuildItem continuousTestingPages = new InternalPageBuildItem("Continuous Testing", 30,
                 "qwc-continuous-testing-menu-action");
 
-        continuousTestingPages.addPage(Page.webComponentPageBuilder()
-                .namespace(NAMESPACE)
-                .title("Continuous Testing")
-                .icon("font-awesome-solid:flask-vial")
-                .componentLink("qwc-continuous-testing.js"));
+        continuousTestingPages.addPage(Page.webComponentPageBuilder().namespace(NAMESPACE).title("Continuous Testing")
+                .icon("font-awesome-solid:flask-vial").componentLink("qwc-continuous-testing.js"));
 
         return continuousTestingPages;
 
@@ -169,7 +164,8 @@ public class ContinuousTestingProcessor {
         });
     }
 
-    private void registerToggleBrokenOnlyMethod(LaunchModeBuildItem launchModeBuildItem, BuildTimeActionBuildItem actions) {
+    private void registerToggleBrokenOnlyMethod(LaunchModeBuildItem launchModeBuildItem,
+            BuildTimeActionBuildItem actions) {
         actions.addAction("toggleBrokenOnly", ignored -> {
 
             try {
@@ -230,8 +226,8 @@ public class ContinuousTestingProcessor {
                     testStatus.put("totalTestsPassed", result.getPassedCount());
                     testStatus.put("totalTestsSkipped", result.getSkippedCount());
                 }
-                //get running last, as otherwise if the test completes in the meantime you could see
-                //both running and last run being the same number
+                // get running last, as otherwise if the test completes in the meantime you could see
+                // both running and last run being the same number
                 testStatus.put("running", status.getRunning());
                 return testStatus;
             } catch (Exception e) {

@@ -28,8 +28,7 @@ import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "grpc-alias", password = "password", formats = { Format.JKS, Format.PEM,
-                Format.PKCS12 }, client = true, aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost"))
-})
+                Format.PKCS12 }, client = true, aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost")) })
 public class TlsWithHttpServerUsingP12WithAliasTest {
 
     static String configuration = """
@@ -43,23 +42,17 @@ public class TlsWithHttpServerUsingP12WithAliasTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addClass(HelloService.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage())
+                    .addClass(HelloService.class).add(new StringAsset(configuration), "application.properties"));
 
     protected ManagedChannel channel;
 
     @BeforeEach
     public void init() throws Exception {
         File certs = new File("target/certs/alias-ca.crt");
-        SslContext sslcontext = GrpcSslContexts.forClient()
-                .trustManager(certs)
-                .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 8444)
-                .sslContext(sslcontext)
-                .useTransportSecurity()
+        SslContext sslcontext = GrpcSslContexts.forClient().trustManager(certs).build();
+        channel = NettyChannelBuilder.forAddress("localhost", 8444).sslContext(sslcontext).useTransportSecurity()
                 .build();
     }
 

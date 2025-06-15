@@ -42,36 +42,34 @@ abstract class AbstractHttpAuthorizer {
     private final SecurityEventHelper<AuthorizationSuccessEvent, AuthorizationFailureEvent> securityEventHelper;
     private final HttpSecurityPolicy.AuthorizationRequestContext context;
 
-    AbstractHttpAuthorizer(IdentityProviderManager identityProviderManager,
-            AuthorizationController controller, List<HttpSecurityPolicy> policies, BeanManager beanManager,
-            BlockingSecurityExecutor blockingExecutor, Event<AuthorizationFailureEvent> authZFailureEvent,
-            Event<AuthorizationSuccessEvent> authZSuccessEvent, boolean securityEventsEnabled) {
+    AbstractHttpAuthorizer(IdentityProviderManager identityProviderManager, AuthorizationController controller,
+            List<HttpSecurityPolicy> policies, BeanManager beanManager, BlockingSecurityExecutor blockingExecutor,
+            Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
+            boolean securityEventsEnabled) {
         this.identityProviderManager = identityProviderManager;
         this.controller = controller;
         this.policies = policies;
         this.context = new HttpSecurityPolicy.DefaultAuthorizationRequestContext(blockingExecutor);
-        this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
-                AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
+        this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent,
+                AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
     }
 
     /**
-     * Checks that the request is allowed to proceed. If it is then {@link RoutingContext#next()} will
-     * be invoked, if not appropriate action will be taken to either report the failure or attempt authentication.
+     * Checks that the request is allowed to proceed. If it is then {@link RoutingContext#next()} will be invoked, if
+     * not appropriate action will be taken to either report the failure or attempt authentication.
      */
     public void checkPermission(RoutingContext routingContext) {
         if (!controller.isAuthorizationEnabled()) {
             routingContext.next();
             return;
         }
-        //check their permissions
-        doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null,
-                policies);
+        // check their permissions
+        doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager),
+                0, null, policies);
     }
 
-    private void doPermissionCheck(RoutingContext routingContext,
-            Uni<SecurityIdentity> identity, int index,
-            SecurityIdentity augmentedIdentity,
-            List<HttpSecurityPolicy> permissionCheckers) {
+    private void doPermissionCheck(RoutingContext routingContext, Uni<SecurityIdentity> identity, int index,
+            SecurityIdentity augmentedIdentity, List<HttpSecurityPolicy> permissionCheckers) {
         if (index == permissionCheckers.size()) {
             QuarkusHttpUser currentUser = (QuarkusHttpUser) routingContext.user();
             if (augmentedIdentity != null) {
@@ -92,21 +90,22 @@ abstract class AbstractHttpAuthorizer {
             routingContext.next();
             return;
         }
-        //get the current checker
+        // get the current checker
         HttpSecurityPolicy res = permissionCheckers.get(index);
-        res.checkPermission(routingContext, identity, context)
-                .subscribe().with(new Consumer<HttpSecurityPolicy.CheckResult>() {
+        res.checkPermission(routingContext, identity, context).subscribe()
+                .with(new Consumer<HttpSecurityPolicy.CheckResult>() {
                     @Override
                     public void accept(HttpSecurityPolicy.CheckResult checkResult) {
                         if (!checkResult.isPermitted()) {
                             doDeny(identity, routingContext, res, checkResult.getAugmentedIdentity());
                         } else {
                             if (checkResult.getAugmentedIdentity() != null) {
-                                doPermissionCheck(routingContext, checkResult.getAugmentedIdentityAsUni(),
-                                        index + 1, checkResult.getAugmentedIdentity(), permissionCheckers);
+                                doPermissionCheck(routingContext, checkResult.getAugmentedIdentityAsUni(), index + 1,
+                                        checkResult.getAugmentedIdentity(), permissionCheckers);
                             } else {
-                                //attempt to run the next checker
-                                doPermissionCheck(routingContext, identity, index + 1, augmentedIdentity, permissionCheckers);
+                                // attempt to run the next checker
+                                doPermissionCheck(routingContext, identity, index + 1, augmentedIdentity,
+                                        permissionCheckers);
                             }
                         }
                     }
@@ -114,7 +113,8 @@ abstract class AbstractHttpAuthorizer {
                     @Override
                     public void accept(Throwable throwable) {
                         // we don't fail event if it's already failed with same exception as we don't want to process
-                        // the exception twice;at this point, the exception could be failed by the default auth failure handler
+                        // the exception twice;at this point, the exception could be failed by the default auth failure
+                        // handler
                         if (!routingContext.response().ended() && !throwable.equals(routingContext.failure())) {
                             routingContext.fail(throwable);
                         } else if (throwable instanceof AuthenticationFailedException) {
@@ -131,7 +131,7 @@ abstract class AbstractHttpAuthorizer {
     }
 
     private void doDeny(SecurityIdentity identity, RoutingContext routingContext, HttpSecurityPolicy policy) {
-        //if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
+        // if we were denied we send a challenge if we are not authenticated, otherwise we send a 403
         if (identity.isAnonymous()) {
             HttpAuthenticator httpAuthenticator = routingContext.get(HttpAuthenticator.class.getName());
             httpAuthenticator.sendChallenge(routingContext).subscribe().withSubscriber(new UniSubscriber<Boolean>() {

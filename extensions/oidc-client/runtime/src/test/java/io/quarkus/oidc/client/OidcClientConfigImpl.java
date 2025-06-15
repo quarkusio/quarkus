@@ -148,20 +148,22 @@ final class OidcClientConfigImpl implements OidcClientConfig {
                         return new Provider() {
                             @Override
                             public Optional<String> name() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_NAME, true);
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<String> keyringName() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_KEYRING_NAME,
+                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_NAME,
                                         true);
                                 return Optional.empty();
                             }
 
                             @Override
+                            public Optional<String> keyringName() {
+                                invocationsRecorder.put(
+                                        ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_KEYRING_NAME, true);
+                                return Optional.empty();
+                            }
+
+                            @Override
                             public Optional<String> key() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_KEY, true);
+                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_KEY,
+                                        true);
                                 return Optional.empty();
                             }
                         };
@@ -203,14 +205,15 @@ final class OidcClientConfigImpl implements OidcClientConfig {
                         return new Provider() {
                             @Override
                             public Optional<String> name() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SECRET_PROVIDER_NAME, true);
+                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SECRET_PROVIDER_NAME,
+                                        true);
                                 return Optional.empty();
                             }
 
                             @Override
                             public Optional<String> keyringName() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SECRET_PROVIDER_KEYRING_NAME,
-                                        true);
+                                invocationsRecorder
+                                        .put(ConfigMappingMethods.CREDENTIALS_JWT_SECRET_PROVIDER_KEYRING_NAME, true);
                                 return Optional.empty();
                             }
 

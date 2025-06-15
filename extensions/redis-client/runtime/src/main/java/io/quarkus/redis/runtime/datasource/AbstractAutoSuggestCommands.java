@@ -19,10 +19,7 @@ public class AbstractAutoSuggestCommands<K> extends AbstractRedisCommands {
     Uni<Response> _ftSugAdd(K key, String string, double score, boolean increment) {
         nonNull(key, "key");
         notNullOrBlank(string, "string");
-        RedisCommand cmd = RedisCommand.of(Command.FT_SUGADD)
-                .put(marshaller.encode(key))
-                .put(string)
-                .put(score);
+        RedisCommand cmd = RedisCommand.of(Command.FT_SUGADD).put(marshaller.encode(key)).put(string).put(score);
         if (increment) {
             cmd.put("INCR");
         }
@@ -32,18 +29,14 @@ public class AbstractAutoSuggestCommands<K> extends AbstractRedisCommands {
     Uni<Response> _ftSugDel(K key, String string) {
         nonNull(key, "key");
         notNullOrBlank(string, "string");
-        RedisCommand cmd = RedisCommand.of(Command.FT_SUGDEL)
-                .put(marshaller.encode(key))
-                .put(string);
+        RedisCommand cmd = RedisCommand.of(Command.FT_SUGDEL).put(marshaller.encode(key)).put(string);
         return execute(cmd);
     }
 
     Uni<Response> _ftSugget(K key, String prefix) {
         nonNull(key, "key");
         notNullOrBlank(prefix, "prefix");
-        RedisCommand cmd = RedisCommand.of(Command.FT_SUGGET)
-                .put(marshaller.encode(key))
-                .put(prefix);
+        RedisCommand cmd = RedisCommand.of(Command.FT_SUGGET).put(marshaller.encode(key)).put(prefix);
         return execute(cmd);
     }
 
@@ -51,17 +44,13 @@ public class AbstractAutoSuggestCommands<K> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(prefix, "prefix");
         nonNull(args, "args");
-        RedisCommand cmd = RedisCommand.of(Command.FT_SUGGET)
-                .put(marshaller.encode(key))
-                .put(prefix)
-                .putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.FT_SUGGET).put(marshaller.encode(key)).put(prefix).putArgs(args);
         return execute(cmd);
     }
 
     Uni<Response> _ftSugLen(K key) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of(Command.FT_SUGLEN)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.FT_SUGLEN).put(marshaller.encode(key));
         return execute(cmd);
     }
 }

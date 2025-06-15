@@ -38,11 +38,11 @@ public class OidcDevUiRuntimePropertiesDTO {
     private final boolean alwaysLogoutUserInDevUiOnReload;
     private final String propertiesStateId;
 
-    OidcDevUiRuntimePropertiesDTO(String authorizationUrl, String tokenUrl, String logoutUrl, Config config, int httpPort,
-            String oidcProviderName, String oidcApplicationType, String oidcGrantType,
+    OidcDevUiRuntimePropertiesDTO(String authorizationUrl, String tokenUrl, String logoutUrl, Config config,
+            int httpPort, String oidcProviderName, String oidcApplicationType, String oidcGrantType,
             boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms,
-            boolean swaggerIsAvailable, boolean graphqlIsAvailable, String swaggerUiPath,
-            String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload, String propertiesStateId) {
+            boolean swaggerIsAvailable, boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath,
+            boolean alwaysLogoutUserInDevUiOnReload, String propertiesStateId) {
         this.clientId = new OidcConfigPropertySupplier(CLIENT_ID_CONFIG_KEY).get(config);
         this.clientSecret = new OidcConfigPropertySupplier(CLIENT_SECRET_CONFIG_KEY, "").get(config);
         this.authorizationUrl = new OidcConfigPropertySupplier(AUTHORIZATION_PATH_CONFIG_KEY, authorizationUrl, true)

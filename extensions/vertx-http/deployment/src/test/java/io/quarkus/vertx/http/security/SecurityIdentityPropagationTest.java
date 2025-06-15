@@ -27,39 +27,31 @@ public class SecurityIdentityPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RouterObserver.class, UserInfo.class)
-                    .addAsResource(new StringAsset("quarkus.http.auth.propagate-security-identity=true"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(RouterObserver.class, UserInfo.class).addAsResource(
+                    new StringAsset("quarkus.http.auth.propagate-security-identity=true"), "application.properties"));
 
     @Test
     public void testSecurityIdentityAvailable() {
         // anonymous identity is allowed as no credentials
         RestAssured.given().get("/admin-user-info").then().statusCode(200).body(Matchers.is(""));
         // auth not required, but wrong credentials
-        RestAssured.given()
-                .auth().preemptive().basic("user", "user")
-                .get("/admin-user-info").then().statusCode(401);
+        RestAssured.given().auth().preemptive().basic("user", "user").get("/admin-user-info").then().statusCode(401);
 
         // authenticated user with admin role
-        RestAssured.given()
-                .auth().preemptive().basic("admin", "admin")
-                .get("/admin-user-info").then().statusCode(200).body(Matchers.is("admin"));
+        RestAssured.given().auth().preemptive().basic("admin", "admin").get("/admin-user-info").then().statusCode(200)
+                .body(Matchers.is("admin"));
         // authenticated user without admin role
-        RestAssured.given()
-                .auth().preemptive().basic("harvey", "harvey")
-                .get("/admin-user-info").then().statusCode(200).body(Matchers.is(""));
+        RestAssured.given().auth().preemptive().basic("harvey", "harvey").get("/admin-user-info").then().statusCode(200)
+                .body(Matchers.is(""));
     }
 
     @Test
     public void testPrincipalAvailable() {
         RestAssured.given().get("/user-info-principal").then().statusCode(200).body(Matchers.is(""));
-        RestAssured.given()
-                .auth().preemptive().basic("admin", "admin")
-                .get("/user-info-principal").then().statusCode(200).body(Matchers.is("admin"));
-        RestAssured.given()
-                .auth().preemptive().basic("harvey", "harvey")
-                .get("/user-info-principal").then().statusCode(200).body(Matchers.is("harvey"));
+        RestAssured.given().auth().preemptive().basic("admin", "admin").get("/user-info-principal").then()
+                .statusCode(200).body(Matchers.is("admin"));
+        RestAssured.given().auth().preemptive().basic("harvey", "harvey").get("/user-info-principal").then()
+                .statusCode(200).body(Matchers.is("harvey"));
     }
 
     public static class RouterObserver {
@@ -109,9 +101,7 @@ public class SecurityIdentityPropagationTest {
             boolean isAdmin = "admin".equalsIgnoreCase(username);
             if (isAdmin || "harvey".equalsIgnoreCase(username)) {
                 var identity = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal(username))
-                        .setAnonymous(false)
-                        .addRole(isAdmin ? "admin" : "harvey")
-                        .build();
+                        .setAnonymous(false).addRole(isAdmin ? "admin" : "harvey").build();
                 return Uni.createFrom().item(identity);
             }
             return Uni.createFrom().nullItem();

@@ -16,7 +16,8 @@ import io.quarkus.qute.TemplateInstance;
 import io.smallrye.mutiny.Uni;
 
 /**
- * This class is needed in order to support handling {@link jakarta.ws.rs.core.Response} that contains a TemplateInstance...
+ * This class is needed in order to support handling {@link jakarta.ws.rs.core.Response} that contains a
+ * TemplateInstance...
  */
 public class TemplateResponseFilter {
 
@@ -24,7 +25,8 @@ public class TemplateResponseFilter {
     Engine engine;
 
     @ServerResponseFilter
-    public Uni<Void> filter(ResteasyReactiveContainerRequestContext requestContext, ContainerResponseContext responseContext) {
+    public Uni<Void> filter(ResteasyReactiveContainerRequestContext requestContext,
+            ContainerResponseContext responseContext) {
         Object entity = responseContext.getEntity();
         if (!(entity instanceof TemplateInstance)) {
             return null;

@@ -21,27 +21,20 @@ class RedHatOpenJDKRuntimeBaseProviderTest {
 
     private final DockerFileBaseInformationProvider sut = new RedHatOpenJDKRuntimeBaseProvider();
 
-    @ParameterizedTest(name = DISPLAY_NAME_PLACEHOLDER + "[" + INDEX_PLACEHOLDER + "] (" + ARGUMENTS_WITH_NAMES_PLACEHOLDER
-            + ")")
+    @ParameterizedTest(name = DISPLAY_NAME_PLACEHOLDER + "[" + INDEX_PLACEHOLDER + "] ("
+            + ARGUMENTS_WITH_NAMES_PLACEHOLDER + ")")
     @MethodSource("imageCombinations")
     void testImage(int javaVersion, int ubiVersion, String imageVersion) {
         var path = getPath("ubi%d-openjdk-%d-runtime".formatted(ubiVersion, javaVersion));
         var result = sut.determine(path);
-        assertThat(result)
-                .isNotNull()
-                .get()
-                .extracting(
-                        DockerFileBaseInformation::baseImage,
-                        DockerFileBaseInformation::javaVersion)
-                .containsExactly(
-                        "registry.access.redhat.com/ubi%d/openjdk-%d-runtime:%s".formatted(ubiVersion, javaVersion,
-                                imageVersion),
-                        javaVersion);
+        assertThat(result).isNotNull().get()
+                .extracting(DockerFileBaseInformation::baseImage, DockerFileBaseInformation::javaVersion)
+                .containsExactly("registry.access.redhat.com/ubi%d/openjdk-%d-runtime:%s".formatted(ubiVersion,
+                        javaVersion, imageVersion), javaVersion);
     }
 
     static Stream<Arguments> imageCombinations() {
-        return Stream.of(
-                Arguments.of(17, 8, ContainerImages.UBI8_JAVA_VERSION),
+        return Stream.of(Arguments.of(17, 8, ContainerImages.UBI8_JAVA_VERSION),
                 Arguments.of(21, 8, ContainerImages.UBI8_JAVA_VERSION),
                 Arguments.of(17, 9, ContainerImages.UBI8_JAVA_VERSION),
                 Arguments.of(21, 9, ContainerImages.UBI8_JAVA_VERSION));

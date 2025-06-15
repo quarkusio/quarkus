@@ -23,9 +23,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TrustAllTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Client.class))
             .withConfigurationResource("trust-all-test-application.properties");
 
     WireMockServer server;
@@ -34,8 +32,7 @@ public class TrustAllTest {
     @BeforeEach
     public void setUp() {
         server = new WireMockServer(wireMockConfig().dynamicHttpsPort());
-        server.stubFor(WireMock.get("/ssl")
-                .willReturn(aResponse().withBody("hello").withStatus(200)));
+        server.stubFor(WireMock.get("/ssl").willReturn(aResponse().withBody("hello").withStatus(200)));
         server.start();
         baseUri = URI.create("https://localhost:" + server.httpsPort());
     }
@@ -47,9 +44,7 @@ public class TrustAllTest {
 
     @Test
     void shouldWorkWithTrustAllAndSelfSignedCert() {
-        Client client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.get()).isEqualTo("hello");
     }
 

@@ -12,7 +12,8 @@ public final class PreloadClassBuildItem extends MultiBuildItem {
     /**
      * Construct a new instance.
      *
-     * @param className the class name (must not be {@code null})
+     * @param className
+     *        the class name (must not be {@code null})
      */
     public PreloadClassBuildItem(final String className) {
         this.className = Assert.checkNotNullParam("className", className);

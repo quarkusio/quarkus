@@ -22,15 +22,11 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class ProviderTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, HelloClient2.class, HelloClient.class, GlobalRequestFilter.class,
-                            GlobalResponseFilter.class, GlobalRequestFilterConstrainedToServer.class,
-                            GlobalFeature.class)
-                    .addAsResource(
-                            new StringAsset(setUrlForClass(HelloClient.class)
-                                    + setUrlForClass(HelloClient2.class)),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(HelloResource.class, HelloClient2.class, HelloClient.class, GlobalRequestFilter.class,
+                    GlobalResponseFilter.class, GlobalRequestFilterConstrainedToServer.class, GlobalFeature.class)
+            .addAsResource(new StringAsset(setUrlForClass(HelloClient.class) + setUrlForClass(HelloClient2.class)),
+                    "application.properties"));
 
     @RestClient
     HelloClient helloClient;
@@ -78,8 +74,6 @@ public class ProviderTest {
     }
 
     private HelloClient helloClient() {
-        return RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                .build(HelloClient.class);
+        return RestClientBuilder.newBuilder().baseUri(baseUri).build(HelloClient.class);
     }
 }

@@ -22,11 +22,9 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 /**
- * Validate that the injection of a {@linkplain Principal} works when using the MP-JWT feature.
- * This validates that the MP-JWT implementation is not interfering with the CDI built in
- * Principal bean.
- * This also validates that the {@linkplain SecurityContext#getUserPrincipal()} is also an
- * instance of the {@linkplain JsonWebToken} interface.
+ * Validate that the injection of a {@linkplain Principal} works when using the MP-JWT feature. This validates that the
+ * MP-JWT implementation is not interfering with the CDI built in Principal bean. This also validates that the
+ * {@linkplain SecurityContext#getUserPrincipal()} is also an instance of the {@linkplain JsonWebToken} interface.
  */
 @Path("/endp")
 @RequestScoped
@@ -70,10 +68,7 @@ public class PrincipalInjectionEndpoint {
             }
         }
 
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -90,13 +85,11 @@ public class PrincipalInjectionEndpoint {
             msg = "\nInjected Principal#getName matches, PASS";
             pass = true;
         } else {
-            msg = String.format("Injected preferred_username %s != %s, FAIL", currentUsername.get().getString(), username);
+            msg = String.format("Injected preferred_username %s != %s, FAIL", currentUsername.get().getString(),
+                    username);
         }
 
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 }

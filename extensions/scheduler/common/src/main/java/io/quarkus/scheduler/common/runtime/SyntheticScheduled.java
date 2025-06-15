@@ -25,9 +25,9 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
     private final String implementation;
     private final String executionMaxDelay;
 
-    public SyntheticScheduled(String identity, String cron, String every, long delay, TimeUnit delayUnit, String delayed,
-            String overdueGracePeriod, ConcurrentExecution concurrentExecution, SkipPredicate skipPredicate, String timeZone,
-            String implementation, String executionMaxDelay) {
+    public SyntheticScheduled(String identity, String cron, String every, long delay, TimeUnit delayUnit,
+            String delayed, String overdueGracePeriod, ConcurrentExecution concurrentExecution,
+            SkipPredicate skipPredicate, String timeZone, String implementation, String executionMaxDelay) {
         this.identity = Objects.requireNonNull(identity);
         this.cron = Objects.requireNonNull(cron);
         this.every = Objects.requireNonNull(every);
@@ -123,10 +123,12 @@ public final class SyntheticScheduled extends AnnotationLiteral<Scheduled> imple
 
     public static SyntheticScheduled fromJson(String json) {
         JsonObject jsonObj = new JsonObject(json);
-        return new SyntheticScheduled(jsonObj.getString("identity"), jsonObj.getString("cron"), jsonObj.getString("every"),
-                jsonObj.getLong("delay"), TimeUnit.valueOf(jsonObj.getString("delayUnit")), jsonObj.getString("delayed"),
-                jsonObj.getString("overdueGracePeriod"), ConcurrentExecution.valueOf(jsonObj.getString("concurrentExecution")),
-                null, jsonObj.getString("timeZone"), jsonObj.getString("executeWith"), jsonObj.getString("executionMaxDelay"));
+        return new SyntheticScheduled(jsonObj.getString("identity"), jsonObj.getString("cron"),
+                jsonObj.getString("every"), jsonObj.getLong("delay"), TimeUnit.valueOf(jsonObj.getString("delayUnit")),
+                jsonObj.getString("delayed"), jsonObj.getString("overdueGracePeriod"),
+                ConcurrentExecution.valueOf(jsonObj.getString("concurrentExecution")), null,
+                jsonObj.getString("timeZone"), jsonObj.getString("executeWith"),
+                jsonObj.getString("executionMaxDelay"));
     }
 
     @Override

@@ -40,7 +40,8 @@ final class BuildTimeEnabledStereotypesBuildItem extends SimpleBuildItem {
         // enablement annotations present directly _or transitively_ on this stereotype
         final Map<DotName, List<AnnotationInstance>> annotations;
 
-        BuildTimeEnabledStereotype(DotName name, boolean inheritable, Map<DotName, List<AnnotationInstance>> annotations) {
+        BuildTimeEnabledStereotype(DotName name, boolean inheritable,
+                Map<DotName, List<AnnotationInstance>> annotations) {
             this.name = name;
             this.inheritable = inheritable;
             this.annotations = annotations;

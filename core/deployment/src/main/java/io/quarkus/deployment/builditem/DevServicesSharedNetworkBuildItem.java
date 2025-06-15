@@ -13,10 +13,9 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.dev.devservices.GlobalDevServicesConfig;
 
 /**
- * A marker build item that indicates, if any instances are provided during the build, the containers started by DevServices
- * may use a shared network.
- * This is mainly useful in integration tests where the application container needs to be able
- * to communicate with the service containers.
+ * A marker build item that indicates, if any instances are provided during the build, the containers started by
+ * DevServices may use a shared network. This is mainly useful in integration tests where the application container
+ * needs to be able to communicate with the service containers.
  */
 public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
 
@@ -30,13 +29,16 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
     /**
      * Create a build item identifying the creator source.
      *
-     * @param source The identifier of the creator
+     * @param source
+     *        The identifier of the creator
      */
     public DevServicesSharedNetworkBuildItem(String source) {
         this.source = source;
     }
 
-    /** The creator source of this build item. May be useful to decide whether a DevService should join a shared network. */
+    /**
+     * The creator source of this build item. May be useful to decide whether a DevService should join a shared network.
+     */
     public String getSource() {
         return source;
     }
@@ -48,8 +50,8 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
     public static final String UNKNOWN_SOURCE = "unknown";
 
     /**
-     * Generates a {@code List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step
-     * producing the {@link DevServicesSharedNetworkBuildItem} build item.
+     * Generates a {@code List<Consumer<BuildChainBuilder>> build chain builder} which creates a build step producing
+     * the {@link DevServicesSharedNetworkBuildItem} build item.
      */
     public static final class Factory implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
 
@@ -71,28 +73,24 @@ public final class DevServicesSharedNetworkBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Helper method for DevServices processors that tells if joining the shared network is required.
-     * Joining this network may be required if explicitily asked by user properties or if running a containerized
-     * application during integration tests.
+     * Helper method for DevServices processors that tells if joining the shared network is required. Joining this
+     * network may be required if explicitily asked by user properties or if running a containerized application during
+     * integration tests.
      */
-    public static boolean isSharedNetworkRequired(
-            DevServicesConfig devServicesConfig,
+    public static boolean isSharedNetworkRequired(DevServicesConfig devServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
-        return devServicesConfig.launchOnSharedNetwork() ||
-                (!devServicesSharedNetworkBuildItem.isEmpty()
-                        && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
+        return devServicesConfig.launchOnSharedNetwork() || (!devServicesSharedNetworkBuildItem.isEmpty()
+                && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
     }
 
     /**
-     * @deprecated Please, use {@link DevServicesSharedNetworkBuildItem#isSharedNetworkRequired(DevServicesConfig, List)}
-     *             instead.
+     * @deprecated Please, use
+     *             {@link DevServicesSharedNetworkBuildItem#isSharedNetworkRequired(DevServicesConfig, List)} instead.
      */
     @Deprecated(forRemoval = true, since = "3.18")
-    public static boolean isSharedNetworkRequired(
-            GlobalDevServicesConfig globalDevServicesConfig,
+    public static boolean isSharedNetworkRequired(GlobalDevServicesConfig globalDevServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
-        return globalDevServicesConfig.launchOnSharedNetwork ||
-                (!devServicesSharedNetworkBuildItem.isEmpty()
-                        && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
+        return globalDevServicesConfig.launchOnSharedNetwork || (!devServicesSharedNetworkBuildItem.isEmpty()
+                && devServicesSharedNetworkBuildItem.get(0).getSource().equals("io.quarkus.test.junit"));
     }
 }

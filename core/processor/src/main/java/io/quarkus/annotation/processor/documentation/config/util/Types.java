@@ -42,13 +42,9 @@ public final class Types {
     public static final Set<String> SUPPORTED_ANNOTATIONS_TYPES = Set.of(ANNOTATION_BUILD_STEP, ANNOTATION_CONFIG_GROUP,
             ANNOTATION_CONFIG_ROOT, ANNOTATION_RECORDER, ANNOTATION_CONFIG_MAPPING);
 
-    static final Map<String, String> ALIASED_TYPES = Map.of(
-            OptionalLong.class.getName(), long.class.getName(),
-            OptionalInt.class.getName(), int.class.getName(),
-            OptionalDouble.class.getName(), double.class.getName(),
-            "java.lang.Class<?>", "class name",
-            "java.net.InetSocketAddress", "host:port",
-            Path.class.getName(), "path",
+    static final Map<String, String> ALIASED_TYPES = Map.of(OptionalLong.class.getName(), long.class.getName(),
+            OptionalInt.class.getName(), int.class.getName(), OptionalDouble.class.getName(), double.class.getName(),
+            "java.lang.Class<?>", "class name", "java.net.InetSocketAddress", "host:port", Path.class.getName(), "path",
             String.class.getName(), "string");
 
     static final Map<String, String> PRIMITIVE_DEFAULT_VALUES = new HashMap<>();

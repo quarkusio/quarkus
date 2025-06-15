@@ -48,10 +48,8 @@ public class CronParser {
                 return CronMapper.fromSpringToQuartz().map(cron);
             case SPRING53:
                 // https://github.com/jmrozanec/cron-utils/issues/579
-                return new CronMapper(
-                        CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING53),
-                        CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ),
-                        setQuestionMark()).map(cron);
+                return new CronMapper(CronDefinitionBuilder.instanceDefinitionFor(CronType.SPRING53),
+                        CronDefinitionBuilder.instanceDefinitionFor(CronType.QUARTZ), setQuestionMark()).map(cron);
             default:
                 throw new IllegalStateException("Unsupported cron type: " + cronType);
         }
@@ -71,14 +69,12 @@ public class CronParser {
             final Map<CronFieldName, CronField> fields = new EnumMap<>(CronFieldName.class);
             fields.putAll(cron.retrieveFieldsAsMap());
             if (dow.getExpression() instanceof Always) {
-                fields.put(CronFieldName.DAY_OF_WEEK,
-                        new CronField(CronFieldName.DAY_OF_WEEK, questionMark(),
-                                fields.get(CronFieldName.DAY_OF_WEEK).getConstraints()));
+                fields.put(CronFieldName.DAY_OF_WEEK, new CronField(CronFieldName.DAY_OF_WEEK, questionMark(),
+                        fields.get(CronFieldName.DAY_OF_WEEK).getConstraints()));
             } else {
                 if (dom.getExpression() instanceof Always) {
-                    fields.put(CronFieldName.DAY_OF_MONTH,
-                            new CronField(CronFieldName.DAY_OF_MONTH, questionMark(),
-                                    fields.get(CronFieldName.DAY_OF_MONTH).getConstraints()));
+                    fields.put(CronFieldName.DAY_OF_MONTH, new CronField(CronFieldName.DAY_OF_MONTH, questionMark(),
+                            fields.get(CronFieldName.DAY_OF_MONTH).getConstraints()));
                 } else {
                     cron.validate();
                 }

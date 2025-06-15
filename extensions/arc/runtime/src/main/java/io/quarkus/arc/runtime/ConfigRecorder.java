@@ -42,12 +42,14 @@ public class ConfigRecorder {
         for (ConfigValidationMetadata property : properties) {
             Class<?> propertyType = load(property.getRawTypeName(), cl);
             Type effectivePropertyType = propertyType;
-            // For parameterized types and arrays, we only check if the property config exists without trying to convert it
+            // For parameterized types and arrays, we only check if the property config exists without trying to convert
+            // it
             if (propertyType.isArray() || (propertyType.getTypeParameters().length > 0 && propertyType != Map.class
                     && propertyType != List.class && propertyType != Set.class)) {
                 effectivePropertyType = String.class;
             } else if (property.getActualTypeArgumentNames().size() > 0) {
-                // this is a really simplified way of constructing the generic types, but we don't need anything more complex
+                // this is a really simplified way of constructing the generic types, but we don't need anything more
+                // complex
                 // here due to what SR Config checks (which is basically if the type is a collection)
                 Type[] genericTypes = new Type[(property.getActualTypeArgumentNames().size())];
                 for (int i = 0; i < property.getActualTypeArgumentNames().size(); i++) {
@@ -57,7 +59,8 @@ public class ConfigRecorder {
             }
 
             try {
-                ConfigProducerUtil.getValue(property.getName(), effectivePropertyType, property.getDefaultValue(), config);
+                ConfigProducerUtil.getValue(property.getName(), effectivePropertyType, property.getDefaultValue(),
+                        config);
             } catch (Exception e) {
                 msg.append("Failed to load config value of type ").append(effectivePropertyType).append(" for: ")
                         .append(property.getName()).append(System.lineSeparator());
@@ -120,8 +123,8 @@ public class ConfigRecorder {
         private String defaultValue;
 
         @RecordableConstructor
-        public ConfigValidationMetadata(final String name, final String rawTypeName, List<String> actualTypeArgumentNames,
-                final String defaultValue) {
+        public ConfigValidationMetadata(final String name, final String rawTypeName,
+                List<String> actualTypeArgumentNames, final String defaultValue) {
             this.name = name;
             this.rawTypeName = rawTypeName;
             this.actualTypeArgumentNames = actualTypeArgumentNames;

@@ -77,8 +77,8 @@ public class ConfigMappingListener extends AbstractConfigListener {
 
         validateRuntimeConfigOnDeploymentModules(configPhase, configRoot);
 
-        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configMappingAnnotion.getElementValues()
-                .entrySet()) {
+        for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configMappingAnnotion
+                .getElementValues().entrySet()) {
             if ("prefix()".equals(entry.getKey().toString())) {
                 prefix = entry.getValue().getValue().toString();
             }
@@ -87,8 +87,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
         String overriddenDocPrefix = null;
         if (configDocPrefixAnnotation != null) {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocPrefixAnnotation
-                    .getElementValues()
-                    .entrySet()) {
+                    .getElementValues().entrySet()) {
                 if ("value()".equals(entry.getKey().toString())) {
                     overriddenDocPrefix = entry.getValue().getValue().toString();
                     break;
@@ -99,8 +98,7 @@ public class ConfigMappingListener extends AbstractConfigListener {
         String overriddenDocFileName = null;
         if (configDocFileNameAnnotation != null) {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocFileNameAnnotation
-                    .getElementValues()
-                    .entrySet()) {
+                    .getElementValues().entrySet()) {
                 if ("value()".equals(entry.getKey().toString())) {
                     overriddenDocFileName = entry.getValue().getValue().toString();
                     break;
@@ -108,12 +106,13 @@ public class ConfigMappingListener extends AbstractConfigListener {
             }
         }
 
-        String rootPrefix = ConfigNamingUtil.getRootPrefix(prefix, "", configRoot.getSimpleName().toString(), configPhase);
+        String rootPrefix = ConfigNamingUtil.getRootPrefix(prefix, "", configRoot.getSimpleName().toString(),
+                configPhase);
         String binaryName = utils.element().getBinaryName(configRoot);
 
-        DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(),
-                rootPrefix, overriddenDocPrefix,
-                binaryName, configRoot.getQualifiedName().toString(), configPhase, overriddenDocFileName, true);
+        DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), rootPrefix,
+                overriddenDocPrefix, binaryName, configRoot.getQualifiedName().toString(), configPhase,
+                overriddenDocFileName, true);
         configCollector.addConfigRoot(discoveryConfigRoot);
         return Optional.of(discoveryConfigRoot);
     }

@@ -10,14 +10,19 @@ import jakarta.ws.rs.core.Link;
 public interface RestLinksProvider {
 
     /**
-     * @param elementType The resource type.
+     * @param elementType
+     *        The resource type.
+     *
      * @return the web links associated with the element type.
      */
     Collection<Link> getTypeLinks(Class<?> elementType);
 
     /**
-     * @param instance the resource instance.
-     * @param <T> the resource generic type.
+     * @param instance
+     *        the resource instance.
+     * @param <T>
+     *        the resource generic type.
+     *
      * @return the web links associated with the instance.
      */
     <T> Collection<Link> getInstanceLinks(T instance);

@@ -69,8 +69,10 @@ public class TemplateProducer {
             templateVariants.put(entry.getKey(), var);
         }
         this.templateVariants = Collections.unmodifiableMap(templateVariants);
-        this.renderedResults = launchMode == LaunchMode.TEST && renderedResults.isResolvable() ? renderedResults.get() : null;
-        this.injectedTemplates = launchMode == LaunchMode.DEVELOPMENT ? Collections.synchronizedList(new ArrayList<>()) : null;
+        this.renderedResults = launchMode == LaunchMode.TEST && renderedResults.isResolvable() ? renderedResults.get()
+                : null;
+        this.injectedTemplates = launchMode == LaunchMode.DEVELOPMENT ? Collections.synchronizedList(new ArrayList<>())
+                : null;
         LOGGER.debugf("Initializing Qute variant templates: %s", templateVariants);
     }
 
@@ -86,7 +88,8 @@ public class TemplateProducer {
                 name = parameter.getJavaParameter().getName();
             } else {
                 name = injectionPoint.getMember().getName();
-                LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s", name);
+                LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s",
+                        name);
             }
         }
         return newInjectableTemplate(name);
@@ -140,10 +143,8 @@ public class TemplateProducer {
     }
 
     /**
-     * We inject a delegating template in order to:
-     *
-     * 1. Be able to select an appropriate variant if needed
-     * 2. Be able to reload the template when needed, i.e. when the cache is cleared
+     * We inject a delegating template in order to: 1. Be able to select an appropriate variant if needed 2. Be able to
+     * reload the template when needed, i.e. when the cache is cleared
      */
     static class InjectableTemplate implements Template {
 
@@ -184,7 +185,8 @@ public class TemplateProducer {
         @Override
         public TemplateInstance instance() {
             TemplateInstance instance = new InjectableTemplateInstanceImpl();
-            return renderedResults != null ? new ResultsCollectingTemplateInstance(instance, renderedResults) : instance;
+            return renderedResults != null ? new ResultsCollectingTemplateInstance(instance, renderedResults)
+                    : instance;
         }
 
         @Override
@@ -344,7 +346,8 @@ public class TemplateProducer {
             @Override
             public TemplateInstance instance() {
                 TemplateInstance instance = new InjectableFragmentTemplateInstanceImpl(identifier);
-                return renderedResults != null ? new ResultsCollectingTemplateInstance(instance, renderedResults) : instance;
+                return renderedResults != null ? new ResultsCollectingTemplateInstance(instance, renderedResults)
+                        : instance;
             }
 
         }
@@ -471,7 +474,8 @@ public class TemplateProducer {
         }
     }
 
-    private static Map<Variant, String> initVariants(String base, List<String> availableVariants, ContentTypes contentTypes) {
+    private static Map<Variant, String> initVariants(String base, List<String> availableVariants,
+            ContentTypes contentTypes) {
         Map<Variant, String> map = new LinkedHashMap<>();
         for (String path : availableVariants) {
             if (!base.equals(path)) {

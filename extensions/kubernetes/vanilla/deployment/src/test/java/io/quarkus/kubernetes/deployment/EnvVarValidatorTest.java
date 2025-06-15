@@ -31,7 +31,8 @@ class EnvVarValidatorTest {
         validator.process(initial);
         final Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
         assertEquals(1, items.size());
-        assertEquals(initial, items.stream().findFirst().orElseGet(() -> fail("no item was found when one was expected")));
+        assertEquals(initial,
+                items.stream().findFirst().orElseGet(() -> fail("no item was found when one was expected")));
     }
 
     @Test
@@ -61,7 +62,8 @@ class EnvVarValidatorTest {
         validator.process(second);
         final Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
         assertEquals(1, items.size());
-        assertEquals(first, items.stream().findFirst().orElseGet(() -> fail("no item was found when one was expected")));
+        assertEquals(first,
+                items.stream().findFirst().orElseGet(() -> fail("no item was found when one was expected")));
     }
 
     @Test
@@ -112,19 +114,17 @@ class EnvVarValidatorTest {
     @Test
     void getBuildItemsOldConflictShouldNotPreventNewToWork() {
         /*
-         * quarkus.kubernetes.env.configmaps=configMap
-         * quarkus.kubernetes.env-vars.xxx.configmap=configMap
-         * quarkus.kubernetes.env.secrets=secret
-         * quarkus.kubernetes.env-vars.xxx.secret=secret
+         * quarkus.kubernetes.env.configmaps=configMap quarkus.kubernetes.env-vars.xxx.configmap=configMap
+         * quarkus.kubernetes.env.secrets=secret quarkus.kubernetes.env-vars.xxx.secret=secret
          */
         final KubernetesEnvBuildItem newCM = KubernetesEnvBuildItem.createFromConfigMap("configmap", TARGET, null);
         final KubernetesEnvBuildItem newS = KubernetesEnvBuildItem.createFromSecret("secret", TARGET, null);
-        validator.process("foo", Optional.empty(), Optional.empty(), Optional.of("configmap"), Optional.empty(),
-                TARGET, Optional.empty(), true);
+        validator.process("foo", Optional.empty(), Optional.empty(), Optional.of("configmap"), Optional.empty(), TARGET,
+                Optional.empty(), true);
         validator.process(newS);
         validator.process(newCM);
-        validator.process("foo", Optional.empty(), Optional.of("secret"), Optional.empty(), Optional.empty(),
-                TARGET, Optional.empty(), true);
+        validator.process("foo", Optional.empty(), Optional.of("secret"), Optional.empty(), Optional.empty(), TARGET,
+                Optional.empty(), true);
         Collection<KubernetesEnvBuildItem> items = validator.getBuildItems();
         assertEquals(2, items.size());
         assertTrue(items.contains(newCM));
@@ -177,8 +177,8 @@ class EnvVarValidatorTest {
             fail();
         } catch (Exception e) {
             final String message = e.getMessage();
-            assertTrue(
-                    message.contains(name) && message.contains(value1) && message.contains(configmap) && message.contains(key));
+            assertTrue(message.contains(name) && message.contains(value1) && message.contains(configmap)
+                    && message.contains(key));
         }
 
         // check different order
@@ -190,8 +190,8 @@ class EnvVarValidatorTest {
             fail();
         } catch (Exception e) {
             final String message = e.getMessage();
-            assertTrue(
-                    message.contains(name) && message.contains(value1) && message.contains(configmap) && message.contains(key));
+            assertTrue(message.contains(name) && message.contains(value1) && message.contains(configmap)
+                    && message.contains(key));
         }
     }
 
@@ -200,7 +200,8 @@ class EnvVarValidatorTest {
         final String name = "name";
         final String configmap = "configmap";
         final String key = "key";
-        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createFromConfigMapKey(name, key, configmap, null, TARGET);
+        final KubernetesEnvBuildItem first = KubernetesEnvBuildItem.createFromConfigMapKey(name, key, configmap, null,
+                TARGET);
         validator.process(first);
         validator.process(name, Optional.of("oldKey"), Optional.empty(), Optional.of(configmap), Optional.empty(),
                 TARGET, Optional.empty(), true);

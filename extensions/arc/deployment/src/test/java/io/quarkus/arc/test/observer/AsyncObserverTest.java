@@ -28,10 +28,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AsyncObserverTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(StringProducer.class, StringObserver.class,
-                            ThreadNameProvider.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(StringProducer.class, StringObserver.class, ThreadNameProvider.class));
 
     @Inject
     StringProducer producer;

@@ -39,8 +39,8 @@ public class ArcDevModeApiProcessor {
     private static final int DEPENCENY_GRAPH_BEANS_LIMIT = 1000;
 
     /**
-     * If a dependency graph exceeds the limit then we apply the {@link DevBeanInfos#MAX_DEPENDENCY_LEVEL} and if still exceeds
-     * the limit it's skipped completely, i.e. dependency graph is not available
+     * If a dependency graph exceeds the limit then we apply the {@link DevBeanInfos#MAX_DEPENDENCY_LEVEL} and if still
+     * exceeds the limit it's skipped completely, i.e. dependency graph is not available
      */
     private static final int DEPENCENY_GRAPH_NODES_LIMIT = 30;
 
@@ -62,7 +62,8 @@ public class ArcDevModeApiProcessor {
         for (InterceptorInfo interceptor : validationContext.get(BuildExtension.Key.INTERCEPTORS)) {
             beanInfos.addInterceptor(DevInterceptorInfo.from(interceptor, predicate));
         }
-        Collection<InterceptorInfo> removedInterceptors = validationContext.get(BuildExtension.Key.REMOVED_INTERCEPTORS);
+        Collection<InterceptorInfo> removedInterceptors = validationContext
+                .get(BuildExtension.Key.REMOVED_INTERCEPTORS);
         if (removedInterceptors != null) {
             for (InterceptorInfo interceptor : removedInterceptors) {
                 beanInfos.addRemovedInterceptor(DevInterceptorInfo.from(interceptor, predicate));
@@ -98,8 +99,7 @@ public class ArcDevModeApiProcessor {
             }
             for (BeanInfo bean : beans) {
                 DependencyGraph dependencyGraph = buildDependencyGraph(bean, validationContext, resolver, beanInfos,
-                        allInjectionPoints, declaringToProducers,
-                        directDependents);
+                        allInjectionPoints, declaringToProducers, directDependents);
                 if (dependencyGraph.links.isEmpty()) {
                     // Skip the graph if no links exist
                     continue;
@@ -140,8 +140,8 @@ public class ArcDevModeApiProcessor {
         Set<DevBeanInfo> nodes = new HashSet<>();
         Set<Link> links = new HashSet<>();
         addNodesDependencies(0, bean, nodes, links, bean, devBeanInfos);
-        addNodesDependents(0, bean, nodes, links, bean, allInjectionPoints, declaringToProducers, resolver, devBeanInfos,
-                directDependents);
+        addNodesDependents(0, bean, nodes, links, bean, allInjectionPoints, declaringToProducers, resolver,
+                devBeanInfos, directDependents);
         return new DependencyGraph(nodes.stream().map(Node::from).collect(Collectors.toSet()), links);
     }
 
@@ -166,8 +166,9 @@ public class ArcDevModeApiProcessor {
     }
 
     private void addNodesDependents(int level, BeanInfo root, Set<DevBeanInfo> nodes, Set<Link> links, BeanInfo bean,
-            List<InjectionPointInfo> injectionPoints, Map<BeanInfo, List<BeanInfo>> declaringToProducers, BeanResolver resolver,
-            DevBeanInfos devBeanInfos, Map<BeanInfo, List<InjectionPointInfo>> directDependents) {
+            List<InjectionPointInfo> injectionPoints, Map<BeanInfo, List<BeanInfo>> declaringToProducers,
+            BeanResolver resolver, DevBeanInfos devBeanInfos,
+            Map<BeanInfo, List<InjectionPointInfo>> directDependents) {
         List<InjectionPointInfo> direct = directDependents.get(bean);
         if (direct == null) {
             direct = new ArrayList<>();
@@ -178,9 +179,9 @@ public class ArcDevModeApiProcessor {
                 }
                 BeanInfo resolved = injectionPoint.getResolvedBean();
                 if (resolved == null) {
-                    if (injectionPoint.isProgrammaticLookup() && resolver.matches(bean,
-                            injectionPoint.getType().asParameterizedType().arguments().get(0),
-                            injectionPoint.getRequiredQualifiers())) {
+                    if (injectionPoint.isProgrammaticLookup()
+                            && resolver.matches(bean, injectionPoint.getType().asParameterizedType().arguments().get(0),
+                                    injectionPoint.getRequiredQualifiers())) {
                         direct.add(injectionPoint);
                     }
                 } else if (bean.equals(resolved)) {
@@ -200,8 +201,8 @@ public class ArcDevModeApiProcessor {
             links.add(link);
             if (nodes.add(devBeanInfos.getBean(dependent.getIdentifier()))) {
                 // add transient dependents
-                addNodesDependents(level + 1, root, nodes, links, dependent, injectionPoints, declaringToProducers, resolver,
-                        devBeanInfos, directDependents);
+                addNodesDependents(level + 1, root, nodes, links, dependent, injectionPoints, declaringToProducers,
+                        resolver, devBeanInfos, directDependents);
             }
         }
 
@@ -209,8 +210,8 @@ public class ArcDevModeApiProcessor {
             links.add(Link.producer(producer.getIdentifier(), bean.getIdentifier(), level));
             if (nodes.add(devBeanInfos.getBean(producer.getIdentifier()))) {
                 // add transient dependents
-                addNodesDependents(level + 1, root, nodes, links, producer, injectionPoints, declaringToProducers, resolver,
-                        devBeanInfos, directDependents);
+                addNodesDependents(level + 1, root, nodes, links, producer, injectionPoints, declaringToProducers,
+                        resolver, devBeanInfos, directDependents);
             }
         }
     }
@@ -220,7 +221,8 @@ public class ArcDevModeApiProcessor {
             case TRUE -> true;
             case FALSE -> false;
             case AUTO -> beanInfos.getBeans().size() < DEPENCENY_GRAPH_BEANS_LIMIT;
-            default -> throw new IllegalArgumentException("Unexpected value: " + config.devMode().generateDependencyGraphs());
+            default -> throw new IllegalArgumentException(
+                    "Unexpected value: " + config.devMode().generateDependencyGraphs());
         };
     }
 

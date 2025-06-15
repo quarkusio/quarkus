@@ -23,8 +23,7 @@ public class SqlClientInstrumenterVertxTracer implements
     public SqlClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         SqlClientAttributesGetter sqlClientAttributesGetter = new SqlClientAttributesGetter();
 
-        InstrumenterBuilder<QueryTrace, QueryTrace> serverBuilder = Instrumenter.builder(
-                openTelemetry,
+        InstrumenterBuilder<QueryTrace, QueryTrace> serverBuilder = Instrumenter.builder(openTelemetry,
                 INSTRUMENTATION_NAME, DbClientSpanNameExtractor.create(sqlClientAttributesGetter));
 
         serverBuilder.setEnabled(!runtimeConfig.sdkDisabled());
@@ -46,25 +45,18 @@ public class SqlClientInstrumenterVertxTracer implements
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R> OpenTelemetryVertxTracer.SpanOperation sendRequest(
-            final Context context,
-            final SpanKind kind,
-            final TracingPolicy policy,
-            final R request,
-            final String operation,
-            final BiConsumer<String, String> headers,
-            final TagExtractor<R> tagExtractor) {
+    public <R> OpenTelemetryVertxTracer.SpanOperation sendRequest(final Context context, final SpanKind kind,
+            final TracingPolicy policy, final R request, final String operation,
+            final BiConsumer<String, String> headers, final TagExtractor<R> tagExtractor) {
 
         R queryTrace = (R) QueryTrace.queryTrace(tagExtractor.extract(request));
-        return InstrumenterVertxTracer.super.sendRequest(context, kind, policy, queryTrace, operation, headers, tagExtractor);
+        return InstrumenterVertxTracer.super.sendRequest(context, kind, policy, queryTrace, operation, headers,
+                tagExtractor);
     }
 
     @Override
-    public <R> void receiveResponse(
-            final Context context,
-            final R response,
-            final OpenTelemetryVertxTracer.SpanOperation spanOperation,
-            final Throwable failure,
+    public <R> void receiveResponse(final Context context, final R response,
+            final OpenTelemetryVertxTracer.SpanOperation spanOperation, final Throwable failure,
             final TagExtractor<R> tagExtractor) {
 
         InstrumenterVertxTracer.super.receiveResponse(context, response, spanOperation, failure, tagExtractor);
@@ -119,8 +111,8 @@ public class SqlClientInstrumenterVertxTracer implements
         }
     }
 
-    static class SqlClientAttributesGetter implements
-            io.opentelemetry.instrumentation.api.incubator.semconv.db.SqlClientAttributesGetter<QueryTrace> {
+    static class SqlClientAttributesGetter
+            implements io.opentelemetry.instrumentation.api.incubator.semconv.db.SqlClientAttributesGetter<QueryTrace> {
 
         @Override
         public String getRawStatement(final QueryTrace queryTrace) {

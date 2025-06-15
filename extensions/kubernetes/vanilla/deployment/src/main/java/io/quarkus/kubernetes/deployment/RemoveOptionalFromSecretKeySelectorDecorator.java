@@ -10,7 +10,8 @@ import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.fabric8.kubernetes.api.model.SecretKeySelectorFluent;
 
-public class RemoveOptionalFromSecretKeySelectorDecorator extends ApplicationContainerDecorator<SecretKeySelectorFluent> {
+public class RemoveOptionalFromSecretKeySelectorDecorator
+        extends ApplicationContainerDecorator<SecretKeySelectorFluent> {
 
     @Override
     public void andThenVisit(SecretKeySelectorFluent fluent) {
@@ -19,8 +20,8 @@ public class RemoveOptionalFromSecretKeySelectorDecorator extends ApplicationCon
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { AddEnvVarDecorator.class,
-                AddSecretVolumeDecorator.class, AddSecretVolumeToRevisionDecorator.class,
-                AddConfigMapVolumeToRevisionDecorator.class, AddConfigMapVolumeDecorator.class };
+        return new Class[] { AddEnvVarDecorator.class, AddSecretVolumeDecorator.class,
+                AddSecretVolumeToRevisionDecorator.class, AddConfigMapVolumeToRevisionDecorator.class,
+                AddConfigMapVolumeDecorator.class };
     }
 }

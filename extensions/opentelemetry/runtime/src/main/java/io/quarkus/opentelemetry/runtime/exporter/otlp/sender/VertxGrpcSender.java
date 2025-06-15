@@ -51,7 +51,8 @@ public final class VertxGrpcSender implements GrpcSender {
     private static final Logger internalLogger = Logger.getLogger(VertxGrpcSender.class.getName());
     private static final int MAX_ATTEMPTS = 3;
 
-    private final ThrottlingLogger logger = new ThrottlingLogger(internalLogger); // TODO: is there something in JBoss Logging we can use?
+    private final ThrottlingLogger logger = new ThrottlingLogger(internalLogger); // TODO: is there something in JBoss
+                                                                                  // Logging we can use?
 
     // We only log unimplemented once since it's a configuration issue that won't be recovered.
     private final AtomicBoolean loggedUnimplemented = new AtomicBoolean();
@@ -65,23 +66,20 @@ public final class VertxGrpcSender implements GrpcSender {
 
     private final GrpcClient client;
 
-    public VertxGrpcSender(
-            URI grpcBaseUri,
-            String grpcEndpointPath,
-            boolean compressionEnabled,
-            Duration timeout,
-            Map<String, String> headersMap,
-            Consumer<HttpClientOptions> clientOptionsCustomizer,
-            Vertx vertx) {
+    public VertxGrpcSender(URI grpcBaseUri, String grpcEndpointPath, boolean compressionEnabled, Duration timeout,
+            Map<String, String> headersMap, Consumer<HttpClientOptions> clientOptionsCustomizer, Vertx vertx) {
         this.grpcEndpointPath = grpcEndpointPath;
         this.server = SocketAddress.inetSocketAddress(OTelExporterUtil.getPort(grpcBaseUri), grpcBaseUri.getHost());
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         this.exportTimeout = timeout;
-        var httpClientOptions = new HttpClientOptions()
-                .setHttp2ClearTextUpgrade(false) // needed otherwise connections get closed immediately
-                .setReadIdleTimeout((int) timeout.getSeconds())
-                .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this gRPC client
+        var httpClientOptions = new HttpClientOptions().setHttp2ClearTextUpgrade(false) // needed otherwise connections
+                // get closed immediately
+                .setReadIdleTimeout((int) timeout.getSeconds()).setTracingPolicy(TracingPolicy.IGNORE); // needed to
+                                                                                                        // avoid tracing
+                                                                                                        // the calls
+                                                                                                        // from this
+                                                                                                        // gRPC client
         clientOptionsCustomizer.accept(httpClientOptions);
         this.client = GrpcClient.client(vertx, httpClientOptions);
     }
@@ -93,10 +91,9 @@ public final class VertxGrpcSender implements GrpcSender {
         }
 
         final String marshalerType = request.getClass().getSimpleName();
-        var onSuccessHandler = new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled,
-                request,
-                loggedUnimplemented, logger, marshalerType, onSuccess, onError, 1, grpcEndpointPath,
-                isShutdown::get, exportTimeout);
+        var onSuccessHandler = new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled, request,
+                loggedUnimplemented, logger, marshalerType, onSuccess, onError, 1, grpcEndpointPath, isShutdown::get,
+                exportTimeout);
 
         initiateSend(client, server, MAX_ATTEMPTS, onSuccessHandler, exportTimeout, new Consumer<>() {
             @Override
@@ -114,20 +111,17 @@ public final class VertxGrpcSender implements GrpcSender {
         }
 
         try {
-            client.close()
-                    .onSuccess(
-                            new Handler<>() {
-                                @Override
-                                public void handle(Void event) {
-                                    shutdownResult.succeed();
-                                }
-                            })
-                    .onFailure(new Handler<>() {
-                        @Override
-                        public void handle(Throwable event) {
-                            shutdownResult.fail();
-                        }
-                    });
+            client.close().onSuccess(new Handler<>() {
+                @Override
+                public void handle(Void event) {
+                    shutdownResult.succeed();
+                }
+            }).onFailure(new Handler<>() {
+                @Override
+                public void handle(Throwable event) {
+                    shutdownResult.fail();
+                }
+            });
         } catch (RejectedExecutionException e) {
             internalLogger.log(Level.FINE, "Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
@@ -137,49 +131,36 @@ public final class VertxGrpcSender implements GrpcSender {
         return shutdownResult;
     }
 
-    private static void initiateSend(GrpcClient client, SocketAddress server,
-            int numberOfAttempts,
+    private static void initiateSend(GrpcClient client, SocketAddress server, int numberOfAttempts,
             Handler<GrpcClientRequest<Buffer, Buffer>> onSuccessHandler, Duration exportTimeout,
             Consumer<Throwable> onFailureCallback) {
         Uni.createFrom().completionStage(new Supplier<CompletionStage<GrpcClientRequest<Buffer, Buffer>>>() {
             @Override
             public CompletionStage<GrpcClientRequest<Buffer, Buffer>> get() {
-                return client.request(server)
-                        .timeout(exportTimeout.toMillis(), MILLISECONDS)
-                        .toCompletionStage();
+                return client.request(server).timeout(exportTimeout.toMillis(), MILLISECONDS).toCompletionStage();
             }
-        })
-                .onFailure(new Predicate<Throwable>() {
+        }).onFailure(new Predicate<Throwable>() {
+            @Override
+            public boolean test(Throwable t) {
+                // Will not retry on shutdown
+                return t instanceof IllegalStateException || t instanceof RejectedExecutionException;
+            }
+        }).recoverWithUni(new Supplier<Uni<? extends GrpcClientRequest<Buffer, Buffer>>>() {
+            @Override
+            public Uni<? extends GrpcClientRequest<Buffer, Buffer>> get() {
+                return Uni.createFrom().nothing();
+            }
+        }).onFailure().retry().withBackOff(Duration.ofMillis(100)).atMost(numberOfAttempts).subscribe()
+                .with(new Consumer<>() {
                     @Override
-                    public boolean test(Throwable t) {
-                        // Will not retry on shutdown
-                        return t instanceof IllegalStateException ||
-                                t instanceof RejectedExecutionException;
+                    public void accept(GrpcClientRequest<Buffer, Buffer> request) {
+                        onSuccessHandler.handle(request);
                     }
-                })
-                .recoverWithUni(new Supplier<Uni<? extends GrpcClientRequest<Buffer, Buffer>>>() {
-                    @Override
-                    public Uni<? extends GrpcClientRequest<Buffer, Buffer>> get() {
-                        return Uni.createFrom().nothing();
-                    }
-                })
-                .onFailure()
-                .retry()
-                .withBackOff(Duration.ofMillis(100))
-                .atMost(numberOfAttempts)
-                .subscribe().with(
-                        new Consumer<>() {
-                            @Override
-                            public void accept(GrpcClientRequest<Buffer, Buffer> request) {
-                                onSuccessHandler.handle(request);
-                            }
-                        }, onFailureCallback);
+                }, onFailureCallback);
     }
 
     private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
-        String message = "Failed to export "
-                + type
-                + "s. The request could not be executed. Full error message: "
+        String message = "Failed to export " + type + "s. The request could not be executed. Full error message: "
                 + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
         logger.log(Level.WARNING, message);
         onError.accept(t);
@@ -204,20 +185,10 @@ public final class VertxGrpcSender implements GrpcSender {
         private final Supplier<Boolean> isShutdown;
         private final Duration exportTimeout;
 
-        public ClientRequestOnSuccessHandler(GrpcClient client,
-                SocketAddress server,
-                Map<String, String> headers,
-                boolean compressionEnabled,
-                Marshaler marshaler,
-                AtomicBoolean loggedUnimplemented,
-                ThrottlingLogger logger,
-                String type,
-                Consumer<GrpcResponse> onSuccess,
-                Consumer<Throwable> onError,
-                int attemptNumber,
-                String grpcEndpointPath,
-                Supplier<Boolean> isShutdown,
-                Duration exportTimeout) {
+        public ClientRequestOnSuccessHandler(GrpcClient client, SocketAddress server, Map<String, String> headers,
+                boolean compressionEnabled, Marshaler marshaler, AtomicBoolean loggedUnimplemented,
+                ThrottlingLogger logger, String type, Consumer<GrpcResponse> onSuccess, Consumer<Throwable> onError,
+                int attemptNumber, String grpcEndpointPath, Supplier<Boolean> isShutdown, Duration exportTimeout) {
             this.client = client;
             this.server = server;
             this.grpcEndpointPath = grpcEndpointPath;
@@ -264,10 +235,8 @@ public final class VertxGrpcSender implements GrpcSender {
                             public void handle(Throwable t) {
                                 if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
                                     // retry
-                                    initiateSend(client, server,
-                                            MAX_ATTEMPTS - attemptNumber,
-                                            newAttempt(), exportTimeout,
-                                            new Consumer<>() {
+                                    initiateSend(client, server, MAX_ATTEMPTS - attemptNumber, newAttempt(),
+                                            exportTimeout, new Consumer<>() {
                                                 @Override
                                                 public void accept(Throwable throwable) {
                                                     failOnClientRequest(throwable, onError, attemptNumber);
@@ -302,46 +271,28 @@ public final class VertxGrpcSender implements GrpcSender {
                         onError.accept(new IllegalStateException(statusMessage));
                     }
 
-                    private void logAppropriateWarning(GrpcStatus status,
-                            String statusMessage) {
+                    private void logAppropriateWarning(GrpcStatus status, String statusMessage) {
                         if (status == GrpcStatus.UNIMPLEMENTED) {
                             if (loggedUnimplemented.compareAndSet(false, true)) {
                                 logUnimplemented(internalLogger, type, statusMessage);
                             }
                         } else if (status == GrpcStatus.UNAVAILABLE) {
-                            logger.log(
-                                    Level.WARNING,
-                                    "Failed to export "
-                                            + type
-                                            + "s. Server is UNAVAILABLE. "
+                            logger.log(Level.WARNING,
+                                    "Failed to export " + type + "s. Server is UNAVAILABLE. "
                                             + "Make sure your collector is running and reachable from this network. "
-                                            + "Full error message:"
-                                            + statusMessage);
+                                            + "Full error message:" + statusMessage);
                         } else {
                             if (status == null) {
                                 if (statusMessage == null) {
-                                    logger.log(
-                                            Level.WARNING,
-                                            "Failed to export "
-                                                    + type
-                                                    + "s. Perhaps the collector does not support collecting traces using grpc? Try configuring 'quarkus.otel.exporter.otlp.traces.protocol=http/protobuf'");
+                                    logger.log(Level.WARNING, "Failed to export " + type
+                                            + "s. Perhaps the collector does not support collecting traces using grpc? Try configuring 'quarkus.otel.exporter.otlp.traces.protocol=http/protobuf'");
                                 } else {
-                                    logger.log(
-                                            Level.WARNING,
-                                            "Failed to export "
-                                                    + type
-                                                    + "s. Server responded with error message: "
-                                                    + statusMessage);
+                                    logger.log(Level.WARNING, "Failed to export " + type
+                                            + "s. Server responded with error message: " + statusMessage);
                                 }
                             } else {
-                                logger.log(
-                                        Level.WARNING,
-                                        "Failed to export "
-                                                + type
-                                                + "s. Server responded with "
-                                                + status.code
-                                                + ". Error message: "
-                                                + statusMessage);
+                                logger.log(Level.WARNING, "Failed to export " + type + "s. Server responded with "
+                                        + status.code + ". Error message: " + statusMessage);
                             }
                         }
                     }
@@ -363,19 +314,13 @@ public final class VertxGrpcSender implements GrpcSender {
                                         "Unrecognized type, this is a programming bug in the OpenTelemetry SDK");
                         }
 
-                        logger.log(
-                                Level.WARNING,
-                                "Failed to export "
-                                        + type
-                                        + "s. Server responded with UNIMPLEMENTED. "
-                                        + "This usually means that your collector is not configured with an otlp "
-                                        + "receiver in the \"pipelines\" section of the configuration. "
-                                        + "If export is not desired and you are using OpenTelemetry autoconfiguration or the javaagent, "
-                                        + "disable export by setting "
-                                        + envVar
-                                        + "=none. "
-                                        + "Full error message: "
-                                        + fullErrorMessage);
+                        logger.log(Level.WARNING, "Failed to export " + type
+                                + "s. Server responded with UNIMPLEMENTED. "
+                                + "This usually means that your collector is not configured with an otlp "
+                                + "receiver in the \"pipelines\" section of the configuration. "
+                                + "If export is not desired and you are using OpenTelemetry autoconfiguration or the javaagent, "
+                                + "disable export by setting " + envVar + "=none. " + "Full error message: "
+                                + fullErrorMessage);
                     }
 
                     private GrpcStatus getStatus(GrpcClientResponse<?, ?> response) {
@@ -408,9 +353,7 @@ public final class VertxGrpcSender implements GrpcSender {
                     public void handle(Throwable t) {
                         if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
                             // retry
-                            initiateSend(client, server,
-                                    MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(), exportTimeout,
+                            initiateSend(client, server, MAX_ATTEMPTS - attemptNumber, newAttempt(), exportTimeout,
                                     new Consumer<>() {
                                         @Override
                                         public void accept(Throwable throwable) {
@@ -423,8 +366,7 @@ public final class VertxGrpcSender implements GrpcSender {
                     }
                 });
             } catch (IOException e) {
-                final String message = "Failed to export "
-                        + type
+                final String message = "Failed to export " + type
                         + "s. Unable to serialize payload. Full error message: "
                         + (e.getMessage() == null ? e.getClass().getName() : e.getMessage());
                 logger.log(Level.WARNING, message);
@@ -433,19 +375,16 @@ public final class VertxGrpcSender implements GrpcSender {
         }
 
         private void failOnClientRequest(Throwable t, Consumer<Throwable> onError, int attemptNumber) {
-            final String message = "Failed to export "
-                    + type
-                    + "s. The request could not be executed after " + attemptNumber
-                    + " attempts. Full error message: "
-                    + (t != null ? t.getMessage() : "");
+            final String message = "Failed to export " + type + "s. The request could not be executed after "
+                    + attemptNumber + " attempts. Full error message: " + (t != null ? t.getMessage() : "");
             logger.log(Level.WARNING, message);
             onError.accept(t);
         }
 
         public ClientRequestOnSuccessHandler newAttempt() {
             return new ClientRequestOnSuccessHandler(client, server, headers, compressionEnabled, marshaler,
-                    loggedUnimplemented, logger, type, onSuccess, onError, attemptNumber + 1,
-                    grpcEndpointPath, isShutdown, exportTimeout);
+                    loggedUnimplemented, logger, type, onSuccess, onError, attemptNumber + 1, grpcEndpointPath,
+                    isShutdown, exportTimeout);
         }
     }
 }

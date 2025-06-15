@@ -25,8 +25,10 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
     private static KeycloakContainer keycloak;
 
     private static final String KEYCLOAK_REALM = System.getProperty("keycloak.realm", "quarkus");
-    private static final String KEYCLOAK_SERVICE_CLIENT = System.getProperty("keycloak.service.client", "quarkus-service-app");
-    private static final String KEYCLOAK_WEB_APP_CLIENT = System.getProperty("keycloak.web-app.client", "quarkus-web-app");
+    private static final String KEYCLOAK_SERVICE_CLIENT = System.getProperty("keycloak.service.client",
+            "quarkus-service-app");
+    private static final String KEYCLOAK_WEB_APP_CLIENT = System.getProperty("keycloak.web-app.client",
+            "quarkus-web-app");
     private static final Boolean KEYCLOAK_USE_HTTPS = Boolean.valueOf(System.getProperty("keycloak.use.https", "true"));
 
     private static final String TOKEN_USER_ROLES = System.getProperty("keycloak.token.user-roles", "user");
@@ -35,8 +37,7 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
     @SuppressWarnings("resource")
     @Override
     public Map<String, String> start() {
-        keycloak = new KeycloakContainer()
-                .withUseHttps(KEYCLOAK_USE_HTTPS);
+        keycloak = new KeycloakContainer().withUseHttps(KEYCLOAK_USE_HTTPS);
         keycloak.start();
 
         RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
@@ -51,12 +52,9 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
 
     private static void postRealm(RealmRepresentation realm) {
         try {
-            createRequestSpec().auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
-                    .when()
-                    .post(keycloak.getServerUrl() + "/admin/realms").then()
-                    .statusCode(201);
+            createRequestSpec().auth().oauth2(getAdminAccessToken()).contentType("application/json")
+                    .body(JsonSerialization.writeValueAsBytes(realm)).when()
+                    .post(keycloak.getServerUrl() + "/admin/realms").then().statusCode(201);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -93,12 +91,8 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
     }
 
     private static String getAdminAccessToken() {
-        return createRequestSpec()
-                .param("grant_type", "password")
-                .param("username", "admin")
-                .param("password", "admin")
-                .param("client_id", "admin-cli")
-                .when()
+        return createRequestSpec().param("grant_type", "password").param("username", "admin").param("password", "admin")
+                .param("client_id", "admin-cli").when()
                 .post(keycloak.getServerUrl() + "/realms/master/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
     }
@@ -149,31 +143,24 @@ public class KeycloakTestResourceLifecycleManager implements QuarkusTestResource
     }
 
     public static String getAccessToken(String userName) {
-        return createRequestSpec().param("grant_type", "password")
-                .param("username", userName)
-                .param("password", userName)
-                .param("client_id", KEYCLOAK_SERVICE_CLIENT)
-                .param("client_secret", "secret")
-                .when()
+        return createRequestSpec().param("grant_type", "password").param("username", userName)
+                .param("password", userName).param("client_id", KEYCLOAK_SERVICE_CLIENT)
+                .param("client_secret", "secret").when()
                 .post(keycloak.getServerUrl() + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
     }
 
     public static String getRefreshToken(String userName) {
-        return createRequestSpec().param("grant_type", "password")
-                .param("username", userName)
-                .param("password", userName)
-                .param("client_id", KEYCLOAK_SERVICE_CLIENT)
-                .param("client_secret", "secret")
-                .when()
+        return createRequestSpec().param("grant_type", "password").param("username", userName)
+                .param("password", userName).param("client_id", KEYCLOAK_SERVICE_CLIENT)
+                .param("client_secret", "secret").when()
                 .post(keycloak.getServerUrl() + "/realms/" + KEYCLOAK_REALM + "/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getRefreshToken();
     }
 
     @Override
     public void stop() {
-        createRequestSpec().auth().oauth2(getAdminAccessToken())
-                .when()
+        createRequestSpec().auth().oauth2(getAdminAccessToken()).when()
                 .delete(keycloak.getServerUrl() + "/admin/realms/" + KEYCLOAK_REALM).then().statusCode(204);
 
         keycloak.stop();

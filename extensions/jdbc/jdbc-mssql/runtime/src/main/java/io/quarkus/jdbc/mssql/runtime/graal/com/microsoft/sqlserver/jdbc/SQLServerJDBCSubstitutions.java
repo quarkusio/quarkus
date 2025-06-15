@@ -42,8 +42,9 @@ final class QuarkusSQLServerConnection {
     }
 
     @Substitute
-    ArrayList<byte[]> initEnclaveParameters(SQLServerStatement statement, String userSql, String preparedTypeDefinitions,
-            QuarkusSqlParameter[] params, ArrayList<String> parameterNames) throws SQLServerException {
+    ArrayList<byte[]> initEnclaveParameters(SQLServerStatement statement, String userSql,
+            String preparedTypeDefinitions, QuarkusSqlParameter[] params, ArrayList<String> parameterNames)
+            throws SQLServerException {
         throw new IllegalStateException("Quarkus does not support AAS Enclave");
     }
 }
@@ -58,16 +59,16 @@ final class QuarkusSqlSQLServerCertificateUtils {
 }
 
 @TargetClass(className = "com.microsoft.sqlserver.jdbc.SQLServerLexer")
-@Delete //Deleting this one explicitly, so to help with maintenance with the substitutions of SQLServerFMTQuery
+@Delete // Deleting this one explicitly, so to help with maintenance with the substitutions of SQLServerFMTQuery
 final class SQLServerLexerRemove {
 
 }
 
 /**
- * This will make sure the ANTLR4 Lexer included in the driver is not reachable; this was mostly
- * prevented by not allowing to explicitly set the useFmtOnly connection property, but this code
- * path would also get activated on very old SQL Server versions being detected on a connection.
- * Since that's not a constant that the compiler can rely on, we need one more substitution.
+ * This will make sure the ANTLR4 Lexer included in the driver is not reachable; this was mostly prevented by not
+ * allowing to explicitly set the useFmtOnly connection property, but this code path would also get activated on very
+ * old SQL Server versions being detected on a connection. Since that's not a constant that the compiler can rely on, we
+ * need one more substitution.
  */
 @TargetClass(className = "com.microsoft.sqlserver.jdbc.SQLServerFMTQuery")
 final class SQLServerFMTQuery {
@@ -87,7 +88,7 @@ final class DisableFMTRemove {
 
     @Substitute
     public final boolean getUseFmtOnly() throws SQLServerException {
-        return false;//Important for this to be disabled via a constant
+        return false;// Important for this to be disabled via a constant
     }
 
     @Substitute

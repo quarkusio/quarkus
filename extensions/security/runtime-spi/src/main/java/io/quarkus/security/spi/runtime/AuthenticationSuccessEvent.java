@@ -5,8 +5,8 @@ import java.util.Map;
 import io.quarkus.security.identity.SecurityIdentity;
 
 /**
- * Security event fired when request authentication succeeded.
- * This event is never fired for anonymous {@link SecurityIdentity}.
+ * Security event fired when request authentication succeeded. This event is never fired for anonymous
+ * {@link SecurityIdentity}.
  */
 public class AuthenticationSuccessEvent extends AbstractSecurityEvent {
 

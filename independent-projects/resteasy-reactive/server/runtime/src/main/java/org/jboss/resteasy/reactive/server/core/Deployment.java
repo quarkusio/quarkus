@@ -50,23 +50,18 @@ public class Deployment {
     private final boolean servletPresent;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
     private final Map<String, List<String>> disabledEndpoints;
-    //this is not final, as it is set after startup
+    // this is not final, as it is set after startup
     private RuntimeConfiguration runtimeConfiguration;
 
-    public Deployment(ExceptionMapping exceptionMapping,
-            ContextResolvers contextResolvers,
-            ServerSerialisers serialisers,
-            ServerRestHandler[] abortHandlerChain,
-            EntityWriter dynamicEntityWriter, String prefix, ParamConverterProviders paramConverterProviders,
-            ConfigurationImpl configuration, Supplier<Application> applicationSupplier,
-            ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
-            List<ServerRestHandler> preMatchHandlers,
+    public Deployment(ExceptionMapping exceptionMapping, ContextResolvers contextResolvers,
+            ServerSerialisers serialisers, ServerRestHandler[] abortHandlerChain, EntityWriter dynamicEntityWriter,
+            String prefix, ParamConverterProviders paramConverterProviders, ConfigurationImpl configuration,
+            Supplier<Application> applicationSupplier, ThreadSetupAction threadSetupAction,
+            RequestContextFactory requestContextFactory, List<ServerRestHandler> preMatchHandlers,
             ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers,
             List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers,
-            RuntimeExceptionMapper exceptionMapper,
-            boolean servletPresent,
-            ResteasyReactiveConfig resteasyReactiveConfig,
-            Map<String, List<String>> disabledEndpoints) {
+            RuntimeExceptionMapper exceptionMapper, boolean servletPresent,
+            ResteasyReactiveConfig resteasyReactiveConfig, Map<String, List<String>> disabledEndpoints) {
         this.exceptionMapping = exceptionMapping;
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
@@ -165,8 +160,8 @@ public class Deployment {
             } else {
                 genericType = field.getGenericType();
                 if (genericType instanceof ParameterizedType) {
-                    Type[] args = Types.findInterfaceParameterizedTypes(field.getType(), (ParameterizedType) genericType,
-                            Collection.class);
+                    Type[] args = Types.findInterfaceParameterizedTypes(field.getType(),
+                            (ParameterizedType) genericType, Collection.class);
                     if (args != null && args.length == 1) {
                         genericType = args[0];
                         klass = Types.getRawType(genericType);

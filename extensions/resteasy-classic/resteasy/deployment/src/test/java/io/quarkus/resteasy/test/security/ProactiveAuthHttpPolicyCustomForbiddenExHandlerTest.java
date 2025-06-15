@@ -29,10 +29,10 @@ import io.vertx.ext.web.RoutingContext;
 
 public class ProactiveAuthHttpPolicyCustomForbiddenExHandlerTest {
 
-    private static final String PROPERTIES = "quarkus.http.auth.basic=true\n" +
-            "quarkus.http.auth.policy.user-policy.roles-allowed=user\n" +
-            "quarkus.http.auth.permission.roles.paths=/secured\n" +
-            "quarkus.http.auth.permission.roles.policy=user-policy";
+    private static final String PROPERTIES = "quarkus.http.auth.basic=true\n"
+            + "quarkus.http.auth.policy.user-policy.roles-allowed=user\n"
+            + "quarkus.http.auth.permission.roles.paths=/secured\n"
+            + "quarkus.http.auth.permission.roles.policy=user-policy";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
@@ -51,11 +51,7 @@ public class ProactiveAuthHttpPolicyCustomForbiddenExHandlerTest {
 
     @Test
     public void testDeniedAccessAdminResource() {
-        RestAssured.given()
-                .auth().basic("a d m i n", "a d m i n")
-                .when().get("/secured")
-                .then()
-                .statusCode(403)
+        RestAssured.given().auth().basic("a d m i n", "a d m i n").when().get("/secured").then().statusCode(403)
                 .body(equalTo(CUSTOM_FORBIDDEN_EXCEPTION_HANDLER));
     }
 
@@ -79,7 +75,8 @@ public class ProactiveAuthHttpPolicyCustomForbiddenExHandlerTest {
                 @Override
                 public void handle(RoutingContext event) {
                     if (event.failure() instanceof ForbiddenException) {
-                        event.response().setStatusCode(FORBIDDEN.getStatusCode()).end(CUSTOM_FORBIDDEN_EXCEPTION_HANDLER);
+                        event.response().setStatusCode(FORBIDDEN.getStatusCode())
+                                .end(CUSTOM_FORBIDDEN_EXCEPTION_HANDLER);
                     } else {
                         event.next();
                     }

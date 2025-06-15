@@ -43,7 +43,6 @@ public class OptionalQueryParamResource {
     }
 
     private String doSayHelloToCollection(final Optional<? extends Collection<String>> names) {
-        return HELLO + names.map(l -> l.stream().collect(Collectors.joining(AND)))
-                .orElse(NOBODY);
+        return HELLO + names.map(l -> l.stream().collect(Collectors.joining(AND))).orElse(NOBODY);
     }
 }

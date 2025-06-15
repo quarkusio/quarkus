@@ -38,12 +38,8 @@ public class SyntheticBeanStartupTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(SyntheticBeanBuildItem.configure(SynthBean.class)
-                                .scope(ApplicationScoped.class)
-                                .identifier("ok")
-                                .startup()
-                                .creator(SynthBeanCreator.class)
-                                .done());
+                        context.produce(SyntheticBeanBuildItem.configure(SynthBean.class).scope(ApplicationScoped.class)
+                                .identifier("ok").startup().creator(SynthBeanCreator.class).done());
                     }
                 }).produces(SyntheticBeanBuildItem.class).build();
             }

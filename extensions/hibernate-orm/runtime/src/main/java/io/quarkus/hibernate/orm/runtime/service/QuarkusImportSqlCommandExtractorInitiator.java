@@ -7,7 +7,8 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.schema.internal.script.MultiLineSqlScriptExtractor;
 import org.hibernate.tool.schema.spi.SqlScriptCommandExtractor;
 
-public final class QuarkusImportSqlCommandExtractorInitiator implements StandardServiceInitiator<SqlScriptCommandExtractor> {
+public final class QuarkusImportSqlCommandExtractorInitiator
+        implements StandardServiceInitiator<SqlScriptCommandExtractor> {
 
     public static final QuarkusImportSqlCommandExtractorInitiator INSTANCE = new QuarkusImportSqlCommandExtractorInitiator();
 

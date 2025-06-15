@@ -30,16 +30,14 @@ public class ReadmeJsonRPCService {
 
     @PostConstruct
     public void init() {
-        this.path = getPath("README.md")
-                .orElse(getPath("readme.md")
-                        .orElse(null));
+        this.path = getPath("README.md").orElse(getPath("readme.md").orElse(null));
         if (this.path != null) {
             this.path = this.path.toAbsolutePath();
             Path parentDir = this.path.getParent();
             try {
                 watchService = FileSystems.getDefault().newWatchService();
-                parentDir.register(watchService, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE,
-                        StandardWatchEventKinds.ENTRY_MODIFY);
+                parentDir.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
+                        StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
 
                 this.cancellable = Multi.createFrom().emitter(emitter -> {
                     while (!Thread.currentThread().isInterrupted()) {
@@ -65,13 +63,12 @@ public class ReadmeJsonRPCService {
                             break;
                         }
                     }
-                }).runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                        .onItem().transform(event -> {
-                            readmeStream.onNext(getContent());
-                            return this.path;
-                        }).subscribe().with((t) -> {
+                }).runSubscriptionOn(Infrastructure.getDefaultExecutor()).onItem().transform(event -> {
+                    readmeStream.onNext(getContent());
+                    return this.path;
+                }).subscribe().with((t) -> {
 
-                        });
+                });
             } catch (IOException e) {
                 e.printStackTrace();
             }

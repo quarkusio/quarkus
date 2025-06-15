@@ -78,17 +78,16 @@ public final class ConfigDiagnostic {
     }
 
     /**
-     * Report any unused properties.
-     * <br>
+     * Report any unused properties. <br>
      * The list of unused properties may contain false positives. This is caused when an environment variable is set up,
-     * and we cannot determine correctly if it was used or not.
-     * <br>
+     * and we cannot determine correctly if it was used or not. <br>
      * Environment variables require a conversion to regular property names so a Map can be properly populated when
      * iterating {@link Config#getPropertyNames()}. Because an Environment variable name may match multiple property
      * names, we try the best effort to report unknowns by matching used properties in their Environment variable name
      * format.
      *
-     * @param properties the set of possible unused properties
+     * @param properties
+     *        the set of possible unused properties
      */
     public static void unknownProperties(Set<String> properties) {
         if (properties.isEmpty()) {
@@ -113,7 +112,8 @@ public final class ConfigDiagnostic {
             usedProperties.add(usedProperty);
         }
         for (String property : properties) {
-            // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore them.
+            // Indexed properties not supported by @ConfigRoot, but they can show up due to the YAML source. Just ignore
+            // them.
             if (property.indexOf('[') != -1 && property.indexOf(']') != -1) {
                 continue;
             }
@@ -189,7 +189,8 @@ public final class ConfigDiagnostic {
             // Ignore .properties, because we know these are have a default loader in core
             // Ignore profile files. The loading rules require the main file to be present, so we only need the type
             String filename = entry.getFileName().toString();
-            return Files.isRegularFile(entry) && filename.startsWith("application.") && !filename.endsWith(".properties");
+            return Files.isRegularFile(entry) && filename.startsWith("application.")
+                    && !filename.endsWith(".properties");
         }
     };
 
@@ -220,7 +221,8 @@ public final class ConfigDiagnostic {
             @Override
             public void accept(final List<URI> locations) {
                 for (URI location : locations) {
-                    Path path = location.getScheme() != null && location.getScheme().equals("file") ? Paths.get(location)
+                    Path path = location.getScheme() != null && location.getScheme().equals("file")
+                            ? Paths.get(location)
                             : Paths.get(location.getPath());
                     if (Files.isDirectory(path)) {
                         try {

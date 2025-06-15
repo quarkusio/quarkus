@@ -27,26 +27,16 @@ public class HibernateOrmDevUIProcessor {
         CardPageBuildItem card = new CardPageBuildItem();
         card.setLogo("hibernate_icon_dark.svg", "hibernate_icon_light.svg");
         card.addLibraryVersion("org.hibernate.orm", "hibernate-core", "Hibernate", "https://hibernate.org/orm/");
-        card.addPage(Page.webComponentPageBuilder()
-                .title("Persistence Units")
-                .componentLink("hibernate-orm-persistence-units.js")
-                .icon("font-awesome-solid:boxes-stacked")
+        card.addPage(Page.webComponentPageBuilder().title("Persistence Units")
+                .componentLink("hibernate-orm-persistence-units.js").icon("font-awesome-solid:boxes-stacked")
                 .dynamicLabelJsonRPCMethodName("getNumberOfPersistenceUnits"));
-        card.addPage(Page.webComponentPageBuilder()
-                .title("Entity Types")
-                .componentLink("hibernate-orm-entity-types.js")
-                .icon("font-awesome-solid:table")
-                .dynamicLabelJsonRPCMethodName("getNumberOfEntityTypes"));
-        card.addPage(Page.webComponentPageBuilder()
-                .title("Named Queries")
-                .componentLink("hibernate-orm-named-queries.js")
-                .icon("font-awesome-solid:circle-question")
+        card.addPage(Page.webComponentPageBuilder().title("Entity Types").componentLink("hibernate-orm-entity-types.js")
+                .icon("font-awesome-solid:table").dynamicLabelJsonRPCMethodName("getNumberOfEntityTypes"));
+        card.addPage(Page.webComponentPageBuilder().title("Named Queries")
+                .componentLink("hibernate-orm-named-queries.js").icon("font-awesome-solid:circle-question")
                 .dynamicLabelJsonRPCMethodName("getNumberOfNamedQueries"));
-        card.addPage(Page.webComponentPageBuilder()
-                .title("HQL Console")
-                .componentLink("hibernate-orm-hql-console.js")
-                .icon("font-awesome-solid:play")
-                .metadata("allowHql", String.valueOf(config.devui().allowHql())));
+        card.addPage(Page.webComponentPageBuilder().title("HQL Console").componentLink("hibernate-orm-hql-console.js")
+                .icon("font-awesome-solid:play").metadata("allowHql", String.valueOf(config.devui().allowHql())));
         return card;
     }
 
@@ -57,12 +47,8 @@ public class HibernateOrmDevUIProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem additionalBeans() {
-        return AdditionalBeanBuildItem
-                .builder()
-                .addBeanClass(HibernateOrmDevJsonRpcService.class)
-                .setUnremovable()
-                .setDefaultScope(DotNames.APPLICATION_SCOPED)
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(HibernateOrmDevJsonRpcService.class).setUnremovable()
+                .setDefaultScope(DotNames.APPLICATION_SCOPED).build();
     }
 
     @BuildStep
@@ -70,9 +56,10 @@ public class HibernateOrmDevUIProcessor {
             BuildProducer<JdbcInitialSQLGeneratorBuildItem> initialSQLGeneratorBuildItemBuildProducer) {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             String puName = puDescriptor.getPersistenceUnitName();
-            String dsName = puDescriptor.getConfig().getDataSource().orElse(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
-            initialSQLGeneratorBuildItemBuildProducer
-                    .produce(new JdbcInitialSQLGeneratorBuildItem(dsName, new HibernateOrmDevInfoCreateDDLSupplier(puName)));
+            String dsName = puDescriptor.getConfig().getDataSource()
+                    .orElse(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+            initialSQLGeneratorBuildItemBuildProducer.produce(
+                    new JdbcInitialSQLGeneratorBuildItem(dsName, new HibernateOrmDevInfoCreateDDLSupplier(puName)));
         }
     }
 

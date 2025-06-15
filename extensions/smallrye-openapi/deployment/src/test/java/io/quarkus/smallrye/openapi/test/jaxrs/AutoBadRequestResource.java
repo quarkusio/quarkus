@@ -72,19 +72,15 @@ public class AutoBadRequestResource {
 
     @POST
     @Path("/provided")
-    @APIResponses({
-            @APIResponse(responseCode = "204", description = "Successful"),
-            @APIResponse(responseCode = "400", description = "Invalid bean supplied")
-    })
+    @APIResponses({ @APIResponse(responseCode = "204", description = "Successful"),
+            @APIResponse(responseCode = "400", description = "Invalid bean supplied") })
     public void addProvidedBar(MyBean myBean) {
     }
 
     @PUT
     @Path("/provided")
-    @APIResponses({
-            @APIResponse(responseCode = "204", description = "Successful"),
-            @APIResponse(responseCode = "400", description = "Invalid bean supplied")
-    })
+    @APIResponses({ @APIResponse(responseCode = "204", description = "Successful"),
+            @APIResponse(responseCode = "400", description = "Invalid bean supplied") })
     public void updateProvidedBar(MyBean myBean) {
     }
 

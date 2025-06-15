@@ -78,13 +78,10 @@ public abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContex
                     resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/problem+json");
                     try (BufferOutputStream outputStream = new BufferOutputStream(buffer)) {
                         JsonObjectBuilder objectBuilder = JSON_PROVIDER.createObjectBuilder();
-                        objectBuilder
-                                .add("type", "about:blank")
-                                .add("status", 503)
+                        objectBuilder.add("type", "about:blank").add("status", 503)
                                 .add("title", "Health Check Failed: " + ctx.normalizedPath())
                                 .add("detail", ctx.request().uri() + ", invoked at " + Instant.now())
-                                .add("instance", ctx.request().absoluteURI())
-                                .add("health", health.getPayload());
+                                .add("instance", ctx.request().absoluteURI()).add("health", health.getPayload());
                         JsonWriter writer = JSON_WRITER_FACTORY.createWriter(outputStream);
                         writer.writeObject(objectBuilder.build());
                         resp.end(buffer);
@@ -94,8 +91,7 @@ public abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContex
                     }
                 }
             }
-            resp.headers()
-                    .set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8")
+            resp.headers().set(HttpHeaders.CONTENT_TYPE, "application/json; charset=UTF-8")
                     .set(HttpHeaders.CACHE_CONTROL, "no-store");
 
             try (BufferOutputStream outputStream = new BufferOutputStream(buffer)) {

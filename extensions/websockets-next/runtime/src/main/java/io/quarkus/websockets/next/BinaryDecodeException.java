@@ -3,7 +3,6 @@ package io.quarkus.websockets.next;
 import io.vertx.core.buffer.Buffer;
 
 /**
- *
  * @see BinaryMessageCodec
  */
 public class BinaryDecodeException extends WebSocketException {

@@ -22,7 +22,6 @@ public class EnversRevisionOnCollectionChangeTestCase {
 
     @Test
     public void testRevisionOnCollectionChange() {
-        RestAssured.when().get("/envers-revision-on-collection-change").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-revision-on-collection-change").then().body(is("OK"));
     }
 }

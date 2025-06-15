@@ -29,7 +29,8 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         CharSequence[] expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
                 "Finished generating '" + NATIVE_IMAGE_NAME + "' in" };
         assertThat(buildOutput)
-                .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
+                .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s",
+                        buildOutput)
                 .contains(expectedOutput);
         Path nativeImagePath = projectDir.toPath().resolve("build").resolve(NATIVE_IMAGE_NAME);
         assertThat(nativeImagePath).exists();
@@ -59,9 +60,9 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         CharSequence[] expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
                 "Finished generating 'test-runner' in" };
         assertThat(buildOutput)
-                .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
-                .contains(expectedOutput)
-                .doesNotContain("Finished generating '" + NATIVE_IMAGE_NAME + "' in");
+                .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s",
+                        buildOutput)
+                .contains(expectedOutput).doesNotContain("Finished generating '" + NATIVE_IMAGE_NAME + "' in");
         Path nativeImagePath = projectDir.toPath().resolve("build").resolve("test-runner");
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());
@@ -90,9 +91,9 @@ public class BasicJavaNativeBuildIT extends QuarkusNativeGradleITBase {
         CharSequence[] expectedOutput = new CharSequence[] { "Initializing...", "Performing analysis...",
                 "Finished generating 'test' in" };
         assertThat(buildOutput)
-                .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s", buildOutput)
-                .contains(expectedOutput)
-                .doesNotContain("Finished generating '" + NATIVE_IMAGE_NAME + "' in");
+                .withFailMessage("native-image build log is missing certain expected log messages: \n\n %s",
+                        buildOutput)
+                .contains(expectedOutput).doesNotContain("Finished generating '" + NATIVE_IMAGE_NAME + "' in");
         Path nativeImagePath = projectDir.toPath().resolve("build").resolve("test");
         assertThat(nativeImagePath).exists();
         Process nativeImageProcess = runNativeImage(nativeImagePath.toAbsolutePath().toString());

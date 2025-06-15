@@ -16,10 +16,10 @@ import java.lang.annotation.Target;
 public @interface RegisterForProxy {
 
     /**
-     * Alternative interfaces that should actually be registered for dynamic proxy generation instead of the current interface.
-     * This allows for interfaces in 3rd party libraries to be registered without modification or writing an
-     * extension. If this is set then the interface it is placed on is not registered for dynamic proxy generation, so this
-     * should generally just be placed on an empty interface that is not otherwise used.
+     * Alternative interfaces that should actually be registered for dynamic proxy generation instead of the current
+     * interface. This allows for interfaces in 3rd party libraries to be registered without modification or writing an
+     * extension. If this is set then the interface it is placed on is not registered for dynamic proxy generation, so
+     * this should generally just be placed on an empty interface that is not otherwise used.
      */
     Class<?>[] targets() default {};
 

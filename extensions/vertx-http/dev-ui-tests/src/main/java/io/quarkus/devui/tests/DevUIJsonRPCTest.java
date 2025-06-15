@@ -50,8 +50,9 @@ public class DevUIJsonRPCTest {
     public DevUIJsonRPCTest(String namespace, String testUrl) {
         this.namespace = namespace;
         this.testUrl = testUrl;
-        String nonApplicationRoot = ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT)
-                .getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");
+        String nonApplicationRoot = ((TestConfigProviderResolver) ConfigProviderResolver.instance())
+                .getConfig(DEVELOPMENT).getOptionalValue("quarkus.http.non-application-root-path", String.class)
+                .orElse("q");
         if (!nonApplicationRoot.startsWith("/")) {
             nonApplicationRoot = "/" + nonApplicationRoot;
         }
@@ -84,7 +85,8 @@ public class DevUIJsonRPCTest {
     }
 
     @SuppressWarnings("unchecked")
-    public <T> T executeJsonRPCMethod(Class<T> classType, String methodName, Map<String, Object> params) throws Exception {
+    public <T> T executeJsonRPCMethod(Class<T> classType, String methodName, Map<String, Object> params)
+            throws Exception {
 
         int id = sendRequest(methodName, params);
         T response = getJsonRPCResponse(classType, id);
@@ -124,7 +126,8 @@ public class DevUIJsonRPCTest {
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T getJsonRPCResponse(Class<T> classType, int id, int loopCount) throws InterruptedException, IOException {
+    private <T> T getJsonRPCResponse(Class<T> classType, int id, int loopCount)
+            throws InterruptedException, IOException {
         JsonNode object = objectResultFromJsonRPC(id);
         if (object != null) {
             if (classType == null || classType.equals(JsonNode.class)) {
@@ -152,7 +155,8 @@ public class DevUIJsonRPCTest {
         return objectResultFromJsonRPC(id, 0);
     }
 
-    private JsonNode objectResultFromJsonRPC(int id, int loopCount) throws InterruptedException, JsonProcessingException {
+    private JsonNode objectResultFromJsonRPC(int id, int loopCount)
+            throws InterruptedException, JsonProcessingException {
         if (RESPONSES.containsKey(id)) {
             WebSocketResponse response = RESPONSES.remove(id);
             if (response != null) {
@@ -197,16 +201,13 @@ public class DevUIJsonRPCTest {
 
         Vertx vertx = Vertx.vertx();
 
-        HttpClientOptions options = new HttpClientOptions()
-                .setDefaultHost(this.uri.getHost())
+        HttpClientOptions options = new HttpClientOptions().setDefaultHost(this.uri.getHost())
                 .setDefaultPort(this.uri.getPort());
 
         HttpClient client = vertx.createHttpClient(options);
 
-        WebSocketConnectOptions socketOptions = new WebSocketConnectOptions()
-                .setHost(this.uri.getHost())
-                .setPort(this.uri.getPort())
-                .setURI(this.uri.getPath());
+        WebSocketConnectOptions socketOptions = new WebSocketConnectOptions().setHost(this.uri.getHost())
+                .setPort(this.uri.getPort()).setURI(this.uri.getPath());
 
         client.webSocket(socketOptions, ar -> {
             if (ar.succeeded()) {

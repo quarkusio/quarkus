@@ -45,7 +45,6 @@ public class HalEntityWrapperJacksonSerializer extends JsonSerializer<HalEntityW
         JavaType entityType = serializers.getTypeFactory().constructType(entityClass);
 
         return new BasicClassIntrospector()
-                .forSerialization(serializers.getConfig(), entityType, serializers.getConfig())
-                .findProperties();
+                .forSerialization(serializers.getConfig(), entityType, serializers.getConfig()).findProperties();
     }
 }

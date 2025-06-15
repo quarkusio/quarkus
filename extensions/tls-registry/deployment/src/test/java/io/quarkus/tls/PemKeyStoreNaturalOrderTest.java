@@ -23,12 +23,10 @@ import io.smallrye.certs.junit5.Alias;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
-@Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-pem-order", formats = { Format.PEM }, subjectAlternativeNames = "dns:quarkus.io", aliases = {
+@Certificates(baseDir = "target/certs", certificates = { @Certificate(name = "test-pem-order", formats = {
+        Format.PEM }, subjectAlternativeNames = "dns:quarkus.io", aliases = {
                 @Alias(name = "test-pem-order-alias1", subjectAlternativeNames = "dns:acme.org"),
-                @Alias(name = "test-pem-order-alias2", subjectAlternativeNames = "dns:example.com"),
-        })
-})
+                @Alias(name = "test-pem-order-alias2", subjectAlternativeNames = "dns:example.com"), }) })
 public class PemKeyStoreNaturalOrderTest {
 
     private static final String configuration = """
@@ -42,8 +40,7 @@ public class PemKeyStoreNaturalOrderTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;

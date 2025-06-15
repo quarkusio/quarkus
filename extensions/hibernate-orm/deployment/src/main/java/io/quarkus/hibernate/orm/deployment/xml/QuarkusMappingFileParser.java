@@ -48,9 +48,13 @@ public final class QuarkusMappingFileParser implements AutoCloseable {
     }
 
     /**
-     * @param persistenceUnitName The name of the persistence unit requesting the mapping file.
-     * @param persistenceUnitRootUrl The root URL of the persistence unit requesting the mapping file.
-     * @param mappingFilePath The path of the mapping file in the classpath.
+     * @param persistenceUnitName
+     *        The name of the persistence unit requesting the mapping file.
+     * @param persistenceUnitRootUrl
+     *        The root URL of the persistence unit requesting the mapping file.
+     * @param mappingFilePath
+     *        The path of the mapping file in the classpath.
+     *
      * @return A summary of the parsed mapping file, or {@link Optional#empty()} if it was not found.
      */
     public Optional<RecordableXmlMapping> parse(String persistenceUnitName, URL persistenceUnitRootUrl,
@@ -96,10 +100,11 @@ public final class QuarkusMappingFileParser implements AutoCloseable {
                 }
             }
             if (urlInSameMappingFile == null) {
-                throw new IllegalStateException("Persistence unit '" + persistenceUnitName + "' references mapping file '"
-                        + mappingFileName + "', but multiple resources with this path exist in the classpath,"
-                        + " and it is not possible to resolve the ambiguity."
-                        + " URLs of matching resources found in the classpath: " + mappingFileURLs);
+                throw new IllegalStateException(
+                        "Persistence unit '" + persistenceUnitName + "' references mapping file '" + mappingFileName
+                                + "', but multiple resources with this path exist in the classpath,"
+                                + " and it is not possible to resolve the ambiguity."
+                                + " URLs of matching resources found in the classpath: " + mappingFileURLs);
             }
             return urlInSameMappingFile;
         }
@@ -114,7 +119,8 @@ public final class QuarkusMappingFileParser implements AutoCloseable {
                 return Collections.emptyList();
             }
         };
-        final StrategySelector strategySelector = QuarkusStrategySelectorBuilder.buildSelector(providedClassLoaderService);
+        final StrategySelector strategySelector = QuarkusStrategySelectorBuilder
+                .buildSelector(providedClassLoaderService);
         return new BootstrapServiceRegistryImpl(true, providedClassLoaderService, strategySelector, integratorService);
     }
 }

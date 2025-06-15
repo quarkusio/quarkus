@@ -50,13 +50,15 @@ public class BuildTimeEnabledProcessor {
     private static final DotName UNLESS_BUILD_PROFILE = DotName.createSimple(UnlessBuildProfile.class.getName());
 
     private static final DotName IF_BUILD_PROPERTY = DotName.createSimple(IfBuildProperty.class.getName());
-    private static final DotName IF_BUILD_PROPERTY_CONTAINER = DotName.createSimple(IfBuildProperty.List.class.getName());
+    private static final DotName IF_BUILD_PROPERTY_CONTAINER = DotName
+            .createSimple(IfBuildProperty.List.class.getName());
     private static final DotName UNLESS_BUILD_PROPERTY = DotName.createSimple(UnlessBuildProperty.class.getName());
     private static final DotName UNLESS_BUILD_PROPERTY_CONTAINER = DotName
             .createSimple(UnlessBuildProperty.List.class.getName());
 
-    public static final Set<DotName> BUILD_TIME_ENABLED_BEAN_ANNOTATIONS = Set.of(IF_BUILD_PROFILE, UNLESS_BUILD_PROFILE,
-            IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER);
+    public static final Set<DotName> BUILD_TIME_ENABLED_BEAN_ANNOTATIONS = Set.of(IF_BUILD_PROFILE,
+            UNLESS_BUILD_PROFILE, IF_BUILD_PROPERTY, IF_BUILD_PROPERTY_CONTAINER, UNLESS_BUILD_PROPERTY,
+            UNLESS_BUILD_PROPERTY_CONTAINER);
 
     @BuildStep
     BuildTimeEnabledStereotypesBuildItem findEnablementStereotypes(CombinedIndexBuildItem combinedIndex) {
@@ -65,8 +67,7 @@ public class BuildTimeEnabledProcessor {
         // find all stereotypes
         Set<DotName> stereotypeNames = new HashSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(DotNames.STEREOTYPE)) {
-            if (annotation.target() != null
-                    && annotation.target().kind() == Kind.CLASS
+            if (annotation.target() != null && annotation.target().kind() == Kind.CLASS
                     && annotation.target().asClass().isAnnotation()) {
                 stereotypeNames.add(annotation.target().asClass().name());
             }
@@ -124,7 +125,8 @@ public class BuildTimeEnabledProcessor {
 
             if (!result.isEmpty()) {
                 ClassInfo stereotypeClass = index.getClassByName(stereotypeToScan);
-                boolean inheritable = stereotypeClass != null && stereotypeClass.hasDeclaredAnnotation(DotNames.INHERITED);
+                boolean inheritable = stereotypeClass != null
+                        && stereotypeClass.hasDeclaredAnnotation(DotNames.INHERITED);
                 buildTimeEnabledStereotypes.add(new BuildTimeEnabledStereotypesBuildItem.BuildTimeEnabledStereotype(
                         stereotypeToScan, inheritable, result));
             }
@@ -174,8 +176,8 @@ public class BuildTimeEnabledProcessor {
     void unlessBuildProperty(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
             BuildProducer<BuildTimeConditionBuildItem> conditions) {
         Config config = ConfigProviderResolver.instance().getConfig();
-        enablementAnnotations(UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER, index.getIndex(), stereotypes, conditions,
-                new Function<AnnotationInstance, Boolean>() {
+        enablementAnnotations(UNLESS_BUILD_PROPERTY, UNLESS_BUILD_PROPERTY_CONTAINER, index.getIndex(), stereotypes,
+                conditions, new Function<AnnotationInstance, Boolean>() {
                     @Override
                     public Boolean apply(AnnotationInstance annotation) {
                         return BuildProperty.from(annotation).disabled(config);
@@ -251,11 +253,11 @@ public class BuildTimeEnabledProcessor {
                     for (AnnotationInstance annotation : stereotype.getEnablementAnnotations(annotationName)) {
                         boolean enabled = test.apply(annotation);
                         if (enabled) {
-                            LOGGER.debugf("Enabling %s due to %s on stereotype %s inherited from %s",
-                                    clazz, annotation, stereotype.name, superclass.name());
+                            LOGGER.debugf("Enabling %s due to %s on stereotype %s inherited from %s", clazz, annotation,
+                                    stereotype.name, superclass.name());
                         } else {
-                            LOGGER.debugf("Disabling %s due to %s on stereotype %s inherited from %s",
-                                    clazz, annotation, stereotype.name, superclass.name());
+                            LOGGER.debugf("Disabling %s due to %s on stereotype %s inherited from %s", clazz,
+                                    annotation, stereotype.name, superclass.name());
                         }
                         producer.produce(new BuildTimeConditionBuildItem(clazz, enabled));
                     }
@@ -276,9 +278,9 @@ public class BuildTimeEnabledProcessor {
         }
 
         /*
-         * Determine whether each of the targets was enabled or not by combining their 'enabled' values
-         * Done this way in order to support having different annotation specify different conditions
-         * under which the bean is enabled and then combining all of them using a logical 'AND'
+         * Determine whether each of the targets was enabled or not by combining their 'enabled' values Done this way in
+         * order to support having different annotation specify different conditions under which the bean is enabled and
+         * then combining all of them using a logical 'AND'
          */
         final Map<EquivalenceKey, Boolean> enabled = new HashMap<>();
         for (BuildTimeConditionBuildItem buildTimeCondition : buildTimeConditions) {
@@ -309,20 +311,19 @@ public class BuildTimeEnabledProcessor {
     }
 
     /**
-     * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
-     * @return an instance of {@link BuildExclusionsBuildItem} containing the set of classes
-     *         that have been annotated with unsuccessful build time conditions.
+     * @param buildTimeConditions
+     *        the build time conditions from which the excluded classes are extracted.
+     *
+     * @return an instance of {@link BuildExclusionsBuildItem} containing the set of classes that have been annotated
+     *         with unsuccessful build time conditions.
      */
     @BuildStep
     BuildExclusionsBuildItem buildExclusions(List<BuildTimeConditionBuildItem> buildTimeConditions) {
         final Map<Kind, Set<String>> map = buildTimeConditions.stream()
-                .filter(not(BuildTimeConditionBuildItem::isEnabled))
-                .map(BuildTimeConditionBuildItem::getTarget)
-                .collect(groupingBy(
-                        AnnotationTarget::kind,
+                .filter(not(BuildTimeConditionBuildItem::isEnabled)).map(BuildTimeConditionBuildItem::getTarget)
+                .collect(groupingBy(AnnotationTarget::kind,
                         Collectors.mapping(BuildExclusionsBuildItem::targetMapper, Collectors.toSet())));
-        return new BuildExclusionsBuildItem(
-                map.getOrDefault(AnnotationTarget.Kind.CLASS, Collections.emptySet()),
+        return new BuildExclusionsBuildItem(map.getOrDefault(AnnotationTarget.Kind.CLASS, Collections.emptySet()),
                 map.getOrDefault(AnnotationTarget.Kind.METHOD, Collections.emptySet()),
                 map.getOrDefault(AnnotationTarget.Kind.FIELD, Collections.emptySet()));
     }
@@ -347,14 +348,15 @@ public class BuildTimeEnabledProcessor {
             return annotationInstances;
         }
         // Collect containing annotation instances
-        // Note that we can't just use the IndexView.getAnnotationsWithRepeatable() method because the containing annotation is not part of the index
+        // Note that we can't just use the IndexView.getAnnotationsWithRepeatable() method because the containing
+        // annotation is not part of the index
         for (AnnotationInstance containingInstance : index.getAnnotations(containingAnnotationName)) {
             AnnotationTarget target = containingInstance.target();
             if (target != null && (target.kind() != Kind.CLASS || !target.asClass().isAnnotation())) {
                 for (AnnotationInstance nestedInstance : containingInstance.value().asNestedArray()) {
                     // We need to set the target of the containing instance
-                    annotationInstances.add(
-                            AnnotationInstance.create(nestedInstance.name(), target, nestedInstance.values()));
+                    annotationInstances
+                            .add(AnnotationInstance.create(nestedInstance.name(), target, nestedInstance.values()));
                 }
             }
         }

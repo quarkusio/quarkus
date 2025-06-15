@@ -19,12 +19,9 @@ public class InfinispanConfigurationSetupTest {
     RemoteCacheManager remoteCacheManager;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
-            .withConfigurationResource("cache-config-application.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("distributed-cache-config.xml")
-                    .addAsResource("local-cache-config.xml"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
+            .withConfigurationResource("cache-config-application.properties").withApplicationRoot(
+                    (jar) -> jar.addAsResource("distributed-cache-config.xml").addAsResource("local-cache-config.xml"));
 
     @Test
     public void infinispanConnectionConfiguration() {

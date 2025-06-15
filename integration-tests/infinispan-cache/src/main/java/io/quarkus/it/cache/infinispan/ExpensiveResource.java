@@ -33,8 +33,7 @@ public class ExpensiveResource {
     @CacheResult(cacheName = "expensiveResourceCache")
     public ExpensiveResponse getExpensiveResponse(@PathParam("keyElement1") @CacheKey String keyElement1,
             @PathParam("keyElement2") @CacheKey String keyElement2,
-            @PathParam("keyElement3") @CacheKey String keyElement3,
-            @QueryParam("foo") String foo) {
+            @PathParam("keyElement3") @CacheKey String keyElement3, @QueryParam("foo") String foo) {
         invocations.incrementAndGet();
         requestService.setData("getExpensiveResponse " + foo);
         return new ExpensiveResponse(keyElement1 + " " + keyElement2 + " " + keyElement3 + " too!");
@@ -45,8 +44,7 @@ public class ExpensiveResource {
     @CacheResult(cacheName = "expensiveResourceCache")
     public Uni<ExpensiveResponse> getExpensiveResponseAsync(@PathParam("keyElement1") @CacheKey String keyElement1,
             @PathParam("keyElement2") @CacheKey String keyElement2,
-            @PathParam("keyElement3") @CacheKey String keyElement3,
-            @QueryParam("foo") String foo) {
+            @PathParam("keyElement3") @CacheKey String keyElement3, @QueryParam("foo") String foo) {
         invocations.incrementAndGet();
         requestService.setData("getExpensiveResponseAsync " + foo);
         return Uni.createFrom()
@@ -57,8 +55,8 @@ public class ExpensiveResource {
     @Path("/{keyElement1}/{keyElement2}/{keyElement3}")
     @CacheInvalidate(cacheName = "expensiveResourceCache")
     public Response resetExpensiveResponse(@PathParam("keyElement1") @CacheKey String keyElement1,
-            @PathParam("keyElement2") @CacheKey String keyElement2, @PathParam("keyElement3") @CacheKey String keyElement3,
-            @QueryParam("foo") String foo) {
+            @PathParam("keyElement2") @CacheKey String keyElement2,
+            @PathParam("keyElement3") @CacheKey String keyElement3, @QueryParam("foo") String foo) {
         requestService.setData("invalidate");
         return Response.ok().build();
     }

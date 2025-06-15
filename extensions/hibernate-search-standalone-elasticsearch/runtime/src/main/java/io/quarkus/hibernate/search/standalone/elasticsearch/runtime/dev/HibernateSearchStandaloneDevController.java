@@ -29,14 +29,11 @@ public class HibernateSearchStandaloneDevController {
             return new HibernateSearchStandaloneDevInfo(List.of());
         }
         return new HibernateSearchStandaloneDevInfo(searchMapping().allIndexedEntities().stream()
-                .map(HibernateSearchStandaloneDevInfo.IndexedEntity::new).sorted()
-                .collect(Collectors.toList()));
+                .map(HibernateSearchStandaloneDevInfo.IndexedEntity::new).sorted().collect(Collectors.toList()));
     }
 
     public SearchMapping searchMapping() {
-        return Arc.container()
-                .select(SearchMapping.class)
-                .get();
+        return Arc.container().select(SearchMapping.class).get();
     }
 
 }

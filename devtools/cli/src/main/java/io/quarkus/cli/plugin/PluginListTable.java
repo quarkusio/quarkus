@@ -61,7 +61,8 @@ public class PluginListTable {
         return String.format(format, getLabels(withCommand));
     }
 
-    private static String getBody(String format, Collection<PluginListItem> items, boolean withCommand, boolean withDiff) {
+    private static String getBody(String format, Collection<PluginListItem> items, boolean withCommand,
+            boolean withDiff) {
         StringBuilder sb = new StringBuilder();
         for (PluginListItem item : items) {
             sb.append(String.format(format, fieldsWithDiff(item.getFields(withCommand), withDiff)));
@@ -75,7 +76,8 @@ public class PluginListTable {
         return getContent(format, items, wtihCommand, withDiff);
     }
 
-    public static String getContent(String format, Collection<PluginListItem> items, boolean wtihCommand, boolean withDiff) {
+    public static String getContent(String format, Collection<PluginListItem> items, boolean wtihCommand,
+            boolean withDiff) {
         StringBuilder sb = new StringBuilder();
         sb.append(getHeader(format, items, wtihCommand));
         sb.append(NEWLINE);
@@ -87,58 +89,35 @@ public class PluginListTable {
         StringBuilder sb = new StringBuilder();
         sb.append(" %-1s ");
 
-        int maxNameLength = Stream.concat(Stream.of(NAME),
-                items.stream().map(PluginListItem::getName))
-                .filter(Objects::nonNull)
-                .map(String::length)
-                .max(Comparator.naturalOrder())
-                .orElse(0);
+        int maxNameLength = Stream.concat(Stream.of(NAME), items.stream().map(PluginListItem::getName))
+                .filter(Objects::nonNull).map(String::length).max(Comparator.naturalOrder()).orElse(0);
         sb.append(" %-" + maxNameLength + "s ");
         sb.append("\t");
 
-        int maxTypeLength = Stream.concat(Stream.of(TYPE),
-                items.stream().map(PluginListItem::getType))
-                .filter(Objects::nonNull)
-                .map(String::length)
-                .max(Comparator.naturalOrder())
-                .orElse(0);
+        int maxTypeLength = Stream.concat(Stream.of(TYPE), items.stream().map(PluginListItem::getType))
+                .filter(Objects::nonNull).map(String::length).max(Comparator.naturalOrder()).orElse(0);
         sb.append(" %-" + maxTypeLength + "s ");
         sb.append("\t");
 
-        int maxScopeLength = Stream.concat(Stream.of(SCOPE),
-                items.stream().map(PluginListItem::getScope))
-                .filter(Objects::nonNull)
-                .map(String::length)
-                .max(Comparator.naturalOrder())
-                .orElse(0);
+        int maxScopeLength = Stream.concat(Stream.of(SCOPE), items.stream().map(PluginListItem::getScope))
+                .filter(Objects::nonNull).map(String::length).max(Comparator.naturalOrder()).orElse(0);
         sb.append(" %-" + maxScopeLength + "s ");
         sb.append("\t");
 
-        int maxLocationLength = Stream.concat(Stream.of(LOCATION),
-                items.stream().map(PluginListItem::getLocation))
-                .filter(Objects::nonNull)
-                .map(String::length)
-                .max(Comparator.naturalOrder())
-                .orElse(0);
+        int maxLocationLength = Stream.concat(Stream.of(LOCATION), items.stream().map(PluginListItem::getLocation))
+                .filter(Objects::nonNull).map(String::length).max(Comparator.naturalOrder()).orElse(0);
         sb.append(" %-" + maxLocationLength + "s ");
         sb.append("\t");
 
-        int maxDescriptionLength = Stream.concat(Stream.of(DESCRIPTION),
-                items.stream().map(PluginListItem::getDescription))
-                .filter(Objects::nonNull)
-                .map(String::length)
-                .max(Comparator.naturalOrder())
-                .orElse(0);
+        int maxDescriptionLength = Stream
+                .concat(Stream.of(DESCRIPTION), items.stream().map(PluginListItem::getDescription))
+                .filter(Objects::nonNull).map(String::length).max(Comparator.naturalOrder()).orElse(0);
         sb.append(" %-" + maxDescriptionLength + "s ");
         sb.append("\t");
 
         if (withCommand) {
-            int maxCommandLength = Stream.concat(Stream.of(COMMAND),
-                    items.stream().map(PluginListItem::getCommand))
-                    .filter(Objects::nonNull)
-                    .map(String::length)
-                    .max(Comparator.naturalOrder())
-                    .orElse(0);
+            int maxCommandLength = Stream.concat(Stream.of(COMMAND), items.stream().map(PluginListItem::getCommand))
+                    .filter(Objects::nonNull).map(String::length).max(Comparator.naturalOrder()).orElse(0);
             sb.append(" %-" + maxCommandLength + "s ");
         }
         return sb.toString();
@@ -148,7 +127,7 @@ public class PluginListTable {
         if (!showDiff) {
             return fields;
         }
-        //Map '*'' -> '+'' and ' ' -> '-'
+        // Map '*'' -> '+'' and ' ' -> '-'
         fields[0] = fields[0].replace("*", "+").replace(" ", "-");
         return fields;
     }

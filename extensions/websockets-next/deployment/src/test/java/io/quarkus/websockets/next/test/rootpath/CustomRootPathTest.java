@@ -20,10 +20,9 @@ import io.vertx.core.Vertx;
 public class CustomRootPathTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Echo.class, WSClient.class);
-            }).overrideConfigKey("quarkus.http.root-path", "/api");
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Echo.class, WSClient.class);
+    }).overrideConfigKey("quarkus.http.root-path", "/api");
 
     @Inject
     Vertx vertx;

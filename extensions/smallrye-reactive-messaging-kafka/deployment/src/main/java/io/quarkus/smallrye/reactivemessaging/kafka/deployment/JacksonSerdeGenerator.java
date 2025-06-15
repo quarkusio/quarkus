@@ -24,8 +24,7 @@ public class JacksonSerdeGenerator {
     public static String generateSerializer(BuildProducer<GeneratedClassBuildItem> generatedClass, Type type) {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         String baseName = type.name().withoutPackagePrefix();
-        String targetPackage = io.quarkus.arc.processor.DotNames
-                .internalPackageNameWithTrailingSlash(type.name());
+        String targetPackage = io.quarkus.arc.processor.DotNames.internalPackageNameWithTrailingSlash(type.name());
         String out = baseName + "_Serializer_" + HashUtil.sha1(UUID.randomUUID().toString());
         String generatedName = targetPackage + out;
         ClassCreator creator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
@@ -37,9 +36,9 @@ public class JacksonSerdeGenerator {
     public static String generateDeserializer(BuildProducer<GeneratedClassBuildItem> generatedClass, Type type) {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         String baseName = type.name().withoutPackagePrefix();
-        String targetPackage = io.quarkus.arc.processor.DotNames
-                .internalPackageNameWithTrailingSlash(type.name());
-        String out = baseName + "_Deserializer_" + HashUtil.sha1(Long.toString(UUID.randomUUID().getMostSignificantBits()));
+        String targetPackage = io.quarkus.arc.processor.DotNames.internalPackageNameWithTrailingSlash(type.name());
+        String out = baseName + "_Deserializer_"
+                + HashUtil.sha1(Long.toString(UUID.randomUUID().getMostSignificantBits()));
         String generatedName = targetPackage + out;
         ClassCreator creator = ClassCreator.builder().classOutput(classOutput).className(generatedName)
                 .superClass(ObjectMapperDeserializer.class).build();

@@ -31,8 +31,7 @@ public class MyPermission extends Permission {
         if (o == null || getClass() != o.getClass())
             return false;
         MyPermission that = (MyPermission) o;
-        return Objects.equals(authorization, that.authorization)
-                && Objects.equals(queryParam, that.queryParam);
+        return Objects.equals(authorization, that.authorization) && Objects.equals(queryParam, that.queryParam);
     }
 
     @Override

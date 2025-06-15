@@ -93,13 +93,13 @@ public class OidcTokenCredentialProducer {
     /**
      * The producer method for the current TokenIntrospection.
      * <p/>
-     * This TokenIntrospection always represents the bearer access token introspection when the bearer access tokens
-     * are used.
+     * This TokenIntrospection always represents the bearer access token introspection when the bearer access tokens are
+     * used.
      * <p/>
-     * In case of the authorization code flow, it represents a code flow access token introspection
-     * if it has been enabled by setting the `quarkus.oidc.authentication.verify-access-token` property to `true`
-     * and an ID token introspection otherwise. Use the `@IdToken` qualifier if both ID and code flow access tokens
-     * must be introspected.
+     * In case of the authorization code flow, it represents a code flow access token introspection if it has been
+     * enabled by setting the `quarkus.oidc.authentication.verify-access-token` property to `true` and an ID token
+     * introspection otherwise. Use the `@IdToken` qualifier if both ID and code flow access tokens must be
+     * introspected.
      *
      * @return the token introspection
      */

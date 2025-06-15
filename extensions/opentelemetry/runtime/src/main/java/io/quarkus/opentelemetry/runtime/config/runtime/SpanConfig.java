@@ -10,7 +10,8 @@ import io.smallrye.config.WithName;
 public interface SpanConfig {
 
     /**
-     * The maximum length of span attribute values. Takes precedence over <code>otel.attribute.value.length.limit</code>.
+     * The maximum length of span attribute values. Takes precedence over
+     * <code>otel.attribute.value.length.limit</code>.
      * <p>
      * By default, there is no limit.
      */

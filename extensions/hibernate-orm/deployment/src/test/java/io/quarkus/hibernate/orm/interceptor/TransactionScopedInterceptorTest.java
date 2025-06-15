@@ -33,9 +33,7 @@ public class TransactionScopedInterceptorTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(TransactionScopedInterceptor.class))
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addClass(TransactionScopedInterceptor.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -94,8 +92,7 @@ public class TransactionScopedInterceptorTest {
             try (Session manualSession = sessionFactory.openSession()) {
                 manualSession.find(MyEntity.class, 0);
             }
-        })
-                .isInstanceOf(jakarta.enterprise.context.ContextNotActiveException.class);
+        }).isInstanceOf(jakarta.enterprise.context.ContextNotActiveException.class);
 
         assertThat(TransactionScopedInterceptor.instances).isEmpty();
         assertThat(TransactionScopedInterceptor.loadedIds).isEmpty();
@@ -119,7 +116,8 @@ public class TransactionScopedInterceptorTest {
     @PersistenceUnitExtension
     @TransactionScoped
     public static class TransactionScopedInterceptor implements Interceptor {
-        private static final List<TransactionScopedInterceptor> instances = Collections.synchronizedList(new ArrayList<>());
+        private static final List<TransactionScopedInterceptor> instances = Collections
+                .synchronizedList(new ArrayList<>());
         private static final List<Object> loadedIds = Collections.synchronizedList(new ArrayList<>());
 
         public TransactionScopedInterceptor() {

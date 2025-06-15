@@ -18,13 +18,13 @@ public class ORMReactiveCompatbilityDefaultBothUnitTest extends CompatibilityUni
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hero.class)
-                    .addAsResource("complexMultilineImports.sql", "import.sql"))
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-            ))
-            .withConfigurationResource("application-unittest-both.properties")
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Hero.class).addAsResource("complexMultilineImports.sql", "import.sql"))
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this
+                                                                                                                                                                                                                                                                                                                          // triggers
+                                                                                                                                                                                                                                                                                                                          // Agroal
+                    )).withConfigurationResource("application-unittest-both.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.reactive", "true")
             .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
@@ -34,10 +34,10 @@ public class ORMReactiveCompatbilityDefaultBothUnitTest extends CompatibilityUni
             .overrideConfigKey("quarkus.hibernate-orm.log.highlight-sql", "false")
             .overrideConfigKey("quarkus.log.category.\"org.hibernate.SQL\".level", "DEBUG")
             .setLogRecordPredicate(record -> "org.hibernate.SQL".equals(record.getLoggerName()))
-            .assertLogRecords(
-                    records -> // When using both blocking and reactive we don't want migration to be applied twice
-                    assertThat(records.stream().map(l -> l.getMessage()))
-                            .containsOnlyOnce("create sequence hero_SEQ start with 1 increment by 50"));
+            .assertLogRecords(records -> // When using both blocking and reactive we don't want migration to be applied
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 // twice
+            assertThat(records.stream().map(l -> l.getMessage()))
+                    .containsOnlyOnce("create sequence hero_SEQ start with 1 increment by 50"));
 
     @Test
     @RunOnVertxContext

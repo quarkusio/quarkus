@@ -29,8 +29,7 @@ public class SerializersUtil {
             List<MessageBodyWriterBuildItem> messageBodyWriterBuildItems,
             List<MessageBodyReaderOverrideBuildItem> messageBodyReaderOverrideBuildItems,
             List<MessageBodyWriterOverrideBuildItem> messageBodyWriterOverrideBuildItems,
-            BeanContainerBuildItem beanContainerBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
+            BeanContainerBuildItem beanContainerBuildItem, ApplicationResultBuildItem applicationResultBuildItem,
             Serialisers serialisers, RuntimeType runtimeType) {
 
         Map<String, MessageBodyReaderWriterOverrideData> writerOverrides = new HashMap<>();
@@ -48,8 +47,7 @@ public class SerializersUtil {
                 writer.setBuiltin(additionalWriter.isBuiltin());
             }
             writer.setFactory(FactoryUtils.factory(writerClassName,
-                    applicationResultBuildItem.getResult().getSingletonClasses(), recorder,
-                    beanContainerBuildItem));
+                    applicationResultBuildItem.getResult().getSingletonClasses(), recorder, beanContainerBuildItem));
             writer.setConstraint(additionalWriter.getRuntimeType());
             if (!additionalWriter.getMediaTypeStrings().isEmpty()) {
                 writer.setMediaTypeStrings(additionalWriter.getMediaTypeStrings());
@@ -60,8 +58,7 @@ public class SerializersUtil {
                 writer.setPriority(additionalWriter.getPriority());
             }
             recorder.registerWriter(serialisers, additionalWriter.getHandledClassName(), writer);
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(writerClassName).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(writerClassName).build());
         }
 
         Map<String, MessageBodyReaderWriterOverrideData> readerOverrides = new HashMap<>();
@@ -79,8 +76,7 @@ public class SerializersUtil {
                 reader.setBuiltin(additionalReader.isBuiltin());
             }
             reader.setFactory(FactoryUtils.factory(readerClassName,
-                    applicationResultBuildItem.getResult().getSingletonClasses(), recorder,
-                    beanContainerBuildItem));
+                    applicationResultBuildItem.getResult().getSingletonClasses(), recorder, beanContainerBuildItem));
             reader.setConstraint(additionalReader.getRuntimeType());
             if (!additionalReader.getMediaTypeStrings().isEmpty()) {
                 reader.setMediaTypeStrings(additionalReader.getMediaTypeStrings());
@@ -91,8 +87,7 @@ public class SerializersUtil {
                 reader.setPriority(additionalReader.getPriority());
             }
             recorder.registerReader(serialisers, additionalReader.getHandledClassName(), reader);
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(readerClassName).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(readerClassName).build());
         }
 
     }

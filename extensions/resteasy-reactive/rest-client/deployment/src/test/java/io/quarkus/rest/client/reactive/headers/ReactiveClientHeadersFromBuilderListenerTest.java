@@ -49,8 +49,8 @@ public class ReactiveClientHeadersFromBuilderListenerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ReactiveClientHeadersFromBuilderTest.Client.class, TestJacksonBasicMessageBodyReader.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ReactiveClientHeadersFromBuilderTest.Client.class,
+                    TestJacksonBasicMessageBodyReader.class)
                     .addAsServiceProvider(RestClientBuilderListener.class, CustomRestClientBuilderListener.class))
             .overrideRuntimeConfigKey("my.property-value", HEADER_VALUE);
 
@@ -70,9 +70,11 @@ public class ReactiveClientHeadersFromBuilderListenerTest {
         // @formatter:on
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.jsonPath().getString(INCOMING_HEADER)).isNull();
-        assertThat(response.jsonPath().getString(COPIED_INCOMING_HEADER)).isEqualTo(format("[%s]", propagatedHeaderValue));
+        assertThat(response.jsonPath().getString(COPIED_INCOMING_HEADER))
+                .isEqualTo(format("[%s]", propagatedHeaderValue));
         assertThat(response.jsonPath().getString(HEADER_NAME)).isEqualTo(format("[%s]", HEADER_VALUE));
-        assertThat(response.jsonPath().getString(DIRECT_HEADER_PARAM)).isEqualTo(format("[%s]", DIRECT_HEADER_PARAM_VAL));
+        assertThat(response.jsonPath().getString(DIRECT_HEADER_PARAM))
+                .isEqualTo(format("[%s]", DIRECT_HEADER_PARAM_VAL));
     }
 
     @Path("/")
@@ -89,8 +91,7 @@ public class ReactiveClientHeadersFromBuilderListenerTest {
         @POST
         public Map<String, List<String>> callClient(String uri) {
             ReactiveClientHeadersFromBuilderTest.Client client = QuarkusRestClientBuilder.newBuilder()
-                    .baseUri(URI.create(uri))
-                    .register(new TestJacksonBasicMessageBodyReader())
+                    .baseUri(URI.create(uri)).register(new TestJacksonBasicMessageBodyReader())
                     .build(ReactiveClientHeadersFromBuilderTest.Client.class);
             return client.getWithHeader(DIRECT_HEADER_PARAM_VAL);
         }

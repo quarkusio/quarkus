@@ -44,10 +44,8 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
 
         try (QuarkusClassLoader deploymentClassLoader = curatedApplication.createDeploymentClassLoader()) {
             QuarkusBootstrap quarkusBootstrap = curatedApplication.getQuarkusBootstrap();
-            QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder()
-                    .setRoot(quarkusBootstrap.getApplicationRoot())
-                    .setClassLoader(classLoader)
-                    .addFinal(ApplicationClassNameBuildItem.class)
+            QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder().setRoot(quarkusBootstrap.getApplicationRoot())
+                    .setClassLoader(classLoader).addFinal(ApplicationClassNameBuildItem.class)
                     .setTargetDir(quarkusBootstrap.getTargetDirectory())
                     .setDeploymentClassLoader(curatedApplication.createDeploymentClassLoader())
                     .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
@@ -67,12 +65,11 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                             : (auxiliaryApplication ? DevModeType.LOCAL : null));
             builder.setLaunchMode(LaunchMode.NORMAL);
             builder.setRebuild(quarkusBootstrap.isRebuild());
-            builder.setLiveReloadState(
-                    new LiveReloadBuildItem(false, Collections.emptySet(), new HashMap<>(), null));
+            builder.setLiveReloadState(new LiveReloadBuildItem(false, Collections.emptySet(), new HashMap<>(), null));
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
-                //this gets added to the class path either way
-                //but we only need to add it to the additional app archives
-                //if it is forced as an app archive
+                // this gets added to the class path either way
+                // but we only need to add it to the additional app archives
+                // if it is forced as an app archive
                 if (i.isForceApplicationArchive()) {
                     builder.addAdditionalApplicationArchive(i.getResolvedPaths());
                 }
@@ -100,11 +97,11 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 builder.addFinal(NativeImageBuildItem.class);
             }
             if (containerBuildRequested) {
-                //TODO: this is a bit ugly
-                //we don't necessarily need these artifacts
-                //but if we include them it does mean that you can auto create docker images
-                //and deploy to kube etc
-                //for an ordinary build with no native and no docker this is a waste
+                // TODO: this is a bit ugly
+                // we don't necessarily need these artifacts
+                // but if we include them it does mean that you can auto create docker images
+                // and deploy to kube etc
+                // for an ordinary build with no native and no docker this is a waste
                 builder.addFinal(ArtifactResultBuildItem.class);
             }
 

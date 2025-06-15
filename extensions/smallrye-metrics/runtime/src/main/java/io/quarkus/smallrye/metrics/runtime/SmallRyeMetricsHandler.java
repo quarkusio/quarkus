@@ -38,7 +38,8 @@ public class SmallRyeMetricsHandler implements Handler<RoutingContext> {
             internalHandler.handleRequest(request.path(), metricsPath, request.method().name(), acceptHeaders,
                     new MetricsRequestHandler.Responder() {
                         @Override
-                        public void respondWith(int status, String message, Map<String, String> headers) throws IOException {
+                        public void respondWith(int status, String message, Map<String, String> headers)
+                                throws IOException {
                             response.setStatusCode(status);
                             for (Map.Entry<String, String> entry : headers.entrySet()) {
                                 response.putHeader(entry.getKey(), entry.getValue());

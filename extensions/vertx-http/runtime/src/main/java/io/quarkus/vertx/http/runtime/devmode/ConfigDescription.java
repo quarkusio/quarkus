@@ -34,10 +34,7 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
         this.configPhase = configPhase;
     }
 
-    public ConfigDescription(
-            final String name,
-            final String description,
-            final String defaultValue,
+    public ConfigDescription(final String name, final String description, final String defaultValue,
             final ConfigValue configValue) {
         this.name = name;
         this.description = description;
@@ -120,7 +117,8 @@ public class ConfigDescription implements Comparable<ConfigDescription> {
 
     @Override
     public int compareTo(ConfigDescription o) {
-        int ordinal = Integer.compare(o.configValue.getConfigSourceOrdinal(), this.configValue.getConfigSourceOrdinal());
+        int ordinal = Integer.compare(o.configValue.getConfigSourceOrdinal(),
+                this.configValue.getConfigSourceOrdinal());
         if (ordinal == 0) {
             return this.configValue.getName().compareTo(o.configValue.getName());
         }

@@ -31,12 +31,9 @@ public class MutinyStubInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyConsumer.class,
-                            MutinyGreeterGrpc.class, GreeterGrpc.class,
-                            MutinyGreeterGrpc.MutinyGreeterStub.class,
-                            HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(MyConsumer.class, MutinyGreeterGrpc.class,
+                    GreeterGrpc.class, MutinyGreeterGrpc.MutinyGreeterStub.class, HelloService.class,
+                    HelloRequest.class, HelloReply.class, HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject
@@ -64,23 +61,21 @@ public class MutinyStubInjectionTest {
         Vertx vertx;
 
         public String invoke(String s) {
-            return service.sayHello(HelloRequest.newBuilder().setName(s).build())
-                    .map(HelloReply::getMessage)
+            return service.sayHello(HelloRequest.newBuilder().setName(s).build()).map(HelloReply::getMessage)
                     .invoke(() -> assertThat(Vertx.currentContext()).isNull())
-                    .map(r -> r + " " + Thread.currentThread().getName())
-                    .await().atMost(Duration.ofSeconds(5));
+                    .map(r -> r + " " + Thread.currentThread().getName()).await().atMost(Duration.ofSeconds(5));
         }
 
         public String invokeFromIoThread(String s) {
             Context context = vertx.getOrCreateContext();
             return Uni.createFrom().<String> emitter(e -> {
                 context.runOnContext(() -> {
-                    service.sayHello(HelloRequest.newBuilder().setName(s).build())
-                            .map(HelloReply::getMessage)
+                    service.sayHello(HelloRequest.newBuilder().setName(s).build()).map(HelloReply::getMessage)
                             .invoke(() -> assertThat(Vertx.currentContext()).isNotNull().isEqualTo(context))
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isInstanceOf(ContextInternal.class))
-                            .map(r -> r + " " + Thread.currentThread().getName())
-                            .subscribe().with(e::complete, e::fail);
+                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate())
+                                    .isInstanceOf(ContextInternal.class))
+                            .map(r -> r + " " + Thread.currentThread().getName()).subscribe()
+                            .with(e::complete, e::fail);
                 });
             }).await().atMost(Duration.ofSeconds(5));
         }
@@ -90,12 +85,10 @@ public class MutinyStubInjectionTest {
             io.vertx.core.Context duplicate = VertxContext.getOrCreateDuplicatedContext(root.getDelegate());
             return Uni.createFrom().<String> emitter(e -> {
                 duplicate.runOnContext(x -> {
-                    service.sayHello(HelloRequest.newBuilder().setName(s).build())
-                            .map(HelloReply::getMessage)
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate())
-                                    .isEqualTo(duplicate))
-                            .map(r -> r + " " + Thread.currentThread().getName())
-                            .subscribe().with(e::complete, e::fail);
+                    service.sayHello(HelloRequest.newBuilder().setName(s).build()).map(HelloReply::getMessage)
+                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isEqualTo(duplicate))
+                            .map(r -> r + " " + Thread.currentThread().getName()).subscribe()
+                            .with(e::complete, e::fail);
                 });
             }).await().atMost(Duration.ofSeconds(5));
         }

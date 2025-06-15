@@ -15,8 +15,7 @@ public class SimpleUnlessBuildPropertyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PingService.class, AlphaService.class, BravoService.class))
+            .withApplicationRoot((jar) -> jar.addClasses(PingService.class, AlphaService.class, BravoService.class))
             .overrideConfigKey("foo.bar", "baz");
 
     @Inject

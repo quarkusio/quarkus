@@ -24,14 +24,14 @@ public final class QuarkusConnectionProviderInitiator implements StandardService
 
     @Override
     public ConnectionProvider initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        //First, check that this setup won't need to deal with multi-tenancy at the connection pool level:
+        // First, check that this setup won't need to deal with multi-tenancy at the connection pool level:
         final MultiTenancyStrategy strategy = MultiTenancyStrategy.determineMultiTenancyStrategy(configurationValues);
         if (strategy == MultiTenancyStrategy.DATABASE || strategy == MultiTenancyStrategy.SCHEMA) {
             // nothing to do, but given the separate hierarchies have to handle this here.
             return null;
         }
 
-        //Next, we'll want to try the Quarkus optimised pool:
+        // Next, we'll want to try the Quarkus optimised pool:
         Object o = configurationValues.get(AvailableSettings.DATASOURCE);
         if (o != null) {
             final AgroalDataSource ds;
@@ -44,8 +44,8 @@ public final class QuarkusConnectionProviderInitiator implements StandardService
             return new QuarkusConnectionProvider(ds);
         }
 
-        //When not using the Quarkus specific Datasource, delegate to traditional bootstrap so to not break
-        //applications using persistence.xml :
+        // When not using the Quarkus specific Datasource, delegate to traditional bootstrap so to not break
+        // applications using persistence.xml :
         return ConnectionProviderInitiator.INSTANCE.initiateService(configurationValues, registry);
     }
 

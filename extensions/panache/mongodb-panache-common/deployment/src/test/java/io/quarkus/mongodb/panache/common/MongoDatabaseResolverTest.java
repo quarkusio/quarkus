@@ -38,12 +38,9 @@ public class MongoDatabaseResolverTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "quarkus.arc.remove-unused-beans=false\n" +
-                                    "quarkus.mongodb.connection-string=mongodb://localhost:27017,localhost:27018\n" +
-                                    "quarkus.mongodb.devservices.enabled=false"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("quarkus.arc.remove-unused-beans=false\n"
+                    + "quarkus.mongodb.connection-string=mongodb://localhost:27017,localhost:27018\n"
+                    + "quarkus.mongodb.devservices.enabled=false"), "application.properties"));
 
     protected static final MongoOperations<Object, PanacheUpdate> OPERATIONS = new CustomMongoOperations();
     protected static final ReactiveMongoOperations<Object, PanacheUpdate> REACTIVE_OPERATIONS = new CustomReactiveMongoOperations();
@@ -95,28 +92,20 @@ public class MongoDatabaseResolverTest {
     }
 
     private void persistPerson(final boolean isReactive, final Person person, final String databaseName) {
-        final Document document = new Document()
-                .append("_id", person.id)
-                .append("firstname", person.firstname)
+        final Document document = new Document().append("_id", person.id).append("firstname", person.firstname)
                 .append("lastname", person.lastname);
 
         if (isReactive) {
-            reactiveMongoClient.getDatabase(databaseName)
-                    .getCollection("persons")
-                    .insertOne(document)
-                    .await()
+            reactiveMongoClient.getDatabase(databaseName).getCollection("persons").insertOne(document).await()
                     .indefinitely();
             return;
         }
 
-        mongoClient.getDatabase(databaseName)
-                .getCollection("persons")
-                .insertOne(document);
+        mongoClient.getDatabase(databaseName).getCollection("persons").insertOne(document);
     }
 
     private Person findPersonByIdUsingMongoOperations(final boolean isReactive, final Long id) {
-        return isReactive
-                ? (Person) REACTIVE_OPERATIONS.findById(Person.class, id).await().indefinitely()
+        return isReactive ? (Person) REACTIVE_OPERATIONS.findById(Person.class, id).await().indefinitely()
                 : (Person) OPERATIONS.findById(Person.class, id);
     }
 
@@ -161,7 +150,8 @@ public class MongoDatabaseResolverTest {
         }
 
         @Override
-        protected PanacheUpdate createUpdate(ReactiveMongoCollection<?> collection, Class<?> entityClass, Bson docUpdate) {
+        protected PanacheUpdate createUpdate(ReactiveMongoCollection<?> collection, Class<?> entityClass,
+                Bson docUpdate) {
             return null;
         }
 

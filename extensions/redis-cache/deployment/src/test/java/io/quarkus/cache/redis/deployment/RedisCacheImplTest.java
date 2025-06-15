@@ -52,8 +52,7 @@ class RedisCacheImplTest {
     @AfterEach
     void clear() {
         try {
-            redis.send(Request.cmd(Command.FLUSHALL).arg("SYNC")).await()
-                    .atMost(Duration.ofSeconds(10));
+            redis.send(Request.cmd(Command.FLUSHALL).arg("SYNC")).await().atMost(Duration.ofSeconds(10));
         } catch (Exception ignored) {
             // ignored.
         }
@@ -115,10 +114,8 @@ class RedisCacheImplTest {
         info.valueType = String.class;
         info.expireAfterWrite = Optional.of(Duration.ofSeconds(2));
 
-        Redis redis = Redis.createClient(vertx, new RedisOptions()
-                .setMaxPoolSize(1)
-                .setMaxPoolWaiting(0)
-                .setConnectionString(redisUrl));
+        Redis redis = Redis.createClient(vertx,
+                new RedisOptions().setMaxPoolSize(1).setMaxPoolWaiting(0).setConnectionString(redisUrl));
 
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
@@ -257,11 +254,10 @@ class RedisCacheImplTest {
 
         cache.get("foo", Person.class, s -> new Person(s, s.toUpperCase())).await().indefinitely();
         person = cache.getOrNull("foo", Person.class).await().indefinitely();
-        assertThat(person).isNotNull()
-                .satisfies(p -> {
-                    assertThat(p.firstName).isEqualTo("foo");
-                    assertThat(p.lastName).isEqualTo("FOO");
-                });
+        assertThat(person).isNotNull().satisfies(p -> {
+            assertThat(p.firstName).isEqualTo("foo");
+            assertThat(p.lastName).isEqualTo("FOO");
+        });
         assertThatTheKeyDoesExist("cache:default-redis-cache:foo");
     }
 
@@ -272,22 +268,20 @@ class RedisCacheImplTest {
         info.valueType = Person.class;
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
         Person person = cache.getOrDefault("foo", new Person("bar", "BAR")).await().indefinitely();
-        assertThat(person).isNotNull()
-                .satisfies(p -> {
-                    assertThat(p.firstName).isEqualTo("bar");
-                    assertThat(p.lastName).isEqualTo("BAR");
-                });
+        assertThat(person).isNotNull().satisfies(p -> {
+            assertThat(p.firstName).isEqualTo("bar");
+            assertThat(p.lastName).isEqualTo("BAR");
+        });
         // Verify it was not stored
         person = cache.getOrNull("foo", Person.class).await().indefinitely();
         assertThat(person).isNull();
 
         cache.get("foo", Person.class, s -> new Person(s, s.toUpperCase())).await().indefinitely();
         person = cache.getOrNull("foo", Person.class).await().indefinitely();
-        assertThat(person).isNotNull()
-                .satisfies(p -> {
-                    assertThat(p.firstName).isEqualTo("foo");
-                    assertThat(p.lastName).isEqualTo("FOO");
-                });
+        assertThat(person).isNotNull().satisfies(p -> {
+            assertThat(p.firstName).isEqualTo("foo");
+            assertThat(p.lastName).isEqualTo("FOO");
+        });
         assertThatTheKeyDoesExist("cache:default-redis-cache:foo");
     }
 
@@ -337,7 +331,8 @@ class RedisCacheImplTest {
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         cache.put(1, new Person("luke", "skywalker")).await().indefinitely();
-        assertThat(cache.get(1, x -> new Person("1", "1")).await().indefinitely()).isEqualTo(new Person("luke", "skywalker"));
+        assertThat(cache.get(1, x -> new Person("1", "1")).await().indefinitely())
+                .isEqualTo(new Person("luke", "skywalker"));
         assertThatTheKeyDoesExist("cache:default-redis-cache:1");
         cache.invalidate(1).await().indefinitely();
         assertThat(cache.getOrNull(1, Person.class).await().indefinitely()).isNull();
@@ -354,7 +349,8 @@ class RedisCacheImplTest {
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
         cache.put(1, new Person("luke", "skywalker")).await().indefinitely();
-        assertThat(cache.get(1, x -> new Person("1", "1")).await().indefinitely()).isEqualTo(new Person("luke", "skywalker"));
+        assertThat(cache.get(1, x -> new Person("1", "1")).await().indefinitely())
+                .isEqualTo(new Person("luke", "skywalker"));
         assertThatTheKeyDoesExist("cache:default-redis-cache:1");
         cache.invalidate(1).await().indefinitely();
         assertThat(cache.getOrNull(1, Person.class).await().indefinitely()).isNull();
@@ -426,12 +422,13 @@ class RedisCacheImplTest {
                 .isInstanceOf(UnsupportedOperationException.class);
 
         assertThat(cache.get("test", String.class, x -> "value").await().indefinitely()).isEqualTo("value");
-        assertThat(cache.getAsync("test-async", String.class, x -> Uni.createFrom().item("value")).await().indefinitely())
+        assertThat(
+                cache.getAsync("test-async", String.class, x -> Uni.createFrom().item("value")).await().indefinitely())
                 .isEqualTo("value");
 
         assertThat(cache.get("test", String.class, x -> "another").await().indefinitely()).isEqualTo("value");
-        assertThat(cache.getAsync("test-async", String.class, x -> Uni.createFrom().item("another")).await().indefinitely())
-                .isEqualTo("value");
+        assertThat(cache.getAsync("test-async", String.class, x -> Uni.createFrom().item("another")).await()
+                .indefinitely()).isEqualTo("value");
     }
 
     @Test
@@ -442,23 +439,24 @@ class RedisCacheImplTest {
         info.valueType = Person.class;
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
-        assertThat(cache
-                .getAsync("test",
-                        x -> Uni.createFrom().item(new Person("luke", "skywalker"))
-                                .runSubscriptionOn(Infrastructure.getDefaultExecutor()))
+        assertThat(cache.getAsync("test",
+                x -> Uni.createFrom().item(new Person("luke", "skywalker"))
+                        .runSubscriptionOn(Infrastructure.getDefaultExecutor()))
                 .await().indefinitely()).satisfies(p -> {
                     assertThat(p.firstName).isEqualTo("luke");
                     assertThat(p.lastName).isEqualTo("skywalker");
                 });
 
-        assertThat(cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa")))
-                .await().indefinitely()).satisfies(p -> {
+        assertThat(
+                cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa"))).await().indefinitely())
+                .satisfies(p -> {
                     assertThat(p.firstName).isEqualTo("luke");
                     assertThat(p.lastName).isEqualTo("skywalker");
                 });
 
-        await().untilAsserted(() -> assertThat(cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa")))
-                .await().indefinitely()).satisfies(p -> {
+        await().untilAsserted(() -> assertThat(
+                cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa"))).await().indefinitely())
+                .satisfies(p -> {
                     assertThat(p.firstName).isEqualTo("leia");
                     assertThat(p.lastName).isEqualTo("organa");
                 }));
@@ -479,17 +477,17 @@ class RedisCacheImplTest {
 
         server.close();
 
-        assertThat(cache
-                .getAsync("test",
-                        x -> Uni.createFrom().item(new Person("luke", "skywalker"))
-                                .runSubscriptionOn(Infrastructure.getDefaultExecutor()))
+        assertThat(cache.getAsync("test",
+                x -> Uni.createFrom().item(new Person("luke", "skywalker"))
+                        .runSubscriptionOn(Infrastructure.getDefaultExecutor()))
                 .await().indefinitely()).satisfies(p -> {
                     assertThat(p.firstName).isEqualTo("luke");
                     assertThat(p.lastName).isEqualTo("skywalker");
                 });
 
-        assertThat(cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa")))
-                .await().indefinitely()).satisfies(p -> {
+        assertThat(
+                cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa"))).await().indefinitely())
+                .satisfies(p -> {
                     assertThat(p.firstName).isEqualTo("leia");
                     assertThat(p.lastName).isEqualTo("organa");
                 });
@@ -506,23 +504,24 @@ class RedisCacheImplTest {
         info.useOptimisticLocking = true;
         RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
 
-        assertThat(cache
-                .getAsync("test",
-                        x -> Uni.createFrom().item(new Person("luke", "skywalker"))
-                                .runSubscriptionOn(Infrastructure.getDefaultExecutor()))
+        assertThat(cache.getAsync("test",
+                x -> Uni.createFrom().item(new Person("luke", "skywalker"))
+                        .runSubscriptionOn(Infrastructure.getDefaultExecutor()))
                 .await().indefinitely()).satisfies(p -> {
                     assertThat(p.firstName).isEqualTo("luke");
                     assertThat(p.lastName).isEqualTo("skywalker");
                 });
 
-        assertThat(cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa")))
-                .await().indefinitely()).satisfies(p -> {
+        assertThat(
+                cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa"))).await().indefinitely())
+                .satisfies(p -> {
                     assertThat(p.firstName).isEqualTo("luke");
                     assertThat(p.lastName).isEqualTo("skywalker");
                 });
 
-        await().untilAsserted(() -> assertThat(cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa")))
-                .await().indefinitely()).satisfies(p -> {
+        await().untilAsserted(() -> assertThat(
+                cache.getAsync("test", x -> Uni.createFrom().item(new Person("leia", "organa"))).await().indefinitely())
+                .satisfies(p -> {
                     assertThat(p.firstName).isEqualTo("leia");
                     assertThat(p.lastName).isEqualTo("organa");
                 }));
@@ -543,8 +542,9 @@ class RedisCacheImplTest {
 
         assertThat(cache.get("test", x -> new Person("x", "x")).await().indefinitely()).isEqualTo(luke);
 
-        await().untilAsserted(() -> assertThat(cache.getAsync("test", x -> Uni.createFrom().item(leia))
-                .await().indefinitely()).isEqualTo(leia));
+        await().untilAsserted(
+                () -> assertThat(cache.getAsync("test", x -> Uni.createFrom().item(leia)).await().indefinitely())
+                        .isEqualTo(leia));
     }
 
     @Test
@@ -562,8 +562,7 @@ class RedisCacheImplTest {
 
         assertThat(cache.get("test", x -> new Person("x", "x")).await().indefinitely()).isEqualTo(luke);
 
-        await().untilAsserted(() -> assertThat(cache.get("test", x -> leia)
-                .await().indefinitely()).isEqualTo(leia));
+        await().untilAsserted(() -> assertThat(cache.get("test", x -> leia).await().indefinitely()).isEqualTo(leia));
     }
 
     @Test
@@ -622,15 +621,13 @@ class RedisCacheImplTest {
     }
 
     private Set<String> getAllKeys() {
-        return redis.send(Request.cmd(Command.KEYS).arg("*"))
-                .map(r -> {
-                    Set<String> keys = new HashSet<>();
-                    for (Response response : r) {
-                        keys.add(response.toString());
-                    }
-                    return keys;
-                })
-                .await().indefinitely();
+        return redis.send(Request.cmd(Command.KEYS).arg("*")).map(r -> {
+            Set<String> keys = new HashSet<>();
+            for (Response response : r) {
+                keys.add(response.toString());
+            }
+            return keys;
+        }).await().indefinitely();
     }
 
     private void assertThatTheKeyDoesExist(String key) {

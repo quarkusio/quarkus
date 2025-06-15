@@ -7,12 +7,9 @@ import java.util.Map;
 import jakarta.ws.rs.core.Link;
 
 /**
- * The Hal collection wrapper that includes the list of Hal entities {@link HalEntityWrapper}, the collection name and the Hal
- * links.
- *
- * This type is serialized into Json using:
- * - the JSON-B serializer: {@link HalCollectionWrapperJsonbSerializer}
- * - the Jackson serializer: {@link HalCollectionWrapperJacksonSerializer}
+ * The Hal collection wrapper that includes the list of Hal entities {@link HalEntityWrapper}, the collection name and
+ * the Hal links. This type is serialized into Json using: - the JSON-B serializer:
+ * {@link HalCollectionWrapperJsonbSerializer} - the Jackson serializer: {@link HalCollectionWrapperJacksonSerializer}
  */
 public class HalCollectionWrapper<T> extends HalWrapper {
 
@@ -25,7 +22,8 @@ public class HalCollectionWrapper<T> extends HalWrapper {
         addLinks(links);
     }
 
-    public HalCollectionWrapper(Collection<HalEntityWrapper<T>> collection, String collectionName, Map<String, HalLink> links) {
+    public HalCollectionWrapper(Collection<HalEntityWrapper<T>> collection, String collectionName,
+            Map<String, HalLink> links) {
         super(links);
 
         this.collection = collection;

@@ -27,10 +27,8 @@ public class AttributeConverterAutoApplyTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(MyData.class)
-                    .addClass(MyDataConverter.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClass(MyEntity.class).addClass(MyData.class).addClass(MyDataConverter.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -49,8 +47,7 @@ public class AttributeConverterAutoApplyTest {
         transaction.commit();
 
         transaction.begin();
-        assertThat(session.createNativeQuery("select myData from myentity").getResultList())
-                .containsExactly("foo");
+        assertThat(session.createNativeQuery("select myData from myentity").getResultList()).containsExactly("foo");
         transaction.commit();
     }
 

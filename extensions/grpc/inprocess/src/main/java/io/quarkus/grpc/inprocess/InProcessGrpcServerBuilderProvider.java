@@ -31,7 +31,8 @@ public class InProcessGrpcServerBuilderProvider implements GrpcBuilderProvider<I
     @Override
     public ServerBuilder<InProcessServerBuilder> createServerBuilder(Vertx vertx, GrpcServerConfiguration configuration,
             LaunchMode launchMode) {
-        ServerBuilder<InProcessServerBuilder> builder = InProcessServerBuilder.forName(configuration.inProcess().name());
+        ServerBuilder<InProcessServerBuilder> builder = InProcessServerBuilder
+                .forName(configuration.inProcess().name());
         // wrap with Vert.x context, so that the context interceptors work
         VertxInternal vxi = (VertxInternal) vertx;
         Executor delegate = vertx.nettyEventLoopGroup();

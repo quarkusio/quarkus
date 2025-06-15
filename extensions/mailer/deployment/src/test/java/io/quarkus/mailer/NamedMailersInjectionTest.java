@@ -18,15 +18,14 @@ import io.vertx.ext.mail.MailClient;
 public class NamedMailersInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingBareMailClient.class, BeanUsingMutinyClient.class, BeanUsingBlockingMailer.class,
-                            BeanUsingReactiveMailer.class, MailTemplates.class,
-                            BeanUsingBareMailClientNamedClient1.class, BeanUsingMutinyClientNamedClient1.class,
-                            BeanUsingReactiveMailerNamedClient1.class, BeanUsingBlockingMailerNamedClient1.class,
-                            BeanUsingBareMailClientNamedClient2.class, BeanUsingMutinyClientNamedClient2.class,
-                            BeanUsingReactiveMailerNamedClient2.class, BeanUsingBlockingMailerNamedClient2.class)
-                    .addAsResource("mock-config-named-mailers.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(BeanUsingBareMailClient.class, BeanUsingMutinyClient.class, BeanUsingBlockingMailer.class,
+                    BeanUsingReactiveMailer.class, MailTemplates.class, BeanUsingBareMailClientNamedClient1.class,
+                    BeanUsingMutinyClientNamedClient1.class, BeanUsingReactiveMailerNamedClient1.class,
+                    BeanUsingBlockingMailerNamedClient1.class, BeanUsingBareMailClientNamedClient2.class,
+                    BeanUsingMutinyClientNamedClient2.class, BeanUsingReactiveMailerNamedClient2.class,
+                    BeanUsingBlockingMailerNamedClient2.class)
+            .addAsResource("mock-config-named-mailers.properties", "application.properties"));
 
     @Inject
     BeanUsingBareMailClient beanUsingBare;
@@ -197,8 +196,7 @@ public class NamedMailersInjectionTest {
 
             Assertions.assertEquals(1, mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").size());
             Assertions.assertEquals("from-client1@quarkus.io",
-                    mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").get(0)
-                            .getFrom());
+                    mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").get(0).getFrom());
         }
     }
 
@@ -217,8 +215,8 @@ public class NamedMailersInjectionTest {
             mailer.send(Mail.withText("quarkus@quarkus.io", "test mailer", "blocking test!"));
 
             Assertions.assertEquals(1, mockMailbox.getMailMessagesSentTo("quarkus@quarkus.io").size());
-            Assertions.assertEquals("from-client1@quarkus.io", mockMailbox.getMailMessagesSentTo("quarkus@quarkus.io").get(0)
-                    .getFrom());
+            Assertions.assertEquals("from-client1@quarkus.io",
+                    mockMailbox.getMailMessagesSentTo("quarkus@quarkus.io").get(0).getFrom());
         }
     }
 
@@ -263,8 +261,7 @@ public class NamedMailersInjectionTest {
 
             Assertions.assertEquals(1, mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").size());
             Assertions.assertEquals("from-client2@quarkus.io",
-                    mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").get(0)
-                            .getFrom());
+                    mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").get(0).getFrom());
         }
     }
 
@@ -283,8 +280,8 @@ public class NamedMailersInjectionTest {
             mailer.send(Mail.withText("quarkus@quarkus.io", "test mailer", "blocking test!"));
 
             Assertions.assertEquals(1, mockMailbox.getMailMessagesSentTo("quarkus@quarkus.io").size());
-            Assertions.assertEquals("from-client2@quarkus.io", mockMailbox.getMailMessagesSentTo("quarkus@quarkus.io").get(0)
-                    .getFrom());
+            Assertions.assertEquals("from-client2@quarkus.io",
+                    mockMailbox.getMailMessagesSentTo("quarkus@quarkus.io").get(0).getFrom());
         }
     }
 }

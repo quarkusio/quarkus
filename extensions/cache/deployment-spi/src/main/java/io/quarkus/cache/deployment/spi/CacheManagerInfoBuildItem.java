@@ -4,7 +4,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.cache.CacheManagerInfo;
 
 /**
- * A build item that makes sure a {@link CacheManagerInfo} is available at runtime for consideration as the cache backend
+ * A build item that makes sure a {@link CacheManagerInfo} is available at runtime for consideration as the cache
+ * backend
  */
 public final class CacheManagerInfoBuildItem extends MultiBuildItem {
 

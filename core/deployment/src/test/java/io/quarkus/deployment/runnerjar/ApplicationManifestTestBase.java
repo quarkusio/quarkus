@@ -55,8 +55,7 @@ public abstract class ApplicationManifestTestBase extends BootstrapFromOriginalJ
     }
 
     protected static void assertDependencyScope(ApplicationComponent comp, String expectedScope) {
-        assertThat(comp.getScope())
-                .as(() -> ApplicationManifestTestBase.getComponentKey(comp) + " has scope")
+        assertThat(comp.getScope()).as(() -> ApplicationManifestTestBase.getComponentKey(comp) + " has scope")
                 .isEqualTo(expectedScope);
     }
 
@@ -72,7 +71,8 @@ public abstract class ApplicationManifestTestBase extends BootstrapFromOriginalJ
 
     protected static void assertNoDistributionPath(ApplicationComponent comp) {
         assertThat(comp.getDistributionPath())
-                .as(() -> ApplicationManifestTestBase.getComponentKey(comp) + " is not found in the distribution").isNull();
+                .as(() -> ApplicationManifestTestBase.getComponentKey(comp) + " is not found in the distribution")
+                .isNull();
     }
 
     protected static void assertDependencies(ApplicationComponent comp, ArtifactCoords... expectedDeps) {
@@ -84,13 +84,16 @@ public abstract class ApplicationManifestTestBase extends BootstrapFromOriginalJ
     /**
      * Makes sure the collection of {@link ArtifactCoords}'s uses the default implementation.}
      *
-     * @param original original collection of artifact coordinates
+     * @param original
+     *        original collection of artifact coordinates
+     *
      * @return a copy of the original collection using the default implementation
      */
     private static Collection<ArtifactCoords> toArtifactCoordsList(Collection<ArtifactCoords> original) {
         var result = new ArrayList<ArtifactCoords>(original.size());
         for (var a : original) {
-            result.add(ArtifactCoords.of(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getType(), a.getVersion()));
+            result.add(ArtifactCoords.of(a.getGroupId(), a.getArtifactId(), a.getClassifier(), a.getType(),
+                    a.getVersion()));
         }
         return result;
     }
@@ -105,7 +108,8 @@ public abstract class ApplicationManifestTestBase extends BootstrapFromOriginalJ
         var manifestsBuildItem = result.consume(ApplicationManifestsBuildItem.class);
         for (var manifest : manifestsBuildItem.getManifests()) {
             List<String> extraComponents = null;
-            var assertion = expectedComponents.remove(ApplicationManifestTestBase.getComponentKey(manifest.getMainComponent()));
+            var assertion = expectedComponents
+                    .remove(ApplicationManifestTestBase.getComponentKey(manifest.getMainComponent()));
             if (assertion == null) {
                 extraComponents = new ArrayList<>();
                 extraComponents.add(ApplicationManifestTestBase.getComponentKey(manifest.getMainComponent()));

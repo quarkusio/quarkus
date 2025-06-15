@@ -15,37 +15,29 @@ import io.restassured.authentication.FormAuthConfig;
  * See @io.quarkus.vertx.http.security.FormAuthTestCase for functional coverage.
  */
 public class FormAuthTestCase {
-    static Class[] testClasses = {
-            TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class
-    };
+    static Class[] testClasses = { TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-form-auth.properties", "application.properties")
-                    .addAsResource("test-users.properties")
-                    .addAsResource("test-roles.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("application-form-auth.properties", "application.properties")
+            .addAsResource("test-users.properties").addAsResource("test-roles.properties"));
 
     @Test()
     public void testSecureAccessSuccess() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         given().auth()
                 .form("stuart", "test",
-                        new FormAuthConfig("j_security_check", "j_username", "j_password")
-                                .withLoggingEnabled())
+                        new FormAuthConfig("j_security_check", "j_username", "j_password").withLoggingEnabled())
                 .when().get("/secure-test").then().statusCode(200);
 
         given().auth()
                 .form("jdoe", "p4ssw0rd",
-                        new FormAuthConfig("j_security_check", "j_username", "j_password")
-                                .withLoggingEnabled())
+                        new FormAuthConfig("j_security_check", "j_username", "j_password").withLoggingEnabled())
                 .when().get("/secure-test").then().statusCode(403);
 
         given().auth()
                 .form("scott", "jb0ss",
-                        new FormAuthConfig("j_security_check", "j_username", "j_password")
-                                .withLoggingEnabled())
+                        new FormAuthConfig("j_security_check", "j_username", "j_password").withLoggingEnabled())
                 .when().get("/jaxrs-secured/rolesClass").then().statusCode(200);
     }
 

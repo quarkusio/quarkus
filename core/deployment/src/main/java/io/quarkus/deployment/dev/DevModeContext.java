@@ -21,16 +21,15 @@ import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 
 /**
- * Object that is used to pass context data from the plugin doing the invocation
- * into the dev mode process using java serialization.
- *
- * There is no need to worry about compat as both sides will always be using the same version
+ * Object that is used to pass context data from the plugin doing the invocation into the dev mode process using java
+ * serialization. There is no need to worry about compat as both sides will always be using the same version
  */
 public class DevModeContext implements Serializable {
 
     private static final long serialVersionUID = 4688502145533897982L;
 
-    public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null, null);
+    public static final CompilationUnit EMPTY_COMPILATION_UNIT = new CompilationUnit(PathList.of(), null, null, null,
+            null);
 
     private static final String ENABLE_PREVIEW_FLAG = "--enable-preview";
 
@@ -276,15 +275,13 @@ public class DevModeContext implements Serializable {
             this.appArtifactKey = builder.appArtifactKey;
             this.name = builder.name == null ? builder.appArtifactKey.toGacString() : builder.name;
             this.projectDirectory = builder.projectDirectory;
-            this.main = new CompilationUnit(builder.sourcePaths, builder.classesPath,
-                    builder.resourcePaths,
-                    builder.resourcesOutputPath,
-                    builder.generatedSourcesPath);
+            this.main = new CompilationUnit(builder.sourcePaths, builder.classesPath, builder.resourcePaths,
+                    builder.resourcesOutputPath, builder.generatedSourcesPath);
 
             if (builder.testClassesPath != null) {
                 // FIXME: do tests have generated sources?
-                this.test = new CompilationUnit(builder.testSourcePaths,
-                        builder.testClassesPath, builder.testResourcePaths, builder.testResourcesOutputPath, null);
+                this.test = new CompilationUnit(builder.testSourcePaths, builder.testClassesPath,
+                        builder.testResourcePaths, builder.testResourcesOutputPath, null);
             } else {
                 this.test = null;
             }
@@ -305,13 +302,11 @@ public class DevModeContext implements Serializable {
             return sourceParents;
         }
 
-        //TODO: why isn't this immutable?
+        // TODO: why isn't this immutable?
         public void addSourcePaths(Collection<String> additionalPaths) {
-            this.main.sourcePaths = this.main.sourcePaths.add(
-                    additionalPaths.stream()
-                            .map(p -> Paths.get(p).isAbsolute() ? p : (projectDirectory + File.separator + p))
-                            .map(Paths::get)
-                            .toArray(Path[]::new));
+            this.main.sourcePaths = this.main.sourcePaths.add(additionalPaths.stream()
+                    .map(p -> Paths.get(p).isAbsolute() ? p : (projectDirectory + File.separator + p)).map(Paths::get)
+                    .toArray(Path[]::new));
         }
 
         public String getPreBuildOutputDir() {
@@ -335,8 +330,7 @@ public class DevModeContext implements Serializable {
         }
 
         public void addSourcePathFirst(String path) {
-            String absolutePath = Paths.get(path).isAbsolute() ? path
-                    : (projectDirectory + File.separator + path);
+            String absolutePath = Paths.get(path).isAbsolute() ? path : (projectDirectory + File.separator + path);
             this.main.sourcePaths = this.main.sourcePaths.addFirst(Paths.get(absolutePath));
         }
 

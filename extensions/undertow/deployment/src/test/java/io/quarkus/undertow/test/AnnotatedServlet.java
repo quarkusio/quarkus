@@ -23,7 +23,8 @@ public class AnnotatedServlet extends HttpServlet {
     public static final String OK_RESPONSE = "Success";
 
     @Override
-    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
+            throws ServletException, IOException {
         resp.getWriter().write(OK_RESPONSE);
     }
 }

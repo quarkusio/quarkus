@@ -7,8 +7,8 @@ import io.smallrye.config.WithDefault;
 public interface ArcTestConfig {
 
     /**
-     * If set to true then disable {@code StartupEvent} and {@code ShutdownEvent} observers declared on application bean classes
-     * during the tests.
+     * If set to true then disable {@code StartupEvent} and {@code ShutdownEvent} observers declared on application bean
+     * classes during the tests.
      */
     @WithDefault("false")
     boolean disableApplicationLifecycleObservers();

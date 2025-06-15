@@ -153,29 +153,26 @@ class ReflectiveClassForValueSerializerPayloadTest {
 
     @Test
     void processAnnotationsForReflectiveClassJacksonPayload() {
-        Tuple[] expectations = {
-                tuple("outgoing-channel1", JacksonDto.class.getName()),
+        Tuple[] expectations = { tuple("outgoing-channel1", JacksonDto.class.getName()),
                 tuple("outgoing-channel2", JacksonDto.class.getName()),
-                tuple("outgoing-channel3", JacksonDto.class.getName()),
-                tuple("outgoing1", JacksonDto.class.getName()),
-                tuple("outgoing2", JacksonDto.class.getName()),
-                tuple("outgoing3", JacksonDto.class.getName()),
-                tuple("outgoing4", JacksonDto.class.getName()),
-                tuple("outgoing5", JacksonDto.class.getName()),
-                tuple("incoming1", JacksonDto.class.getName()),
-                tuple("incoming2", JacksonDto.class.getName()),
-                tuple("incoming3", JacksonDto.class.getName()),
-                tuple("incoming4", JacksonDto.class.getName()),
+                tuple("outgoing-channel3", JacksonDto.class.getName()), tuple("outgoing1", JacksonDto.class.getName()),
+                tuple("outgoing2", JacksonDto.class.getName()), tuple("outgoing3", JacksonDto.class.getName()),
+                tuple("outgoing4", JacksonDto.class.getName()), tuple("outgoing5", JacksonDto.class.getName()),
+                tuple("incoming1", JacksonDto.class.getName()), tuple("incoming2", JacksonDto.class.getName()),
+                tuple("incoming3", JacksonDto.class.getName()), tuple("incoming4", JacksonDto.class.getName()),
                 tuple("incoming-channel1", JacksonDto.class.getName()),
                 tuple("incoming-channel2", JacksonDto.class.getName()),
                 tuple("incoming-channel3", JacksonDto.class.getName()),
-                tuple("incoming-channel4", JacksonDto.class.getName()),
-        };
+                tuple("incoming-channel4", JacksonDto.class.getName()), };
         Map<String, String> configMap = Map.ofEntries(
-                Map.entry("mp.messaging.outgoing.outgoing-channel1.value.serializer", JacksonDtoSerializer.class.getName()),
-                Map.entry("mp.messaging.outgoing.outgoing-channel2.value.serializer", JacksonDtoSerializer.class.getName()),
-                Map.entry("mp.messaging.outgoing.outgoing-channel3.value.serializer", JacksonDtoSerializer.class.getName()),
-                Map.entry("mp.messaging.outgoing.outgoing-channel4.value.serializer", JacksonDtoSerializer.class.getName()),
+                Map.entry("mp.messaging.outgoing.outgoing-channel1.value.serializer",
+                        JacksonDtoSerializer.class.getName()),
+                Map.entry("mp.messaging.outgoing.outgoing-channel2.value.serializer",
+                        JacksonDtoSerializer.class.getName()),
+                Map.entry("mp.messaging.outgoing.outgoing-channel3.value.serializer",
+                        JacksonDtoSerializer.class.getName()),
+                Map.entry("mp.messaging.outgoing.outgoing-channel4.value.serializer",
+                        JacksonDtoSerializer.class.getName()),
                 Map.entry("mp.messaging.outgoing.outgoing1.value.serializer", JacksonDtoSerializer.class.getName()),
                 Map.entry("mp.messaging.outgoing.outgoing2.value.serializer", JacksonDtoSerializer.class.getName()),
                 Map.entry("mp.messaging.outgoing.outgoing3.value.serializer", ObjectMapperSerializer.class.getName()),
@@ -186,10 +183,14 @@ class ReflectiveClassForValueSerializerPayloadTest {
                 Map.entry("mp.messaging.incoming.incoming2.value.deserializer", JacksonDtoDeserializer.class.getName()),
                 Map.entry("mp.messaging.incoming.incoming3.value.deserializer", JacksonDtoDeserializer.class.getName()),
                 Map.entry("mp.messaging.incoming.incoming4.key.deserializer", JacksonDtoDeserializer.class.getName()),
-                Map.entry("mp.messaging.incoming.incoming-channel1.value.deserializer", JacksonDtoDeserializer.class.getName()),
-                Map.entry("mp.messaging.incoming.incoming-channel2.value.deserializer", JacksonDtoDeserializer.class.getName()),
-                Map.entry("mp.messaging.incoming.incoming-channel3.value.deserializer", JacksonDtoDeserializer.class.getName()),
-                Map.entry("mp.messaging.incoming.incoming-channel4.key.deserializer", JacksonDtoDeserializer.class.getName()));
+                Map.entry("mp.messaging.incoming.incoming-channel1.value.deserializer",
+                        JacksonDtoDeserializer.class.getName()),
+                Map.entry("mp.messaging.incoming.incoming-channel2.value.deserializer",
+                        JacksonDtoDeserializer.class.getName()),
+                Map.entry("mp.messaging.incoming.incoming-channel3.value.deserializer",
+                        JacksonDtoDeserializer.class.getName()),
+                Map.entry("mp.messaging.incoming.incoming-channel4.key.deserializer",
+                        JacksonDtoDeserializer.class.getName()));
 
         doTest(expectations, configMap, JacksonDto.class, JacksonDtoSerializer.class, JacksonDtoDeserializer.class,
                 JacksonDtoSerde.class);
@@ -286,31 +287,27 @@ class ReflectiveClassForValueSerializerPayloadTest {
 
     @Test
     void processAnnotationsForReflectiveClassJsonbPayload() {
-        Tuple[] expectations = {
-                tuple("outgoing-channel1", JsonbDto.class.getName()),
+        Tuple[] expectations = { tuple("outgoing-channel1", JsonbDto.class.getName()),
                 tuple("outgoing-channel2", JsonbDto.class.getName()),
                 tuple("outgoing-channel3", JsonbDto.class.getName()),
-                tuple("outgoing-channel4", JsonbDto.class.getName()),
-                tuple("outgoing1", JsonbDto.class.getName()),
-                tuple("outgoing2", JsonbDto.class.getName()),
-                tuple("outgoing3", JsonbDto.class.getName()),
-                tuple("outgoing4", JsonbDto.class.getName()),
-                tuple("outgoing5", JsonbDto.class.getName()),
-                tuple("incoming1", JsonbDto.class.getName()),
-                tuple("incoming2", JsonbDto.class.getName()),
-                tuple("incoming3", JsonbDto.class.getName()),
-                tuple("incoming4", JsonbDto.class.getName()),
+                tuple("outgoing-channel4", JsonbDto.class.getName()), tuple("outgoing1", JsonbDto.class.getName()),
+                tuple("outgoing2", JsonbDto.class.getName()), tuple("outgoing3", JsonbDto.class.getName()),
+                tuple("outgoing4", JsonbDto.class.getName()), tuple("outgoing5", JsonbDto.class.getName()),
+                tuple("incoming1", JsonbDto.class.getName()), tuple("incoming2", JsonbDto.class.getName()),
+                tuple("incoming3", JsonbDto.class.getName()), tuple("incoming4", JsonbDto.class.getName()),
                 tuple("incoming-channel1", JsonbDto.class.getName()),
                 tuple("incoming-channel2", JsonbDto.class.getName()),
                 tuple("incoming-channel3", JsonbDto.class.getName()),
-                tuple("incoming-channel4", JsonbDto.class.getName()),
-        };
+                tuple("incoming-channel4", JsonbDto.class.getName()), };
 
         Map<String, String> configMap = Map.ofEntries(
-                Map.entry("mp.messaging.outgoing.outgoing-channel1.value.serializer", JsonbDtoSerializer.class.getName()),
-                Map.entry("mp.messaging.outgoing.outgoing-channel2.value.serializer", JsonbDtoSerializer.class.getName()),
+                Map.entry("mp.messaging.outgoing.outgoing-channel1.value.serializer",
+                        JsonbDtoSerializer.class.getName()),
+                Map.entry("mp.messaging.outgoing.outgoing-channel2.value.serializer",
+                        JsonbDtoSerializer.class.getName()),
                 Map.entry("mp.messaging.outgoing.outgoing-channel3.key.serializer", JsonbDtoSerializer.class.getName()),
-                Map.entry("mp.messaging.outgoing.outgoing-channel4.value.serializer", JsonbDtoSerializer.class.getName()),
+                Map.entry("mp.messaging.outgoing.outgoing-channel4.value.serializer",
+                        JsonbDtoSerializer.class.getName()),
                 Map.entry("mp.messaging.outgoing.outgoing1.value.serializer", JsonbDtoSerializer.class.getName()),
                 Map.entry("mp.messaging.outgoing.outgoing2.value.serializer", JsonbDtoSerializer.class.getName()),
                 Map.entry("mp.messaging.outgoing.outgoing3.value.serializer", JsonbDtoSerializer.class.getName()),
@@ -321,10 +318,14 @@ class ReflectiveClassForValueSerializerPayloadTest {
                 Map.entry("mp.messaging.incoming.incoming2.value.deserializer", JsonbDtoDeserializer.class.getName()),
                 Map.entry("mp.messaging.incoming.incoming3.value.deserializer", JsonbDtoDeserializer.class.getName()),
                 Map.entry("mp.messaging.incoming.incoming4.key.deserializer", JsonbDtoDeserializer.class.getName()),
-                Map.entry("mp.messaging.incoming.incoming-channel1.value.deserializer", JsonbDtoDeserializer.class.getName()),
-                Map.entry("mp.messaging.incoming.incoming-channel2.value.deserializer", JsonbDtoDeserializer.class.getName()),
-                Map.entry("mp.messaging.incoming.incoming-channel3.value.deserializer", JsonbDtoDeserializer.class.getName()),
-                Map.entry("mp.messaging.incoming.incoming-channel4.key.deserializer", JsonbDtoDeserializer.class.getName()));
+                Map.entry("mp.messaging.incoming.incoming-channel1.value.deserializer",
+                        JsonbDtoDeserializer.class.getName()),
+                Map.entry("mp.messaging.incoming.incoming-channel2.value.deserializer",
+                        JsonbDtoDeserializer.class.getName()),
+                Map.entry("mp.messaging.incoming.incoming-channel3.value.deserializer",
+                        JsonbDtoDeserializer.class.getName()),
+                Map.entry("mp.messaging.incoming.incoming-channel4.key.deserializer",
+                        JsonbDtoDeserializer.class.getName()));
 
         doTest(expectations, configMap, JsonbDto.class, JsonbDtoSerializer.class, JsonbDtoDeserializer.class,
                 JsonbDtoSerde.class);
@@ -347,9 +348,7 @@ class ReflectiveClassForValueSerializerPayloadTest {
     }
 
     private static Config configFromMap(Map<String, String> configMap) {
-        return new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("config-map", configMap) {
-                })
-                .build();
+        return new SmallRyeConfigBuilder().withSources(new MapBackedConfigSource("config-map", configMap) {
+        }).build();
     }
 }

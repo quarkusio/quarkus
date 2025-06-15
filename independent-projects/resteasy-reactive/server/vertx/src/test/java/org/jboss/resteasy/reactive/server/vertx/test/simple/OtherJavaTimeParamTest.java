@@ -22,31 +22,29 @@ public class OtherJavaTimeParamTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class));
 
     @Test
     public void localTimeParam() {
-        RestAssured.get("/hello/localTime?date=01:02:03")
-                .then().statusCode(200).body(Matchers.equalTo("hello#1:2:3"));
+        RestAssured.get("/hello/localTime?date=01:02:03").then().statusCode(200).body(Matchers.equalTo("hello#1:2:3"));
     }
 
     @Test
     public void offsetDateTime() {
-        RestAssured.get("/hello/offsetDateTime?date=1995-09-21T01:02:03+01:00")
-                .then().statusCode(200).body(Matchers.equalTo("hello#1995:+01:00"));
+        RestAssured.get("/hello/offsetDateTime?date=1995-09-21T01:02:03+01:00").then().statusCode(200)
+                .body(Matchers.equalTo("hello#1995:+01:00"));
     }
 
     @Test
     public void offsetTime() {
-        RestAssured.get("/hello/offsetTime?date=11:02:03+01:00")
-                .then().statusCode(200).body(Matchers.equalTo("hello#+01:00"));
+        RestAssured.get("/hello/offsetTime?date=11:02:03+01:00").then().statusCode(200)
+                .body(Matchers.equalTo("hello#+01:00"));
     }
 
     @Test
     public void zonedDateTime() {
-        RestAssured.get("/hello/zonedDateTime?date=1995-09-21T01:02:03+01:00[Europe/Paris]")
-                .then().statusCode(200).body(Matchers.equalTo("hello#1995:9"));
+        RestAssured.get("/hello/zonedDateTime?date=1995-09-21T01:02:03+01:00[Europe/Paris]").then().statusCode(200)
+                .body(Matchers.equalTo("hello#1995:9"));
     }
 
     @Path("hello")

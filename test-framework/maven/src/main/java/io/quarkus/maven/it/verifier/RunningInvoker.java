@@ -72,11 +72,12 @@ public class RunningInvoker extends MavenProcessInvoker {
     }
 
     /**
-     * Creates a {@link PrintStream} with an underlying {@link TeeOutputStream} composed of {@code one}
-     * and {@code two} outputstreams
+     * Creates a {@link PrintStream} with an underlying {@link TeeOutputStream} composed of {@code one} and {@code two}
+     * outputstreams
      *
      * @param one
      * @param two
+     *
      * @return
      */
     private static PrintStream createTeePrintStream(final OutputStream one, final OutputStream two) {
@@ -125,10 +126,10 @@ public class RunningInvoker extends MavenProcessInvoker {
         if (System.getProperty("mavenOpts") != null) {
             request.setMavenOpts(System.getProperty("mavenOpts"));
         } else {
-            //we need to limit the memory consumption, as we can have a lot of these processes
-            //running at once, if they add default to 75% of total mem we can easily run out
-            //of physical memory as they will consume way more than what they need instead of
-            //just running GC
+            // we need to limit the memory consumption, as we can have a lot of these processes
+            // running at once, if they add default to 75% of total mem we can easily run out
+            // of physical memory as they will consume way more than what they need instead of
+            // just running GC
             request.setMavenOpts("-Xmx192m");
         }
 

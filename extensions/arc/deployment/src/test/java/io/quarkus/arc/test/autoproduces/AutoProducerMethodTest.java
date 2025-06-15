@@ -29,8 +29,7 @@ public class AutoProducerMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AutoProducerMethodTest.class, Client.class, Producers.class));
+            .withApplicationRoot((jar) -> jar.addClasses(AutoProducerMethodTest.class, Client.class, Producers.class));
 
     @Inject
     Client bean;

@@ -18,10 +18,8 @@ public class SimpleWarTest {
 
     @Deployment
     public static WebArchive createTestArchive() {
-        return ShrinkWrap.create(WebArchive.class)
-                .addAsLibrary(ShrinkWrap.create(JavaArchive.class).addClass(Foo.class)
-                        .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"))
-                .addClass(SimpleClass.class);
+        return ShrinkWrap.create(WebArchive.class).addAsLibrary(ShrinkWrap.create(JavaArchive.class).addClass(Foo.class)
+                .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")).addClass(SimpleClass.class);
     }
 
     @Inject

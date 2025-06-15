@@ -24,8 +24,7 @@ public class FlywayExtensionInitSqlTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1.0.0__Quarkus.sql")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("init-sql-config.properties", "application.properties"));
 
     @Test

@@ -21,38 +21,32 @@ public class BlockingHashCommandsImpl<K, F, V> extends AbstractRedisCommandGroup
 
     @Override
     public int hdel(K key, F... fields) {
-        return reactive.hdel(key, fields)
-                .await().atMost(timeout);
+        return reactive.hdel(key, fields).await().atMost(timeout);
     }
 
     @Override
     public boolean hexists(K key, F field) {
-        return reactive.hexists(key, field)
-                .await().atMost(timeout);
+        return reactive.hexists(key, field).await().atMost(timeout);
     }
 
     @Override
     public V hget(K key, F field) {
-        return reactive.hget(key, field)
-                .await().atMost(timeout);
+        return reactive.hget(key, field).await().atMost(timeout);
     }
 
     @Override
     public long hincrby(K key, F field, long amount) {
-        return reactive.hincrby(key, field, amount)
-                .await().atMost(timeout);
+        return reactive.hincrby(key, field, amount).await().atMost(timeout);
     }
 
     @Override
     public double hincrbyfloat(K key, F field, double amount) {
-        return reactive.hincrbyfloat(key, field, amount)
-                .await().atMost(timeout);
+        return reactive.hincrbyfloat(key, field, amount).await().atMost(timeout);
     }
 
     @Override
     public Map<F, V> hgetall(K key) {
-        return reactive.hgetall(key)
-                .await().atMost(timeout);
+        return reactive.hgetall(key).await().atMost(timeout);
     }
 
     @Override
@@ -62,38 +56,32 @@ public class BlockingHashCommandsImpl<K, F, V> extends AbstractRedisCommandGroup
 
     @Override
     public long hlen(K key) {
-        return reactive.hlen(key)
-                .await().atMost(timeout);
+        return reactive.hlen(key).await().atMost(timeout);
     }
 
     @Override
     public Map<F, V> hmget(K key, F... fields) {
-        return reactive.hmget(key, fields)
-                .await().atMost(timeout);
+        return reactive.hmget(key, fields).await().atMost(timeout);
     }
 
     @Override
     public void hmset(K key, Map<F, V> map) {
-        reactive.hmset(key, map)
-                .await().atMost(timeout);
+        reactive.hmset(key, map).await().atMost(timeout);
     }
 
     @Override
     public F hrandfield(K key) {
-        return reactive.hrandfield(key)
-                .await().atMost(timeout);
+        return reactive.hrandfield(key).await().atMost(timeout);
     }
 
     @Override
     public List<F> hrandfield(K key, long count) {
-        return reactive.hrandfield(key, count)
-                .await().atMost(timeout);
+        return reactive.hrandfield(key, count).await().atMost(timeout);
     }
 
     @Override
     public Map<F, V> hrandfieldWithValues(K key, long count) {
-        return reactive.hrandfieldWithValues(key, count)
-                .await().atMost(timeout);
+        return reactive.hrandfieldWithValues(key, count).await().atMost(timeout);
     }
 
     @Override
@@ -108,31 +96,26 @@ public class BlockingHashCommandsImpl<K, F, V> extends AbstractRedisCommandGroup
 
     @Override
     public boolean hset(K key, F field, V value) {
-        return reactive.hset(key, field, value)
-                .await().atMost(timeout);
+        return reactive.hset(key, field, value).await().atMost(timeout);
     }
 
     @Override
     public long hset(K key, Map<F, V> map) {
-        return reactive.hset(key, map)
-                .await().atMost(timeout);
+        return reactive.hset(key, map).await().atMost(timeout);
     }
 
     @Override
     public boolean hsetnx(K key, F field, V value) {
-        return reactive.hsetnx(key, field, value)
-                .await().atMost(timeout);
+        return reactive.hsetnx(key, field, value).await().atMost(timeout);
     }
 
     @Override
     public long hstrlen(K key, F field) {
-        return reactive.hstrlen(key, field)
-                .await().atMost(timeout);
+        return reactive.hstrlen(key, field).await().atMost(timeout);
     }
 
     @Override
     public List<V> hvals(K key) {
-        return reactive.hvals(key)
-                .await().atMost(timeout);
+        return reactive.hvals(key).await().atMost(timeout);
     }
 }

@@ -37,37 +37,24 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MalformedMultipartInputTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(MyEnumMessageBodyReader.class, TestMapper.class,
-                                    TestEndpoint.class,
-                                    Input.class, MyEnum.class);
-                }
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(MyEnumMessageBodyReader.class, TestMapper.class,
+                    TestEndpoint.class, Input.class, MyEnum.class);
+        }
 
-            });
+    });
 
     @Test
     public void properInput() {
-        given()
-                .multiPart("format", "FOO", "text/myenum")
-                .accept("text/plain")
-                .when()
-                .post("/test")
-                .then()
+        given().multiPart("format", "FOO", "text/myenum").accept("text/plain").when().post("/test").then()
                 .statusCode(200);
     }
 
     @Test
     public void malformedInput() {
-        given()
-                .multiPart("format", "FOO2", "text/myenum")
-                .accept("text/plain")
-                .when()
-                .post("/test")
-                .then()
+        given().multiPart("format", "FOO2", "text/myenum").accept("text/plain").when().post("/test").then()
                 .statusCode(999);
     }
 
@@ -103,7 +90,8 @@ public class MalformedMultipartInputTest {
 
     @Provider
     @Consumes("text/myenum")
-    public static class MyEnumMessageBodyReader extends PrimitiveBodyHandler implements ServerMessageBodyReader<MyEnum> {
+    public static class MyEnumMessageBodyReader extends PrimitiveBodyHandler
+            implements ServerMessageBodyReader<MyEnum> {
         @Override
         public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
                 MediaType mediaType) {

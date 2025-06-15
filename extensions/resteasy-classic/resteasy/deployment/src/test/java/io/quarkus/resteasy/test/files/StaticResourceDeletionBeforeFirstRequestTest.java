@@ -12,9 +12,8 @@ public class StaticResourceDeletionBeforeFirstRequestTest {
     public static final String META_INF_RESOURCES_STATIC_RESOURCE_TXT = "META-INF/resources/static-resource.txt";
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("static resource content"), META_INF_RESOURCES_STATIC_RESOURCE_TXT));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("static resource content"), META_INF_RESOURCES_STATIC_RESOURCE_TXT));
 
     @Test
     public void shouldReturn404HttpStatusCode() {

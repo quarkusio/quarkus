@@ -37,8 +37,8 @@ public class ApplyContainerImageDecorator extends ApplicationContainerDecorator<
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class, AddInitContainerDecorator.class,
-                ApplyImageDecorator.class };
+        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class,
+                AddInitContainerDecorator.class, ApplyImageDecorator.class };
     }
 
     @Override
@@ -50,18 +50,16 @@ public class ApplyContainerImageDecorator extends ApplicationContainerDecorator<
         String property = "image";
         String path = "spec.template.spec.containers.image";
         if (!Strings.equals(getDeploymentName(), ANY) && !Strings.equals(getContainerName(), ANY)) {
-            path = "(metadata.name == " + getDeploymentName() + ")].spec.template.spec.containers"
-                    + ".(name == " + getContainerName() + ").image";
+            path = "(metadata.name == " + getDeploymentName() + ")].spec.template.spec.containers" + ".(name == "
+                    + getContainerName() + ").image";
         } else if (!Strings.equals(getDeploymentName(), ANY)) {
             path = "(metadata.name == " + getDeploymentName() + ").spec.template.spec.containers.image";
         } else if (!Strings.equals(getContainerName(), ANY)) {
             path = "spec.template.spec.containers.(name == " + getContainerName() + ").image";
         }
 
-        return new ConfigReference.Builder(property, path)
-                .withValue(image)
-                .withDescription("The container image to use.")
-                .build();
+        return new ConfigReference.Builder(property, path).withValue(image)
+                .withDescription("The container image to use.").build();
     }
 
 }

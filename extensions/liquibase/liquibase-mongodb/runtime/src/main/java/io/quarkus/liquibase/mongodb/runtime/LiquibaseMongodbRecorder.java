@@ -66,7 +66,7 @@ public class LiquibaseMongodbRecorder {
                         }
                     }
                 } catch (UnsatisfiedResolutionException e) {
-                    //ignore, the DS is not configured
+                    // ignore, the DS is not configured
                 }
             }
         } catch (Exception e) {

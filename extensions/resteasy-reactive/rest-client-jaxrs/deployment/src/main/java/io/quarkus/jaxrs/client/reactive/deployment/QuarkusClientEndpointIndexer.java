@@ -56,8 +56,8 @@ public class QuarkusClientEndpointIndexer extends ClientEndpointIndexer {
     }
 
     @Override
-    protected void handleAdditionalMethodProcessing(ResourceMethod method, ClassInfo currentClassInfo,
-            MethodInfo info, AnnotationStore annotationStore) {
+    protected void handleAdditionalMethodProcessing(ResourceMethod method, ClassInfo currentClassInfo, MethodInfo info,
+            AnnotationStore annotationStore) {
         super.handleAdditionalMethodProcessing(method, currentClassInfo, info, annotationStore);
         if (!capabilities.isCapabilityWithPrefixMissing("io.quarkus.rest.client.reactive.json")) {
             return;

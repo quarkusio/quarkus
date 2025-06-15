@@ -41,12 +41,10 @@ public class DevReactiveMessagingInfos {
                 // Unfortunately, there is no easy way to obtain the connectors metadata
                 Connectors connectors = container.instance(Connectors.class).get();
                 for (Entry<String, Component> entry : connectors.outgoingConnectors.entrySet()) {
-                    publishers.computeIfAbsent(entry.getKey(), fun)
-                            .add(entry.getValue());
+                    publishers.computeIfAbsent(entry.getKey(), fun).add(entry.getValue());
                 }
                 for (Entry<String, Component> entry : connectors.incomingConnectors.entrySet()) {
-                    consumers.computeIfAbsent(entry.getKey(), fun)
-                            .add(entry.getValue());
+                    consumers.computeIfAbsent(entry.getKey(), fun).add(entry.getValue());
                 }
 
                 for (EmitterConfiguration emitter : context.getEmitterConfigurations()) {
@@ -56,9 +54,8 @@ public class DevReactiveMessagingInfos {
                                             : "" + asCode(DevConsoleRecorder.EMITTERS.get(emitter.name()))));
                 }
                 for (ChannelConfiguration channel : context.getChannelConfigurations()) {
-                    consumers.computeIfAbsent(channel.channelName, fun)
-                            .add(new Component(ComponentType.CHANNEL,
-                                    asCode(DevConsoleRecorder.CHANNELS.get(channel.channelName))));
+                    consumers.computeIfAbsent(channel.channelName, fun).add(new Component(ComponentType.CHANNEL,
+                            asCode(DevConsoleRecorder.CHANNELS.get(channel.channelName))));
                 }
                 for (MediatorConfiguration mediator : context.getMediatorConfigurations()) {
                     boolean isProcessor = !mediator.getIncoming().isEmpty() && !mediator.getOutgoings().isEmpty();
@@ -69,8 +66,7 @@ public class DevReactiveMessagingInfos {
                         }
                         for (String incoming : mediator.getIncoming()) {
                             consumers.computeIfAbsent(incoming, fun)
-                                    .add(new Component(ComponentType.PROCESSOR,
-                                            asMethod(mediator.methodAsString())));
+                                    .add(new Component(ComponentType.PROCESSOR, asMethod(mediator.methodAsString())));
                         }
                     } else if (!mediator.getOutgoings().isEmpty()) {
                         for (String outgoing : mediator.getOutgoings()) {
@@ -85,8 +81,7 @@ public class DevReactiveMessagingInfos {
                     } else if (!mediator.getIncoming().isEmpty()) {
                         for (String incoming : mediator.getIncoming()) {
                             consumers.computeIfAbsent(incoming, fun)
-                                    .add(new Component(ComponentType.SUBSCRIBER,
-                                            asMethod(mediator.methodAsString())));
+                                    .add(new Component(ComponentType.SUBSCRIBER, asMethod(mediator.methodAsString())));
                         }
                     }
                 }

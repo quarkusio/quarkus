@@ -25,8 +25,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resource
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Tests annotation inheritance from interface.
+ *
  * @tpSince RESTEasy 3.0.20
  */
 @DisplayName("Inheritance Test")
@@ -35,18 +38,17 @@ public class InheritanceTest {
     private static Client client;
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(InheritanceParentResource.class);
-                    war.addClass(InheritanceAbstractParentResource.class);
-                    war.addClass(InheritanceAbstractParentImplResource.class);
-                    war.addClasses(PortProviderUtil.class, InheritanceParentResourceImpl.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClass(InheritanceParentResource.class);
+            war.addClass(InheritanceAbstractParentResource.class);
+            war.addClass(InheritanceAbstractParentImplResource.class);
+            war.addClasses(PortProviderUtil.class, InheritanceParentResourceImpl.class);
+            return war;
+        }
+    });
 
     private String generateURL(String path) {
         return PortProviderUtil.generateURL(path, InheritanceTest.class.getSimpleName());

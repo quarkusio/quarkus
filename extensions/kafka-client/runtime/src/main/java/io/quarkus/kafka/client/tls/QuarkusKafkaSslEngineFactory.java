@@ -29,24 +29,15 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
     /**
      * Omits 'ssl.endpoint.identification.algorithm' because it is set by the user and it is not ignored
      */
-    private static final Set<String> KAFKA_SSL_CONFIGS = Set.of(
-            SslConfigs.SSL_KEYSTORE_TYPE_CONFIG,
-            SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG,
-            SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
-            SslConfigs.SSL_KEY_PASSWORD_CONFIG,
-            SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG,
-            SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG,
-            SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
-            SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG,
-            SslConfigs.SSL_KEYSTORE_KEY_CONFIG,
-            SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG,
-            SslConfigs.SSL_PROTOCOL_CONFIG,
-            SslConfigs.SSL_PROVIDER_CONFIG,
-            SslConfigs.SSL_CIPHER_SUITES_CONFIG,
-            SslConfigs.SSL_ENABLED_PROTOCOLS_CONFIG,
-            SslConfigs.SSL_KEYMANAGER_ALGORITHM_CONFIG,
-            SslConfigs.SSL_TRUSTMANAGER_ALGORITHM_CONFIG,
-            SslConfigs.SSL_SECURE_RANDOM_IMPLEMENTATION_CONFIG);
+    private static final Set<String> KAFKA_SSL_CONFIGS = Set.of(SslConfigs.SSL_KEYSTORE_TYPE_CONFIG,
+            SslConfigs.SSL_KEYSTORE_LOCATION_CONFIG, SslConfigs.SSL_KEYSTORE_PASSWORD_CONFIG,
+            SslConfigs.SSL_KEY_PASSWORD_CONFIG, SslConfigs.SSL_TRUSTSTORE_TYPE_CONFIG,
+            SslConfigs.SSL_TRUSTSTORE_LOCATION_CONFIG, SslConfigs.SSL_TRUSTSTORE_PASSWORD_CONFIG,
+            SslConfigs.SSL_KEYSTORE_CERTIFICATE_CHAIN_CONFIG, SslConfigs.SSL_KEYSTORE_KEY_CONFIG,
+            SslConfigs.SSL_TRUSTSTORE_CERTIFICATES_CONFIG, SslConfigs.SSL_PROTOCOL_CONFIG,
+            SslConfigs.SSL_PROVIDER_CONFIG, SslConfigs.SSL_CIPHER_SUITES_CONFIG,
+            SslConfigs.SSL_ENABLED_PROTOCOLS_CONFIG, SslConfigs.SSL_KEYMANAGER_ALGORITHM_CONFIG,
+            SslConfigs.SSL_TRUSTMANAGER_ALGORITHM_CONFIG, SslConfigs.SSL_SECURE_RANDOM_IMPLEMENTATION_CONFIG);
 
     private TlsConfiguration configuration;
     private SSLContext sslContext;
@@ -104,8 +95,8 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
                 .select(TlsConfigurationRegistry.class);
         if (!tlsConfig.isUnsatisfied()) {
             TlsConfigurationRegistry registry = tlsConfig.get();
-            configuration = registry.get(tlsConfigName)
-                    .orElseThrow(() -> new IllegalArgumentException("No TLS configuration found for name " + tlsConfigName));
+            configuration = registry.get(tlsConfigName).orElseThrow(
+                    () -> new IllegalArgumentException("No TLS configuration found for name " + tlsConfigName));
             try {
                 sslContext = configuration.createSSLContext();
             } catch (Exception e) {
@@ -119,9 +110,11 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
     }
 
     /**
-     * Check if any SSL configuration is set for the Kafka client that will be ignored because the TLS configuration is set
+     * Check if any SSL configuration is set for the Kafka client that will be ignored because the TLS configuration is
+     * set
      *
-     * @param configs the Kafka client configuration
+     * @param configs
+     *        the Kafka client configuration
      */
     public static void checkForOtherSslConfigs(Map<String, ?> configs) {
         String tlsConfigName = (String) configs.get(TLS_CONFIG_NAME_KEY);

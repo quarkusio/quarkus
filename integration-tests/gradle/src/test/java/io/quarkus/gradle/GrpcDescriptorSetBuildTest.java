@@ -12,16 +12,10 @@ public class GrpcDescriptorSetBuildTest extends QuarkusGradleWrapperTestBase {
         var buildResult = runGradleWrapper(projectDir, "clean", "build");
         assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":quarkusGenerateCode"))).isTrue();
 
-        var expectedOutputDir = projectDir.toPath()
-                .resolve("build")
-                .resolve("classes")
-                .resolve("java")
-                .resolve("quarkus-generated-sources")
-                .resolve("grpc");
+        var expectedOutputDir = projectDir.toPath().resolve("build").resolve("classes").resolve("java")
+                .resolve("quarkus-generated-sources").resolve("grpc");
 
         assertThat(expectedOutputDir).exists();
-        assertThat(expectedOutputDir.resolve("descriptor_set.dsc"))
-                .exists()
-                .isNotEmptyFile();
+        assertThat(expectedOutputDir.resolve("descriptor_set.dsc")).exists().isNotEmptyFile();
     }
 }

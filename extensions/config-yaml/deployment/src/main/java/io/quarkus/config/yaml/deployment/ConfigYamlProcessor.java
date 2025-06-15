@@ -24,8 +24,7 @@ public final class ConfigYamlProcessor {
     }
 
     @BuildStep
-    public void yamlConfig(
-            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+    public void yamlConfig(BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
         staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(YamlConfigBuilder.class));
@@ -48,10 +47,10 @@ public final class ConfigYamlProcessor {
         for (String profile : config.getProfiles()) {
             configWatchedFiles.add(String.format("application-%s.yaml", profile));
             configWatchedFiles.add(String.format("application-%s.yml", profile));
-            configWatchedFiles.add(
-                    Paths.get(userDir, "config", String.format("application-%s.yaml", profile)).toAbsolutePath().toString());
-            configWatchedFiles.add(
-                    Paths.get(userDir, "config", String.format("application-%s.yml", profile)).toAbsolutePath().toString());
+            configWatchedFiles.add(Paths.get(userDir, "config", String.format("application-%s.yaml", profile))
+                    .toAbsolutePath().toString());
+            configWatchedFiles.add(Paths.get(userDir, "config", String.format("application-%s.yml", profile))
+                    .toAbsolutePath().toString());
         }
 
         for (String configWatchedFile : configWatchedFiles) {

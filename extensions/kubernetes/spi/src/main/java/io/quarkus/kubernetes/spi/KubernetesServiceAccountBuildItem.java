@@ -6,8 +6,7 @@ import java.util.Map;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Produce this build item to request the Kubernetes extension to generate
- * a Kubernetes {@code ServiceAccount} resource.
+ * Produce this build item to request the Kubernetes extension to generate a Kubernetes {@code ServiceAccount} resource.
  */
 public final class KubernetesServiceAccountBuildItem extends MultiBuildItem {
     /**
@@ -35,7 +34,8 @@ public final class KubernetesServiceAccountBuildItem extends MultiBuildItem {
         this(null, null, Collections.emptyMap(), useAsDefault);
     }
 
-    public KubernetesServiceAccountBuildItem(String name, String namespace, Map<String, String> labels, boolean useAsDefault) {
+    public KubernetesServiceAccountBuildItem(String name, String namespace, Map<String, String> labels,
+            boolean useAsDefault) {
         this.name = name;
         this.namespace = namespace;
         this.labels = labels;

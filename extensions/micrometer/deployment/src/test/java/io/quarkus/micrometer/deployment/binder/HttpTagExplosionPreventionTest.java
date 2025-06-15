@@ -18,8 +18,7 @@ import io.restassured.RestAssured;
 
 public class HttpTagExplosionPreventionTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
@@ -27,9 +26,7 @@ public class HttpTagExplosionPreventionTest {
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.suppress4xx-errors", "true")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Util.class,
-                            Resource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Util.class, Resource.class));
 
     @Inject
     MeterRegistry registry;
@@ -42,7 +39,8 @@ public class HttpTagExplosionPreventionTest {
 
         RestAssured.get("/api/hello/foo").then().statusCode(200);
         Util.waitForMeters(registry.find("http.server.requests").timers(), 2);
-        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/api/hello/{message}").timers().size());
+        Assertions.assertEquals(1,
+                registry.find("http.server.requests").tag("uri", "/api/hello/{message}").timers().size());
 
         RestAssured.delete("/api/hello").then().statusCode(405);
         Util.waitForMeters(registry.find("http.server.requests").timers(), 3);
@@ -61,8 +59,13 @@ public class HttpTagExplosionPreventionTest {
         }
         Util.waitForMeters(registry.find("http.server.requests").timers(), 6 + 10);
 
-        Assertions.assertEquals(2, registry.find("http.server.requests").tag("uri", "UNKNOWN").timers().size()); // 2 different set of tags
-        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/api/failure/{message}").timers().size());
+        Assertions.assertEquals(2, registry.find("http.server.requests").tag("uri", "UNKNOWN").timers().size()); // 2
+                                                                                                                 // different
+                                                                                                                 // set
+                                                                                                                 // of
+                                                                                                                 // tags
+        Assertions.assertEquals(1,
+                registry.find("http.server.requests").tag("uri", "/api/failure/{message}").timers().size());
     }
 
     @Path("/")

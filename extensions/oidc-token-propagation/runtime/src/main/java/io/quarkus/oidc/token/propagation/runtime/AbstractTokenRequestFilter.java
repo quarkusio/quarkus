@@ -30,7 +30,8 @@ public abstract class AbstractTokenRequestFilter implements ClientRequestFilter 
         }
     }
 
-    protected boolean verifyTokenInstance(ClientRequestContext requestContext, Instance<?> instance) throws IOException {
+    protected boolean verifyTokenInstance(ClientRequestContext requestContext, Instance<?> instance)
+            throws IOException {
         if (!instance.isResolvable()) {
             LOG.debugf("Access token is not injected, aborting the request with HTTP 401 error");
             abortRequest(requestContext);

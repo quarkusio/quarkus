@@ -14,9 +14,9 @@ public class CheckedTemplateDefaultNameTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UnderscoredTemplates.class)
-                    .addAsResource(new StringAsset("Hello {val}!"), "templates/CheckedTemplateDefaultNameTest/foo_bar.txt")
+            .withApplicationRoot((jar) -> jar.addClasses(UnderscoredTemplates.class)
+                    .addAsResource(new StringAsset("Hello {val}!"),
+                            "templates/CheckedTemplateDefaultNameTest/foo_bar.txt")
                     .addAsResource(new StringAsset("Olleh {val}!"), "templates/bim/foo-baz.txt"));
 
     @Test

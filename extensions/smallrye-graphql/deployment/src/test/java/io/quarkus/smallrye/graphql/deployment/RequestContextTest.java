@@ -15,27 +15,19 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 /**
- * Make sure that the request context is active while processing GraphQL API methods.
- * This is necessary to get frameworks like JPA working.
+ * Make sure that the request context is active while processing GraphQL API methods. This is necessary to get
+ * frameworks like JPA working.
  */
 public class RequestContextTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(RequestContextApi.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClass(RequestContextApi.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void verifyRequestContextActive() {
         String query = getPayload("{ foo }");
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
+        RestAssured.given().body(query).contentType(MEDIATYPE_JSON).post("/graphql").then().assertThat().statusCode(200)
                 .body(containsString("success"));
     }
 

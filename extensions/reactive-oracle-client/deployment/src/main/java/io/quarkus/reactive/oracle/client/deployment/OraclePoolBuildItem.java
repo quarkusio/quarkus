@@ -14,7 +14,8 @@ public final class OraclePoolBuildItem extends MultiBuildItem {
 
     private final Function<SyntheticCreationalContext<OraclePool>, OraclePool> oraclePool;
 
-    public OraclePoolBuildItem(String dataSourceName, Function<SyntheticCreationalContext<OraclePool>, OraclePool> oraclePool) {
+    public OraclePoolBuildItem(String dataSourceName,
+            Function<SyntheticCreationalContext<OraclePool>, OraclePool> oraclePool) {
         this.dataSourceName = dataSourceName;
         this.oraclePool = oraclePool;
     }

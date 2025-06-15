@@ -26,11 +26,9 @@ public class MetricsDisabledWebSocketsTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(WSClient.class, BounceEndpoint.class, BounceClient.class))
-            .setForcedDependencies(
-                    List.of(Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus-deployment",
-                            Version.getVersion())));
+            .withApplicationRoot(root -> root.addClasses(WSClient.class, BounceEndpoint.class, BounceClient.class))
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus",
+                    "quarkus-micrometer-registry-prometheus-deployment", Version.getVersion())));
 
     @Inject
     WebSocketConnector<BounceClient> bounceClientConnector;
@@ -48,11 +46,7 @@ public class MetricsDisabledWebSocketsTest {
                 Assertions.assertEquals("Merry Christmas", BounceEndpoint.MESSAGES.get(0));
                 Assertions.assertEquals(1, BounceClient.MESSAGES.size());
                 Assertions.assertEquals("Merry Christmas", BounceClient.MESSAGES.get(0));
-                RestAssured
-                        .given()
-                        .get("/q/metrics")
-                        .then()
-                        .statusCode(200)
+                RestAssured.given().get("/q/metrics").then().statusCode(200)
                         .body(Matchers.not(Matchers.containsString("quarkus_websockets_server")))
                         .body(Matchers.not(Matchers.containsString("quarkus_websockets_client")));
             });

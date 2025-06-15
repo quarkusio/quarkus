@@ -114,8 +114,11 @@ public final class StringUtil {
     /**
      * Dropped for public usage, kept in place for usage by hyphenate method to avoid need for lambda
      *
-     * @param delim delimiter
-     * @param it iterator
+     * @param delim
+     *        delimiter
+     * @param it
+     *        iterator
+     *
      * @return the joined string
      */
     private static String join(String delim, Iterator<String> it) {

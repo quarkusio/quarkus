@@ -28,12 +28,9 @@ import io.smallrye.mutiny.Uni;
 public class TransactionalAsBlockingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addPackage(Blocking1.class.getPackage())
-                            .addClasses(Blocking1Service.class, Blocking2Service.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(Blocking1.class.getPackage())
+                    .addClasses(Blocking1Service.class, Blocking2Service.class));
     public static final com.dam.Blocking.Empty EMPTY = com.dam.Blocking.Empty.newBuilder().getDefaultInstanceForType();
 
     @GrpcClient
@@ -94,16 +91,14 @@ public class TransactionalAsBlockingTest {
         @NonBlocking
         public Uni<ThreadName> returnThread1(com.dam.Blocking.Empty request) {
             String message = Thread.currentThread().getName();
-            return Uni.createFrom().item(
-                    ThreadName.newBuilder().setName(message).build());
+            return Uni.createFrom().item(ThreadName.newBuilder().setName(message).build());
         }
 
         @Override
         @Transactional
         public Uni<ThreadName> returnThread2(com.dam.Blocking.Empty request) {
             String message = Thread.currentThread().getName();
-            return Uni.createFrom().item(
-                    ThreadName.newBuilder().setName(message).build());
+            return Uni.createFrom().item(ThreadName.newBuilder().setName(message).build());
         }
     }
 
@@ -113,16 +108,14 @@ public class TransactionalAsBlockingTest {
         @Override
         public Uni<ThreadName> returnThread1(com.dam.Blocking.Empty request) {
             String message = Thread.currentThread().getName();
-            return Uni.createFrom().item(
-                    ThreadName.newBuilder().setName(message).build());
+            return Uni.createFrom().item(ThreadName.newBuilder().setName(message).build());
         }
 
         @Override
         @NonBlocking
         public Uni<ThreadName> returnThread2(com.dam.Blocking.Empty request) {
             String message = Thread.currentThread().getName();
-            return Uni.createFrom().item(
-                    ThreadName.newBuilder().setName(message).build());
+            return Uni.createFrom().item(ThreadName.newBuilder().setName(message).build());
         }
     }
 
@@ -133,16 +126,14 @@ public class TransactionalAsBlockingTest {
         @Override
         public Uni<ThreadName> returnThread1(com.dam.Blocking.Empty request) {
             String message = Thread.currentThread().getName();
-            return Uni.createFrom().item(
-                    ThreadName.newBuilder().setName(message).build());
+            return Uni.createFrom().item(ThreadName.newBuilder().setName(message).build());
         }
 
         @Override
         @Blocking
         public Uni<ThreadName> returnThread2(com.dam.Blocking.Empty request) {
             String message = Thread.currentThread().getName();
-            return Uni.createFrom().item(
-                    ThreadName.newBuilder().setName(message).build());
+            return Uni.createFrom().item(ThreadName.newBuilder().setName(message).build());
         }
     }
 }

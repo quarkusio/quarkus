@@ -15,20 +15,17 @@ import io.restassured.RestAssured;
 public class AbortingRequestFilterTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(ClassLevelMediaTypeResource.class, AbortingRequestFilter.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(ClassLevelMediaTypeResource.class, AbortingRequestFilter.class);
+            return war;
+        }
+    });
 
     @Test
     public void testAbortingRequestFilter() {
-        RestAssured.get("/test")
-                .then().body(Matchers.equalTo("aborted"))
-                .statusCode(555);
+        RestAssured.get("/test").then().body(Matchers.equalTo("aborted")).statusCode(555);
     }
 }

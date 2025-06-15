@@ -59,8 +59,7 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
         @Override
         public BeanFactory<?> apply(String name) {
             try {
-                return FACTORY.apply(
-                        Thread.currentThread().getContextClassLoader().loadClass(name));
+                return FACTORY.apply(Thread.currentThread().getContextClassLoader().loadClass(name));
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
             }
@@ -81,14 +80,15 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
         constructor.setAccessible(true);
         constructorParams = new ArrayList<>();
         for (var i : constructor.getParameterTypes()) {
-            //assume @Contextual object
-            if (i.isInterface() && (i.getName().startsWith("jakarta.ws.rs") || i.getName().startsWith("jakarta.ws.rs"))) {
+            // assume @Contextual object
+            if (i.isInterface()
+                    && (i.getName().startsWith("jakarta.ws.rs") || i.getName().startsWith("jakarta.ws.rs"))) {
                 var val = extractContextParam(i);
                 constructorParams.add(() -> val);
             } else if (i.isAnnotationPresent(QueryParam.class)) {
-                //todo: this is all super hacky
-                //we need better SPI's around this
-                //we don't handle conversion at all
+                // todo: this is all super hacky
+                // we need better SPI's around this
+                // we don't handle conversion at all
                 QueryParam param = i.getAnnotation(QueryParam.class);
                 constructorParams.add(() -> CurrentRequestManager.get().getQueryParameter(param.value(), true, false));
             } else if (i.isAnnotationPresent(HeaderParam.class)) {

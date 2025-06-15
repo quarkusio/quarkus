@@ -36,8 +36,10 @@ public class GoogleCloudFunctionsProcessor {
     public static final DotName DOTNAME_NAMED = DotName.createSimple(Named.class.getName());
     public static final DotName DOTNAME_HTTP_FUNCTION = DotName.createSimple(HttpFunction.class.getName());
     public static final DotName DOTNAME_BACKGROUND_FUNCTION = DotName.createSimple(BackgroundFunction.class.getName());
-    public static final DotName DOTNAME_RAW_BACKGROUND_FUNCTION = DotName.createSimple(RawBackgroundFunction.class.getName());
-    public static final DotName DOTNAME_CLOUD_EVENT_FUNCTION = DotName.createSimple(CloudEventsFunction.class.getName());
+    public static final DotName DOTNAME_RAW_BACKGROUND_FUNCTION = DotName
+            .createSimple(RawBackgroundFunction.class.getName());
+    public static final DotName DOTNAME_CLOUD_EVENT_FUNCTION = DotName
+            .createSimple(CloudEventsFunction.class.getName());
 
     @BuildStep
     public FeatureBuildItem feature() {
@@ -52,8 +54,7 @@ public class GoogleCloudFunctionsProcessor {
 
     @BuildStep
     public List<CloudFunctionBuildItem> discoverFunctionClass(CombinedIndexBuildItem combinedIndex,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans)
-            throws BuildException {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) throws BuildException {
         IndexView index = combinedIndex.getIndex();
         Collection<ClassInfo> httpFunctions = index.getAllKnownImplementors(DOTNAME_HTTP_FUNCTION);
         Collection<ClassInfo> backgroundFunctions = index.getAllKnownImplementors(DOTNAME_BACKGROUND_FUNCTION);
@@ -61,15 +62,14 @@ public class GoogleCloudFunctionsProcessor {
         Collection<ClassInfo> cloudEventFunctions = index.getAllKnownImplementors(DOTNAME_CLOUD_EVENT_FUNCTION);
 
         List<CloudFunctionBuildItem> cloudFunctions = new ArrayList<>();
-        cloudFunctions.addAll(
-                registerFunctions(unremovableBeans, httpFunctions, GoogleCloudFunctionInfo.FunctionType.HTTP));
-        cloudFunctions.addAll(
-                registerFunctions(unremovableBeans, backgroundFunctions, GoogleCloudFunctionInfo.FunctionType.BACKGROUND));
-        cloudFunctions.addAll(
-                registerFunctions(unremovableBeans, rawBackgroundFunctions,
-                        GoogleCloudFunctionInfo.FunctionType.RAW_BACKGROUND));
-        cloudFunctions.addAll(
-                registerFunctions(unremovableBeans, cloudEventFunctions, GoogleCloudFunctionInfo.FunctionType.CLOUD_EVENT));
+        cloudFunctions
+                .addAll(registerFunctions(unremovableBeans, httpFunctions, GoogleCloudFunctionInfo.FunctionType.HTTP));
+        cloudFunctions.addAll(registerFunctions(unremovableBeans, backgroundFunctions,
+                GoogleCloudFunctionInfo.FunctionType.BACKGROUND));
+        cloudFunctions.addAll(registerFunctions(unremovableBeans, rawBackgroundFunctions,
+                GoogleCloudFunctionInfo.FunctionType.RAW_BACKGROUND));
+        cloudFunctions.addAll(registerFunctions(unremovableBeans, cloudEventFunctions,
+                GoogleCloudFunctionInfo.FunctionType.CLOUD_EVENT));
 
         if (cloudFunctions.isEmpty()) {
             throw new BuildException("No Google Cloud Function found on the classpath", Collections.emptyList());
@@ -78,8 +78,7 @@ public class GoogleCloudFunctionsProcessor {
     }
 
     private List<CloudFunctionBuildItem> registerFunctions(BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            Collection<ClassInfo> functions,
-            GoogleCloudFunctionInfo.FunctionType functionType) {
+            Collection<ClassInfo> functions, GoogleCloudFunctionInfo.FunctionType functionType) {
         List<CloudFunctionBuildItem> buildItems = new ArrayList<>();
         for (ClassInfo classInfo : functions) {
             String className = classInfo.name().toString();
@@ -96,12 +95,10 @@ public class GoogleCloudFunctionsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void selectDelegate(List<CloudFunctionBuildItem> cloudFunctions,
-            GoogleCloudFunctionsConfig config,
+    public void selectDelegate(List<CloudFunctionBuildItem> cloudFunctions, GoogleCloudFunctionsConfig config,
             GoogleCloudFunctionRecorder recorder) throws BuildException {
 
-        List<GoogleCloudFunctionInfo> functionInfos = cloudFunctions.stream()
-                .map(CloudFunctionBuildItem::build)
+        List<GoogleCloudFunctionInfo> functionInfos = cloudFunctions.stream().map(CloudFunctionBuildItem::build)
                 .collect(Collectors.toList());
 
         recorder.selectDelegate(config, functionInfos);

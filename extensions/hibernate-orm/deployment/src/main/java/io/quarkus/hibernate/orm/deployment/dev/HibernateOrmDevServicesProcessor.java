@@ -30,14 +30,13 @@ public class HibernateOrmDevServicesProcessor {
 
     @BuildStep
     void devServicesAutoGenerateByDefault(List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
-            HibernateOrmConfig config,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems, HibernateOrmConfig config,
             BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {
-        Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
+        Set<String> managedSources = schemaReadyBuildItems.stream()
+                .map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
-        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits()
-                .entrySet()) {
+        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits().entrySet()) {
             Optional<String> dataSourceName = entry.getValue().datasource();
             List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
                     .dataSourcePropertyKeys(dataSourceName.orElse(null), "username");

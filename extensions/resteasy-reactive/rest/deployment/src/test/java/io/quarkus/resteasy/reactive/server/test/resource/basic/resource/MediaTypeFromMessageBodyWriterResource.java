@@ -35,7 +35,8 @@ public class MediaTypeFromMessageBodyWriterResource {
     public Response variantsResponse() {
         final List<Integer> body = Arrays.asList(1, 2, 3, 4, 5, 6);
         final List<Variant> variants = Variant
-                .mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_XML_TYPE, MediaType.TEXT_PLAIN_TYPE).build();
+                .mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_XML_TYPE, MediaType.TEXT_PLAIN_TYPE)
+                .build();
         return Response.ok(body).variants(variants).build();
     }
 
@@ -44,7 +45,8 @@ public class MediaTypeFromMessageBodyWriterResource {
     public Object variantsObjectResponse() {
         final List<Integer> body = Arrays.asList(1, 2, 3, 4, 5, 6);
         final List<Variant> variants = Variant
-                .mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_XML_TYPE, MediaType.TEXT_PLAIN_TYPE).build();
+                .mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.APPLICATION_XML_TYPE, MediaType.TEXT_PLAIN_TYPE)
+                .build();
         return Response.ok(body).variants(variants).build();
     }
 

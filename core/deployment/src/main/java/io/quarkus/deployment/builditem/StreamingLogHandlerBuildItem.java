@@ -16,7 +16,8 @@ public final class StreamingLogHandlerBuildItem extends SimpleBuildItem {
     /**
      * Construct a new instance.
      *
-     * @param handlerValue the handler value to add to the run time configuration
+     * @param handlerValue
+     *        the handler value to add to the run time configuration
      */
     public StreamingLogHandlerBuildItem(final RuntimeValue<Optional<Handler>> handlerValue) {
         this.handlerValue = Assert.checkNotNullParam("handlerValue", handlerValue);

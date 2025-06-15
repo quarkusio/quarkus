@@ -15,7 +15,8 @@ public final class ContainerResponseFilterBuildItem extends AbstractInterceptorB
         return filterSourceMethod;
     }
 
-    public static final class Builder extends AbstractInterceptorBuildItem.Builder<ContainerResponseFilterBuildItem, Builder> {
+    public static final class Builder
+            extends AbstractInterceptorBuildItem.Builder<ContainerResponseFilterBuildItem, Builder> {
 
         private MethodInfo filterSourceMethod = null;
 

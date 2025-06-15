@@ -75,8 +75,8 @@ public class InterceptedStaticMethodsProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(InterceptedStaticMethodsProcessor.class);
 
-    static final MethodDescriptor INTERCEPTED_STATIC_METHODS_REGISTER = MethodDescriptor
-            .ofMethod(InterceptedStaticMethods.class, "register", void.class, String.class, InterceptedMethodMetadata.class);
+    static final MethodDescriptor INTERCEPTED_STATIC_METHODS_REGISTER = MethodDescriptor.ofMethod(
+            InterceptedStaticMethods.class, "register", void.class, String.class, InterceptedMethodMetadata.class);
     static final MethodDescriptor INTERCEPTED_STATIC_METHODS_AROUND_INVOKE = MethodDescriptor
             .ofMethod(InterceptedStaticMethods.class, "aroundInvoke", Object.class, String.class, Object[].class);
 
@@ -88,14 +88,13 @@ public class InterceptedStaticMethodsProcessor {
             BuildProducer<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
             InterceptorResolverBuildItem interceptorResolver, TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        // In this step we collect all intercepted static methods, i.e. static methods annotated with interceptor bindings
+        // In this step we collect all intercepted static methods, i.e. static methods annotated with interceptor
+        // bindings
 
         for (ClassInfo clazz : beanArchiveIndex.getIndex().getKnownClasses()) {
             for (MethodInfo method : clazz.methods()) {
                 // Find all non-synthetic static methods (except for static initializers)
-                if (method.isSynthetic()
-                        || !Modifier.isStatic(method.flags())
-                        || "<clinit>".equals(method.name())) {
+                if (method.isSynthetic() || !Modifier.isStatic(method.flags()) || "<clinit>".equals(method.name())) {
                     continue;
                 }
                 // Get the (possibly transformed) set of annotations
@@ -121,14 +120,11 @@ public class InterceptedStaticMethodsProcessor {
                     continue;
                 }
                 if (Modifier.isPrivate(method.flags())) {
-                    LOGGER.warnf(
-                            "Interception of private static methods is not supported; bindings found on %s: %s",
-                            method.declaringClass().name(),
-                            method);
+                    LOGGER.warnf("Interception of private static methods is not supported; bindings found on %s: %s",
+                            method.declaringClass().name(), method);
                 } else {
-                    List<InterceptorInfo> interceptors = interceptorResolver.get().resolve(
-                            InterceptionType.AROUND_INVOKE,
-                            methodLevelBindings);
+                    List<InterceptorInfo> interceptors = interceptorResolver.get()
+                            .resolve(InterceptionType.AROUND_INVOKE, methodLevelBindings);
                     if (!interceptors.isEmpty()) {
                         LOGGER.debugf("Intercepted static method found on %s: %s", method.declaringClass().name(),
                                 method);
@@ -145,8 +141,7 @@ public class InterceptedStaticMethodsProcessor {
     @Produce(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
     @BuildStep
     void processInterceptedStaticMethods(BeanArchiveIndexBuildItem beanArchiveIndex,
-            BeanRegistrationPhaseBuildItem phase,
-            List<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
+            BeanRegistrationPhaseBuildItem phase, List<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
             CompletedApplicationClassPredicateBuildItem applicationClassPredicate,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
@@ -203,8 +198,8 @@ public class InterceptedStaticMethodsProcessor {
                     + INITIALIZER_CLASS_SUFFIX;
             baseToGeneratedInitializer.put(entry.getKey(), initializerName);
 
-            ClassCreator initializer = ClassCreator.builder().classOutput(classOutput)
-                    .className(initializerName).setFinal(true).build();
+            ClassCreator initializer = ClassCreator.builder().classOutput(classOutput).className(initializerName)
+                    .setFinal(true).build();
 
             List<String> initMethods = new ArrayList<>();
             for (InterceptedStaticMethodBuildItem interceptedStaticMethod : entry.getValue()) {
@@ -216,8 +211,7 @@ public class InterceptedStaticMethodsProcessor {
             MethodCreator init = initializer.getMethodCreator(initAllMethodName, void.class)
                     .setModifiers(ACC_PUBLIC | ACC_STATIC);
             for (String initMethod : initMethods) {
-                init.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(initializer.getClassName(), initMethod, void.class));
+                init.invokeStaticMethod(MethodDescriptor.ofMethod(initializer.getClassName(), initMethod, void.class));
 
             }
             init.returnValue(null);
@@ -225,22 +219,24 @@ public class InterceptedStaticMethodsProcessor {
         }
 
         // Transform all declaring classes
-        // For each intercepted static methods create a copy and modify the original method to delegate to the relevant initializer
+        // For each intercepted static methods create a copy and modify the original method to delegate to the relevant
+        // initializer
         for (Entry<DotName, List<InterceptedStaticMethodBuildItem>> entry : interceptedStaticMethodsMap.entrySet()) {
-            transformers.produce(new BytecodeTransformerBuildItem(entry.getKey().toString(),
-                    new InterceptedStaticMethodsEnhancer(baseToGeneratedInitializer.get(entry.getKey()), entry.getValue())));
+            transformers.produce(
+                    new BytecodeTransformerBuildItem(entry.getKey().toString(), new InterceptedStaticMethodsEnhancer(
+                            baseToGeneratedInitializer.get(entry.getKey()), entry.getValue())));
         }
 
-        // Generate a global initializer that calls all other initializers; this initializer must be loaded by the runtime ClassLoader
+        // Generate a global initializer that calls all other initializers; this initializer must be loaded by the
+        // runtime ClassLoader
         ClassCreator globalInitializer = ClassCreator.builder()
                 .classOutput(new GeneratedClassGizmoAdaptor(generatedClasses, true))
-                .className(InterceptedStaticMethodsRecorder.INITIALIZER_CLASS_NAME.replace('.', '/')).setFinal(true).build();
+                .className(InterceptedStaticMethodsRecorder.INITIALIZER_CLASS_NAME.replace('.', '/')).setFinal(true)
+                .build();
 
-        MethodCreator staticInit = globalInitializer.getMethodCreator("<clinit>", void.class)
-                .setModifiers(ACC_STATIC);
+        MethodCreator staticInit = globalInitializer.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC);
         for (String initializerClass : baseToGeneratedInitializer.values()) {
-            staticInit.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(initializerClass, initAllMethodName, void.class));
+            staticInit.invokeStaticMethod(MethodDescriptor.ofMethod(initializerClass, initAllMethodName, void.class));
         }
         staticInit.returnValue(null);
         globalInitializer.close();
@@ -248,7 +244,8 @@ public class InterceptedStaticMethodsProcessor {
 
     @Record(STATIC_INIT)
     @BuildStep
-    void callInitializer(BeanContainerBuildItem beanContainer, List<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
+    void callInitializer(BeanContainerBuildItem beanContainer,
+            List<InterceptedStaticMethodBuildItem> interceptedStaticMethods,
             InterceptedStaticMethodsRecorder recorder) {
         if (interceptedStaticMethods.isEmpty()) {
             return;
@@ -256,8 +253,7 @@ public class InterceptedStaticMethodsProcessor {
         recorder.callInitializer();
     }
 
-    private void implementForward(ClassCreator initializer,
-            InterceptedStaticMethodBuildItem interceptedStaticMethod) {
+    private void implementForward(ClassCreator initializer, InterceptedStaticMethodBuildItem interceptedStaticMethod) {
         MethodInfo method = interceptedStaticMethod.getMethod();
         List<Type> params = method.parameterTypes();
         Object[] paramTypes = new String[params.size()];
@@ -266,8 +262,7 @@ public class InterceptedStaticMethodsProcessor {
         }
         MethodCreator forward = initializer
                 .getMethodCreator(interceptedStaticMethod.getForwardingMethodName(),
-                        DescriptorUtils.typeToString(method.returnType()),
-                        paramTypes)
+                        DescriptorUtils.typeToString(method.returnType()), paramTypes)
                 .setModifiers(ACC_PUBLIC | ACC_FINAL | ACC_STATIC);
         ResultHandle argArray = forward.newArray(Object.class, params.size());
         for (int i = 0; i < params.size(); i++) {
@@ -287,10 +282,7 @@ public class InterceptedStaticMethodsProcessor {
         Set<AnnotationInstance> bindings = interceptedStaticMethod.getBindings();
 
         // init_interceptMe_hash()
-        String name = new StringBuilder("init")
-                .append("_")
-                .append(method.name())
-                .append("_")
+        String name = new StringBuilder("init").append("_").append(method.name()).append("_")
                 .append(interceptedStaticMethod.getHash()).toString();
 
         MethodCreator init = initializer.getMethodCreator(name, void.class)
@@ -328,15 +320,13 @@ public class InterceptedStaticMethodsProcessor {
         } else {
             paramsHandles[2] = init.newArray(Class.class, init.load(0));
         }
-        ResultHandle methodHandle = init.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD,
-                paramsHandles);
+        ResultHandle methodHandle = init.invokeStaticMethod(MethodDescriptors.REFLECTIONS_FIND_METHOD, paramsHandles);
 
         // 3. Interceptor bindings
         ResultHandle bindingsHandle;
         if (bindings.size() == 1) {
-            bindingsHandle = init.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON,
-                    createBindingLiteral(index, init, bindings.iterator().next(),
-                            beanProcessor.getAnnotationLiteralProcessor()));
+            bindingsHandle = init.invokeStaticMethod(MethodDescriptors.COLLECTIONS_SINGLETON, createBindingLiteral(
+                    index, init, bindings.iterator().next(), beanProcessor.getAnnotationLiteralProcessor()));
         } else {
             bindingsHandle = init.newInstance(MethodDescriptor.ofConstructor(HashSet.class));
             for (AnnotationInstance binding : bindings) {
@@ -362,8 +352,8 @@ public class InterceptedStaticMethodsProcessor {
         return name;
     }
 
-    private ResultHandle createBindingLiteral(IndexView index, BytecodeCreator init,
-            AnnotationInstance binding, AnnotationLiteralProcessor annotationLiterals) {
+    private ResultHandle createBindingLiteral(IndexView index, BytecodeCreator init, AnnotationInstance binding,
+            AnnotationLiteralProcessor annotationLiterals) {
         ClassInfo bindingClass = index.getClassByName(binding.name());
         return annotationLiterals.create(init, bindingClass, binding);
     }
@@ -372,30 +362,28 @@ public class InterceptedStaticMethodsProcessor {
             ResultHandle creationalContext) {
         ResultHandle interceptorBean = getInterceptorBean(interceptor, init);
         ResultHandle interceptorInstance = createInterceptor(interceptorBean, init, creationalContext);
-        return init.invokeStaticMethod(
-                MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE,
-                interceptorBean, interceptorInstance);
+        return init.invokeStaticMethod(MethodDescriptors.INTERCEPTOR_INVOCATION_AROUND_INVOKE, interceptorBean,
+                interceptorInstance);
     }
 
     private ResultHandle getInterceptorBean(InterceptorInfo interceptor, BytecodeCreator creator) {
-        ResultHandle containerHandle = creator
-                .invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
-        return creator.checkCast(creator.invokeInterfaceMethod(
-                MethodDescriptors.ARC_CONTAINER_BEAN,
-                containerHandle, creator.load(interceptor.getIdentifier())), InjectableInterceptor.class);
+        ResultHandle containerHandle = creator.invokeStaticMethod(MethodDescriptors.ARC_CONTAINER);
+        return creator.checkCast(creator.invokeInterfaceMethod(MethodDescriptors.ARC_CONTAINER_BEAN, containerHandle,
+                creator.load(interceptor.getIdentifier())), InjectableInterceptor.class);
     }
 
     private ResultHandle createInterceptor(ResultHandle interceptorBean, BytecodeCreator creator,
             ResultHandle parentCreationalContext) {
         ResultHandle creationalContext = creator.invokeStaticMethod(MethodDescriptors.CREATIONAL_CTX_CHILD,
                 parentCreationalContext);
-        return creator.invokeInterfaceMethod(
-                MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorBean, creationalContext);
+        return creator.invokeInterfaceMethod(MethodDescriptors.INJECTABLE_REF_PROVIDER_GET, interceptorBean,
+                creationalContext);
     }
 
     private ResultHandle createForwardingFunction(MethodCreator init, ClassInfo target, MethodInfo method) {
         // Forwarding function
-        // BiFunction<Object, InvocationContext, Object> forward = (ignored, ctx) -> Foo.interceptMe_original((java.lang.String)ctx.getParameters()[0])
+        // BiFunction<Object, InvocationContext, Object> forward = (ignored, ctx) ->
+        // Foo.interceptMe_original((java.lang.String)ctx.getParameters()[0])
         FunctionCreator func = init.createFunction(BiFunction.class);
         BytecodeCreator funcBytecode = func.getBytecode();
         List<Type> paramTypes = method.parameterTypes();
@@ -408,8 +396,7 @@ public class InterceptedStaticMethodsProcessor {
             paramHandles = new ResultHandle[paramTypes.size()];
             ResultHandle ctxHandle = funcBytecode.getMethodParam(1);
             ResultHandle ctxParamsHandle = funcBytecode.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(InvocationContext.class, "getParameters", Object[].class),
-                    ctxHandle);
+                    MethodDescriptor.ofMethod(InvocationContext.class, "getParameters", Object[].class), ctxHandle);
             // autoboxing is handled inside Gizmo
             for (int i = 0; i < paramHandles.length; i++) {
                 paramHandles[i] = funcBytecode.readArrayValue(ctxParamsHandle, i);
@@ -419,10 +406,8 @@ public class InterceptedStaticMethodsProcessor {
                 params[i] = paramTypes.get(i).name().toString();
             }
         }
-        ResultHandle ret = funcBytecode.invokeStaticMethod(
-                MethodDescriptor.ofMethod(target.name().toString(), method.name() + ORIGINAL_METHOD_COPY_SUFFIX,
-                        method.returnType().name().toString(),
-                        params),
+        ResultHandle ret = funcBytecode.invokeStaticMethod(MethodDescriptor.ofMethod(target.name().toString(),
+                method.name() + ORIGINAL_METHOD_COPY_SUFFIX, method.returnType().name().toString(), params),
                 paramHandles);
         if (ret == null) {
             funcBytecode.returnValue(funcBytecode.loadNull());
@@ -437,7 +422,8 @@ public class InterceptedStaticMethodsProcessor {
         private final String initializerClassName;
         private final List<InterceptedStaticMethodBuildItem> methods;
 
-        public InterceptedStaticMethodsEnhancer(String initializerClassName, List<InterceptedStaticMethodBuildItem> methods) {
+        public InterceptedStaticMethodsEnhancer(String initializerClassName,
+                List<InterceptedStaticMethodBuildItem> methods) {
             this.methods = methods;
             this.initializerClassName = initializerClassName;
         }
@@ -452,7 +438,8 @@ public class InterceptedStaticMethodsProcessor {
                 transformer.modifyMethod(originalDescriptor)
                         .rename(interceptedMethod.name() + ORIGINAL_METHOD_COPY_SUFFIX);
 
-                // Add the intercepted method again - invoke the initializer in the body, e.g. Foo_InterceptorInitializer.hash("ping")
+                // Add the intercepted method again - invoke the initializer in the body, e.g.
+                // Foo_InterceptorInitializer.hash("ping")
                 MethodCreator newMethod = transformer.addMethod(originalDescriptor)
                         .setModifiers(interceptedMethod.flags())
                         .setSignature(interceptedMethod.genericSignatureIfRequired());
@@ -478,10 +465,8 @@ public class InterceptedStaticMethodsProcessor {
                     args[i] = newMethod.getMethodParam(i);
                 }
                 ResultHandle ret = newMethod.invokeStaticMethod(MethodDescriptor.ofMethod(initializerClassName,
-                        interceptedStaticMethod.getForwardingMethodName(),
-                        interceptedMethod.returnType().descriptor(),
-                        interceptedMethod.parameterTypes().stream().map(Type::descriptor).toArray()),
-                        args);
+                        interceptedStaticMethod.getForwardingMethodName(), interceptedMethod.returnType().descriptor(),
+                        interceptedMethod.parameterTypes().stream().map(Type::descriptor).toArray()), args);
                 newMethod.returnValue(ret);
             }
             return transformer.applyTo(outputClassVisitor);

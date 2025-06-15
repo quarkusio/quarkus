@@ -12,8 +12,8 @@ public abstract class Container {
     }
 
     /**
-     * Get the parent container, or {@code null} if the container is a root. Presently only
-     * field containers may be roots.
+     * Get the parent container, or {@code null} if the container is a root. Presently only field containers may be
+     * roots.
      *
      * @return the parent container
      */

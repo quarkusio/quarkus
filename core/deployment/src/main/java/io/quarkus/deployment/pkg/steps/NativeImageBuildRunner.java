@@ -29,9 +29,7 @@ public abstract class NativeImageBuildRunner {
             try {
                 final String[] versionCommand = getGraalVMVersionCommand(Collections.singletonList("--version"));
                 log.debugf(String.join(" ", versionCommand).replace("$", "\\$"));
-                final Process versionProcess = new ProcessBuilder(versionCommand)
-                        .redirectErrorStream(true)
-                        .start();
+                final Process versionProcess = new ProcessBuilder(versionCommand).redirectErrorStream(true).start();
                 versionProcess.waitFor();
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(versionProcess.getInputStream(), StandardCharsets.UTF_8))) {
@@ -59,14 +57,13 @@ public abstract class NativeImageBuildRunner {
         try {
             CountDownLatch errorReportLatch = new CountDownLatch(1);
             final String[] buildCommand = getBuildCommand(outputDir, args);
-            final ProcessBuilder processBuilder = new ProcessBuilder(buildCommand)
-                    .directory(outputDir.toFile());
+            final ProcessBuilder processBuilder = new ProcessBuilder(buildCommand).directory(outputDir.toFile());
             log.info(String.join(" ", buildCommand).replace("$", "\\$"));
             final Process process = ProcessUtil.launchProcessStreamStdOut(processBuilder, processInheritIODisabled);
             addShutdownHook(process);
             ExecutorService executor = Executors.newSingleThreadExecutor();
-            executor.submit(new ErrorReplacingProcessReader(process.getErrorStream(), outputDir.resolve("reports").toFile(),
-                    errorReportLatch));
+            executor.submit(new ErrorReplacingProcessReader(process.getErrorStream(),
+                    outputDir.resolve("reports").toFile(), errorReportLatch));
             executor.shutdown();
             errorReportLatch.await();
             int exitCode = process.waitFor();
@@ -85,7 +82,8 @@ public abstract class NativeImageBuildRunner {
                 } else if (SystemUtils.IS_OS_LINUX) {
                     log.warn(
                             "objcopy executable not found in PATH. Debug symbols will therefore not be separated from the executable.");
-                    log.warn("That also means that resulting native executable is larger as it embeds the debug symbols.");
+                    log.warn(
+                            "That also means that resulting native executable is larger as it embeds the debug symbols.");
                 }
             }
             return new Result(0);
@@ -114,17 +112,19 @@ public abstract class NativeImageBuildRunner {
     /**
      * Run {@code command} in {@code workingDirectory} and log error if {@code errorMsg} is not null.
      *
-     * @param command The command to run
-     * @param errorMsg The error message to be printed in case of failure.
-     *        If {@code null} the failure is ignored, but logged.
-     * @param workingDirectory The directory in which to run the command
+     * @param command
+     *        The command to run
+     * @param errorMsg
+     *        The error message to be printed in case of failure. If {@code null} the failure is ignored, but
+     *        logged.
+     * @param workingDirectory
+     *        The directory in which to run the command
      */
     static void runCommand(String[] command, String errorMsg, File workingDirectory) {
         log.info(String.join(" ", command).replace("$", "\\$"));
         Process process = null;
         try {
-            final ProcessBuilder processBuilder = new ProcessBuilder(command)
-                    .redirectErrorStream(true);
+            final ProcessBuilder processBuilder = new ProcessBuilder(command).redirectErrorStream(true);
             if (workingDirectory != null) {
                 processBuilder.directory(workingDirectory);
             }
@@ -138,8 +138,8 @@ public abstract class NativeImageBuildRunner {
                 if (errorMsg != null) {
                     log.error(errorMsg + " Output: " + out);
                 } else {
-                    log.debugf(
-                            "Command: " + String.join(" ", command) + " failed with exit code " + exitCode + " Output: " + out);
+                    log.debugf("Command: " + String.join(" ", command) + " failed with exit code " + exitCode
+                            + " Output: " + out);
                 }
             }
         } catch (IOException | InterruptedException e) {

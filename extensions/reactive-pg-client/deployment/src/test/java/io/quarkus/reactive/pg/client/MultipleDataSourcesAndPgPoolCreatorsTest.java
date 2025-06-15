@@ -21,10 +21,8 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-multiple-datasources-with-erroneous-url.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingDefaultDataSource.class)
-                    .addClass(BeanUsingHibernateDataSource.class)
-                    .addClass(DefaultPgPoolCreator.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BeanUsingDefaultDataSource.class)
+                    .addClass(BeanUsingHibernateDataSource.class).addClass(DefaultPgPoolCreator.class)
                     .addClass(HibernatePgPoolCreator.class));
 
     @Inject
@@ -35,10 +33,8 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
     @Test
     public void testMultipleDataSources() {
-        beanUsingDefaultDataSource.verify()
-                .thenCompose(v -> beanUsingHibernateDataSource.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingDefaultDataSource.verify().thenCompose(v -> beanUsingHibernateDataSource.verify())
+                .toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -85,7 +81,9 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(10, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
+            assertEquals(10, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has
+                                                                                        // been called for the proper
+                                                                                        // datasource
             return Pool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
                     input.poolOptions());
         }
@@ -97,7 +95,9 @@ public class MultipleDataSourcesAndPgPoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(7, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has been called for the proper datasource
+            assertEquals(7, input.pgConnectOptionsList().get(0).getPipeliningLimit()); // validate that the bean has
+                                                                                       // been called for the proper
+                                                                                       // datasource
             return Pool.pool(input.vertx(), input.pgConnectOptionsList().get(0).setHost("localhost").setPort(5431),
                     input.poolOptions());
         }

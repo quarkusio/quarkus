@@ -37,9 +37,8 @@ public class ClientConnectionManager implements OpenClientConnections {
     ClientConnectionManager(@Open Event<WebSocketClientConnection> openEvent,
             @Closed Event<WebSocketClientConnection> closedEvent) {
         ArcContainer container = Arc.container();
-        this.openEvent = container.resolveObserverMethods(WebSocketClientConnection.class, Open.Literal.INSTANCE).isEmpty()
-                ? null
-                : openEvent;
+        this.openEvent = container.resolveObserverMethods(WebSocketClientConnection.class, Open.Literal.INSTANCE)
+                .isEmpty() ? null : openEvent;
         this.closedEvent = container.resolveObserverMethods(WebSocketClientConnection.class, Closed.Literal.INSTANCE)
                 .isEmpty() ? null : closedEvent;
     }
@@ -97,8 +96,8 @@ public class ClientConnectionManager implements OpenClientConnections {
     }
 
     /**
-     *
      * @param endpoint
+     *
      * @return the connections for the given client endpoint, never {@code null}
      */
     public Set<WebSocketClientConnectionImpl> getConnections(String endpoint) {

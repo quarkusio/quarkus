@@ -169,8 +169,7 @@ class MockBeanConfiguratorImpl<T> implements MockBeanConfigurator<T> {
     }
 
     boolean matches(BeanResolver beanResolver, org.jboss.jandex.Type requiredType, Set<AnnotationInstance> qualifiers) {
-        return matchesType(requiredType, beanResolver)
-                && hasQualifiers(qualifiers, beanResolver);
+        return matchesType(requiredType, beanResolver) && hasQualifiers(qualifiers, beanResolver);
     }
 
     boolean matchesType(org.jboss.jandex.Type requiredType, BeanResolver beanResolver) {

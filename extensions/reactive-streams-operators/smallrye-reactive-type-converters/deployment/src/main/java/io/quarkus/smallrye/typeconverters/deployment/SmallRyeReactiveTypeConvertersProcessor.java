@@ -14,10 +14,9 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.smallrye.reactive.converters.ReactiveTypeConverter;
 
 /**
- * Searches for implementations of the {@link ReactiveTypeConverter} class and register them as SPI. So the result depends
- * on the implementation added by the user in the build classpath (Maven dependencies).
- *
- * Note that if none are found, nothing is added - so declaring this augmentation is quite useless in this case.
+ * Searches for implementations of the {@link ReactiveTypeConverter} class and register them as SPI. So the result
+ * depends on the implementation added by the user in the build classpath (Maven dependencies). Note that if none are
+ * found, nothing is added - so declaring this augmentation is quite useless in this case.
  */
 public class SmallRyeReactiveTypeConvertersProcessor {
 

@@ -17,11 +17,8 @@ public class SortQueryParamFilter implements ContainerRequestFilter {
     private static final String SORT_REGEX = "-?([a-z]|[A-Z]|_|\\$|[\u0080-\ufffe])([a-z]|[A-Z]|_|\\$|[0-9]|[\u0080-\ufffe])*";
 
     /**
-     * Verifies that sort query parameters are valid.
-     * Valid examples:
-     * * ?sort=name,surname
-     * * ?sort=$surname&sort=-age
-     * * ?sort=_id
+     * Verifies that sort query parameters are valid. Valid examples: * ?sort=name,surname * ?sort=$surname&sort=-age *
+     * ?sort=_id
      */
     @Override
     public void filter(ContainerRequestContext requestContext) {
@@ -30,10 +27,8 @@ public class SortQueryParamFilter implements ContainerRequestFilter {
             for (String sortPart : sort.split(",")) {
                 String trimmed = sortPart.trim();
                 if (trimmed.length() > 0 && !trimmed.matches(SORT_REGEX)) {
-                    requestContext.abortWith(
-                            Response.status(BAD_REQUEST)
-                                    .entity(String.format("Invalid sort parameter '%s'", sort))
-                                    .build());
+                    requestContext.abortWith(Response.status(BAD_REQUEST)
+                            .entity(String.format("Invalid sort parameter '%s'", sort)).build());
                 }
             }
         }

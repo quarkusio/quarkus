@@ -32,8 +32,8 @@ public interface DataSourceJdbcBuildTimeConfig {
     TransactionIntegration transactions();
 
     /**
-     * Enable datasource metrics collection. If unspecified, collecting metrics will be enabled by default if
-     * a metrics extension is active.
+     * Enable datasource metrics collection. If unspecified, collecting metrics will be enabled by default if a metrics
+     * extension is active.
      * <p>
      * Deprecated. This was used by the now deprecated quarkus-smallrye-metrics and will be removed soon.
      * <p>

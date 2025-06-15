@@ -17,8 +17,7 @@ import io.restassured.RestAssured;
 public class ImportSqlHotReloadScriptTestCase {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
                     .addAsResource("application-import-load-script-test.properties", "application.properties")
                     .addAsResource("import.sql"));
 

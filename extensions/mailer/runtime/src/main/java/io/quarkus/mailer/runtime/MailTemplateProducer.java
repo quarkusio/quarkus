@@ -43,7 +43,8 @@ public class MailTemplateProducer {
                 name = parameter.getJavaParameter().getName();
             } else {
                 name = injectionPoint.getMember().getName();
-                LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s", name);
+                LOGGER.warnf("Parameter name not present - using the method name as the template name instead %s",
+                        name);
             }
         }
 

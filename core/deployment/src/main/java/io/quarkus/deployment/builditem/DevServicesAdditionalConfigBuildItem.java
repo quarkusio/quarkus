@@ -12,8 +12,8 @@ import io.quarkus.builder.item.MultiBuildItem;
  * <p>
  * Quarkus will make sure the relevant settings are present in both JVM and native modes.
  * <p>
- * This is used to change the defaults of extension configuration when dev services are in use,
- * for example to enable schema management in the Hibernate ORM extension.
+ * This is used to change the defaults of extension configuration when dev services are in use, for example to enable
+ * schema management in the Hibernate ORM extension.
  */
 public final class DevServicesAdditionalConfigBuildItem extends MultiBuildItem {
 
@@ -29,8 +29,8 @@ public final class DevServicesAdditionalConfigBuildItem extends MultiBuildItem {
      *             instead.
      */
     @Deprecated
-    public DevServicesAdditionalConfigBuildItem(String triggeringKey,
-            String key, String value, Runnable callbackWhenEnabled) {
+    public DevServicesAdditionalConfigBuildItem(String triggeringKey, String key, String value,
+            Runnable callbackWhenEnabled) {
         this(List.of(triggeringKey), key, value, callbackWhenEnabled);
     }
 
@@ -40,8 +40,8 @@ public final class DevServicesAdditionalConfigBuildItem extends MultiBuildItem {
      *             instead.
      */
     @Deprecated
-    public DevServicesAdditionalConfigBuildItem(Collection<String> triggeringKeys,
-            String key, String value, Runnable callbackWhenEnabled) {
+    public DevServicesAdditionalConfigBuildItem(Collection<String> triggeringKeys, String key, String value,
+            Runnable callbackWhenEnabled) {
         this.triggeringKeys = triggeringKeys;
         this.key = key;
         this.value = value;

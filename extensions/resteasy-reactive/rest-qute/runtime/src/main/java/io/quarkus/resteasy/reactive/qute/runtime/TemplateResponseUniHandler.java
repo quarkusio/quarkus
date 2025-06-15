@@ -35,7 +35,8 @@ public class TemplateResponseUniHandler implements ServerRestHandler {
         requestContext.setResult(createUni(requestContext, (TemplateInstance) result, engine));
     }
 
-    private Uni<String> createUni(ResteasyReactiveRequestContext requestContext, TemplateInstance result, Engine engine) {
+    private Uni<String> createUni(ResteasyReactiveRequestContext requestContext, TemplateInstance result,
+            Engine engine) {
         MediaType mediaType = setSelectedVariant(result, requestContext.getRequest(),
                 requestContext.getHttpHeaders().getAcceptableLanguages());
         requestContext.setResponseContentType(mediaType);

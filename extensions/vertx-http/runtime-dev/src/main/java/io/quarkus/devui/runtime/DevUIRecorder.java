@@ -46,10 +46,8 @@ public class DevUIRecorder {
     }
 
     public void createJsonRpcRouter(BeanContainer beanContainer,
-            Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
-            List<String> deploymentMethods,
-            List<String> deploymentSubscriptions,
-            Map<String, RuntimeValue> recordedValues) {
+            Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap, List<String> deploymentMethods,
+            List<String> deploymentSubscriptions, Map<String, RuntimeValue> recordedValues) {
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
         jsonRpcRouter.populateJsonRPCRuntimeMethods(extensionMethodsMap);
         jsonRpcRouter.setJsonRPCDeploymentActions(deploymentMethods, deploymentSubscriptions);
@@ -63,27 +61,28 @@ public class DevUIRecorder {
     private JsonMapper createJsonMapper() {
         // We use a codec defined in the deployment module
         // because that module always has access to Jackson-Databind regardless of the application dependencies.
-        JsonMapper.Factory factory = JsonMapper.Factory.deploymentLinker().createLink(
-                DevConsoleManager.getGlobal(DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY));
+        JsonMapper.Factory factory = JsonMapper.Factory.deploymentLinker()
+                .createLink(DevConsoleManager.getGlobal(DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY));
         // We need to pass some information so that the mapper, who lives in the deployment classloader,
         // knows how to deal with JsonObject/JsonArray/JsonBuffer, who live in the runtime classloader.
         return factory.create(new JsonTypeAdapter<>(JsonObject.class, JsonObject::getMap, JsonObject::new),
                 new JsonTypeAdapter<JsonArray, List<?>>(JsonArray.class, JsonArray::getList, JsonArray::new),
-                new JsonTypeAdapter<>(Buffer.class, buffer -> BASE64_ENCODER.encodeToString(buffer.getBytes()), text -> {
-                    try {
-                        return Buffer.buffer(BASE64_DECODER.decode(text));
-                    } catch (IllegalArgumentException e) {
-                        throw new IllegalArgumentException("Expected a base64 encoded byte array, got: " + text, e);
-                    }
-                }));
+                new JsonTypeAdapter<>(Buffer.class, buffer -> BASE64_ENCODER.encodeToString(buffer.getBytes()),
+                        text -> {
+                            try {
+                                return Buffer.buffer(BASE64_DECODER.decode(text));
+                            } catch (IllegalArgumentException e) {
+                                throw new IllegalArgumentException("Expected a base64 encoded byte array, got: " + text,
+                                        e);
+                            }
+                        }));
     }
 
     public Handler<RoutingContext> communicationHandler() {
         return new DevUIWebSocket();
     }
 
-    public Handler<RoutingContext> uiHandler(String finalDestination,
-            String path,
+    public Handler<RoutingContext> uiHandler(String finalDestination, String path,
             List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations,
             ShutdownContext shutdownContext) {
 
@@ -118,16 +117,15 @@ public class DevUIRecorder {
             public void handle(RoutingContext rc) {
                 // Initially we were using 308 (MOVED PERMANENTLY) because we also want to redirect other HTTP Methods
                 // (and not only GET).
-                // However, it caused issues with browser caches and prevented users to have applications using Quarkus 2
+                // However, it caused issues with browser caches and prevented users to have applications using Quarkus
+                // 2
                 // and Quarkus 3 at the same time. So, we decided to switch to FOUND (302)
                 // See https://github.com/quarkusio/quarkus/issues/33658 for more context.
                 String location = contextRoot + "dev-ui";
                 if (page != null) {
                     location = location + "/" + page;
                 }
-                rc.response()
-                        .putHeader("Location", location)
-                        .setStatusCode(HttpResponseStatus.FOUND.code()).end();
+                rc.response().putHeader("Location", location).setStatusCode(HttpResponseStatus.FOUND.code()).end();
             }
         };
     }
@@ -147,20 +145,19 @@ public class DevUIRecorder {
         @Override
         public void run() {
             try {
-                Files.walkFileTree(directory,
-                        new SimpleFileVisitor<Path>() {
-                            @Override
-                            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                                Files.delete(dir);
-                                return FileVisitResult.CONTINUE;
-                            }
+                Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                        Files.delete(dir);
+                        return FileVisitResult.CONTINUE;
+                    }
 
-                            @Override
-                            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                                Files.delete(file);
-                                return FileVisitResult.CONTINUE;
-                            }
-                        });
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        Files.delete(file);
+                        return FileVisitResult.CONTINUE;
+                    }
+                });
             } catch (IOException e) {
                 LOG.error("Error cleaning up dev-ui temporary directory: " + directory, e);
             }

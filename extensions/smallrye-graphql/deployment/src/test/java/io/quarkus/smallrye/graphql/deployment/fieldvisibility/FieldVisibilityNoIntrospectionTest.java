@@ -18,26 +18,19 @@ public class FieldVisibilityNoIntrospectionTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(FieldVisibilityResource.Book.class, FieldVisibilityResource.Customer.class,
                             FieldVisibilityResource.Purchase.class, FieldVisibilityResource.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
-                    .addAsResource(
-                            new StringAsset("quarkus.smallrye-graphql.schema-include-introspection-types=true\n" +
-                                    "quarkus.smallrye-graphql.field-visibility=no-introspection"),
+                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml").addAsResource(
+                            new StringAsset("quarkus.smallrye-graphql.schema-include-introspection-types=true\n"
+                                    + "quarkus.smallrye-graphql.field-visibility=no-introspection"),
                             "application.properties"));
 
     @Test
     void testSchemaWithInvisibleFields() {
-        given()
-                .when()
-                .accept(MediaType.APPLICATION_JSON)
-                .get("/graphql/schema.graphql")
-                .then()
-                .statusCode(200)
-                .and().body(containsStringButNoFields("type __Directive"))
-                .and().body(containsStringButNoFields("type __EnumValue"))
-                .and().body(containsStringButNoFields("type __Field"))
-                .and().body(containsStringButNoFields("type __InputValue"))
-                .and().body(containsStringButNoFields("type __Schema"))
-                .and().body(containsStringButNoFields("type __Type"));
+        given().when().accept(MediaType.APPLICATION_JSON).get("/graphql/schema.graphql").then().statusCode(200).and()
+                .body(containsStringButNoFields("type __Directive")).and()
+                .body(containsStringButNoFields("type __EnumValue")).and()
+                .body(containsStringButNoFields("type __Field")).and()
+                .body(containsStringButNoFields("type __InputValue")).and()
+                .body(containsStringButNoFields("type __Schema")).and().body(containsStringButNoFields("type __Type"));
     }
 
     private org.hamcrest.Matcher<String> containsStringButNoFields(String s) {

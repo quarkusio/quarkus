@@ -67,29 +67,22 @@ public class TracerProcessor {
     private static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
 
     @BuildStep
-    UnremovableBeanBuildItem ensureProducersAreRetained(
-            CombinedIndexBuildItem indexBuildItem,
-            Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    UnremovableBeanBuildItem ensureProducersAreRetained(CombinedIndexBuildItem indexBuildItem,
+            Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .setUnremovable()
-                .addBeanClass(TracerProducer.class)
-                .build());
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(TracerProducer.class).build());
 
         IndexView index = indexBuildItem.getIndex();
 
         // Find all known SpanExporters and SpanProcessors
         Collection<String> knownClasses = new HashSet<>();
         knownClasses.add(ID_GENERATOR.toString());
-        index.getAllKnownImplementors(ID_GENERATOR)
-                .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
+        index.getAllKnownImplementors(ID_GENERATOR).forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(RESOURCE.toString());
-        index.getAllKnownImplementors(RESOURCE)
-                .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
+        index.getAllKnownImplementors(RESOURCE).forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(SAMPLER.toString());
-        index.getAllKnownImplementors(SAMPLER)
-                .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
+        index.getAllKnownImplementors(SAMPLER).forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
         knownClasses.add(SPAN_EXPORTER.toString());
         index.getAllKnownImplementors(SPAN_EXPORTER)
                 .forEach(classInfo -> knownClasses.add(classInfo.name().toString()));
@@ -128,8 +121,7 @@ public class TracerProcessor {
     }
 
     @BuildStep
-    void dropNames(
-            Optional<FrameworkEndpointsBuildItem> frameworkEndpoints,
+    void dropNames(Optional<FrameworkEndpointsBuildItem> frameworkEndpoints,
             Optional<StaticResourcesBuildItem> staticResources,
             BuildProducer<DropNonApplicationUrisBuildItem> dropNonApplicationUris,
             BuildProducer<DropStaticResourcesBuildItem> dropStaticResources) {
@@ -137,21 +129,20 @@ public class TracerProcessor {
         List<String> nonApplicationUris = new ArrayList<>();
 
         // Drop framework paths
-        frameworkEndpoints.ifPresent(
-                frameworkEndpointsBuildItem -> {
-                    for (String endpoint : frameworkEndpointsBuildItem.getEndpoints()) {
-                        // Management routes are using full urls -> Extract the path.
-                        if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
-                            try {
-                                nonApplicationUris.add(new URL(endpoint).getPath());
-                            } catch (Exception ignored) { // Not an URL
-                                nonApplicationUris.add(endpoint);
-                            }
-                        } else {
-                            nonApplicationUris.add(endpoint);
-                        }
+        frameworkEndpoints.ifPresent(frameworkEndpointsBuildItem -> {
+            for (String endpoint : frameworkEndpointsBuildItem.getEndpoints()) {
+                // Management routes are using full urls -> Extract the path.
+                if (endpoint.startsWith("http://") || endpoint.startsWith("https://")) {
+                    try {
+                        nonApplicationUris.add(new URL(endpoint).getPath());
+                    } catch (Exception ignored) { // Not an URL
+                        nonApplicationUris.add(endpoint);
                     }
-                });
+                } else {
+                    nonApplicationUris.add(endpoint);
+                }
+            }
+        });
 
         dropNonApplicationUris.produce(new DropNonApplicationUrisBuildItem(nonApplicationUris));
 
@@ -169,14 +160,10 @@ public class TracerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupSampler(
-            TracerRecorder recorder,
-            DropNonApplicationUrisBuildItem dropNonApplicationUris,
+    void setupSampler(TracerRecorder recorder, DropNonApplicationUrisBuildItem dropNonApplicationUris,
             DropStaticResourcesBuildItem dropStaticResources) {
 
-        recorder.setupSampler(
-                dropNonApplicationUris.getDropNames(),
-                dropStaticResources.getDropNames());
+        recorder.setupSampler(dropNonApplicationUris.getDropNames(), dropStaticResources.getDropNames());
     }
 
     @BuildStep(onlyIf = SecurityEventsEnabled.class)
@@ -192,10 +179,11 @@ public class TracerProcessor {
                 }
             }
         } else {
-            LOGGER.warn("""
-                    Exporting of Quarkus Security events as OpenTelemetry Span events is enabled,
-                    but the Quarkus Security is missing. This feature will only work if you add the Quarkus Security extension.
-                    """);
+            LOGGER.warn(
+                    """
+                            Exporting of Quarkus Security events as OpenTelemetry Span events is enabled,
+                            but the Quarkus Security is missing. This feature will only work if you add the Quarkus Security extension.
+                            """);
         }
     }
 
@@ -212,12 +200,12 @@ public class TracerProcessor {
             ObserverRegistrationPhaseBuildItem observerRegistrationPhase,
             BuildProducer<ObserverConfiguratorBuildItem> observerProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            observerProducer
-                    .produce(createEventObserver(observerRegistrationPhase, AUTHENTICATION_SUCCESS, "addEndUserAttributes"));
-            observerProducer
-                    .produce(createEventObserver(observerRegistrationPhase, AUTHORIZATION_SUCCESS, "updateEndUserAttributes"));
-            observerProducer
-                    .produce(createEventObserver(observerRegistrationPhase, AUTHORIZATION_FAILURE, "updateEndUserAttributes"));
+            observerProducer.produce(
+                    createEventObserver(observerRegistrationPhase, AUTHENTICATION_SUCCESS, "addEndUserAttributes"));
+            observerProducer.produce(
+                    createEventObserver(observerRegistrationPhase, AUTHORIZATION_SUCCESS, "updateEndUserAttributes"));
+            observerProducer.produce(
+                    createEventObserver(observerRegistrationPhase, AUTHORIZATION_FAILURE, "updateEndUserAttributes"));
         }
     }
 
@@ -230,12 +218,11 @@ public class TracerProcessor {
     }
 
     private static ObserverConfiguratorBuildItem createEventObserver(
-            ObserverRegistrationPhaseBuildItem observerRegistrationPhase, SecurityEventType eventType, String utilMethodName) {
-        return new ObserverConfiguratorBuildItem(observerRegistrationPhase.getContext()
-                .configure()
+            ObserverRegistrationPhaseBuildItem observerRegistrationPhase, SecurityEventType eventType,
+            String utilMethodName) {
+        return new ObserverConfiguratorBuildItem(observerRegistrationPhase.getContext().configure()
                 .beanClass(DotName.createSimple(TracerProducer.class.getName()))
-                .observedType(eventType.getObservedType())
-                .notify(mc -> {
+                .observedType(eventType.getObservedType()).notify(mc -> {
                     // Object event = eventContext.getEvent();
                     ResultHandle eventContext = mc.getMethodParam(0);
                     ResultHandle event = mc.invokeInterfaceMethod(
@@ -244,8 +231,8 @@ public class TracerProcessor {
                     // SecurityEventUtil.addAllEvents((SecurityEvent) event)
                     // SecurityEventUtil.addEvent((AuthenticationSuccessEvent) event)
                     // Method 'addEvent' is overloaded and accepts SecurityEventType#getObservedType
-                    mc.invokeStaticMethod(MethodDescriptor.ofMethod(SecurityEventUtil.class, utilMethodName,
-                            void.class, eventType.getObservedType()), mc.checkCast(event, eventType.getObservedType()));
+                    mc.invokeStaticMethod(MethodDescriptor.ofMethod(SecurityEventUtil.class, utilMethodName, void.class,
+                            eventType.getObservedType()), mc.checkCast(event, eventType.getObservedType()));
                     mc.returnNull();
                 }));
     }
@@ -267,8 +254,7 @@ public class TracerProcessor {
     }
 
     private static boolean isClassAnnotatedWithPath(AnnotationInstance annotation) {
-        return annotation.target().kind().equals(AnnotationTarget.Kind.CLASS) &&
-                annotation.name().equals(PATH);
+        return annotation.target().kind().equals(AnnotationTarget.Kind.CLASS) && annotation.name().equals(PATH);
     }
 
     private String combinePaths(String basePath, String relativePath) {

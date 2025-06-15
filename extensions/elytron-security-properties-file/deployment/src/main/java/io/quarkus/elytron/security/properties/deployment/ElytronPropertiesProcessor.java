@@ -19,12 +19,11 @@ import io.quarkus.elytron.security.properties.runtime.SecurityUsersConfig;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
- * The build time process for the security aspects of the deployment. This creates {@linkplain BuildStep}s for integration
- * with the Elytron security services. This supports the Elytron
- * {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
- * and {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm} realm implementations. Others could be
+ * The build time process for the security aspects of the deployment. This creates {@linkplain BuildStep}s for
+ * integration with the Elytron security services. This supports the Elytron
+ * {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm} and
+ * {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm} realm implementations. Others could be
  * added by creating an extension that produces a SecurityRealmBuildItem for the realm.
- *
  */
 class ElytronPropertiesProcessor {
     private static final Logger log = Logger.getLogger(ElytronPropertiesProcessor.class.getName());
@@ -38,16 +37,20 @@ class ElytronPropertiesProcessor {
 
     /**
      * Check to see if a PropertiesRealmConfig was specified and enabled and create a
-     * {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
-     * runtime value to process the user/roles properties files. This also registers the names of the user/roles properties
-     * files
-     * to include the build artifact.
+     * {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm} runtime value to process the
+     * user/roles properties files. This also registers the names of the user/roles properties files to include the
+     * build artifact.
      *
-     * @param recorder - runtime security recorder
-     * @param securityRealm - the producer factory for the SecurityRealmBuildItem
-     * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled PropertiesRealmConfig,
-     *         null otherwise
-     * @throws Exception - on any failure
+     * @param recorder
+     *        - runtime security recorder
+     * @param securityRealm
+     *        - the producer factory for the SecurityRealmBuildItem
+     *
+     * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled
+     *         PropertiesRealmConfig, null otherwise
+     *
+     * @throws Exception
+     *         - on any failure
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -59,10 +62,8 @@ class ElytronPropertiesProcessor {
                     realmConfig.roles());
             // Have the runtime recorder create the LegacyPropertiesSecurityRealm and create the build item
             RuntimeValue<SecurityRealm> realm = recorder.createRealm(propertiesConfig);
-            securityRealm
-                    .produce(
-                            new SecurityRealmBuildItem(realm, realmConfig.realmName(),
-                                    recorder.loadRealm(realm, propertiesConfig)));
+            securityRealm.produce(new SecurityRealmBuildItem(realm, realmConfig.realmName(),
+                    recorder.loadRealm(realm, propertiesConfig)));
             // Return the realm authentication mechanism build item
         }
     }
@@ -85,27 +86,29 @@ class ElytronPropertiesProcessor {
 
     /**
      * Check to see if the a MPRealmConfig was specified and enabled and create a
-     * {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm}
-     * runtime value.
+     * {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm} runtime value.
      *
-     * @param recorder - runtime security recorder
-     * @param securityRealm - the producer factory for the SecurityRealmBuildItem
+     * @param recorder
+     *        - runtime security recorder
+     * @param securityRealm
+     *        - the producer factory for the SecurityRealmBuildItem
+     *
      * @return the AuthConfigBuildItem for the realm authentication mechanism if there was an enabled MPRealmConfig,
      *         null otherwise
-     * @throws Exception - on any failure
+     *
+     * @throws Exception
+     *         - on any failure
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureMPRealmConfig(ElytronPropertiesFileRecorder recorder,
-            BuildProducer<SecurityRealmBuildItem> securityRealm,
-            MPRealmRuntimeConfig runtimeConfig) throws Exception {
+            BuildProducer<SecurityRealmBuildItem> securityRealm, MPRealmRuntimeConfig runtimeConfig) throws Exception {
         if (propertiesConfig.embedded().enabled()) {
             log.info("Configuring from MPRealmConfig");
 
             RuntimeValue<SecurityRealm> realm = recorder.createEmbeddedRealm(propertiesConfig);
-            securityRealm
-                    .produce(new SecurityRealmBuildItem(realm, propertiesConfig.embedded().realmName(),
-                            recorder.loadEmbeddedRealm(realm, propertiesConfig, runtimeConfig)));
+            securityRealm.produce(new SecurityRealmBuildItem(realm, propertiesConfig.embedded().realmName(),
+                    recorder.loadEmbeddedRealm(realm, propertiesConfig, runtimeConfig)));
         }
     }
 }

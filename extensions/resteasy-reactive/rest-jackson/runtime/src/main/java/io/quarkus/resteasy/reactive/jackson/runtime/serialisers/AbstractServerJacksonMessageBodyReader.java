@@ -39,8 +39,8 @@ public abstract class AbstractServerJacksonMessageBodyReader extends AbstractJso
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException,
-            WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return doReadFrom(type, genericType, entityStream);
     }
 

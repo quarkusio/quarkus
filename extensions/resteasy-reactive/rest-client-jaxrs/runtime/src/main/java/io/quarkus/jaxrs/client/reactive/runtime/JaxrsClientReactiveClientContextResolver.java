@@ -57,9 +57,7 @@ public class JaxrsClientReactiveClientContextResolver implements ClientContextRe
             @Override
             public Map<Class<?>, MultipartResponseData> getMultipartResponsesData() {
                 Map<Class<?>, MultipartResponseData> result = JaxrsClientReactiveRecorder.getMultipartResponsesData();
-                return result == null
-                        ? DefaultClientContext.INSTANCE.getMultipartResponsesData()
-                        : result;
+                return result == null ? DefaultClientContext.INSTANCE.getMultipartResponsesData() : result;
             }
         };
     }

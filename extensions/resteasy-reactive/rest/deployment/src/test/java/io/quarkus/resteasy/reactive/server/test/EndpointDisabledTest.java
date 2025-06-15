@@ -17,48 +17,33 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EndpointDisabledTest {
 
     @RegisterExtension
-    static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InvalidEncodingTest.FeedbackBody.class, InvalidEncodingTest.FeedbackResource.class)
-                    .addAsResource(new StringAsset("dummy.disabled=true"),
-                            "application.properties"));
+    static QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(InvalidEncodingTest.FeedbackBody.class, InvalidEncodingTest.FeedbackResource.class)
+                    .addAsResource(new StringAsset("dummy.disabled=true"), "application.properties"));
 
     @Test
     public void endpointWithNoAnnotation() {
-        get("/no-annotation")
-                .then()
-                .statusCode(200)
-                .body(equalTo("no"));
+        get("/no-annotation").then().statusCode(200).body(equalTo("no"));
     }
 
     @Test
     public void shouldBeDisabledBecauseOfMatchingProperty() {
-        get("/dummy-disabled-true")
-                .then()
-                .statusCode(404);
+        get("/dummy-disabled-true").then().statusCode(404);
     }
 
     @Test
     public void shouldBeEnabledBecauseOfNonMatchingProperty() {
-        get("/dummy-disabled-false")
-                .then()
-                .statusCode(200)
-                .body(equalTo("dummy.disabled=false"));
+        get("/dummy-disabled-false").then().statusCode(200).body(equalTo("dummy.disabled=false"));
     }
 
     @Test
     public void shouldBeDisabledBecauseOfNonExistingProperty() {
-        get("/other-dummy-disabled-missing-true")
-                .then()
-                .statusCode(404);
+        get("/other-dummy-disabled-missing-true").then().statusCode(404);
     }
 
     @Test
     public void shouldBeEnabledBecauseOfNonExistingProperty() {
-        get("/other-dummy-disabled-missing-false")
-                .then()
-                .statusCode(200)
-                .body(equalTo("missing=false"));
+        get("/other-dummy-disabled-missing-false").then().statusCode(200).body(equalTo("missing=false"));
     }
 
     @Path("no-annotation")

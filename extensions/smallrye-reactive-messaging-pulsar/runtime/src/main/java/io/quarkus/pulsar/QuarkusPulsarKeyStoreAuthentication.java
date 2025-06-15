@@ -84,10 +84,8 @@ public class QuarkusPulsarKeyStoreAuthentication implements Authentication {
         Buffer buffer = Buffer.buffer();
         final Base64.Encoder encoder = Base64.getMimeEncoder(64, LINE_SEPARATOR.getBytes());
 
-        buffer.appendString(BEGIN_CERT)
-                .appendString(LINE_SEPARATOR)
-                .appendBytes(encoder.encode(certificate.getEncoded()))
-                .appendString(LINE_SEPARATOR)
+        buffer.appendString(BEGIN_CERT).appendString(LINE_SEPARATOR)
+                .appendBytes(encoder.encode(certificate.getEncoded())).appendString(LINE_SEPARATOR)
                 .appendString(END_CERT);
         return buffer;
     }

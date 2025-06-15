@@ -53,8 +53,7 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Blocking
     @Path("/param/json")
-    public Map<String, Object> greeting(
-            @RestForm @PartType(MediaType.APPLICATION_JSON) Map<String, Object> map,
+    public Map<String, Object> greeting(@RestForm @PartType(MediaType.APPLICATION_JSON) Map<String, Object> map,
             @RestForm @PartType(MediaType.APPLICATION_JSON) Map<String, Object> map2,
 
             @FormParam("names") @PartType(MediaType.TEXT_PLAIN) List<String> names,

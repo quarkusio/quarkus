@@ -17,9 +17,8 @@ public class ScalaProcessor {
     }
 
     /*
-     * Register the Scala Jackson module if that has been added to the classpath
-     * Producing the BuildItem is entirely safe since if quarkus-jackson is not on the classpath
-     * the BuildItem will just be ignored
+     * Register the Scala Jackson module if that has been added to the classpath Producing the BuildItem is entirely
+     * safe since if quarkus-jackson is not on the classpath the BuildItem will just be ignored
      */
     @BuildStep
     void registerScalaJacksonModule(BuildProducer<ClassPathJacksonModuleBuildItem> classPathJacksonModules) {

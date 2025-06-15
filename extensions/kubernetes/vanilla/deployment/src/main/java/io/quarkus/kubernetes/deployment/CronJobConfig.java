@@ -25,8 +25,8 @@ public interface CronJobConfig {
     CronJobConcurrencyPolicy concurrencyPolicy();
 
     /**
-     * Deadline in seconds for starting the job if it misses scheduled time for any reason.
-     * Missed jobs executions will be counted as failed ones.
+     * Deadline in seconds for starting the job if it misses scheduled time for any reason. Missed jobs executions will
+     * be counted as failed ones.
      */
     Optional<Long> startingDeadlineSeconds();
 
@@ -68,8 +68,8 @@ public interface CronJobConfig {
     Optional<Long> activeDeadlineSeconds();
 
     /**
-     * Limits the lifetime of a Job that has finished execution (either Complete or Failed). If this
-     * field is set, ttlSecondsAfterFinished after the Job finishes, it is eligible to be automatically deleted.
+     * Limits the lifetime of a Job that has finished execution (either Complete or Failed). If this field is set,
+     * ttlSecondsAfterFinished after the Job finishes, it is eligible to be automatically deleted.
      */
     Optional<Integer> ttlSecondsAfterFinished();
 

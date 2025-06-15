@@ -22,8 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DevServicesDerbyDatasourceTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static QuarkusUnitTest test = new QuarkusUnitTest().withEmptyApplication()
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     // There are other warnings: JDK8, TestContainers, drivers, ...
@@ -31,8 +30,7 @@ public class DevServicesDerbyDatasourceTestCase {
                     && record.getMessage().contains("Agroal"))
             .assertLogRecords(records -> assertThat(records)
                     // This is just to get meaningful error messages, as LogRecord doesn't have a toString()
-                    .extracting(LogRecord::getMessage)
-                    .isEmpty());;
+                    .extracting(LogRecord::getMessage).isEmpty());;
 
     @Inject
     AgroalDataSource dataSource;

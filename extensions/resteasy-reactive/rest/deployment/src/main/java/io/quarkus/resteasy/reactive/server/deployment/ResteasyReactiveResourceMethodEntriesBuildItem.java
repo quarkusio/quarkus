@@ -10,10 +10,9 @@ import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Provides a list of entries for each JAX-RS Resource Methods created during the indexing process.
- * Each entry also contains the information about the Java class and method that correspond
- * to the JAX-RS Resource Method, giving extensions access to the entire set of metadata
- * thus allowing them to build additionally build-time functionality.
+ * Provides a list of entries for each JAX-RS Resource Methods created during the indexing process. Each entry also
+ * contains the information about the Java class and method that correspond to the JAX-RS Resource Method, giving
+ * extensions access to the entire set of metadata thus allowing them to build additionally build-time functionality.
  */
 public final class ResteasyReactiveResourceMethodEntriesBuildItem extends SimpleBuildItem {
 

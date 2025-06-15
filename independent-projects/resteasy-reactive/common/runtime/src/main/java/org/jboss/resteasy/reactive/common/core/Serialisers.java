@@ -56,8 +56,8 @@ public abstract class Serialisers {
         do {
             Collections.addAll(toProcess, klass.getInterfaces());
             if (klass == Object.class || klass.getSuperclass() == null) {
-                //spec extension, look for interfaces as well
-                //we match interfaces before Object
+                // spec extension, look for interfaces as well
+                // we match interfaces before Object
                 Set<Class<?>> seen = new HashSet<>(toProcess);
                 while (!toProcess.isEmpty()) {
                     Class<?> iface = toProcess.poll();
@@ -84,8 +84,7 @@ public abstract class Serialisers {
     }
 
     private void readerLookup(MediaType mediaType, RuntimeType runtimeType, List<MediaType> desired,
-            List<MessageBodyReader<?>> ret,
-            List<ResourceReader> goodTypeReaders) {
+            List<MessageBodyReader<?>> ret, List<ResourceReader> goodTypeReaders) {
         if (goodTypeReaders != null && !goodTypeReaders.isEmpty()) {
             List<ResourceReader> mediaTypeMatchingReaders = new ArrayList<>(goodTypeReaders.size());
             for (int i = 0; i < goodTypeReaders.size(); i++) {
@@ -99,7 +98,8 @@ public abstract class Serialisers {
                 }
             }
 
-            mediaTypeMatchingReaders.sort(new ResourceReader.ResourceReaderComparator(Collections.singletonList(mediaType)));
+            mediaTypeMatchingReaders
+                    .sort(new ResourceReader.ResourceReaderComparator(Collections.singletonList(mediaType)));
             for (int i = 0; i < mediaTypeMatchingReaders.size(); i++) {
                 ResourceReader mediaTypeMatchingReader = mediaTypeMatchingReaders.get(i);
                 ret.add(mediaTypeMatchingReader.instance());
@@ -121,14 +121,14 @@ public abstract class Serialisers {
             return Collections.emptyList();
         }
         Class<?> klass = lookupPrimitiveWrapper(entityType);
-        //first we check to make sure that the return type is build time selectable
-        //this fails when there are eligible writers for a sub type of the entity type
-        //e.g. if the entity type is Object and there are mappers for String then we
-        //can't determine the type at build time
+        // first we check to make sure that the return type is build time selectable
+        // this fails when there are eligible writers for a sub type of the entity type
+        // e.g. if the entity type is Object and there are mappers for String then we
+        // can't determine the type at build time
         for (Map.Entry<Class<?>, List<ResourceWriter>> entry : writers.entrySet()) {
             if (klass.isAssignableFrom(entry.getKey()) && !entry.getKey().equals(klass)) {
-                //this is a writer registered under a sub type
-                //check to see if the media type is relevant
+                // this is a writer registered under a sub type
+                // check to see if the media type is relevant
                 if (produces == null || produces.isEmpty()) {
                     return null;
                 } else {
@@ -145,21 +145,22 @@ public abstract class Serialisers {
         }
 
         var resourceWriters = findResourceWriters(writers, klass, produces, runtimeType);
-        // we must NOT sort here because the spec mentions that the writers closer to the requested java type are tried first
+        // we must NOT sort here because the spec mentions that the writers closer to the requested java type are tried
+        // first
         // and the list has already been built up in this way
         return toMessageBodyWriters(resourceWriters);
     }
 
-    protected List<ResourceWriter> findResourceWriters(QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers, Class<?> klass,
-            List<MediaType> produces, RuntimeType runtimeType) {
+    protected List<ResourceWriter> findResourceWriters(QuarkusMultivaluedMap<Class<?>, ResourceWriter> writers,
+            Class<?> klass, List<MediaType> produces, RuntimeType runtimeType) {
         Class<?> currentClass = klass;
         List<MediaType> desired = MediaTypeHelper.getUngroupedMediaTypes(produces);
         List<ResourceWriter> ret = new ArrayList<>();
         Deque<Class<?>> toProcess = new LinkedList<>();
         do {
             if (currentClass == Object.class && !toProcess.isEmpty()) {
-                //spec extension, look for interfaces as well
-                //we match interfaces before Object
+                // spec extension, look for interfaces as well
+                // we match interfaces before Object
                 Set<Class<?>> seen = new HashSet<>(toProcess);
                 while (!toProcess.isEmpty()) {
                     Class<?> iface = toProcess.poll();
@@ -262,7 +263,8 @@ public abstract class Serialisers {
 
     public List<MessageBodyWriter<?>> findWriters(ConfigurationImpl configuration, Class<?> entityType,
             MediaType resolvedMediaType, RuntimeType runtimeType) {
-        // FIXME: invocation is very different between client and server, where the server doesn't treat GenericEntity specially
+        // FIXME: invocation is very different between client and server, where the server doesn't treat GenericEntity
+        // specially
         // it's probably missing from there, while the client handles it upstack
         List<MediaType> mt = Collections.singletonList(resolvedMediaType);
         Class<?> klass = lookupPrimitiveWrapper(entityType);
@@ -295,7 +297,8 @@ public abstract class Serialisers {
     public static class BuiltinWriter extends Builtin {
         public final Class<? extends MessageBodyWriter<?>> writerClass;
 
-        public BuiltinWriter(Class<?> entityClass, Class<? extends MessageBodyWriter<?>> writerClass, String mediaType) {
+        public BuiltinWriter(Class<?> entityClass, Class<? extends MessageBodyWriter<?>> writerClass,
+                String mediaType) {
             this(entityClass, writerClass, mediaType, null);
         }
 
@@ -309,7 +312,8 @@ public abstract class Serialisers {
     public static class BuiltinReader extends Builtin {
         public final Class<? extends MessageBodyReader<?>> readerClass;
 
-        public BuiltinReader(Class<?> entityClass, Class<? extends MessageBodyReader<?>> readerClass, String mediaType) {
+        public BuiltinReader(Class<?> entityClass, Class<? extends MessageBodyReader<?>> readerClass,
+                String mediaType) {
             this(entityClass, readerClass, mediaType, null);
         }
 

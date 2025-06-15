@@ -96,11 +96,11 @@ public class MongoServiceBindingConverterTest {
     public void testSrvConnectionStringWithPortMissing() {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_HOST);
 
-        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(BINDING_DIRECTORY_NO_PORT,
-                properties);
+        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(
+                BINDING_DIRECTORY_NO_PORT, properties);
 
-        String expectedConnString = DB_PREFIX_SRV + EXPECTED_HOST + DB_N_OPTIONS_SEPARATOR + EXPECTED_DB + OPTIONS_SEPARATOR
-                + EXPECTED_OPTIONS;
+        String expectedConnString = DB_PREFIX_SRV + EXPECTED_HOST + DB_N_OPTIONS_SEPARATOR + EXPECTED_DB
+                + OPTIONS_SEPARATOR + EXPECTED_OPTIONS;
         verifyConnectionString(serviceBindingConfigSource, DB_PREFIX_SRV, expectedConnString);
         verifyUsernameAndPassword(serviceBindingConfigSource);
     }
@@ -110,8 +110,8 @@ public class MongoServiceBindingConverterTest {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_HOST);
         properties.remove(DB_SRV); // Make it a Standard connection string
 
-        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(BINDING_DIRECTORY_NO_PORT,
-                properties);
+        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(
+                BINDING_DIRECTORY_NO_PORT, properties);
 
         String expectedConnString = DB_PREFIX_STANDARD + EXPECTED_HOST + DB_N_OPTIONS_SEPARATOR + EXPECTED_DB
                 + OPTIONS_SEPARATOR + EXPECTED_OPTIONS;
@@ -124,11 +124,11 @@ public class MongoServiceBindingConverterTest {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_STANDARD_HOST_N_PORT_2);
         properties.remove(DB_SRV); // Make it a Standard connection string
 
-        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(BINDING_DIRECTORY_NO_PORT,
-                properties);
+        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(
+                BINDING_DIRECTORY_NO_PORT, properties);
 
-        String expectedConnString = DB_PREFIX_STANDARD + EXPECTED_STANDARD_HOST_N_PORT_2 + DB_N_OPTIONS_SEPARATOR + EXPECTED_DB
-                + OPTIONS_SEPARATOR + EXPECTED_OPTIONS;
+        String expectedConnString = DB_PREFIX_STANDARD + EXPECTED_STANDARD_HOST_N_PORT_2 + DB_N_OPTIONS_SEPARATOR
+                + EXPECTED_DB + OPTIONS_SEPARATOR + EXPECTED_OPTIONS;
         verifyConnectionString(serviceBindingConfigSource, DB_PREFIX_STANDARD, expectedConnString);
         verifyUsernameAndPassword(serviceBindingConfigSource);
     }
@@ -149,7 +149,8 @@ public class MongoServiceBindingConverterTest {
 
     @Test
     public void testConnectionStringWithUserAndOptionsMissing() {
-        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAndVerifyConfigSource(BINDING_DIRECTORY_NO_USER);
+        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAndVerifyConfigSource(
+                BINDING_DIRECTORY_NO_USER);
 
         String expectedConnString = DB_PREFIX_STANDARD + EXPECTED_HOST + ":" + EXPECTED_PORT + DB_N_OPTIONS_SEPARATOR
                 + EXPECTED_DB;
@@ -159,11 +160,12 @@ public class MongoServiceBindingConverterTest {
     @Test
     public void testConnectionStringWithUserMissing() {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_HOST_N_PORT);
-        properties.remove(DB_SRV); // BindingDirectory doesn't have this property, but removing it since it's put back in the map
+        properties.remove(DB_SRV); // BindingDirectory doesn't have this property, but removing it since it's put back
+                                   // in the map
         properties.remove(DB_USER); // This is what we actually want to test out
 
-        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(BINDING_DIRECTORY_NO_USER,
-                properties);
+        ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(
+                BINDING_DIRECTORY_NO_USER, properties);
 
         String expectedConnString = DB_PREFIX_STANDARD + EXPECTED_HOST + ":" + EXPECTED_PORT + DB_N_OPTIONS_SEPARATOR
                 + EXPECTED_DB + OPTIONS_SEPARATOR + EXPECTED_OPTIONS;
@@ -173,7 +175,8 @@ public class MongoServiceBindingConverterTest {
     @Test
     public void testConnectionStringWithUserAndPortMissing() {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_HOST);
-        properties.remove(DB_USER); // BindingDirectory doesn't have this property, but removing it since it's put back in the map
+        properties.remove(DB_USER); // BindingDirectory doesn't have this property, but removing it since it's put back
+                                    // in the map
 
         ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(
                 BINDING_DIRECTORY_NO_USER, properties);
@@ -186,7 +189,8 @@ public class MongoServiceBindingConverterTest {
     @Test
     public void testConnectionStringWithUserAndPortAndDatabaseMissing() {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_HOST);
-        properties.remove(DB_USER); // BindingDirectory doesn't have this property, but removing it since it's put back in the map
+        properties.remove(DB_USER); // BindingDirectory doesn't have this property, but removing it since it's put back
+                                    // in the map
         properties.remove(DB_DATABASE); // This is what we actually want to test out
 
         ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(
@@ -200,7 +204,8 @@ public class MongoServiceBindingConverterTest {
     @Test
     public void testStandardConnectionStringWithUserAndDatabaseMissing() {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_HOST_N_PORT);
-        properties.remove(DB_USER); // BindingDirectory doesn't have this property, but removing it since it's put back in the map
+        properties.remove(DB_USER); // BindingDirectory doesn't have this property, but removing it since it's put back
+                                    // in the map
         properties.remove(DB_SRV);
         properties.remove(DB_DATABASE); // This is what we actually want to test out
 
@@ -215,28 +220,30 @@ public class MongoServiceBindingConverterTest {
     @Test
     public void testSrvConnectionStringWithUserAndDatabaseMissing() {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_HOST_N_PORT);
-        properties.remove(DB_USER); // BindingDirectory doesn't have this property, but removing it since it's put back in the map
+        properties.remove(DB_USER); // BindingDirectory doesn't have this property, but removing it since it's put back
+                                    // in the map
         properties.remove(DB_DATABASE); // This is what we actually want to test out
 
         ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(
                 BINDING_DIRECTORY_NO_USER, properties);
 
-        String expectedConnString = DB_PREFIX_SRV + EXPECTED_HOST_N_PORT + DB_N_OPTIONS_SEPARATOR
-                + OPTIONS_SEPARATOR + EXPECTED_OPTIONS;
+        String expectedConnString = DB_PREFIX_SRV + EXPECTED_HOST_N_PORT + DB_N_OPTIONS_SEPARATOR + OPTIONS_SEPARATOR
+                + EXPECTED_OPTIONS;
         verifyConnectionString(serviceBindingConfigSource, DB_PREFIX_SRV, expectedConnString);
     }
 
     @Test
     public void testStandardConnectionStringWithDatabaseMissing() {
         HashMap<String, String> properties = getMapWithAllValuesPopulated(EXPECTED_HOST_N_PORT);
-        properties.remove(DB_SRV); // BindingDirectory doesn't have this property, but removing it since it's put back in the map
+        properties.remove(DB_SRV); // BindingDirectory doesn't have this property, but removing it since it's put back
+                                   // in the map
         properties.remove(DB_DATABASE); // This is what we actually want to test out
 
         ServiceBindingConfigSource serviceBindingConfigSource = readBindingAsSpyAndVerifyConfigSource(
                 BINDING_DIRECTORY_ALL_PROPS, properties);
 
-        String expectedConnString = DB_PREFIX_STANDARD +
-                EXPECTED_HOST_N_PORT + DB_N_OPTIONS_SEPARATOR + OPTIONS_SEPARATOR + EXPECTED_OPTIONS;
+        String expectedConnString = DB_PREFIX_STANDARD + EXPECTED_HOST_N_PORT + DB_N_OPTIONS_SEPARATOR
+                + OPTIONS_SEPARATOR + EXPECTED_OPTIONS;
         verifyConnectionString(serviceBindingConfigSource, DB_PREFIX_STANDARD, expectedConnString);
 
         verifyUsernameAndPassword(serviceBindingConfigSource);
@@ -270,8 +277,8 @@ public class MongoServiceBindingConverterTest {
 
     /*
      * ServiceBinding will be created as a {@link Mockito.spy} so that we can return the given bindingProperties from
-     * that object when getProperties is invoked.
-     * This is to facilitate testing any scenario where we don't want to read from binding
+     * that object when getProperties is invoked. This is to facilitate testing any scenario where we don't want to read
+     * from binding
      */
     private ServiceBindingConfigSource readBindingAsSpyAndVerifyConfigSource(String bindingDirectory,
             Map<String, String> bindingProperties) {
@@ -297,8 +304,10 @@ public class MongoServiceBindingConverterTest {
 
     private void verifyConnectionString(ServiceBindingConfigSource serviceBindingConfigSource, String expectedPrefix,
             String expectedConnString) {
-        assertThat(serviceBindingConfigSource.getProperties().get(MONGO_DB_CONNECTION_STRING)).startsWith(expectedPrefix);
-        assertThat(serviceBindingConfigSource.getProperties().get(MONGO_DB_CONNECTION_STRING)).isEqualTo(expectedConnString);
+        assertThat(serviceBindingConfigSource.getProperties().get(MONGO_DB_CONNECTION_STRING))
+                .startsWith(expectedPrefix);
+        assertThat(serviceBindingConfigSource.getProperties().get(MONGO_DB_CONNECTION_STRING))
+                .isEqualTo(expectedConnString);
     }
 
     private HashMap<String, String> getMapWithAllValuesPopulated(String host) {

@@ -68,10 +68,8 @@ public class OidcJsonWebTokenProducer {
             }
             JwtClaims jwtClaims;
             try {
-                jwtClaims = new JwtConsumerBuilder()
-                        .setSkipSignatureVerification()
-                        .setSkipAllValidators()
-                        .build().processToClaims(credential.getToken());
+                jwtClaims = new JwtConsumerBuilder().setSkipSignatureVerification().setSkipAllValidators().build()
+                        .processToClaims(credential.getToken());
             } catch (InvalidJwtException e) {
                 throw new OIDCException(e);
             }

@@ -8,7 +8,8 @@ public final class ResteasyReactiveSimplifiedResourceInfo implements SimpleResou
     private final Class<?> resourceClass;
     private final Class<?>[] parameterTypes;
 
-    public ResteasyReactiveSimplifiedResourceInfo(String methodName, Class<?> resourceClass, Class<?>[] parameterTypes) {
+    public ResteasyReactiveSimplifiedResourceInfo(String methodName, Class<?> resourceClass,
+            Class<?>[] parameterTypes) {
         this.methodName = methodName;
         this.resourceClass = resourceClass;
         this.parameterTypes = parameterTypes;

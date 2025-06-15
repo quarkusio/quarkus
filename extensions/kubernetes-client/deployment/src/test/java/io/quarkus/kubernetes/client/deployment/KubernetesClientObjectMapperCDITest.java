@@ -35,8 +35,8 @@ public class KubernetesClientObjectMapperCDITest {
 
     @Test
     public void kubernetesClientUsesCustomizedObjectMapper() {
-        final var result = kubernetesClient.getKubernetesSerialization()
-                .unmarshal("{\"quarkusName\":\"the-name\"}", ObjectMeta.class);
+        final var result = kubernetesClient.getKubernetesSerialization().unmarshal("{\"quarkusName\":\"the-name\"}",
+                ObjectMeta.class);
         assertEquals("the-name", result.getName());
     }
 

@@ -39,14 +39,10 @@ public interface LogRuntimeConfig {
      * <p>
      * JBoss Logging supports Apache-style log levels:
      * <p>
-     * * {@link org.jboss.logmanager.Level#FATAL}
-     * * {@link org.jboss.logmanager.Level#ERROR}
-     * * {@link org.jboss.logmanager.Level#WARN}
-     * * {@link org.jboss.logmanager.Level#INFO}
-     * * {@link org.jboss.logmanager.Level#DEBUG}
-     * * {@link org.jboss.logmanager.Level#TRACE}
-     *
-     * In addition, it also supports the standard JDK log levels.
+     * * {@link org.jboss.logmanager.Level#FATAL} * {@link org.jboss.logmanager.Level#ERROR} *
+     * {@link org.jboss.logmanager.Level#WARN} * {@link org.jboss.logmanager.Level#INFO} *
+     * {@link org.jboss.logmanager.Level#DEBUG} * {@link org.jboss.logmanager.Level#TRACE} In addition, it also supports
+     * the standard JDK log levels.
      *
      * @asciidoclet
      */
@@ -89,9 +85,9 @@ public interface LogRuntimeConfig {
     /**
      * Logging categories.
      * <p>
-     * Logging is done on a per-category basis. Each category can be independently configured.
-     * A configuration that applies to a category will also apply to all sub-categories of that category,
-     * unless there is a more specific matching sub-category configuration.
+     * Logging is done on a per-category basis. Each category can be independently configured. A configuration that
+     * applies to a category will also apply to all sub-categories of that category, unless there is a more specific
+     * matching sub-category configuration.
      */
     @WithName("category")
     @ConfigDocSection
@@ -141,8 +137,8 @@ public interface LogRuntimeConfig {
     Map<String, CleanupFilterConfig> filters();
 
     /**
-     * The names of additional handlers to link to the root category.
-     * These handlers are defined in consoleHandlers, fileHandlers, or syslogHandlers.
+     * The names of additional handlers to link to the root category. These handlers are defined in consoleHandlers,
+     * fileHandlers, or syslogHandlers.
      */
     Optional<List<String>> handlers();
 
@@ -150,8 +146,8 @@ public interface LogRuntimeConfig {
         /**
          * The log level for this category.
          * <p>
-         * Note that to get log levels below <code>INFO</code>,
-         * the minimum level build-time configuration option also needs to be adjusted.
+         * Note that to get log levels below <code>INFO</code>, the minimum level build-time configuration option also
+         * needs to be adjusted.
          */
         @WithDefault("inherit")
         InheritableLevel level();
@@ -215,10 +211,9 @@ public interface LogRuntimeConfig {
         AsyncConfig async();
 
         /**
-         * File rotation config.
-         * The time interval is determined by the content of the <code>fileSuffix</code> property.
-         * The size interval is determined by the content of the <code>maxFileSize</code> property.
-         * If both are used, the rotating will be based on time, then on size.
+         * File rotation config. The time interval is determined by the content of the <code>fileSuffix</code> property.
+         * The size interval is determined by the content of the <code>maxFileSize</code> property. If both are used,
+         * the rotating will be based on time, then on size.
          */
         RotationConfig rotation();
 
@@ -231,10 +226,9 @@ public interface LogRuntimeConfig {
             boolean enabled();
 
             /**
-             * The maximum log file size, after which a rotation is executed, up to {@code Long.MAX_VALUE} bytes.
-             * Note that the file is rotated <em>after</em> the log record is written.
-             * Thus, this isn't a hard maximum on the file size; rather, it's a hard <em>minimum</em>
-             * on the size of the file before it is rotated.
+             * The maximum log file size, after which a rotation is executed, up to {@code Long.MAX_VALUE} bytes. Note
+             * that the file is rotated <em>after</em> the log record is written. Thus, this isn't a hard maximum on the
+             * file size; rather, it's a hard <em>minimum</em> on the size of the file before it is rotated.
              */
             @WithDefault("10M")
             @WithConverter(MemorySizeConverter.class)
@@ -247,8 +241,7 @@ public interface LogRuntimeConfig {
             int maxBackupIndex();
 
             /**
-             * The file handler rotation file suffix.
-             * When used, the file will be rotated based on its suffix.
+             * The file handler rotation file suffix. When used, the file will be rotated based on its suffix.
              * <p>
              * The suffix must be in a date-time format that is understood by {@link DateTimeFormatter}.
              * <p>
@@ -282,8 +275,8 @@ public interface LogRuntimeConfig {
         boolean stderr();
 
         /**
-         * The log format. Note that this value is ignored if an extension is present that takes
-         * control of console formatting (e.g., an XML or JSON-format extension).
+         * The log format. Note that this value is ignored if an extension is present that takes control of console
+         * formatting (e.g., an XML or JSON-format extension).
          */
         @WithDefault("%d{yyyy-MM-dd HH:mm:ss,SSS} %-5p [%c{3.}] (%t) %s%e%n")
         String format();
@@ -296,21 +289,19 @@ public interface LogRuntimeConfig {
         Level level();
 
         /**
-         * If the console logging should be in color. If undefined, Quarkus takes
-         * best guess based on the operating system and environment.
-         * Note that this value is ignored if an extension is present that takes
-         * control of console formatting (e.g., an XML or JSON-format extension).
+         * If the console logging should be in color. If undefined, Quarkus takes best guess based on the operating
+         * system and environment. Note that this value is ignored if an extension is present that takes control of
+         * console formatting (e.g., an XML or JSON-format extension).
          * <p>
-         * This has been deprecated and replaced with <code>quarkus.console.color</code>,
-         * as Quarkus now provides more console-based functionality than just logging.
+         * This has been deprecated and replaced with <code>quarkus.console.color</code>, as Quarkus now provides more
+         * console-based functionality than just logging.
          */
         @Deprecated
         Optional<Boolean> color();
 
         /**
-         * Specify how much the colors should be darkened.
-         * Note that this value is ignored if an extension is present that takes
-         * control of console formatting (e.g., an XML or JSON-format extension).
+         * Specify how much the colors should be darkened. Note that this value is ignored if an extension is present
+         * that takes control of console formatting (e.g., an XML or JSON-format extension).
          */
         @WithDefault("0")
         int darken();
@@ -334,7 +325,6 @@ public interface LogRuntimeConfig {
         boolean enable();
 
         /**
-         *
          * The IP address and port of the Syslog server
          */
         @WithDefault("localhost:514")
@@ -382,9 +372,8 @@ public interface LogRuntimeConfig {
         boolean truncate();
 
         /**
-         * Enables or disables blocking when attempting to reconnect a
-         * {@link Protocol#TCP
-         * TCP} or {@link Protocol#SSL_TCP SSL TCP} protocol
+         * Enables or disables blocking when attempting to reconnect a {@link Protocol#TCP TCP} or
+         * {@link Protocol#SSL_TCP SSL TCP} protocol
          */
         @WithDefault("false")
         boolean blockOnReconnect();
@@ -408,11 +397,11 @@ public interface LogRuntimeConfig {
         Optional<String> filter();
 
         /**
-         * The maximum length, in bytes, of the message allowed to be sent, up to {@code Integer.MAX_VALUE} bytes. The length
-         * includes the header and the message.
+         * The maximum length, in bytes, of the message allowed to be sent, up to {@code Integer.MAX_VALUE} bytes. The
+         * length includes the header and the message.
          * <p>
-         * If not set, the default value is {@code 2048} when {@code sys-log-type} is {@code rfc5424} (which is the default)
-         * and {@code 1024} when {@code sys-log-type} is {@code rfc3164}
+         * If not set, the default value is {@code 2048} when {@code sys-log-type} is {@code rfc5424} (which is the
+         * default) and {@code 1024} when {@code sys-log-type} is {@code rfc3164}
          */
         Optional<@WithConverter(MemorySizeConverter.class) MemorySize> maxLength();
 
@@ -431,7 +420,6 @@ public interface LogRuntimeConfig {
         boolean enable();
 
         /**
-         *
          * The IP address and port of the server receiving the logs
          */
         @WithDefault("localhost:4560")
@@ -445,9 +433,8 @@ public interface LogRuntimeConfig {
         SocketHandler.Protocol protocol();
 
         /**
-         * Enables or disables blocking when attempting to reconnect a
-         * {@link Protocol#TCP
-         * TCP} or {@link Protocol#SSL_TCP SSL TCP} protocol
+         * Enables or disables blocking when attempting to reconnect a {@link Protocol#TCP TCP} or
+         * {@link Protocol#SSL_TCP SSL TCP} protocol
          */
         @WithDefault("false")
         boolean blockOnReconnect();

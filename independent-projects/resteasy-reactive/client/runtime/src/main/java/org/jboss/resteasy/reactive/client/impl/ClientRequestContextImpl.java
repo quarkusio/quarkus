@@ -59,7 +59,7 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.restClientRequestContext = restClientRequestContext;
         this.client = client;
         this.configuration = configuration;
-        this.headersMap = new ClientRequestHeadersMap(); //restClientRequestContext.requestHeaders.getHeaders()
+        this.headersMap = new ClientRequestHeadersMap(); // restClientRequestContext.requestHeaders.getHeaders()
         this.providers = new ProvidersImpl(restClientRequestContext);
 
         // Always create a duplicated context because each REST Client invocation must have its own context
@@ -394,14 +394,15 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
 
         @Override
         public boolean isEmpty() {
-            return restClientRequestContext.requestHeaders.getHeaders().isEmpty() &&
-                    (restClientRequestContext.entity == null || restClientRequestContext.entity.getMediaType() == null);
+            return restClientRequestContext.requestHeaders.getHeaders().isEmpty()
+                    && (restClientRequestContext.entity == null
+                            || restClientRequestContext.entity.getMediaType() == null);
         }
 
         @Override
         public boolean containsKey(Object key) {
-            return restClientRequestContext.requestHeaders.getHeaders().containsKey(key) ||
-                    (isContentType(key) && restClientRequestContext.entity.getMediaType() != null);
+            return restClientRequestContext.requestHeaders.getHeaders().containsKey(key)
+                    || (isContentType(key) && restClientRequestContext.entity.getMediaType() != null);
         }
 
         @Override
@@ -491,7 +492,8 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
                                     return iterator.next();
                                 } else if (!contentTypeReturned.get()) {
                                     contentTypeReturned.set(true);
-                                    return new AbstractMap.SimpleEntry<>(HttpHeaders.CONTENT_TYPE, singletonList(mediaType()));
+                                    return new AbstractMap.SimpleEntry<>(HttpHeaders.CONTENT_TYPE,
+                                            singletonList(mediaType()));
                                 } else {
                                     throw new NoSuchElementException();
                                 }

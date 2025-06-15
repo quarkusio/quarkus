@@ -39,8 +39,8 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.PanacheMovingAnnotationVisitor;
 
 /**
- * A visitor that replaces public fields in an entity with a protected field + accessors,
- * so that the accessors can be called in {@link io.quarkus.panache.common.deployment.PanacheEntityEnhancer}.
+ * A visitor that replaces public fields in an entity with a protected field + accessors, so that the accessors can be
+ * called in {@link io.quarkus.panache.common.deployment.PanacheEntityEnhancer}.
  */
 public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisitor {
 
@@ -49,8 +49,8 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
     private final Set<String> userMethods = new HashSet<>();
     private final ClassInfo entityInfo;
 
-    public PanacheEntityClassAccessorGenerationVisitor(ClassVisitor outputClassVisitor,
-            ClassInfo entityInfo, EntityModel entityModel) {
+    public PanacheEntityClassAccessorGenerationVisitor(ClassVisitor outputClassVisitor, ClassInfo entityInfo,
+            EntityModel entityModel) {
         super(Gizmo.ASM_API_VERSION, outputClassVisitor);
 
         String className = entityInfo.name().toString();
@@ -73,14 +73,14 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
         // We're going to generate a getter for this field;
         // let's alter the field accordingly.
 
-        //we make the fields protected
-        //so any errors are visible immediately, rather than data just being lost
+        // we make the fields protected
+        // so any errors are visible immediately, rather than data just being lost
         FieldVisitor superVisitor;
         if (name.equals("id")) {
             superVisitor = super.visitField(access, name, descriptor, signature, value);
         } else {
-            superVisitor = super.visitField((access | Modifier.PROTECTED) & ~(Modifier.PRIVATE | Modifier.PUBLIC),
-                    name, descriptor, signature, value);
+            superVisitor = super.visitField((access | Modifier.PROTECTED) & ~(Modifier.PRIVATE | Modifier.PUBLIC), name,
+                    descriptor, signature, value);
         }
         entityField.signature = signature;
         // if we have a mapped field, let's add some annotations
@@ -99,10 +99,12 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
 
             @Override
             public void visitEnd() {
-                // Add the @JaxbTransient property to the field so that JAXB prefers the generated getter (otherwise JAXB complains about
+                // Add the @JaxbTransient property to the field so that JAXB prefers the generated getter (otherwise
+                // JAXB complains about
                 // having a field and property both with the same name)
                 // JSONB will already use the getter, so we're good
-                // Note: we don't need to check if we already have @XmlTransient in the descriptors because if we did, we moved it to the getter
+                // Note: we don't need to check if we already have @XmlTransient in the descriptors because if we did,
+                // we moved it to the getter
                 // so we can't have any duplicate
                 super.visitAnnotation(JAXB_TRANSIENT_SIGNATURE, true);
                 super.visitEnd();
@@ -139,8 +141,8 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
             String getterName = field.getGetterName();
             String getterDescriptor = "()" + field.descriptor;
             if (!userMethods.contains(getterName + "/" + getterDescriptor)) {
-                MethodVisitor mv = super.visitMethod(field.visibility.accessOpCode,
-                        getterName, getterDescriptor, field.signature == null ? null : "()" + field.signature, null);
+                MethodVisitor mv = super.visitMethod(field.visibility.accessOpCode, getterName, getterDescriptor,
+                        field.signature == null ? null : "()" + field.signature, null);
                 mv.visitCode();
                 mv.visitIntInsn(Opcodes.ALOAD, 0);
                 mv.visitFieldInsn(Opcodes.GETFIELD, thisClass.getInternalName(), field.name, field.descriptor);
@@ -151,7 +153,8 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
                 for (EntityFieldAnnotation anno : field.annotations) {
                     anno.writeToVisitor(mv);
                 }
-                // Add an explicit JAXB annotation so that the entire property is not ignored due to having @XmlTransient
+                // Add an explicit JAXB annotation so that the entire property is not ignored due to having
+                // @XmlTransient
                 // on the field
                 if (shouldAddJsonProperty(field)) {
                     AnnotationVisitor visitor = mv.visitAnnotation(JSON_PROPERTY_SIGNATURE, true);
@@ -172,8 +175,8 @@ public final class PanacheEntityClassAccessorGenerationVisitor extends ClassVisi
             String setterName = field.getSetterName();
             String setterDescriptor = "(" + field.descriptor + ")V";
             if (!userMethods.contains(setterName + "/" + setterDescriptor)) {
-                MethodVisitor mv = super.visitMethod(field.visibility.accessOpCode,
-                        setterName, setterDescriptor, field.signature == null ? null : "(" + field.signature + ")V", null);
+                MethodVisitor mv = super.visitMethod(field.visibility.accessOpCode, setterName, setterDescriptor,
+                        field.signature == null ? null : "(" + field.signature + ")V", null);
                 mv.visitCode();
                 mv.visitIntInsn(Opcodes.ALOAD, 0);
                 int loadCode;

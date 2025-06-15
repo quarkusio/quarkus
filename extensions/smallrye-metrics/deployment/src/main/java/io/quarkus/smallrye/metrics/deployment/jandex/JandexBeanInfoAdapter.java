@@ -42,27 +42,21 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
         List<AnnotationInfo> annotations = new ArrayList<>();
         ClassInfo clazz = input;
         while (clazz != null && clazz.superName() != null) {
-            List<AnnotationInfo> annotationsSuper = transformedAnnotations.getAnnotations(clazz)
-                    .stream()
-                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
-                    .map(annotationInfoAdapter::convert)
+            List<AnnotationInfo> annotationsSuper = transformedAnnotations.getAnnotations(clazz).stream()
+                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation).map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
             annotations.addAll(annotationsSuper);
 
             // a metric annotation can also be added through a CDI stereotype, so look into stereotypes
-            List<AnnotationInfo> annotationsThroughStereotypes = transformedAnnotations.getAnnotations(clazz)
-                    .stream()
-                    .flatMap(a -> getMetricAnnotationsThroughStereotype(a, indexView))
-                    .collect(Collectors.toList());
+            List<AnnotationInfo> annotationsThroughStereotypes = transformedAnnotations.getAnnotations(clazz).stream()
+                    .flatMap(a -> getMetricAnnotationsThroughStereotype(a, indexView)).collect(Collectors.toList());
             annotations.addAll(annotationsThroughStereotypes);
 
             clazz = indexView.getClassByName(clazz.superName());
         }
 
         return new RawBeanInfo(input.simpleName(),
-                input.name().prefix() == null ? "" : input.name().prefix().toString(),
-                annotations,
-                superClassInfo);
+                input.name().prefix() == null ? "" : input.name().prefix().toString(), annotations, superClassInfo);
     }
 
     private Stream<AnnotationInfo> getMetricAnnotationsThroughStereotype(AnnotationInstance stereotypeInstance,
@@ -70,10 +64,8 @@ public class JandexBeanInfoAdapter implements BeanInfoAdapter<ClassInfo> {
         ClassInfo annotationType = indexView.getClassByName(stereotypeInstance.name());
         if (annotationType != null && annotationType.declaredAnnotation(DotNames.STEREOTYPE) != null) {
             JandexAnnotationInfoAdapter adapter = new JandexAnnotationInfoAdapter(indexView);
-            return transformedAnnotations.getAnnotations(annotationType)
-                    .stream()
-                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
-                    .map(adapter::convert);
+            return transformedAnnotations.getAnnotations(annotationType).stream()
+                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation).map(adapter::convert);
         } else {
             return Stream.empty();
         }

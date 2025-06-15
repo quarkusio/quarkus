@@ -14,8 +14,8 @@ final class BouncyCastlePackages {
     static final String ORG_BOUNCYCASTLE_CRYPTO_FIPS_PACKAGE = "org.bouncycastle.crypto.fips";
     static final String ORG_BOUNCYCASTLE_CRYPTO_INTERNAL_PACKAGE = "org.bouncycastle.crypto.internal";
     static final String ORG_BOUNCYCASTLE_CRYPTO_GENERAL_PACKAGE = "org.bouncycastle.crypto.general";
-    static final Set<String> PACKAGES = Arrays.asList(Package.getPackages()).stream()
-            .map(p -> p.getName()).filter(p -> p.startsWith(ORG_BOUNCYCASTLE_CRYPTO_PACKAGE)).collect(Collectors.toSet());
+    static final Set<String> PACKAGES = Arrays.asList(Package.getPackages()).stream().map(p -> p.getName())
+            .filter(p -> p.startsWith(ORG_BOUNCYCASTLE_CRYPTO_PACKAGE)).collect(Collectors.toSet());
 }
 
 @com.oracle.svm.core.annotate.TargetClass(className = "org.bouncycastle.crypto.general.DSA$1", onlyWith = BouncyCastleCryptoGeneral.class)

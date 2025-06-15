@@ -10,12 +10,9 @@ import io.restassured.RestAssured;
 public class RestPathTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withConfigurationResource("empty.properties")
-            .overrideConfigKey("quarkus.rest.path", "/foo")
-            .overrideConfigKey("quarkus.http.root-path", "/app")
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withConfigurationResource("empty.properties")
+            .overrideConfigKey("quarkus.rest.path", "/foo").overrideConfigKey("quarkus.http.root-path", "/app")
+            .withApplicationRoot((jar) -> jar.addClass(HelloResource.class));
 
     @Test
     public void testRestPath() {

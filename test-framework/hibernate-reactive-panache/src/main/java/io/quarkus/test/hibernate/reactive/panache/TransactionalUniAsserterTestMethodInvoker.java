@@ -20,8 +20,7 @@ public class TransactionalUniAsserterTestMethodInvoker extends RunOnVertxContext
 
     @Override
     public boolean supportsMethod(Class<?> originalTestClass, Method originalTestMethod) {
-        return hasSupportedAnnotation(originalTestClass, originalTestMethod)
-                && hasSupportedParams(originalTestMethod);
+        return hasSupportedAnnotation(originalTestClass, originalTestMethod) && hasSupportedParams(originalTestMethod);
     }
 
     private boolean hasSupportedParams(Method originalTestMethod) {

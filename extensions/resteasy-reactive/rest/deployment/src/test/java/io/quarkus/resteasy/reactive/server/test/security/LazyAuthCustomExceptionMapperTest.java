@@ -8,8 +8,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class LazyAuthCustomExceptionMapperTest extends AbstractCustomExceptionMapperTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(jar -> jar
-            .addAsResource(new StringAsset("""
+    static QuarkusUnitTest runner = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addAsResource(new StringAsset("""
                     quarkus.http.auth.permission.authentication.paths=*
                     quarkus.http.auth.permission.authentication.policy=authenticated
                     quarkus.http.auth.proactive=false

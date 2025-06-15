@@ -16,46 +16,33 @@ import io.restassured.RestAssured;
 
 public class ReplaceIdentityLazyAuthRolesAllowedJaxRsTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RolesAllowedResource.class, UserResource.class, RolesAllowedBlockingResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
-                            SecurityOverrideFilter.class,
-                            UnsecuredSubResource.class)
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(RolesAllowedResource.class, UserResource.class, RolesAllowedBlockingResource.class,
+                    TestIdentityProvider.class, TestIdentityController.class, SecurityOverrideFilter.class,
+                    UnsecuredSubResource.class)
+            .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"), "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
     public void testRolesAllowedModified() {
-        //make sure that things work as normal when no modification happens
+        // make sure that things work as normal when no modification happens
 
         Arrays.asList("/roles", "/roles-blocking").forEach((path) -> {
-            RestAssured.given()
-                    .header("user", "admin")
-                    .header("role", "admin")
-                    .get(path).then().statusCode(200);
-            RestAssured.given()
-                    .auth().basic("user", "user")
-                    .header("user", "admin")
-                    .header("role", "admin").get(path + "/admin").then().statusCode(200);
+            RestAssured.given().header("user", "admin").header("role", "admin").get(path).then().statusCode(200);
+            RestAssured.given().auth().basic("user", "user").header("user", "admin").header("role", "admin")
+                    .get(path + "/admin").then().statusCode(200);
         });
     }
 
     @Test
     public void testUser() {
-        RestAssured.given().auth().basic("user", "user")
-                .header("user", "admin")
-                .header("role", "admin").get("/user").then().body(is("admin"));
-        RestAssured.given().auth().preemptive().basic("user", "user")
-                .header("user", "admin")
-                .header("role", "admin").get("/user").then().body(is("admin"));
+        RestAssured.given().auth().basic("user", "user").header("user", "admin").header("role", "admin").get("/user")
+                .then().body(is("admin"));
+        RestAssured.given().auth().preemptive().basic("user", "user").header("user", "admin").header("role", "admin")
+                .get("/user").then().body(is("admin"));
     }
 }

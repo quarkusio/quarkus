@@ -31,15 +31,9 @@ public class OidcConfigurationMetadata {
     private final String issuer;
     private final JsonObject json;
 
-    public OidcConfigurationMetadata(String tokenUri,
-            String introspectionUri,
-            String authorizationUri,
-            String jsonWebKeySetUri,
-            String userInfoUri,
-            String endSessionUri,
-            String registrationUri,
-            String revocationUri,
-            String issuer) {
+    public OidcConfigurationMetadata(String tokenUri, String introspectionUri, String authorizationUri,
+            String jsonWebKeySetUri, String userInfoUri, String endSessionUri, String registrationUri,
+            String revocationUri, String issuer) {
         this.discoveryUri = null;
         this.tokenUri = tokenUri;
         this.introspectionUri = introspectionUri;

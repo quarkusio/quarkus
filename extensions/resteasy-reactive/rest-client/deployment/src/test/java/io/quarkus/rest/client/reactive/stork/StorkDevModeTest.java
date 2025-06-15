@@ -28,8 +28,7 @@ public class StorkDevModeTest {
     public static void setUp() {
         wireMockServer = new WireMockServer(options().port(8766));
         wireMockServer.stubFor(WireMock.get("/hello")
-                .willReturn(aResponse().withFixedDelay(1000)
-                        .withBody(WIREMOCK_RESPONSE).withStatus(200)));
+                .willReturn(aResponse().withFixedDelay(1000).withBody(WIREMOCK_RESPONSE).withStatus(200)));
         wireMockServer.start();
     }
 
@@ -39,12 +38,9 @@ public class StorkDevModeTest {
     }
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PassThroughResource.class, HelloResource.class, HelloClient.class)
-                    .addAsResource(
-                            new File("src/test/resources/stork-dev-application.properties"),
-                            "application.properties"));
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClasses(PassThroughResource.class, HelloResource.class, HelloClient.class).addAsResource(
+                    new File("src/test/resources/stork-dev-application.properties"), "application.properties"));
 
     @Test
     void shouldModifyStorkSettings() {
@@ -70,10 +66,7 @@ public class StorkDevModeTest {
 
     @Test
     void shouldSayHelloNameWithSlash() {
-        when()
-                .get("/helper/v2/stork")
-                .then()
-                .statusCode(200)
+        when().get("/helper/v2/stork").then().statusCode(200)
                 // The response contains an encoded `/`
                 .body(equalTo("Hello, stork/stork"));
 
@@ -81,10 +74,7 @@ public class StorkDevModeTest {
 
     @Test
     void shouldSayHelloNameWithBlank() {
-        when()
-                .get("/helper/smallrye stork")
-                .then()
-                .statusCode(200)
+        when().get("/helper/smallrye stork").then().statusCode(200)
                 // The response contains an encoded blank espace
                 .body(equalTo("Hello, smallrye stork"));
     }

@@ -17,11 +17,8 @@ public class MessageBundleValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hellos.class)
-                    .addAsResource(new StringAsset(
-                            "hello=Hallo {foo}!\nhello_never=Ball!"),
-                            "messages/msg_de.properties"))
+            .withApplicationRoot((jar) -> jar.addClasses(Hellos.class).addAsResource(
+                    new StringAsset("hello=Hallo {foo}!\nhello_never=Ball!"), "messages/msg_de.properties"))
             .assertException(t -> {
                 Throwable e = t;
                 MessageBundleException me = null;

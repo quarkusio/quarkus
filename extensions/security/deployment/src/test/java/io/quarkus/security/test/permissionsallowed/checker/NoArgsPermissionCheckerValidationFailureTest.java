@@ -13,12 +13,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoArgsPermissionCheckerValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .assertException(t -> {
-                Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
-                Assertions.assertTrue(t.getMessage().contains("Checker#checkSomeValue"));
-                Assertions.assertTrue(t.getMessage().contains("must have at least one parameter"));
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().assertException(t -> {
+        Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
+        Assertions.assertTrue(t.getMessage().contains("Checker#checkSomeValue"));
+        Assertions.assertTrue(t.getMessage().contains("must have at least one parameter"));
+    });
 
     @Test
     public void test() {

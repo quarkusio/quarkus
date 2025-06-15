@@ -18,10 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class RequiredClaimsUnitTest {
-    private static Class[] testClasses = {
-            RequiredClaimsEndpoint.class,
-            TokenUtils.class
-    };
+    private static Class[] testClasses = { RequiredClaimsEndpoint.class, TokenUtils.class };
 
     /**
      * The test generated JWT token string
@@ -36,13 +33,9 @@ public class RequiredClaimsUnitTest {
     private Long expClaim;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("publicKey.pem")
-                    .addAsResource("privateKey.pem")
-                    .addAsResource("RequiredClaims.json")
-                    .addAsResource("application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(testClasses).addAsResource("publicKey.pem").addAsResource("privateKey.pem")
+                    .addAsResource("RequiredClaims.json").addAsResource("application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {
@@ -55,16 +48,12 @@ public class RequiredClaimsUnitTest {
 
     /**
      * Verify that the token issuer claim is as expected
-     *
      */
     @Test()
     public void verifyIssuerClaim() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
                 .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyIssuer").andReturn();
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyIssuer").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
@@ -75,17 +64,12 @@ public class RequiredClaimsUnitTest {
 
     /**
      * Verify that the token subclaim is as expected
-     *
      */
     @Test()
     public void verifySubClaim() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
-                .queryParam(Claims.sub.name(), "24400320")
-                .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifySUB").andReturn();
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
+                .queryParam(Claims.sub.name(), "24400320").queryParam(Claims.iss.name(), "https://server.example.com")
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifySUB").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
@@ -96,17 +80,12 @@ public class RequiredClaimsUnitTest {
 
     /**
      * Verify that the token jti claim is as expected
-     *
      */
     @Test()
     public void verifyJTI() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
-                .queryParam(Claims.jti.name(), "a-f2b2180c")
-                .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyJTI").andReturn();
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
+                .queryParam(Claims.jti.name(), "a-f2b2180c").queryParam(Claims.iss.name(), "https://server.example.com")
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyJTI").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
@@ -117,17 +96,13 @@ public class RequiredClaimsUnitTest {
 
     /**
      * Verify that the token upn claim is as expected
-     *
      */
     @Test()
     public void verifyUPN() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
                 .queryParam(Claims.upn.name(), "jdoe@example.com")
                 .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyUPN").andReturn();
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyUPN").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
@@ -138,17 +113,12 @@ public class RequiredClaimsUnitTest {
 
     /**
      * Verify that the token aud claim is as expected
-     *
      */
     @Test()
     public void verifyAudience() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
-                .queryParam(Claims.aud.name(), "")
-                .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyAudience").andReturn();
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
+                .queryParam(Claims.aud.name(), "").queryParam(Claims.iss.name(), "https://server.example.com")
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyAudience").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
@@ -159,17 +129,12 @@ public class RequiredClaimsUnitTest {
 
     /**
      * Verify that the token aud claim is as expected
-     *
      */
     @Test()
     public void verifyAudience2() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
-                .queryParam(Claims.aud.name(), "")
-                .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyOptionalAudience").andReturn();
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
+                .queryParam(Claims.aud.name(), "").queryParam(Claims.iss.name(), "https://server.example.com")
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyOptionalAudience").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
@@ -180,17 +145,12 @@ public class RequiredClaimsUnitTest {
 
     /**
      * Verify that the token iat claim is as expected
-     *
      */
     @Test()
     public void verifyIssuedAt() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
-                .queryParam(Claims.iat.name(), iatClaim)
-                .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyIssuedAt").andReturn();
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
+                .queryParam(Claims.iat.name(), iatClaim).queryParam(Claims.iss.name(), "https://server.example.com")
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyIssuedAt").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();
@@ -201,17 +161,12 @@ public class RequiredClaimsUnitTest {
 
     /**
      * Verify that the token exp claim is as expected
-     *
      */
     @Test()
     public void verifyExpiration() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
-                .queryParam(Claims.exp.name(), expClaim)
-                .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyExpiration").andReturn();
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
+                .queryParam(Claims.exp.name(), expClaim).queryParam(Claims.iss.name(), "https://server.example.com")
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyExpiration").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();

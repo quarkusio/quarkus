@@ -28,14 +28,12 @@ import io.quarkus.test.QuarkusUnitTest;
 class LambdaWithDecoratorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(LambdaWithDecorator.class, RequestHandlerDecorator.class, InputPerson.class))
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(LambdaWithDecorator.class,
+                    RequestHandlerDecorator.class, InputPerson.class))
             .setLogRecordPredicate(record -> record.getLevel().intValue() == Level.INFO.intValue()
                     && record.getMessage().contains("handling request with id"))
-            .assertLogRecords(records -> assertThat(records)
-                    .extracting(LogRecord::getMessage)
-                    .isNotEmpty());
+            .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage).isNotEmpty());
 
     @Test
     public void testLambdaWithDecorator() throws Exception {
@@ -43,14 +41,7 @@ class LambdaWithDecoratorTest {
         // this works in dev mode too
 
         InputPerson in = new InputPerson("Stu");
-        given()
-                .contentType("application/json")
-                .accept("application/json")
-                .body(in)
-                .when()
-                .post()
-                .then()
-                .statusCode(200)
+        given().contentType("application/json").accept("application/json").body(in).when().post().then().statusCode(200)
                 .body(containsString("Hey Stu"));
     }
 

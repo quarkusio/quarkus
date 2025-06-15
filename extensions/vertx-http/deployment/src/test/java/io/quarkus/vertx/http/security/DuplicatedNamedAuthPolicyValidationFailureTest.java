@@ -18,8 +18,7 @@ public class DuplicatedNamedAuthPolicyValidationFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NamedPolicy_1.class, NamedPolicy_2.class))
+            .withApplicationRoot((jar) -> jar.addClasses(NamedPolicy_1.class, NamedPolicy_2.class))
             .assertException(throwable -> {
                 var errMsg = throwable.getMessage();
                 Assertions.assertTrue(errMsg.contains("Only one HttpSecurityPolicy"), errMsg);

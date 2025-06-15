@@ -15,11 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SimpleIdentityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("jobs.identity=every_1s_another_name"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("jobs.identity=every_1s_another_name"), "application.properties"));
 
     @Test
     public void testJobsWithIdentity() throws InterruptedException {

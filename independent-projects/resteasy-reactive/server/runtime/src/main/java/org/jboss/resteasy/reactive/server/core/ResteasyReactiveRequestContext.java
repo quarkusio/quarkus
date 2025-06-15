@@ -89,14 +89,13 @@ public abstract class ResteasyReactiveRequestContext
     /**
      * The parameter values extracted from the path.
      * <p>
-     * This is not a map, for two reasons. One is raw performance, as an array causes
-     * less allocations and is generally faster. The other is that it is possible
-     * that you can have equivalent templates with different names. This allows the
-     * mapper to ignore the names, as everything is resolved in terms of indexes.
+     * This is not a map, for two reasons. One is raw performance, as an array causes less allocations and is generally
+     * faster. The other is that it is possible that you can have equivalent templates with different names. This allows
+     * the mapper to ignore the names, as everything is resolved in terms of indexes.
      * <p>
-     * If there is only a single path param then it is stored directly into the field,
-     * while multiple params this will be an array. This optimisation allows us to avoid
-     * allocating anything in the common case that there is zero or one path param.
+     * If there is only a single path param then it is stored directly into the field, while multiple params this will
+     * be an array. This optimisation allows us to avoid allocating anything in the common case that there is zero or
+     * one path param.
      * <p>
      * Note: those are decoded.
      */
@@ -160,8 +159,8 @@ public abstract class ResteasyReactiveRequestContext
 
     private RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch;
 
-    public ResteasyReactiveRequestContext(Deployment deployment,
-            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+    public ResteasyReactiveRequestContext(Deployment deployment, ThreadSetupAction requestContext,
+            ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(handlerChain, abortHandlerChain, requestContext);
         this.deployment = deployment;
         this.parameters = EMPTY_ARRAY;
@@ -190,7 +189,8 @@ public abstract class ResteasyReactiveRequestContext
     /**
      * Restarts handler chain processing with a new chain targeting a new resource.
      *
-     * @param target The resource target
+     * @param target
+     *        The resource target
      */
     public void restart(RuntimeResource target) {
         restart(target, false);
@@ -199,7 +199,8 @@ public abstract class ResteasyReactiveRequestContext
     public void restart(RuntimeResource target, boolean setLocatorTarget) {
         this.handlers = target.getHandlerChain();
         position = 0;
-        parameters = target.getParameterTypes().length == 0 ? EMPTY_ARRAY : new Object[target.getParameterTypes().length];
+        parameters = target.getParameterTypes().length == 0 ? EMPTY_ARRAY
+                : new Object[target.getParameterTypes().length];
         if (setLocatorTarget) {
             setProperty(PreviousResource.PROPERTY_KEY, new PreviousResource(this.target, pathParamValues,
                     (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY)));
@@ -228,7 +229,8 @@ public abstract class ResteasyReactiveRequestContext
      * @return true if a restart occurred
      */
     public boolean restartWithNextInitialMatch() {
-        initialMatch = new RequestMapper<>(deployment.getClassMappers()).continueMatching(getPathWithoutPrefix(), initialMatch);
+        initialMatch = new RequestMapper<>(deployment.getClassMappers()).continueMatching(getPathWithoutPrefix(),
+                initialMatch);
         if (initialMatch == null) {
             return false;
         }
@@ -260,8 +262,7 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     /**
-     * Resets the build time serialization assumptions. Called if a filter
-     * modifies the response
+     * Resets the build time serialization assumptions. Called if a filter modifies the response
      */
     public void resetBuildTimeSerialization() {
         entityWriter = deployment.getDynamicEntityWriter();
@@ -548,9 +549,8 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     /**
-     * Returns the current response content type. If a response has been set and has an
-     * explicit content type then this is used, otherwise it returns any content type
-     * that has been explicitly set.
+     * Returns the current response content type. If a response has been set and has an explicit content type then this
+     * is used, otherwise it returns any content type that has been explicitly set.
      */
     @Override
     public EncodedMediaType getResponseContentType() {
@@ -721,18 +721,18 @@ public abstract class ResteasyReactiveRequestContext
         if (matchedURIs == null) {
             matchedURIs = new LinkedList<>();
         } else if (matchedURIs.get(0).resource == target) {
-            //already saved
+            // already saved
             return;
         }
         if (target != null) {
             URITemplate classPath = target.getClassPath();
             if (classPath != null) {
-                //this is not great, but the alternative is to do path based matching on every request
-                //given that this method is likely to be called very infrequently it is better to have a small
-                //cost here than a cost applied to every request
+                // this is not great, but the alternative is to do path based matching on every request
+                // given that this method is likely to be called very infrequently it is better to have a small
+                // cost here than a cost applied to every request
                 int pos = classPath.stem.length();
                 String path = getPathWithoutPrefix();
-                //we already know that this template matches, we just need to find the matched bit
+                // we already know that this template matches, we just need to find the matched bit
                 for (int i = 1; i < classPath.components.length; ++i) {
                     URITemplate.TemplateComponent segment = classPath.components[i];
                     if (segment.type == URITemplate.Type.LITERAL) {
@@ -760,8 +760,9 @@ public abstract class ResteasyReactiveRequestContext
         if (path.equals(remaining)) {
             matchedURIs.add(0, new UriMatch(path.substring(1), target, endpointInstance));
         } else {
-            matchedURIs.add(0, new UriMatch(path.substring(1, path.length() - (remaining == null ? 0 : remaining.length())),
-                    target, endpointInstance));
+            matchedURIs.add(0,
+                    new UriMatch(path.substring(1, path.length() - (remaining == null ? 0 : remaining.length())),
+                            target, endpointInstance));
         }
 
     }
@@ -819,15 +820,14 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     /**
-     * initializes the path segments and removes any matrix params for the path
-     * used for matching.
+     * initializes the path segments and removes any matrix params for the path used for matching.
      */
     public void initPathSegments() {
         if (getPathSegments0() != null) {
             return;
         }
-        //this is not super optimised
-        //I don't think we care about it that much though
+        // this is not super optimised
+        // I don't think we care about it that much though
         String path = getPath();
         String[] parts = path.split("/");
         List<PathSegment> pathSegments = new ArrayList<>();
@@ -1136,7 +1136,8 @@ public abstract class ResteasyReactiveRequestContext
     @Override
     public String getPathParameter(String name, boolean encoded) {
         // this is a slower version than getPathParam, but we can't actually bake path indices inside
-        // BeanParam classes (which use thismethod ) because they can be used by multiple resources that would have different
+        // BeanParam classes (which use thismethod ) because they can be used by multiple resources that would have
+        // different
         // indices
         Integer index = target.getPathParameterIndexes().get(name);
         String value;
@@ -1205,14 +1206,16 @@ public abstract class ResteasyReactiveRequestContext
     public abstract Runnable registerTimer(long millis, Runnable task);
 
     public String getResourceLocatorPathParam(String name, boolean encoded) {
-        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY), encoded);
+        return getResourceLocatorPathParam(name, (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY),
+                encoded);
     }
 
     /**
-     * Collects all path parameters, first from the current RuntimeResource, also known as target, and then from the previous
-     * RuntimeResources, including path parameters from sub resource locators in the process.
+     * Collects all path parameters, first from the current RuntimeResource, also known as target, and then from the
+     * previous RuntimeResources, including path parameters from sub resource locators in the process.
      *
      * @param encoded
+     *
      * @return MultivaluedMap with path parameters. May be empty, but is never null
      */
     public MultivaluedMap<String, String> getAllPathParameters(boolean encoded) {
@@ -1312,15 +1315,14 @@ public abstract class ResteasyReactiveRequestContext
 
         /**
          * When a subresource has been located and the processing has been restarted (and thus target point to the new
-         * subresource),
-         * this field contains the target that resulted in the offloading to the new target
+         * subresource), this field contains the target that resulted in the offloading to the new target
          */
         private final RuntimeResource locatorTarget;
 
         /**
          * When a subresource has been located and the processing has been restarted (and thus target point to the new
-         * subresource),
-         * this field contains the pathParamValues of the target that resulted in the offloading to the new target
+         * subresource), this field contains the pathParamValues of the target that resulted in the offloading to the
+         * new target
          */
         private final Object locatorPathParamValues;
 

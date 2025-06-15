@@ -44,8 +44,8 @@ public class ArcRecorder {
 
     public static volatile Map<String, Supplier<ActiveResult>> syntheticBeanCheckActive;
 
-    public ArcContainer initContainer(ShutdownContext shutdown, RuntimeValue<CurrentContextFactory> currentContextFactory,
-            boolean strictCompatibility) throws Exception {
+    public ArcContainer initContainer(ShutdownContext shutdown,
+            RuntimeValue<CurrentContextFactory> currentContextFactory, boolean strictCompatibility) throws Exception {
         ArcInitConfig.Builder builder = ArcInitConfig.builder();
         builder.setCurrentContextFactory(currentContextFactory != null ? currentContextFactory.getValue() : null);
         builder.setStrictCompatibility(strictCompatibility);
@@ -98,8 +98,7 @@ public class ArcRecorder {
 
         // If needed then mock all app observers in the test mode
         if (launchMode == LaunchMode.TEST && disableApplicationLifecycleObservers) {
-            Predicate<String> predicate = container
-                    .select(TestApplicationClassPredicate.class).get();
+            Predicate<String> predicate = container.select(TestApplicationClassPredicate.class).get();
             mockBeanClasses = new ArrayList<>();
             for (InjectableBean<?> bean : container.getBeans()) {
                 // Mock observers for all application class beans
@@ -116,7 +115,8 @@ public class ArcRecorder {
         context.addShutdownTask(new Runnable() {
             @Override
             public void run() {
-                fireLifecycleEvent(container, new ShutdownEvent(ApplicationLifecycleManager.shutdownReason), mockBeanClasses);
+                fireLifecycleEvent(container, new ShutdownEvent(ApplicationLifecycleManager.shutdownReason),
+                        mockBeanClasses);
             }
         });
     }

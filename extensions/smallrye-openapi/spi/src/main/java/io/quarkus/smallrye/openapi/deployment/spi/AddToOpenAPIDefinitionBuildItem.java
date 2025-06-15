@@ -9,7 +9,8 @@ public final class AddToOpenAPIDefinitionBuildItem extends MultiBuildItem {
     private final OASFilter filter;
 
     /**
-     * @param filter the filter to be applied when building the OpenAPI document
+     * @param filter
+     *        the filter to be applied when building the OpenAPI document
      */
     public AddToOpenAPIDefinitionBuildItem(OASFilter filter) {
         this.filter = filter;

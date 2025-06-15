@@ -24,10 +24,12 @@ public class RESTEasyTestHttpProvider implements TestHttpEndpointProvider {
                 if (value.startsWith("/")) {
                     value = value.substring(1);
                 }
-                //TODO: there is not really any way to handle @ApplicationPath, we could do something for @QuarkusTest apps, but we can't for
-                //native apps, so we just have to document the limitation
+                // TODO: there is not really any way to handle @ApplicationPath, we could do something for @QuarkusTest
+                // apps, but we can't for
+                // native apps, so we just have to document the limitation
                 String path = "/";
-                Optional<String> appPath = ConfigProvider.getConfig().getOptionalValue("quarkus.resteasy.path", String.class);
+                Optional<String> appPath = ConfigProvider.getConfig().getOptionalValue("quarkus.resteasy.path",
+                        String.class);
                 if (appPath.isPresent()) {
                     path = appPath.get();
                 }

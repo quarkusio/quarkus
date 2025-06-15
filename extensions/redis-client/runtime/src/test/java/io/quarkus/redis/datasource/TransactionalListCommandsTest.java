@@ -55,11 +55,8 @@ public class TransactionalListCommandsTest extends DatasourceTestBase {
     public void listReactive() {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalListCommands<String, String> list = tx.list(String.class);
-            return list.lpush(key, "a", "b", "c", "d")
-                    .chain(() -> list.linsertBeforePivot(key, "c", "1"))
-                    .chain(() -> list.lpos(key, "c"))
-                    .chain(() -> list.llen(key))
-                    .chain(() -> list.lpop(key));
+            return list.lpush(key, "a", "b", "c", "d").chain(() -> list.linsertBeforePivot(key, "c", "1"))
+                    .chain(() -> list.lpos(key, "c")).chain(() -> list.llen(key)).chain(() -> list.lpop(key));
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();

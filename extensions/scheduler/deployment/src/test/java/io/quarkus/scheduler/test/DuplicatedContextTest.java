@@ -24,24 +24,19 @@ import io.vertx.core.Vertx;
 public class DuplicatedContextTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyScheduledClass.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyScheduledClass.class));
 
     @Inject
     MyScheduledClass scheduled;
 
     @Test
     public void testBlocking() {
-        await()
-                .atMost(Duration.ofSeconds(3))
-                .until(() -> scheduled.blockingCalled() > 0);
+        await().atMost(Duration.ofSeconds(3)).until(() -> scheduled.blockingCalled() > 0);
     }
 
     @Test
     public void testNonBlocking() {
-        await()
-                .atMost(Duration.ofSeconds(3))
-                .until(() -> scheduled.nonBlockingCalled() > 0);
+        await().atMost(Duration.ofSeconds(3)).until(() -> scheduled.nonBlockingCalled() > 0);
     }
 
     public static class MyScheduledClass {

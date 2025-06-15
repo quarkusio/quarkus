@@ -63,7 +63,8 @@ public class ContextProvidersPriorityTest {
                         .thenReturn();
         // @formatter:on
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.jsonPath().getString(HEADER_NAME)).isEqualTo(format("[%s]", HEADER_VALUE_FROM_HIGH_PRIORITY));
+        assertThat(response.jsonPath().getString(HEADER_NAME))
+                .isEqualTo(format("[%s]", HEADER_VALUE_FROM_HIGH_PRIORITY));
     }
 
     @Path("/")
@@ -79,12 +80,9 @@ public class ContextProvidersPriorityTest {
         @Path("/call-client")
         @POST
         public Map<String, List<String>> callClient(String uri) {
-            Client client = QuarkusRestClientBuilder.newBuilder()
-                    .baseUri(URI.create(uri))
-                    .register(LowPriorityClientHeadersProvider.class)
-                    .register(HighPriorityClientHeadersProvider.class)
-                    .register(new TestJacksonBasicMessageBodyReader())
-                    .build(Client.class);
+            Client client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create(uri))
+                    .register(LowPriorityClientHeadersProvider.class).register(HighPriorityClientHeadersProvider.class)
+                    .register(new TestJacksonBasicMessageBodyReader()).build(Client.class);
             return client.get();
         }
     }

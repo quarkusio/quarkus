@@ -10,7 +10,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class FlywayDevUIRecorder {
 
-    public RuntimeValue<Boolean> setInitialSqlSuppliers(Map<String, Supplier<String>> initialSqlSuppliers, String artifactId) {
+    public RuntimeValue<Boolean> setInitialSqlSuppliers(Map<String, Supplier<String>> initialSqlSuppliers,
+            String artifactId) {
         FlywayJsonRpcService rpcService = Arc.container().instance(FlywayJsonRpcService.class).get();
         rpcService.setInitialSqlSuppliers(initialSqlSuppliers);
         rpcService.setArtifactId(artifactId);

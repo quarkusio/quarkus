@@ -9,13 +9,9 @@ import java.util.Map;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * BuildItem for running dev services.
- * Combines injected configs to the application with container id (if it exists).
- *
- * Processors are expected to return this build item not only when the dev service first starts,
- * but also if a running dev service already exists.
- *
- * {@link RunningDevService} helps to manage the lifecycle of the running dev service.
+ * BuildItem for running dev services. Combines injected configs to the application with container id (if it exists).
+ * Processors are expected to return this build item not only when the dev service first starts, but also if a running
+ * dev service already exists. {@link RunningDevService} helps to manage the lifecycle of the running dev service.
  */
 public final class DevServicesResultBuildItem extends MultiBuildItem {
 
@@ -65,8 +61,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return map;
         }
 
-        public RunningDevService(String name, String containerId, Closeable closeable, String key,
-                String value) {
+        public RunningDevService(String name, String containerId, Closeable closeable, String key, String value) {
             this(name, null, containerId, closeable, mapOf(key, value));
         }
 
@@ -75,8 +70,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             this(name, description, containerId, closeable, mapOf(key, value));
         }
 
-        public RunningDevService(String name, String containerId, Closeable closeable,
-                Map<String, String> config) {
+        public RunningDevService(String name, String containerId, Closeable closeable, Map<String, String> config) {
             this(name, null, containerId, closeable, config);
         }
 

@@ -11,11 +11,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import io.quarkus.amazon.lambda.http.model.CognitoAuthorizerClaims;
 
 /**
- * Allocated when cognito is used to authenticate user
- *
- * Will only be allocated if requestContext.authorizer.claims.cognito:username is set
- * in the http event sent by API Gateway
- *
+ * Allocated when cognito is used to authenticate user Will only be allocated if
+ * requestContext.authorizer.claims.cognito:username is set in the http event sent by API Gateway
  */
 public class CognitoPrincipal implements JsonWebToken {
     private CognitoAuthorizerClaims claims;

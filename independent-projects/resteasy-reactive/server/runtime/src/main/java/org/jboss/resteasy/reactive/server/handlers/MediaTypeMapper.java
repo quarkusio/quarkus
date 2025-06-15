@@ -20,11 +20,9 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
- * Handler that deals with the case when two methods have the same path,
- * and it needs to select based on content type.
+ * Handler that deals with the case when two methods have the same path, and it needs to select based on content type.
  * <p>
- * This is not super optimised, as it is not a common case. Most apps
- * won't every use this handler.
+ * This is not super optimised, as it is not a common case. Most apps won't every use this handler.
  */
 public class MediaTypeMapper implements ServerRestHandler {
 
@@ -115,8 +113,7 @@ public class MediaTypeMapper implements ServerRestHandler {
         MediaType selected = null;
         List<String> accepts = requestContext.getHttpHeaders().getRequestHeader(HttpHeaders.ACCEPT);
         for (String accept : accepts) {
-            Map.Entry<MediaType, MediaType> entry = holder.serverMediaType
-                    .negotiateProduces(accept, null);
+            Map.Entry<MediaType, MediaType> entry = holder.serverMediaType.negotiateProduces(accept, null);
             if (entry.getValue() != null) {
                 selected = entry.getValue();
                 break;
@@ -132,14 +129,12 @@ public class MediaTypeMapper implements ServerRestHandler {
     }
 
     private MediaType[] getProducesMediaTypes(RuntimeResource runtimeResource) {
-        return runtimeResource.getProduces() == null
-                ? DEFAULT_MEDIA_TYPES
+        return runtimeResource.getProduces() == null ? DEFAULT_MEDIA_TYPES
                 : runtimeResource.getProduces().getSortedOriginalMediaTypes();
     }
 
     private List<MediaType> getConsumesMediaTypes(RuntimeResource runtimeResource) {
-        return runtimeResource.getConsumes().isEmpty() ? DEFAULT_MEDIA_TYPES_LIST
-                : runtimeResource.getConsumes();
+        return runtimeResource.getConsumes().isEmpty() ? DEFAULT_MEDIA_TYPES_LIST : runtimeResource.getConsumes();
     }
 
     private static final class Holder {

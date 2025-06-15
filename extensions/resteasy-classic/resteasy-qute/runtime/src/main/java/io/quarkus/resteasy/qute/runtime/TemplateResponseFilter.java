@@ -51,11 +51,10 @@ public class TemplateResponseFilter implements ContainerResponseFilter {
             if (!quteVariants.isEmpty()) {
                 List<jakarta.ws.rs.core.Variant> variants = new ArrayList<>();
                 for (Variant variant : quteVariants) {
-                    variants.add(new jakarta.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()), variant.getLocale(),
-                            variant.getEncoding()));
+                    variants.add(new jakarta.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()),
+                            variant.getLocale(), variant.getEncoding()));
                 }
-                jakarta.ws.rs.core.Variant selected = requestContext.getRequest()
-                        .selectVariant(variants);
+                jakarta.ws.rs.core.Variant selected = requestContext.getRequest().selectVariant(variants);
 
                 if (selected != null) {
                     Locale selectedLocale = selected.getLanguage();

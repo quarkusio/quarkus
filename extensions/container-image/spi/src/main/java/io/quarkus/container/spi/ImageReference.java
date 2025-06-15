@@ -32,21 +32,19 @@ public class ImageReference {
     private static final String LIBRARY_REPOSITORY_PREFIX = "library/";
 
     /**
-     * Matches all sequences of alphanumeric characters possibly separated by any number of dashes in
-     * the middle.
+     * Matches all sequences of alphanumeric characters possibly separated by any number of dashes in the middle.
      */
     private static final String REGISTRY_COMPONENT_REGEX = "(?:[a-zA-Z\\d]|(?:[a-zA-Z\\d][a-zA-Z\\d-]*[a-zA-Z\\d]))";
 
     /**
-     * Matches sequences of {@code REGISTRY_COMPONENT_REGEX} separated by a dot, with an optional
-     * {@code :port} at the end.
+     * Matches sequences of {@code REGISTRY_COMPONENT_REGEX} separated by a dot, with an optional {@code :port} at the
+     * end.
      */
     private static final String REGISTRY_REGEX = String.format("%s(?:\\.%s)*(?::\\d+)?", REGISTRY_COMPONENT_REGEX,
             REGISTRY_COMPONENT_REGEX);
 
     /**
      * Matches all sequences of alphanumeric characters separated by a separator.
-     *
      * <p>
      * A separator is either an underscore, a dot, two underscores, or any number of dashes.
      */
@@ -69,12 +67,11 @@ public class ImageReference {
     private static final String DIGEST_REGEX = DIGEST_PREFIX + HASH_REGEX;
 
     /**
-     * Matches a full image reference, which is the registry, repository, and tag/digest separated by
-     * backslashes. The repository is required, but the registry and tag/digest are optional.
+     * Matches a full image reference, which is the registry, repository, and tag/digest separated by backslashes. The
+     * repository is required, but the registry and tag/digest are optional.
      */
-    private static final String REFERENCE_REGEX = String.format(
-            "^(?:(%s)/)?(%s)(?::(%s))?(?:@(%s))?$",
-            REGISTRY_REGEX, REPOSITORY_REGEX, TAG_REGEX, DIGEST_REGEX);
+    private static final String REFERENCE_REGEX = String.format("^(?:(%s)/)?(%s)(?::(%s))?(?:@(%s))?$", REGISTRY_REGEX,
+            REPOSITORY_REGEX, TAG_REGEX, DIGEST_REGEX);
 
     private static final Pattern REFERENCE_PATTERN = Pattern.compile(REFERENCE_REGEX);
 
@@ -84,10 +81,12 @@ public class ImageReference {
     private final String digest;
 
     /**
-     * Returns {@code true} if {@code registry} is a valid registry string. For example, a valid
-     * registry could be {@code gcr.io} or {@code localhost:5000}.
+     * Returns {@code true} if {@code registry} is a valid registry string. For example, a valid registry could be
+     * {@code gcr.io} or {@code localhost:5000}.
      *
-     * @param registry the registry to check
+     * @param registry
+     *        the registry to check
+     *
      * @return {@code true} if is a valid registry; {@code false} otherwise
      */
     public static boolean isValidRegistry(String registry) {
@@ -95,10 +94,12 @@ public class ImageReference {
     }
 
     /**
-     * Returns {@code true} if {@code repository} is a valid repository string. For example, a valid
-     * repository could be {@code distroless} or {@code my/container-image/repository}.
+     * Returns {@code true} if {@code repository} is a valid repository string. For example, a valid repository could be
+     * {@code distroless} or {@code my/container-image/repository}.
      *
-     * @param repository the repository to check
+     * @param repository
+     *        the repository to check
+     *
      * @return {@code true} if is a valid repository; {@code false} otherwise
      */
     public static boolean isValidRepository(String repository) {
@@ -109,7 +110,9 @@ public class ImageReference {
      * Returns {@code true} if {@code tag} is a valid tag string. For example, a valid tag could be
      * {@code v120.5-release}.
      *
-     * @param tag the tag to check
+     * @param tag
+     *        the tag to check
+     *
      * @return {@code true} if is a valid tag; {@code false} otherwise
      */
     public static boolean isValidTag(String tag) {
@@ -118,21 +121,22 @@ public class ImageReference {
 
     /**
      * Parses a string {@code reference} into an {@link ImageReference}.
-     *
      * <p>
-     * Image references should generally be in the form: {@code <registry>/<repository>:<tag>} For
-     * example, an image reference could be {@code gcr.io/distroless/java:debug}.
-     *
+     * Image references should generally be in the form: {@code <registry>/<repository>:<tag>} For example, an image
+     * reference could be {@code gcr.io/distroless/java:debug}.
      * <p>
-     * See <a
-     * href=
+     * See <a href=
      * "https://docs.docker.com/engine/reference/commandline/tag/#extended-description">https://docs.docker.com/engine/reference/commandline/tag/#extended-description</a>
-     * for a description of valid image reference format. Note, however, that the image reference is
-     * referred confusingly as {@code tag} on that page.
+     * for a description of valid image reference format. Note, however, that the image reference is referred
+     * confusingly as {@code tag} on that page.
      *
-     * @param reference the string to parse
+     * @param reference
+     *        the string to parse
+     *
      * @return an {@link ImageReference} parsed from the string
-     * @throws IllegalArgumentException if {@code reference} is formatted incorrectly
+     *
+     * @throws IllegalArgumentException
+     *         if {@code reference} is formatted incorrectly
      */
     public static ImageReference parse(String reference) {
 
@@ -155,20 +159,17 @@ public class ImageReference {
             registry = null;
         } else if (!registry.contains(".") && !registry.contains(":") && !"localhost".equals(registry)) {
             /*
-             * If a registry was matched but it does not contain any dots or colons, it should actually be
-             * part of the repository unless it is "localhost".
-             *
-             * See
-             * https://github.com/docker/distribution/blob/245ca4659e09e9745f3cc1217bf56e946509220c/reference/normalize.go#L62
+             * If a registry was matched but it does not contain any dots or colons, it should actually be part of the
+             * repository unless it is "localhost". See
+             * https://github.com/docker/distribution/blob/245ca4659e09e9745f3cc1217bf56e946509220c/reference/normalize.
+             * go#L62
              */
             repository = registry + "/" + repository;
             registry = null;
         } else if (DOCKER_HUB_REGISTRY.equals(registry) && repository.indexOf('/') < 0) {
             /*
-             * For Docker Hub, if the repository is only one component, then it should be prefixed with
-             * 'library/'.
-             *
-             * See https://docs.docker.com/engine/reference/commandline/pull/#pull-an-image-from-docker-hub
+             * For Docker Hub, if the repository is only one component, then it should be prefixed with 'library/'. See
+             * https://docs.docker.com/engine/reference/commandline/pull/#pull-an-image-from-docker-hub
              */
             repository = LIBRARY_REPOSITORY_PREFIX + repository;
         }

@@ -36,8 +36,7 @@ class ConcurrentGaugeInterceptor {
         ConcurrentGauge annotation = context.findIterceptorBinding(ConcurrentGauge.class);
         if (annotation != null) {
             MpMetadata metadata = new MpMetadata(annotation.name().replace("<method>", methodName),
-                    annotation.description().replace("<method>", methodName),
-                    annotation.unit(),
+                    annotation.description().replace("<method>", methodName), annotation.unit(),
                     MetricType.CONCURRENT_GAUGE);
 
             ConcurrentGaugeImpl impl = mpRegistry.interceptorConcurrentGauge(metadata, annotation.tags());

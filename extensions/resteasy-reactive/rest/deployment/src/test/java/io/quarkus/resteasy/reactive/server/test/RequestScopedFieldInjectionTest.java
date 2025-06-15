@@ -22,21 +22,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RequestScopedFieldInjectionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class);
+        }
+    });
 
     @Test
     public void test() {
-        get("/test/f/p")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("field:f-parameter:p"));
+        get("/test/f/p").then().statusCode(200).body(Matchers.equalTo("field:f-parameter:p"));
     }
 
     @Path("/test/{field}")

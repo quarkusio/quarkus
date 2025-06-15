@@ -34,8 +34,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
     ExceptionHandlerProvider ehp;
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
-            Metadata headers,
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
 
         // This interceptor is called first, so, we should be on the event loop.
@@ -54,8 +53,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         }
     }
 
-    private <ReqT, RespT> Supplier<ServerCall.Listener<ReqT>> nextCall(ServerCall<ReqT, RespT> call,
-            Metadata headers,
+    private <ReqT, RespT> Supplier<ServerCall.Listener<ReqT>> nextCall(ServerCall<ReqT, RespT> call, Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
         // Must be sure to call next.startCall on the right context
         io.grpc.Context current = io.grpc.Context.current();
@@ -84,9 +82,8 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         private final AtomicBoolean closed = new AtomicBoolean();
 
-        public ListenedOnDuplicatedContext(
-                ExceptionHandlerProvider ehp,
-                ServerCall<ReqT, RespT> call, Supplier<ServerCall.Listener<ReqT>> supplier, Context context) {
+        public ListenedOnDuplicatedContext(ExceptionHandlerProvider ehp, ServerCall<ReqT, RespT> call,
+                Supplier<ServerCall.Listener<ReqT>> supplier, Context context) {
             this.ehp = ehp;
             this.context = context;
             this.supplier = supplier;
@@ -109,7 +106,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         private void close(Throwable t) {
             // TODO -- "call.isRead" guards against dup calls;
-            //  e.g. onComplete, after onError already closed it
+            // e.g. onComplete, after onError already closed it
             if (closed.compareAndSet(false, true) && call.isReady()) {
                 // use EHP so that we're consistent with transforming any user exception
                 Throwable nt = ehp.transform(t);

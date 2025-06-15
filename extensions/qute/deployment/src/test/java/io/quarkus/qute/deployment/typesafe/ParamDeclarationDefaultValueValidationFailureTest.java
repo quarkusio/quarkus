@@ -14,11 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ParamDeclarationDefaultValueValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset(
-                            "{@java.lang.String myName=1}\n{myName}"),
-                            "templates/myName.html"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addAsResource(new StringAsset("{@java.lang.String myName=1}\n{myName}"), "templates/myName.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

@@ -29,15 +29,13 @@ public class ConfigEnabledFalseAndAuditedEntityTest {
     @Test
     @SuppressWarnings("rawtypes")
     public void test() {
-        assertThat(sessionFactory.getMetamodel().getEntities())
-                .extracting(Bindable::getBindableJavaType)
+        assertThat(sessionFactory.getMetamodel().getEntities()).extracting(Bindable::getBindableJavaType)
                 // In particular this should not contain the revision entity
                 .containsExactlyInAnyOrder((Class) MyAuditedEntity.class);
 
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> AuditReaderFactory.get(session).isEntityClassAudited(MyAuditedEntity.class))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("Service is not yet initialized");
+                    .isInstanceOf(IllegalStateException.class).hasMessageContaining("Service is not yet initialized");
         }
     }
 }

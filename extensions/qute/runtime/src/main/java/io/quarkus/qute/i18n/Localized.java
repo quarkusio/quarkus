@@ -25,6 +25,7 @@ public @interface Localized {
 
     /**
      * @return the locale language tag string (IETF)
+     *
      * @see Locale#forLanguageTag(String)
      */
     String value();

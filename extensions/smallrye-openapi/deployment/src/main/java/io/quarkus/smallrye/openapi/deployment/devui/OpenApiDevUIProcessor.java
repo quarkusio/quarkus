@@ -16,10 +16,8 @@ public class OpenApiDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public CardPageBuildItem pages(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            LaunchModeBuildItem launchModeBuildItem,
-            SwaggerUiConfig swaggerUiConfig,
-            SmallRyeOpenApiConfig openApiConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
+            SwaggerUiConfig swaggerUiConfig, SmallRyeOpenApiConfig openApiConfig) {
 
         String uiPath = nonApplicationRootPathBuildItem.resolveManagementPath(swaggerUiConfig.path(),
                 managementBuildTimeConfig, launchModeBuildItem, openApiConfig.managementEnabled());
@@ -33,25 +31,18 @@ public class OpenApiDevUIProcessor {
                 "https://github.com/smallrye/smallrye-open-api");
         cardPageBuildItem.setLogo("openapi_logo.png", "openapi_logo.png");
 
-        cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
-                .url(uiPath + "/index.html?embed=true", uiPath)
-                .isHtmlContent()
-                .icon("font-awesome-solid:signs-post"));
+        cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI").url(uiPath + "/index.html?embed=true", uiPath)
+                .isHtmlContent().icon("font-awesome-solid:signs-post"));
 
-        cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml")
-                .url(schemaPath, schemaPath)
-                .isYamlContent()
+        cardPageBuildItem.addPage(Page.externalPageBuilder("Schema yaml").url(schemaPath, schemaPath).isYamlContent()
                 .icon("font-awesome-solid:file-lines"));
 
         String jsonSchema = schemaPath + "?format=json";
-        cardPageBuildItem.addPage(Page.externalPageBuilder("Schema json")
-                .url(jsonSchema, jsonSchema)
-                .isJsonContent()
+        cardPageBuildItem.addPage(Page.externalPageBuilder("Schema json").url(jsonSchema, jsonSchema).isJsonContent()
                 .icon("font-awesome-solid:file-code"));
 
-        cardPageBuildItem.addPage(Page.assistantPageBuilder()
-                .title("Generate clients")
-                .componentLink("qwc-openapi-generate-client.js"));
+        cardPageBuildItem.addPage(
+                Page.assistantPageBuilder().title("Generate clients").componentLink("qwc-openapi-generate-client.js"));
 
         return cardPageBuildItem;
     }

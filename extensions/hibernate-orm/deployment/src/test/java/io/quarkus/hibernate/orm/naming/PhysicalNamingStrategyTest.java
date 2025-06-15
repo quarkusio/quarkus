@@ -19,8 +19,7 @@ public class PhysicalNamingStrategyTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
                     .addAsResource(EmptyAsset.INSTANCE, "import.sql")
                     .addAsResource("application-physical-naming-strategy.properties", "application.properties"));
 

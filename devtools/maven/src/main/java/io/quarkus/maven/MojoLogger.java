@@ -49,7 +49,7 @@ public class MojoLogger implements LoggerProvider {
                     String text;
                     if (parameters == null) {
                         try {
-                            //noinspection RedundantStringFormatCall
+                            // noinspection RedundantStringFormatCall
                             text = String.format(format);
                         } catch (Exception e) {
                             text = invalidFormat(format, NO_PARAMS);
@@ -91,8 +91,8 @@ public class MojoLogger implements LoggerProvider {
                 final MessageBuilder buffer = MessageUtils.buffer();
                 // style options are limited unless we crack into jansi ourselves
                 if (Level.DEBUG.compareTo(level) <= 0) {
-                    buffer.strong("[").project(name).strong("]").a(" ").a("(").a(Thread.currentThread().getName()).a(")").a(" ")
-                            .a(message);
+                    buffer.strong("[").project(name).strong("]").a(" ").a("(").a(Thread.currentThread().getName())
+                            .a(")").a(" ").a(message);
                 } else {
                     buffer.strong("[").project(name).strong("]").a(" ").a(message);
                 }
@@ -151,7 +151,7 @@ public class MojoLogger implements LoggerProvider {
 
     @Override
     public Object putMdc(final String key, final Object value) {
-        //throw Assert.unsupported();
+        // throw Assert.unsupported();
         return null;
     }
 

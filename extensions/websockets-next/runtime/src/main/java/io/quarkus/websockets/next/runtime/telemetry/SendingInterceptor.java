@@ -9,18 +9,20 @@ import io.vertx.core.buffer.Buffer;
 public sealed interface SendingInterceptor permits MetricsSendingInterceptor {
 
     /**
-     * Intercept sent text messages, corresponds
-     * to the {@link io.quarkus.websockets.next.runtime.WebSocketConnectionBase#sendText(String)} method.
+     * Intercept sent text messages, corresponds to the
+     * {@link io.quarkus.websockets.next.runtime.WebSocketConnectionBase#sendText(String)} method.
      *
-     * @param textMessage sent text message
+     * @param textMessage
+     *        sent text message
      */
     void onSend(String textMessage);
 
     /**
-     * Intercept sent binary messages, corresponds
-     * to the {@link io.quarkus.websockets.next.runtime.WebSocketConnectionBase#sendBinary(Buffer)} method.
+     * Intercept sent binary messages, corresponds to the
+     * {@link io.quarkus.websockets.next.runtime.WebSocketConnectionBase#sendBinary(Buffer)} method.
      *
-     * @param binaryMessage sent binary message
+     * @param binaryMessage
+     *        sent binary message
      */
     void onSend(Buffer binaryMessage);
 

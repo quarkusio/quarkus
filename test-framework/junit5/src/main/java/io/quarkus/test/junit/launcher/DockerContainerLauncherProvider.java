@@ -43,15 +43,16 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         if ((containerImage != null) && !containerImage.isEmpty()) {
             DockerContainerArtifactLauncher launcher;
-            ServiceLoader<DockerContainerArtifactLauncher> loader = ServiceLoader.load(DockerContainerArtifactLauncher.class);
+            ServiceLoader<DockerContainerArtifactLauncher> loader = ServiceLoader
+                    .load(DockerContainerArtifactLauncher.class);
             Iterator<DockerContainerArtifactLauncher> iterator = loader.iterator();
             if (iterator.hasNext()) {
                 launcher = iterator.next();
             } else {
                 launcher = new DefaultDockerContainerLauncher();
             }
-            launcherInit(context, launcher, config, containerImage, pullRequired, Optional.empty(), volumeMounts(config),
-                    Collections.emptyList());
+            launcherInit(context, launcher, config, containerImage, pullRequired, Optional.empty(),
+                    volumeMounts(config), Collections.emptyList());
             return launcher;
         } else {
             // Running quarkus integration tests with a native image agent,
@@ -72,7 +73,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 List<String> programArgs = new ArrayList<>();
                 addNativeAgentProgramArgs(programArgs, context);
 
-                launcherInit(context, launcher, config, containerImage, pullRequired, entryPoint, volumeMounts, programArgs);
+                launcherInit(context, launcher, config, containerImage, pullRequired, entryPoint, volumeMounts,
+                        programArgs);
                 return launcher;
             } else {
                 throw new IllegalStateException("The container image to be launched could not be determined");
@@ -87,18 +89,10 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         launcher.init(new DefaultDockerInitContext(
                 config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                 config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                testConfig.waitTime(),
-                testConfig.integrationTestProfile(),
-                TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
-                testConfig.env(),
-                context.devServicesLaunchResult(),
-                containerImage,
-                pullRequired,
-                additionalExposedPorts(config),
-                labels(config),
-                volumeMounts,
-                entryPoint,
-                programArgs));
+                testConfig.waitTime(), testConfig.integrationTestProfile(),
+                TestConfigUtil.argLineValues(testConfig.argLine().orElse("")), testConfig.env(),
+                context.devServicesLaunchResult(), containerImage, pullRequired, additionalExposedPorts(config),
+                labels(config), volumeMounts, entryPoint, programArgs));
     }
 
     private void addNativeAgentProgramArgs(List<String> programArgs, CreateContext context) {
@@ -111,11 +105,10 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         final String accessFilter = "access-filter-file=quarkus-access-filter.json";
         final String callerFilter = "caller-filter-file=quarkus-caller-filter.json";
 
-        final String output = String.format(
-                "%s=%s", outputPropertyName, outputPropertyValue);
+        final String output = String.format("%s=%s", outputPropertyName, outputPropertyValue);
 
-        String agentLibArg = String.format(
-                "-agentlib:native-image-agent=%s,%s,%s,%s", accessFilter, callerFilter, output, agentAdditionalArgs);
+        String agentLibArg = String.format("-agentlib:native-image-agent=%s,%s,%s,%s", accessFilter, callerFilter,
+                output, agentAdditionalArgs);
 
         programArgs.add(agentLibArg);
 
@@ -160,10 +153,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
                 List<String> argLine, Map<String, String> env,
-                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
-                String containerImage, boolean pullRequired,
-                Map<Integer, Integer> additionalExposedPorts,
-                Map<String, String> labels,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, String containerImage,
+                boolean pullRequired, Map<Integer, Integer> additionalExposedPorts, Map<String, String> labels,
                 Map<String, String> volumeMounts, Optional<String> entryPoint, List<String> programArgs) {
             super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.containerImage = containerImage;

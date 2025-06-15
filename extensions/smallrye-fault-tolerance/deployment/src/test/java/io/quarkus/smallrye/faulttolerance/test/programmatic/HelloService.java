@@ -16,9 +16,8 @@ public class HelloService {
     static final int THRESHOLD = 5;
     static final int DELAY = 500;
 
-    private final Supplier<String> anotherHello = TypedGuard.create(String.class)
-            .withCircuitBreaker().requestVolumeThreshold(THRESHOLD).delay(DELAY, ChronoUnit.MILLIS).name("another-hello").done()
-            .build()
+    private final Supplier<String> anotherHello = TypedGuard.create(String.class).withCircuitBreaker()
+            .requestVolumeThreshold(THRESHOLD).delay(DELAY, ChronoUnit.MILLIS).name("another-hello").done().build()
             .adaptSupplier(this::anotherHelloImpl);
 
     @CircuitBreaker(requestVolumeThreshold = THRESHOLD, delay = DELAY)

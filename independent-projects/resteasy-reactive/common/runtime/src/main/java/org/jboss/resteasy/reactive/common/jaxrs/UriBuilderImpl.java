@@ -140,7 +140,9 @@ public class UriBuilderImpl extends UriBuilder {
     /**
      * You may put path parameters anywhere within the uriTemplate except port.
      *
-     * @param uriTemplate uri template
+     * @param uriTemplate
+     *        uri template
+     *
      * @return uri builder
      */
     public static UriBuilderImpl fromTemplate(String uriTemplate) {
@@ -156,7 +158,9 @@ public class UriBuilderImpl extends UriBuilder {
     /**
      * You may put path parameters anywhere within the uriTemplate except port.
      *
-     * @param uriTemplate uri template
+     * @param uriTemplate
+     *        uri template
+     *
      * @return uri builder
      */
     public UriBuilder uriTemplate(CharSequence uriTemplate) {
@@ -224,8 +228,8 @@ public class UriBuilderImpl extends UriBuilder {
         }
         if (match.group(5) != null) {
             String group = match.group(5);
-            if (!scheme && !"".equals(group) && !group.startsWith("/") && group.indexOf(':') > -1 &&
-                    group.indexOf('/') > -1 && group.indexOf(':') < group.indexOf('/'))
+            if (!scheme && !"".equals(group) && !group.startsWith("/") && group.indexOf(':') > -1
+                    && group.indexOf('/') > -1 && group.indexOf(':') < group.indexOf('/'))
                 throw new IllegalArgumentException("Illegal URI template" + uriTemplate);
             if (!"".equals(group))
                 replacePath(group);
@@ -426,7 +430,8 @@ public class UriBuilderImpl extends UriBuilder {
             }
         }
         if (theMethod == null)
-            throw new IllegalArgumentException("No public method annotated with @Path " + resource.getName() + " " + method);
+            throw new IllegalArgumentException(
+                    "No public method annotated with @Path " + resource.getName() + " " + method);
         return path(theMethod);
     }
 
@@ -486,9 +491,13 @@ public class UriBuilderImpl extends UriBuilder {
     /**
      * Only replace path params in path of URI. This changes state of URIBuilder.
      *
-     * @param name parameter name
-     * @param value parameter value
-     * @param isEncoded encoded flag
+     * @param name
+     *        parameter name
+     * @param value
+     *        parameter value
+     * @param isEncoded
+     *        encoded flag
+     *
      * @return uri builder
      */
     public UriBuilder substitutePathParam(String name, Object value, boolean isEncoded) {
@@ -506,7 +515,8 @@ public class UriBuilderImpl extends UriBuilder {
         return buildUriFromMap(values, false, true);
     }
 
-    public URI buildFromEncodedMap(Map<String, ? extends Object> values) throws IllegalArgumentException, UriBuilderException {
+    public URI buildFromEncodedMap(Map<String, ? extends Object> values)
+            throws IllegalArgumentException, UriBuilderException {
         if (values == null)
             throw new IllegalArgumentException("Values parameter is null");
         return buildUriFromMap(values, true, false);
@@ -534,8 +544,8 @@ public class UriBuilderImpl extends UriBuilder {
         return buildCharSequence(paramMap, fromEncodedMap, isTemplate, encodeSlash).toString();
     }
 
-    private CharSequence buildCharSequence(Map<String, ? extends Object> paramMap, boolean fromEncodedMap, boolean isTemplate,
-            boolean encodeSlash) {
+    private CharSequence buildCharSequence(Map<String, ? extends Object> paramMap, boolean fromEncodedMap,
+            boolean isTemplate, boolean encodeSlash) {
         StringBuilder builder = new StringBuilder();
 
         if (scheme != null)
@@ -610,13 +620,13 @@ public class UriBuilderImpl extends UriBuilder {
         return matcher;
     }
 
-    protected StringBuilder replaceParameter(Map<String, ? extends Object> paramMap, boolean fromEncodedMap, boolean isTemplate,
-            String string, StringBuilder builder, boolean encodeSlash) {
+    protected StringBuilder replaceParameter(Map<String, ? extends Object> paramMap, boolean fromEncodedMap,
+            boolean isTemplate, String string, StringBuilder builder, boolean encodeSlash) {
         return replaceParameter(paramMap, fromEncodedMap, isTemplate, string, builder, true, encodeSlash);
     }
 
-    protected StringBuilder replaceParameter(Map<String, ? extends Object> paramMap, boolean fromEncodedMap, boolean isTemplate,
-            String string, StringBuilder builder, boolean encode, boolean encodeSlash) {
+    protected StringBuilder replaceParameter(Map<String, ? extends Object> paramMap, boolean fromEncodedMap,
+            boolean isTemplate, String string, StringBuilder builder, boolean encode, boolean encodeSlash) {
         if (string.indexOf('{') == -1) {
             return builder.append(string);
         }
@@ -746,7 +756,7 @@ public class UriBuilderImpl extends UriBuilder {
         try {
             buf = buildString(new URITemplateParametersMap(values), encoded, false, encodeSlash);
             return new URI(buf);
-            //return URI.create(buf);
+            // return URI.create(buf);
         } catch (IllegalArgumentException iae) {
             throw iae;
         } catch (Exception e) {
@@ -856,31 +866,26 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     /**
-     * Called by ClientRequest.getUri() to add a query parameter for
-     * {@code @QueryParam} parameters. We do not use UriBuilder.queryParam()
-     * because
+     * Called by ClientRequest.getUri() to add a query parameter for {@code @QueryParam} parameters. We do not use
+     * UriBuilder.queryParam() because
      * <ul>
-     * <li>queryParam() supports URI template processing and this method must
-     * always encode braces (for parameter substitution is not possible for
-     * {@code @QueryParam} parameters).
-     * <li>queryParam() supports "contextual URI encoding" (i.e., it does not
-     * encode {@code %} characters that are followed by two hex characters).
-     * The JavaDoc for {@code @QueryParam.value()} explicitly states that
-     * the value is specified in decoded format and that "any percent
-     * encoded literals within the value will not be decoded and will
-     * instead be treated as literal text". This means that it is an
-     * explicit bug to perform contextual URI encoding of this method's
-     * name parameter; hence, we must always encode said parameter. This
-     * method also foregoes contextual URI encoding on this method's values
-     * parameter because it represents arbitrary data passed to a
-     * {@code QueryParam} parameter of a client proxy (since the client
-     * proxy is nothing more than a transport layer, it should not be
-     * "interpreting" such data; instead, it should faithfully transmit
-     * this data over the wire).
+     * <li>queryParam() supports URI template processing and this method must always encode braces (for parameter
+     * substitution is not possible for {@code @QueryParam} parameters).
+     * <li>queryParam() supports "contextual URI encoding" (i.e., it does not encode {@code %} characters that are
+     * followed by two hex characters). The JavaDoc for {@code @QueryParam.value()} explicitly states that the value is
+     * specified in decoded format and that "any percent encoded literals within the value will not be decoded and will
+     * instead be treated as literal text". This means that it is an explicit bug to perform contextual URI encoding of
+     * this method's name parameter; hence, we must always encode said parameter. This method also foregoes contextual
+     * URI encoding on this method's values parameter because it represents arbitrary data passed to a
+     * {@code QueryParam} parameter of a client proxy (since the client proxy is nothing more than a transport layer, it
+     * should not be "interpreting" such data; instead, it should faithfully transmit this data over the wire).
      * </ul>
      *
-     * @param name the name of the query parameter.
-     * @param values the value(s) of the query parameter.
+     * @param name
+     *        the name of the query parameter.
+     * @param values
+     *        the value(s) of the query parameter.
+     *
      * @return Returns this instance to allow call chaining.
      */
     public UriBuilder clientQueryParam(String name, Object... values) throws IllegalArgumentException {
@@ -1095,7 +1100,8 @@ public class UriBuilderImpl extends UriBuilder {
         return uriTemplate(buildCharSequence(templateValues, false, true, true));
     }
 
-    public UriBuilder resolveTemplate(String name, Object value, boolean encodeSlashInPath) throws IllegalArgumentException {
+    public UriBuilder resolveTemplate(String name, Object value, boolean encodeSlashInPath)
+            throws IllegalArgumentException {
         if (name == null)
             throw new IllegalArgumentException("Name is null");
         if (value == null)

@@ -12,16 +12,14 @@ public class TextResource {
 
     @GET
     @Path("/validate/{id}")
-    public String validate(
-            @Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
+    public String validate(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
         return id;
     }
 
     @GET
     @Path("/validate/text/{id}")
     @Produces(MediaType.TEXT_PLAIN)
-    public String validateText(
-            @Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
+    public String validateText(@Digits(integer = 5, fraction = 0) @PathParam("id") String id) {
         return id;
     }
 }

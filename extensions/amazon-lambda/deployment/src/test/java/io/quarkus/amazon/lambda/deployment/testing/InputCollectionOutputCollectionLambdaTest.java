@@ -20,9 +20,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InputCollectionOutputCollectionLambdaTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(InputCollectionOutputCollectionLambda.class, InputPerson.class, OutputPerson.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(InputCollectionOutputCollectionLambda.class, InputPerson.class, OutputPerson.class));
 
     @Test
     void requestHandler_InputCollectionInputPerson_OutputCollectionOutputPerson() {
@@ -31,15 +31,20 @@ public class InputCollectionOutputCollectionLambdaTest {
         personList.add(new InputPerson("Chris"));
         personList.add(new InputPerson("Fred"));
 
-        given()
-                .body(personList)
-                .when()
-                .post()
-                .then()
-                .statusCode(200)
-                .body("", hasItem(hasEntry("outputname", "Chris"))) // OutputPerson serializes name with key outputname
-                .body("", hasItem(hasEntry("outputname", "Fred")))
-                .body("", not(hasItem(hasEntry("name", "Chris")))) // make sure that there is no key name
+        given().body(personList).when().post().then().statusCode(200).body("", hasItem(hasEntry("outputname", "Chris"))) // OutputPerson
+                // serializes
+                // name
+                // with
+                // key
+                // outputname
+                .body("", hasItem(hasEntry("outputname", "Fred"))).body("", not(hasItem(hasEntry("name", "Chris")))) // make
+                // sure
+                // that
+                // there
+                // is
+                // no
+                // key
+                // name
                 .body("", not(hasItem(hasEntry("name", "Fred"))));
     }
 }

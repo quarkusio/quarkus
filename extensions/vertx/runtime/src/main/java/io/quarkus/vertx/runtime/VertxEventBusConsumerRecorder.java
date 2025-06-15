@@ -50,8 +50,7 @@ public class VertxEventBusConsumerRecorder {
     static volatile Vertx vertx;
     static volatile List<MessageConsumer<?>> messageConsumers;
 
-    public void configureVertx(Supplier<Vertx> vertx,
-            List<EventConsumerInfo> messageConsumerConfigurations,
+    public void configureVertx(Supplier<Vertx> vertx, List<EventConsumerInfo> messageConsumerConfigurations,
             LaunchMode launchMode, ShutdownContext shutdown, Map<Class<?>, Class<?>> codecByClass,
             List<Class<?>> selectorTypes) {
         VertxEventBusConsumerRecorder.vertx = vertx.get();
@@ -97,10 +96,12 @@ public class VertxEventBusConsumerRecorder {
             CountDownLatch latch = new CountDownLatch(messageConsumerConfigurations.size());
             final List<Throwable> registrationFailures = new ArrayList<>();
             for (EventConsumerInfo info : messageConsumerConfigurations) {
-                EventConsumerInvoker invoker = new EventConsumerInvoker(info.invoker.getValue(), info.splitHeadersBodyParams);
+                EventConsumerInvoker invoker = new EventConsumerInvoker(info.invoker.getValue(),
+                        info.splitHeadersBodyParams);
                 String address = lookUpPropertyValue(info.annotation.value());
                 boolean local = info.annotation.local();
-                boolean blocking = info.annotation.blocking() || info.blockingAnnotation || info.runOnVirtualThreadAnnotation;
+                boolean blocking = info.annotation.blocking() || info.blockingAnnotation
+                        || info.runOnVirtualThreadAnnotation;
                 boolean runOnVirtualThread = info.runOnVirtualThreadAnnotation;
                 boolean ordered = info.annotation.ordered();
                 // Create a context attached to each consumer
@@ -143,22 +144,23 @@ public class VertxEventBusConsumerRecorder {
                                             }
                                         });
                                     } else {
-                                        Future<Void> future = Vertx.currentContext().executeBlocking(new Callable<Void>() {
-                                            @Override
-                                            public Void call() {
-                                                try {
-                                                    invoker.invoke(m);
-                                                } catch (Exception e) {
-                                                    if (m.replyAddress() == null) {
-                                                        // No reply handler
-                                                        throw wrapIfNecessary(e);
-                                                    } else {
-                                                        m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                        Future<Void> future = Vertx.currentContext()
+                                                .executeBlocking(new Callable<Void>() {
+                                                    @Override
+                                                    public Void call() {
+                                                        try {
+                                                            invoker.invoke(m);
+                                                        } catch (Exception e) {
+                                                            if (m.replyAddress() == null) {
+                                                                // No reply handler
+                                                                throw wrapIfNecessary(e);
+                                                            } else {
+                                                                m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
+                                                            }
+                                                        }
+                                                        return null;
                                                     }
-                                                }
-                                                return null;
-                                            }
-                                        }, ordered);
+                                                }, ordered);
                                         future.onFailure(context::reportException);
                                     }
                                 } else {
@@ -197,7 +199,8 @@ public class VertxEventBusConsumerRecorder {
             }
             if (!registrationFailures.isEmpty()) {
                 // just log/raise the first failure
-                throw new RuntimeException("Registration of one or more message consumers failed", registrationFailures.get(0));
+                throw new RuntimeException("Registration of one or more message consumers failed",
+                        registrationFailures.get(0));
             }
         }
     }
@@ -252,7 +255,8 @@ public class VertxEventBusConsumerRecorder {
                 } else {
                     LOGGER.error(String.format("The codec %s does not inherit from MessageCodec ", target.toString()));
                 }
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
                 LOGGER.error("Cannot instantiate the MessageCodec " + target.toString(), e);
             }
         }
@@ -282,7 +286,9 @@ public class VertxEventBusConsumerRecorder {
     /**
      * Looks up the property value by checking whether the value is a configuration key and resolves it if so.
      *
-     * @param propertyValue property value to look up.
+     * @param propertyValue
+     *        property value to look up.
+     *
      * @return the resolved property value.
      */
     private static String lookUpPropertyValue(String propertyValue) {
@@ -308,8 +314,8 @@ public class VertxEventBusConsumerRecorder {
                 } else if (resolveContext.hasDefault()) {
                     resolveContext.expandDefault();
                 } else {
-                    throw new NoSuchElementException(String.format("Could not expand value %s in property %s",
-                            resolveContext.getKey(), expr));
+                    throw new NoSuchElementException(
+                            String.format("Could not expand value %s in property %s", resolveContext.getKey(), expr));
                 }
             }
         });

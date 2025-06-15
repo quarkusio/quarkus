@@ -81,7 +81,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 return null;
             }
             final MultiPartUploadHandler parser = new MultiPartUploadHandler(exchange, boundary, maxIndividualFileSize,
-                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, maxParameters, fileFormNames);
+                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, maxParameters,
+                    fileFormNames);
             exchange.registerCompletionCallback(new CompletionCallback() {
                 @Override
                 public void onComplete(Throwable throwable) {
@@ -227,8 +228,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (exchange.getFormData() != null) {
                 return;
             }
-            //we need to delegate to a thread pool
-            //as we parse with blocking operations
+            // we need to delegate to a thread pool
+            // as we parse with blocking operations
             exchange.suspend();
             exchange.serverRequest().setReadListener(new NonBlockingParseTask(executorSupplier.get()));
             exchange.serverRequest().resumeRequestInput();
@@ -348,7 +349,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     throw new RuntimeException(e);
                 }
             } else if (fileName != null) {
-                data.add(currentName, Arrays.copyOf(contentBytes.toByteArray(), contentBytes.size()), fileName, headers);
+                data.add(currentName, Arrays.copyOf(contentBytes.toByteArray(), contentBytes.size()), fileName,
+                        headers);
                 contentBytes.reset();
             } else {
 
@@ -356,7 +358,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 if (isText(contentType)) {
                     try {
                         String charset = defaultEncoding;
-                        String cs = contentType != null ? HeaderUtil.extractQuotedValueFromHeader(contentType, "charset")
+                        String cs = contentType != null
+                                ? HeaderUtil.extractQuotedValueFromHeader(contentType, "charset")
                                 : null;
                         if (cs != null) {
                             charset = cs;
@@ -367,7 +370,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                         throw new RuntimeException(e);
                     }
                 } else {
-                    data.add(currentName, Arrays.copyOf(contentBytes.toByteArray(), contentBytes.size()), null, headers);
+                    data.add(currentName, Arrays.copyOf(contentBytes.toByteArray(), contentBytes.size()), null,
+                            headers);
                 }
 
                 contentBytes.reset();
@@ -375,7 +379,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         }
 
         private boolean isText(String contentType) {
-            if (contentType == null || contentType.isEmpty()) { // https://www.rfc-editor.org/rfc/rfc7578.html#section-4.4 says the default content-type if missing is text/plain
+            if (contentType == null || contentType.isEmpty()) { // https://www.rfc-editor.org/rfc/rfc7578.html#section-4.4
+                                                                // says the default content-type if missing is
+                                                                // text/plain
                 return true;
             }
             return MediaTypeHelper.isTextLike(MediaType.valueOf(contentType));
@@ -390,7 +396,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (fileChannel != null) {
                 fileChannel.close();
             }
-            //we have to dispatch this, as it may result in file IO
+            // we have to dispatch this, as it may result in file IO
             if (deleteUploadsOnEnd) {
                 deleteFiles();
             }

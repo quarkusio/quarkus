@@ -41,7 +41,7 @@ public class TestClassUsages implements Serializable {
     public synchronized PostDiscoveryFilter getTestsToRun(Set<String> changedClasses, TestState testState) {
 
         Set<UniqueId> touchedIds = new HashSet<>();
-        //classes that have at least one test
+        // classes that have at least one test
         Set<String> testClassesToRun = new HashSet<>();
         for (Map.Entry<ClassAndMethod, Set<String>> entry : classNames.entrySet()) {
             if (entry.getKey().uniqueId != null) {
@@ -121,8 +121,7 @@ public class TestClassUsages implements Serializable {
             if (o == null || getClass() != o.getClass())
                 return false;
             ClassAndMethod that = (ClassAndMethod) o;
-            return Objects.equals(className, that.className) &&
-                    Objects.equals(uniqueId, that.uniqueId);
+            return Objects.equals(className, that.className) && Objects.equals(uniqueId, that.uniqueId);
         }
 
         @Override

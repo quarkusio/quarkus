@@ -63,8 +63,8 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
         }
 
         /**
-         *
          * @return the child nodes of the root node
+         *
          * @see Template#getNodes()
          */
         public List<TemplateNode> getNodes() {
@@ -72,8 +72,8 @@ public final class TemplatesAnalysisBuildItem extends SimpleBuildItem {
         }
 
         /**
-         *
          * @return the collection of nodes that match the given predicate
+         *
          * @see Template#findNodes(Predicate)
          */
         public Collection<TemplateNode> findNodes(Predicate<TemplateNode> predicate) {

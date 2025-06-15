@@ -34,7 +34,8 @@ public class CalculatingIndexView implements IndexView {
     private final ClassLoader classLoader;
     final Map<DotName, Optional<ClassInfo>> additionalClasses;
 
-    public CalculatingIndexView(IndexView index, ClassLoader classLoader, Map<DotName, Optional<ClassInfo>> additionalClasses) {
+    public CalculatingIndexView(IndexView index, ClassLoader classLoader,
+            Map<DotName, Optional<ClassInfo>> additionalClasses) {
         this.index = index;
         this.classLoader = classLoader;
         this.additionalClasses = additionalClasses;
@@ -47,8 +48,7 @@ public class CalculatingIndexView implements IndexView {
         }
         Collection<ClassInfo> known = index.getKnownClasses();
         Collection<ClassInfo> additional = additionalClasses.values().stream().filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+                .map(Optional::get).collect(Collectors.toList());
         List<ClassInfo> all = new ArrayList<>(known.size() + additional.size());
         all.addAll(known);
         all.addAll(additional);
@@ -324,8 +324,7 @@ public class CalculatingIndexView implements IndexView {
 
     static boolean index(Indexer indexer, String className, ClassLoader classLoader) {
         boolean result = false;
-        try (InputStream stream = classLoader
-                .getResourceAsStream(className.replace('.', '/') + ".class")) {
+        try (InputStream stream = classLoader.getResourceAsStream(className.replace('.', '/') + ".class")) {
             if (stream != null) {
                 indexer.index(stream);
                 result = true;

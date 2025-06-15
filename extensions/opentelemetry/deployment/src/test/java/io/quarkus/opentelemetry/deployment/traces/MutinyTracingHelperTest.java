@@ -38,15 +38,11 @@ import io.vertx.core.Vertx;
 class MutinyTracingHelperTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
-                            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                            .addAsResource(new StringAsset(
-                                    "quarkus.otel.bsp.schedule.delay=50ms\n"),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsResource(new StringAsset("quarkus.otel.bsp.schedule.delay=50ms\n"), "application.properties"));
 
     @Inject
     private TestSpanExporter spanExporter;
@@ -66,25 +62,20 @@ class MutinyTracingHelperTest {
     @MethodSource("generateContextRunners")
     void testSimpleUniPipeline(final String contextType, final String contextName) {
 
-        final UniAssertSubscriber<String> subscriber = Uni.createFrom()
-                .item("Hello")
-                .emitOn(r -> runOnContext(r, vertx, contextType))
-                .onItem()
-                .transformToUni(m -> wrapWithSpan(tracer, "testSpan",
-                        Uni.createFrom().item(m).onItem().transform(s -> {
-                            final Span span = tracer.spanBuilder("subspan").startSpan();
-                            try (final Scope scope = span.makeCurrent()) {
-                                return s + " world";
-                            } finally {
-                                span.end();
-                            }
-                        })))
-                .subscribe()
-                .withSubscriber(new UniAssertSubscriber<>());
+        final UniAssertSubscriber<String> subscriber = Uni.createFrom().item("Hello")
+                .emitOn(r -> runOnContext(r, vertx, contextType)).onItem()
+                .transformToUni(m -> wrapWithSpan(tracer, "testSpan", Uni.createFrom().item(m).onItem().transform(s -> {
+                    final Span span = tracer.spanBuilder("subspan").startSpan();
+                    try (final Scope scope = span.makeCurrent()) {
+                        return s + " world";
+                    } finally {
+                        span.end();
+                    }
+                }))).subscribe().withSubscriber(new UniAssertSubscriber<>());
 
         subscriber.awaitItem().assertItem("Hello world");
 
-        //ensure there are two spans with subspan as child of testSpan
+        // ensure there are two spans with subspan as child of testSpan
         final List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
         assertThat(spans.stream().map(SpanData::getName)).containsExactlyInAnyOrder("testSpan", "subspan");
         assertChildSpan(spans, "testSpan", "subspan");
@@ -99,15 +90,12 @@ class MutinyTracingHelperTest {
         final String subspanName = "subspan";
 
         final Span parentSpan = tracer.spanBuilder(parentSpanName).startSpan();
-        final io.opentelemetry.context.Context parentContext = io.opentelemetry.context.Context.current().with(parentSpan);
+        final io.opentelemetry.context.Context parentContext = io.opentelemetry.context.Context.current()
+                .with(parentSpan);
 
-        final UniAssertSubscriber<String> subscriber = Uni.createFrom()
-                .item("Hello")
-                .emitOn(r -> runOnContext(r, vertx, contextType))
-                .onItem()
-                .transformToUni(m -> wrapWithSpan(tracer, Optional.of(parentContext),
-                        pipelineSpanName,
-                        Uni.createFrom().item(m).onItem().transform(s -> {
+        final UniAssertSubscriber<String> subscriber = Uni.createFrom().item("Hello")
+                .emitOn(r -> runOnContext(r, vertx, contextType)).onItem().transformToUni(m -> wrapWithSpan(tracer,
+                        Optional.of(parentContext), pipelineSpanName, Uni.createFrom().item(m).onItem().transform(s -> {
                             final Span span = tracer.spanBuilder(subspanName).startSpan();
                             try (final Scope scope = span.makeCurrent()) {
                                 return s + " world";
@@ -115,13 +103,12 @@ class MutinyTracingHelperTest {
                                 span.end();
                             }
                         })))
-                .subscribe()
-                .withSubscriber(new UniAssertSubscriber<>());
+                .subscribe().withSubscriber(new UniAssertSubscriber<>());
 
         subscriber.awaitItem().assertItem("Hello world");
         parentSpan.end();
 
-        //ensure there are 3 spans with proper parent-child relationships
+        // ensure there are 3 spans with proper parent-child relationships
         final List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
         assertThat(spans.stream().map(SpanData::getName)).containsExactlyInAnyOrder(parentSpanName, pipelineSpanName,
                 subspanName);
@@ -131,30 +118,23 @@ class MutinyTracingHelperTest {
 
     @ParameterizedTest(name = "{index}: Nested uni pipeline with implicit parent {1}")
     @MethodSource("generateContextRunners")
-    void testNestedPipeline_implicitParent(final String contextType,
-            final String contextName) {
+    void testNestedPipeline_implicitParent(final String contextType, final String contextName) {
 
         final String parentSpanName = "parentSpan";
         final String childSpanName = "childSpan";
 
-        final UniAssertSubscriber<String> subscriber = Uni.createFrom()
-                .item("test")
-                .emitOn(r -> runOnContext(r, vertx, contextType))
-                .onItem()
+        final UniAssertSubscriber<String> subscriber = Uni.createFrom().item("test")
+                .emitOn(r -> runOnContext(r, vertx, contextType)).onItem()
                 .transformToUni(m -> wrapWithSpan(tracer, parentSpanName,
-                        Uni.createFrom().item(m)
-                                .onItem().transform(s -> s + " in outer span")
-                                .onItem().transformToUni(m1 -> wrapWithSpan(tracer, childSpanName,
-                                        Uni.createFrom().item(m1)
-                                                .onItem().transform(s -> "now in inner span")))
+                        Uni.createFrom().item(m).onItem().transform(s -> s + " in outer span").onItem()
+                                .transformToUni(m1 -> wrapWithSpan(tracer, childSpanName,
+                                        Uni.createFrom().item(m1).onItem().transform(s -> "now in inner span")))
 
-                ))
-                .subscribe()
-                .withSubscriber(new UniAssertSubscriber<>());
+                )).subscribe().withSubscriber(new UniAssertSubscriber<>());
 
         subscriber.awaitItem(Duration.ofMillis(300));
 
-        //ensure there are 2 spans with doSomething and doSomethingAsync as children of testSpan
+        // ensure there are 2 spans with doSomething and doSomethingAsync as children of testSpan
         final List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
         assertThat(spans.stream().map(SpanData::getName)).containsExactlyInAnyOrder(parentSpanName, childSpanName);
         assertChildSpan(spans, parentSpanName, childSpanName);
@@ -167,43 +147,32 @@ class MutinyTracingHelperTest {
         final String parentSpanName = "parentSpan";
         final String childSpanName = "childSpan";
 
-        final UniAssertSubscriber<String> subscriber = Uni.createFrom()
-                .item("test")
-                .emitOn(r -> runOnContext(r, vertx, contextType))
-                .onItem()
+        final UniAssertSubscriber<String> subscriber = Uni.createFrom().item("test")
+                .emitOn(r -> runOnContext(r, vertx, contextType)).onItem()
                 .transformToUni(m -> wrapWithSpan(tracer, parentSpanName,
-                        Uni.createFrom().item(m)
-                                .onItem().transform(s -> s + " in outer span")
-                                .onItem().transformToUni(m1 -> wrapWithSpan(tracer, Optional.empty(), childSpanName,
-                                        Uni.createFrom().item(m1)
-                                                .onItem().transform(s -> "now in inner span")))
+                        Uni.createFrom().item(m).onItem().transform(s -> s + " in outer span").onItem()
+                                .transformToUni(m1 -> wrapWithSpan(tracer, Optional.empty(), childSpanName,
+                                        Uni.createFrom().item(m1).onItem().transform(s -> "now in inner span")))
 
-                ))
-                .subscribe()
-                .withSubscriber(new UniAssertSubscriber<>());
+                )).subscribe().withSubscriber(new UniAssertSubscriber<>());
 
         subscriber.awaitItem(Duration.ofMillis(300));
 
-        //ensure there are 2 spans but without parent-child relationship
+        // ensure there are 2 spans but without parent-child relationship
         final List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
         assertThat(spans.stream().map(SpanData::getName)).containsExactlyInAnyOrder(parentSpanName, childSpanName);
-        assertThat(spans.stream()
-                .filter(span -> span.getName().equals(childSpanName))
-                .findAny()
-                .orElseThrow()
-                .getParentSpanId()).isEqualTo("0000000000000000");//signifies no parent
+        assertThat(spans.stream().filter(span -> span.getName().equals(childSpanName)).findAny().orElseThrow()
+                .getParentSpanId()).isEqualTo("0000000000000000");// signifies no parent
     }
 
     @ParameterizedTest(name = "{index}: Concatenating multi pipeline {1}")
     @MethodSource("generateContextRunners")
     void testSimpleMultiPipeline_Concatenate(final String contextType, final String contextName) {
 
-        final AssertSubscriber<String> subscriber = Multi.createFrom()
-                .items("test1", "test2", "test3")
-                .emitOn(r -> runOnContext(r, vertx, contextType))
-                .onItem()
+        final AssertSubscriber<String> subscriber = Multi.createFrom().items("test1", "test2", "test3")
+                .emitOn(r -> runOnContext(r, vertx, contextType)).onItem()
                 .transformToUniAndConcatenate(m -> wrapWithSpan(tracer, Optional.empty(), "testSpan " + m,
-                        //the traced pipeline
+                        // the traced pipeline
                         Uni.createFrom().item(m).onItem().transform(s -> {
                             final Span span = tracer.spanBuilder("subspan " + s).startSpan();
                             try (final Scope scope = span.makeCurrent()) {
@@ -212,12 +181,11 @@ class MutinyTracingHelperTest {
                                 span.end();
                             }
                         })))
-                .subscribe()
-                .withSubscriber(AssertSubscriber.create(3));
+                .subscribe().withSubscriber(AssertSubscriber.create(3));
 
         subscriber.awaitCompletion().assertItems("test1 transformed", "test2 transformed", "test3 transformed");
 
-        //ensure there are six spans with three pairs of subspan as child of testSpan
+        // ensure there are six spans with three pairs of subspan as child of testSpan
         final List<SpanData> spans = spanExporter.getFinishedSpanItems(6);
         for (int i = 1; i <= 3; i++) {
             final int currentI = i;
@@ -231,10 +199,8 @@ class MutinyTracingHelperTest {
     @MethodSource("generateContextRunners")
     void testSimpleMultiPipeline_Merge(final String contextType, final String contextName) {
 
-        final AssertSubscriber<String> subscriber = Multi.createFrom()
-                .items("test1", "test2", "test3")
-                .emitOn(r -> runOnContext(r, vertx, contextType))
-                .onItem()
+        final AssertSubscriber<String> subscriber = Multi.createFrom().items("test1", "test2", "test3")
+                .emitOn(r -> runOnContext(r, vertx, contextType)).onItem()
                 .transformToUniAndMerge(m -> wrapWithSpan(tracer, Optional.empty(), "testSpan " + m,
                         Uni.createFrom().item(m).onItem().transform(s -> {
                             final Span span = tracer.spanBuilder("subspan " + s).startSpan();
@@ -244,12 +210,11 @@ class MutinyTracingHelperTest {
                                 span.end();
                             }
                         })))
-                .subscribe()
-                .withSubscriber(AssertSubscriber.create(3));
+                .subscribe().withSubscriber(AssertSubscriber.create(3));
 
         subscriber.awaitCompletion();
 
-        //ensure there are six spans with three pairs of subspan as child of testSpan
+        // ensure there are six spans with three pairs of subspan as child of testSpan
         final List<SpanData> spans = spanExporter.getFinishedSpanItems(6);
         for (int i = 1; i <= 3; i++) {
             final int currentI = i;
@@ -261,17 +226,14 @@ class MutinyTracingHelperTest {
 
     private static void assertChildSpan(final List<SpanData> spans, final String parentSpanName,
             final String childSpanName1) {
-        assertThat(spans.stream()
-                .filter(span -> span.getName().equals(childSpanName1))
-                .findAny()
-                .orElseThrow()
-                .getParentSpanId()).isEqualTo(
-                        spans.stream().filter(span -> span.getName().equals(parentSpanName)).findAny().get().getSpanId());
+        assertThat(spans.stream().filter(span -> span.getName().equals(childSpanName1)).findAny().orElseThrow()
+                .getParentSpanId())
+                .isEqualTo(spans.stream().filter(span -> span.getName().equals(parentSpanName)).findAny().get()
+                        .getSpanId());
     }
 
     private static Stream<Arguments> generateContextRunners() {
-        return Stream.of(
-                Arguments.of("WITHOUT_CONTEXT", "Without Context"),
+        return Stream.of(Arguments.of("WITHOUT_CONTEXT", "Without Context"),
                 Arguments.of("ROOT_CONTEXT", "On Root Context"),
                 Arguments.of("DUPLICATED_CONTEXT", "On Duplicated Context"));
     }

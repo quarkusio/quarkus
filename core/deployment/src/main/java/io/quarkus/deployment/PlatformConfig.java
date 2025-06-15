@@ -8,10 +8,8 @@ import io.smallrye.config.WithDefault;
 /**
  * Platform
  * <p>
- * This is used currently only to suppress warnings about unknown properties
- * when the user supplies something like: -Dquarkus.platform.group-id=someGroup
- *
- * TODO refactor code to actually use these values
+ * This is used currently only to suppress warnings about unknown properties when the user supplies something like:
+ * -Dquarkus.platform.group-id=someGroup TODO refactor code to actually use these values
  */
 @ConfigMapping(prefix = "quarkus.platform")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)

@@ -26,8 +26,7 @@ public class GraphQLClientEnvVarConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyGraphQLClient.class, MyEnvSource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyGraphQLClient.class, MyEnvSource.class)
                     .addAsServiceProvider(ConfigSource.class, MyEnvSource.class));
 
     @Inject
@@ -41,8 +40,8 @@ public class GraphQLClientEnvVarConfigTest {
         assertFalse(buildConfig.enableBuildTimeScanning());
         GraphQLClientConfig client = config.clients().get(CONFIG_KEY);
         assertNotNull(client);
-        assertEquals(URL,
-                client.url().orElseThrow(() -> new AssertException("URL not found in '%s' config".formatted(CONFIG_KEY))));
+        assertEquals(URL, client.url()
+                .orElseThrow(() -> new AssertException("URL not found in '%s' config".formatted(CONFIG_KEY))));
     }
 
     @GraphQLClientApi(configKey = CONFIG_KEY)

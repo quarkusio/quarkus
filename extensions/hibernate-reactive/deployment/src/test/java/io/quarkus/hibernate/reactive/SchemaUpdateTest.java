@@ -18,9 +18,7 @@ import io.quarkus.test.vertx.UniAsserter;
 public class SchemaUpdateTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Hero.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(Hero.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "update");
 
@@ -30,9 +28,8 @@ public class SchemaUpdateTest {
     @Test
     @RunOnVertxContext
     public void integerIdentifierWithStageAPI(UniAsserter asserter) {
-        asserter.assertThat(() -> sessionFactory.withSession(s -> s
-                .createQuery("from Hero h where h.name = :name").setParameter("name", "Galadriel").getResultList()),
-                list -> {
+        asserter.assertThat(() -> sessionFactory.withSession(s -> s.createQuery("from Hero h where h.name = :name")
+                .setParameter("name", "Galadriel").getResultList()), list -> {
                     assertThat(list).isEmpty();
                 });
     }

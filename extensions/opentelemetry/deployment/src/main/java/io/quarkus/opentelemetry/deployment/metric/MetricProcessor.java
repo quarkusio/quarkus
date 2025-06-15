@@ -38,22 +38,17 @@ public class MetricProcessor {
     @BuildStep
     void startJvmMetrics(BuildProducer<NativeMonitoringBuildItem> nativeMonitoring,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .setUnremovable()
-                .addBeanClass(JvmMetricsService.class)
-                .build());
+        additionalBeans.produce(
+                AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(JvmMetricsService.class).build());
         nativeMonitoring.produce(new NativeMonitoringBuildItem(NativeConfig.MonitoringOption.JFR));
     }
 
     @BuildStep
-    UnremovableBeanBuildItem ensureProducersAreRetained(
-            CombinedIndexBuildItem indexBuildItem,
+    UnremovableBeanBuildItem ensureProducersAreRetained(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .setUnremovable()
-                .addBeanClass(MetricsProducer.class)
-                .build());
+        additionalBeans.produce(
+                AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(MetricsProducer.class).build());
 
         IndexView index = indexBuildItem.getIndex();
 
@@ -100,23 +95,20 @@ public class MetricProcessor {
 
     @BuildStep
     void runtimeInit(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) {
-        runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem(
-                        "io.opentelemetry.instrumentation.runtimemetrics.java8.internal.CpuMethods"));
+        runtimeReinitialized.produce(new RuntimeReinitializedClassBuildItem(
+                "io.opentelemetry.instrumentation.runtimemetrics.java8.internal.CpuMethods"));
     }
 
     public static class MetricEnabled implements BooleanSupplier {
         OTelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
-            return otelBuildConfig.metrics().enabled()
-                    .map(new Function<Boolean, Boolean>() {
-                        @Override
-                        public Boolean apply(Boolean enabled) {
-                            return otelBuildConfig.enabled() && enabled;
-                        }
-                    })
-                    .orElseGet(() -> otelBuildConfig.enabled());
+            return otelBuildConfig.metrics().enabled().map(new Function<Boolean, Boolean>() {
+                @Override
+                public Boolean apply(Boolean enabled) {
+                    return otelBuildConfig.enabled() && enabled;
+                }
+            }).orElseGet(() -> otelBuildConfig.enabled());
         }
     }
 }

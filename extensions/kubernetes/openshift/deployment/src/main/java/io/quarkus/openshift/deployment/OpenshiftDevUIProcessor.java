@@ -26,10 +26,8 @@ public class OpenshiftDevUIProcessor {
 
         CardPageBuildItem card = new CardPageBuildItem();
         card.addBuildTimeData("builderTypes", array);
-        card.addPage(Page.webComponentPageBuilder()
-                .title("Deploy to OpenShift")
-                .componentLink("qwc-openshift-deployment.js")
-                .icon("font-awesome-solid:box"));
+        card.addPage(Page.webComponentPageBuilder().title("Deploy to OpenShift")
+                .componentLink("qwc-openshift-deployment.js").icon("font-awesome-solid:box"));
         return card;
     }
 
@@ -49,12 +47,10 @@ public class OpenshiftDevUIProcessor {
                 for (Map.Entry<String, String> arg : map.entrySet()) {
                     properties.set(arg.getKey(), arg.getValue());
                 }
-                QuarkusBootstrap quarkusBootstrap = existing.clonedBuilder()
-                        .setMode(QuarkusBootstrap.Mode.PROD)
+                QuarkusBootstrap quarkusBootstrap = existing.clonedBuilder().setMode(QuarkusBootstrap.Mode.PROD)
                         .setIsolateDeployment(true).build();
                 try (CuratedApplication bootstrap = quarkusBootstrap.bootstrap()) {
-                    bootstrap
-                            .createAugmentor().createProductionApplication();
+                    bootstrap.createAugmentor().createProductionApplication();
                     return quarkusBootstrap.getBaseName() + " deployed successfully";
                 } catch (Exception e) {
                     return getRootMessage(e);

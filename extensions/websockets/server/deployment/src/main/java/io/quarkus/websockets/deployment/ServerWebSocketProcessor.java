@@ -39,16 +39,10 @@ public class ServerWebSocketProcessor {
 
     private static final DotName SERVER_ENDPOINT = DotName.createSimple(ServerEndpoint.class.getName());
 
-    public static final Collection<DotName> CODECS = List.of(
-            Decoder.TextStream.class,
-            Decoder.Text.class,
-            Decoder.BinaryStream.class,
-            Decoder.Binary.class,
-            Encoder.TextStream.class,
-            Encoder.Text.class,
-            Encoder.BinaryStream.class,
-            Encoder.Binary.class).stream().map(Class::getName).map(DotName::createSimple)
-            .collect(Collectors.toList());
+    public static final Collection<DotName> CODECS = List
+            .of(Decoder.TextStream.class, Decoder.Text.class, Decoder.BinaryStream.class, Decoder.Binary.class,
+                    Encoder.TextStream.class, Encoder.Text.class, Encoder.BinaryStream.class, Encoder.Binary.class)
+            .stream().map(Class::getName).map(DotName::createSimple).collect(Collectors.toList());
 
     @BuildStep
     void holdConfig(BuildProducer<FeatureBuildItem> feature) {
@@ -74,20 +68,18 @@ public class ServerWebSocketProcessor {
 
     @BuildStep
     void buildIndexDependencies(BuildProducer<IndexDependencyBuildItem> indexDependencyProduer) {
-        indexDependencyProduer.produce(new IndexDependencyBuildItem("jakarta.websocket", "jakarta.websocket-client-api"));
+        indexDependencyProduer
+                .produce(new IndexDependencyBuildItem("jakarta.websocket", "jakarta.websocket-client-api"));
     }
 
     @BuildStep
     void scanForCodecs(CombinedIndexBuildItem index,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyBuildItemProducer) {
-        CODECS.stream().forEach(
-                codec -> index.getIndex().getAllKnownImplementors(codec).stream()
-                        .filter(implementor -> !Modifier.isAbstract(implementor.flags()))
-                        .forEach(implementor -> JandexUtil.resolveTypeParameters(
-                                implementor.name(),
-                                codec, index.getIndex()).forEach(
-                                        typeParameter -> reflectiveHierarchyBuildItemProducer.produce(
-                                                ReflectiveHierarchyBuildItem.builder(typeParameter).build()))));
+        CODECS.stream().forEach(codec -> index.getIndex().getAllKnownImplementors(codec).stream()
+                .filter(implementor -> !Modifier.isAbstract(implementor.flags()))
+                .forEach(implementor -> JandexUtil.resolveTypeParameters(implementor.name(), codec, index.getIndex())
+                        .forEach(typeParameter -> reflectiveHierarchyBuildItemProducer
+                                .produce(ReflectiveHierarchyBuildItem.builder(typeParameter).build()))));
     }
 
     @BuildStep
@@ -98,8 +90,7 @@ public class ServerWebSocketProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public FilterBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
-            WebsocketServerRecorder recorder,
+    public FilterBuildItem deploy(final CombinedIndexBuildItem indexBuildItem, WebsocketServerRecorder recorder,
             BuildProducer<ReflectiveClassBuildItem> reflection,
             Optional<WebSocketDeploymentInfoBuildItem> webSocketDeploymentInfoBuildItem,
             Optional<ServerWebSocketContainerBuildItem> serverWebSocketContainerBuildItem) throws Exception {
@@ -110,10 +101,8 @@ public class ServerWebSocketProcessor {
         final IndexView index = indexBuildItem.getIndex();
         WebsocketClientProcessor.registerCodersForReflection(reflection, index.getAnnotations(SERVER_ENDPOINT));
 
-        return new FilterBuildItem(
-                recorder.createHandler(webSocketDeploymentInfoBuildItem.get().getInfo(),
-                        serverWebSocketContainerBuildItem.get().getContainer()),
-                100);
+        return new FilterBuildItem(recorder.createHandler(webSocketDeploymentInfoBuildItem.get().getInfo(),
+                serverWebSocketContainerBuildItem.get().getContainer()), 100);
     }
 
     @BuildStep

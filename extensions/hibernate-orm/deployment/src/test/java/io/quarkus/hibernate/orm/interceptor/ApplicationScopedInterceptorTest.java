@@ -31,9 +31,7 @@ public class ApplicationScopedInterceptorTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(ApplicationScopedInterceptor.class))
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addClass(ApplicationScopedInterceptor.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -114,7 +112,8 @@ public class ApplicationScopedInterceptorTest {
 
     @PersistenceUnitExtension // @ApplicationScoped is the default
     public static class ApplicationScopedInterceptor implements Interceptor {
-        private static final List<ApplicationScopedInterceptor> instances = Collections.synchronizedList(new ArrayList<>());
+        private static final List<ApplicationScopedInterceptor> instances = Collections
+                .synchronizedList(new ArrayList<>());
         private static final List<Object> loadedIds = Collections.synchronizedList(new ArrayList<>());
 
         public ApplicationScopedInterceptor() {

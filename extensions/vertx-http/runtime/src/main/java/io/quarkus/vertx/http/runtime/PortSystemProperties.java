@@ -15,21 +15,21 @@ public class PortSystemProperties {
         String testPropName = "quarkus." + subProperty + ".test-port";
 
         set(portPropertyName, testPropName, portPropertyValue, launchMode);
-        //if subProperty is "https", the correct properties are not quarkus.https.port and quarkus.https.test-port
-        //but quarkus.http.ssl-port and quarkus.http.test-ssl-port
-        //the incorrect properties are still set for backward compatibility with code that works around the incorrect
-        //names
+        // if subProperty is "https", the correct properties are not quarkus.https.port and quarkus.https.test-port
+        // but quarkus.http.ssl-port and quarkus.http.test-ssl-port
+        // the incorrect properties are still set for backward compatibility with code that works around the incorrect
+        // names
         if ("https".equals(subProperty)) {
             set("quarkus.http.ssl-port", "quarkus.http.test-ssl-port", portPropertyValue, launchMode);
         }
     }
 
     private void set(String portPropertyName, String testPropName, String portPropertyValue, LaunchMode launchMode) {
-        //we always set the .port property, even if we are in test mode, so this will always
-        //reflect the current port
+        // we always set the .port property, even if we are in test mode, so this will always
+        // reflect the current port
         set(portPropertyName, portPropertyValue);
         if (launchMode == LaunchMode.TEST) {
-            //we also set the test-port property in a test
+            // we also set the test-port property in a test
             set(testPropName, portPropertyValue);
         }
         if (launchMode.isDevOrTest()) {

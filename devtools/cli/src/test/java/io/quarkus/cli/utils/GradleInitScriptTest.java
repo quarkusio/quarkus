@@ -19,9 +19,12 @@ public class GradleInitScriptTest {
     @Test
     public void testGetInitScript() {
         assertTrue(GradleInitScript.getInitScript(List.of("arg1", "arg2", "arg3")).isEmpty());
-        assertEquals("/some/path", GradleInitScript.getInitScript(List.of("arg1", "arg2", "--init-script=/some/path")).get());
-        assertEquals("/some/path", GradleInitScript.getInitScript(List.of("arg1", "--init-script=/some/path", "arg3")).get());
-        assertEquals("/some/path", GradleInitScript.getInitScript(List.of("--init-script=/some/path", "arg2", "arg3")).get());
+        assertEquals("/some/path",
+                GradleInitScript.getInitScript(List.of("arg1", "arg2", "--init-script=/some/path")).get());
+        assertEquals("/some/path",
+                GradleInitScript.getInitScript(List.of("arg1", "--init-script=/some/path", "arg3")).get());
+        assertEquals("/some/path",
+                GradleInitScript.getInitScript(List.of("--init-script=/some/path", "arg2", "arg3")).get());
     }
 
     @Test

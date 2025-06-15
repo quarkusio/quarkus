@@ -24,20 +24,18 @@ public class ComposeLocator {
     public static Optional<ContainerAddress> locateContainer(DevServicesComposeProjectBuildItem composeProject,
             List<String> images, int port, LaunchMode launchMode, boolean useSharedNetwork) {
         if (launchMode != LaunchMode.NORMAL) {
-            return composeProject.locate(images, port)
-                    .map(runningContainer -> {
-                        String serviceName = getServiceName(runningContainer);
-                        ContainerAddress containerAddress = new ContainerAddress(runningContainer,
-                                useSharedNetwork ? serviceName : DockerClientFactory.instance().dockerHostIpAddress(),
-                                useSharedNetwork ? port
-                                        : runningContainer.getPortMapping(port).orElseThrow(
-                                                () -> new IllegalStateException("No public port found for " + port)));
-                        log.infof("Compose Dev Service container found: %s (%s). Connecting to: %s.",
-                                getShortId(containerAddress.getId()),
-                                containerAddress.getRunningContainer().containerInfo().imageName(),
-                                containerAddress.getUrl());
-                        return containerAddress;
-                    });
+            return composeProject.locate(images, port).map(runningContainer -> {
+                String serviceName = getServiceName(runningContainer);
+                ContainerAddress containerAddress = new ContainerAddress(runningContainer,
+                        useSharedNetwork ? serviceName : DockerClientFactory.instance().dockerHostIpAddress(),
+                        useSharedNetwork ? port
+                                : runningContainer.getPortMapping(port).orElseThrow(
+                                        () -> new IllegalStateException("No public port found for " + port)));
+                log.infof("Compose Dev Service container found: %s (%s). Connecting to: %s.",
+                        getShortId(containerAddress.getId()),
+                        containerAddress.getRunningContainer().containerInfo().imageName(), containerAddress.getUrl());
+                return containerAddress;
+            });
         }
         return Optional.empty();
     }

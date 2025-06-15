@@ -65,8 +65,7 @@ public class KnativeEventsBindingRecorder {
     public void init() {
         typeTriggers = new HashMap<>();
         invokersFilters = new HashMap<>();
-        objectMapper = getObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        objectMapper = getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
         queryMapper = new QueryObjectMapper();
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
@@ -94,7 +93,8 @@ public class KnativeEventsBindingRecorder {
                 // as resolution based on trigger (ce-type) and optional filters (on ce-attributes) can return only
                 // one function invoker
                 if (v.stream().anyMatch(i -> hasSameFilters(i.getName(), invokersFilters.get(i.getName()), filter))) {
-                    throw new IllegalStateException("Function for trigger '" + trigger + "' has multiple matching invokers");
+                    throw new IllegalStateException(
+                            "Function for trigger '" + trigger + "' has multiple matching invokers");
                 }
 
                 v.add(invoker);
@@ -164,14 +164,9 @@ public class KnativeEventsBindingRecorder {
         return new ObjectMapper();
     }
 
-    public Handler<RoutingContext> start(
-            String rootPath,
-            FunqyConfig funqyConfig,
-            FunqyKnativeEventsConfig eventsConfig,
-            Supplier<Vertx> vertx,
-            ShutdownContext shutdown,
-            BeanContainer beanContainer,
-            Executor executor) {
+    public Handler<RoutingContext> start(String rootPath, FunqyConfig funqyConfig,
+            FunqyKnativeEventsConfig eventsConfig, Supplier<Vertx> vertx, ShutdownContext shutdown,
+            BeanContainer beanContainer, Executor executor) {
 
         shutdown.addShutdownTask(new Runnable() {
             @Override
@@ -190,17 +185,20 @@ public class KnativeEventsBindingRecorder {
         if (funqyConfig.export().isPresent()) {
             defaultInvoker = FunctionRecorder.registry.matchInvoker(funqyConfig.export().get());
             if (defaultInvoker == null) {
-                throw new RuntimeException("quarkus.funqy.export value does not map a function: " + funqyConfig.export().get());
+                throw new RuntimeException(
+                        "quarkus.funqy.export value does not map a function: " + funqyConfig.export().get());
             }
 
         }
 
         if (eventsConfig.mapping() != null) {
-            for (Map.Entry<String, FunqyKnativeEventsConfig.FunctionMapping> entry : eventsConfig.mapping().entrySet()) {
+            for (Map.Entry<String, FunqyKnativeEventsConfig.FunctionMapping> entry : eventsConfig.mapping()
+                    .entrySet()) {
                 String functionName = entry.getKey();
                 FunctionInvoker invoker = FunctionRecorder.registry.matchInvoker(functionName);
                 if (invoker == null) {
-                    throw new RuntimeException("knative-events.function-mapping does not map to a function: " + functionName);
+                    throw new RuntimeException(
+                            "knative-events.function-mapping does not map to a function: " + functionName);
                 }
                 FunqyKnativeEventsConfig.FunctionMapping mapping = entry.getValue();
                 if (mapping.trigger().isPresent()) {
@@ -225,8 +223,7 @@ public class KnativeEventsBindingRecorder {
         }
 
         Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), rootPath, beanContainer, objectMapper,
-                eventsConfig,
-                defaultInvoker, typeTriggers, invokersFilters, executor);
+                eventsConfig, defaultInvoker, typeTriggers, invokersFilters, executor);
 
         return handler;
     }

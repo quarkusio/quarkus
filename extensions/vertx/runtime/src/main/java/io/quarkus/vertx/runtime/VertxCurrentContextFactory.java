@@ -36,15 +36,14 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
         String key = LOCAL_KEY_PREFIX + scope.getName();
         if (keys.contains(key)) {
             throw new IllegalStateException(
-                    "Multiple current contexts for the same scope are not supported. Current context for "
-                            + scope + " already exists!");
+                    "Multiple current contexts for the same scope are not supported. Current context for " + scope
+                            + " already exists!");
         }
         keys.add(key);
         return new VertxCurrentContext<>(key);
     }
 
     /**
-     *
      * @return an unmodifiable list of used keys
      */
     public List<String> keys() {
@@ -54,13 +53,12 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
     private static final class VertxCurrentContext<T extends ContextState> implements CurrentContext<T> {
 
         private final String key;
-        private final LazyValue<FastThreadLocal<T>> fallback = new LazyValue<>(
-                new Supplier<>() {
-                    @Override
-                    public FastThreadLocal<T> get() {
-                        return new FastThreadLocal<>();
-                    }
-                });
+        private final LazyValue<FastThreadLocal<T>> fallback = new LazyValue<>(new Supplier<>() {
+            @Override
+            public FastThreadLocal<T> get() {
+                return new FastThreadLocal<>();
+            }
+        });
 
         private VertxCurrentContext(String key) {
             this.key = key;

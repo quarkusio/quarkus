@@ -27,80 +27,69 @@ public class SSEMultiRouteWithContentTypeTest {
 
     @Test
     public void testSSEMultiRoute() {
-        when().get("/hello").then().statusCode(200)
-                .body(is("data: Hello world!\nid: 0\n\n"))
-                .header("content-type", "text/event-stream");
+        when().get("/hello").then().statusCode(200).body(is("data: Hello world!\nid: 0\n\n")).header("content-type",
+                "text/event-stream");
 
-        when().get("/hellos").then().statusCode(200)
-                .body(containsString(
-                // @formatter:off
+        when().get("/hellos").then().statusCode(200).body(containsString(
+        // @formatter:off
                         "data: hello\nid: 0\n\n"
                             + "data: world\nid: 1\n\n"
                             + "data: !\nid: 2\n\n"))
                         // @formatter:on
                 .header("content-type", "text/event-stream");
 
-        when().get("/no-hello").then().statusCode(200).body(hasLength(0))
-                .header("content-type", "text/event-stream");
+        when().get("/no-hello").then().statusCode(200).body(hasLength(0)).header("content-type", "text/event-stream");
 
         // We get the item followed by the exception
-        when().get("/hello-and-fail").then().statusCode(200)
-                .body(containsString("id: 0"))
+        when().get("/hello-and-fail").then().statusCode(200).body(containsString("id: 0"))
                 .body(not(containsString("boom")));
 
-        when().get("/buffer").then().statusCode(200)
-                .body(is("data: Buffer\nid: 0\n\n"))
-                .header("content-type", is("text/event-stream"));
+        when().get("/buffer").then().statusCode(200).body(is("data: Buffer\nid: 0\n\n")).header("content-type",
+                is("text/event-stream"));
 
         when().get("/buffers").then().statusCode(200)
                 .body(is("data: Buffer\nid: 0\n\ndata: Buffer\nid: 1\n\ndata: Buffer.\nid: 2\n\n"))
                 .header("content-type", is("text/event-stream"));
 
-        when().get("/mutiny-buffer").then().statusCode(200)
-                .body(is("data: Buffer\nid: 0\n\ndata: Mutiny\nid: 1\n\n"))
+        when().get("/mutiny-buffer").then().statusCode(200).body(is("data: Buffer\nid: 0\n\ndata: Mutiny\nid: 1\n\n"))
                 .header("content-type", is("text/event-stream"));
 
         when().get("/void").then().statusCode(204).body(hasLength(0));
 
-        when().get("/people").then().statusCode(200)
-                .body(is(
-                // @formatter:off
+        when().get("/people").then().statusCode(200).body(is(
+        // @formatter:off
                                 "data: {\"name\":\"superman\",\"id\":1}\nid: 0\n\n" +
                                 "data: {\"name\":\"batman\",\"id\":2}\nid: 1\n\n" +
                                 "data: {\"name\":\"spiderman\",\"id\":3}\nid: 2\n\n"))
                         // @formatter:on
                 .header("content-type", is("text/event-stream"));
 
-        when().get("/people-content-type").then().statusCode(200)
-                .body(is(
-                // @formatter:off
+        when().get("/people-content-type").then().statusCode(200).body(is(
+        // @formatter:off
                         "data: {\"name\":\"superman\",\"id\":1}\nid: 0\n\n" +
                                 "data: {\"name\":\"batman\",\"id\":2}\nid: 1\n\n" +
                                 "data: {\"name\":\"spiderman\",\"id\":3}\nid: 2\n\n"))
                 // @formatter:on
                 .header("content-type", is("text/event-stream;charset=utf-8"));
 
-        when().get("/people-as-event").then().statusCode(200)
-                .body(is(
-                // @formatter:off
+        when().get("/people-as-event").then().statusCode(200).body(is(
+        // @formatter:off
                         "event: person\ndata: {\"name\":\"superman\",\"id\":1}\nid: 1\n\n" +
                                 "event: person\ndata: {\"name\":\"batman\",\"id\":2}\nid: 2\n\n" +
                                 "event: person\ndata: {\"name\":\"spiderman\",\"id\":3}\nid: 3\n\n"))
                 // @formatter:on
                 .header("content-type", is("text/event-stream"));
 
-        when().get("/people-as-event-without-id").then().statusCode(200)
-                .body(is(
-                // @formatter:off
+        when().get("/people-as-event-without-id").then().statusCode(200).body(is(
+        // @formatter:off
                         "event: person\ndata: {\"name\":\"superman\",\"id\":1}\nid: 0\n\n" +
                                 "event: person\ndata: {\"name\":\"batman\",\"id\":2}\nid: 1\n\n" +
                                 "event: person\ndata: {\"name\":\"spiderman\",\"id\":3}\nid: 2\n\n"))
                 // @formatter:on
                 .header("content-type", is("text/event-stream"));
 
-        when().get("/people-as-event-without-event").then().statusCode(200)
-                .body(is(
-                // @formatter:off
+        when().get("/people-as-event-without-event").then().statusCode(200).body(is(
+        // @formatter:off
                         "data: {\"name\":\"superman\",\"id\":1}\nid: 1\n\n" +
                                 "data: {\"name\":\"batman\",\"id\":2}\nid: 2\n\n" +
                                 "data: {\"name\":\"spiderman\",\"id\":3}\nid: 3\n\n"))
@@ -132,8 +121,7 @@ public class SSEMultiRouteWithContentTypeTest {
 
         @Route(path = "hello-and-fail", produces = EVENT_STREAM)
         Multi<String> helloAndFail() {
-            return Multi.createBy().concatenating().streams(
-                    Multi.createFrom().item("Hello"),
+            return Multi.createBy().concatenating().streams(Multi.createFrom().item("Hello"),
                     Multi.createFrom().failure(() -> new IOException("boom")));
         }
 
@@ -144,8 +132,7 @@ public class SSEMultiRouteWithContentTypeTest {
 
         @Route(path = "buffers", produces = EVENT_STREAM)
         Multi<Buffer> buffers() {
-            return Multi.createFrom()
-                    .items(Buffer.buffer("Buffer"), Buffer.buffer("Buffer"), Buffer.buffer("Buffer."));
+            return Multi.createFrom().items(Buffer.buffer("Buffer"), Buffer.buffer("Buffer"), Buffer.buffer("Buffer."));
         }
 
         @Route(path = "mutiny-buffer", produces = EVENT_STREAM)
@@ -161,42 +148,32 @@ public class SSEMultiRouteWithContentTypeTest {
 
         @Route(path = "/people", produces = EVENT_STREAM)
         Multi<Person> people() {
-            return Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
+            return Multi.createFrom().items(new Person("superman", 1), new Person("batman", 2),
                     new Person("spiderman", 3));
         }
 
         @Route(path = "/people-as-event", produces = EVENT_STREAM)
         Multi<PersonAsEvent> peopleAsEvent() {
-            return Multi.createFrom().items(
-                    new PersonAsEvent("superman", 1),
-                    new PersonAsEvent("batman", 2),
+            return Multi.createFrom().items(new PersonAsEvent("superman", 1), new PersonAsEvent("batman", 2),
                     new PersonAsEvent("spiderman", 3));
         }
 
         @Route(path = "/people-as-event-without-id", produces = EVENT_STREAM)
         Multi<PersonAsEventWithoutId> peopleAsEventWithoutId() {
-            return Multi.createFrom().items(
-                    new PersonAsEventWithoutId("superman", 1),
-                    new PersonAsEventWithoutId("batman", 2),
-                    new PersonAsEventWithoutId("spiderman", 3));
+            return Multi.createFrom().items(new PersonAsEventWithoutId("superman", 1),
+                    new PersonAsEventWithoutId("batman", 2), new PersonAsEventWithoutId("spiderman", 3));
         }
 
         @Route(path = "/people-as-event-without-event", produces = EVENT_STREAM)
         Multi<PersonAsEventWithoutEvent> peopleAsEventWithoutEvent() {
-            return Multi.createFrom().items(
-                    new PersonAsEventWithoutEvent("superman", 1),
-                    new PersonAsEventWithoutEvent("batman", 2),
-                    new PersonAsEventWithoutEvent("spiderman", 3));
+            return Multi.createFrom().items(new PersonAsEventWithoutEvent("superman", 1),
+                    new PersonAsEventWithoutEvent("batman", 2), new PersonAsEventWithoutEvent("spiderman", 3));
         }
 
         @Route(path = "/people-content-type", produces = EVENT_STREAM)
         Multi<Person> peopleWithContentType(RoutingContext context) {
             context.response().putHeader("content-type", "text/event-stream;charset=utf-8");
-            return Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
+            return Multi.createFrom().items(new Person("superman", 1), new Person("batman", 2),
                     new Person("spiderman", 3));
         }
 

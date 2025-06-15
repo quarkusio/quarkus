@@ -6,10 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * When applied to a bean class or producer method (or field), the bean will only be enabled
- * if the Quarkus build time profile does <b>not</b> match the rules of the annotation values.
- *
- * <blockquote>
+ * When applied to a bean class or producer method (or field), the bean will only be enabled if the Quarkus build time
+ * profile does <b>not</b> match the rules of the annotation values. <blockquote>
  *
  * <pre>
  *    Enabled when "dev" profile is <b>not</b> active:
@@ -48,8 +46,8 @@ import java.lang.annotation.Target;
 @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })
 public @interface UnlessBuildProfile {
     /**
-     * A single profile name to enable a bean if a profile with the same name is <b>not</b> active in Quarkus build
-     * time config.
+     * A single profile name to enable a bean if a profile with the same name is <b>not</b> active in Quarkus build time
+     * config.
      */
     String value() default "";
 

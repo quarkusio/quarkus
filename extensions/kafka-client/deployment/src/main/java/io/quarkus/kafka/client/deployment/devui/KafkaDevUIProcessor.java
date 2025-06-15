@@ -20,30 +20,22 @@ public class KafkaDevUIProcessor {
     public CardPageBuildItem pages() {
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .icon("font-awesome-solid:folder-tree")
-                .componentLink("qwc-kafka-topics.js")
-                .title("Topics"));
-        //  TODO: Implement this. This is also not implemented in the old Dev UI
-        //        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-        //                .icon("font-awesome-solid:file-circle-check")
-        //                .componentLink("qwc-kafka-schema-registry.js")
-        //                .title("Schema registry"));
+        cardPageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:folder-tree")
+                .componentLink("qwc-kafka-topics.js").title("Topics"));
+        // TODO: Implement this. This is also not implemented in the old Dev UI
+        // cardPageBuildItem.addPage(Page.webComponentPageBuilder()
+        // .icon("font-awesome-solid:file-circle-check")
+        // .componentLink("qwc-kafka-schema-registry.js")
+        // .title("Schema registry"));
 
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .icon("font-awesome-solid:inbox")
-                .componentLink("qwc-kafka-consumer-groups.js")
-                .title("Consumer groups"));
+        cardPageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:inbox")
+                .componentLink("qwc-kafka-consumer-groups.js").title("Consumer groups"));
 
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .icon("font-awesome-solid:key")
-                .componentLink("qwc-kafka-access-control-list.js")
-                .title("Access control list"));
+        cardPageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:key")
+                .componentLink("qwc-kafka-access-control-list.js").title("Access control list"));
 
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .icon("font-awesome-solid:circle-nodes")
-                .componentLink("qwc-kafka-nodes.js")
-                .title("Nodes"));
+        cardPageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:circle-nodes")
+                .componentLink("qwc-kafka-nodes.js").title("Nodes"));
 
         return cardPageBuildItem;
     }

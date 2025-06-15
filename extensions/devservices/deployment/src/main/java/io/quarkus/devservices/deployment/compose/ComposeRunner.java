@@ -48,7 +48,9 @@ public class ComposeRunner {
     /**
      * Set the compose command and args to run.
      *
-     * @param cmd the command to run
+     * @param cmd
+     *        the command to run
+     *
      * @return this
      */
     public ComposeRunner withCommand(String cmd) {
@@ -59,7 +61,9 @@ public class ComposeRunner {
     /**
      * Set the environment variables to use when running the command.
      *
-     * @param env the environment variables
+     * @param env
+     *        the environment variables
+     *
      * @return this
      */
     public ComposeRunner withEnv(Map<String, String> env) {
@@ -70,7 +74,9 @@ public class ComposeRunner {
     /**
      * Set the profiles to use when running the command.
      *
-     * @param profiles the profiles
+     * @param profiles
+     *        the profiles
+     *
      * @return this
      */
     public ComposeRunner withProfiles(List<String> profiles) {
@@ -101,10 +107,7 @@ public class ComposeRunner {
             environment.put(DOCKER_TLS_VERIFY_ENV, "true");
         }
         environment.put(DOCKER_HOST_ENV, transportConfig.getDockerHost().toString());
-        environment.put(COMPOSE_FILE_ENV, composeFiles
-                .stream()
-                .map(File::getAbsolutePath)
-                .map(Objects::toString)
+        environment.put(COMPOSE_FILE_ENV, composeFiles.stream().map(File::getAbsolutePath).map(Objects::toString)
                 .collect(Collectors.joining(File.pathSeparator)));
         if (!profiles.isEmpty()) {
             environment.put(COMPOSE_PROFILES_ENV, String.join(",", this.profiles));
@@ -121,9 +124,9 @@ public class ComposeRunner {
             if (exitCode == 0) {
                 LOG.info("Compose has finished running");
             } else {
-                throw new RuntimeException("Compose exited abnormally with code " + exitCode +
-                        " whilst running command: " +
-                        composeExecutable + " " + cmd + ", with env vars: " + environment);
+                throw new RuntimeException(
+                        "Compose exited abnormally with code " + exitCode + " whilst running command: "
+                                + composeExecutable + " " + cmd + ", with env vars: " + environment);
             }
         } catch (RuntimeException e) {
             throw e;

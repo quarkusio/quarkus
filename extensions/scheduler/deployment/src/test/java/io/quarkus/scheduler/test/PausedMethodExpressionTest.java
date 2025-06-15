@@ -22,10 +22,8 @@ public class PausedMethodExpressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PausedMethodExpressionTest.Jobs.class)
-                    .addAsResource(new StringAsset("scheduler.identity=myIdentity"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(PausedMethodExpressionTest.Jobs.class)
+                    .addAsResource(new StringAsset("scheduler.identity=myIdentity"), "application.properties"));
 
     private static final String IDENTITY = "{scheduler.identity}";
 
@@ -43,7 +41,8 @@ public class PausedMethodExpressionTest {
             LATCH.countDown();
         }
 
-        void pause(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE - 1) StartupEvent event, Scheduler scheduler) {
+        void pause(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE - 1) StartupEvent event,
+                Scheduler scheduler) {
             // Pause the job before the scheduler starts
             scheduler.pause(IDENTITY);
         }

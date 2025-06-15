@@ -80,9 +80,9 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             Event<SkippedExecution> skippedExecutionEvent, Event<SuccessfulExecution> successExecutionEvent,
             Event<FailedExecution> failedExecutionEvent, Event<DelayedExecution> delayedExecutionEvent,
             Event<SchedulerPaused> schedulerPausedEvent, Event<SchedulerResumed> schedulerResumedEvent,
-            Event<ScheduledJobPaused> scheduledJobPausedEvent,
-            Event<ScheduledJobResumed> scheduledJobResumedEvent, Vertx vertx, SchedulerConfig schedulerConfig,
-            Instance<JobInstrumenter> jobInstrumenter, ScheduledExecutorService blockingExecutor) {
+            Event<ScheduledJobPaused> scheduledJobPausedEvent, Event<ScheduledJobResumed> scheduledJobResumedEvent,
+            Vertx vertx, SchedulerConfig schedulerConfig, Instance<JobInstrumenter> jobInstrumenter,
+            ScheduledExecutorService blockingExecutor) {
         super(vertx, new CronParser(context.getCronType()), schedulerRuntimeConfig.overdueGracePeriod(),
                 new Events(skippedExecutionEvent, successExecutionEvent, failedExecutionEvent, delayedExecutionEvent,
                         schedulerPausedEvent, schedulerResumedEvent, scheduledJobPausedEvent, scheduledJobResumedEvent),
@@ -112,8 +112,7 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             @Override
             public Thread newThread(Runnable runnable) {
                 Thread t = new Thread(Thread.currentThread().getThreadGroup(), runnable,
-                        "quarkus-scheduler-trigger-check-" + threadNumber.getAndIncrement(),
-                        0);
+                        "quarkus-scheduler-trigger-check-" + threadNumber.getAndIncrement(), 0);
                 if (t.isDaemon()) {
                     t.setDaemon(false);
                 }
@@ -155,8 +154,9 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
                         instrumenter = jobInstrumenter.get();
                     }
                     ScheduledInvoker invoker = initInvoker(context.createInvoker(method.getInvokerClassName()), events,
-                            scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()), instrumenter,
-                            vertx, false, SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
+                            scheduled.concurrentExecution(), initSkipPredicate(scheduled.skipExecutionIf()),
+                            instrumenter, vertx, false, SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled),
+                            blockingExecutor);
                     scheduledTasks.put(trigger.get().id, new ScheduledTask(trigger.get(), invoker, false));
                 }
             }
@@ -369,7 +369,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             return Optional.of(new IntervalTrigger(id, start, everyMillis.getAsLong(),
                     SchedulerUtils.parseOverdueGracePeriod(scheduled, defaultGracePeriod), methodDescription));
         } else {
-            throw new IllegalArgumentException("Either the 'cron' expression or the 'every' period must be set: " + scheduled);
+            throw new IllegalArgumentException(
+                    "Either the 'cron' expression or the 'every' period must be set: " + scheduled);
         }
     }
 
@@ -417,7 +418,9 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
         }
 
         /**
-         * @param now The current date-time in the default time zone
+         * @param now
+         *        The current date-time in the default time zone
+         *
          * @return the scheduled time if fired, {@code null} otherwise
          */
         abstract ZonedDateTime evaluate(ZonedDateTime now);
@@ -498,8 +501,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             if (now.isBefore(start)) {
                 return false;
             }
-            return lastFireTime == null || lastFireTime.plus(Duration.ofMillis(interval))
-                    .plus(gracePeriod).isBefore(now);
+            return lastFireTime == null
+                    || lastFireTime.plus(Duration.ofMillis(interval)).plus(gracePeriod).isBefore(now);
         }
 
         @Override
@@ -518,7 +521,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
         private final Duration gracePeriod;
         private final ZoneId timeZone;
 
-        CronTrigger(String id, ZonedDateTime start, Cron cron, Duration gracePeriod, ZoneId timeZone, String description) {
+        CronTrigger(String id, ZonedDateTime start, Cron cron, Duration gracePeriod, ZoneId timeZone,
+                String description) {
             super(id, start, description);
             this.cron = cron;
             this.executionTime = ExecutionTime.forCron(cron);
@@ -564,8 +568,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
 
         @Override
         public String toString() {
-            return "CronTrigger [id=" + id + ", cron=" + cron.asString() + ", gracePeriod=" + gracePeriod + ", timeZone="
-                    + timeZone + "]";
+            return "CronTrigger [id=" + id + ", cron=" + cron.asString() + ", gracePeriod=" + gracePeriod
+                    + ", timeZone=" + timeZone + "]";
         }
 
         private ZonedDateTime zoned(ZonedDateTime time) {
@@ -580,7 +584,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
         private final ZonedDateTime scheduledFireTime;
         private final Trigger trigger;
 
-        public SimpleScheduledExecution(ZonedDateTime fireTime, ZonedDateTime scheduledFireTime, SimpleTrigger trigger) {
+        public SimpleScheduledExecution(ZonedDateTime fireTime, ZonedDateTime scheduledFireTime,
+                SimpleTrigger trigger) {
             this.fireTime = fireTime;
             this.scheduledFireTime = scheduledFireTime;
             this.trigger = trigger;
@@ -657,7 +662,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
                 };
             }
             Scheduled scheduled = new SyntheticScheduled(identity, cron, every, 0, TimeUnit.MINUTES, delayed,
-                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone, implementation, executionMaxDelay);
+                    overdueGracePeriod, concurrentExecution, skipPredicate, timeZone, implementation,
+                    executionMaxDelay);
             Optional<SimpleTrigger> trigger = createTrigger(identity, null, scheduled, defaultOverdueGracePeriod);
             if (trigger.isPresent()) {
                 SimpleTrigger simpleTrigger = trigger.get();
@@ -665,8 +671,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
                 if (schedulerConfig.tracingEnabled() && jobInstrumenter.isResolvable()) {
                     instrumenter = jobInstrumenter.get();
                 }
-                invoker = initInvoker(invoker, events, concurrentExecution, skipPredicate, instrumenter, vertx,
-                        false, SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
+                invoker = initInvoker(invoker, events, concurrentExecution, skipPredicate, instrumenter, vertx, false,
+                        SchedulerUtils.parseExecutionMaxDelayAsMillis(scheduled), blockingExecutor);
                 ScheduledTask scheduledTask = new ScheduledTask(trigger.get(), invoker, true);
                 ScheduledTask existing = scheduledTasks.putIfAbsent(simpleTrigger.id, scheduledTask);
                 if (existing != null) {

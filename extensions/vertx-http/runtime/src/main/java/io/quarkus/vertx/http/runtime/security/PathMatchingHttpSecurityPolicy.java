@@ -14,12 +14,11 @@ import io.quarkus.vertx.http.runtime.VertxHttpConfig;
  * This is used for the default path/method based RBAC.
  */
 @Singleton
-public class PathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy implements HttpSecurityPolicy {
-    PathMatchingHttpSecurityPolicy(
-            VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+public class PathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy
+        implements HttpSecurityPolicy {
+    PathMatchingHttpSecurityPolicy(VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig,
             Instance<HttpSecurityPolicy> installedPolicies) {
         super(httpConfig.auth().permissions(), httpConfig.auth().rolePolicy(), httpBuildTimeConfig.rootPath(),
-                installedPolicies,
-                ALL);
+                installedPolicies, ALL);
     }
 }

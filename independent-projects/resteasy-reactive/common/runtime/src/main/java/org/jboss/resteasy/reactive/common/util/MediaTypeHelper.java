@@ -59,7 +59,9 @@ public class MediaTypeHelper {
     /**
      * subtypes like application/*+xml
      *
-     * @param subtype subtype
+     * @param subtype
+     *        subtype
+     *
      * @return true if subtype is composite
      */
     public static boolean isCompositeWildcardSubtype(String subtype) {
@@ -69,7 +71,9 @@ public class MediaTypeHelper {
     /**
      * subtypes like application/*+xml
      *
-     * @param subtype subtype
+     * @param subtype
+     *        subtype
+     *
      * @return true if subtype is wildcard composite
      */
     public static boolean isWildcardCompositeSubtype(String subtype) {
@@ -118,13 +122,17 @@ public class MediaTypeHelper {
                 return -1;
             if (!isComposite(mediaType.getSubtype()) && isComposite(mediaType2.getSubtype()))
                 return 1;
-            if (isCompositeWildcardSubtype(mediaType.getSubtype()) && !isCompositeWildcardSubtype(mediaType2.getSubtype()))
+            if (isCompositeWildcardSubtype(mediaType.getSubtype())
+                    && !isCompositeWildcardSubtype(mediaType2.getSubtype()))
                 return -1;
-            if (!isCompositeWildcardSubtype(mediaType.getSubtype()) && isCompositeWildcardSubtype(mediaType2.getSubtype()))
+            if (!isCompositeWildcardSubtype(mediaType.getSubtype())
+                    && isCompositeWildcardSubtype(mediaType2.getSubtype()))
                 return 1;
-            if (isWildcardCompositeSubtype(mediaType.getSubtype()) && !isWildcardCompositeSubtype(mediaType2.getSubtype()))
+            if (isWildcardCompositeSubtype(mediaType.getSubtype())
+                    && !isWildcardCompositeSubtype(mediaType2.getSubtype()))
                 return -1;
-            if (!isWildcardCompositeSubtype(mediaType.getSubtype()) && isWildcardCompositeSubtype(mediaType2.getSubtype()))
+            if (!isWildcardCompositeSubtype(mediaType.getSubtype())
+                    && isWildcardCompositeSubtype(mediaType2.getSubtype()))
                 return 1;
 
             int numNonQ = 0;
@@ -180,9 +188,8 @@ public class MediaTypeHelper {
     }
 
     /**
-     * Finds the best match according to the weight of the media types
-     * The parameters needs to be sorted, so a copy of these is made if necessary
-     * in order to avoid altering the input
+     * Finds the best match according to the weight of the media types The parameters needs to be sorted, so a copy of
+     * these is made if necessary in order to avoid altering the input
      */
     public static MediaType getBestMatch(List<MediaType> desired, List<MediaType> provided) {
         if (!hasAtMostOneItem(desired)) {
@@ -281,7 +288,8 @@ public class MediaTypeHelper {
     public static boolean isTextLike(MediaType mediaType) {
         String type = mediaType.getType();
         String subtype = mediaType.getSubtype();
-        return (type.equals("application") && (subtype.contains("json") || subtype.contains("xml") || subtype.contains("yaml")))
+        return (type.equals("application")
+                && (subtype.contains("json") || subtype.contains("xml") || subtype.contains("yaml")))
                 || type.equals("text");
     }
 
@@ -307,10 +315,12 @@ public class MediaTypeHelper {
 
     /**
      * This method ungroups the media types with suffix in separated media types. For example, having the media type
-     * "application/one+two" will return a list containing ["application/one+two", "application/one", "application/two"].
-     * The Media Types without suffix remain as one media type.
+     * "application/one+two" will return a list containing ["application/one+two", "application/one",
+     * "application/two"]. The Media Types without suffix remain as one media type.
      *
-     * @param mediaTypes the list of media types to separate.
+     * @param mediaTypes
+     *        the list of media types to separate.
+     *
      * @return the list of ungrouped media types.
      */
     public static List<MediaType> getUngroupedMediaTypes(List<MediaType> mediaTypes) {
@@ -324,10 +334,12 @@ public class MediaTypeHelper {
 
     /**
      * This method ungroups the media type with suffix in separated media types. For example, having the media type
-     * "application/one+two" will return a list containing ["application/one+two", "application/one", "application/two"].
-     * If the Media Type does not have a suffix, then it's not modified.
+     * "application/one+two" will return a list containing ["application/one+two", "application/one",
+     * "application/two"]. If the Media Type does not have a suffix, then it's not modified.
      *
-     * @param mediaType the media type to separate.
+     * @param mediaType
+     *        the media type to separate.
+     *
      * @return the list of ungrouped media types.
      */
     public static List<MediaType> getUngroupedMediaTypes(MediaType mediaType) {

@@ -32,8 +32,7 @@ public final class PanacheJpaCommonResourceProcessor {
 
     @BuildStep
     void lookupNamedQueries(CombinedIndexBuildItem index,
-            BuildProducer<PanacheNamedQueryEntityClassBuildStep> namedQueries,
-            JpaModelBuildItem jpaModel) {
+            BuildProducer<PanacheNamedQueryEntityClassBuildStep> namedQueries, JpaModelBuildItem jpaModel) {
         for (String modelClass : jpaModel.getAllModelClassNames()) {
             // lookup for `@NamedQuery` on the hierarchy and produce NamedQueryEntityClassBuildStep
             Map<String, String> typeNamedQueries = new HashMap<>();
@@ -63,7 +62,8 @@ public final class PanacheJpaCommonResourceProcessor {
         List<AnnotationInstance> namedQueryInstances = classInfo.annotationsMap().get(DOTNAME_NAMED_QUERY);
         if (namedQueryInstances != null) {
             for (AnnotationInstance namedQueryInstance : namedQueryInstances) {
-                namedQueries.put(namedQueryInstance.value("name").asString(), namedQueryInstance.value("query").asString());
+                namedQueries.put(namedQueryInstance.value("name").asString(),
+                        namedQueryInstance.value("query").asString());
             }
         }
 

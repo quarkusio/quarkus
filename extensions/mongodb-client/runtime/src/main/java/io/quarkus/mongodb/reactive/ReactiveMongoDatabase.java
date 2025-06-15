@@ -32,7 +32,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Gets a collection.
      *
-     * @param collectionName the name of the collection to return
+     * @param collectionName
+     *        the name of the collection to return
+     *
      * @return the collection
      */
     ReactiveMongoCollection<Document> getCollection(String collectionName);
@@ -40,9 +42,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Gets a collection, with a specific default document class.
      *
-     * @param collectionName the name of the collection to return
-     * @param clazz the default class to cast any documents returned from the database into.
-     * @param <T> the type of the class to use instead of {@code Document}.
+     * @param collectionName
+     *        the name of the collection to return
+     * @param clazz
+     *        the default class to cast any documents returned from the database into.
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     *
      * @return the collection
      */
     <T> ReactiveMongoCollection<T> getCollection(String collectionName, Class<T> clazz);
@@ -50,7 +56,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Executes command in the context of the current database.
      *
-     * @param command the command to be run
+     * @param command
+     *        the command to be run
+     *
      * @return a {@link Uni} emitting the command result once completed
      */
     Uni<Document> runCommand(Bson command);
@@ -58,8 +66,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Executes command in the context of the current database.
      *
-     * @param command the command to be run
-     * @param readPreference the {@link ReadPreference} to be used when executing the command
+     * @param command
+     *        the command to be run
+     * @param readPreference
+     *        the {@link ReadPreference} to be used when executing the command
+     *
      * @return a {@link Uni} emitting the command result once completed
      */
     Uni<Document> runCommand(Bson command, ReadPreference readPreference);
@@ -67,9 +78,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Executes command in the context of the current database.
      *
-     * @param command the command to be run
-     * @param clazz the default class to cast any documents returned from the database into.
-     * @param <T> the type of the class to use instead of {@code Document}.
+     * @param command
+     *        the command to be run
+     * @param clazz
+     *        the default class to cast any documents returned from the database into.
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     *
      * @return a {@link Uni} emitting the command result once completed
      */
     <T> Uni<T> runCommand(Bson command, Class<T> clazz);
@@ -77,10 +92,15 @@ public interface ReactiveMongoDatabase {
     /**
      * Executes command in the context of the current database.
      *
-     * @param command the command to be run
-     * @param readPreference the {@link ReadPreference} to be used when executing the command
-     * @param clazz the default class to cast any documents returned from the database into.
-     * @param <T> the type of the class to use instead of {@code Document}.
+     * @param command
+     *        the command to be run
+     * @param readPreference
+     *        the {@link ReadPreference} to be used when executing the command
+     * @param clazz
+     *        the default class to cast any documents returned from the database into.
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     *
      * @return a {@link Uni} emitting the command result once completed
      */
     <T> Uni<T> runCommand(Bson command, ReadPreference readPreference, Class<T> clazz);
@@ -88,8 +108,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Executes command in the context of the current database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param command the command to be run
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param command
+     *        the command to be run
+     *
      * @return a {@link Uni} emitting the command result once completed
      */
     Uni<Document> runCommand(ClientSession clientSession, Bson command);
@@ -97,9 +120,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Executes command in the context of the current database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param readPreference the {@link ReadPreference} to be used when executing the command
-     * @param command the command to be run
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param readPreference
+     *        the {@link ReadPreference} to be used when executing the command
+     * @param command
+     *        the command to be run
+     *
      * @return a {@link Uni} emitting the command result once completed
      */
     Uni<Document> runCommand(ClientSession clientSession, Bson command, ReadPreference readPreference);
@@ -107,10 +134,15 @@ public interface ReactiveMongoDatabase {
     /**
      * Executes command in the context of the current database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param command the command to be run
-     * @param clazz the default class to cast any documents returned from the database into.
-     * @param <T> the type of the class to use instead of {@code Document}.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param command
+     *        the command to be run
+     * @param clazz
+     *        the default class to cast any documents returned from the database into.
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     *
      * @return a {@link Uni} emitting the command result once completed
      */
     <T> Uni<T> runCommand(ClientSession clientSession, Bson command, Class<T> clazz);
@@ -118,15 +150,20 @@ public interface ReactiveMongoDatabase {
     /**
      * Executes command in the context of the current database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param readPreference the {@link ReadPreference} to be used when executing the command
-     * @param command the command to be run
-     * @param clazz the default class to cast any documents returned from the database into.
-     * @param <T> the type of the class to use instead of {@code Document}.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param readPreference
+     *        the {@link ReadPreference} to be used when executing the command
+     * @param command
+     *        the command to be run
+     * @param clazz
+     *        the default class to cast any documents returned from the database into.
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     *
      * @return a {@link Uni} emitting the command result once completed
      */
-    <T> Uni<T> runCommand(ClientSession clientSession, Bson command, ReadPreference readPreference,
-            Class<T> clazz);
+    <T> Uni<T> runCommand(ClientSession clientSession, Bson command, ReadPreference readPreference, Class<T> clazz);
 
     /**
      * Drops this database.
@@ -138,7 +175,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Drops this database.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return a {@link Uni} emitting {@code null} when the database has been dropped
      */
     Uni<Void> drop(ClientSession clientSession);
@@ -153,7 +192,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Gets a stream of the names of all the collections in this database.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return a stream with all the names of all the collections in this database
      */
     Multi<String> listCollectionNames(ClientSession clientSession);
@@ -168,7 +209,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Finds all the collections in this database.
      *
-     * @param options the stream options
+     * @param options
+     *        the stream options
+     *
      * @return stream of collection descriptor
      */
     Multi<Document> listCollections(CollectionListOptions options);
@@ -176,8 +219,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Finds all the collections in this database.
      *
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     *
      * @return stream of collection descriptor
      */
     <T> Multi<T> listCollections(Class<T> clazz);
@@ -185,9 +231,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Finds all the collections in this database.
      *
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
-     * @param options the stream options
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     * @param options
+     *        the stream options
+     *
      * @return stream of collection descriptor
      */
     <T> Multi<T> listCollections(Class<T> clazz, CollectionListOptions options);
@@ -195,7 +245,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Finds all the collections in this database.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return stream of collection descriptor
      */
     Multi<Document> listCollections(ClientSession clientSession);
@@ -203,8 +255,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Finds all the collections in this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param options
+     *        the stream options
+     *
      * @return stream of collection descriptor
      */
     Multi<Document> listCollections(ClientSession clientSession, CollectionListOptions options);
@@ -212,9 +267,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Finds all the collections in this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     *
      * @return stream of collection descriptor
      */
     <T> Multi<T> listCollections(ClientSession clientSession, Class<T> clazz);
@@ -222,10 +281,15 @@ public interface ReactiveMongoDatabase {
     /**
      * Finds all the collections in this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     * @param options
+     *        the stream options
+     *
      * @return stream of collection descriptor
      */
     <T> Multi<T> listCollections(ClientSession clientSession, Class<T> clazz, CollectionListOptions options);
@@ -233,7 +297,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Create a new collection with the selected options
      *
-     * @param collectionName the name for the new collection to create
+     * @param collectionName
+     *        the name for the new collection to create
+     *
      * @return a {@link Uni} emitting {@code null} when the operation has completed
      */
     Uni<Void> createCollection(String collectionName);
@@ -241,8 +307,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Create a new collection with the selected options
      *
-     * @param collectionName the name for the new collection to create
-     * @param options various options for creating the collection
+     * @param collectionName
+     *        the name for the new collection to create
+     * @param options
+     *        various options for creating the collection
+     *
      * @return a {@link Uni} emitting {@code null} when the operation has completed
      */
     Uni<Void> createCollection(String collectionName, CreateCollectionOptions options);
@@ -250,8 +319,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Create a new collection with the selected options
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param collectionName the name for the new collection to create
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param collectionName
+     *        the name for the new collection to create
+     *
      * @return a {@link Uni} emitting {@code null} when the operation has completed
      */
     Uni<Void> createCollection(ClientSession clientSession, String collectionName);
@@ -259,64 +331,85 @@ public interface ReactiveMongoDatabase {
     /**
      * Create a new collection with the selected options
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param collectionName the name for the new collection to create
-     * @param options various options for creating the collection
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param collectionName
+     *        the name for the new collection to create
+     * @param options
+     *        various options for creating the collection
+     *
      * @return a {@link Uni} emitting {@code null} when the operation has completed
      */
-    Uni<Void> createCollection(ClientSession clientSession, String collectionName,
-            CreateCollectionOptions options);
+    Uni<Void> createCollection(ClientSession clientSession, String collectionName, CreateCollectionOptions options);
 
     /**
-     * Creates a view with the given name, backing collection/view name, aggregation pipeline, and options that
-     * defines the view.
+     * Creates a view with the given name, backing collection/view name, aggregation pipeline, and options that defines
+     * the view.
      *
-     * @param viewName the name of the view to create
-     * @param viewOn the backing collection/view for the view
-     * @param pipeline the pipeline that defines the view
+     * @param viewName
+     *        the name of the view to create
+     * @param viewOn
+     *        the backing collection/view for the view
+     * @param pipeline
+     *        the pipeline that defines the view
+     *
      * @return a {@link Uni} emitting {@code null} when the operation has completed
      */
     Uni<Void> createView(String viewName, String viewOn, List<? extends Bson> pipeline);
 
     /**
-     * Creates a view with the given name, backing collection/view name, aggregation pipeline, and options that
-     * defines the view.
+     * Creates a view with the given name, backing collection/view name, aggregation pipeline, and options that defines
+     * the view.
      *
-     * @param viewName the name of the view to create
-     * @param viewOn the backing collection/view for the view
-     * @param pipeline the pipeline that defines the view
-     * @param createViewOptions various options for creating the view
+     * @param viewName
+     *        the name of the view to create
+     * @param viewOn
+     *        the backing collection/view for the view
+     * @param pipeline
+     *        the pipeline that defines the view
+     * @param createViewOptions
+     *        various options for creating the view
+     *
      * @return a {@link Uni} emitting {@code null} when the operation has completed
      */
     Uni<Void> createView(String viewName, String viewOn, List<? extends Bson> pipeline,
             CreateViewOptions createViewOptions);
 
     /**
-     * Creates a view with the given name, backing collection/view name, aggregation pipeline, and options that
-     * defines the view.
+     * Creates a view with the given name, backing collection/view name, aggregation pipeline, and options that defines
+     * the view.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param viewName the name of the view to create
-     * @param viewOn the backing collection/view for the view
-     * @param pipeline the pipeline that defines the view
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param viewName
+     *        the name of the view to create
+     * @param viewOn
+     *        the backing collection/view for the view
+     * @param pipeline
+     *        the pipeline that defines the view
+     *
      * @return a {@link Uni} emitting {@code null} when the operation has completed
      */
-    Uni<Void> createView(ClientSession clientSession, String viewName, String viewOn,
-            List<? extends Bson> pipeline);
+    Uni<Void> createView(ClientSession clientSession, String viewName, String viewOn, List<? extends Bson> pipeline);
 
     /**
-     * Creates a view with the given name, backing collection/view name, aggregation pipeline, and options that
-     * defines the view.
+     * Creates a view with the given name, backing collection/view name, aggregation pipeline, and options that defines
+     * the view.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param viewName the name of the view to create
-     * @param viewOn the backing collection/view for the view
-     * @param pipeline the pipeline that defines the view
-     * @param createViewOptions various options for creating the view
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param viewName
+     *        the name of the view to create
+     * @param viewOn
+     *        the backing collection/view for the view
+     * @param pipeline
+     *        the pipeline that defines the view
+     * @param createViewOptions
+     *        various options for creating the view
+     *
      * @return a {@link Uni} emitting {@code null} when the operation has completed
      */
-    Uni<Void> createView(ClientSession clientSession, String viewName, String viewOn,
-            List<? extends Bson> pipeline,
+    Uni<Void> createView(ClientSession clientSession, String viewName, String viewOn, List<? extends Bson> pipeline,
             CreateViewOptions createViewOptions);
 
     /**
@@ -329,7 +422,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param options the stream options
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change events.
      */
     Multi<ChangeStreamDocument<Document>> watch(ChangeStreamOptions options);
@@ -337,8 +432,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     *
      * @return the stream of change events.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(Class<T> clazz);
@@ -346,9 +444,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
-     * @param options the stream options
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change events.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(Class<T> clazz, ChangeStreamOptions options);
@@ -356,7 +458,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     *
      * @return the stream of change events.
      */
     Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline);
@@ -364,8 +468,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change events.
      */
     Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline, ChangeStreamOptions options);
@@ -373,9 +480,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     *
      * @return the stream of change events.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz);
@@ -383,10 +494,15 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change events.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz,
@@ -395,7 +511,9 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return the stream of change events.
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession);
@@ -403,8 +521,11 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change events.
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, ChangeStreamOptions options);
@@ -412,9 +533,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     *
      * @return the stream of change events.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz);
@@ -422,20 +547,27 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change events.
      */
-    <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz,
-            ChangeStreamOptions options);
+    <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz, ChangeStreamOptions options);
 
     /**
      * Creates a change stream for this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     *
      * @return the stream of change events.
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline);
@@ -443,9 +575,13 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change events.
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
@@ -454,10 +590,15 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     *
      * @return the stream of change events.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
@@ -466,101 +607,138 @@ public interface ReactiveMongoDatabase {
     /**
      * Creates a change stream for this database.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change events.
      */
-    <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
-            Class<T> clazz, ChangeStreamOptions options);
+    <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline, Class<T> clazz,
+            ChangeStreamOptions options);
 
     /**
-     * Runs an aggregation framework pipeline on the database for pipeline stages
-     * that do not require an underlying collection, such as {@code $currentOp} and {@code $listLocalSessions}.
+     * Runs an aggregation framework pipeline on the database for pipeline stages that do not require an underlying
+     * collection, such as {@code $currentOp} and {@code $listLocalSessions}.
      *
-     * @param pipeline the aggregation pipeline
+     * @param pipeline
+     *        the aggregation pipeline
+     *
      * @return a stream of the result of the aggregation operation
      */
     Multi<Document> aggregate(List<? extends Bson> pipeline);
 
     /**
-     * Runs an aggregation framework pipeline on the database for pipeline stages
-     * that do not require an underlying collection, such as {@code $currentOp} and {@code $listLocalSessions}.
+     * Runs an aggregation framework pipeline on the database for pipeline stages that do not require an underlying
+     * collection, such as {@code $currentOp} and {@code $listLocalSessions}.
      *
-     * @param pipeline the aggregation pipeline
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregation pipeline
+     * @param options
+     *        the stream options
+     *
      * @return a stream of the result of the aggregation operation
      */
     Multi<Document> aggregate(List<? extends Bson> pipeline, AggregateOptions options);
 
     /**
-     * Runs an aggregation framework pipeline on the database for pipeline stages
-     * that do not require an underlying collection, such as {@code $currentOp} and {@code $listLocalSessions}.
+     * Runs an aggregation framework pipeline on the database for pipeline stages that do not require an underlying
+     * collection, such as {@code $currentOp} and {@code $listLocalSessions}.
      *
-     * @param pipeline the aggregation pipeline
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
+     * @param pipeline
+     *        the aggregation pipeline
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     *
      * @return a stream of the result of the aggregation operation
      */
     <T> Multi<T> aggregate(List<? extends Bson> pipeline, Class<T> clazz);
 
     /**
-     * Runs an aggregation framework pipeline on the database for pipeline stages
-     * that do not require an underlying collection, such as {@code $currentOp} and {@code $listLocalSessions}.
+     * Runs an aggregation framework pipeline on the database for pipeline stages that do not require an underlying
+     * collection, such as {@code $currentOp} and {@code $listLocalSessions}.
      *
-     * @param pipeline the aggregation pipeline
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregation pipeline
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return a stream of the result of the aggregation operation
      */
     <T> Multi<T> aggregate(List<? extends Bson> pipeline, Class<T> clazz, AggregateOptions options);
 
     /**
-     * Runs an aggregation framework pipeline on the database for pipeline stages
-     * that do not require an underlying collection, such as {@code $currentOp} and {@code $listLocalSessions}.
+     * Runs an aggregation framework pipeline on the database for pipeline stages that do not require an underlying
+     * collection, such as {@code $currentOp} and {@code $listLocalSessions}.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline
+     *
      * @return a stream of the result of the aggregation operation
      */
     Multi<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline);
 
     /**
-     * Runs an aggregation framework pipeline on the database for pipeline stages
-     * that do not require an underlying collection, such as {@code $currentOp} and {@code $listLocalSessions}.
+     * Runs an aggregation framework pipeline on the database for pipeline stages that do not require an underlying
+     * collection, such as {@code $currentOp} and {@code $listLocalSessions}.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline
+     * @param options
+     *        the stream options
+     *
      * @return a stream of the result of the aggregation operation
      */
-    Multi<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
-            AggregateOptions options);
+    Multi<Document> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, AggregateOptions options);
 
     /**
-     * Runs an aggregation framework pipeline on the database for pipeline stages
-     * that do not require an underlying collection, such as {@code $currentOp} and {@code $listLocalSessions}.
+     * Runs an aggregation framework pipeline on the database for pipeline stages that do not require an underlying
+     * collection, such as {@code $currentOp} and {@code $listLocalSessions}.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     *
      * @return a stream of the result of the aggregation operation
      */
     <T> Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, Class<T> clazz);
 
     /**
-     * Runs an aggregation framework pipeline on the database for pipeline stages
-     * that do not require an underlying collection, such as {@code $currentOp} and {@code $listLocalSessions}.
+     * Runs an aggregation framework pipeline on the database for pipeline stages that do not require an underlying
+     * collection, such as {@code $currentOp} and {@code $listLocalSessions}.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return a stream of the result of the aggregation operation
      */
     <T> Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, Class<T> clazz,

@@ -33,8 +33,7 @@ public class TestTrustedIdentityProvider implements IdentityProvider<TrustedAuth
         if (ident == null) {
             return Uni.createFrom().optional(Optional.empty());
         }
-        return Uni.createFrom().completionStage(CompletableFuture
-                .completedFuture(QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal(request.getPrincipal()))
-                        .addRoles(ident.roles).build()));
+        return Uni.createFrom().completionStage(CompletableFuture.completedFuture(QuarkusSecurityIdentity.builder()
+                .setPrincipal(new QuarkusPrincipal(request.getPrincipal())).addRoles(ident.roles).build()));
     }
 }

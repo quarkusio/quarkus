@@ -21,8 +21,7 @@ public class AdditionalTemplatePathTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt")
+            .withApplicationRoot(root -> root.addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt")
                     .addAsResource(new StringAsset("And... {#include foo/hello /}"), "templates/include.txt"))
             .addBuildChainCustomizer(buildCustomizer());
 
@@ -33,13 +32,10 @@ public class AdditionalTemplatePathTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(TemplatePathBuildItem.builder()
-                                .path("foo/hello.txt")
-                                .extensionInfo("test-ext")
+                        context.produce(TemplatePathBuildItem.builder().path("foo/hello.txt").extensionInfo("test-ext")
                                 .content("Hello {name}!").build());
                     }
-                }).produces(TemplatePathBuildItem.class)
-                        .build();
+                }).produces(TemplatePathBuildItem.class).build();
 
             }
         };

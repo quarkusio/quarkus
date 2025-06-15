@@ -17,11 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BatchFetchSizeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MainEntity.class)
-                    .addClass(OtherEntity.class)
-                    .addAsResource("application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MainEntity.class)
+            .addClass(OtherEntity.class).addAsResource("application.properties"));
 
     @Inject
     Session session;
@@ -45,21 +42,19 @@ public class BatchFetchSizeTest {
 
         transaction.begin();
         List<MainEntity> entities = session.createQuery("from MainEntity", MainEntity.class).list();
-        assertThat(entities).allSatisfy(e -> assertThat(Hibernate.isInitialized(e.others))
-                .as("'others' initialized for " + e).isFalse());
+        assertThat(entities).allSatisfy(
+                e -> assertThat(Hibernate.isInitialized(e.others)).as("'others' initialized for " + e).isFalse());
 
         MainEntity entity = entities.get(0);
         // Trigger initialization for the collection from one entity.
         entity.others.get(0);
-        assertThat(Hibernate.isInitialized(entity.others))
-                .as("'others' initialized for " + entity).isTrue();
+        assertThat(Hibernate.isInitialized(entity.others)).as("'others' initialized for " + entity).isTrue();
 
         // 20 entities were already in the session when the initialization above occurred,
         // so it should have triggered batch initialization of several 'others' collections.
         assertThat(entities).hasSize(20);
-        assertThat(entities)
-                .filteredOn(e -> Hibernate.isInitialized(e.others))
-                .hasSize(16); // Default batch fetch size is 16
+        assertThat(entities).filteredOn(e -> Hibernate.isInitialized(e.others)).hasSize(16); // Default batch fetch size
+                                                                                             // is 16
         transaction.commit();
     }
 

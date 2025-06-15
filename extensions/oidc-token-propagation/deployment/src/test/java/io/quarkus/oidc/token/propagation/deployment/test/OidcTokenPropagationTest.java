@@ -17,17 +17,12 @@ public class OidcTokenPropagationTest {
 
     final static OidcTestClient client = new OidcTestClient();
 
-    private static Class<?>[] testClasses = {
-            FrontendResource.class,
-            ProtectedResource.class,
-            AccessTokenPropagationService.class
-    };
+    private static Class<?>[] testClasses = { FrontendResource.class, ProtectedResource.class,
+            AccessTokenPropagationService.class };
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addAsResource("application.properties"));
 
     @AfterAll
     public static void close() {
@@ -36,11 +31,8 @@ public class OidcTokenPropagationTest {
 
     @Test
     public void testGetUserNameWithTokenPropagation() {
-        RestAssured.given().auth().oauth2(getBearerAccessToken())
-                .when().get("/frontend/token-propagation")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Token issued to alice has been exchanged, new user name: bob"));
+        RestAssured.given().auth().oauth2(getBearerAccessToken()).when().get("/frontend/token-propagation").then()
+                .statusCode(200).body(equalTo("Token issued to alice has been exchanged, new user name: bob"));
     }
 
     public String getBearerAccessToken() {

@@ -16,8 +16,7 @@ public class JPAQuotedIdentifiersTest extends AbstractJPAQuotedTest {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Group.class, QuotedResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Group.class, QuotedResource.class)
                     .addAsResource("application-quoted-identifiers.properties", "application.properties"));
 
 }

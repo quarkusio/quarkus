@@ -38,7 +38,7 @@ public class RegisteredClientImpl implements RegisteredClient {
 
     private static final String APPLICATION_JSON = "application/json";
     private static final String AUTHORIZATION_HEADER = String.valueOf(HttpHeaders.AUTHORIZATION);
-    //https://datatracker.ietf.org/doc/html/rfc7592.html#section-2.2
+    // https://datatracker.ietf.org/doc/html/rfc7592.html#section-2.2
     private static final Set<String> PRIVATE_PROPERTIES = Set.of(OidcConstants.CLIENT_METADATA_SECRET_EXPIRES_AT,
             OidcConstants.CLIENT_METADATA_ID_ISSUED_AT);
     private static final OidcRequestContextProperties DEFAULT_REQUEST_PROPS = new OidcRequestContextProperties();
@@ -54,8 +54,8 @@ public class RegisteredClientImpl implements RegisteredClient {
 
     public RegisteredClientImpl(WebClient client, OidcClientRegistrationConfig oidcConfig,
             Map<Type, List<OidcRequestFilter>> oidcRequestFilters,
-            Map<Type, List<OidcResponseFilter>> oidcResponseFilters,
-            ClientMetadata registeredMetadata, String registrationClientUri, String registrationToken) {
+            Map<Type, List<OidcResponseFilter>> oidcResponseFilters, ClientMetadata registeredMetadata,
+            String registrationClientUri, String registrationToken) {
         this.client = client;
         this.oidcConfig = oidcConfig;
         this.registrationClientUri = registrationClientUri;
@@ -155,17 +155,15 @@ public class RegisteredClientImpl implements RegisteredClient {
         }
     }
 
-    private UniOnItem<HttpResponse<Buffer>> makeRequest(OidcRequestContextProperties requestProps, HttpRequest<Buffer> request,
-            Buffer buffer) {
+    private UniOnItem<HttpResponse<Buffer>> makeRequest(OidcRequestContextProperties requestProps,
+            HttpRequest<Buffer> request, Buffer buffer) {
         if (registrationToken != null) {
             request.putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + registrationToken);
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, buffer).sendBuffer(buffer)
-                .onFailure(SocketException.class)
-                .retry()
-                .atMost(oidcConfig.connectionRetryCount())
-                .onFailure().transform(t -> {
+                .onFailure(SocketException.class).retry().atMost(oidcConfig.connectionRetryCount()).onFailure()
+                .transform(t -> {
                     LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
                     // don't wrap it to avoid information leak
                     return new OidcClientRegistrationException("OIDC Server is not available");
@@ -173,8 +171,8 @@ public class RegisteredClientImpl implements RegisteredClient {
         return response.onItem();
     }
 
-    private HttpRequest<Buffer> filterHttpRequest(OidcRequestContextProperties requestProps, HttpRequest<Buffer> request,
-            Buffer body) {
+    private HttpRequest<Buffer> filterHttpRequest(OidcRequestContextProperties requestProps,
+            HttpRequest<Buffer> request, Buffer body) {
         if (!requestFilters.isEmpty()) {
             OidcRequestContext context = new OidcRequestContext(request, body, requestProps);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(requestFilters,
@@ -187,7 +185,8 @@ public class RegisteredClientImpl implements RegisteredClient {
 
     private RegisteredClient newRegisteredClient(HttpResponse<Buffer> resp, OidcRequestContextProperties requestProps) {
         Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.REGISTERED_CLIENT);
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters,
+                OidcEndpoint.Type.REGISTERED_CLIENT);
         if (resp.statusCode() >= 200 && resp.statusCode() < 300) {
             io.vertx.core.json.JsonObject json = buffer.toJsonObject();
             LOG.debugf("Client metadata has been succesfully updated: %s", json.toString());
@@ -209,7 +208,8 @@ public class RegisteredClientImpl implements RegisteredClient {
 
     private Uni<Void> deleteResponse(HttpResponse<Buffer> resp, OidcRequestContextProperties requestProps) {
         Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.REGISTERED_CLIENT);
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters,
+                OidcEndpoint.Type.REGISTERED_CLIENT);
         if (resp.statusCode() == 200) {
             LOG.debug("Client has been succesfully deleted");
             return Uni.createFrom().voidItem();

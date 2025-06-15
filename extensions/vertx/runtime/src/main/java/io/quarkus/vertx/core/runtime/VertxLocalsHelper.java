@@ -5,14 +5,14 @@ import io.vertx.core.impl.ContextInternal;
 
 public class VertxLocalsHelper {
 
-    private static final String ILLEGAL_ACCESS_TO_CONTEXT = "Access to Context.put(), Context.get() and Context.remove() " +
-            "are forbidden as it can leak data between unrelated processing. Use Context.putLocal(), Context.getLocal() " +
-            "and Context.removeLocal() instead. Note that these methods can only be used from a 'duplicated' Context, " +
-            "and so may not be available everywhere.";
+    private static final String ILLEGAL_ACCESS_TO_CONTEXT = "Access to Context.put(), Context.get() and Context.remove() "
+            + "are forbidden as it can leak data between unrelated processing. Use Context.putLocal(), Context.getLocal() "
+            + "and Context.removeLocal() instead. Note that these methods can only be used from a 'duplicated' Context, "
+            + "and so may not be available everywhere.";
 
-    private static final String ILLEGAL_ACCESS_TO_LOCAL_CONTEXT = "Access to Context.putLocal(), Context.getLocal() and" +
-            " Context.removeLocal() are forbidden from a 'root' context  as it can leak data between unrelated processing." +
-            " Make sure the method runs on a 'duplicated' (local) Context";
+    private static final String ILLEGAL_ACCESS_TO_LOCAL_CONTEXT = "Access to Context.putLocal(), Context.getLocal() and"
+            + " Context.removeLocal() are forbidden from a 'root' context  as it can leak data between unrelated processing."
+            + " Make sure the method runs on a 'duplicated' (local) Context";
 
     public static void throwOnRootContextAccess() {
         throw new UnsupportedOperationException(ILLEGAL_ACCESS_TO_CONTEXT);

@@ -22,10 +22,9 @@ import io.vertx.core.Vertx;
 public class UnhandledOpenFailureDefaultStrategyTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(EchoOpenError.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(EchoOpenError.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

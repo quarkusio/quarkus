@@ -12,20 +12,15 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(LdapServerTestResource.class)
 public class SearchRecursiveTest {
 
-    protected static Class[] testClasses = {
-            SingleRoleSecuredServlet.class
-    };
+    protected static Class[] testClasses = { SingleRoleSecuredServlet.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("search-recursive/application.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("search-recursive/application.properties", "application.properties"));
 
     @Test()
     public void testNotSearchingRecursiveFailure() {
-        RestAssured.given().auth().preemptive().basic("subUser", "subUserPassword")
-                .when().get("/servlet-secured").then()
-                .statusCode(200);
+        RestAssured.given().auth().preemptive().basic("subUser", "subUserPassword").when().get("/servlet-secured")
+                .then().statusCode(200);
     }
 }

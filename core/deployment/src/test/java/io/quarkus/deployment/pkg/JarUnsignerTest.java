@@ -46,8 +46,7 @@ class JarUnsignerTest {
 
     @Test
     void should_unsign_jar_when_filtered(@TempDir Path tempDir) throws Exception {
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "myarchive.jar")
-                .addClasses(Integer.class);
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "myarchive.jar").addClasses(Integer.class);
         Path unsignedJarPath = tempDir.resolve("unsigned-jar.jar");
         Path signedJarPath = tempDir.resolve("signed-jar.jar");
         Path unsignedJarToTestPath = tempDir.resolve("unsigned.jar");
@@ -59,7 +58,8 @@ class JarUnsignerTest {
         }
         JarUnsigner.unsignJar(signedJarPath, unsignedJarToTestPath, p -> !p.equals("java/lang/Integer.class"));
         try (JarFile jarFile = new JarFile(unsignedJarToTestPath.toFile())) {
-            assertThat(jarFile.stream().map(JarEntry::getName)).doesNotContain("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF");
+            assertThat(jarFile.stream().map(JarEntry::getName)).doesNotContain("META-INF/ECLIPSE_.RSA",
+                    "META-INF/ECLIPSE_.SF");
             // Check that the manifest is still present
             Manifest manifest = jarFile.getManifest();
             assertThat(manifest.getMainAttributes()).isNotEmpty();
@@ -69,18 +69,15 @@ class JarUnsignerTest {
 
     @Test
     void manifestTimeShouldAlwaysBeSetToEpoch(@TempDir Path tempDir) throws Exception {
-        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "myarchive.jar")
-                .addClasses(Integer.class)
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class, "myarchive.jar").addClasses(Integer.class)
                 .addManifest();
         Path initialJar = tempDir.resolve("initial.jar");
         Path filteredJar = tempDir.resolve("filtered.jar");
         archive.as(ZipExporter.class).exportTo(new File(initialJar.toUri()), true);
         JarUnsigner.unsignJar(initialJar, filteredJar, p -> !p.equals("java/lang/Integer.class"));
         try (JarFile jarFile = new JarFile(filteredJar.toFile())) {
-            assertThat(jarFile.stream())
-                    .filteredOn(jarEntry -> jarEntry.getName().equals(JarFile.MANIFEST_NAME))
-                    .isNotEmpty()
-                    .allMatch(jarEntry -> jarEntry.getTime() == 0);
+            assertThat(jarFile.stream()).filteredOn(jarEntry -> jarEntry.getName().equals(JarFile.MANIFEST_NAME))
+                    .isNotEmpty().allMatch(jarEntry -> jarEntry.getTime() == 0);
             // Check that the manifest is still has attributes
             Manifest manifest = jarFile.getManifest();
             assertThat(manifest.getMainAttributes()).isNotEmpty();
@@ -111,14 +108,14 @@ class JarUnsignerTest {
 
         ContentSigner contentSigner = new JcaContentSignerBuilder(signatureAlgorithm).build(keyPair.getPrivate());
 
-        JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber, new Date(now),
-                endDate,
-                dnName, keyPair.getPublic());
+        JcaX509v3CertificateBuilder certBuilder = new JcaX509v3CertificateBuilder(dnName, certSerialNumber,
+                new Date(now), endDate, dnName, keyPair.getPublic());
 
         BasicConstraints basicConstraints = new BasicConstraints(true);
 
         certBuilder.addExtension(new ASN1ObjectIdentifier("2.5.29.19"), true, basicConstraints);
-        return new JcaX509CertificateConverter().setProvider(bcProvider).getCertificate(certBuilder.build(contentSigner));
+        return new JcaX509CertificateConverter().setProvider(bcProvider)
+                .getCertificate(certBuilder.build(contentSigner));
 
     }
 

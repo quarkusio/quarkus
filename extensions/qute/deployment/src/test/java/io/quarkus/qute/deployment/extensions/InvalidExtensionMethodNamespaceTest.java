@@ -13,8 +13,7 @@ public class InvalidExtensionMethodNamespaceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Extensions.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Extensions.class))
             .setExpectedException(TemplateException.class);
 
     @Test

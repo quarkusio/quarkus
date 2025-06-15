@@ -22,104 +22,57 @@ public class PermissionsAllowedBeanParamTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, SimpleBeanParam.class,
-                            SimpleResource.class, SimpleBeanParamPermission.class, MyPermission.class, MyBeanParam.class,
-                            BeanParamPermissionChecker.class, OtherBeanParam.class));
+            .withApplicationRoot((jar) -> jar.addClasses(TestIdentityProvider.class, TestIdentityController.class,
+                    SimpleBeanParam.class, SimpleResource.class, SimpleBeanParamPermission.class, MyPermission.class,
+                    MyBeanParam.class, BeanParamPermissionChecker.class, OtherBeanParam.class));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", SimpleBeanParamPermission.EMPTY, MyPermission.EMPTY)
+        TestIdentityController.resetRoles().add("admin", "admin", SimpleBeanParamPermission.EMPTY, MyPermission.EMPTY)
                 .add("user", "user");
     }
 
     @Test
     public void testSimpleBeanParam() {
-        getSimpleBeanParamReq()
-                .post("/simple/param")
-                .then().statusCode(401);
-        getSimpleBeanParamReq()
-                .auth().preemptive().basic("user", "user")
-                .post("/simple/param")
-                .then().statusCode(403);
-        getSimpleBeanParamReq()
-                .auth().preemptive().basic("admin", "admin")
-                .post("/simple/param")
-                .then().statusCode(200).body(Matchers.equalTo("OK"));
+        getSimpleBeanParamReq().post("/simple/param").then().statusCode(401);
+        getSimpleBeanParamReq().auth().preemptive().basic("user", "user").post("/simple/param").then().statusCode(403);
+        getSimpleBeanParamReq().auth().preemptive().basic("admin", "admin").post("/simple/param").then().statusCode(200)
+                .body(Matchers.equalTo("OK"));
     }
 
     @Test
     public void testRecordBeanParam() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .queryParam("queryParam", "query1")
-                .get("/simple/record-param")
-                .then().statusCode(403);
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .queryParam("queryParam", "query1")
-                .get("/simple/record-param")
-                .then().statusCode(200)
-                .body(Matchers.equalTo("OK"));
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .queryParam("queryParam", "wrong-query-param")
-                .get("/simple/record-param")
-                .then().statusCode(403);
+        RestAssured.given().auth().preemptive().basic("user", "user").queryParam("queryParam", "query1")
+                .get("/simple/record-param").then().statusCode(403);
+        RestAssured.given().auth().preemptive().basic("admin", "admin").queryParam("queryParam", "query1")
+                .get("/simple/record-param").then().statusCode(200).body(Matchers.equalTo("OK"));
+        RestAssured.given().auth().preemptive().basic("admin", "admin").queryParam("queryParam", "wrong-query-param")
+                .get("/simple/record-param").then().statusCode(403);
     }
 
     @Test
     public void testAutodetectedParams() {
-        RestAssured
-                .given()
-                .body("autodetected")
-                .auth().preemptive().basic("admin", "admin")
-                .header("CustomAuthorization", "customAuthorization")
-                .queryParam("query", "myQueryParam")
-                .get("/simple/autodetect-params")
-                .then().statusCode(200).body(Matchers.equalTo("autodetected"));
+        RestAssured.given().body("autodetected").auth().preemptive().basic("admin", "admin")
+                .header("CustomAuthorization", "customAuthorization").queryParam("query", "myQueryParam")
+                .get("/simple/autodetect-params").then().statusCode(200).body(Matchers.equalTo("autodetected"));
         // wrong custom authorization
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .header("CustomAuthorization", "wrongAuthorization")
-                .queryParam("query", "myQueryParam")
-                .get("/simple/autodetect-params")
-                .then().statusCode(403);
+        RestAssured.given().auth().preemptive().basic("admin", "admin")
+                .header("CustomAuthorization", "wrongAuthorization").queryParam("query", "myQueryParam")
+                .get("/simple/autodetect-params").then().statusCode(403);
         // wrong query param
-        RestAssured
-                .given()
-                .body("autodetected")
-                .auth().preemptive().basic("admin", "admin")
-                .header("CustomAuthorization", "customAuthorization")
-                .queryParam("query", "wrongQueryParam")
-                .get("/simple/autodetect-params")
-                .then().statusCode(403);
+        RestAssured.given().body("autodetected").auth().preemptive().basic("admin", "admin")
+                .header("CustomAuthorization", "customAuthorization").queryParam("query", "wrongQueryParam")
+                .get("/simple/autodetect-params").then().statusCode(403);
         // wrong principal
-        RestAssured
-                .given()
-                .body("autodetected")
-                .auth().preemptive().basic("user", "user")
-                .header("CustomAuthorization", "customAuthorization")
-                .queryParam("query", "myQueryParam")
-                .get("/simple/autodetect-params")
-                .then().statusCode(403);
+        RestAssured.given().body("autodetected").auth().preemptive().basic("user", "user")
+                .header("CustomAuthorization", "customAuthorization").queryParam("query", "myQueryParam")
+                .get("/simple/autodetect-params").then().statusCode(403);
     }
 
     private static RequestSpecification getSimpleBeanParamReq() {
-        return RestAssured
-                .with()
-                .header("header", "one-header")
-                .queryParam("query", "one-query")
-                .queryParam("queryList", "one")
-                .queryParam("queryList", "two")
-                .queryParam("int", "666")
-                .cookie("cookie", "cookie")
-                .body("OK");
+        return RestAssured.with().header("header", "one-header").queryParam("query", "one-query")
+                .queryParam("queryList", "one").queryParam("queryList", "two").queryParam("int", "666")
+                .cookie("cookie", "cookie").body("OK");
     }
 
     @Path("/simple")

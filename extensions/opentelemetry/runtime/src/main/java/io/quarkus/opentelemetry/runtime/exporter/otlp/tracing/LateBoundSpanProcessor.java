@@ -9,9 +9,9 @@ import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 
 /**
- * Class to facilitate a delay in when the worker thread inside {@link SpanProcessor}
- * is started, enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider}
- * during static initialization and set a {@link SpanProcessor} delegate during runtime initialization.
+ * Class to facilitate a delay in when the worker thread inside {@link SpanProcessor} is started, enabling Quarkus to
+ * instantiate a {@link io.opentelemetry.api.trace.TracerProvider} during static initialization and set a
+ * {@link SpanProcessor} delegate during runtime initialization.
  */
 public class LateBoundSpanProcessor implements SpanProcessor {
     private static final Logger log = Logger.getLogger(LateBoundSpanProcessor.class);
@@ -98,8 +98,8 @@ public class LateBoundSpanProcessor implements SpanProcessor {
     }
 
     /**
-     * If we haven't previously logged an error,
-     * log an error about a missing {@code delegate} and set {@code warningLogged=true}
+     * If we haven't previously logged an error, log an error about a missing {@code delegate} and set
+     * {@code warningLogged=true}
      */
     private void logDelegateNotFound() {
         if (!warningLogged) {

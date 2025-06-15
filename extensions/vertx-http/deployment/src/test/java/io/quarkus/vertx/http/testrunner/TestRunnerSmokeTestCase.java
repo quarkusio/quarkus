@@ -24,21 +24,18 @@ public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
     ObjectMapper mapper = new ObjectMapper();
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class)
-                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties()),
-                                    "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, UnitET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class)
+                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties()), "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, UnitET.class);
+        }
+    });
 
     public TestRunnerSmokeTestCase() {
         super("devui-continuous-testing");
@@ -99,7 +96,7 @@ public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(2L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        //fix the unit test
+        // fix the unit test
 
         test.modifySourceFile(UnitService.class, new Function<String, String>() {
             @Override
@@ -131,7 +128,7 @@ public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(4L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        //disable the unit test
+        // disable the unit test
         test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -147,7 +144,7 @@ public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(2L, ts.getTotalTestsPassed());
         Assertions.assertEquals(2L, ts.getTotalTestsSkipped());
 
-        //delete the unit test
+        // delete the unit test
         test.modifyTestSourceFile(UnitET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -163,14 +160,14 @@ public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(2L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        //now test compile errors
+        // now test compile errors
         test.modifySourceFile(HelloResource.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
                 return s.replaceAll("\"hello", "\"hello\" world");
             }
         });
-        //we just sleep here
+        // we just sleep here
         Thread.sleep(1000);
         test.modifySourceFile(HelloResource.class, new Function<String, String>() {
             @Override
@@ -187,14 +184,14 @@ public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(0L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        //now test compile errors for the test itself
+        // now test compile errors for the test itself
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
                 return s.replaceAll("\"hello", "\"hello\" world");
             }
         });
-        //we just sleep here
+        // we just sleep here
         Thread.sleep(1000);
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
             @Override

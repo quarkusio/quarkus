@@ -4,7 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The thread name
- *
  */
 public class ThreadNameAttribute implements ExchangeAttribute {
 

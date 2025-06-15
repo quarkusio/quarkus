@@ -9,17 +9,13 @@ import io.restassured.RestAssured;
 
 public class AnnotatedServletInitParamsTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AnnotatedServletInitParam.class, AnnotatedFilterInitParam.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(AnnotatedServletInitParam.class, AnnotatedFilterInitParam.class));
 
     @Test
     public void testAnnotatedInitParamsServlet() {
-        RestAssured.when().get(AnnotatedServletInitParam.SERVLET_ENDPOINT).then()
-                .statusCode(200)
-                .body(CoreMatchers.is("invoked-before-chain\n" +
-                        "AnnotatedInitFilterParamValue\n" +
-                        "AnnotatedInitParamValue\n" +
-                        "invoked-after-chain\n"));
+        RestAssured.when().get(AnnotatedServletInitParam.SERVLET_ENDPOINT).then().statusCode(200)
+                .body(CoreMatchers.is("invoked-before-chain\n" + "AnnotatedInitFilterParamValue\n"
+                        + "AnnotatedInitParamValue\n" + "invoked-after-chain\n"));
     }
 }

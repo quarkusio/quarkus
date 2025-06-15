@@ -20,8 +20,7 @@ import io.vertx.core.http.HttpServer;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "graphql", password = "password", formats = { Format.PKCS12 }, client = true),
-        @Certificate(name = "wrong-graphql", password = "wrong-password", formats = { Format.PKCS12 }, client = true)
-})
+        @Certificate(name = "wrong-graphql", password = "wrong-password", formats = { Format.PKCS12 }, client = true) })
 public class TypesafeGraphQLClientClientAuthenticationBadKeystoreTest {
 
     private static final int PORT = 63805;
@@ -38,10 +37,8 @@ public class TypesafeGraphQLClientClientAuthenticationBadKeystoreTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyApi.class, SSLTestingTools.class)
-                    .addAsResource(new StringAsset(CONFIGURATION),
-                            "application.properties")
+            .withApplicationRoot((jar) -> jar.addClasses(MyApi.class, SSLTestingTools.class)
+                    .addAsResource(new StringAsset(CONFIGURATION), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @GraphQLClientApi(configKey = "my-client")
@@ -55,8 +52,8 @@ public class TypesafeGraphQLClientClientAuthenticationBadKeystoreTest {
 
     @BeforeAll
     static void setupServer() throws Exception {
-        server = TOOLS.runServer("target/certs/graphql-keystore.p12",
-                "password", "target/certs/graphql-server-truststore.p12", "password");
+        server = TOOLS.runServer("target/certs/graphql-keystore.p12", "password",
+                "target/certs/graphql-server-truststore.p12", "password");
     }
 
     @Test

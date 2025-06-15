@@ -30,33 +30,28 @@ public class ImplicitBasicAuthAndCodeFlowAuthCombinationTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BasicCodeFlowResource.class)
-                    .addAsResource(
-                            new StringAsset("""
-                                    quarkus.security.users.embedded.enabled=true
-                                    quarkus.security.users.embedded.plain-text=true
-                                    quarkus.security.users.embedded.users.alice=alice
-                                    quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
-                                    quarkus.oidc.client-id=quarkus-web-app
-                                    quarkus.oidc.credentials.secret=secret
-                                    quarkus.oidc.application-type=web-app
-                                    quarkus.http.auth.permission.code-flow.paths=/basic-code-flow/code-flow
-                                    quarkus.http.auth.permission.code-flow.policy=authenticated
-                                    quarkus.http.auth.permission.code-flow.auth-mechanism=code
-                                    quarkus.http.auth.permission.basic.paths=/basic-code-flow/basic
-                                    quarkus.http.auth.permission.basic.policy=authenticated
-                                    quarkus.http.auth.permission.basic.auth-mechanism=basic
-                                    """),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(BasicCodeFlowResource.class).addAsResource(new StringAsset("""
+                    quarkus.security.users.embedded.enabled=true
+                    quarkus.security.users.embedded.plain-text=true
+                    quarkus.security.users.embedded.users.alice=alice
+                    quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
+                    quarkus.oidc.client-id=quarkus-web-app
+                    quarkus.oidc.credentials.secret=secret
+                    quarkus.oidc.application-type=web-app
+                    quarkus.http.auth.permission.code-flow.paths=/basic-code-flow/code-flow
+                    quarkus.http.auth.permission.code-flow.policy=authenticated
+                    quarkus.http.auth.permission.code-flow.auth-mechanism=code
+                    quarkus.http.auth.permission.basic.paths=/basic-code-flow/basic
+                    quarkus.http.auth.permission.basic.policy=authenticated
+                    quarkus.http.auth.permission.basic.auth-mechanism=basic
+                    """), "application.properties"));
 
     @Test
     public void testBasicEnabledAsSelectedWithHttpPerm() throws IOException, InterruptedException {
         // endpoint is annotated with 'BasicAuthentication', so basic auth must be enabled
-        RestAssured.given().auth().basic("alice", "alice").get("/basic-code-flow/basic")
-                .then().statusCode(204);
-        RestAssured.given().auth().basic("alice", "alice").redirects().follow(false)
-                .get("/basic-code-flow/code-flow").then().statusCode(302);
+        RestAssured.given().auth().basic("alice", "alice").get("/basic-code-flow/basic").then().statusCode(204);
+        RestAssured.given().auth().basic("alice", "alice").redirects().follow(false).get("/basic-code-flow/code-flow")
+                .then().statusCode(302);
 
         try (final WebClient webClient = createWebClient()) {
 

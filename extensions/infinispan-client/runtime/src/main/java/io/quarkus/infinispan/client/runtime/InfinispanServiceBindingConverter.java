@@ -15,9 +15,7 @@ import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConfigSource;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter;
 
 /**
- * ServiceBindingConverter for Infinispan to support SBO (Service Binding Operator) in Quarkus.
- *
- * <br>
+ * ServiceBindingConverter for Infinispan to support SBO (Service Binding Operator) in Quarkus. <br>
  * <br>
  * Following individual properties are supported to make the connection:
  * <ul>
@@ -27,10 +25,8 @@ import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter;
  * <li>username</li>
  * <li>password</li>
  * </ul>
- * <i>if uri is provided, all the other properties are ignored</i>
- * <i>if uri is not provided, hosts is mandatory and all other properties are optional</i>
- *
- * <br>
+ * <i>if uri is provided, all the other properties are ignored</i> <i>if uri is not provided, hosts is mandatory and all
+ * other properties are optional</i> <br>
  * <br>
  * The Quarkus properties set by this class are:
  * <ul>

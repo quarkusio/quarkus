@@ -13,8 +13,11 @@ public interface Filter {
     /**
      * Creates a {@code label=value}, selecting samples where the label equals value.
      *
-     * @param label the label, must not be {@code null}
-     * @param value the value, must not be {@code null}
+     * @param label
+     *        the label, must not be {@code null}
+     * @param value
+     *        the value, must not be {@code null}
+     *
      * @return the filter
      */
     static Filter withLabel(String label, Object value) {
@@ -31,8 +34,11 @@ public interface Filter {
     /**
      * Creates a {@code label!=value}, selecting samples where the label is not equal to value.
      *
-     * @param label the label, must not be {@code null}
-     * @param value the value, must not be {@code null}
+     * @param label
+     *        the label, must not be {@code null}
+     * @param value
+     *        the value, must not be {@code null}
+     *
      * @return the filter
      */
     static Filter withoutLabel(String label, String value) {
@@ -49,7 +55,9 @@ public interface Filter {
     /**
      * Creates a {@code label=}, selecting samples containing the given label.
      *
-     * @param label the label, must not be {@code null}
+     * @param label
+     *        the label, must not be {@code null}
+     *
      * @return the filter
      */
     static Filter withLabel(String label) {
@@ -65,7 +73,9 @@ public interface Filter {
     /**
      * Creates a {@code label!=}, selecting samples that do not have the given label.
      *
-     * @param label the label, must not be {@code null}
+     * @param label
+     *        the label, must not be {@code null}
+     *
      * @return the filter
      */
     static Filter withoutLabel(String label) {
@@ -80,10 +90,12 @@ public interface Filter {
     }
 
     /**
-     * Creates a {@code label=(value1,value2,...)}, selecting samples with the given label equals one of the values
-     * in the list
+     * Creates a {@code label=(value1,value2,...)}, selecting samples with the given label equals one of the values in
+     * the list
      *
-     * @param label the label, must not be {@code null}
+     * @param label
+     *        the label, must not be {@code null}
+     *
      * @return the filter
      */
     static Filter withLabelHavingValueFrom(String label, String... values) {
@@ -101,8 +113,11 @@ public interface Filter {
      * Creates a {@code label!=(value1,value2,...)}, selecting samples with the given label with a value not equal to
      * any of the values in the list.
      *
-     * @param label the label, must not be {@code null}
-     * @param values the values
+     * @param label
+     *        the label, must not be {@code null}
+     * @param values
+     *        the values
+     *
      * @return the filter
      */
     static Filter withLabelNotHavingValueFrom(String label, String... values) {

@@ -5,8 +5,8 @@ import java.util.Map;
 
 /**
  * A launcher that simply sets the {@code quarkus.http.host} property based on the value {@code quarkus.http.test-host}
- * in order to support the case of running integration tests against an already running application
- * using RestAssured without any chances.
+ * in order to support the case of running integration tests against an already running application using RestAssured
+ * without any chances.
  */
 @SuppressWarnings("rawtypes")
 public class TestHostLauncher implements ArtifactLauncher {

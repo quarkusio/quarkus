@@ -15,10 +15,8 @@ public class KafkaStreamsDevUIProcessor {
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .componentLink("qwc-kafka-streams-topology.js")
-                .title("Topology")
-                .icon("font-awesome-solid:diagram-project"));
+        cardPageBuildItem.addPage(Page.webComponentPageBuilder().componentLink("qwc-kafka-streams-topology.js")
+                .title("Topology").icon("font-awesome-solid:diagram-project"));
 
         cardPageProducer.produce(cardPageBuildItem);
     }

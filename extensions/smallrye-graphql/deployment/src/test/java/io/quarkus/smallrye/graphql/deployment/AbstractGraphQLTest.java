@@ -35,22 +35,11 @@ public abstract class AbstractGraphQLTest {
     }
 
     private void pingPongTest(String operationName, String message) {
-        String pingRequest = getPayload("{\n" +
-                "  " + operationName + " {\n" +
-                "    message\n" +
-                "  }\n" +
-                "}");
+        String pingRequest = getPayload("{\n" + "  " + operationName + " {\n" + "    message\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(pingRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .body(CoreMatchers.containsString("{\"data\":{\"" + operationName + "\":{\"message\":\"" + message + "\"}}}"));
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(pingRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().body(CoreMatchers
+                        .containsString("{\"data\":{\"" + operationName + "\":{\"message\":\"" + message + "\"}}}"));
     }
 
     protected String getPayload(String query) {

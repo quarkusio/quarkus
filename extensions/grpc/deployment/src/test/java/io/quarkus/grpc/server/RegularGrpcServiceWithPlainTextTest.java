@@ -21,19 +21,15 @@ import io.quarkus.grpc.server.services.TestService;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Test services exposed by the gRPC server implemented using the regular gRPC model.
- * Communication uses plain-text.
+ * Test services exposed by the gRPC server implemented using the regular gRPC model. Communication uses plain-text.
  */
 public class RegularGrpcServiceWithPlainTextTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true).setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloService.class, TestService.class, AssertHelper.class,
-                                    GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
-                                    HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
-                                    EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
-                                    TestServiceGrpc.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(HelloService.class,
+                    TestService.class, AssertHelper.class, GreeterGrpc.class, HelloRequest.class, HelloReply.class,
+                    MutinyGreeterGrpc.class, HelloRequestOrBuilder.class, HelloReplyOrBuilder.class, EmptyProtos.class,
+                    Messages.class, MutinyTestServiceGrpc.class, TestServiceGrpc.class));
 
 }

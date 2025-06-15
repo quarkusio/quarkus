@@ -21,23 +21,17 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MisfirePolicyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.quartz.misfire-policy.\"simple_ignore_misfire_policy\"=ignore-misfire-policy\n" +
-                                    "quarkus.quartz.misfire-policy.\"cron_ignore_misfire_policy\"=ignore-misfire-policy\n" +
-                                    "quarkus.quartz.misfire-policy.\"simple_reschedule_now_existing_policy\"=simple-trigger-reschedule-now-with-existing-repeat-count\n"
-                                    +
-                                    "quarkus.quartz.misfire-policy.\"simple_reschedule_now_remaining_policy\"=simple-trigger-reschedule-now-with-remaining-repeat-count\n"
-                                    +
-                                    "quarkus.quartz.misfire-policy.\"simple_reschedule_next_existing_policy\"=simple-trigger-reschedule-next-with-existing-count\n"
-                                    +
-                                    "quarkus.quartz.misfire-policy.\"simple_reschedule_next_remaining_policy\"=simple-trigger-reschedule-next-with-remaining-count\n"
-                                    +
-                                    "quarkus.quartz.misfire-policy.\"cron_do_nothing_policy\"=cron-trigger-do-nothing\n"
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset(
+                    "quarkus.quartz.misfire-policy.\"simple_ignore_misfire_policy\"=ignore-misfire-policy\n"
+                            + "quarkus.quartz.misfire-policy.\"cron_ignore_misfire_policy\"=ignore-misfire-policy\n"
+                            + "quarkus.quartz.misfire-policy.\"simple_reschedule_now_existing_policy\"=simple-trigger-reschedule-now-with-existing-repeat-count\n"
+                            + "quarkus.quartz.misfire-policy.\"simple_reschedule_now_remaining_policy\"=simple-trigger-reschedule-now-with-remaining-repeat-count\n"
+                            + "quarkus.quartz.misfire-policy.\"simple_reschedule_next_existing_policy\"=simple-trigger-reschedule-next-with-existing-count\n"
+                            + "quarkus.quartz.misfire-policy.\"simple_reschedule_next_remaining_policy\"=simple-trigger-reschedule-next-with-remaining-count\n"
+                            + "quarkus.quartz.misfire-policy.\"cron_do_nothing_policy\"=cron-trigger-do-nothing\n"
 
-                    ), "application.properties"));
+            ), "application.properties"));
 
     @Inject
     org.quartz.Scheduler quartz;
@@ -71,7 +65,8 @@ public class MisfirePolicyTest {
         Trigger cronIgnoreMisfirePolicyTrigger = quartz
                 .getTrigger(new TriggerKey("cron_ignore_misfire_policy", Scheduler.class.getName()));
         assertNotNull(cronIgnoreMisfirePolicyTrigger);
-        assertEquals(Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY, cronIgnoreMisfirePolicyTrigger.getMisfireInstruction());
+        assertEquals(Trigger.MISFIRE_INSTRUCTION_IGNORE_MISFIRE_POLICY,
+                cronIgnoreMisfirePolicyTrigger.getMisfireInstruction());
     }
 
     @Test
@@ -103,7 +98,8 @@ public class MisfirePolicyTest {
 
     @Test
     public void testCronTriggerMisfirePolicy() throws SchedulerException {
-        Trigger cronDoNothingPolicy = quartz.getTrigger(new TriggerKey("cron_do_nothing_policy", Scheduler.class.getName()));
+        Trigger cronDoNothingPolicy = quartz
+                .getTrigger(new TriggerKey("cron_do_nothing_policy", Scheduler.class.getName()));
         assertNotNull(cronDoNothingPolicy);
         assertEquals(CronTrigger.MISFIRE_INSTRUCTION_DO_NOTHING, cronDoNothingPolicy.getMisfireInstruction());
     }

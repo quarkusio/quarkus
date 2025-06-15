@@ -49,19 +49,10 @@ public class ProactiveAuthCompletionExceptionMapperTest {
     @Test
     public void testAuthCompletionExMapper() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-        RestAssured
-                .given()
-                .filter(new CookieFilter())
-                .redirects().follow(false)
-                .when()
-                .formParam("j_username", "a d m i n")
-                .formParam("j_password", "a d m i n")
-                .cookie("quarkus-redirect-location", "https://quarkus.io/guides")
-                .post("/j_security_check")
-                .then()
-                .assertThat()
-                .statusCode(401)
-                .body(Matchers.equalTo(AUTHENTICATION_COMPLETION_EX));
+        RestAssured.given().filter(new CookieFilter()).redirects().follow(false).when()
+                .formParam("j_username", "a d m i n").formParam("j_password", "a d m i n")
+                .cookie("quarkus-redirect-location", "https://quarkus.io/guides").post("/j_security_check").then()
+                .assertThat().statusCode(401).body(Matchers.equalTo(AUTHENTICATION_COMPLETION_EX));
     }
 
     @Path("/hello")
@@ -76,7 +67,8 @@ public class ProactiveAuthCompletionExceptionMapperTest {
 
     @Priority(Priorities.USER)
     @Provider
-    public static class CustomAuthCompletionExceptionMapper implements ExceptionMapper<AuthenticationCompletionException> {
+    public static class CustomAuthCompletionExceptionMapper
+            implements ExceptionMapper<AuthenticationCompletionException> {
 
         @Override
         public Response toResponse(AuthenticationCompletionException e) {

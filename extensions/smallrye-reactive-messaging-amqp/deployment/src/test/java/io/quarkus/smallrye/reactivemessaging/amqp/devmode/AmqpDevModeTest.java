@@ -20,12 +20,10 @@ import io.restassured.RestAssured;
 public class AmqpDevModeTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ConsumingBean.class, ProducingBean.class, TestResource.class,
-                            AnonymousAmqpBroker.class, ProtonProtocolManagerFactory.class)
-                    .addAsResource("broker.xml")
-                    .addAsResource("application.properties"));
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addClasses(ConsumingBean.class, ProducingBean.class, TestResource.class, AnonymousAmqpBroker.class,
+                    ProtonProtocolManagerFactory.class)
+            .addAsResource("broker.xml").addAsResource("application.properties"));
 
     @BeforeAll
     public static void startBroker() {
@@ -39,21 +37,17 @@ public class AmqpDevModeTest {
 
     @Test
     public void testCodeUpdate() {
-        await()
-                .atMost(1, TimeUnit.MINUTES)
-                .until(() -> {
-                    String value = RestAssured.get("/last").asString();
-                    return value.equalsIgnoreCase("20");
-                });
+        await().atMost(1, TimeUnit.MINUTES).until(() -> {
+            String value = RestAssured.get("/last").asString();
+            return value.equalsIgnoreCase("20");
+        });
 
         TEST.modifySourceFile(ProducingBean.class, s -> s.replace("* 2", "* 3"));
 
-        await()
-                .atMost(1, TimeUnit.MINUTES)
-                .until(() -> {
-                    String value = RestAssured.get("/last").asString();
-                    return value.equalsIgnoreCase("30");
-                });
+        await().atMost(1, TimeUnit.MINUTES).until(() -> {
+            String value = RestAssured.get("/last").asString();
+            return value.equalsIgnoreCase("30");
+        });
 
     }
 

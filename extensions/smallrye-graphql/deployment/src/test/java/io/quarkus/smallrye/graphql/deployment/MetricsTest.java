@@ -23,37 +23,25 @@ import io.smallrye.metrics.MetricRegistries;
 public class MetricsTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class, TestUnion.class, TestUnionMember.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.metrics.enabled=true"), "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
+                    BusinessException.class, TestUnion.class, TestUnionMember.class)
+            .addAsResource(new StringAsset("quarkus.smallrye-graphql.metrics.enabled=true"), "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     // Run a Query and check that its corresponding metric is updated
     @Test
     public void testQuery() {
         MetricRegistry metricRegistry = MetricRegistries.get(MetricRegistry.Type.VENDOR);
 
-        String pingRequest = getPayload("{\n" +
-                "  ping {\n" +
-                "    message\n" +
-                "  }\n" +
-                "}");
+        String pingRequest = getPayload("{\n" + "  ping {\n" + "    message\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept("application/json")
-                .contentType("application/json")
-                .body(pingRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept("application/json").contentType("application/json").body(pingRequest)
+                .post("/graphql").then().assertThat().statusCode(200).and()
                 .body(CoreMatchers.containsString("{\"data\":{\"ping\":{\"message\":\"pong\"}}}"));
 
-        SimpleTimer metric = metricRegistry.getSimpleTimers()
-                .get(new MetricID("mp_graphql", new Tag("name", "ping"), new Tag("source", "false"), new Tag("type", "QUERY")));
+        SimpleTimer metric = metricRegistry.getSimpleTimers().get(new MetricID("mp_graphql", new Tag("name", "ping"),
+                new Tag("source", "false"), new Tag("type", "QUERY")));
         assertNotNull(metric, "Metrics should be registered eagerly");
 
         assertEquals(1L, metric.getCount(), "Metric should be updated after querying");

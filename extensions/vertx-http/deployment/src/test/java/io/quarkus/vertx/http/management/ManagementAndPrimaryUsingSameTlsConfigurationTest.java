@@ -42,10 +42,8 @@ public class ManagementAndPrimaryUsingSameTlsConfigurationTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addClasses(MyObserver.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset(APP_PROPS), "application.properties").addClasses(MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -55,17 +53,12 @@ public class ManagementAndPrimaryUsingSameTlsConfigurationTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        NonApplicationRootPathBuildItem buildItem = context.consume(NonApplicationRootPathBuildItem.class);
-                        context.produce(buildItem.routeBuilder()
-                                .management()
-                                .route("management")
-                                .handler(new MyHandler())
-                                .blockingRoute()
-                                .build());
+                        NonApplicationRootPathBuildItem buildItem = context
+                                .consume(NonApplicationRootPathBuildItem.class);
+                        context.produce(buildItem.routeBuilder().management().route("management")
+                                .handler(new MyHandler()).blockingRoute().build());
                     }
-                }).produces(RouteBuildItem.class)
-                        .consumes(NonApplicationRootPathBuildItem.class)
-                        .build();
+                }).produces(RouteBuildItem.class).consumes(NonApplicationRootPathBuildItem.class).build();
             }
         };
     }
@@ -73,9 +66,7 @@ public class ManagementAndPrimaryUsingSameTlsConfigurationTest {
     public static class MyHandler implements Handler<RoutingContext> {
         @Override
         public void handle(RoutingContext routingContext) {
-            routingContext.response()
-                    .setStatusCode(200)
-                    .end("Hello management");
+            routingContext.response().setStatusCode(200).end("Hello management");
         }
     }
 
@@ -119,7 +110,7 @@ public class ManagementAndPrimaryUsingSameTlsConfigurationTest {
         }
 
         void test(@Observes String event) {
-            //Do Nothing
+            // Do Nothing
         }
 
     }

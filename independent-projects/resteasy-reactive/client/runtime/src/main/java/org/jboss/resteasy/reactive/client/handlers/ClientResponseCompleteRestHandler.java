@@ -36,18 +36,16 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
         context.getResult().complete(mapToResponse(context, true));
     }
 
-    public static ResponseImpl mapToResponse(RestClientRequestContext context,
-            boolean parseContent)
+    public static ResponseImpl mapToResponse(RestClientRequestContext context, boolean parseContent)
             throws IOException {
         ClientResponseContextImpl responseContext = context.getOrCreateClientResponseContext();
-        Response.StatusType statusType = new StatusTypeImpl(responseContext.getStatus(), responseContext.getReasonPhrase());
+        Response.StatusType statusType = new StatusTypeImpl(responseContext.getStatus(),
+                responseContext.getReasonPhrase());
         return mapToResponse(context, statusType, parseContent);
     }
 
     public static ResponseImpl mapToResponse(RestClientRequestContext context,
-            Response.StatusType effectiveResponseStatus,
-            boolean parseContent)
-            throws IOException {
+            Response.StatusType effectiveResponseStatus, boolean parseContent) throws IOException {
         Map<Class<?>, MultipartResponseData> multipartDataMap = context.getMultipartResponsesData();
         ClientResponseContextImpl responseContext = context.getOrCreateClientResponseContext();
         ClientResponseBuilderImpl builder = new ClientResponseBuilderImpl();
@@ -62,14 +60,14 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
             if (context.getResponseMultipartParts() != null) {
                 GenericType<?> responseType = context.getResponseType();
                 if (!(responseType.getType() instanceof Class)) {
-                    throw new IllegalArgumentException("Not supported return type for a multipart message, " +
-                            "expected a non-generic class got : " + responseType.getType());
+                    throw new IllegalArgumentException("Not supported return type for a multipart message, "
+                            + "expected a non-generic class got : " + responseType.getType());
                 }
                 Class<?> responseClass = (Class<?>) responseType.getType();
                 MultipartResponseData multipartData = multipartDataMap.get(responseClass);
                 if (multipartData == null) {
-                    throw new IllegalStateException("Failed to find multipart data for class " + responseClass + ". " +
-                            "If it's meant to be used as multipart response type, consider annotating it with @MultipartForm");
+                    throw new IllegalStateException("Failed to find multipart data for class " + responseClass + ". "
+                            + "If it's meant to be used as multipart response type, consider annotating it with @MultipartForm");
                 }
                 Object result = multipartData.newInstance();
                 builder.entity(result);
@@ -91,8 +89,7 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                         // TODO: maybe we could extract something closer to input stream from attribute
                         ByteArrayInputStream in = new ByteArrayInputStream(
                                 at.getValue().getBytes(StandardCharsets.UTF_8));
-                        Object fieldValue = context.readEntity(in,
-                                fieldFiller.getFieldType(),
+                        Object fieldValue = context.readEntity(in, fieldFiller.getFieldType(),
                                 MediaType.valueOf(fieldFiller.getMediaType()),
                                 context.getMethodDeclaredAnnotationsSafe(),
                                 // FIXME: we have strings, it wants objects, perhaps there's
@@ -104,8 +101,8 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                     } else if (httpData instanceof FileUpload fu) {
                         fieldFiller.set(result, new FileDownloadImpl(fu));
                     } else {
-                        throw new IllegalArgumentException("Unsupported multipart message element type. " +
-                                "Expected FileAttribute or Attribute, got: " + httpData.getClass());
+                        throw new IllegalArgumentException("Unsupported multipart message element type. "
+                                + "Expected FileAttribute or Attribute, got: " + httpData.getClass());
                     }
                 }
             } else {
@@ -120,10 +117,8 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
                     }
                     context.clearTmpFilePath();
                 } else if (!void.class.equals(rawType)) {
-                    Object entity = context.readEntity(entityStream,
-                            context.getResponseType(),
-                            responseContext.getMediaType(),
-                            context.getMethodDeclaredAnnotationsSafe(),
+                    Object entity = context.readEntity(entityStream, context.getResponseType(),
+                            responseContext.getMediaType(), context.getMethodDeclaredAnnotationsSafe(),
                             // FIXME: we have strings, it wants objects, perhaps there's
                             // an Object->String conversion too many
                             (MultivaluedMap) responseContext.getHeaders());

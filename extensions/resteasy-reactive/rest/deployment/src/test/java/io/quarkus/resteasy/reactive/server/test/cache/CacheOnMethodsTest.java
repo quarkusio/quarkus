@@ -29,20 +29,14 @@ public class CacheOnMethodsTest {
 
     @Test
     public void testWith() {
-        RestAssured.get("/test/with")
-                .then()
-                .statusCode(200)
-                .body(equalTo("with"))
-                .header("Cache-Control", "must-revalidate, no-store, max-age=100, private");
+        RestAssured.get("/test/with").then().statusCode(200).body(equalTo("with")).header("Cache-Control",
+                "must-revalidate, no-store, max-age=100, private");
     }
 
     @Test
     public void testWithout() {
-        RestAssured.get("/test/without")
-                .then()
-                .statusCode(200)
-                .body(equalTo("without"))
-                .header("Cache-Control", nullValue());
+        RestAssured.get("/test/without").then().statusCode(200).body(equalTo("without")).header("Cache-Control",
+                nullValue());
     }
 
     @Path("test")

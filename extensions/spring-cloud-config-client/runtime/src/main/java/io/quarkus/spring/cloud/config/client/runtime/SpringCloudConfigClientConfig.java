@@ -37,16 +37,15 @@ public interface SpringCloudConfigClientConfig {
     String url();
 
     /**
-     * Name of the application on Spring Cloud Config server.
-     * Could be a list of names to load multiple files (value separated by a comma)
+     * Name of the application on Spring Cloud Config server. Could be a list of names to load multiple files (value
+     * separated by a comma)
      */
     @WithDefault("${quarkus.application.name:}")
     String name();
 
     /**
-     * The label to be used to pull remote configuration properties.
-     * The default is set on the Spring Cloud Config Server
-     * (generally "master" when the server uses a Git backend).
+     * The label to be used to pull remote configuration properties. The default is set on the Spring Cloud Config
+     * Server (generally "master" when the server uses a Git backend).
      */
     Optional<String> label();
 
@@ -79,8 +78,8 @@ public interface SpringCloudConfigClientConfig {
     Optional<String> password();
 
     /**
-     * TrustStore to be used containing the SSL certificate used by the Config server
-     * Can be either a classpath resource or a file system path
+     * TrustStore to be used containing the SSL certificate used by the Config server Can be either a classpath resource
+     * or a file system path
      */
     Optional<@WithConverter(PathConverter.class) Path> trustStore();
 
@@ -90,8 +89,8 @@ public interface SpringCloudConfigClientConfig {
     Optional<String> trustStorePassword();
 
     /**
-     * KeyStore to be used containing the SSL certificate for authentication with the Config server
-     * Can be either a classpath resource or a file system path
+     * KeyStore to be used containing the SSL certificate for authentication with the Config server Can be either a
+     * classpath resource or a file system path
      */
     Optional<@WithConverter(PathConverter.class) Path> keyStore();
 
@@ -101,8 +100,8 @@ public interface SpringCloudConfigClientConfig {
     Optional<String> keyStorePassword();
 
     /**
-     * Password to recover key from KeyStore for SSL client authentication with the Config server
-     * If no value is provided, the key-store-password will be used
+     * Password to recover key from KeyStore for SSL client authentication with the Config server If no value is
+     * provided, the key-store-password will be used
      */
     Optional<String> keyPassword();
 

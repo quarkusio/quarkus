@@ -54,7 +54,8 @@ class HibernateReactivePanacheRestProcessor {
     @BuildStep
     void findResourceMethodListeners(CombinedIndexBuildItem index,
             BuildProducer<ResourceMethodListenerBuildItem> resourceMethodListeners) {
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(REST_DATA_RESOURCE_METHOD_LISTENER_INTERFACE)) {
+        for (ClassInfo classInfo : index.getIndex()
+                .getKnownDirectImplementors(REST_DATA_RESOURCE_METHOD_LISTENER_INTERFACE)) {
             List<Type> generics = getGenericTypes(classInfo);
             Type entityType = generics.get(0);
             resourceMethodListeners.produce(new ResourceMethodListenerBuildItem(classInfo, entityType));
@@ -80,14 +81,14 @@ class HibernateReactivePanacheRestProcessor {
             String entityType = generics.get(0).name().toString();
             String idType = generics.get(1).name().toString();
 
-            List<ClassInfo> listenersForEntityType = getListenersByEntityType(index, resourceMethodListeners, entityType);
+            List<ClassInfo> listenersForEntityType = getListenersByEntityType(index, resourceMethodListeners,
+                    entityType);
             DataAccessImplementor dataAccessImplementor = new EntityDataAccessImplementor(entityType);
-            String resourceClass = resourceImplementor.implement(
-                    classOutput, dataAccessImplementor, resourceInterface, entityType, listenersForEntityType);
+            String resourceClass = resourceImplementor.implement(classOutput, dataAccessImplementor, resourceInterface,
+                    entityType, listenersForEntityType);
 
-            restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
-                            getEntityFields(index, entityType))));
+            restDataResourceProducer.produce(new RestDataResourceBuildItem(new ResourceMetadata(resourceClass,
+                    resourceInterface, entityType, idType, getEntityFields(index, entityType))));
         }
     }
 
@@ -112,17 +113,17 @@ class HibernateReactivePanacheRestProcessor {
             String entityType = generics.get(1).name().toString();
             String idType = generics.get(2).name().toString();
 
-            List<ClassInfo> listenersForEntityType = getListenersByEntityType(index, resourceMethodListeners, entityType);
+            List<ClassInfo> listenersForEntityType = getListenersByEntityType(index, resourceMethodListeners,
+                    entityType);
             DataAccessImplementor dataAccessImplementor = new RepositoryDataAccessImplementor(repositoryClassName);
-            String resourceClass = resourceImplementor.implement(
-                    classOutput, dataAccessImplementor, resourceInterface, entityType, listenersForEntityType);
+            String resourceClass = resourceImplementor.implement(classOutput, dataAccessImplementor, resourceInterface,
+                    entityType, listenersForEntityType);
             // Make sure that repository bean is not removed and will be injected to the generated resource
             unremovableBeansProducer.produce(new UnremovableBeanBuildItem(
                     new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
 
-            restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
-                            getEntityFields(index, entityType))));
+            restDataResourceProducer.produce(new RestDataResourceBuildItem(new ResourceMetadata(resourceClass,
+                    resourceInterface, entityType, idType, getEntityFields(index, entityType))));
         }
     }
 
@@ -141,11 +142,8 @@ class HibernateReactivePanacheRestProcessor {
     }
 
     private List<Type> getGenericTypes(ClassInfo classInfo) {
-        return classInfo.interfaceTypes()
-                .stream()
-                .findFirst()
+        return classInfo.interfaceTypes().stream().findFirst()
                 .orElseThrow(() -> new RuntimeException(classInfo.toString() + " does not have generic types"))
-                .asParameterizedType()
-                .arguments();
+                .asParameterizedType().arguments();
     }
 }

@@ -70,22 +70,21 @@ public class MicroProfileRestClientRequestFilter implements ResteasyReactiveClie
             if (clientHeadersFactory instanceof ReactiveClientHeadersFactory reactiveClientHeadersFactory) {
                 // reactive
                 requestContext.suspend();
-                reactiveClientHeadersFactory.getHeaders(incomingHeaders, headers).subscribe().with(
-                        new Consumer<>() {
-                            @Override
-                            public void accept(MultivaluedMap<String, String> newHeaders) {
-                                for (var headerEntry : newHeaders.entrySet()) {
-                                    requestContext.getHeaders()
-                                            .put(headerEntry.getKey(), castToListOfObjects(headerEntry.getValue()));
-                                }
-                                requestContext.resume();
-                            }
-                        }, new Consumer<>() {
-                            @Override
-                            public void accept(Throwable t) {
-                                requestContext.resume(t);
-                            }
-                        });
+                reactiveClientHeadersFactory.getHeaders(incomingHeaders, headers).subscribe().with(new Consumer<>() {
+                    @Override
+                    public void accept(MultivaluedMap<String, String> newHeaders) {
+                        for (var headerEntry : newHeaders.entrySet()) {
+                            requestContext.getHeaders().put(headerEntry.getKey(),
+                                    castToListOfObjects(headerEntry.getValue()));
+                        }
+                        requestContext.resume();
+                    }
+                }, new Consumer<>() {
+                    @Override
+                    public void accept(Throwable t) {
+                        requestContext.resume(t);
+                    }
+                });
             } else {
                 // blocking
                 incomingHeaders = clientHeadersFactory.update(incomingHeaders, headers);

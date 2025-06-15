@@ -26,8 +26,7 @@ class RestClientConfigTest {
     void restClientConfigClass() {
         RegisteredRestClient registeredRestClient = new RegisteredRestClient(FullNameRestClient.class, null);
         // application.properties in test/resources
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -38,8 +37,7 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
         assertEquals(1, restClientsConfig.clients().size());
@@ -51,8 +49,7 @@ class RestClientConfigTest {
     void restClientConfigKey() {
         RegisteredRestClient registeredRestClient = new RegisteredRestClient(ConfigKeyRestClient.class, "key");
         // application.properties in test/resources
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -63,8 +60,7 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
         assertEquals(1, restClientsConfig.clients().size());
@@ -74,8 +70,7 @@ class RestClientConfigTest {
 
     @Test
     void restClientConfigKeyMatchName() {
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -87,12 +82,10 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
         assertNotNull(config);
 
-        config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -104,8 +97,7 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
         assertNotNull(config);
     }
 
@@ -113,8 +105,7 @@ class RestClientConfigTest {
     void restClientMicroProfile() {
         RegisteredRestClient registeredRestClient = new RegisteredRestClient(MPRestClient.class, null);
         // application.properties in test/resources
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -125,8 +116,7 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
         assertEquals(1, restClientsConfig.clients().size());
@@ -154,8 +144,7 @@ class RestClientConfigTest {
     void restClientMicroProfileConfigKey() {
         RegisteredRestClient registeredRestClient = new RegisteredRestClient(MPConfigKeyRestClient.class, "mp.key");
         // application.properties in test/resources
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -166,8 +155,7 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
         assertEquals(1, restClientsConfig.clients().size());
@@ -193,8 +181,7 @@ class RestClientConfigTest {
 
     @Test
     void restClientMicroProfileConfigKeyMatchName() {
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -206,12 +193,10 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
         assertNotNull(config);
 
-        config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -223,8 +208,7 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
         assertNotNull(config);
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
@@ -238,53 +222,48 @@ class RestClientConfigTest {
 
     @Test
     void restClientDuplicateSimpleName() {
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
                         new AbstractRestClientConfigBuilder() {
                             @Override
                             public List<RegisteredRestClient> getRestClients() {
-                                return List.of(
+                                return List.of(new RegisteredRestClient(
+                                        io.quarkus.restclient.config.simple.one.SimpleNameRestClient.class, "one"),
                                         new RegisteredRestClient(
-                                                io.quarkus.restclient.config.simple.one.SimpleNameRestClient.class, "one"),
-                                        new RegisteredRestClient(
-                                                io.quarkus.restclient.config.simple.two.SimpleNameRestClient.class, "two"));
+                                                io.quarkus.restclient.config.simple.two.SimpleNameRestClient.class,
+                                                "two"));
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
         assertNotNull(config);
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
         assertEquals(2, restClientsConfig.clients().size());
-        assertThat(restClientsConfig.getClient(io.quarkus.restclient.config.simple.one.SimpleNameRestClient.class).uri().get())
-                .isEqualTo("http://localhost:8081");
-        assertThat(restClientsConfig.getClient(io.quarkus.restclient.config.simple.two.SimpleNameRestClient.class).uri().get())
-                .isEqualTo("http://localhost:8082");
+        assertThat(restClientsConfig.getClient(io.quarkus.restclient.config.simple.one.SimpleNameRestClient.class).uri()
+                .get()).isEqualTo("http://localhost:8081");
+        assertThat(restClientsConfig.getClient(io.quarkus.restclient.config.simple.two.SimpleNameRestClient.class).uri()
+                .get()).isEqualTo("http://localhost:8082");
     }
 
     @Test
     void restClientSharedConfigKey() {
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
                         new AbstractRestClientConfigBuilder() {
                             @Override
                             public List<RegisteredRestClient> getRestClients() {
-                                return List.of(
-                                        new RegisteredRestClient(SharedOneConfigKeyRestClient.class, "shared"),
+                                return List.of(new RegisteredRestClient(SharedOneConfigKeyRestClient.class, "shared"),
                                         new RegisteredRestClient(SharedTwoConfigKeyRestClient.class, "shared"),
                                         new RegisteredRestClient(SharedThreeConfigKeyRestClient.class, "shared"));
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
         assertNotNull(config);
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
@@ -296,15 +275,13 @@ class RestClientConfigTest {
         assertEquals("one", restClientConfigOne.headers().get("two"));
         assertEquals("two", restClientConfigOne.headers().get("one"));
 
-        RestClientConfig restClientConfigTwo = restClientsConfig
-                .getClient(SharedTwoConfigKeyRestClient.class);
+        RestClientConfig restClientConfigTwo = restClientsConfig.getClient(SharedTwoConfigKeyRestClient.class);
         assertThat(restClientConfigTwo.uri().get()).isEqualTo("http://localhost:8082");
         assertEquals(2, restClientConfigTwo.headers().size());
         assertEquals("one", restClientConfigTwo.headers().get("two"));
         assertEquals("two", restClientConfigTwo.headers().get("one"));
 
-        RestClientConfig restClientConfigThree = restClientsConfig
-                .getClient(SharedThreeConfigKeyRestClient.class);
+        RestClientConfig restClientConfigThree = restClientsConfig.getClient(SharedThreeConfigKeyRestClient.class);
         assertThat(restClientConfigThree.uri().get()).isEqualTo("http://localhost:8083");
         assertEquals(2, restClientConfigThree.headers().size());
         assertEquals("one", restClientConfigThree.headers().get("two"));
@@ -313,9 +290,7 @@ class RestClientConfigTest {
 
     @Test
     void buildTimeConfig() {
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsBuildTimeConfig.class)
-                .build();
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsBuildTimeConfig.class).build();
         assertNotNull(config);
 
         RestClientsBuildTimeConfig buildTimeConfig = config.getConfigMapping(RestClientsBuildTimeConfig.class)
@@ -326,10 +301,10 @@ class RestClientConfigTest {
 
     @Test
     void defaultPackage() {
-        RegisteredRestClient registeredRestClient = new RegisteredRestClient("FullNameRestClient", "FullNameRestClient", null);
+        RegisteredRestClient registeredRestClient = new RegisteredRestClient("FullNameRestClient", "FullNameRestClient",
+                null);
         // application.properties in test/resources
-        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder()
-                .withMapping(RestClientsConfig.class)
+        SmallRyeConfig config = ConfigUtils.emptyConfigBuilder().withMapping(RestClientsConfig.class)
                 .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
@@ -340,8 +315,7 @@ class RestClientConfigTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .build();
+                }).build();
 
         RestClientsConfig restClientsConfig = config.getConfigMapping(RestClientsConfig.class);
         assertEquals(1, restClientsConfig.clients().size());

@@ -36,15 +36,13 @@ final class Target_jdk_internal_loader_URLClassPath {
         String file = url.getFile();
         if (file != null && file.endsWith("/")) {
             if ("file".equals(url.getProtocol())) {
-                return (Target_URLClassPath$Loader) (Object) new Target_URLClassPath$FileLoader(
-                        url);
+                return (Target_URLClassPath$Loader) (Object) new Target_URLClassPath$FileLoader(url);
             } else {
                 return new Target_URLClassPath$Loader(url);
             }
         } else {
             // that must be wrong, but JarLoader is deleted by SVM
-            return (Target_URLClassPath$Loader) (Object) new Target_URLClassPath$FileLoader(
-                    url);
+            return (Target_URLClassPath$Loader) (Object) new Target_URLClassPath$FileLoader(url);
         }
     }
 

@@ -21,7 +21,8 @@ public final class HibernateUserTypeProcessor {
     private static final String TYPE_CLASS_VALUE = "typeClass";
 
     @BuildStep
-    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, CombinedIndexBuildItem combinedIndexBuildItem) {
+    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            CombinedIndexBuildItem combinedIndexBuildItem) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         final Set<String> userTypes = new HashSet<>();
@@ -44,8 +45,7 @@ public final class HibernateUserTypeProcessor {
 
         if (!userTypes.isEmpty()) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(userTypes.toArray(new String[] {}))
-                    .reason(ClassNames.HIBERNATE_USER_TYPE_PROCESSOR.toString())
-                    .methods().fields().build());
+                    .reason(ClassNames.HIBERNATE_USER_TYPE_PROCESSOR.toString()).methods().fields().build());
         }
     }
 

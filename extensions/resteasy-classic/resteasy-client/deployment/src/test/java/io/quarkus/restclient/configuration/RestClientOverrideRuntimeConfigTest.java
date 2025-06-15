@@ -25,8 +25,8 @@ import io.smallrye.config.SmallRyeConfig;
 
 public class RestClientOverrideRuntimeConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(EchoResource.class, EchoClient.class, RestClientBuildTimeConfigBuilderCustomizer.class)
                     .addAsServiceProvider("io.smallrye.config.SmallRyeConfigBuilderCustomizer",
                             "io.quarkus.restclient.configuration.RestClientBuildTimeConfigBuilderCustomizer"));
@@ -48,8 +48,8 @@ public class RestClientOverrideRuntimeConfigTest {
                 .contains("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));
         assertEquals("http://nohost",
                 specifiedDefaultValues.get().getValue("io.quarkus.restclient.configuration.EchoClient/mp-rest/url"));
-        assertTrue(StreamSupport.stream(config.getPropertyNames().spliterator(), false).anyMatch(
-                property -> property.equals("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url")));
+        assertTrue(StreamSupport.stream(config.getPropertyNames().spliterator(), false).anyMatch(property -> property
+                .equals("quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url")));
 
         // Override MP Build time property with Quarkus property
         ConfigValue mpValue = config.getConfigValue("io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
@@ -61,7 +61,8 @@ public class RestClientOverrideRuntimeConfigTest {
         // There is no relocate for MP names, so it keeps the same name
         assertEquals(mpValue.getName(), "io.quarkus.restclient.configuration.EchoClient/mp-rest/url");
         // We use the Quarkus name, because that is the one that has priority
-        assertEquals(quarkusValue.getName(), "quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
+        assertEquals(quarkusValue.getName(),
+                "quarkus.rest-client.\"io.quarkus.restclient.configuration.EchoClient\".url");
 
         assertTrue(restClientsConfig.clients().containsKey("io.quarkus.restclient.configuration.EchoClient"));
         Optional<String> url = restClientsConfig.clients().get("io.quarkus.restclient.configuration.EchoClient").url();

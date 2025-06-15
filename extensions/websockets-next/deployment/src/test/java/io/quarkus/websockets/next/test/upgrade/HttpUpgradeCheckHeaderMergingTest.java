@@ -28,9 +28,8 @@ public class HttpUpgradeCheckHeaderMergingTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Headers.class, Header1HttpUpgradeCheck.class,
-                            Header2HttpUpgradeCheck.class, Header3HttpUpgradeCheck.class, WSClient.class));
+            .withApplicationRoot(root -> root.addClasses(Headers.class, Header1HttpUpgradeCheck.class,
+                    Header2HttpUpgradeCheck.class, Header3HttpUpgradeCheck.class, WSClient.class));
 
     @TestHTTPResource("headers")
     URI headersUri;
@@ -41,12 +40,7 @@ public class HttpUpgradeCheckHeaderMergingTest {
         // but the checks itself did not reject upgrade, the upgrade wasn't performed due to incorrect headers
         var headers = RestAssured.given()
                 // without this header the client would receive 404
-                .header("Sec-WebSocket-Key", "foo")
-                .get(headersUri)
-                .then()
-                .statusCode(400)
-                .extract()
-                .headers();
+                .header("Sec-WebSocket-Key", "foo").get(headersUri).then().statusCode(400).extract().headers();
 
         assertNotNull(headers);
         assertTrue(headers.size() >= 3);

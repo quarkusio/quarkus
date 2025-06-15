@@ -25,30 +25,21 @@ import io.quarkus.test.QuarkusUnitTest;
 public class JsonViewDeserializeSerializeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(User.class, Views.class, Resource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(User.class, Views.class, Resource.class);
+        }
+    });
 
     @Test
     public void test() {
-        given().accept("application/json")
-                .contentType("application/json")
-                .body("""
-                        {
-                         "id": 1,
-                         "name": "Foo"
-                        }
-                        """)
-                .post("test")
-                .then()
-                .statusCode(201)
-                .body("id", equalTo(0))
-                .body("name", equalTo("Foo"));
+        given().accept("application/json").contentType("application/json").body("""
+                {
+                 "id": 1,
+                 "name": "Foo"
+                }
+                """).post("test").then().statusCode(201).body("id", equalTo(0)).body("name", equalTo("Foo"));
     }
 
     @Path("test")

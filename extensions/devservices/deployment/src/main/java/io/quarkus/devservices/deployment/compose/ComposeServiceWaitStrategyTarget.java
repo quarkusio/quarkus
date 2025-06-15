@@ -32,11 +32,8 @@ public class ComposeServiceWaitStrategyTarget implements WaitStrategyTarget, Sup
     public ComposeServiceWaitStrategyTarget(DockerClient dockerClient, Container container) {
         this.dockerClient = dockerClient;
         this.container = container;
-        this.exposedPorts = Arrays.stream(container.getPorts())
-                .filter(port -> port.getPublicPort() != null)
-                .map(ContainerPort::getPrivatePort)
-                .filter(Objects::nonNull)
-                .toList();
+        this.exposedPorts = Arrays.stream(container.getPorts()).filter(port -> port.getPublicPort() != null)
+                .map(ContainerPort::getPrivatePort).filter(Objects::nonNull).toList();
     }
 
     @Override

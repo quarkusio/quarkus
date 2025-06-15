@@ -62,7 +62,7 @@ public class GeneratedConverterIndexerExtension implements ServerEndpointIndexer
                     }
                 }
                 if (type.isEnum()) {
-                    //spec weirdness, enums order is different
+                    // spec weirdness, enums order is different
                     if (fromString != null) {
                         valueOf = null;
                     }
@@ -75,11 +75,11 @@ public class GeneratedConverterIndexerExtension implements ServerEndpointIndexer
         if (stringCtor != null || valueOf != null || fromString != null) {
             String effectivePrefix = prefix + elementType;
             if (effectivePrefix.startsWith("java")) {
-                effectivePrefix = effectivePrefix.replace("java", "javaq"); // generated classes can't start with the java package
+                effectivePrefix = effectivePrefix.replace("java", "javaq"); // generated classes can't start with the
+                                                                            // java package
             }
             baseName = effectivePrefix + "$quarkusrestparamConverter$";
-            try (ClassCreator classCreator = new ClassCreator(classOutput.apply(elementType),
-                    baseName, null,
+            try (ClassCreator classCreator = new ClassCreator(classOutput.apply(elementType), baseName, null,
                     Object.class.getName(), ParameterConverter.class.getName())) {
                 MethodCreator mc = classCreator.getMethodCreator("convert", Object.class, Object.class);
                 if (stringCtor != null) {

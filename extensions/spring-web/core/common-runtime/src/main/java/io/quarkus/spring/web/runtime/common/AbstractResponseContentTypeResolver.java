@@ -20,7 +20,8 @@ public abstract class AbstractResponseContentTypeResolver {
         Objects.requireNonNull(httpHeaders, "HttpHeaders cannot be null");
         Objects.requireNonNull(supportedMediaTypes, "Supported media types array cannot be null");
 
-        Variant bestVariant = getBestVariant(httpHeaders.getRequestHeader(ACCEPT), getMediaTypeVariants(supportedMediaTypes));
+        Variant bestVariant = getBestVariant(httpHeaders.getRequestHeader(ACCEPT),
+                getMediaTypeVariants(supportedMediaTypes));
 
         if (bestVariant != null) {
             return bestVariant.getMediaType();

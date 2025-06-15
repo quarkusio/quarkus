@@ -15,9 +15,8 @@ public class TimezoneDefaultStorageNormalizeUtcTest extends AbstractTimezoneDefa
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EntityWithTimezones.class)
-                    .addClasses(SchemaUtil.class, SmokeTestUtils.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EntityWithTimezones.class).addClasses(SchemaUtil.class,
+                    SmokeTestUtils.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping.timezone.default-storage", "normalize-utc");
 
@@ -34,8 +33,7 @@ public class TimezoneDefaultStorageNormalizeUtcTest extends AbstractTimezoneDefa
     @Test
     public void persistAndLoad() {
         long id = persistWithValuesToTest();
-        assertLoadedValues(id,
-                PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneOffset.UTC),
+        assertLoadedValues(id, PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneOffset.UTC),
                 PERSISTED_OFFSET_DATE_TIME.withOffsetSameInstant(ZoneOffset.UTC),
                 PERSISTED_OFFSET_TIME.withOffsetSameInstant(ZoneOffset.UTC));
     }

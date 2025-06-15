@@ -40,7 +40,8 @@ public class FlywayH2TestCustomizer {
         try {
             tcpServer = Server.createTcpServer("-tcpPort", String.valueOf(port), "-ifNotExists");
             tcpServer.start();
-            System.out.println("[INFO] Custom H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
+            System.out.println(
+                    "[INFO] Custom H2 database started in TCP server mode; server status: " + tcpServer.getStatus());
             if (initSqlFile != null) {
                 executeInitSQL();
             }
@@ -55,13 +56,7 @@ public class FlywayH2TestCustomizer {
         final String url = buildDbURL();
         try {
             System.out.println("[INFO] Custom H2 Initializing DB: " + url);
-            RunScript.execute(
-                    url,
-                    "sa",
-                    "sa",
-                    initSqlFile,
-                    Charset.defaultCharset(),
-                    false);
+            RunScript.execute(url, "sa", "sa", initSqlFile, Charset.defaultCharset(), false);
         } catch (SQLException exception) {
             throw new RuntimeException(exception);
         }

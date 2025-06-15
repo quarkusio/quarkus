@@ -47,10 +47,9 @@ public class CDIAuthorizationFailureEventTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class,
-                            SecurityTestUtils.class, IdentityMock.class, AuthZFailureEventObserver.class,
-                            AsyncAuthZFailureEventObserver.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithNoSecurityAnnotations.class,
+                    BeanWithSecurityAnnotations.class, SecurityTestUtils.class, IdentityMock.class,
+                    AuthZFailureEventObserver.class, AsyncAuthZFailureEventObserver.class));
 
     @BeforeEach
     public void beforeEach() {

@@ -4,8 +4,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * This class is needed because some message writers don't give us a way to control if the output stream is going to be closed
- * or not.
+ * This class is needed because some message writers don't give us a way to control if the output stream is going to be
+ * closed or not.
  */
 public class NoopCloseAndFlushOutputStream extends OutputStream {
     private final OutputStream delegate;

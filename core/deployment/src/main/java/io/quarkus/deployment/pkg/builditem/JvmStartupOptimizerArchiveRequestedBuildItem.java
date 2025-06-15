@@ -5,8 +5,7 @@ import java.nio.file.Path;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Build item to indicate to the various steps that generation
- * of a JVM startup archive has been requested
+ * Build item to indicate to the various steps that generation of a JVM startup archive has been requested
  */
 public final class JvmStartupOptimizerArchiveRequestedBuildItem extends SimpleBuildItem {
 

@@ -40,9 +40,9 @@ public interface LogBuildTimeConfig {
     /**
      * Minimum logging categories.
      * <p>
-     * Logging is done on a per-category basis. Each category can be configured independently.
-     * A configuration that applies to a category will also apply to all sub-categories of that category,
-     * unless there is a more specific matching sub-category configuration.
+     * Logging is done on a per-category basis. Each category can be configured independently. A configuration that
+     * applies to a category will also apply to all sub-categories of that category, unless there is a more specific
+     * matching sub-category configuration.
      */
     @WithName("category")
     @ConfigDocSection
@@ -50,14 +50,14 @@ public interface LogBuildTimeConfig {
 
     interface CategoryBuildTimeConfig {
         /**
-         * The minimum log level for this category.
-         * By default, all categories are configured with <code>DEBUG</code> minimum level.
+         * The minimum log level for this category. By default, all categories are configured with <code>DEBUG</code>
+         * minimum level.
          * <p>
-         * To get runtime logging below <code>DEBUG</code>, e.g., <code>TRACE</code>,
-         * adjust the minimum level at build time. The right log level needs to be provided at runtime.
+         * To get runtime logging below <code>DEBUG</code>, e.g., <code>TRACE</code>, adjust the minimum level at build
+         * time. The right log level needs to be provided at runtime.
          * <p>
-         * As an example, to get <code>TRACE</code> logging,
-         * minimum level needs to be at <code>TRACE</code>, and the runtime log level needs to match that.
+         * As an example, to get <code>TRACE</code> logging, minimum level needs to be at <code>TRACE</code>, and the
+         * runtime log level needs to match that.
          */
         @WithDefault("inherit")
         InheritableLevel minLevel();

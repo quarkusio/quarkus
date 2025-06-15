@@ -15,7 +15,8 @@ public final class ContextResolverBuildItem extends MultiBuildItem implements Ch
         this(className, providedType, mediaTypes, true);
     }
 
-    public ContextResolverBuildItem(String className, String providedType, List<String> mediaTypes, boolean registerAsBean) {
+    public ContextResolverBuildItem(String className, String providedType, List<String> mediaTypes,
+            boolean registerAsBean) {
         this.className = className;
         this.providedType = providedType;
         this.mediaTypes = mediaTypes;

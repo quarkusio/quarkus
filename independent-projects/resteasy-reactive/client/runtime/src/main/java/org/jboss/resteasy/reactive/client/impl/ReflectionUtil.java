@@ -11,9 +11,13 @@ public class ReflectionUtil {
     /**
      * Used by io.quarkus.resteasy.reactive.client.deployment.beanparam.FieldExtractor
      *
-     * @param object object to read the field from
-     * @param clazz class that declares the field
-     * @param fieldName name of the field
+     * @param object
+     *        object to read the field from
+     * @param clazz
+     *        class that declares the field
+     * @param fieldName
+     *        name of the field
+     *
      * @return value of the field
      */
     public static Object readField(Object object, Class<?> clazz, String fieldName) {
@@ -24,7 +28,8 @@ public class ReflectionUtil {
             }
             return field.get(object);
         } catch (IllegalAccessException | NoSuchFieldException e) {
-            throw new IllegalArgumentException("Cannot read '" + fieldName + "' field from " + object + " of class " + clazz);
+            throw new IllegalArgumentException(
+                    "Cannot read '" + fieldName + "' field from " + object + " of class " + clazz);
         }
     }
 }

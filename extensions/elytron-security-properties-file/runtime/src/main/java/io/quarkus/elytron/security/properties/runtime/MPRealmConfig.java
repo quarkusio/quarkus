@@ -4,8 +4,8 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
 /**
- * Configuration information used to populate a {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm}
- * }
+ * Configuration information used to populate a
+ * {@linkplain org.wildfly.security.auth.realm.SimpleMapBackedSecurityRealm} }
  */
 @ConfigGroup
 public interface MPRealmConfig {

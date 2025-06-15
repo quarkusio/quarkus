@@ -29,37 +29,33 @@ import io.vertx.ext.web.client.WebClient;
 
 public class JakartaRestResourceHttpPermissionTest {
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
-    private static final String APP_PROPS = "quarkus.http.auth.permission.foo.paths=/api/foo,/api/foo/\n" +
-            "quarkus.http.auth.permission.foo.policy=authenticated\n" +
-            "quarkus.http.auth.permission.bar.paths=api/bar*\n" +
-            "quarkus.http.auth.permission.bar.policy=authenticated\n" +
-            "quarkus.http.auth.permission.baz-fum-pub.paths=/api/baz/fum\n" +
-            "quarkus.http.auth.permission.baz-fum-pub.policy=permit\n" +
-            "quarkus.http.auth.permission.baz-fum-deny.paths=/api/baz/fum/\n" +
-            "quarkus.http.auth.permission.baz-fum-deny.policy=authenticated\n" +
-            "quarkus.http.auth.permission.baz-fum.paths=/api/baz/fum*\n" +
-            "quarkus.http.auth.permission.baz-fum.policy=authenticated\n" +
-            "quarkus.http.auth.permission.root.paths=/\n" +
-            "quarkus.http.auth.permission.root.policy=authenticated\n" +
-            "quarkus.http.auth.permission.fragment.paths=/#stuff,/#stuff/\n" +
-            "quarkus.http.auth.permission.fragment.policy=authenticated\n" +
-            "quarkus.http.auth.permission.jax-rs.paths=jax-rs\n" +
-            "quarkus.http.auth.permission.jax-rs.policy=admin-role\n" +
-            "quarkus.http.auth.policy.admin-role.roles-allowed=admin";
+    private static final String APP_PROPS = "quarkus.http.auth.permission.foo.paths=/api/foo,/api/foo/\n"
+            + "quarkus.http.auth.permission.foo.policy=authenticated\n"
+            + "quarkus.http.auth.permission.bar.paths=api/bar*\n"
+            + "quarkus.http.auth.permission.bar.policy=authenticated\n"
+            + "quarkus.http.auth.permission.baz-fum-pub.paths=/api/baz/fum\n"
+            + "quarkus.http.auth.permission.baz-fum-pub.policy=permit\n"
+            + "quarkus.http.auth.permission.baz-fum-deny.paths=/api/baz/fum/\n"
+            + "quarkus.http.auth.permission.baz-fum-deny.policy=authenticated\n"
+            + "quarkus.http.auth.permission.baz-fum.paths=/api/baz/fum*\n"
+            + "quarkus.http.auth.permission.baz-fum.policy=authenticated\n"
+            + "quarkus.http.auth.permission.root.paths=/\n" + "quarkus.http.auth.permission.root.policy=authenticated\n"
+            + "quarkus.http.auth.permission.fragment.paths=/#stuff,/#stuff/\n"
+            + "quarkus.http.auth.permission.fragment.policy=authenticated\n"
+            + "quarkus.http.auth.permission.jax-rs.paths=jax-rs\n"
+            + "quarkus.http.auth.permission.jax-rs.policy=admin-role\n"
+            + "quarkus.http.auth.policy.admin-role.roles-allowed=admin";
     private static WebClient client;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, ApiResource.class,
-                            RootResource.class, PublicResource.class, JaxRsResource.class)
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestIdentityProvider.class, TestIdentityController.class, ApiResource.class, RootResource.class,
+                    PublicResource.class, JaxRsResource.class)
+            .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("test", "test", "test");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("test", "test", "test");
     }
 
     @AfterAll
@@ -88,11 +84,10 @@ public class JakartaRestResourceHttpPermissionTest {
             "////api/foo", "/api/foo", "/api//foo", "/api//foo", "/api///foo", "/api/foo/", "/api/foo///",
             "/api/foo///.", "/api/foo/./",
             // path with wildcard, without leading slashes in both policy and @Path
-            "////api/bar", "/api///bar", "/api//bar", "/api/bar", "/api/bar/", "/api/bar/irish",
-            "/api/bar///irish", "/api/bar///irish/.", "/../api/bar///irish/.",
+            "////api/bar", "/api///bar", "/api//bar", "/api/bar", "/api/bar/", "/api/bar/irish", "/api/bar///irish",
+            "/api/bar///irish/.", "/../api/bar///irish/.",
             // combination of permit and authenticated policies, paths are resolved to /api/baz/fum/ and auth required
-            "/api/baz/fum/", "/api//baz/fum//", "/api//baz/fum/."
-    })
+            "/api/baz/fum/", "/api//baz/fum//", "/api//baz/fum/." })
     public void testEmptyPathSegments(String path) {
         assurePath(path, 401);
 

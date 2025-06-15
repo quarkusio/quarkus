@@ -26,13 +26,12 @@ public class HalServerResponseFilter implements ContainerResponseFilter {
     @Override
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) {
         Object entity = responseContext.getEntity();
-        if (isHttpStatusSuccessful(responseContext.getStatusInfo())
-                && acceptsHalMediaType(requestContext)
+        if (isHttpStatusSuccessful(responseContext.getStatusInfo()) && acceptsHalMediaType(requestContext)
                 && canEntityBeProcessed(entity)) {
             ResteasyHalService service = Arc.container().instance(ResteasyHalService.class).get();
             if (entity instanceof Collection) {
-                responseContext.setEntity(service.toHalCollectionWrapper((Collection<Object>) entity,
-                        COLLECTION_NAME, findEntityClass(requestContext, responseContext.getEntityType())));
+                responseContext.setEntity(service.toHalCollectionWrapper((Collection<Object>) entity, COLLECTION_NAME,
+                        findEntityClass(requestContext, responseContext.getEntityType())));
             } else {
                 responseContext.setEntity(service.toHalWrapper(entity));
             }
@@ -40,8 +39,7 @@ public class HalServerResponseFilter implements ContainerResponseFilter {
     }
 
     private boolean canEntityBeProcessed(Object entity) {
-        return entity != null
-                && !(entity instanceof String)
+        return entity != null && !(entity instanceof String)
                 && !(entity instanceof HalEntityWrapper || entity instanceof HalCollectionWrapper);
     }
 
@@ -50,8 +48,8 @@ public class HalServerResponseFilter implements ContainerResponseFilter {
     }
 
     private boolean acceptsHalMediaType(ContainerRequestContext requestContext) {
-        List<String> acceptMediaType = requestContext.getAcceptableMediaTypes().stream().map(MediaType::toString).collect(
-                Collectors.toList());
+        List<String> acceptMediaType = requestContext.getAcceptableMediaTypes().stream().map(MediaType::toString)
+                .collect(Collectors.toList());
         return acceptMediaType.contains(APPLICATION_HAL_JSON);
     }
 

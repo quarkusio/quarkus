@@ -5,8 +5,8 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Allows for extension to register global handler customizers.
- * These are useful for adding handlers that run before and after pre matching
+ * Allows for extension to register global handler customizers. These are useful for adding handlers that run before and
+ * after pre matching
  */
 public final class GlobalHandlerCustomizerBuildItem extends MultiBuildItem {
 

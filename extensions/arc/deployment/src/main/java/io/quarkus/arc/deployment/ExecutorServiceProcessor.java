@@ -13,11 +13,8 @@ public class ExecutorServiceProcessor {
     @BuildStep
     SyntheticBeanBuildItem executorServiceBean(ExecutorBuildItem executor) {
         return SyntheticBeanBuildItem.configure(ScheduledExecutorService.class)
-                .types(ExecutorService.class, Executor.class)
-                .scope(BuiltinScope.APPLICATION.getInfo())
-                .setRuntimeInit()
-                .runtimeProxy(executor.getExecutorProxy())
-                .done();
+                .types(ExecutorService.class, Executor.class).scope(BuiltinScope.APPLICATION.getInfo()).setRuntimeInit()
+                .runtimeProxy(executor.getExecutorProxy()).done();
     }
 
 }

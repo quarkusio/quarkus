@@ -12,8 +12,10 @@ public class MyInterceptedGreeting implements Greeter {
     @Override
     @Blocking
     public Uni<HelloReply> sayHello(HelloRequest request) {
-        return Uni.createFrom().item(() -> HelloReply.newBuilder()
-                .setMessage("hello " + MyFirstInterceptor.KEY_1.get() + " - " + MyFirstInterceptor.KEY_2.get()).build());
+        return Uni.createFrom()
+                .item(() -> HelloReply.newBuilder()
+                        .setMessage("hello " + MyFirstInterceptor.KEY_1.get() + " - " + MyFirstInterceptor.KEY_2.get())
+                        .build());
     }
 
     @Override

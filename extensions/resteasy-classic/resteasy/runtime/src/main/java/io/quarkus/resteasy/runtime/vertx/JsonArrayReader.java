@@ -31,7 +31,8 @@ public class JsonArrayReader implements MessageBodyReader<JsonArray> {
 
     @Override
     public JsonArray readFrom(Class<JsonArray> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         byte[] bytes = getBytes(entityStream);
         if (bytes.length == 0) {
             throw new NoContentException("Cannot create JsonArray");

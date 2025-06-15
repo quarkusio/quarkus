@@ -48,7 +48,8 @@ public class GrpcPostProcessing {
     /**
      * Methods used for the quarkus-grpc-stub project post-processing (as it's not a quarkus app)
      *
-     * @param args expects the path to the source root of the files to post-process.
+     * @param args
+     *        expects the path to the source root of the files to post-process.
      */
     public static void main(String[] args) {
         for (String arg : args) {
@@ -71,7 +72,8 @@ public class GrpcPostProcessing {
                 public com.github.javaparser.utils.SourceRoot.Callback.Result process(Path localPath, Path absolutePath,
                         com.github.javaparser.ParseResult<CompilationUnit> result) {
                     if (result.isSuccessful()) {
-                        CompilationUnit unit = result.getResult().orElseThrow(); // the parsing succeed, so we can retrieve the cu
+                        CompilationUnit unit = result.getResult().orElseThrow(); // the parsing succeed, so we can
+                                                                                 // retrieve the cu
 
                         if (unit.getPrimaryType().isPresent()) {
                             TypeDeclaration<?> type = unit.getPrimaryType().get();
@@ -81,10 +83,8 @@ public class GrpcPostProcessing {
 
                     } else {
                         // Compilation issue - report and skip
-                        log.errorf(
-                                "Unable to parse a class generated using protoc, skipping post-processing for this " +
-                                        "file. Reported problems are %s",
-                                result.toString());
+                        log.errorf("Unable to parse a class generated using protoc, skipping post-processing for this "
+                                + "file. Reported problems are %s", result.toString());
                     }
 
                     return Result.DONT_SAVE;
@@ -124,8 +124,7 @@ public class GrpcPostProcessing {
             @Override
             public Visitable visit(MethodDeclaration n, Void arg) {
                 if (removeFinal) {
-                    if (n.hasModifier(Modifier.Keyword.FINAL)
-                            && n.getNameAsString().equalsIgnoreCase(BIND_METHOD)) {
+                    if (n.hasModifier(Modifier.Keyword.FINAL) && n.getNameAsString().equalsIgnoreCase(BIND_METHOD)) {
                         n.removeModifier(Modifier.Keyword.FINAL);
                     }
                 }

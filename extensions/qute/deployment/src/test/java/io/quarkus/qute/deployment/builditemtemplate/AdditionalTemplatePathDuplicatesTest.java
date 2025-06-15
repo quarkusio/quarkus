@@ -18,11 +18,9 @@ public class AdditionalTemplatePathDuplicatesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt"))
+            .withApplicationRoot(root -> root.addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt"))
             .overrideConfigKey("quarkus.qute.duplicit-templates-strategy", "fail")
-            .addBuildChainCustomizer(buildCustomizer())
-            .setExpectedException(IllegalStateException.class, true);
+            .addBuildChainCustomizer(buildCustomizer()).setExpectedException(IllegalStateException.class, true);
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
         return new Consumer<BuildChainBuilder>() {
@@ -31,24 +29,18 @@ public class AdditionalTemplatePathDuplicatesTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(TemplatePathBuildItem.builder()
-                                .path("hi.txt")
-                                .extensionInfo("test-ext")
+                        context.produce(TemplatePathBuildItem.builder().path("hi.txt").extensionInfo("test-ext")
                                 .content("Hello {name}!").build());
                     }
-                }).produces(TemplatePathBuildItem.class)
-                        .build();
+                }).produces(TemplatePathBuildItem.class).build();
 
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(TemplatePathBuildItem.builder()
-                                .path("hi.txt")
-                                .extensionInfo("test-ext")
+                        context.produce(TemplatePathBuildItem.builder().path("hi.txt").extensionInfo("test-ext")
                                 .content("Hello {name}!").build());
                     }
-                }).produces(TemplatePathBuildItem.class)
-                        .build();
+                }).produces(TemplatePathBuildItem.class).build();
             }
         };
     }

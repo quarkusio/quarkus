@@ -19,10 +19,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class LogSqlFormatSqlDefaultValueTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class)
-                    .addAsResource("application-log-sql-format-sql-default.properties", "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(MyEntity.class)
+            .addAsResource("application-log-sql-format-sql-default.properties", "application.properties"));
 
     @Inject
     EntityManager em;

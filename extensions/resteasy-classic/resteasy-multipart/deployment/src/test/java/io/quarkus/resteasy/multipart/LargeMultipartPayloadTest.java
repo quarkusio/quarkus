@@ -27,26 +27,18 @@ import io.restassured.RestAssured;
 public class LargeMultipartPayloadTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addAsResource(new StringAsset("""
-                                    quarkus.http.limits.max-body-size=30M
-                                    """),
-                                    "application.properties");
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addAsResource(new StringAsset("""
+                    quarkus.http.limits.max-body-size=30M
+                    """), "application.properties");
+        }
+    });
 
     @Test
     public void testConnectionClosedOnException() {
-        RestAssured
-                .given()
-                .multiPart("content", twentyMegaBytes())
-                .post("/test/multipart")
-                .then()
-                .statusCode(500);
+        RestAssured.given().multiPart("content", twentyMegaBytes()).post("/test/multipart").then().statusCode(500);
     }
 
     private static String twentyMegaBytes() {

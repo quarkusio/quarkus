@@ -25,8 +25,7 @@ public class WebSocketProcessorTest {
         assertEquals(
                 "Path parameter {baz} may not be followed by an alphanumeric character or underscore: /foo/v{bar}/{baz}_{alpha_1}-{name}",
                 e.getMessage());
-        e = assertThrows(WebSocketServerException.class,
-                () -> WebSocketProcessor.getPath("/foo/v{bar}/{baz}1-{name}"));
+        e = assertThrows(WebSocketServerException.class, () -> WebSocketProcessor.getPath("/foo/v{bar}/{baz}1-{name}"));
         assertEquals(
                 "Path parameter {baz} may not be followed by an alphanumeric character or underscore: /foo/v{bar}/{baz}1-{name}",
                 e.getMessage());

@@ -9,7 +9,6 @@ import java.util.function.Function;
 
 /**
  * Turn URI parameter map into an object
- *
  */
 class QueryObjectReader extends BaseObjectReader {
 
@@ -70,8 +69,8 @@ class QueryObjectReader extends BaseObjectReader {
     }
 
     static boolean isSetter(Method m) {
-        return !Modifier.isStatic(m.getModifiers()) && m.getName().startsWith("set") && m.getName().length() > "set".length()
-                && m.getParameterCount() == 1;
+        return !Modifier.isStatic(m.getModifiers()) && m.getName().startsWith("set")
+                && m.getName().length() > "set".length() && m.getParameterCount() == 1;
     }
 
     @Override

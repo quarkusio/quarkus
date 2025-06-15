@@ -24,22 +24,17 @@ import io.restassured.RestAssured;
 public class SubResourceDevModeTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, SubResource.class);
-                }
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, SubResource.class);
+        }
 
-            });
+    });
 
     @Test
     public void test() {
-        RestAssured.get("/test/sub")
-                .then()
-                .statusCode(200)
-                .body(equalTo("hello"));
+        RestAssured.get("/test/sub").then().statusCode(200).body(equalTo("hello"));
     }
 
     @Path("test")

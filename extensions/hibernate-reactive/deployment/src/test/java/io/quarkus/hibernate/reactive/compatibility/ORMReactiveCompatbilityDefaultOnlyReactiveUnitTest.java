@@ -13,9 +13,8 @@ public class ORMReactiveCompatbilityDefaultOnlyReactiveUnitTest extends Compatib
     // To disable the blocking datasource, it's enough not to include the jdbc driver in the dependencies
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hero.class)
-                    .addAsResource("complexMultilineImports.sql", "import.sql"))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Hero.class).addAsResource("complexMultilineImports.sql", "import.sql"))
             .withConfigurationResource("application-unittest-onlyreactive.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.reactive", "true")

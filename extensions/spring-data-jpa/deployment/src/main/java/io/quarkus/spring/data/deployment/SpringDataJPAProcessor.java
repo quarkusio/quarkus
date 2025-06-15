@@ -78,15 +78,12 @@ public class SpringDataJPAProcessor {
 
     @BuildStep
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses) {
-        // index the Spring Data repository interfaces that extend Repository because we need to pull the generic types from it
-        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
-                Repository.class.getName(),
-                CrudRepository.class.getName(),
-                ListCrudRepository.class.getName(),
-                PagingAndSortingRepository.class.getName(),
-                ListPagingAndSortingRepository.class.getName(),
-                JpaRepository.class.getName(),
-                QueryByExampleExecutor.class.getName()));
+        // index the Spring Data repository interfaces that extend Repository because we need to pull the generic types
+        // from it
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(Repository.class.getName(),
+                CrudRepository.class.getName(), ListCrudRepository.class.getName(),
+                PagingAndSortingRepository.class.getName(), ListPagingAndSortingRepository.class.getName(),
+                JpaRepository.class.getName(), QueryByExampleExecutor.class.getName()));
     }
 
     @BuildStep
@@ -99,16 +96,12 @@ public class SpringDataJPAProcessor {
 
     @BuildStep
     void registerReflection(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(ReflectiveClassBuildItem.builder(
-                "org.springframework.data.domain.Page",
-                "org.springframework.data.domain.Slice",
-                "org.springframework.data.domain.PageImpl",
-                "org.springframework.data.domain.Pageable",
-                "org.springframework.data.domain.SliceImpl",
-                "org.springframework.data.domain.Sort",
-                "org.springframework.data.domain.Chunk",
-                "org.springframework.data.domain.PageRequest",
-                "org.springframework.data.domain.AbstractPageRequest").methods().build());
+        producer.produce(ReflectiveClassBuildItem.builder("org.springframework.data.domain.Page",
+                "org.springframework.data.domain.Slice", "org.springframework.data.domain.PageImpl",
+                "org.springframework.data.domain.Pageable", "org.springframework.data.domain.SliceImpl",
+                "org.springframework.data.domain.Sort", "org.springframework.data.domain.Chunk",
+                "org.springframework.data.domain.PageRequest", "org.springframework.data.domain.AbstractPageRequest")
+                .methods().build());
     }
 
     @BuildStep
@@ -123,16 +116,16 @@ public class SpringDataJPAProcessor {
         detectAndLogSpecificSpringPropertiesIfExist();
 
         IndexView indexView = index.getIndex();
-        LinkedHashSet<ClassInfo> interfacesExtendingRepository = getAllInterfacesExtending(DotNames.SUPPORTED_REPOSITORIES,
-                indexView);
+        LinkedHashSet<ClassInfo> interfacesExtendingRepository = getAllInterfacesExtending(
+                DotNames.SUPPORTED_REPOSITORIES, indexView);
 
         addRepositoryDefinitionInstances(indexView, interfacesExtendingRepository);
 
         addInterfacesExtendingIntermediateRepositories(indexView, interfacesExtendingRepository);
 
         removeNoRepositoryBeanClasses(interfacesExtendingRepository);
-        Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans, reflectiveClasses,
-                interfacesExtendingRepository, indexView);
+        Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, additionalBeans,
+                reflectiveClasses, interfacesExtendingRepository, indexView);
         determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, entities, "Spring Data JPA")
                 .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
 
@@ -160,7 +153,8 @@ public class SpringDataJPAProcessor {
             for (DotName supportedRepository : supportedRepositories) {
                 if (classInfo.interfaceNames().contains(supportedRepository)) {
                     throw new IllegalArgumentException("Class " + classInfo.name()
-                            + " which is annotated with @RepositoryDefinition cannot also extend " + supportedRepository);
+                            + " which is annotated with @RepositoryDefinition cannot also extend "
+                            + supportedRepository);
                 }
             }
             interfacesExtendingRepository.add(classInfo);
@@ -173,7 +167,8 @@ public class SpringDataJPAProcessor {
         Iterable<String> iterablePropertyNames = config.getPropertyNames();
         List<String> propertyNames = new ArrayList<String>();
         iterablePropertyNames.forEach(propertyNames::add);
-        List<String> springProperties = propertyNames.stream().filter(s -> pattern.matcher(s).matches()).collect(toList());
+        List<String> springProperties = propertyNames.stream().filter(s -> pattern.matcher(s).matches())
+                .collect(toList());
         String notSupportedProperties = "";
 
         if (!springProperties.isEmpty()) {
@@ -184,8 +179,9 @@ public class SpringDataJPAProcessor {
                                 + " should be replaced by " + QUARKUS_HIBERNATE_ORM_LOG_SQL + "\n";
                         break;
                     case SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT:
-                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT
-                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_DIALECT + "\n";
+                        notSupportedProperties = notSupportedProperties + "\t- "
+                                + SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT + " should be replaced by "
+                                + QUARKUS_HIBERNATE_ORM_DIALECT + "\n";
                         break;
                     case SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT_STORAGE_ENGINE:
                         notSupportedProperties = notSupportedProperties + "\t- "
@@ -197,34 +193,35 @@ public class SpringDataJPAProcessor {
                                 + " should be replaced by " + QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY + "\n";
                         break;
                     case SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY:
-                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY
-                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY + "\n";
+                        notSupportedProperties = notSupportedProperties + "\t- "
+                                + SPRING_JPA_HIBERNATE_NAMING_PHYSICAL_STRATEGY + " should be replaced by "
+                                + QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY + "\n";
                         break;
                     case SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY:
-                        notSupportedProperties = notSupportedProperties + "\t- " + SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY
-                                + " should be replaced by " + QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY + "\n";
+                        notSupportedProperties = notSupportedProperties + "\t- "
+                                + SPRING_JPA_HIBERNATE_NAMING_IMPLICIT_STRATEGY + " should be replaced by "
+                                + QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY + "\n";
                         break;
                     case SPRING_DATASOURCE_DATA:
                         notSupportedProperties = notSupportedProperties + "\t- " + QUARKUS_HIBERNATE_ORM_SQL_LOAD_SCRIPT
                                 + " could be used to load data instead of " + SPRING_DATASOURCE_DATA
-                                + " but it does not support ant-style patterns as "
-                                + SPRING_DATASOURCE_DATA
+                                + " but it does not support ant-style patterns as " + SPRING_DATASOURCE_DATA
                                 + " does, it accepts the name of files containing the SQL statements to execute when Hibernate ORM starts.\n";
                         break;
                     default:
-                        notSupportedProperties = notSupportedProperties + "\t- " + sp + " does not have a Quarkus equivalent\n";
+                        notSupportedProperties = notSupportedProperties + "\t- " + sp
+                                + " does not have a Quarkus equivalent\n";
                         break;
                 }
             }
-            LOGGER.warnf(
-                    "Quarkus does not support the following Spring Boot configuration properties: %n%s",
+            LOGGER.warnf("Quarkus does not support the following Spring Boot configuration properties: %n%s",
                     notSupportedProperties);
         }
     }
 
     private void removeNoRepositoryBeanClasses(Set<ClassInfo> interfacesExtendingRepository) {
-        interfacesExtendingRepository.removeIf(
-                next -> next.declaredAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null);
+        interfacesExtendingRepository
+                .removeIf(next -> next.declaredAnnotation(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN) != null);
     }
 
     private LinkedHashSet<ClassInfo> getAllInterfacesExtending(Collection<DotName> targets, IndexView index) {
@@ -239,28 +236,27 @@ public class SpringDataJPAProcessor {
         return index.getAnnotations(DotNames.SPRING_DATA_NO_REPOSITORY_BEAN).stream()
                 .filter(ai -> ai.target().kind() == Kind.CLASS)
                 .filter(ai -> Modifier.isInterface(ai.target().asClass().flags()))
-                .map(ai -> ai.target().asClass().name())
-                .collect(Collectors.toSet());
+                .map(ai -> ai.target().asClass().name()).collect(Collectors.toSet());
     }
 
     // generate a concrete class that will be used by Arc to resolve injection points
     private Set<String> implementCrudRepositories(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            Set<ClassInfo> crudRepositoriesToImplement, IndexView index) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses, Set<ClassInfo> crudRepositoriesToImplement,
+            IndexView index) {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
         ClassOutput otherClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
 
-        SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput, otherClassOutput,
-                index, (n) -> {
+        SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput,
+                otherClassOutput, index, (n) -> {
                     // the implementation of fragments don't need to be beans themselves
                     additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(n));
-                },
-                (className -> {
+                }, (className -> {
                     // the generated classes that implement interfaces for holding custom query results need
-                    // to be registered for reflection here since this is the only point where the generated class is known
+                    // to be registered for reflection here since this is the only point where the generated class is
+                    // known
                     reflectiveClasses.produce(ReflectiveClassBuildItem.builder(className).methods().build());
                 }), JavaJpaTypeBundle.BUNDLE);
 

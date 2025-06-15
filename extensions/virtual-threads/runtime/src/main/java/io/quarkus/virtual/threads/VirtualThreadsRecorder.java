@@ -56,7 +56,8 @@ public class VirtualThreadsRecorder {
                             service.shutdown();
 
                             final long timeout = config.shutdownTimeout().toNanos();
-                            final long interval = config.shutdownCheckInterval().orElse(config.shutdownTimeout()).toNanos();
+                            final long interval = config.shutdownCheckInterval().orElse(config.shutdownTimeout())
+                                    .toNanos();
 
                             long start = System.nanoTime();
                             int loop = 1;
@@ -128,21 +129,22 @@ public class VirtualThreadsRecorder {
     }
 
     /**
-     * This method uses reflection in order to allow developers to quickly test quarkus-loom without needing to
-     * change --release, --source, --target flags and to enable previews.
+     * This method uses reflection in order to allow developers to quickly test quarkus-loom without needing to change
+     * --release, --source, --target flags and to enable previews.
      */
     private static ExecutorService createExecutor() {
         if (config.enabled()) {
             try {
                 String prefix = config.namePrefix().orElse(null);
                 return new ContextPreservingExecutorService(newVirtualThreadPerTaskExecutorWithName(prefix));
-            } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException e) {
+            } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException
+                    | ClassNotFoundException e) {
                 logger.debug("Unable to invoke java.util.concurrent.Executors#newVirtualThreadPerTaskExecutor", e);
-                //quite ugly but works
-                logger.warn("You weren't able to create an executor that spawns virtual threads, the default" +
-                        " blocking executor will be used, please check that your JDK is compatible with " +
-                        "virtual threads");
-                //if for some reason a class/method can't be loaded or invoked we return the traditional executor,
+                // quite ugly but works
+                logger.warn("You weren't able to create an executor that spawns virtual threads, the default"
+                        + " blocking executor will be used, please check that your JDK is compatible with "
+                        + "virtual threads");
+                // if for some reason a class/method can't be loaded or invoked we return the traditional executor,
                 // wrapping executeBlocking.
             }
         }

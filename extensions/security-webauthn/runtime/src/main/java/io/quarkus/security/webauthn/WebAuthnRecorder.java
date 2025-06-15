@@ -23,7 +23,7 @@ public class WebAuthnRecorder {
     final RuntimeValue<VertxHttpConfig> httpConfig;
     final RuntimeValue<WebAuthnRunTimeConfig> config;
 
-    //the temp encryption key, persistent across dev mode restarts
+    // the temp encryption key, persistent across dev mode restarts
     static volatile String encryptionKey;
 
     public WebAuthnRecorder(RuntimeValue<VertxHttpConfig> httpConfig, RuntimeValue<WebAuthnRunTimeConfig> config) {
@@ -61,7 +61,7 @@ public class WebAuthnRecorder {
                 String key;
                 if (!httpConfig.getValue().encryptionKey().isPresent()) {
                     if (encryptionKey != null) {
-                        //persist across dev mode restarts
+                        // persist across dev mode restarts
                         key = encryptionKey;
                     } else {
                         byte[] data = new byte[32];
@@ -76,9 +76,8 @@ public class WebAuthnRecorder {
                 }
                 WebAuthnRunTimeConfig config = WebAuthnRecorder.this.config.getValue();
                 PersistentLoginManager loginManager = new PersistentLoginManager(key, config.cookieName(),
-                        config.sessionTimeout().toMillis(),
-                        config.newCookieInterval().toMillis(), false, config.cookieSameSite().name(),
-                        config.cookiePath().orElse(null),
+                        config.sessionTimeout().toMillis(), config.newCookieInterval().toMillis(), false,
+                        config.cookieSameSite().name(), config.cookiePath().orElse(null),
                         config.cookieMaxAge().map(Duration::toSeconds).orElse(-1L));
                 String loginPage = config.loginPage().startsWith("/") ? config.loginPage() : "/" + config.loginPage();
                 return new WebAuthnAuthenticationMechanism(loginManager, loginPage);

@@ -7,11 +7,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.sbom.ApplicationManifestConfig;
 
 /**
- * Represents a runnable artifact, such as an uberjar or thin jar.
- *
- * Most artifacts will also produce a more specialized build item, to allow them
- * to be consumed by other build steps.
- *
+ * Represents a runnable artifact, such as an uberjar or thin jar. Most artifacts will also produce a more specialized
+ * build item, to allow them to be consumed by other build steps.
  */
 public final class ArtifactResultBuildItem extends MultiBuildItem {
 

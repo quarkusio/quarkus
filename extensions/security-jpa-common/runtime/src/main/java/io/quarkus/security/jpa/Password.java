@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 
 /**
  * <p>
- * Indicates that this field or property should be used as a source of password for security. Only
- * supports the {@link String} type.
+ * Indicates that this field or property should be used as a source of password for security. Only supports the
+ * {@link String} type.
  * </p>
  * <p>
  * Defaults to considering the password as hashed with bcrypt in the Modular Crypt Format.

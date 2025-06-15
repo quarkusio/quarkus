@@ -20,8 +20,8 @@ import org.hibernate.type.format.FormatMapper;
  * <p>
  * This mapper will be used by Hibernate ORM for serialization and deserialization of JSON properties.
  * <p>
- * <strong>Must</strong> be used in a combination with a {@link PersistenceUnitExtension} qualifier to define the persistence
- * unit the mapper should be associated with.
+ * <strong>Must</strong> be used in a combination with a {@link PersistenceUnitExtension} qualifier to define the
+ * persistence unit the mapper should be associated with.
  */
 @Target({ TYPE, FIELD, METHOD, PARAMETER })
 @Retention(RUNTIME)

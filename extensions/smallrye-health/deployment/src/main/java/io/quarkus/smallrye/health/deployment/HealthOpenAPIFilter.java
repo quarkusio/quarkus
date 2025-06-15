@@ -29,30 +29,26 @@ public class HealthOpenAPIFilter implements OASFilter {
             .type(Collections.singletonList(Schema.SchemaType.OBJECT))
             .properties(new TreeMap<>(Map.ofEntries(
                     Map.entry("status",
-                            OASFactory.createSchema()
-                                    .type(Collections.singletonList(Schema.SchemaType.STRING))
+                            OASFactory.createSchema().type(Collections.singletonList(Schema.SchemaType.STRING))
                                     .enumeration(List.of("UP", "DOWN"))),
 
                     Map.entry("checks",
-                            OASFactory.createSchema()
-                                    .type(Collections.singletonList(Schema.SchemaType.ARRAY))
+                            OASFactory.createSchema().type(Collections.singletonList(Schema.SchemaType.ARRAY))
                                     .items(OASFactory.createSchema()
                                             .ref("#/components/schemas/" + HEALTH_CHECK_SCHEMA_NAME))))));
 
     private static final Schema healthCheckSchemaDefinition = OASFactory.createSchema()
-            .type(Collections.singletonList(Schema.SchemaType.OBJECT))
-            .properties(new TreeMap<>(Map.ofEntries(
-                    Map.entry("name",
-                            OASFactory.createSchema()
-                                    .type(Collections.singletonList(Schema.SchemaType.STRING))),
+            .type(Collections.singletonList(Schema.SchemaType.OBJECT)).properties(
+                    new TreeMap<>(Map.ofEntries(
+                            Map.entry("name",
+                                    OASFactory.createSchema()
+                                            .type(Collections.singletonList(Schema.SchemaType.STRING))),
 
-                    Map.entry("status",
-                            OASFactory.createSchema()
-                                    .type(Collections.singletonList(Schema.SchemaType.STRING))
-                                    .enumeration(List.of("UP", "DOWN"))),
+                            Map.entry("status",
+                                    OASFactory.createSchema().type(Collections.singletonList(Schema.SchemaType.STRING))
+                                            .enumeration(List.of("UP", "DOWN"))),
 
-                    Map.entry("data",
-                            OASFactory.createSchema()
+                            Map.entry("data", OASFactory.createSchema()
                                     .type(List.of(Schema.SchemaType.OBJECT, Schema.SchemaType.NULL))))));
 
     private final String rootPath;
@@ -88,92 +84,65 @@ public class HealthOpenAPIFilter implements OASFilter {
         final Paths paths = openAPI.getPaths();
 
         // Health
-        paths.addPathItem(
-                rootPath,
-                createHealthEndpoint(
-                        "MicroProfile Health Endpoint",
-                        "MicroProfile Health provides a way for your application to distribute " +
-                                "information about its healthiness state to state whether or not it is able to " +
-                                "function properly",
-                        "Check the health of the application",
-                        "microprofile_health_root",
-                        "An aggregated view of the Liveness, Readiness and Startup of this application"));
+        paths.addPathItem(rootPath, createHealthEndpoint("MicroProfile Health Endpoint",
+                "MicroProfile Health provides a way for your application to distribute "
+                        + "information about its healthiness state to state whether or not it is able to "
+                        + "function properly",
+                "Check the health of the application", "microprofile_health_root",
+                "An aggregated view of the Liveness, Readiness and Startup of this application"));
 
         // Liveness
-        paths.addPathItem(
-                livenessPath,
-                createHealthEndpoint(
-                        "MicroProfile Health - Liveness Endpoint",
-                        "Liveness checks are utilized to tell whether the application should be " +
-                                "restarted",
-                        "Check the liveness of the application",
-                        "microprofile_health_liveness",
+        paths.addPathItem(livenessPath,
+                createHealthEndpoint("MicroProfile Health - Liveness Endpoint",
+                        "Liveness checks are utilized to tell whether the application should be " + "restarted",
+                        "Check the liveness of the application", "microprofile_health_liveness",
                         "The Liveness check of this application"));
 
         // Readiness
-        paths.addPathItem(
-                readinessPath,
-                createHealthEndpoint(
-                        "MicroProfile Health - Readiness Endpoint",
-                        "Readiness checks are used to tell whether the application is able to " +
-                                "process requests",
-                        "Check the readiness of the application",
-                        "microprofile_health_readiness",
+        paths.addPathItem(readinessPath,
+                createHealthEndpoint("MicroProfile Health - Readiness Endpoint",
+                        "Readiness checks are used to tell whether the application is able to " + "process requests",
+                        "Check the readiness of the application", "microprofile_health_readiness",
                         "The Readiness check of this application"));
 
         // Startup
-        paths.addPathItem(
-                startupPath,
-                createHealthEndpoint(
-                        "MicroProfile Health - Startup Endpoint",
+        paths.addPathItem(startupPath,
+                createHealthEndpoint("MicroProfile Health - Startup Endpoint",
                         "Startup checks are an used to tell when the application has started",
-                        "Check the startup of the application",
-                        "microprofile_health_startup",
+                        "Check the startup of the application", "microprofile_health_startup",
                         "The Startup check of this application"));
     }
 
     /**
      * Creates a {@link PathItem} containing the endpoint definition and GET {@link Operation} for health endpoints.
      *
-     * @param endpointDescription The description for the endpoint definition
-     * @param endpointSummary The summary for the endpoint definition
-     * @param operationDescription The description for the operation definition
-     * @param operationId The operation-id for the operation definition
-     * @param operationSummary The summary for the operation definition
+     * @param endpointDescription
+     *        The description for the endpoint definition
+     * @param endpointSummary
+     *        The summary for the endpoint definition
+     * @param operationDescription
+     *        The description for the operation definition
+     * @param operationId
+     *        The operation-id for the operation definition
+     * @param operationSummary
+     *        The summary for the operation definition
      */
-    private PathItem createHealthEndpoint(
-            String endpointDescription,
-            String endpointSummary,
-            String operationDescription,
-            String operationId,
-            String operationSummary) {
-        final Content content = OASFactory.createContent()
-                .addMediaType(
-                        "application/json",
-                        OASFactory.createMediaType()
-                                .schema(OASFactory.createSchema().ref("#/components/schemas/" + HEALTH_RESPONSE_SCHEMA_NAME)));
+    private PathItem createHealthEndpoint(String endpointDescription, String endpointSummary,
+            String operationDescription, String operationId, String operationSummary) {
+        final Content content = OASFactory.createContent().addMediaType("application/json", OASFactory.createMediaType()
+                .schema(OASFactory.createSchema().ref("#/components/schemas/" + HEALTH_RESPONSE_SCHEMA_NAME)));
 
         final APIResponses responses = OASFactory.createAPIResponses()
-                .addAPIResponse(
-                        "200",
-                        OASFactory.createAPIResponse().description("OK").content(content))
-                .addAPIResponse(
-                        "503",
+                .addAPIResponse("200", OASFactory.createAPIResponse().description("OK").content(content))
+                .addAPIResponse("503",
                         OASFactory.createAPIResponse().description("Service Unavailable").content(content))
-                .addAPIResponse(
-                        "500",
+                .addAPIResponse("500",
                         OASFactory.createAPIResponse().description("Internal Server Error").content(content));
 
-        final Operation getOperation = OASFactory.createOperation()
-                .operationId(operationId)
-                .description(operationDescription)
-                .tags(MICROPROFILE_HEALTH_TAG)
-                .summary(operationSummary)
+        final Operation getOperation = OASFactory.createOperation().operationId(operationId)
+                .description(operationDescription).tags(MICROPROFILE_HEALTH_TAG).summary(operationSummary)
                 .responses(responses);
 
-        return OASFactory.createPathItem()
-                .description(endpointDescription)
-                .summary(endpointSummary)
-                .GET(getOperation);
+        return OASFactory.createPathItem().description(endpointDescription).summary(endpointSummary).GET(getOperation);
     }
 }

@@ -34,22 +34,19 @@ import io.restassured.RestAssured;
 public class BasicGenericTypesHandlingTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
-                    archive.addClasses(AbstractResource.class, TestResource.class, Input.class, Output.class,
-                            TestMessageBodyReader.class, TestMessageBodyWriter.class);
-                    return archive;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
+            archive.addClasses(AbstractResource.class, TestResource.class, Input.class, Output.class,
+                    TestMessageBodyReader.class, TestMessageBodyWriter.class);
+            return archive;
+        }
+    });
 
     @Test
     public void test() {
-        RestAssured.with().body("hello").contentType("text/test").post("/test")
-                .then()
-                .statusCode(200)
+        RestAssured.with().body("hello").contentType("text/test").post("/test").then().statusCode(200)
                 .body(Matchers.equalTo("out / hello"));
     }
 
@@ -134,7 +131,8 @@ public class BasicGenericTypesHandlingTest {
     public static class TestMessageBodyWriter implements ServerMessageBodyWriter<Object> {
 
         @Override
-        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+                MediaType mediaType) {
             return genericType.getTypeName().equals(Output.class.getName());
         }
 

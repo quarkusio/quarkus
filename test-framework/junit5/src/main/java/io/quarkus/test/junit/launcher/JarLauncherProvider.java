@@ -46,12 +46,9 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
             launcher.init(new DefaultJarInitContext(
                     config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                     config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
-                    testConfig.waitTime(),
-                    testConfig.integrationTestProfile(),
-                    TestConfigUtil.argLineValues(testConfig.argLine().orElse("")),
-                    testConfig.env(),
-                    context.devServicesLaunchResult(),
-                    context.buildOutputDirectory().resolve(pathStr)));
+                    testConfig.waitTime(), testConfig.integrationTestProfile(),
+                    TestConfigUtil.argLineValues(testConfig.argLine().orElse("")), testConfig.env(),
+                    context.devServicesLaunchResult(), context.buildOutputDirectory().resolve(pathStr)));
             return launcher;
         } else {
             throw new IllegalStateException("The path of the native binary could not be determined");
@@ -62,9 +59,9 @@ public class JarLauncherProvider implements ArtifactLauncherProvider {
 
         private final Path jarPath;
 
-        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
-                List<String> argLine, Map<String, String> env,
-                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult, Path jarPath) {
+        DefaultJarInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile, List<String> argLine,
+                Map<String, String> env, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult,
+                Path jarPath) {
             super(httpPort, httpsPort, waitTime, testProfile, argLine, env, devServicesLaunchResult);
             this.jarPath = jarPath;
         }

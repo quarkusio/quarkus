@@ -16,10 +16,8 @@ class DefaultInitContextBase {
     private final Map<String, String> env;
     private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
-    DefaultInitContextBase(int httpPort, int httpsPort, Duration waitTime, String testProfile,
-            List<String> argLine,
-            Map<String, String> env,
-            ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+    DefaultInitContextBase(int httpPort, int httpsPort, Duration waitTime, String testProfile, List<String> argLine,
+            Map<String, String> env, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
         this.httpPort = httpPort;
         this.httpsPort = httpsPort;
         this.waitTime = waitTime;

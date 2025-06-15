@@ -26,7 +26,8 @@ public class KotlinCompilationProvider implements CompilationProvider {
 
     private static final Logger log = Logger.getLogger(KotlinCompilationProvider.class);
 
-    // see: https://github.com/JetBrains/kotlin/blob/v1.3.72/libraries/tools/kotlin-maven-plugin/src/main/java/org/jetbrains/kotlin/maven/KotlinCompileMojoBase.java#L181
+    // see:
+    // https://github.com/JetBrains/kotlin/blob/v1.3.72/libraries/tools/kotlin-maven-plugin/src/main/java/org/jetbrains/kotlin/maven/KotlinCompileMojoBase.java#L181
     private final static Pattern OPTION_PATTERN = Pattern.compile("([^:]+):([^=]+)=(.*)");
     private static final String KOTLIN_PACKAGE = "org.jetbrains.kotlin";
     private static final String KOTLIN_PROVIDER_KEY = "kotlin";
@@ -61,7 +62,8 @@ public class KotlinCompilationProvider implements CompilationProvider {
                 }
                 String pluginId = matcher.group(1);
                 if (!pluginId.contains(".")) {
-                    // convert the plugin name to the plugin id by simply removing the dash and adding the kotlin package
+                    // convert the plugin name to the plugin id by simply removing the dash and adding the kotlin
+                    // package
                     // this seems to be the appropriate way of doing things for the plugins that were checked
                     pluginId = KOTLIN_PACKAGE + "." + pluginId.replace("-", "");
                 }
@@ -125,8 +127,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
             if (severity.isError()) {
                 if ((location != null) && (location.getLineContent() != null)) {
                     errors.add(String.format("%s%n%s:%d:%d%nReason: %s", location.getLineContent(), location.getPath(),
-                            location.getLine(),
-                            location.getColumn(), s));
+                            location.getLine(), location.getColumn(), s));
                 } else {
                     errors.add(s);
                 }

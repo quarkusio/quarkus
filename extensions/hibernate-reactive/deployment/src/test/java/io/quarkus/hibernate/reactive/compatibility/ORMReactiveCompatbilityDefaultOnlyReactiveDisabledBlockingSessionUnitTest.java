@@ -13,16 +13,17 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 
-public class ORMReactiveCompatbilityDefaultOnlyReactiveDisabledBlockingSessionUnitTest extends CompatibilityUnitTestBase {
+public class ORMReactiveCompatbilityDefaultOnlyReactiveDisabledBlockingSessionUnitTest
+        extends CompatibilityUnitTestBase {
 
-    // We disable the blocking data source but keep the persistence unit by using the quarkus.hibernate-orm.blocking property
+    // We disable the blocking data source but keep the persistence unit by using the quarkus.hibernate-orm.blocking
+    // property
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hero.class)
-                    .addAsResource("complexMultilineImports.sql", "import.sql"))
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Hero.class).addAsResource("complexMultilineImports.sql", "import.sql"))
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
             .withConfigurationResource("application-unittest-onlyreactive.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.hibernate-orm.blocking", "false")

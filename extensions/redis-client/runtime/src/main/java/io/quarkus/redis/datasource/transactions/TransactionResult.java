@@ -28,11 +28,14 @@ public interface TransactionResult extends Iterable<Object> {
     boolean isEmpty();
 
     /**
-     * Returns the response at the specified position in this {@link TransactionResult}.
-     * It contains the result of the commands executed at the same position in the transaction.
+     * Returns the response at the specified position in this {@link TransactionResult}. It contains the result of the
+     * commands executed at the same position in the transaction.
      *
-     * @param index index of the element to return
-     * @param <T> the expected type
+     * @param index
+     *        index of the element to return
+     * @param <T>
+     *        the expected type
+     *
      * @return the element at the specified position in this {@link TransactionResult}
      */
     <T> T get(int index);

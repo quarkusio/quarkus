@@ -49,8 +49,7 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     public QuarkusPluginExtension(Project project) {
         super(project);
 
-        this.cleanupBuildOutput = project.getObjects().property(Boolean.class)
-                .convention(true);
+        this.cleanupBuildOutput = project.getObjects().property(Boolean.class).convention(true);
         this.cacheLargeArtifacts = project.getObjects().property(Boolean.class)
                 .convention(!System.getenv().containsKey("CI"));
         this.codeGenerationProviders = project.getObjects().listProperty(String.class)
@@ -75,8 +74,8 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     /**
-     * Whether the build output, build/*-runner[.jar] and build/quarkus-app, for other package types than the
-     * currently configured one are removed, default is 'true'.
+     * Whether the build output, build/*-runner[.jar] and build/quarkus-app, for other package types than the currently
+     * configured one are removed, default is 'true'.
      */
     public Property<Boolean> getCleanupBuildOutput() {
         return cleanupBuildOutput;
@@ -87,8 +86,8 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     /**
-     * Whether large build artifacts, like uber-jar and native runners, are cached. Defaults to 'false' if the 'CI' environment
-     * variable is set, otherwise defaults to 'true'.
+     * Whether large build artifacts, like uber-jar and native runners, are cached. Defaults to 'false' if the 'CI'
+     * environment variable is set, otherwise defaults to 'true'.
      */
     public Property<Boolean> getCacheLargeArtifacts() {
         return cacheLargeArtifacts;
@@ -115,8 +114,8 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     }
 
     /**
-     * The identifiers of the code generation providers, only needed if using a customer extension that provides its own code
-     * generator.
+     * The identifiers of the code generation providers, only needed if using a customer extension that provides its own
+     * code generator.
      */
     public ListProperty<String> getCodeGenerationProviders() {
         return codeGenerationProviders;
@@ -153,8 +152,10 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     public Set<File> combinedOutputSourceDirs() {
         Set<File> sourcesDirs = new LinkedHashSet<>();
         SourceSetContainer sourceSets = getSourceSets();
-        sourcesDirs.addAll(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
-        sourcesDirs.addAll(sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
+        sourcesDirs
+                .addAll(sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
+        sourcesDirs
+                .addAll(sourceSets.getByName(SourceSet.TEST_SOURCE_SET_NAME).getOutput().getClassesDirs().getFiles());
         return sourcesDirs;
     }
 
@@ -177,7 +178,8 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     /**
      * Adds an action to configure the {@code JavaForkOptions} to build a Quarkus application.
      *
-     * @param action configuration action
+     * @param action
+     *        configuration action
      */
     @SuppressWarnings("unused")
     public void buildForkOptions(Action<? super JavaForkOptions> action) {
@@ -187,7 +189,8 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     /**
      * Adds an action to configure the {@code JavaForkOptions} to generate Quarkus code.
      *
-     * @param action configuration action
+     * @param action
+     *        configuration action
      */
     @SuppressWarnings("unused")
     public void codeGenForkOptions(Action<? super JavaForkOptions> action) {
@@ -197,7 +200,9 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
     /**
      * Returns the last file from the specified {@link FileCollection}.
      *
-     * @param fileCollection the collection of files present in the directory
+     * @param fileCollection
+     *        the collection of files present in the directory
+     *
      * @return result returns the last file
      */
     public static File getLastFile(FileCollection fileCollection) {
@@ -234,7 +239,8 @@ public abstract class QuarkusPluginExtension extends AbstractQuarkusExtension {
         }
         if (classesDir == null) {
             final SourceSet mainSourceSet = getSourceSets().getByName(SourceSet.MAIN_SOURCE_SET_NAME);
-            final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask.getTemporaryDir(), false);
+            final String classesPath = QuarkusGradleUtils.getClassesDir(mainSourceSet, jarTask.getTemporaryDir(),
+                    false);
             if (classesPath != null) {
                 classesDir = Paths.get(classesPath);
             }

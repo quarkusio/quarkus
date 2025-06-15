@@ -42,11 +42,8 @@ public final class AccessTokenRequestFilterGenerator {
                 new ClientNameAndExchangeToken(instance.getClientName(), instance.exchangeTokenActivated()), i -> {
                     var adaptor = new GeneratedBeanGizmoAdaptor(generatedBeanProducer);
                     String className = createUniqueClassName(i);
-                    try (ClassCreator classCreator = ClassCreator.builder()
-                            .className(className)
-                            .superClass(requestFilterClass)
-                            .classOutput(adaptor)
-                            .build()) {
+                    try (ClassCreator classCreator = ClassCreator.builder().className(className)
+                            .superClass(requestFilterClass).classOutput(adaptor).build()) {
                         classCreator.addAnnotation(Priority.class).add("value", AUTHENTICATION);
                         classCreator.addAnnotation(Singleton.class);
 
@@ -66,10 +63,8 @@ public final class AccessTokenRequestFilterGenerator {
                         }
                     }
                     unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(className));
-                    reflectiveClassProducer
-                            .produce(ReflectiveClassBuildItem.builder(className)
-                                    .reason(getClass().getName())
-                                    .methods().fields().constructors().build());
+                    reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(className)
+                            .reason(getClass().getName()).methods().fields().constructors().build());
                     return className;
                 });
     }

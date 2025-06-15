@@ -21,7 +21,7 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
     @PostConstruct
     public void check() {
         if (LaunchMode.current() != LaunchMode.TEST) {
-            //paranoid check
+            // paranoid check
             throw new RuntimeException("TestAuthController can only be used in tests");
         }
     }
@@ -34,8 +34,8 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
     private volatile boolean isPathBasedIdentity = false;
 
     /**
-     * A request scoped delegate that allows the system to function as normal when
-     * the user has not been explicitly overridden
+     * A request scoped delegate that allows the system to function as normal when the user has not been explicitly
+     * overridden
      */
     @Inject
     DelegateSecurityIdentityAssociation delegate;
@@ -70,10 +70,10 @@ public class TestIdentityAssociation extends SecurityIdentityAssociation {
 
     @Override
     public SecurityIdentity getIdentity() {
-        //we check the underlying identity first
-        //in most cases this will have been set by the TestHttpAuthenticationMechanism
-        //this means that all the usual auth process will run, including augmentors and
-        //the identity ends up in the routing context
+        // we check the underlying identity first
+        // in most cases this will have been set by the TestHttpAuthenticationMechanism
+        // this means that all the usual auth process will run, including augmentors and
+        // the identity ends up in the routing context
         SecurityIdentity underlying = delegate.getIdentity();
         if (underlying.isAnonymous()) {
             if (testIdentity != null && !isPathBasedIdentity) {

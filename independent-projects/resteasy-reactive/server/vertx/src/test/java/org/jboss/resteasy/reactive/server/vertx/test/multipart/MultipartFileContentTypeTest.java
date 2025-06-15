@@ -27,18 +27,16 @@ public class MultipartFileContentTypeTest extends AbstractMultipartTest {
     private static final Path uploadDir = Paths.get("file-uploads");
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setDeleteUploadedFilesOnEnd(false)
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setDeleteUploadedFilesOnEnd(false)
             .setUploadPath(uploadDir)
             .setFileContentTypes(List.of(MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_SVG_XML))
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FormDataBase.class, OtherPackageFormDataBase.class, FormData.class, Status.class,
-                                    OtherFormData.class, FormDataSameFileName.class,
-                                    OtherFormDataBase.class,
-                                    MultipartResource.class, OtherMultipartResource.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(FormDataBase.class,
+                            OtherPackageFormDataBase.class, FormData.class, Status.class, OtherFormData.class,
+                            FormDataSameFileName.class, OtherFormDataBase.class, MultipartResource.class,
+                            OtherMultipartResource.class);
                 }
 
             });
@@ -60,11 +58,7 @@ public class MultipartFileContentTypeTest extends AbstractMultipartTest {
         RestAssured.given()
                 .multiPart("octetStream", null, Files.readAllBytes(FILE.toPath()), MediaType.APPLICATION_OCTET_STREAM)
                 .multiPart("svgXml", null, Files.readAllBytes(FILE.toPath()), MediaType.APPLICATION_SVG_XML)
-                .accept("text/plain")
-                .when()
-                .post("/multipart/optional")
-                .then()
-                .statusCode(200);
+                .accept("text/plain").when().post("/multipart/optional").then().statusCode(200);
 
         // ensure that the 2 uploaded files where created on disk
         Assertions.assertEquals(2, uploadDir.toFile().listFiles().length);

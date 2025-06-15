@@ -8,8 +8,7 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Build Item recording all the methods that have been effectively annotated with
- * {@code @PreAuthorize}
+ * Build Item recording all the methods that have been effectively annotated with {@code @PreAuthorize}
  */
 public final class SpringPreAuthorizeAnnotatedMethodBuildItem extends SimpleBuildItem {
 

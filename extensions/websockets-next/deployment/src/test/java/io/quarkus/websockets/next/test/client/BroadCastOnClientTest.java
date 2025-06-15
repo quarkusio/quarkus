@@ -15,11 +15,9 @@ import io.quarkus.websockets.next.WebSocketClientException;
 public class BroadCastOnClientTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
-            })
-            .setExpectedException(WebSocketClientException.class, true);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
+    }).setExpectedException(WebSocketClientException.class, true);
 
     @Test
     void testInvalidBroadcast() {

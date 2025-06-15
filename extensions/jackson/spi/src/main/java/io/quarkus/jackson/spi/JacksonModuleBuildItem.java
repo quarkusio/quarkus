@@ -11,9 +11,7 @@ import java.util.Set;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * BuildItem used to create a Jackson SimpleModule for the purpose of registering
- * serializers and deserializers
- *
+ * BuildItem used to create a Jackson SimpleModule for the purpose of registering serializers and deserializers
  * Serializers and deserializers MUST contain a public no-args constructor
  */
 public final class JacksonModuleBuildItem extends MultiBuildItem {

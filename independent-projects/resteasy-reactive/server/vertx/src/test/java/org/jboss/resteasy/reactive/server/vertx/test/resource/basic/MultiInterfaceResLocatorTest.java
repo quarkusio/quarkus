@@ -21,25 +21,26 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Multi Interface Res Locator Test")
 public class MultiInterfaceResLocatorTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(MultiInterfaceResLocatorIntf1.class);
-                    war.addClass(MultiInterfaceResLocatorIntf2.class);
-                    war.addClasses(PortProviderUtil.class, MultiInterfaceResLocatorResource.class,
-                            MultiInterfaceResLocatorSubresource.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClass(MultiInterfaceResLocatorIntf1.class);
+            war.addClass(MultiInterfaceResLocatorIntf2.class);
+            war.addClasses(PortProviderUtil.class, MultiInterfaceResLocatorResource.class,
+                    MultiInterfaceResLocatorSubresource.class);
+            return war;
+        }
+    });
 
     private String generateURL(String path) {
         return PortProviderUtil.generateURL(path, MultiInterfaceResLocatorTest.class.getSimpleName());
@@ -47,6 +48,7 @@ public class MultiInterfaceResLocatorTest {
 
     /**
      * @tpTestDetails Test for resource with more interfaces.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

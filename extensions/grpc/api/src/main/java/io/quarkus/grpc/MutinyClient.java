@@ -8,7 +8,6 @@ import io.grpc.stub.AbstractStub;
 public interface MutinyClient<T extends AbstractStub<T>> {
 
     /**
-     *
      * @return the underlying stub
      */
     T getStub();

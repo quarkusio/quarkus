@@ -36,17 +36,14 @@ public class DisableHttpPortTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
-                    .addAsResource(new StringAsset(configuration), "application.properties")
-                    .addAsResource(new File("target/certs/ssl-test.key"), "server-key.key")
-                    .addAsResource(new File("target/certs/ssl-test.crt"), "server-cert.crt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyBean.class).addAsResource(new StringAsset(configuration), "application.properties")
+            .addAsResource(new File("target/certs/ssl-test.key"), "server-key.key")
+            .addAsResource(new File("target/certs/ssl-test.crt"), "server-cert.crt"));
 
     @BeforeAll
     public static void setupRestAssured() {
-        RestAssured
-                .trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret");
+        RestAssured.trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret");
     }
 
     @AfterAll
@@ -56,8 +53,7 @@ public class DisableHttpPortTest {
 
     @Test
     public void testDisabledHttpPortForwardsRequest() {
-        given().config(newConfig().redirect(redirectConfig().followRedirects(false)))
-                .get("/ssl").then().statusCode(301)
+        given().config(newConfig().redirect(redirectConfig().followRedirects(false))).get("/ssl").then().statusCode(301)
                 .header("Location", is("https://localhost:8444/ssl"));
     }
 

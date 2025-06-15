@@ -27,11 +27,8 @@ import io.smallrye.mutiny.Uni;
 public class AsyncHeaderTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class)
-                    .addAsResource(
-                            new StringAsset(setUrlForClass(Client.class)),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class)
+                    .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties"));
 
     @RestClient
     Client client;
@@ -39,16 +36,14 @@ public class AsyncHeaderTest {
     @Test
     void shouldSendHeaderWithUni() {
         String headerValue = "jaka piekna i dluga wartosc headera";
-        String result = client.uniGet(headerValue)
-                .await().atMost(Duration.ofSeconds(10));
+        String result = client.uniGet(headerValue).await().atMost(Duration.ofSeconds(10));
         assertThat(result).isEqualTo(String.format("passedHeader:%s", headerValue));
     }
 
     @Test
     void shouldSendHeaderWithCompletionStage() throws ExecutionException, InterruptedException, TimeoutException {
         String headerValue = "jaka piekna i dluga wartosc headera";
-        String result = client.completionStageGet(headerValue)
-                .toCompletableFuture().get(10, TimeUnit.SECONDS);
+        String result = client.completionStageGet(headerValue).toCompletableFuture().get(10, TimeUnit.SECONDS);
         assertThat(result).isEqualTo(String.format("passedHeader:%s", headerValue));
     }
 

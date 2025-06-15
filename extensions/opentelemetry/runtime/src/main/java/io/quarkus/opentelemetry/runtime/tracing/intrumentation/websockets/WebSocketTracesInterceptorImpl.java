@@ -32,11 +32,8 @@ public final class WebSocketTracesInterceptorImpl implements WebSocketTracesInte
 
     @Override
     public Map<String, Object> onConnectionOpened(String route, EndpointKind endpointKind) {
-        var span = tracer.spanBuilder("OPEN " + route)
-                .setSpanKind(getSpanKind(endpointKind))
-                .addLink(previousSpanContext())
-                .setAttribute(UrlAttributes.URL_PATH, route)
-                .startSpan();
+        var span = tracer.spanBuilder("OPEN " + route).setSpanKind(getSpanKind(endpointKind))
+                .addLink(previousSpanContext()).setAttribute(UrlAttributes.URL_PATH, route).startSpan();
         try (var ignored = span.makeCurrent()) {
             return Map.of(CONNECTION_OPENED_SPAN_CTX, span.getSpanContext());
         } finally {
@@ -47,38 +44,25 @@ public final class WebSocketTracesInterceptorImpl implements WebSocketTracesInte
     @Override
     public void onConnectionOpeningFailed(Throwable cause, String route, EndpointKind endpointKind,
             Map<String, Object> connectionOpenedContext) {
-        tracer.spanBuilder("OPEN " + route)
-                .setSpanKind(getSpanKind(endpointKind))
-                .addLink(getOnOpenSpanContext(connectionOpenedContext))
-                .setAttribute(UrlAttributes.URL_PATH, route)
-                .startSpan()
-                .recordException(cause)
-                .end();
+        tracer.spanBuilder("OPEN " + route).setSpanKind(getSpanKind(endpointKind))
+                .addLink(getOnOpenSpanContext(connectionOpenedContext)).setAttribute(UrlAttributes.URL_PATH, route)
+                .startSpan().recordException(cause).end();
     }
 
     @Override
     public void onConnectionClosed(WebSocketEndpointContext ctx) {
-        tracer.spanBuilder("CLOSE " + ctx.route())
-                .setSpanKind(getSpanKind(ctx))
-                .addLink(getOnOpenSpanContext(ctx))
+        tracer.spanBuilder("CLOSE " + ctx.route()).setSpanKind(getSpanKind(ctx)).addLink(getOnOpenSpanContext(ctx))
                 .setAttribute(CONNECTION_ID_ATTR_KEY, ctx.connectionId())
-                .setAttribute(UrlAttributes.URL_PATH, ctx.route())
-                .setAttribute(getTargetIdKey(ctx), ctx.targetId())
-                .startSpan()
-                .end();
+                .setAttribute(UrlAttributes.URL_PATH, ctx.route()).setAttribute(getTargetIdKey(ctx), ctx.targetId())
+                .startSpan().end();
     }
 
     @Override
     public void onConnectionClosingFailed(Throwable throwable, WebSocketEndpointContext ctx) {
-        tracer.spanBuilder("CLOSE " + ctx.route())
-                .setSpanKind(getSpanKind(ctx))
-                .addLink(getOnOpenSpanContext(ctx))
+        tracer.spanBuilder("CLOSE " + ctx.route()).setSpanKind(getSpanKind(ctx)).addLink(getOnOpenSpanContext(ctx))
                 .setAttribute(CONNECTION_ID_ATTR_KEY, ctx.connectionId())
-                .setAttribute(UrlAttributes.URL_PATH, ctx.route())
-                .setAttribute(getTargetIdKey(ctx), ctx.targetId())
-                .startSpan()
-                .recordException(throwable)
-                .end();
+                .setAttribute(UrlAttributes.URL_PATH, ctx.route()).setAttribute(getTargetIdKey(ctx), ctx.targetId())
+                .startSpan().recordException(throwable).end();
     }
 
     private static SpanContext getOnOpenSpanContext(WebSocketEndpointContext ctx) {

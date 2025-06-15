@@ -31,8 +31,8 @@ import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
  * <li>Add operation descriptions based on the associated Java method name handling the operation</li>
  * <li>Add operation tags based on the associated Java class of the operation</li>
  * <li>Add security requirements based on discovered {@link jakarta.annotation.security.RolesAllowed},
- * {@link io.quarkus.security.PermissionsAllowed}, and {@link io.quarkus.security.Authenticated}
- * annotations. Also add the expected security responses if needed.</li>
+ * {@link io.quarkus.security.PermissionsAllowed}, and {@link io.quarkus.security.Authenticated} annotations. Also add
+ * the expected security responses if needed.</li>
  * <li>Add Bad Request (400) response for invalid input (if none is provided)</li>
  * </ul>
  */
@@ -50,10 +50,9 @@ public class OperationFilter implements OASFilter {
     private final boolean alwaysIncludeScopesValidForScheme;
 
     public OperationFilter(Map<String, ClassAndMethod> classNameMap,
-            Map<String, List<String>> rolesAllowedMethodReferences,
-            List<String> authenticatedMethodReferences,
-            String defaultSecuritySchemeName,
-            boolean doAutoTag, boolean doAutoOperation, boolean doAutoBadRequest, boolean alwaysIncludeScopesValidForScheme) {
+            Map<String, List<String>> rolesAllowedMethodReferences, List<String> authenticatedMethodReferences,
+            String defaultSecuritySchemeName, boolean doAutoTag, boolean doAutoOperation, boolean doAutoBadRequest,
+            boolean alwaysIncludeScopesValidForScheme) {
 
         this.classNameMap = Objects.requireNonNull(classNameMap);
         this.rolesAllowedMethodReferences = Objects.requireNonNull(rolesAllowedMethodReferences);
@@ -71,20 +70,12 @@ public class OperationFilter implements OASFilter {
         String schemeName = securityScheme.map(Map.Entry::getKey).orElse(defaultSecuritySchemeName);
         boolean scopesValidForScheme = alwaysIncludeScopesValidForScheme || securityScheme.map(Map.Entry::getValue)
                 .map(SecurityScheme::getType)
-                .map(Set.of(SecurityScheme.Type.OAUTH2, SecurityScheme.Type.OPENIDCONNECT)::contains)
-                .orElse(false);
+                .map(Set.of(SecurityScheme.Type.OAUTH2, SecurityScheme.Type.OPENIDCONNECT)::contains).orElse(false);
         Map<String, APIResponse> defaultSecurityErrors = getSecurityResponses();
 
-        Optional.ofNullable(openAPI.getPaths())
-                .map(Paths::getPathItems)
-                .map(Map::entrySet)
-                .map(Collection::stream)
-                .orElseGet(Stream::empty)
-                .map(Map.Entry::getValue)
-                .map(PathItem::getOperations)
-                .filter(Objects::nonNull)
-                .flatMap(operations -> operations.entrySet().stream())
-                .forEach(operation -> {
+        Optional.ofNullable(openAPI.getPaths()).map(Paths::getPathItems).map(Map::entrySet).map(Collection::stream)
+                .orElseGet(Stream::empty).map(Map.Entry::getValue).map(PathItem::getOperations).filter(Objects::nonNull)
+                .flatMap(operations -> operations.entrySet().stream()).forEach(operation -> {
                     final String methodRef = methodRef(operation.getValue());
 
                     if (methodRef != null) {
@@ -109,12 +100,12 @@ public class OperationFilter implements OASFilter {
             return;
         }
 
-        if (doAutoBadRequest
-                && isPOSTorPUT(operation) // Only applies to PUT and POST
+        if (doAutoBadRequest && isPOSTorPUT(operation) // Only applies to PUT and POST
                 && hasBody(operation) // Only applies to input
                 && !isStringOrNumberOrBoolean(operation, openAPI) // Except String, Number and boolean
                 && !isFileUpload(operation, openAPI)) { // and file
-            if (!operation.getValue().getResponses().hasAPIResponse("400")) { // Only when the user has not already added one
+            if (!operation.getValue().getResponses().hasAPIResponse("400")) { // Only when the user has not already
+                                                                              // added one
                 operation.getValue().getResponses().addAPIResponse("400",
                         OASFactory.createAPIResponse().description("Bad Request"));
             }
@@ -193,8 +184,7 @@ public class OperationFilter implements OASFilter {
         }
         if (isObject(schema) && schema.getProperties() != null) {
             // Check if it has a "file" property with type "string" and format "binary"
-            return schema.getProperties().values().stream()
-                    .anyMatch(prop -> isString(prop) && isBinaryFormat(prop));
+            return schema.getProperties().values().stream().anyMatch(prop -> isString(prop) && isBinaryFormat(prop));
         }
         if (schema.getRef() != null && components != null) {
             // Resolve reference and check recursively
@@ -246,12 +236,8 @@ public class OperationFilter implements OASFilter {
     }
 
     private String splitCamelCase(String s) {
-        return s.replaceAll(
-                String.format("%s|%s|%s",
-                        "(?<=[A-Z])(?=[A-Z][a-z])",
-                        "(?<=[^A-Z])(?=[A-Z])",
-                        "(?<=[A-Za-z])(?=[^A-Za-z])"),
-                " ");
+        return s.replaceAll(String.format("%s|%s|%s", "(?<=[A-Z])(?=[A-Z][a-z])", "(?<=[^A-Z])(?=[A-Z])",
+                "(?<=[A-Za-z])(?=[^A-Za-z])"), " ");
     }
 
     private String capitalizeFirstLetter(String str) {
@@ -261,8 +247,8 @@ public class OperationFilter implements OASFilter {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
-    private void maybeAddSecurityRequirement(Operation operation, String methodRef, String schemeName, boolean allowScopes,
-            Map<String, APIResponse> defaultSecurityErrors) {
+    private void maybeAddSecurityRequirement(Operation operation, String methodRef, String schemeName,
+            boolean allowScopes, Map<String, APIResponse> defaultSecurityErrors) {
         if (rolesAllowedMethodReferences.containsKey(methodRef)) {
             List<String> scopes = rolesAllowedMethodReferences.get(methodRef);
             addSecurityRequirement(operation, schemeName, allowScopes ? scopes : Collections.emptyList());
@@ -275,12 +261,8 @@ public class OperationFilter implements OASFilter {
 
     private Optional<Map.Entry<String, SecurityScheme>> getSecurityScheme(OpenAPI openAPI) {
         // Might be set in annotations
-        return Optional.ofNullable(openAPI.getComponents())
-                .map(Components::getSecuritySchemes)
-                .map(Map::entrySet)
-                .map(Collection::stream)
-                .orElseGet(Stream::empty)
-                .findFirst();
+        return Optional.ofNullable(openAPI.getComponents()).map(Components::getSecuritySchemes).map(Map::entrySet)
+                .map(Collection::stream).orElseGet(Stream::empty).findFirst();
     }
 
     private void addSecurityRequirement(Operation operation, String schemeName, List<String> scopes) {
@@ -292,9 +274,7 @@ public class OperationFilter implements OASFilter {
     private void addDefaultSecurityResponses(Operation operation, Map<String, APIResponse> defaultSecurityErrors) {
         APIResponses responses = operation.getResponses();
 
-        defaultSecurityErrors.entrySet()
-                .stream()
-                .filter(e -> !responses.hasAPIResponse(e.getKey()))
+        defaultSecurityErrors.entrySet().stream().filter(e -> !responses.hasAPIResponse(e.getKey()))
                 .forEach(e -> responses.addAPIResponse(e.getKey(), e.getValue()));
     }
 

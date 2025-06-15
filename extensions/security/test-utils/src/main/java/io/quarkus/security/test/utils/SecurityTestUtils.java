@@ -50,7 +50,8 @@ public class SecurityTestUtils {
         }
     }
 
-    public static <T> void assertFailureFor(Uni<T> action, Class<? extends Exception> expectedException, AuthData authData) {
+    public static <T> void assertFailureFor(Uni<T> action, Class<? extends Exception> expectedException,
+            AuthData authData) {
         setUpAuth(authData);
         action.subscribe().with(new Consumer<T>() {
             @Override

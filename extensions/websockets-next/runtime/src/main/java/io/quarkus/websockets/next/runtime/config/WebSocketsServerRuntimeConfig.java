@@ -86,8 +86,9 @@ public interface WebSocketsServerRuntimeConfig {
 
         /**
          * Quarkus redirects HTTP handshake request to this URL if an HTTP upgrade is rejected due to the authorization
-         * failure. This configuration property takes effect when you secure endpoint with a standard security annotation.
-         * For example, the HTTP upgrade is secured if an endpoint class is annotated with the `@RolesAllowed` annotation.
+         * failure. This configuration property takes effect when you secure endpoint with a standard security
+         * annotation. For example, the HTTP upgrade is secured if an endpoint class is annotated with the
+         * `@RolesAllowed` annotation.
          */
         Optional<String> authFailureRedirectUrl();
 
@@ -96,8 +97,8 @@ public interface WebSocketsServerRuntimeConfig {
     interface DevMode {
 
         /**
-         * The limit of messages kept for a Dev UI connection. If less than zero then no messages are stored and sent to the Dev
-         * UI view.
+         * The limit of messages kept for a Dev UI connection. If less than zero then no messages are stored and sent to
+         * the Dev UI view.
          */
         @WithDefault("1000")
         long connectionMessagesLimit();

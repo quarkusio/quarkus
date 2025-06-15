@@ -21,11 +21,8 @@ public class LazyBasicMultiNonDefaultGroupTest extends AbstractLazyBasicTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionTestUtils.class)
-                    .addClass(MyEntity.class)
-                    .addClass(AccessDelegate.class)
-                    .addClass(AccessDelegateImpl.class))
+            .withApplicationRoot((jar) -> jar.addClass(TransactionTestUtils.class).addClass(MyEntity.class)
+                    .addClass(AccessDelegate.class).addClass(AccessDelegateImpl.class))
             .withConfigurationResource("application.properties");
 
     public LazyBasicMultiNonDefaultGroupTest() {
@@ -53,7 +50,8 @@ public class LazyBasicMultiNonDefaultGroupTest extends AbstractLazyBasicTest {
     private static class AccessDelegateImpl implements AccessDelegate {
 
         @Override
-        public long create(EntityManager entityManager, String eagerProperty1, String lazyProperty1, String lazyProperty2) {
+        public long create(EntityManager entityManager, String eagerProperty1, String lazyProperty1,
+                String lazyProperty2) {
             MyEntity myEntity = new MyEntity();
             myEntity.eagerProperty1 = eagerProperty1;
             myEntity.lazyProperty1 = lazyProperty1;
@@ -63,8 +61,8 @@ public class LazyBasicMultiNonDefaultGroupTest extends AbstractLazyBasicTest {
         }
 
         @Override
-        public void updateAllProperties(EntityManager entityManager, long entityId, String eagerProperty1, String lazyProperty1,
-                String lazyProperty2) {
+        public void updateAllProperties(EntityManager entityManager, long entityId, String eagerProperty1,
+                String lazyProperty1, String lazyProperty2) {
             MyEntity entity = entityManager.find(MyEntity.class, entityId);
             entity.eagerProperty1 = eagerProperty1;
             entity.lazyProperty1 = lazyProperty1;
@@ -93,9 +91,7 @@ public class LazyBasicMultiNonDefaultGroupTest extends AbstractLazyBasicTest {
 
         @Override
         public void testLazyLoadingAndPersistedValues(EntityManager entityManager, long entityId,
-                String expectedEagerProperty1,
-                String expectedLazyProperty1,
-                String expectedLazyProperty2) {
+                String expectedEagerProperty1, String expectedLazyProperty1, String expectedLazyProperty2) {
             MyEntity entity = entityManager.find(MyEntity.class, entityId);
             assertThat(entity).isNotNull();
             assertThat(Hibernate.isPropertyInitialized(entity, "eagerProperty1")).isTrue();

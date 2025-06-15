@@ -25,8 +25,7 @@ public interface SchedulerContext {
     default ScheduledInvoker createInvoker(String invokerClassName) {
         try {
             Class<? extends ScheduledInvoker> invokerClazz = (Class<? extends ScheduledInvoker>) Thread.currentThread()
-                    .getContextClassLoader()
-                    .loadClass(invokerClassName);
+                    .getContextClassLoader().loadClass(invokerClassName);
             return invokerClazz.getDeclaredConstructor().newInstance();
         } catch (InstantiationException | IllegalAccessException | ClassNotFoundException | NoSuchMethodException
                 | InvocationTargetException e) {

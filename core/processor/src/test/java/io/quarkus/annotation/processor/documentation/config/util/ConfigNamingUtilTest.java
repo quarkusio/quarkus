@@ -10,8 +10,8 @@ public class ConfigNamingUtilTest {
 
     @Test
     public void replaceNonAlphanumericByUnderscoresThenConvertToUpperCase() {
-        assertEquals("QUARKUS_DATASOURCE__DATASOURCE_NAME__JDBC_BACKGROUND_VALIDATION_INTERVAL",
-                ConfigNamingUtil.toEnvVarName("quarkus.datasource.\"datasource-name\".jdbc.background-validation-interval"));
+        assertEquals("QUARKUS_DATASOURCE__DATASOURCE_NAME__JDBC_BACKGROUND_VALIDATION_INTERVAL", ConfigNamingUtil
+                .toEnvVarName("quarkus.datasource.\"datasource-name\".jdbc.background-validation-interval"));
         assertEquals(
                 "QUARKUS_SECURITY_JDBC_PRINCIPAL_QUERY__NAMED_PRINCIPAL_QUERIES__BCRYPT_PASSWORD_MAPPER_ITERATION_COUNT_INDEX",
                 ConfigNamingUtil.toEnvVarName(

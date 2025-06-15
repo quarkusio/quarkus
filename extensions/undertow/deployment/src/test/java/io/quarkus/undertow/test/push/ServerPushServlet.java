@@ -13,8 +13,6 @@ public class ServerPushServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.newPushBuilder()
-                .path("pushed")
-                .push();
+        req.newPushBuilder().path("pushed").push();
     }
 }

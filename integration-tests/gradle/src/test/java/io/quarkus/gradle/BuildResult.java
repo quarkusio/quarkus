@@ -24,10 +24,8 @@ public class BuildResult {
     public static BuildResult of(File logFile) throws IOException {
         BuildResult result = new BuildResult();
         List<String> outputLines = Files.readAllLines(logFile.toPath());
-        result.setTasks(outputLines.stream()
-                .filter(l -> l.startsWith(TASK_RESULT_PREFIX))
-                .map(l -> l.replaceFirst(TASK_RESULT_PREFIX, "").trim())
-                .map(l -> l.split(" "))
+        result.setTasks(outputLines.stream().filter(l -> l.startsWith(TASK_RESULT_PREFIX))
+                .map(l -> l.replaceFirst(TASK_RESULT_PREFIX, "").trim()).map(l -> l.split(" "))
                 .collect(Collectors.toMap(p -> p[0], p -> {
                     if (p.length == 2) {
                         return p[1];

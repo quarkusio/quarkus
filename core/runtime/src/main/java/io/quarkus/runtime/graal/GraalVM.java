@@ -13,9 +13,8 @@ import io.quarkus.logging.Log;
 
 /**
  * Implements version parsing from the {@code com.oracle.svm.core.VM} property inspired by
- * {@code org.graalvm.home.impl.DefaultHomeFinder}.
- * This allows Quarkus to determine the GraalVM version used at build time without depending on
- * {@code org.graalvm.polyglot:polyglot}.
+ * {@code org.graalvm.home.impl.DefaultHomeFinder}. This allows Quarkus to determine the GraalVM version used at build
+ * time without depending on {@code org.graalvm.polyglot:polyglot}.
  */
 public final class GraalVM {
 
@@ -66,34 +65,34 @@ public final class GraalVM {
 
     public static class Version implements Comparable<Version> {
 
-        public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
-        public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
-        public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
-        public static final Version VERSION_25_0_0 = new Version("GraalVM 25.0.0", "25.0.0", "25", Distribution.GRAALVM);
+        public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17",
+                Distribution.GRAALVM);
+        public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21",
+                Distribution.GRAALVM);
+        public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24",
+                Distribution.GRAALVM);
+        public static final Version VERSION_25_0_0 = new Version("GraalVM 25.0.0", "25.0.0", "25",
+                Distribution.GRAALVM);
 
         // Temporarily work around https://github.com/quarkusio/quarkus/issues/36246,
         // till we have a consensus on how to move forward in
         // https://github.com/quarkusio/quarkus/issues/34161
-        protected static final Map<String, String> GRAAL_MAPPING = Map.of(
-                "21", "23.1",
-                "22", "24.0",
-                "23", "24.1",
-                "24", "24.2",
-                "25", "25.0");
+        protected static final Map<String, String> GRAAL_MAPPING = Map.of("21", "23.1", "22", "24.0", "23", "24.1",
+                "24", "24.2", "25", "25.0");
 
         /**
-         * The minimum version of GraalVM supported by Quarkus.
-         * Versions prior to this are expected to cause major issues.
+         * The minimum version of GraalVM supported by Quarkus. Versions prior to this are expected to cause major
+         * issues.
          */
         public static final Version MINIMUM = VERSION_23_0_0;
         /**
-         * The current version of GraalVM supported by Quarkus.
-         * This version is the one actively being tested and is expected to give the best experience.
+         * The current version of GraalVM supported by Quarkus. This version is the one actively being tested and is
+         * expected to give the best experience.
          */
         public static final Version CURRENT = VERSION_23_1_0;
         /**
-         * The minimum version of GraalVM officially supported by Quarkus.
-         * Versions prior to this are expected to work but are not given the same level of testing or priority.
+         * The minimum version of GraalVM officially supported by Quarkus. Versions prior to this are expected to work
+         * but are not given the same level of testing or priority.
          */
         public static final Version MINIMUM_SUPPORTED = CURRENT;
 
@@ -171,13 +170,8 @@ public final class GraalVM {
 
         @Override
         public String toString() {
-            return "Version{" +
-                    "version="
-                    + getVersionAsString() +
-                    ", fullVersion=" + fullVersion +
-                    ", distribution=" + distribution +
-                    ", javaVersion=" + javaVersion +
-                    '}';
+            return "Version{" + "version=" + getVersionAsString() + ", fullVersion=" + fullVersion + ", distribution="
+                    + distribution + ", javaVersion=" + javaVersion + '}';
         }
 
         public static Version getCurrent() {

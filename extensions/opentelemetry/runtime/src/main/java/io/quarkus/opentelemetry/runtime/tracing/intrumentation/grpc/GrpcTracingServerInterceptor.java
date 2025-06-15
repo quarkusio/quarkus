@@ -37,9 +37,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
     private final Instrumenter<GrpcRequest, Status> instrumenter;
 
     public GrpcTracingServerInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
-        InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(
-                openTelemetry,
-                INSTRUMENTATION_NAME,
+        InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(openTelemetry, INSTRUMENTATION_NAME,
                 new GrpcSpanNameExtractor());
 
         builder.setEnabled(!runtimeConfig.sdkDisabled());
@@ -56,8 +54,8 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
     }
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
-            final ServerCall<ReqT, RespT> call, final Metadata headers, final ServerCallHandler<ReqT, RespT> next) {
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(final ServerCall<ReqT, RespT> call,
+            final Metadata headers, final ServerCallHandler<ReqT, RespT> next) {
 
         GrpcRequest grpcRequest = GrpcRequest.server(call.getMethodDescriptor(), headers, call.getAttributes(),
                 call.getAuthority());
@@ -66,15 +64,17 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         if (shouldStart) {
             Context spanContext = instrumenter.start(parentContext, grpcRequest);
             Scope scope = spanContext.makeCurrent();
-            TracingServerCall<ReqT, RespT> tracingServerCall = new TracingServerCall<>(call, spanContext, scope, grpcRequest);
-            return new TracingServerCallListener<>(next.startCall(tracingServerCall, headers), spanContext, scope, grpcRequest);
+            TracingServerCall<ReqT, RespT> tracingServerCall = new TracingServerCall<>(call, spanContext, scope,
+                    grpcRequest);
+            return new TracingServerCallListener<>(next.startCall(tracingServerCall, headers), spanContext, scope,
+                    grpcRequest);
         }
 
         return next.startCall(call, headers);
     }
 
-    static class GrpcServerNetworkAttributesGetter implements NetworkAttributesGetter<GrpcRequest, Status>,
-            ServerAttributesGetter<GrpcRequest> {
+    static class GrpcServerNetworkAttributesGetter
+            implements NetworkAttributesGetter<GrpcRequest, Status>, ServerAttributesGetter<GrpcRequest> {
 
         @Override
         public String getServerAddress(GrpcRequest grpcRequest) {
@@ -87,15 +87,13 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         }
 
         @Override
-        public InetSocketAddress getNetworkLocalInetSocketAddress(
-                GrpcRequest grpcRequest, @Nullable Status status) {
+        public InetSocketAddress getNetworkLocalInetSocketAddress(GrpcRequest grpcRequest, @Nullable Status status) {
             // TODO: later version introduces TRANSPORT_ATTR_LOCAL_ADDR, might be a good idea to use it
             return null;
         }
 
         @Override
-        public InetSocketAddress getNetworkPeerInetSocketAddress(
-                GrpcRequest request, @Nullable Status status) {
+        public InetSocketAddress getNetworkPeerInetSocketAddress(GrpcRequest request, @Nullable Status status) {
             SocketAddress address = request.getPeerSocketAddress();
             if (address instanceof InetSocketAddress) {
                 return (InetSocketAddress) address;
@@ -125,11 +123,8 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         private final Scope scope;
         private final GrpcRequest grpcRequest;
 
-        protected TracingServerCallListener(
-                final ServerCall.Listener<ReqT> delegate,
-                final Context spanContext,
-                final Scope scope,
-                final GrpcRequest grpcRequest) {
+        protected TracingServerCallListener(final ServerCall.Listener<ReqT> delegate, final Context spanContext,
+                final Scope scope, final GrpcRequest grpcRequest) {
 
             super(delegate);
             this.scope = scope;
@@ -194,10 +189,7 @@ public class GrpcTracingServerInterceptor implements ServerInterceptor {
         private final Scope scope;
         private final GrpcRequest grpcRequest;
 
-        public TracingServerCall(
-                final ServerCall<ReqT, RespT> delegate,
-                final Context spanContext,
-                final Scope scope,
+        public TracingServerCall(final ServerCall<ReqT, RespT> delegate, final Context spanContext, final Scope scope,
                 final GrpcRequest grpcRequest) {
 
             super(delegate);

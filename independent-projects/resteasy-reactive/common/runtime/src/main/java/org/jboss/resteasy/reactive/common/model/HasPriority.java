@@ -7,8 +7,8 @@ public interface HasPriority {
     Integer priority();
 
     /**
-     * This comparator is used when a TreeMap is employed to order objects that have priority
-     * because TreeMap will only keep one key if multiple keys compare to the same value
+     * This comparator is used when a TreeMap is employed to order objects that have priority because TreeMap will only
+     * keep one key if multiple keys compare to the same value
      */
     class TreeMapComparator implements Comparator<HasPriority> {
 
@@ -31,8 +31,8 @@ public interface HasPriority {
             if (res != 0) {
                 return res;
             }
-            //what to do here
-            //they are functionally equal, but we don't want one to be discarded if there is a hash collision
+            // what to do here
+            // they are functionally equal, but we don't want one to be discarded if there is a hash collision
             return 1;
         }
     }

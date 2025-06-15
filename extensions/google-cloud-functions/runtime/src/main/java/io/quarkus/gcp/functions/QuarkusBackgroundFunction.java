@@ -26,7 +26,7 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
     static {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
-        if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock unit testing.
+        if (Application.currentApplication() == null) { // were we already bootstrapped? Needed for mock unit testing.
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
             try {
                 // For GCP functions, we need to set the TCCL to the QuarkusHttpFunction classloader then restore it.
@@ -74,7 +74,8 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
 
         if (selectedRawDelegate != null) {
             try {
-                Class<?> clazz = Class.forName(selectedRawDelegate, false, Thread.currentThread().getContextClassLoader());
+                Class<?> clazz = Class.forName(selectedRawDelegate, false,
+                        Thread.currentThread().getContextClassLoader());
                 rawDelegate = (RawBackgroundFunction) Arc.container().instance(clazz).get();
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException(e);
@@ -90,8 +91,8 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
 
         // TODO maybe we can check this at static init
         if ((delegate == null && rawDelegate == null) || (delegate != null && rawDelegate != null)) {
-            throw new IOException("We didn't found any BackgroundFunction or RawBackgroundFunction to run " +
-                    "(or there is multiple one and none selected inside your application.properties)");
+            throw new IOException("We didn't found any BackgroundFunction or RawBackgroundFunction to run "
+                    + "(or there is multiple one and none selected inside your application.properties)");
         }
 
         if (rawDelegate != null) {
@@ -107,8 +108,8 @@ public final class QuarkusBackgroundFunction implements RawBackgroundFunction {
                 Object eventObj = gson.fromJson(event, parameterType);
                 delegate.accept(eventObj, context);
             } catch (JsonParseException e) {
-                throw new RuntimeException("Could not parse received event payload into type "
-                        + parameterType.getCanonicalName(), e);
+                throw new RuntimeException(
+                        "Could not parse received event payload into type " + parameterType.getCanonicalName(), e);
             }
         }
     }

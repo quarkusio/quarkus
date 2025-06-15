@@ -49,7 +49,8 @@ public class Version implements CommandLine.IVersionProvider, Callable<Integer> 
         }
 
         final Properties props = new Properties();
-        final URL quarkusPropertiesUrl = Thread.currentThread().getContextClassLoader().getResource("quarkus.properties");
+        final URL quarkusPropertiesUrl = Thread.currentThread().getContextClassLoader()
+                .getResource("quarkus.properties");
         if (quarkusPropertiesUrl == null) {
             throw new RuntimeException("Failed to locate quarkus.properties on the classpath");
         }
@@ -73,7 +74,8 @@ public class Version implements CommandLine.IVersionProvider, Callable<Integer> 
 
         version = props.getProperty("quarkus-core-version");
         if (version == null) {
-            throw new RuntimeException("Failed to locate quarkus-core-version property in the bundled quarkus.properties");
+            throw new RuntimeException(
+                    "Failed to locate quarkus-core-version property in the bundled quarkus.properties");
         }
 
         return version;

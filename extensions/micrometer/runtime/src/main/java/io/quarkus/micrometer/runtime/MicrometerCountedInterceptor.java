@@ -17,9 +17,8 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.tuples.Functions;
 
 /**
- * Quarkus declared interceptor responsible for intercepting all methods
- * annotated with the {@link Counted} annotation to record a few counter
- * metrics about their execution status.
+ * Quarkus declared interceptor responsible for intercepting all methods annotated with the {@link Counted} annotation
+ * to record a few counter metrics about their execution status.
  *
  * @see Counted
  */
@@ -40,20 +39,19 @@ public class MicrometerCountedInterceptor {
     }
 
     /**
-     * Intercept methods annotated with the {@link Counted} annotation and expose a few counters about
-     * their execution status. By default, record both failed and successful attempts. If the
-     * {@link Counted#recordFailuresOnly()} is set to {@code true}, then record only
-     * failed attempts. In case of a failure, tags the counter with the simple name of the thrown
-     * exception.
-     *
+     * Intercept methods annotated with the {@link Counted} annotation and expose a few counters about their execution
+     * status. By default, record both failed and successful attempts. If the {@link Counted#recordFailuresOnly()} is
+     * set to {@code true}, then record only failed attempts. In case of a failure, tags the counter with the simple
+     * name of the thrown exception.
      * <p>
-     * When the annotated method returns a {@link CompletionStage} or any of its subclasses,
-     * the counters will be incremented only when the {@link CompletionStage} is completed.
-     * If completed exceptionally a failure is recorded, otherwise if
-     * {@link Counted#recordFailuresOnly()} is set to {@code false}, a success is recorded.
+     * When the annotated method returns a {@link CompletionStage} or any of its subclasses, the counters will be
+     * incremented only when the {@link CompletionStage} is completed. If completed exceptionally a failure is recorded,
+     * otherwise if {@link Counted#recordFailuresOnly()} is set to {@code false}, a success is recorded.
      *
      * @return Whatever the intercepted method returns.
-     * @throws Throwable When the intercepted method throws one.
+     *
+     * @throws Throwable
+     *         When the intercepted method throws one.
      */
     @AroundInvoke
     @SuppressWarnings("unchecked")
@@ -79,13 +77,12 @@ public class MicrometerCountedInterceptor {
             }
         } else if (TypesUtil.isUni(returnType)) {
             try {
-                return ((Uni<Object>) context.proceed()).onTermination().invoke(
-                        new Functions.TriConsumer<>() {
-                            @Override
-                            public void accept(Object o, Throwable throwable, Boolean cancelled) {
-                                recordCompletionResult(counted, tags, throwable);
-                            }
-                        });
+                return ((Uni<Object>) context.proceed()).onTermination().invoke(new Functions.TriConsumer<>() {
+                    @Override
+                    public void accept(Object o, Throwable throwable, Boolean cancelled) {
+                        recordCompletionResult(counted, tags, throwable);
+                    }
+                });
             } catch (Throwable e) {
                 record(counted, tags, e);
             }
@@ -112,9 +109,7 @@ public class MicrometerCountedInterceptor {
     }
 
     private void record(Counted counted, Tags commonTags, Throwable throwable) {
-        Counter.Builder builder = Counter.builder(counted.value())
-                .tags(commonTags)
-                .tags(counted.extraTags())
+        Counter.Builder builder = Counter.builder(counted.value()).tags(commonTags).tags(counted.extraTags())
                 .tag("exception", MicrometerRecorder.getExceptionTag(throwable))
                 .tag("result", throwable == null ? RESULT_TAG_SUCCESS_VALUE : RESULT_TAG_FAILURE_VALUE);
         String description = counted.description();

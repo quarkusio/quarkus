@@ -11,8 +11,8 @@ import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.common.AttributesBuilder;
 
 /**
- * Class enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider}
- * during static initialization and set a {@link Attributes} delegate during runtime initialization.
+ * Class enabling Quarkus to instantiate a {@link io.opentelemetry.api.trace.TracerProvider} during static
+ * initialization and set a {@link Attributes} delegate during runtime initialization.
  */
 public class DelayedAttributes implements Attributes {
     private static final Logger log = Logger.getLogger(DelayedAttributes.class);
@@ -23,7 +23,8 @@ public class DelayedAttributes implements Attributes {
     /**
      * Set the actual {@link Attributes} to use as the delegate.
      *
-     * @param delegate Properly constructed {@link Attributes}.
+     * @param delegate
+     *        Properly constructed {@link Attributes}.
      */
     public void setAttributesDelegate(Attributes delegate) {
         this.delegate = delegate;
@@ -93,8 +94,8 @@ public class DelayedAttributes implements Attributes {
     }
 
     /**
-     * If we haven't previously logged an error,
-     * log an error about a missing {@code delegate} and set {@code warningLogged=true}
+     * If we haven't previously logged an error, log an error about a missing {@code delegate} and set
+     * {@code warningLogged=true}
      */
     private void logDelegateNotFound() {
         if (!warningLogged) {

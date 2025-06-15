@@ -38,14 +38,12 @@ public class VertxConnectionMetricsTest {
     private static final Logger log = Logger.getLogger(VertxConnectionMetricsTest.class.getName());
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             // Only allows 2 concurrent connections
             .overrideConfigKey("quarkus.http.limits.max-connections", "2")
             // Close the connection after 1s of inactivity, otherwise, the connection are kept open for 30min
-            .overrideConfigKey("quarkus.http.idle-timeout", "1s")
-            .withApplicationRoot(jar -> jar.addClasses(App.class));
+            .overrideConfigKey("quarkus.http.idle-timeout", "1s").withApplicationRoot(jar -> jar.addClasses(App.class));
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 

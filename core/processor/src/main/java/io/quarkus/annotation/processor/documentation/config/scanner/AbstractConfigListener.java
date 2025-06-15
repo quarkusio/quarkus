@@ -35,8 +35,7 @@ public class AbstractConfigListener implements ConfigAnnotationListener {
     @Override
     public Optional<DiscoveryConfigGroup> onConfigGroup(TypeElement configGroup) {
         DiscoveryConfigGroup discoveryConfigGroup = new DiscoveryConfigGroup(config.getExtension(),
-                utils.element().getBinaryName(configGroup),
-                configGroup.getQualifiedName().toString(),
+                utils.element().getBinaryName(configGroup), configGroup.getQualifiedName().toString(),
                 // interface config groups are considered config mappings, let's hope it's enough
                 configGroup.getKind() == ElementKind.INTERFACE);
         configCollector.addResolvedConfigGroup(discoveryConfigGroup);
@@ -73,8 +72,8 @@ public class AbstractConfigListener implements ConfigAnnotationListener {
             ExtensionModule.ExtensionModuleType type = config.getExtensionModule().type();
             if (type.equals(ExtensionModule.ExtensionModuleType.DEPLOYMENT)) {
                 throw new IllegalStateException(String.format(
-                        "Error on %s: Configuration classes with ConfigPhase.RUN_TIME or " +
-                                "ConfigPhase.BUILD_AND_RUNTIME_FIXED phases, must reside in the respective module.",
+                        "Error on %s: Configuration classes with ConfigPhase.RUN_TIME or "
+                                + "ConfigPhase.BUILD_AND_RUNTIME_FIXED phases, must reside in the respective module.",
                         configRoot.getSimpleName().toString()));
             }
         }

@@ -32,8 +32,8 @@ public final class ReflectUtil {
     public static boolean rawTypeExtends(Type type, Class<?> clazz) {
         return type instanceof Class<?> && clazz.isAssignableFrom((Class<?>) type)
                 || type instanceof ParameterizedType && rawTypeExtends(((ParameterizedType) type).getRawType(), clazz)
-                || type instanceof GenericArrayType
-                        && rawTypeExtends(((GenericArrayType) type).getGenericComponentType(), clazz.getComponentType());
+                || type instanceof GenericArrayType && rawTypeExtends(
+                        ((GenericArrayType) type).getGenericComponentType(), clazz.getComponentType());
     }
 
     public static boolean isListOf(Type type, Class<?> nestedType) {

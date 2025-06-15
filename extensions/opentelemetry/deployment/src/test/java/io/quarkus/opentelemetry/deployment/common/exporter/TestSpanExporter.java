@@ -24,19 +24,14 @@ public class TestSpanExporter implements SpanExporter {
     private final List<SpanData> finishedSpanItems = new CopyOnWriteArrayList<>();
     private volatile boolean isStopped = false;
 
-    public static SpanData getSpanByKindAndParentId(List<SpanData> spans,
-            SpanKind kind,
-            Object parentSpanId) {
+    public static SpanData getSpanByKindAndParentId(List<SpanData> spans, SpanKind kind, Object parentSpanId) {
         List<SpanData> filteredSpans = getSpansByKindAndParentId(spans, kind, parentSpanId);
         assertEquals(1, filteredSpans.size(), "Received: " + spans);
         return filteredSpans.get(0);
     }
 
-    public static List<SpanData> getSpansByKindAndParentId(List<SpanData> spans,
-            SpanKind kind,
-            Object parentSpanId) {
-        return spans.stream()
-                .filter(map -> map.getKind().equals(kind))
+    public static List<SpanData> getSpansByKindAndParentId(List<SpanData> spans, SpanKind kind, Object parentSpanId) {
+        return spans.stream().filter(map -> map.getKind().equals(kind))
                 .filter(map -> map.getParentSpanId().equals(parentSpanId)).collect(toList());
     }
 

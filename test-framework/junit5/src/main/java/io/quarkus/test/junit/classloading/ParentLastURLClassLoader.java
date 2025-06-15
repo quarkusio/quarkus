@@ -4,9 +4,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
- * If we set a parent, vertx http deployment QuarkusTestTypeTestCase and various others break.
- * If we don't set a parent and keep the parent as null, dev mode tests break such as test-test-profile break.
- * The solution is to have a parent, but do parent-last classloading.
+ * If we set a parent, vertx http deployment QuarkusTestTypeTestCase and various others break. If we don't set a parent
+ * and keep the parent as null, dev mode tests break such as test-test-profile break. The solution is to have a parent,
+ * but do parent-last classloading.
  */
 public class ParentLastURLClassLoader extends URLClassLoader {
 

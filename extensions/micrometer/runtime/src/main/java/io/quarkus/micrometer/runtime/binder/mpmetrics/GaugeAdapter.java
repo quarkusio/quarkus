@@ -27,11 +27,8 @@ interface GaugeAdapter<T> extends Gauge<T>, MeterHolder {
 
         public GaugeAdapter<Double> register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
             gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), obj, f)
-                    .description(metadata.getDescription())
-                    .tags(metricInfo.tags())
-                    .baseUnit(metadata.getUnit())
-                    .strongReference(true)
-                    .register(registry);
+                    .description(metadata.getDescription()).tags(metricInfo.tags()).baseUnit(metadata.getUnit())
+                    .strongReference(true).register(registry);
             return this;
         }
 
@@ -63,12 +60,10 @@ interface GaugeAdapter<T> extends Gauge<T>, MeterHolder {
         }
 
         public GaugeAdapter<R> register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
-            gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), obj, obj -> f.apply(obj).doubleValue())
-                    .description(metadata.getDescription())
-                    .tags(metricInfo.tags())
-                    .baseUnit(metadata.getUnit())
-                    .strongReference(true)
-                    .register(registry);
+            gauge = io.micrometer.core.instrument.Gauge
+                    .builder(metricInfo.name(), obj, obj -> f.apply(obj).doubleValue())
+                    .description(metadata.getDescription()).tags(metricInfo.tags()).baseUnit(metadata.getUnit())
+                    .strongReference(true).register(registry);
             return this;
         }
 
@@ -100,9 +95,7 @@ interface GaugeAdapter<T> extends Gauge<T>, MeterHolder {
         public GaugeAdapter<T> register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
             if (gauge == null || metadata.cleanDirtyMetadata()) {
                 gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), (Supplier<Number>) supplier)
-                        .description(metadata.getDescription())
-                        .tags(metricInfo.tags())
-                        .baseUnit(metadata.getUnit())
+                        .description(metadata.getDescription()).tags(metricInfo.tags()).baseUnit(metadata.getUnit())
                         .strongReference(true).register(registry);
             }
 

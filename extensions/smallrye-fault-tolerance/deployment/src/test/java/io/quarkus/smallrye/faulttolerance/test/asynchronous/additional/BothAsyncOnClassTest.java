@@ -14,9 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BothAsyncOnClassTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BothAsyncOnClassService.class))
-            .assertException(e -> {
+            .withApplicationRoot((jar) -> jar.addClasses(BothAsyncOnClassService.class)).assertException(e -> {
                 assertEquals(DefinitionException.class, e.getClass());
                 assertTrue(e.getMessage().contains("Both @Asynchronous and @AsynchronousNonBlocking present"));
             });

@@ -26,23 +26,16 @@ public class ResourceManagerTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ContextPathServlet.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ContextPathServlet.class)
                     .addAsResource(new StringAsset("index.html"), "META-INF/resources/index.html")
                     .addAsResource(new StringAsset("foo/foo.html"), "META-INF/resources/foo/foo.html")
                     .addAsResource(new StringAsset("foo/bar/bar.html"), "META-INF/resources/foo/bar/bar.html"));
 
     @Test
     public void testServlet() {
-        RestAssured.when().get("/").then()
-                .statusCode(200)
-                .body(is("[foo, index.html]"));
-        RestAssured.when().get("/foo").then()
-                .statusCode(200)
-                .body(is("[foo/bar, foo/foo.html]"));
-        RestAssured.when().get("/foo/bar").then()
-                .statusCode(200)
-                .body(is("[foo/bar/bar.html]"));
+        RestAssured.when().get("/").then().statusCode(200).body(is("[foo, index.html]"));
+        RestAssured.when().get("/foo").then().statusCode(200).body(is("[foo/bar, foo/foo.html]"));
+        RestAssured.when().get("/foo/bar").then().statusCode(200).body(is("[foo/bar/bar.html]"));
     }
 
     @WebServlet(urlPatterns = "/*")
@@ -51,8 +44,9 @@ public class ResourceManagerTestCase {
         @Override
         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
             var paths = req.getServletContext().getResourcePaths(req.getPathInfo() == null ? "/" : req.getPathInfo());
-            resp.getWriter().write(String.valueOf(new TreeSet<>(
-                    paths.stream().map(s -> s.substring(s.lastIndexOf(META_INF_RESOURCES) + META_INF_RESOURCES.length()))
+            resp.getWriter()
+                    .write(String.valueOf(new TreeSet<>(paths.stream()
+                            .map(s -> s.substring(s.lastIndexOf(META_INF_RESOURCES) + META_INF_RESOURCES.length()))
                             .collect(Collectors.toSet()))));
         }
     }

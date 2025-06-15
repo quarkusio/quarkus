@@ -55,7 +55,8 @@ public class TypeSignatureParser {
                     break LOOP;
                 // TypeVariableSignature
                 case 'T':
-                    // Stef has come to the conclusion that because TypeVariable depends on the GenericDeclaration that defined them, which is lacking
+                    // Stef has come to the conclusion that because TypeVariable depends on the GenericDeclaration that
+                    // defined them, which is lacking
                     // in signatures unless we have access to the current context, we should not support them
                     throw new IllegalArgumentException(
                             "Invalid type variable in signature: " + new String(chars) + " at position " + i);

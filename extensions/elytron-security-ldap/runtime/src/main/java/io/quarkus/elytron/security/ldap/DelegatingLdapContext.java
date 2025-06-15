@@ -289,8 +289,8 @@ class DelegatingLdapContext implements LdapContext {
     }
 
     @Override
-    public NamingEnumeration<SearchResult> search(String name, Attributes matchingAttributes, String[] attributesToReturn)
-            throws NamingException {
+    public NamingEnumeration<SearchResult> search(String name, Attributes matchingAttributes,
+            String[] attributesToReturn) throws NamingException {
         return wrap(delegating.search(name, matchingAttributes, attributesToReturn));
     }
 
@@ -305,24 +305,26 @@ class DelegatingLdapContext implements LdapContext {
     }
 
     @Override
-    public NamingEnumeration<SearchResult> search(Name name, String filter, SearchControls cons) throws NamingException {
-        return wrap(delegating.search(name, filter, cons));
-    }
-
-    @Override
-    public NamingEnumeration<SearchResult> search(String name, String filter, SearchControls cons) throws NamingException {
-        return wrap(delegating.search(name, filter, cons));
-    }
-
-    @Override
-    public NamingEnumeration<SearchResult> search(Name name, String filterExpr, Object[] filterArgs, SearchControls cons)
+    public NamingEnumeration<SearchResult> search(Name name, String filter, SearchControls cons)
             throws NamingException {
+        return wrap(delegating.search(name, filter, cons));
+    }
+
+    @Override
+    public NamingEnumeration<SearchResult> search(String name, String filter, SearchControls cons)
+            throws NamingException {
+        return wrap(delegating.search(name, filter, cons));
+    }
+
+    @Override
+    public NamingEnumeration<SearchResult> search(Name name, String filterExpr, Object[] filterArgs,
+            SearchControls cons) throws NamingException {
         return wrap(delegating.search(name, filterExpr, filterArgs, cons));
     }
 
     @Override
-    public NamingEnumeration<SearchResult> search(String name, String filterExpr, Object[] filterArgs, SearchControls cons)
-            throws NamingException {
+    public NamingEnumeration<SearchResult> search(String name, String filterExpr, Object[] filterArgs,
+            SearchControls cons) throws NamingException {
         return wrap(delegating.search(name, filterExpr, filterArgs, cons));
     }
 

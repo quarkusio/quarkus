@@ -22,8 +22,8 @@ public enum DuplicatePolicy {
      */
     MAX,
     /**
-     * SUM: If a previous sample exists, add the new sample to it so that the updated value is equal
-     * to (previous + new). If no previous sample exists, set the updated value equal to the new value.
+     * SUM: If a previous sample exists, add the new sample to it so that the updated value is equal to (previous +
+     * new). If no previous sample exists, set the updated value equal to the new value.
      */
     SUM
 }

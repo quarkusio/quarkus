@@ -11,15 +11,14 @@ class StringPropertyAccessorData {
     private final ClassInfo matchingParameterClassInfo;
     private final FieldInfo matchingParameterFieldInfo;
 
-    private StringPropertyAccessorData(ClassInfo matchingParameterClassInfo,
-            FieldInfo matchingParameterFieldInfo) {
+    private StringPropertyAccessorData(ClassInfo matchingParameterClassInfo, FieldInfo matchingParameterFieldInfo) {
         this.matchingParameterClassInfo = matchingParameterClassInfo;
         this.matchingParameterFieldInfo = matchingParameterFieldInfo;
     }
 
     /**
-     * Called with data parsed from a Spring expression like #person.name that is places inside a Spring security annotation on
-     * a method
+     * Called with data parsed from a Spring expression like #person.name that is places inside a Spring security
+     * annotation on a method
      */
     static StringPropertyAccessorData from(MethodInfo methodInfo, int matchingParameterIndex, String propertyName,
             IndexView index, String expression) {
@@ -41,8 +40,8 @@ class StringPropertyAccessorData {
         if (!DotNames.STRING.equals(matchingParameterFieldInfo.type().name())) {
             throw new IllegalArgumentException(
                     "Expression: '" + expression + "' in the @PreAuthorize annotation on method '" + methodInfo.name()
-                            + "' of class '" + methodInfo.declaringClass() + "' references property '"
-                            + propertyName + "' which is not a string");
+                            + "' of class '" + methodInfo.declaringClass() + "' references property '" + propertyName
+                            + "' which is not a string");
         }
 
         return new StringPropertyAccessorData(matchingParameterClassInfo, matchingParameterFieldInfo);

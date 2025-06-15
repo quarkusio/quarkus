@@ -23,19 +23,16 @@ import io.restassured.RestAssured;
 public class SecurityExceptionMapperWithResourceInfoTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class);
+        }
+    });
 
     @Test
     void test() {
-        RestAssured.get("/test/denied")
-                .then().statusCode(403).body(is(Resource.class.getName()));
+        RestAssured.get("/test/denied").then().statusCode(403).body(is(Resource.class.getName()));
     }
 
     @Path("test")

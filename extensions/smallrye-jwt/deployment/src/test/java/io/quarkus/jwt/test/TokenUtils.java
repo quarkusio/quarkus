@@ -39,37 +39,51 @@ public class TokenUtils {
     }
 
     /**
-     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem
-     * test resource key.
+     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem test
+     * resource key.
      *
-     * @param jsonResName - name of test resources file
+     * @param jsonResName
+     *        - name of test resources file
+     *
      * @return the JWT string
-     * @throws Exception on parse failure
+     *
+     * @throws Exception
+     *         on parse failure
      */
     public static String generateTokenString(final String jsonResName) throws Exception {
         return generateTokenString(jsonResName, Collections.emptySet());
     }
 
     /**
+     * @param jsonResName
+     *        - name of test resources file
+     * @param pk
+     *        - the private key to sign the token with
+     * @param kid
+     *        - the kid claim to assign to the token
      *
-     * @param jsonResName - name of test resources file
-     * @param pk - the private key to sign the token with
-     * @param kid - the kid claim to assign to the token
      * @return the JWT string
-     * @throws Exception on parse failure
+     *
+     * @throws Exception
+     *         on parse failure
      */
     public static String generateTokenString(final String jsonResName, PrivateKey pk, String kid) throws Exception {
         return generateTokenString(pk, kid, jsonResName, null, null);
     }
 
     /**
-     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem
-     * test resource key, possibly with invalid fields.
+     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem test
+     * resource key, possibly with invalid fields.
      *
-     * @param jsonResName - name of test resources file
-     * @param invalidClaims - the set of claims that should be added with invalid values to test failure modes
+     * @param jsonResName
+     *        - name of test resources file
+     * @param invalidClaims
+     *        - the set of claims that should be added with invalid values to test failure modes
+     *
      * @return the JWT string
-     * @throws Exception on parse failure
+     *
+     * @throws Exception
+     *         on parse failure
      */
     public static String generateTokenString(final String jsonResName, final Set<InvalidClaims> invalidClaims)
             throws Exception {
@@ -77,36 +91,50 @@ public class TokenUtils {
     }
 
     /**
-     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem
-     * test resource key, possibly with invalid fields.
+     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem test
+     * resource key, possibly with invalid fields.
      *
-     * @param jsonResName - name of test resources file
-     * @param invalidClaims - the set of claims that should be added with invalid values to test failure modes
-     * @param timeClaims - used to return the exp, iat, auth_time claims
+     * @param jsonResName
+     *        - name of test resources file
+     * @param invalidClaims
+     *        - the set of claims that should be added with invalid values to test failure modes
+     * @param timeClaims
+     *        - used to return the exp, iat, auth_time claims
+     *
      * @return the JWT string
-     * @throws Exception on parse failure
+     *
+     * @throws Exception
+     *         on parse failure
      */
-    public static String generateTokenString(String jsonResName, Set<InvalidClaims> invalidClaims, Map<String, Long> timeClaims)
-            throws Exception {
+    public static String generateTokenString(String jsonResName, Set<InvalidClaims> invalidClaims,
+            Map<String, Long> timeClaims) throws Exception {
         // Use the test private key associated with the test public key for a valid signature
         PrivateKey pk = readPrivateKey("/privateKey.pem");
         return generateTokenString(pk, "/privateKey.pem", jsonResName, invalidClaims, timeClaims);
     }
 
     /**
-     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem
-     * test resource key, possibly with invalid fields.
+     * Utility method to generate a JWT string from a JSON resource file that is signed by the privateKey.pem test
+     * resource key, possibly with invalid fields.
      *
-     * @param pk - the private key to sign the token with
-     * @param kid - the kid claim to assign to the token
-     * @param jsonResName - name of test resources file
-     * @param invalidClaims - the set of claims that should be added with invalid values to test failure modes
-     * @param timeClaims - used to return the exp, iat, auth_time claims
+     * @param pk
+     *        - the private key to sign the token with
+     * @param kid
+     *        - the kid claim to assign to the token
+     * @param jsonResName
+     *        - name of test resources file
+     * @param invalidClaims
+     *        - the set of claims that should be added with invalid values to test failure modes
+     * @param timeClaims
+     *        - used to return the exp, iat, auth_time claims
+     *
      * @return the JWT string
-     * @throws Exception on parse failure
+     *
+     * @throws Exception
+     *         on parse failure
      */
-    public static String generateTokenString(PrivateKey pk, String kid, String jsonResName, Set<InvalidClaims> invalidClaims,
-            Map<String, Long> timeClaims) throws Exception {
+    public static String generateTokenString(PrivateKey pk, String kid, String jsonResName,
+            Set<InvalidClaims> invalidClaims, Map<String, Long> timeClaims) throws Exception {
         if (invalidClaims == null) {
             invalidClaims = Collections.emptySet();
         }
@@ -164,9 +192,13 @@ public class TokenUtils {
     /**
      * Read a classpath resource into a string and return it.
      *
-     * @param resName - classpath resource name
+     * @param resName
+     *        - classpath resource name
+     *
      * @return the resource content as a string
-     * @throws IOException - on failure
+     *
+     * @throws IOException
+     *         - on failure
      */
     public static String readResource(String resName) throws IOException {
         InputStream is = TokenUtils.class.getResourceAsStream(resName);
@@ -185,9 +217,13 @@ public class TokenUtils {
     /**
      * Read a PEM encoded private key from the classpath
      *
-     * @param pemResName - key file resource name
+     * @param pemResName
+     *        - key file resource name
+     *
      * @return PrivateKey
-     * @throws Exception on decode failure
+     *
+     * @throws Exception
+     *         on decode failure
      */
     public static PrivateKey readPrivateKey(final String pemResName) throws Exception {
         InputStream contentIS = TokenUtils.class.getResourceAsStream(pemResName);
@@ -199,9 +235,13 @@ public class TokenUtils {
     /**
      * Read a PEM encoded public key from the classpath
      *
-     * @param pemResName - key file resource name
+     * @param pemResName
+     *        - key file resource name
+     *
      * @return PublicKey
-     * @throws Exception on decode failure
+     *
+     * @throws Exception
+     *         on decode failure
      */
     public static PublicKey readPublicKey(final String pemResName) throws Exception {
         InputStream contentIS = TokenUtils.class.getResourceAsStream(pemResName);
@@ -213,9 +253,13 @@ public class TokenUtils {
     /**
      * Generate a new RSA keypair.
      *
-     * @param keySize - the size of the key
+     * @param keySize
+     *        - the size of the key
+     *
      * @return KeyPair
-     * @throws NoSuchAlgorithmException on failure to load RSA key generator
+     *
+     * @throws NoSuchAlgorithmException
+     *         on failure to load RSA key generator
      */
     public static KeyPair generateKeyPair(final int keySize) throws NoSuchAlgorithmException {
         KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
@@ -226,9 +270,13 @@ public class TokenUtils {
     /**
      * Decode a PEM encoded private key string to an RSA PrivateKey
      *
-     * @param pemEncoded - PEM string for private key
+     * @param pemEncoded
+     *        - PEM string for private key
+     *
      * @return PrivateKey
-     * @throws Exception on decode failure
+     *
+     * @throws Exception
+     *         on decode failure
      */
     public static PrivateKey decodePrivateKey(final String pemEncoded) throws Exception {
         byte[] encodedBytes = toEncodedBytes(pemEncoded);
@@ -241,9 +289,13 @@ public class TokenUtils {
     /**
      * Decode a PEM encoded public key string to an RSA PublicKey
      *
-     * @param pemEncoded - PEM string for private key
+     * @param pemEncoded
+     *        - PEM string for private key
+     *
      * @return PublicKey
-     * @throws Exception on decode failure
+     *
+     * @throws Exception
+     *         on decode failure
      */
     public static PublicKey decodePublicKey(String pemEncoded) throws Exception {
         byte[] encodedBytes = toEncodedBytes(pemEncoded);

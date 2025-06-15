@@ -28,8 +28,8 @@ public class CreateApp extends BaseCreateCommand {
     @CommandLine.Mixin
     TargetGAVGroup gav = new TargetGAVGroup();
 
-    @CommandLine.Option(order = 1, paramLabel = "EXTENSION", names = { "-x",
-            "--extension", "--extensions" }, description = "Extension(s) to add to the project.", split = ",")
+    @CommandLine.Option(order = 1, paramLabel = "EXTENSION", names = { "-x", "--extension",
+            "--extensions" }, description = "Extension(s) to add to the project.", split = ",")
     Set<String> extensions = new HashSet<>();
 
     @CommandLine.Option(order = 2, paramLabel = "NAME", names = { "--name" }, description = "Name of the project.")
@@ -78,8 +78,8 @@ public class CreateApp extends BaseCreateCommand {
             setValue(CreateProjectKey.PROJECT_DESCRIPTION, description);
             setValue(CreateProjectKey.DATA, dataOptions.data);
 
-            QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
-                    propertiesOptions.properties, extensions);
+            QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion, propertiesOptions.properties,
+                    extensions);
 
             boolean success = true;
 
@@ -100,25 +100,16 @@ public class CreateApp extends BaseCreateCommand {
             }
             return CommandLine.ExitCode.SOFTWARE;
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to create project: " + e.getLocalizedMessage());
+            return output.handleCommandException(e, "Unable to create project: " + e.getLocalizedMessage());
         }
     }
 
     @Override
     public String toString() {
-        return "CreateApp{"
-                + "gav=" + gav
-                + ", quarkusVersion=" + targetQuarkusVersion
-                + ", targetBuildTool=" + targetBuildTool
-                + ", targetLanguage=" + targetLanguage
-                + ", codeGeneration=" + codeGeneration
-                + ", extensions=" + extensions
-                + ", name=" + name
-                + ", description=" + description
-                + ", project=" + super.toString()
-                + ", data=" + dataOptions.data
-                + ", properties=" + propertiesOptions.properties
+        return "CreateApp{" + "gav=" + gav + ", quarkusVersion=" + targetQuarkusVersion + ", targetBuildTool="
+                + targetBuildTool + ", targetLanguage=" + targetLanguage + ", codeGeneration=" + codeGeneration
+                + ", extensions=" + extensions + ", name=" + name + ", description=" + description + ", project="
+                + super.toString() + ", data=" + dataOptions.data + ", properties=" + propertiesOptions.properties
                 + '}';
     }
 }

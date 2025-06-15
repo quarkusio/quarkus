@@ -21,10 +21,8 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-multiple-datasources-with-erroneous-url.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingDefaultDataSource.class)
-                    .addClass(BeanUsingHibernateDataSource.class)
-                    .addClass(DefaultMySQLPoolCreator.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BeanUsingDefaultDataSource.class)
+                    .addClass(BeanUsingHibernateDataSource.class).addClass(DefaultMySQLPoolCreator.class)
                     .addClass(HibernateMySQLPoolCreator.class));
 
     @Inject
@@ -35,10 +33,8 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
 
     @Test
     public void testMultipleDataSources() {
-        beanUsingDefaultDataSource.verify()
-                .thenCompose(v -> beanUsingHibernateDataSource.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingDefaultDataSource.verify().thenCompose(v -> beanUsingHibernateDataSource.verify())
+                .toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -85,7 +81,8 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(12345, input.mySQLConnectOptionsList().get(0).getPort()); // validate that the bean has been called for the proper datasource
+            assertEquals(12345, input.mySQLConnectOptionsList().get(0).getPort()); // validate that the bean has been
+                                                                                   // called for the proper datasource
             return Pool.pool(input.vertx(), input.mySQLConnectOptionsList().get(0).setHost("localhost").setPort(3308),
                     input.poolOptions());
         }
@@ -97,7 +94,8 @@ public class MultipleDataSourcesAndMySQLPoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(55555, input.mySQLConnectOptionsList().get(0).getPort()); // validate that the bean has been called for the proper datasource
+            assertEquals(55555, input.mySQLConnectOptionsList().get(0).getPort()); // validate that the bean has been
+                                                                                   // called for the proper datasource
             return Pool.pool(input.vertx(), input.mySQLConnectOptionsList().get(0).setHost("localhost").setPort(3308),
                     input.poolOptions());
         }

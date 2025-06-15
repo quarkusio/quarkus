@@ -30,31 +30,19 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestPojo.class, ResourceThatNeedsCdiContextPropagation.class)
+            .withApplicationRoot((jar) -> jar.addClasses(TestPojo.class, ResourceThatNeedsCdiContextPropagation.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     /**
-     * Call a query which needs the CDI context to be propagated, because it is on a RequestScoped bean
-     * and involves retrieving a batch source field (these are retrieved asynchronously).
+     * Call a query which needs the CDI context to be propagated, because it is on a RequestScoped bean and involves
+     * retrieving a batch source field (these are retrieved asynchronously).
      */
     @Test
     public void testCdiContextPropagationForBatchSources() {
-        String pingRequest = getPayload("{\n" +
-                "  pojos {\n" +
-                "    duplicatedMessage\n" +
-                "  }\n" +
-                "}");
+        String pingRequest = getPayload("{\n" + "  pojos {\n" + "    duplicatedMessage\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(pingRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(pingRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and()
                 .body("data.pojos.duplicatedMessage", Matchers.contains("AA", "BB"));
     }
 
@@ -63,45 +51,23 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
      */
     @Test
     public void testCdiContextPropagationForBatchSourcesAsync() {
-        String pingRequest = getPayload("{\n" +
-                "  pojos {\n" +
-                "    duplicatedMessageAsync\n" +
-                "  }\n" +
-                "}");
+        String pingRequest = getPayload("{\n" + "  pojos {\n" + "    duplicatedMessageAsync\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(pingRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(pingRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and()
                 .body("data.pojos.duplicatedMessageAsync", Matchers.contains("AA", "BB"));
     }
 
     /**
-     * In this case, there is an asynchronous query and the application launches a CompletableFuture,
-     * therefore the application is responsible for propagating the context to that future.
+     * In this case, there is an asynchronous query and the application launches a CompletableFuture, therefore the
+     * application is responsible for propagating the context to that future.
      */
     @Test
     public void testManualContextPropagation() {
-        String pingRequest = getPayload("{\n" +
-                "  pojo_manual_propagation {\n" +
-                "    message\n" +
-                "  }\n" +
-                "}");
+        String pingRequest = getPayload("{\n" + "  pojo_manual_propagation {\n" + "    message\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(pingRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(pingRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and()
                 .body("data.pojo_manual_propagation.message", Matchers.equalTo("A"));
     }
 
@@ -132,13 +98,12 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
         @Query("pojo_manual_propagation")
         public CompletionStage<TestPojo> getPojoWithProgrammaticContextPropagation() {
             Long id = injectedBean.getId();
-            return executor.supplyAsync(
-                    () -> {
-                        if (!injectedBean.getId().equals(id)) {
-                            throw new IllegalStateException("The future was not executed in the correct request context");
-                        }
-                        return new TestPojo("A");
-                    });
+            return executor.supplyAsync(() -> {
+                if (!injectedBean.getId().equals(id)) {
+                    throw new IllegalStateException("The future was not executed in the correct request context");
+                }
+                return new TestPojo("A");
+            });
         }
 
         /**
@@ -147,12 +112,11 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
         @Name("duplicatedMessage")
         public List<String> duplicatedMessage(@Source List<TestPojo> pojos) {
             if (!this.injectedBean.getId().equals(this.injectedBeanId)) {
-                throw new IllegalStateException("duplicatedMessage must be executed in the same request context as getPojos ["
-                        + this.injectedBean.getId() + " != " + this.injectedBeanId);
+                throw new IllegalStateException(
+                        "duplicatedMessage must be executed in the same request context as getPojos ["
+                                + this.injectedBean.getId() + " != " + this.injectedBeanId);
             }
-            return pojos.stream()
-                    .map(pojo -> pojo.getMessage() + pojo.getMessage())
-                    .collect(Collectors.toList());
+            return pojos.stream().map(pojo -> pojo.getMessage() + pojo.getMessage()).collect(Collectors.toList());
         }
 
         /**
@@ -165,9 +129,8 @@ public class GraphQLCDIContextPropagationTest extends AbstractGraphQLTest {
                         "duplicatedMessageAsync must be executed in the same request context as getPojos ["
                                 + this.injectedBean.getId() + " != " + this.injectedBeanId);
             }
-            return CompletableFuture.completedFuture(pojos.stream()
-                    .map(pojo -> pojo.getMessage() + pojo.getMessage())
-                    .collect(Collectors.toList()));
+            return CompletableFuture.completedFuture(
+                    pojos.stream().map(pojo -> pojo.getMessage() + pojo.getMessage()).collect(Collectors.toList()));
         }
 
     }

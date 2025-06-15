@@ -3,8 +3,7 @@ package io.quarkus.kubernetes.spi;
 import java.util.List;
 
 /**
- * Produce this build item to request the Kubernetes extension to generate
- * a Kubernetes {@code Role} resource.
+ * Produce this build item to request the Kubernetes extension to generate a Kubernetes {@code Role} resource.
  * <p>
  * Note that this can't be used to generate a {@code ClusterRole}.
  */

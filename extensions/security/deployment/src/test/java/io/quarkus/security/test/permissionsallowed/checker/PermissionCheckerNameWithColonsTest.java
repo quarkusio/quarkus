@@ -39,10 +39,11 @@ public class PermissionCheckerNameWithColonsTest {
     public void testIdentityPermissionWithActionGrantAccess() {
         // @PermissionsAllowed({ "read", "read:all" }) says one of: either 'read' is granted by permission checker
         // or 'read:all' is granted by identity permissions
-        var userWithReadAll = new AuthData(Set.of("user"), false, "user", Set.of(new StringPermission("read", "all")), true);
-        assertSuccess(() -> bean.readAndReadAll(false), "readAndReadAll", userWithReadAll);
-        var userWithReadNothing = new AuthData(Set.of("user"), false, "user", Set.of(new StringPermission("read", "nothing")),
+        var userWithReadAll = new AuthData(Set.of("user"), false, "user", Set.of(new StringPermission("read", "all")),
                 true);
+        assertSuccess(() -> bean.readAndReadAll(false), "readAndReadAll", userWithReadAll);
+        var userWithReadNothing = new AuthData(Set.of("user"), false, "user",
+                Set.of(new StringPermission("read", "nothing")), true);
         assertFailureFor(() -> bean.readAndReadAll(false), ForbiddenException.class, userWithReadNothing);
         // check 'read' is granted by the checker method
         assertSuccess(() -> bean.readAndReadAll(true), "readAndReadAll", userWithReadNothing);
@@ -55,16 +56,17 @@ public class PermissionCheckerNameWithColonsTest {
     public void testIdentityPermissionWithMultipleActionsGrantsAccess() {
         // @PermissionsAllowed({ "write:all", "write", "write:essay" }) says one of: either 'write' is granted
         // by permission checker or 'write:all' or 'write:essay' is granted by identity permissions
-        var userWithWriteAll = new AuthData(Set.of("user"), false, "user", Set.of(new StringPermission("write", "all")), true);
-        assertSuccess(() -> bean.writeAndWriteAllAndEssay(false), "writeAndWriteAllAndEssay", userWithWriteAll);
-        var userWithWriteEssay = new AuthData(Set.of("user"), false, "user", Set.of(new StringPermission("write", "essay")),
+        var userWithWriteAll = new AuthData(Set.of("user"), false, "user", Set.of(new StringPermission("write", "all")),
                 true);
+        assertSuccess(() -> bean.writeAndWriteAllAndEssay(false), "writeAndWriteAllAndEssay", userWithWriteAll);
+        var userWithWriteEssay = new AuthData(Set.of("user"), false, "user",
+                Set.of(new StringPermission("write", "essay")), true);
         assertSuccess(() -> bean.writeAndWriteAllAndEssay(false), "writeAndWriteAllAndEssay", userWithWriteEssay);
         var userWithWriteEssayAndAll = new AuthData(Set.of("user"), false, "user",
                 Set.of(new StringPermission("write", "essay", "all")), true);
         assertSuccess(() -> bean.writeAndWriteAllAndEssay(false), "writeAndWriteAllAndEssay", userWithWriteEssayAndAll);
-        var userWithWriteNothing = new AuthData(Set.of("user"), false, "user", Set.of(new StringPermission("write", "nothing")),
-                true);
+        var userWithWriteNothing = new AuthData(Set.of("user"), false, "user",
+                Set.of(new StringPermission("write", "nothing")), true);
         assertFailureFor(() -> bean.writeAndWriteAllAndEssay(false), ForbiddenException.class, userWithWriteNothing);
         // check 'write' is granted by the checker method
         assertSuccess(() -> bean.writeAndWriteAllAndEssay(true), "writeAndWriteAllAndEssay", userWithWriteNothing);
@@ -82,12 +84,16 @@ public class PermissionCheckerNameWithColonsTest {
         // access is denied because permission checkers require 'true'
         var userWithExecuteDirAndAll = new AuthData(Set.of("user"), false, "user",
                 Set.of(new StringPermission("execute", "all", "dir")), true);
-        assertFailureFor(() -> bean.executeAndAllAndDir(true, true, false), ForbiddenException.class, userWithExecuteDirAndAll);
-        assertFailureFor(() -> bean.executeAndAllAndDir(true, false, true), ForbiddenException.class, userWithExecuteDirAndAll);
-        assertFailureFor(() -> bean.executeAndAllAndDir(false, true, true), ForbiddenException.class, userWithExecuteDirAndAll);
+        assertFailureFor(() -> bean.executeAndAllAndDir(true, true, false), ForbiddenException.class,
+                userWithExecuteDirAndAll);
+        assertFailureFor(() -> bean.executeAndAllAndDir(true, false, true), ForbiddenException.class,
+                userWithExecuteDirAndAll);
+        assertFailureFor(() -> bean.executeAndAllAndDir(false, true, true), ForbiddenException.class,
+                userWithExecuteDirAndAll);
 
         // access is granted because all arguments are true
-        assertSuccess(() -> bean.executeAndAllAndDir(true, true, true), "executeAndAllAndDir", userWithExecuteDirAndAll);
+        assertSuccess(() -> bean.executeAndAllAndDir(true, true, true), "executeAndAllAndDir",
+                userWithExecuteDirAndAll);
 
         // access is denied as anonymous user is not allow access any resources annotated with the @PermissionsAllowed
         // because anonymous users can't have permissions
@@ -117,11 +123,13 @@ public class PermissionCheckerNameWithColonsTest {
         assertFailureFor(() -> bean.deleteAndAllAndDir(false, true, true), ForbiddenException.class, userWithPurge);
 
         // access is granted because all arguments are true
-        assertSuccess(() -> bean.deleteAndAllAndDir(true, true, true), "deleteAndAllAndDir", userWithDeleteDirAndAllAndPurge);
+        assertSuccess(() -> bean.deleteAndAllAndDir(true, true, true), "deleteAndAllAndDir",
+                userWithDeleteDirAndAllAndPurge);
         assertSuccess(() -> bean.deleteAndAllAndDir(true, true, true), "deleteAndAllAndDir", userWithPurge);
 
         // access is not granted because identity doesn't have 'purge' permission
-        assertFailureFor(() -> bean.deleteAndAllAndDir(true, true, true), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertFailureFor(() -> bean.deleteAndAllAndDir(true, true, true), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
     }
 
     @Test
@@ -139,7 +147,8 @@ public class PermissionCheckerNameWithColonsTest {
         assertSuccess(() -> bean.editAndEditAllAndEssay(false, false), "editAndEditAllAndEssay", userWithEdit);
 
         // assert user without either the identity permission or granted access by the checker method cannot access
-        assertFailureFor(() -> bean.editAndEditAllAndEssay(false, false), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertFailureFor(() -> bean.editAndEditAllAndEssay(false, false), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
 
         // @PermissionsAllowed({ "list:files", "list:dir" })
         // permission checker is defined for 'list:files'
@@ -165,7 +174,8 @@ public class PermissionCheckerNameWithColonsTest {
         assertSuccess(() -> bean.listFilesAndLinks(false, true), "listFilesAndLinks", USER_WITH_AUGMENTORS);
         assertFailureFor(() -> bean.listFilesAndLinks(false, false), ForbiddenException.class, USER_WITH_AUGMENTORS);
         var userWithListFilesAndLinks = new AuthData(USER, true, new StringPermission("list", "files", "links"));
-        assertFailureFor(() -> bean.listFilesAndLinks(false, false), ForbiddenException.class, userWithListFilesAndLinks);
+        assertFailureFor(() -> bean.listFilesAndLinks(false, false), ForbiddenException.class,
+                userWithListFilesAndLinks);
     }
 
     @Test
@@ -235,8 +245,8 @@ public class PermissionCheckerNameWithColonsTest {
         @PermissionsAllowed(value = { "cut:blob", "cut:chars" }, inclusive = true)
         @PermissionsAllowed(value = { "cut:text", "cut:binary" }, inclusive = true)
         @PermissionsAllowed({ "cut:text", "cut:binary" }) // this one SHOULD not have effect due to the instance above
-        String cutTextAndBinaryAndBlobAndArrayAndChars(boolean cutText, boolean cutBinary, boolean cutArray, boolean cutChars,
-                boolean cutBlob) {
+        String cutTextAndBinaryAndBlobAndArrayAndChars(boolean cutText, boolean cutBinary, boolean cutArray,
+                boolean cutChars, boolean cutBlob) {
             return "cutTextAndBinaryAndBlobAndArrayAndChars";
         }
     }

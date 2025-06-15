@@ -20,8 +20,8 @@ public interface IngressConfig {
     Optional<String> host();
 
     /**
-     * The default target named port. If not provided, it will be deducted from the Service resource ports.
-     * Options are: "http" and "https".
+     * The default target named port. If not provided, it will be deducted from the Service resource ports. Options are:
+     * "http" and "https".
      */
     @WithDefault("http")
     String targetPort();
@@ -91,7 +91,8 @@ public interface IngressConfig {
         Optional<String> servicePortName();
 
         /**
-         * The service port number to be used by this Ingress rule. This is only used when the servicePortName is not set.
+         * The service port number to be used by this Ingress rule. This is only used when the servicePortName is not
+         * set.
          */
         Optional<Integer> servicePortNumber();
     }

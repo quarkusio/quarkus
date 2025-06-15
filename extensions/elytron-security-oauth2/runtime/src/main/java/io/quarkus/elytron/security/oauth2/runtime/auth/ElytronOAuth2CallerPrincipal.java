@@ -26,7 +26,8 @@ public class ElytronOAuth2CallerPrincipal implements Principal {
 
     @Override
     public String getName() {
-        return getClaimValueAsString(customPrincipalName).orElseGet(() -> getClaimValueAsString("client_id").orElse(null));
+        return getClaimValueAsString(customPrincipalName)
+                .orElseGet(() -> getClaimValueAsString("client_id").orElse(null));
     }
 
     private Optional<String> getClaimValueAsString(String key) {

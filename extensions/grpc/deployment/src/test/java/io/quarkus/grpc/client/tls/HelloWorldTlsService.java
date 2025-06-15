@@ -12,7 +12,6 @@ public class HelloWorldTlsService extends MutinyGreeterGrpc.GreeterImplBase {
     @Override
     public Uni<HelloReply> sayHello(HelloRequest request) {
         String name = request.getName();
-        return Uni.createFrom().item("Hello " + name)
-                .map(res -> HelloReply.newBuilder().setMessage(res).build());
+        return Uni.createFrom().item("Hello " + name).map(res -> HelloReply.newBuilder().setMessage(res).build());
     }
 }

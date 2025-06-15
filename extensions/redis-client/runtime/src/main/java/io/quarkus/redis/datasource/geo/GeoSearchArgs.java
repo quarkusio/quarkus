@@ -38,7 +38,9 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
     /**
      * Use the position of the given existing {@code member} in the sorted set.
      *
-     * @param member the member, must not be {@code null}
+     * @param member
+     *        the member, must not be {@code null}
+     *
      * @return the current {@code GeoSearchArgs}
      */
     public GeoSearchArgs<V> fromMember(V member) {
@@ -52,8 +54,11 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
     /**
      * Use the given {@code longitude} and {@code latitude} position.
      *
-     * @param longitude the longitude
-     * @param latitude the latitude
+     * @param longitude
+     *        the longitude
+     * @param latitude
+     *        the latitude
+     *
      * @return the current {@code GeoSearchArgs}
      */
     public GeoSearchArgs<V> fromCoordinate(double longitude, double latitude) {
@@ -65,8 +70,11 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
     /**
      * Search inside circular area according to given {@code radius}.
      *
-     * @param radius the radius value
-     * @param unit the unit
+     * @param radius
+     *        the radius value
+     * @param unit
+     *        the unit
+     *
      * @return the current {@code GeoSearchArgs}
      **/
     public GeoSearchArgs<V> byRadius(double radius, GeoUnit unit) {
@@ -84,9 +92,13 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
     /**
      * Search inside circular area according to given {@code radius}.
      *
-     * @param width the width of the box
-     * @param height the height of the box
-     * @param unit the unit
+     * @param width
+     *        the width of the box
+     * @param height
+     *        the height of the box
+     * @param unit
+     *        the unit
+     *
      * @return the current {@code GeoSearchArgs}
      **/
     public GeoSearchArgs<V> byBox(double width, double height, GeoUnit unit) {
@@ -147,8 +159,8 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
     }
 
     /**
-     * Also return the raw geohash-encoded sorted set score of the item, in the form of a 52 bit unsigned integer.
-     * This is only useful for low level hacks or debugging and is otherwise of little interest for the general user.
+     * Also return the raw geohash-encoded sorted set score of the item, in the form of a 52 bit unsigned integer. This
+     * is only useful for low level hacks or debugging and is otherwise of little interest for the general user.
      *
      * @return the current {@code GeoRadiusArgs}
      **/
@@ -161,7 +173,9 @@ public class GeoSearchArgs<V> implements RedisCommandExtraArguments {
      * By default all the matching items are returned. It is possible to limit the results to the first N matching items
      * by using the {@code COUNT &lt;count&gt;} option.
      *
-     * @param count the count value
+     * @param count
+     *        the count value
+     *
      * @return the current {@code GeoRadiusArgs}
      **/
     public GeoSearchArgs<V> count(long count) {

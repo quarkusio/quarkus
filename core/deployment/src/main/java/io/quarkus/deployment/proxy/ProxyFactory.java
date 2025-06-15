@@ -21,8 +21,8 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
 /**
- * A factory that can generate proxies of a class.
- * This was inspired from jboss-invocations's org.jboss.invocation.proxy.ProxyFactory
+ * A factory that can generate proxies of a class. This was inspired from jboss-invocations's
+ * org.jboss.invocation.proxy.ProxyFactory
  */
 public class ProxyFactory<T> {
 
@@ -43,7 +43,8 @@ public class ProxyFactory<T> {
         Objects.requireNonNull(configuration.getProxyNameSuffix(), "proxyNameSuffix must be set");
         this.proxyName = configuration.getProxyName();
 
-        Class<T> superClass = configuration.getSuperClass() != null ? configuration.getSuperClass() : (Class<T>) Object.class;
+        Class<T> superClass = configuration.getSuperClass() != null ? configuration.getSuperClass()
+                : (Class<T>) Object.class;
         this.superClassName = superClass.getName();
 
         if (!configuration.isAllowPackagePrivate() && !Modifier.isPublic(superClass.getModifiers())) {
@@ -51,9 +52,8 @@ public class ProxyFactory<T> {
                     "A proxy cannot be created for class " + this.superClassName + " because the it is not public");
         }
         if (!findConstructor(superClass, configuration.isAllowPackagePrivate(), true)) {
-            throw new IllegalArgumentException(
-                    "A proxy cannot be created for class " + this.superClassName
-                            + " because it does not declare a no-arg constructor");
+            throw new IllegalArgumentException("A proxy cannot be created for class " + this.superClassName
+                    + " because it does not declare a no-arg constructor");
         }
         if (Modifier.isFinal(superClass.getModifiers())) {
             throw new IllegalArgumentException(
@@ -72,8 +72,7 @@ public class ProxyFactory<T> {
         this.classBuilder = ClassCreator.builder()
                 .classOutput(configuration.getClassOutput() != null ? configuration.getClassOutput()
                         : new InjectIntoClassloaderClassOutput(configuration.getClassLoader()))
-                .className(this.proxyName)
-                .superClass(this.superClassName);
+                .className(this.proxyName).superClass(this.superClassName);
         if (!configuration.getAdditionalInterfaces().isEmpty()) {
             this.classBuilder.interfaces(configuration.getAdditionalInterfaces().toArray(new Class[0]));
         }
@@ -87,7 +86,7 @@ public class ProxyFactory<T> {
         Constructor<?>[] ctors = clazz.getDeclaredConstructors();
         if (allowInject) {
             for (Constructor<?> constructor : ctors) {
-                //ctor needs to be @Inject or the only constructor
+                // ctor needs to be @Inject or the only constructor
                 if (constructor.isAnnotationPresent(Inject.class)
                         || (ctors.length == 1 && constructor.getParameterCount() > 0)) {
                     if (!isModifierCorrect(allowPackagePrivate, constructor)) {
@@ -120,7 +119,8 @@ public class ProxyFactory<T> {
 
     private void addMethodsOfClass(Class<?> clazz, Set<MethodKey> seen) {
         for (Method methodInfo : clazz.getDeclaredMethods()) {
-            MethodKey key = new MethodKey(methodInfo.getReturnType(), methodInfo.getName(), methodInfo.getParameterTypes());
+            MethodKey key = new MethodKey(methodInfo.getReturnType(), methodInfo.getName(),
+                    methodInfo.getParameterTypes());
             if (seen.contains(key)) {
                 continue;
             }
@@ -133,9 +133,8 @@ public class ProxyFactory<T> {
                     && clazz != Object.class) {
                 throw new RuntimeException("Public method " + methodInfo + " cannot be proxied as it is final");
             }
-            if (!Modifier.isStatic(modifiers) &&
-                    !Modifier.isFinal(modifiers) &&
-                    !methodInfo.getName().equals("<init>")) {
+            if (!Modifier.isStatic(modifiers) && !Modifier.isFinal(modifiers)
+                    && !methodInfo.getName().equals("<init>")) {
                 methods.add(methodInfo);
             }
         }
@@ -192,17 +191,16 @@ public class ProxyFactory<T> {
                     params.add(ctor.getMethodParam(i + 1));
                 }
                 ctor.invokeSpecialMethod(
-                        MethodDescriptor.ofConstructor(injectConstructor.getDeclaringClass(),
-                                parameterTypes),
-                        ctor.getThis(),
-                        params.toArray(ResultHandle[]::new));
+                        MethodDescriptor.ofConstructor(injectConstructor.getDeclaringClass(), parameterTypes),
+                        ctor.getThis(), params.toArray(ResultHandle[]::new));
                 ctor.writeInstanceField(invocationHandlerField, ctor.getThis(), ctor.getMethodParam(0));
                 ctor.returnValue(null);
             }
 
             // proxy each method by forwarding to InvocationHandler
             for (Method methodInfo : methods) {
-                try (MethodCreator mc = cc.getMethodCreator(toMethodDescriptor(methodInfo)).setModifiers(Modifier.PUBLIC)) {
+                try (MethodCreator mc = cc.getMethodCreator(toMethodDescriptor(methodInfo))
+                        .setModifiers(Modifier.PUBLIC)) {
 
                     // method = clazz.getDeclaredMethod(...)
 
@@ -229,8 +227,7 @@ public class ProxyFactory<T> {
                     }
                     ResultHandle result = mc.invokeInterfaceMethod(
                             MethodDescriptor.ofMethod(InvocationHandler.class, "invoke", Object.class, Object.class,
-                                    Method.class,
-                                    Object[].class),
+                                    Method.class, Object[].class),
                             mc.readInstanceField(invocationHandlerField, mc.getThis()), mc.getThis(), method,
                             invokeParamsArray);
 
@@ -311,9 +308,8 @@ public class ProxyFactory<T> {
             if (o == null || getClass() != o.getClass())
                 return false;
             MethodKey methodKey = (MethodKey) o;
-            return Objects.equals(returnType, methodKey.returnType) &&
-                    Objects.equals(name, methodKey.name) &&
-                    Arrays.equals(params, methodKey.params);
+            return Objects.equals(returnType, methodKey.returnType) && Objects.equals(name, methodKey.name)
+                    && Arrays.equals(params, methodKey.params);
         }
 
         @Override

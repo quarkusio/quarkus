@@ -21,8 +21,8 @@ public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
 
     private final ReactiveGeoCommandsImpl<K, V> reactive;
 
-    public ReactiveTransactionalGeoCommandsImpl(ReactiveTransactionalRedisDataSource ds, ReactiveGeoCommandsImpl<K, V> reactive,
-            TransactionHolder tx) {
+    public ReactiveTransactionalGeoCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveGeoCommandsImpl<K, V> reactive, TransactionHolder tx) {
         super(ds, tx);
         this.reactive = reactive;
     }
@@ -53,7 +53,8 @@ public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
     @Override
     public Uni<Void> geoadd(K key, double longitude, double latitude, V member, GeoAddArgs args) {
         this.tx.enqueue(r -> r.toLong() == 1L);
-        return this.reactive._geoadd(key, longitude, latitude, member, args).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._geoadd(key, longitude, latitude, member, args).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 
     @Override
@@ -90,7 +91,8 @@ public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
     @Override
     public Uni<Void> georadius(K key, double longitude, double latitude, double radius, GeoUnit unit) {
         this.tx.enqueue(this.reactive::decodeRadiusSet);
-        return this.reactive._georadius(key, longitude, latitude, radius, unit).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._georadius(key, longitude, latitude, radius, unit).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 
     @Deprecated
@@ -102,9 +104,10 @@ public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
 
     @Deprecated
     @Override
-    public Uni<Void> georadius(K key, double longitude, double latitude, double radius, GeoUnit unit, GeoRadiusArgs geoArgs) {
-        this.tx.enqueue(
-                r -> reactive.decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(), geoArgs.hasHash()));
+    public Uni<Void> georadius(K key, double longitude, double latitude, double radius, GeoUnit unit,
+            GeoRadiusArgs geoArgs) {
+        this.tx.enqueue(r -> reactive.decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(),
+                geoArgs.hasHash()));
         return this.reactive._georadius(key, longitude, latitude, radius, unit, geoArgs).invoke(this::queuedOrDiscard)
                 .replaceWithVoid();
     }
@@ -127,7 +130,8 @@ public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
 
     @Deprecated
     @Override
-    public Uni<Void> georadius(K key, GeoPosition position, double radius, GeoUnit unit, GeoRadiusStoreArgs<K> geoArgs) {
+    public Uni<Void> georadius(K key, GeoPosition position, double radius, GeoUnit unit,
+            GeoRadiusStoreArgs<K> geoArgs) {
         nonNull(position, "position");
         return georadius(key, position.longitude, position.latitude, radius, unit, geoArgs);
     }
@@ -136,14 +140,15 @@ public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
     @Override
     public Uni<Void> georadiusbymember(K key, V member, double distance, GeoUnit unit) {
         this.tx.enqueue(this.reactive::decodeRadiusSet);
-        return this.reactive._georadiusbymember(key, member, distance, unit).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._georadiusbymember(key, member, distance, unit).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 
     @Deprecated
     @Override
     public Uni<Void> georadiusbymember(K key, V member, double distance, GeoUnit unit, GeoRadiusArgs geoArgs) {
-        this.tx.enqueue(
-                r -> reactive.decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(), geoArgs.hasHash()));
+        this.tx.enqueue(r -> reactive.decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(),
+                geoArgs.hasHash()));
         return this.reactive._georadiusbymember(key, member, distance, unit, geoArgs).invoke(this::queuedOrDiscard)
                 .replaceWithVoid();
     }
@@ -158,13 +163,15 @@ public class ReactiveTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
 
     @Override
     public Uni<Void> geosearch(K key, GeoSearchArgs<V> args) {
-        this.tx.enqueue(r -> reactive.decodeAsListOfGeoValues(r, args.hasDistance(), args.hasCoordinates(), args.hasHash()));
+        this.tx.enqueue(
+                r -> reactive.decodeAsListOfGeoValues(r, args.hasDistance(), args.hasCoordinates(), args.hasHash()));
         return this.reactive._geosearch(key, args).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> geosearchstore(K destination, K key, GeoSearchStoreArgs<V> args, boolean storeDist) {
         this.tx.enqueue(Response::toLong);
-        return this.reactive._geosearchstore(destination, key, args, storeDist).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._geosearchstore(destination, key, args, storeDist).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 }

@@ -36,8 +36,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Test resources with sub-resources with parameters.
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Parameter Sub Res Test")
@@ -46,30 +49,29 @@ public class ParameterSubResTest {
     static Client client;
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(MultiInterfaceResLocatorResource.class);
-                    war.addClass(MultiInterfaceResLocatorSubresource.class);
-                    war.addClasses(MultiInterfaceResLocatorIntf1.class);
-                    war.addClasses(MultiInterfaceResLocatorIntf2.class);
-                    war.addClass(ParameterSubResConcreteSubImpl.class);
-                    war.addClass(ParameterSubResDoubleInterface.class);
-                    war.addClass(ParameterSubResGenericInterface.class);
-                    war.addClass(ParameterSubResInternalInterface.class);
-                    war.addClasses(PortProviderUtil.class);
-                    war.addClass(ParameterSubResRoot.class);
-                    war.addClass(ParameterSubResClassSub.class);
-                    war.addClass(ApplicationScopeObject.class);
-                    war.addClass(RequestScopedObject.class);
-                    war.addClass(ParameterSubResSub.class);
-                    war.addClass(ParameterSubResSubImpl.class);
-                    war.addClasses(ParameterSubResRootImpl.class, ParameterSubResGenericSub.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClass(MultiInterfaceResLocatorResource.class);
+            war.addClass(MultiInterfaceResLocatorSubresource.class);
+            war.addClasses(MultiInterfaceResLocatorIntf1.class);
+            war.addClasses(MultiInterfaceResLocatorIntf2.class);
+            war.addClass(ParameterSubResConcreteSubImpl.class);
+            war.addClass(ParameterSubResDoubleInterface.class);
+            war.addClass(ParameterSubResGenericInterface.class);
+            war.addClass(ParameterSubResInternalInterface.class);
+            war.addClasses(PortProviderUtil.class);
+            war.addClass(ParameterSubResRoot.class);
+            war.addClass(ParameterSubResClassSub.class);
+            war.addClass(ApplicationScopeObject.class);
+            war.addClass(RequestScopedObject.class);
+            war.addClass(ParameterSubResSub.class);
+            war.addClass(ParameterSubResSubImpl.class);
+            war.addClasses(ParameterSubResRootImpl.class, ParameterSubResGenericSub.class);
+            return war;
+        }
+    });
 
     private String generateURL(String path) {
         return PortProviderUtil.generateURL(path, ParameterSubResTest.class.getSimpleName());
@@ -87,6 +89,7 @@ public class ParameterSubResTest {
 
     /**
      * @tpTestDetails Check sub resources.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -111,6 +114,7 @@ public class ParameterSubResTest {
 
     /**
      * @tpTestDetails Check root resource.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

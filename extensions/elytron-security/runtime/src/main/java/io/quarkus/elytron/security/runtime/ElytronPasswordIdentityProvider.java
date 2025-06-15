@@ -20,10 +20,8 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
 /**
- *
- * This is an interim class that provides a mapping between the existing Elytron implementations and the
- * new Quarkus API's.
- *
+ * This is an interim class that provides a mapping between the existing Elytron implementations and the new Quarkus
+ * API's.
  */
 @ApplicationScoped
 public class ElytronPasswordIdentityProvider implements IdentityProvider<UsernamePasswordAuthenticationRequest> {

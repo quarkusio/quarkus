@@ -26,8 +26,8 @@ public enum RestLinkType {
      *     public TestRecord getById(@PathParam("id") int id) { // ... }
      * </pre>
      * <p>
-     * Note that the method `getAll` is annotated with `@InjectRestLinks(RestLinkType.TYPE)`, so when calling to the endpoint
-     * `/records`, it will inject the following links:
+     * Note that the method `getAll` is annotated with `@InjectRestLinks(RestLinkType.TYPE)`, so when calling to the
+     * endpoint `/records`, it will inject the following links:
      *
      * <pre>
      * Link: <http://localhost:8080/records>; rel="list"
@@ -39,8 +39,7 @@ public enum RestLinkType {
     TYPE,
 
     /**
-     * It will inject all the links that return the link type {@link RestLink#entityType()}.
-     * For example:
+     * It will inject all the links that return the link type {@link RestLink#entityType()}. For example:
      *
      * <pre>
      *
@@ -65,8 +64,8 @@ public enum RestLinkType {
      *     public TestRecord delete(@PathParam("slug") String slug) { // ... }
      * </pre>
      * <p>
-     * Note that the method `getById` is annotated with `@InjectRestLinks(RestLinkType.INSTANCE)`, so when calling to the
-     * endpoint `/records/1`, it will inject the following links:
+     * Note that the method `getById` is annotated with `@InjectRestLinks(RestLinkType.INSTANCE)`, so when calling to
+     * the endpoint `/records/1`, it will inject the following links:
      *
      * <pre>
      * Link: <http://localhost:8080/records>; rel="list"

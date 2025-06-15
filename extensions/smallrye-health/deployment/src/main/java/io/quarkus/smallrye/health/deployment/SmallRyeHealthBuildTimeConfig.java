@@ -33,45 +33,44 @@ public interface SmallRyeHealthBuildTimeConfig {
     boolean openapiIncluded();
 
     /**
-     * Root path for health-checking endpoints.
-     * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
-     * If the management interface is enabled, the value will be resolved as a path relative to
-     * `${quarkus.management.root-path}`.
+     * Root path for health-checking endpoints. By default, this value will be resolved as a path relative to
+     * `${quarkus.http.non-application-root-path}`. If the management interface is enabled, the value will be resolved
+     * as a path relative to `${quarkus.management.root-path}`.
      */
     @WithDefault("health")
     String rootPath();
 
     /**
-     * The relative path of the liveness health-checking endpoint.
-     * By default, this value will be resolved as a path relative to `${quarkus.smallrye-health.rootPath}`.
+     * The relative path of the liveness health-checking endpoint. By default, this value will be resolved as a path
+     * relative to `${quarkus.smallrye-health.rootPath}`.
      */
     @WithDefault("live")
     String livenessPath();
 
     /**
-     * The relative path of the readiness health-checking endpoint.
-     * By default, this value will be resolved as a path relative to `${quarkus.smallrye-health.rootPath}`.
+     * The relative path of the readiness health-checking endpoint. By default, this value will be resolved as a path
+     * relative to `${quarkus.smallrye-health.rootPath}`.
      */
     @WithDefault("ready")
     String readinessPath();
 
     /**
-     * The relative path of the health group endpoint.
-     * By default, this value will be resolved as a path relative to `${quarkus.smallrye-health.rootPath}`.
+     * The relative path of the health group endpoint. By default, this value will be resolved as a path relative to
+     * `${quarkus.smallrye-health.rootPath}`.
      */
     @WithDefault("group")
     String groupPath();
 
     /**
-     * The relative path of the wellness health-checking endpoint.
-     * By default, this value will be resolved as a path relative to `${quarkus.smallrye-health.rootPath}`.
+     * The relative path of the wellness health-checking endpoint. By default, this value will be resolved as a path
+     * relative to `${quarkus.smallrye-health.rootPath}`.
      */
     @WithDefault("well")
     String wellnessPath();
 
     /**
-     * The relative path of the startup health-checking endpoint.
-     * By default, this value will be resolved as a path relative to `${quarkus.smallrye-health.rootPath}`.
+     * The relative path of the startup health-checking endpoint. By default, this value will be resolved as a path
+     * relative to `${quarkus.smallrye-health.rootPath}`.
      */
     @WithDefault("started")
     String startupPath();
@@ -93,8 +92,8 @@ public interface SmallRyeHealthBuildTimeConfig {
     Optional<String> defaultHealthGroup();
 
     /**
-     * If management interface is turned on the health endpoints and ui will be published under the management interface. This
-     * allows you to exclude Health from management by setting the value to false
+     * If management interface is turned on the health endpoints and ui will be published under the management
+     * interface. This allows you to exclude Health from management by setting the value to false
      */
     @WithName("management.enabled")
     @WithDefault("true")

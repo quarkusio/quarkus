@@ -68,9 +68,7 @@ public class DefaultAndNamedMongoClientConfigTest extends MongoWithReplicasTestB
         org.eclipse.microprofile.health.HealthCheckResponse response = health.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.UP);
         assertThat(response.getData()).isNotEmpty();
-        assertThat(response.getData().get()).hasSize(2).contains(
-                entry("<default>", "OK"),
-                entry("cluster2", "OK"));
+        assertThat(response.getData().get()).hasSize(2).contains(entry("<default>", "OK"), entry("cluster2", "OK"));
 
     }
 

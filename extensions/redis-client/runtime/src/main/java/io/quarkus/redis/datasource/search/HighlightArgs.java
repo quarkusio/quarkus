@@ -24,7 +24,9 @@ public class HighlightArgs implements RedisCommandExtraArguments {
      * Each passed field is highlighted. If no {@code FIELDS} directive is passed, then all fields returned are
      * highlighted.
      *
-     * @param fields the fields
+     * @param fields
+     *        the fields
+     *
      * @return the current {@code HighlightArgs}
      */
     public HighlightArgs fields(String... fields) {
@@ -34,12 +36,14 @@ public class HighlightArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Configure the tags wrapping the highlighted words.
-     * {@code open} is prepended to each term match, {@code close} is appended to it.
-     * If no {@code TAGS} are specified, a built-in tag value is appended and prepended.
+     * Configure the tags wrapping the highlighted words. {@code open} is prepended to each term match, {@code close} is
+     * appended to it. If no {@code TAGS} are specified, a built-in tag value is appended and prepended.
      *
-     * @param open the open tag
-     * @param close the close tag
+     * @param open
+     *        the open tag
+     * @param close
+     *        the close tag
+     *
      * @return the current {@code HighlightArgs}
      */
     public HighlightArgs tags(String open, String close) {

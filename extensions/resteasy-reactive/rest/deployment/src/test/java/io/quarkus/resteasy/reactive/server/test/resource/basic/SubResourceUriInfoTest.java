@@ -23,26 +23,22 @@ import io.restassured.RestAssured;
 
 public class SubResourceUriInfoTest {
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class);
-                    war.addClasses(UsersResource.class);
-                    war.addClasses(UserResource.class);
-                    war.addClasses(ContactResource.class);
-                    war.addClasses(ResponseHolder.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class);
+            war.addClasses(UsersResource.class);
+            war.addClasses(UserResource.class);
+            war.addClasses(ContactResource.class);
+            war.addClasses(ResponseHolder.class);
+            return war;
+        }
+    });
 
     @Test
     public void basicTest() {
-        RestAssured.given()
-                .get("/users/userId/contacts/contactId")
-                .then()
-                .statusCode(200)
+        RestAssured.given().get("/users/userId/contacts/contactId").then().statusCode(200)
                 .body(equalTo("{id=[userId]}{id=[contactId, userId]}{id=[contactId, userId]}"));
     }
 

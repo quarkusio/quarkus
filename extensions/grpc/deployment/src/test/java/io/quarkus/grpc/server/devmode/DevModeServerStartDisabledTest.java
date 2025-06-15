@@ -12,9 +12,8 @@ import io.restassured.response.Response;
 public class DevModeServerStartDisabledTest {
     @RegisterExtension
     public static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IsUpEndpoint.class)
-                    .add(new StringAsset("quarkus.grpc.dev-mode.force-server-start=false\n"), "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(IsUpEndpoint.class).add(
+                    new StringAsset("quarkus.grpc.dev-mode.force-server-start=false\n"), "application.properties"));
 
     @Test
     public void test() {

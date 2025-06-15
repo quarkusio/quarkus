@@ -12,9 +12,8 @@ public interface RedisConfigGroup extends MicrometerConfig.CapabilityEnabled {
     /**
      * Redis client metrics support.
      * <p>
-     * Support for Redis metrics will be enabled if Micrometer support is enabled,
-     * the Quarkus Redis client extension is on the classpath
-     * and either this value is true, or this value is unset and
+     * Support for Redis metrics will be enabled if Micrometer support is enabled, the Quarkus Redis client extension is
+     * on the classpath and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.binder-enabled-default} is true.
      */
     @Override

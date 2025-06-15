@@ -36,8 +36,8 @@ public class AmazonLambdaHttpProcessor {
     private static final Logger log = Logger.getLogger(AmazonLambdaHttpProcessor.class);
     public static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
     public static final DotName API_GATEWAY_HTTP_EVENT = DotName.createSimple(APIGatewayV2HTTPEvent.class.getName());
-    public static final DotName REQUEST_CONTEXT = DotName.createSimple(
-            APIGatewayV2HTTPEvent.RequestContext.class.getName());
+    public static final DotName REQUEST_CONTEXT = DotName
+            .createSimple(APIGatewayV2HTTPEvent.RequestContext.class.getName());
 
     @BuildStep
     public void setupCDI(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -53,8 +53,7 @@ public class AmazonLambdaHttpProcessor {
             return;
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
-        builder.addBeanClasses(LambdaHttpAuthenticationMechanism.class,
-                DefaultLambdaIdentityProvider.class,
+        builder.addBeanClasses(LambdaHttpAuthenticationMechanism.class, DefaultLambdaIdentityProvider.class,
                 AwsHttpContextProducers.class);
         additionalBeans.produce(builder.build());
     }
@@ -76,18 +75,17 @@ public class AmazonLambdaHttpProcessor {
     }
 
     @BuildStep
-    public void registerReflectionClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
-        reflectiveClassBuildItemBuildProducer
-                .produce(ReflectiveClassBuildItem.builder(APIGatewayV2HTTPEvent.class,
-                        APIGatewayV2HTTPEvent.RequestContext.class,
+    public void registerReflectionClasses(
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
+                .builder(APIGatewayV2HTTPEvent.class, APIGatewayV2HTTPEvent.RequestContext.class,
                         APIGatewayV2HTTPEvent.RequestContext.Http.class,
                         APIGatewayV2HTTPEvent.RequestContext.Authorizer.class,
                         APIGatewayV2HTTPEvent.RequestContext.CognitoIdentity.class,
                         APIGatewayV2HTTPEvent.RequestContext.IAM.class,
-                        APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT.class,
-                        APIGatewayV2HTTPResponse.class, Headers.class, MultiValuedTreeMap.class)
-                        .reason(getClass().getName())
-                        .methods().fields().build());
+                        APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT.class, APIGatewayV2HTTPResponse.class,
+                        Headers.class, MultiValuedTreeMap.class)
+                .reason(getClass().getName()).methods().fields().build());
     }
 
     /**
@@ -106,12 +104,10 @@ public class AmazonLambdaHttpProcessor {
         String output = LambdaUtil.copyResource("lambda/bootstrap-example.sh");
         LambdaUtil.writeFile(target, "bootstrap-example.sh", output);
 
-        output = LambdaUtil.copyResource("http/sam.jvm.yaml")
-                .replace("${lambdaName}", lambdaName);
+        output = LambdaUtil.copyResource("http/sam.jvm.yaml").replace("${lambdaName}", lambdaName);
         LambdaUtil.writeFile(target, "sam.jvm.yaml", output);
 
-        output = LambdaUtil.copyResource("http/sam.native.yaml")
-                .replace("${lambdaName}", lambdaName);
+        output = LambdaUtil.copyResource("http/sam.native.yaml").replace("${lambdaName}", lambdaName);
         LambdaUtil.writeFile(target, "sam.native.yaml", output);
     }
 
@@ -122,7 +118,8 @@ public class AmazonLambdaHttpProcessor {
         contextTypeProducer.produce(new ContextTypeBuildItem(API_GATEWAY_HTTP_EVENT));
         contextTypeProducer.produce(new ContextTypeBuildItem(REQUEST_CONTEXT));
 
-        unremovableBeanProducer.produce(UnremovableBeanBuildItem.beanTypes(CONTEXT, API_GATEWAY_HTTP_EVENT, REQUEST_CONTEXT));
+        unremovableBeanProducer
+                .produce(UnremovableBeanBuildItem.beanTypes(CONTEXT, API_GATEWAY_HTTP_EVENT, REQUEST_CONTEXT));
     }
 
 }

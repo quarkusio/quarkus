@@ -33,7 +33,8 @@ public abstract class DevUIBuildTimeDataTest {
     public DevUIBuildTimeDataTest(String namespace) {
         Config config = ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT);
         String testUrl = config.getValue("test.url", String.class);
-        String nonApplicationRoot = config.getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");
+        String nonApplicationRoot = config.getOptionalValue("quarkus.http.non-application-root-path", String.class)
+                .orElse("q");
         if (!nonApplicationRoot.startsWith("/")) {
             nonApplicationRoot = "/" + nonApplicationRoot;
         }
@@ -79,8 +80,7 @@ public abstract class DevUIBuildTimeDataTest {
     }
 
     private String readDataFromUrl() throws MalformedURLException, IOException {
-        try (Scanner scanner = new Scanner(uri.toURL().openStream(),
-                StandardCharsets.UTF_8.toString())) {
+        try (Scanner scanner = new Scanner(uri.toURL().openStream(), StandardCharsets.UTF_8.toString())) {
             scanner.useDelimiter("\\A");
             return scanner.hasNext() ? scanner.next() : null;
         }

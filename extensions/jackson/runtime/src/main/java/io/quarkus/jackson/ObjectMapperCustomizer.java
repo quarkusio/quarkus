@@ -26,8 +26,8 @@ public interface ObjectMapperCustomizer extends Comparable<ObjectMapperCustomize
     void customize(ObjectMapper objectMapper);
 
     /**
-     * Defines the priority that the customizers are applied.
-     * A lower integer value means that the customizer will be applied after a customizer with a higher priority
+     * Defines the priority that the customizers are applied. A lower integer value means that the customizer will be
+     * applied after a customizer with a higher priority
      */
     default int priority() {
         return DEFAULT_PRIORITY;

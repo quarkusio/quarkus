@@ -44,8 +44,8 @@ public class CombinedIndexBuildStep {
 
         for (AdditionalIndexedClassesBuildItem additionalIndexedClasses : additionalIndexedClassesItems) {
             for (String classToIndex : additionalIndexedClasses.getClassesToIndex()) {
-                IndexingUtil.indexClass(classToIndex, indexer, archivesIndex, additionalIndex,
-                        knownMissingClasses, Thread.currentThread().getContextClassLoader());
+                IndexingUtil.indexClass(classToIndex, indexer, archivesIndex, additionalIndex, knownMissingClasses,
+                        Thread.currentThread().getContextClassLoader());
             }
         }
 

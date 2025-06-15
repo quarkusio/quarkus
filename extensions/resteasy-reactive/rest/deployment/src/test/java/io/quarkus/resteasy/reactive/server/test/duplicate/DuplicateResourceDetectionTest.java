@@ -12,8 +12,8 @@ public class DuplicateResourceDetectionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(GreetingResource.class, GreetingResource2.class, GreetingResource3.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class,
+                    GreetingResource2.class, GreetingResource3.class))
             .assertException(throwable -> Assertions.assertThat(throwable)
                     .hasMessage("GET /hello-resteasy is declared by :" + System.lineSeparator()
                             + "io.quarkus.resteasy.reactive.server.test.duplicate.GreetingResource#helloGet consumes *, produces text/plain;charset=UTF-8"

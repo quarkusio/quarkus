@@ -61,15 +61,11 @@ public class MongoTestBase {
             LOGGER.infof("Starting Mongo %s on port %s", version, port);
 
             MONGO = Mongod.instance()
-                    .withNet(Start.to(Net.class).initializedWith(Net.builder()
-                            .from(Net.defaults())
-                            .port(port)
-                            .build()))
+                    .withNet(Start.to(Net.class).initializedWith(Net.builder().from(Net.defaults()).port(port).build()))
                     .withMongodArguments(Start.to(MongodArguments.class)
                             .initializedWith(MongodArguments.defaults().withUseNoJournal(false)))
-                    .withProcessConfig(
-                            Start.to(ProcessConfig.class)
-                                    .initializedWith(ProcessConfig.defaults().withStopTimeoutInMillis(15_000)))
+                    .withProcessConfig(Start.to(ProcessConfig.class)
+                            .initializedWith(ProcessConfig.defaults().withStopTimeoutInMillis(15_000)))
                     .start(version);
 
         } else {
@@ -111,10 +107,7 @@ public class MongoTestBase {
             io.quarkus.mongodb.reactive.ReactiveMongoClient client) {
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
         List<String> names = database.listCollectionNames().collect().asList().await().indefinitely();
-        return names
-                .stream()
-                .filter(c -> c.startsWith(COLLECTION_PREFIX))
-                .map(database::getCollection)
+        return names.stream().filter(c -> c.startsWith(COLLECTION_PREFIX)).map(database::getCollection)
                 .collect(Collectors.toList());
     }
 
@@ -183,9 +176,9 @@ public class MongoTestBase {
 
     public static void fixIssue14424() {
         try {
-            //JDK bug workaround
-            //https://github.com/quarkusio/quarkus/issues/14424
-            //force class init to prevent possible deadlock when done by mongo threads
+            // JDK bug workaround
+            // https://github.com/quarkusio/quarkus/issues/14424
+            // force class init to prevent possible deadlock when done by mongo threads
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException e) {
         }

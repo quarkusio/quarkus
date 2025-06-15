@@ -12,9 +12,7 @@ public class GetAbsolutePathResource {
 
     @GET
     public Response response(@QueryParam("dummy") String dummy, @Context UriInfo uriInfo) {
-        return Response.ok()
-                .header("absolutePath", uriInfo.getAbsolutePath().toString())
-                .header("dummy", dummy == null ? "unset" : dummy)
-                .build();
+        return Response.ok().header("absolutePath", uriInfo.getAbsolutePath().toString())
+                .header("dummy", dummy == null ? "unset" : dummy).build();
     }
 }

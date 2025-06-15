@@ -157,9 +157,7 @@ public final class FormData implements Iterable<String> {
 
     @Override
     public String toString() {
-        return "FormData{" +
-                "values=" + values +
-                '}';
+        return "FormData{" + "values=" + values + '}';
     }
 
     public void deleteFiles() {
@@ -223,7 +221,7 @@ public final class FormData implements Iterable<String> {
             if (file != null) {
                 try {
                     Files.delete(file);
-                } catch (NoSuchFileException e) { //already deleted
+                } catch (NoSuchFileException e) { // already deleted
                 }
             }
         }

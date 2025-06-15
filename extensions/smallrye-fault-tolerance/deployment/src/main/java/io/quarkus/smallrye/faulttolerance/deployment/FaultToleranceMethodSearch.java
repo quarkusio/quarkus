@@ -51,40 +51,53 @@ final class FaultToleranceMethodSearch {
     }
 
     /**
-     * Finds a fallback method for given guarded method. If the guarded method is present on given {@code beanClass}
-     * and is actually declared by given {@code declaringClass} and has given {@code parameterTypes} and {@code returnType},
+     * Finds a fallback method for given guarded method. If the guarded method is present on given {@code beanClass} and
+     * is actually declared by given {@code declaringClass} and has given {@code parameterTypes} and {@code returnType},
      * then a fallback method of given {@code name}, with parameter types and return type matching the parameter types
      * and return type of the guarded method, is searched for on the {@code beanClass} and its superclasses and
-     * superinterfaces, according to the specification rules. Returns {@code null} if no matching fallback method exists.
+     * superinterfaces, according to the specification rules. Returns {@code null} if no matching fallback method
+     * exists.
      *
-     * @param beanClass the class of the bean that has the guarded method
-     * @param declaringClass the class that actually declares the guarded method (can be a supertype of bean class)
-     * @param name name of the fallback method
-     * @param parameterTypes parameter types of the guarded method
-     * @param returnType return type of the guarded method
+     * @param beanClass
+     *        the class of the bean that has the guarded method
+     * @param declaringClass
+     *        the class that actually declares the guarded method (can be a supertype of bean class)
+     * @param name
+     *        name of the fallback method
+     * @param parameterTypes
+     *        parameter types of the guarded method
+     * @param returnType
+     *        return type of the guarded method
+     *
      * @return the fallback method or {@code null} if none exists
      */
-    MethodInfo findFallbackMethod(ClassInfo beanClass, ClassInfo declaringClass,
-            String name, Type[] parameterTypes, Type returnType) {
+    MethodInfo findFallbackMethod(ClassInfo beanClass, ClassInfo declaringClass, String name, Type[] parameterTypes,
+            Type returnType) {
 
         Set<MethodInfo> result = findMethod(beanClass, declaringClass, name, parameterTypes, returnType, false);
         return result.isEmpty() ? null : result.iterator().next();
     }
 
     /**
-     * Finds a set of fallback methods with exception parameter for given guarded method. If the guarded method
-     * is present on given {@code beanClass} and is actually declared by given {@code declaringClass} and has given
+     * Finds a set of fallback methods with exception parameter for given guarded method. If the guarded method is
+     * present on given {@code beanClass} and is actually declared by given {@code declaringClass} and has given
      * {@code parameterTypes} and {@code returnType}, then fallback methods of given {@code name}, with parameter types
      * and return type matching the parameter types and return type of the guarded method, and with one additional
      * parameter assignable to {@code Throwable} at the end of parameter list, is searched for on the {@code beanClass}
      * and its superclasses and superinterfaces, according to the specification rules. Returns an empty set if no
      * matching fallback method exists.
      *
-     * @param beanClass the class of the bean that has the guarded method
-     * @param declaringClass the class that actually declares the guarded method (can be a supertype of bean class)
-     * @param name name of the fallback method
-     * @param parameterTypes parameter types of the guarded method
-     * @param returnType return type of the guarded method
+     * @param beanClass
+     *        the class of the bean that has the guarded method
+     * @param declaringClass
+     *        the class that actually declares the guarded method (can be a supertype of bean class)
+     * @param name
+     *        name of the fallback method
+     * @param parameterTypes
+     *        parameter types of the guarded method
+     * @param returnType
+     *        return type of the guarded method
+     *
      * @return the fallback method or an empty set if none exists
      */
     Set<MethodInfo> findFallbackMethodsWithExceptionParameter(ClassInfo beanClass, ClassInfo declaringClass,
@@ -94,13 +107,18 @@ final class FaultToleranceMethodSearch {
 
     /**
      * Finds a before retry method for given guarded method. If the guarded method is present on given {@code beanClass}
-     * and is actually declared by given {@code declaringClass}, then a before retry method of given {@code name},
-     * with no parameters and return type of {@code void}, is searched for on the {@code beanClass} and its superclasses and
-     * superinterfaces, according to the specification rules. Returns {@code null} if no matching before retry method exists.
+     * and is actually declared by given {@code declaringClass}, then a before retry method of given {@code name}, with
+     * no parameters and return type of {@code void}, is searched for on the {@code beanClass} and its superclasses and
+     * superinterfaces, according to the specification rules. Returns {@code null} if no matching before retry method
+     * exists.
      *
-     * @param beanClass the class of the bean that has the guarded method
-     * @param declaringClass the class that actually declares the guarded method (can be a supertype of bean class)
-     * @param name name of the before retry method
+     * @param beanClass
+     *        the class of the bean that has the guarded method
+     * @param declaringClass
+     *        the class that actually declares the guarded method (can be a supertype of bean class)
+     * @param name
+     *        name of the before retry method
+     *
      * @return the before retry method or {@code null} if none exists
      */
     MethodInfo findBeforeRetryMethod(ClassInfo beanClass, ClassInfo declaringClass, String name) {
@@ -170,8 +188,8 @@ final class FaultToleranceMethodSearch {
                     throw new IllegalArgumentException("Class not in index: " + interfaces.get(i));
                 }
                 Type genericIface = clazz.interfaceTypes().get(i);
-                worklist.add(new ClassWithTypeMapping(iface,
-                        actualMapping.getDirectSupertypeMapping(iface, genericIface)));
+                worklist.add(
+                        new ClassWithTypeMapping(iface, actualMapping.getDirectSupertypeMapping(iface, genericIface)));
             }
         }
 
@@ -222,10 +240,8 @@ final class FaultToleranceMethodSearch {
             TypeMapping actualMapping, TypeMapping expectedMapping) {
         Set<MethodInfo> set = new HashSet<>();
         for (MethodInfo method : classToSearch.methods()) {
-            if (method.name().equals(name)
-                    && isAccessibleFrom(method, guardedMethodDeclaringClass)
-                    && signaturesMatch(method, parameterTypes, returnType, exceptionParameter,
-                            actualMapping, expectedMapping)) {
+            if (method.name().equals(name) && isAccessibleFrom(method, guardedMethodDeclaringClass) && signaturesMatch(
+                    method, parameterTypes, returnType, exceptionParameter, actualMapping, expectedMapping)) {
                 set.add(method);
             }
         }
@@ -297,52 +313,52 @@ final class FaultToleranceMethodSearch {
         return false;
     }
 
-    private boolean typeMatches(Type actualType, Type expectedType,
-            TypeMapping actualMapping, TypeMapping expectedMapping) {
+    private boolean typeMatches(Type actualType, Type expectedType, TypeMapping actualMapping,
+            TypeMapping expectedMapping) {
         actualType = actualMapping.map(actualType);
         expectedType = expectedMapping.map(expectedType);
 
-        if (actualType.kind() == Type.Kind.CLASS
-                || actualType.kind() == Type.Kind.PRIMITIVE
+        if (actualType.kind() == Type.Kind.CLASS || actualType.kind() == Type.Kind.PRIMITIVE
                 || actualType.kind() == Type.Kind.VOID) {
             return expectedType.equals(actualType);
         } else if (actualType.kind() == Type.Kind.ARRAY && expectedType.kind() == Type.Kind.ARRAY) {
             return typeMatches(actualType.asArrayType().componentType(), expectedType.asArrayType().componentType(),
                     actualMapping, expectedMapping);
-        } else if (actualType.kind() == Type.Kind.PARAMETERIZED_TYPE && expectedType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+        } else if (actualType.kind() == Type.Kind.PARAMETERIZED_TYPE
+                && expectedType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
             return parameterizedTypeMatches(actualType.asParameterizedType(), expectedType.asParameterizedType(),
                     actualMapping, expectedMapping);
         } else if (actualType.kind() == Type.Kind.WILDCARD_TYPE && expectedType.kind() == Type.Kind.WILDCARD_TYPE) {
-            return wildcardTypeMatches(actualType.asWildcardType(), expectedType.asWildcardType(),
-                    actualMapping, expectedMapping);
+            return wildcardTypeMatches(actualType.asWildcardType(), expectedType.asWildcardType(), actualMapping,
+                    expectedMapping);
         } else {
             return false;
         }
     }
 
-    private boolean wildcardTypeMatches(WildcardType actualType, WildcardType expectedType,
-            TypeMapping actualMapping, TypeMapping expectedMapping) {
+    private boolean wildcardTypeMatches(WildcardType actualType, WildcardType expectedType, TypeMapping actualMapping,
+            TypeMapping expectedMapping) {
         Type actualLowerBound = actualType.superBound();
         Type expectedLowerBound = expectedType.superBound();
         boolean lowerBoundsMatch = (actualLowerBound == null && expectedLowerBound == null)
                 || (actualLowerBound != null && expectedLowerBound != null
                         && typeMatches(actualLowerBound, expectedLowerBound, actualMapping, expectedMapping));
-        boolean upperBoundsMatch = typeMatches(actualType.extendsBound(), expectedType.extendsBound(),
-                actualMapping, expectedMapping);
+        boolean upperBoundsMatch = typeMatches(actualType.extendsBound(), expectedType.extendsBound(), actualMapping,
+                expectedMapping);
         return lowerBoundsMatch && upperBoundsMatch;
     }
 
     private boolean parameterizedTypeMatches(ParameterizedType actualType, ParameterizedType expectedType,
             TypeMapping actualMapping, TypeMapping expectedMapping) {
-        boolean genericClassMatch = typeMatches(ClassType.create(actualType.name()), ClassType.create(expectedType.name()),
-                actualMapping, expectedMapping);
-        boolean typeArgumentsMatch = typeListMatches(actualType.arguments(), expectedType.arguments(),
-                actualMapping, expectedMapping);
+        boolean genericClassMatch = typeMatches(ClassType.create(actualType.name()),
+                ClassType.create(expectedType.name()), actualMapping, expectedMapping);
+        boolean typeArgumentsMatch = typeListMatches(actualType.arguments(), expectedType.arguments(), actualMapping,
+                expectedMapping);
         return genericClassMatch && typeArgumentsMatch;
     }
 
-    private boolean typeListMatches(List<Type> actualTypes, List<Type> expectedTypes,
-            TypeMapping actualMapping, TypeMapping expectedMapping) {
+    private boolean typeListMatches(List<Type> actualTypes, List<Type> expectedTypes, TypeMapping actualMapping,
+            TypeMapping expectedMapping) {
         if (actualTypes.size() != expectedTypes.size()) {
             return false;
         }
@@ -363,13 +379,17 @@ final class FaultToleranceMethodSearch {
         }
 
         /**
-         * Bean class can be a subclass of the class that declares the guarded method.
-         * This method returns a mapping of the type parameters of the method's declaring class
-         * to the type arguments provided on the bean class or any class between it and the declaring class.
+         * Bean class can be a subclass of the class that declares the guarded method. This method returns a mapping of
+         * the type parameters of the method's declaring class to the type arguments provided on the bean class or any
+         * class between it and the declaring class.
          *
-         * @param beanClass class of the bean which has the guarded method
-         * @param declaringClass class that actually declares the guarded method
-         * @param index index to use for locating superclasses
+         * @param beanClass
+         *        class of the bean which has the guarded method
+         * @param declaringClass
+         *        class that actually declares the guarded method
+         * @param index
+         *        index to use for locating superclasses
+         *
          * @return type mapping
          */
         private static TypeMapping createFor(ClassInfo beanClass, ClassInfo declaringClass, IndexView index) {

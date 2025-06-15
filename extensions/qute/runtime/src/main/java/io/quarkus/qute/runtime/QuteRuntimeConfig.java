@@ -15,11 +15,11 @@ import io.smallrye.config.WithDefault;
 public interface QuteRuntimeConfig {
 
     /**
-     * The strategy used when a standalone expression evaluates to a "not found" value at runtime and
-     * the {@code quarkus.qute.strict-rendering} config property is set to {@code false}
+     * The strategy used when a standalone expression evaluates to a "not found" value at runtime and the
+     * {@code quarkus.qute.strict-rendering} config property is set to {@code false}
      * <p>
-     * This strategy is never used when evaluating section parameters, e.g. <code>{#if foo.name}</code>. In such case, it's the
-     * responsibility of the section to handle this situation appropriately.
+     * This strategy is never used when evaluating section parameters, e.g. <code>{#if foo.name}</code>. In such case,
+     * it's the responsibility of the section to handle this situation appropriately.
      * <p>
      * By default, the {@code NOT_FOUND} constant is written to the output. However, in the development mode the
      * {@link PropertyNotFoundStrategy#THROW_EXCEPTION} is used by default, i.e. when the strategy is not specified.
@@ -27,24 +27,26 @@ public interface QuteRuntimeConfig {
     Optional<PropertyNotFoundStrategy> propertyNotFoundStrategy();
 
     /**
-     * Specify whether the parser should remove standalone lines from the output. A standalone line is a line that contains at
-     * least one section tag, parameter declaration, or comment but no expression and no non-whitespace character.
+     * Specify whether the parser should remove standalone lines from the output. A standalone line is a line that
+     * contains at least one section tag, parameter declaration, or comment but no expression and no non-whitespace
+     * character.
      */
     @WithDefault("true")
     boolean removeStandaloneLines();
 
     /**
-     * If set to {@code true} then any expression that is evaluated to a {@link Results.NotFound} value will always result in a
-     * {@link TemplateException} and the rendering is aborted.
+     * If set to {@code true} then any expression that is evaluated to a {@link Results.NotFound} value will always
+     * result in a {@link TemplateException} and the rendering is aborted.
      * <p>
-     * Note that the {@code quarkus.qute.property-not-found-strategy} config property is completely ignored if strict rendering
-     * is enabled.
+     * Note that the {@code quarkus.qute.property-not-found-strategy} config property is completely ignored if strict
+     * rendering is enabled.
      */
     @WithDefault("true")
     boolean strictRendering();
 
     /**
-     * The global rendering timeout in milliseconds. It is used if no {@code timeout} template instance attribute is set.
+     * The global rendering timeout in milliseconds. It is used if no {@code timeout} template instance attribute is
+     * set.
      */
     @WithDefault("10000")
     long timeout();

@@ -22,20 +22,13 @@ public class MultiRouteTest {
 
     @Test
     public void testMultiRoute() {
-        when().get("/hello").then().statusCode(200)
-                .body(is("Hello world!"))
-                .header("content-type", is(nullValue()));
-        when().get("/hellos").then().statusCode(200)
-                .body(is("helloworld!"))
-                .header("content-type", is(nullValue()));
-        when().get("/no-hello").then().statusCode(204).body(hasLength(0))
-                .header("content-type", is(nullValue()));
+        when().get("/hello").then().statusCode(200).body(is("Hello world!")).header("content-type", is(nullValue()));
+        when().get("/hellos").then().statusCode(200).body(is("helloworld!")).header("content-type", is(nullValue()));
+        when().get("/no-hello").then().statusCode(204).body(hasLength(0)).header("content-type", is(nullValue()));
         // status already sent, but not the end of the array
-        when().get("/hello-and-fail").then().statusCode(200)
-                .body(containsString("Hello"));
+        when().get("/hello-and-fail").then().statusCode(200).body(containsString("Hello"));
 
-        when().get("/buffer").then().statusCode(200).body(is("Buffer"))
-                .header("content-type", is(nullValue()));
+        when().get("/buffer").then().statusCode(200).body(is("Buffer")).header("content-type", is(nullValue()));
         when().get("/buffers").then().statusCode(200).body(is("Buffer Buffer Buffer."));
         when().get("/buffers-and-fail").then().statusCode(200).body(containsString("Buffer"));
 
@@ -43,11 +36,9 @@ public class MultiRouteTest {
 
         when().get("/void").then().statusCode(204).body(hasLength(0));
 
-        when().get("/people").then().statusCode(200)
-                .body(containsString("{\"name\":\"superman\",\"id\":1}"))
+        when().get("/people").then().statusCode(200).body(containsString("{\"name\":\"superman\",\"id\":1}"))
                 .body(containsString("{\"name\":\"batman\",\"id\":2}"))
-                .body(containsString("{\"name\":\"spiderman\",\"id\":3}"))
-                .header("content-type", is(nullValue()));
+                .body(containsString("{\"name\":\"spiderman\",\"id\":3}")).header("content-type", is(nullValue()));
 
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
         when().get("/null").then().statusCode(500).body(containsString(NullPointerException.class.getName()));
@@ -74,8 +65,7 @@ public class MultiRouteTest {
 
         @Route(path = "hello-and-fail")
         Multi<String> helloAndFail(RoutingContext context) {
-            return Multi.createBy().concatenating().streams(
-                    Multi.createFrom().item("Hello"),
+            return Multi.createBy().concatenating().streams(Multi.createFrom().item("Hello"),
                     Multi.createFrom().failure(new IOException("boom")));
         }
 
@@ -86,15 +76,14 @@ public class MultiRouteTest {
 
         @Route(path = "buffers")
         Multi<Buffer> buffers(RoutingContext context) {
-            return Multi.createFrom()
-                    .items(Buffer.buffer("Buffer"), Buffer.buffer(" Buffer"), Buffer.buffer(" Buffer."));
+            return Multi.createFrom().items(Buffer.buffer("Buffer"), Buffer.buffer(" Buffer"),
+                    Buffer.buffer(" Buffer."));
         }
 
         @Route(path = "buffers-and-fail")
         Multi<Buffer> buffersAndFail(RoutingContext context) {
-            return Multi.createBy().concatenating().collectFailures().streams(
-                    Multi.createFrom().items(Buffer.buffer("Buffer"), Buffer.buffer(" Buffer"),
-                            Buffer.buffer(" Buffer.")),
+            return Multi.createBy().concatenating().collectFailures().streams(Multi.createFrom()
+                    .items(Buffer.buffer("Buffer"), Buffer.buffer(" Buffer"), Buffer.buffer(" Buffer.")),
                     Multi.createFrom().failure(new IOException("boom")));
 
         }
@@ -107,15 +96,12 @@ public class MultiRouteTest {
 
         @Route(path = "void")
         Multi<Void> multiVoid(RoutingContext context) {
-            return Multi.createFrom().range(0, 200)
-                    .onItem().ignore();
+            return Multi.createFrom().range(0, 200).onItem().ignore();
         }
 
         @Route(path = "/people")
         Multi<Person> people(RoutingContext context) {
-            return Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
+            return Multi.createFrom().items(new Person("superman", 1), new Person("batman", 2),
                     new Person("spiderman", 3));
         }
 

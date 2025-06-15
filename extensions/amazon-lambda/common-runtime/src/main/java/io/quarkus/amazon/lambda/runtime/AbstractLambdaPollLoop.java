@@ -23,8 +23,7 @@ public abstract class AbstractLambdaPollLoop {
     private static final Logger log = Logger.getLogger(AbstractLambdaPollLoop.class);
 
     private static final String USER_AGENT = "User-Agent";
-    private static final String USER_AGENT_VALUE = String.format(
-            "quarkus/%s-%s",
+    private static final String USER_AGENT_VALUE = String.format("quarkus/%s-%s",
             System.getProperty("java.vendor.version"),
             AbstractLambdaPollLoop.class.getPackage().getImplementationVersion());
 
@@ -65,7 +64,7 @@ public abstract class AbstractLambdaPollLoop {
                             && (launchMode == LaunchMode.DEVELOPMENT || launchMode == LaunchMode.NORMAL)) {
                         // when running with continuous testing, this method fails
                         // because currentApplication is not set when running as an
-                        // auxiliary application.  So, just skip it if hot replacement enabled.
+                        // auxiliary application. So, just skip it if hot replacement enabled.
                         // This method is called to determine if Quarkus is started and ready to receive requests.
                         checkQuarkusBootstrapped();
                     }
@@ -92,7 +91,8 @@ public abstract class AbstractLambdaPollLoop {
                             throw e;
                         }
                         try {
-                            String requestId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
+                            String requestId = requestConnection
+                                    .getHeaderField(AmazonLambdaApi.LAMBDA_RUNTIME_AWS_REQUEST_ID);
                             if (requestId != null) {
                                 MDC.put(MDC_AWS_REQUEST_ID_KEY, requestId);
                             }
@@ -110,7 +110,8 @@ public abstract class AbstractLambdaPollLoop {
                                             // hot replacement happened in dev mode
                                             // so we requeue the request as quarkus will restart
                                             // and the message will not be processed
-                                            // FYI: this requeue endpoint is something only the mock event server implements
+                                            // FYI: this requeue endpoint is something only the mock event server
+                                            // implements
                                             requeue(baseUrl, requestId);
                                             return;
                                         }
@@ -118,7 +119,8 @@ public abstract class AbstractLambdaPollLoop {
                                         shouldInterrupt.set(true);
                                     }
                                 }
-                                String traceId = requestConnection.getHeaderField(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
+                                String traceId = requestConnection
+                                        .getHeaderField(AmazonLambdaApi.LAMBDA_TRACE_HEADER_KEY);
                                 if (traceId != null) {
                                     System.setProperty(LAMBDA_TRACE_HEADER_PROP, traceId);
                                 }
@@ -126,8 +128,8 @@ public abstract class AbstractLambdaPollLoop {
                                 if (isStream()) {
                                     HttpURLConnection responseConnection = responseStream(url);
                                     if (running.get()) {
-                                        processRequest(requestConnection.getInputStream(), responseConnection.getOutputStream(),
-                                                createContext(requestConnection));
+                                        processRequest(requestConnection.getInputStream(),
+                                                responseConnection.getOutputStream(), createContext(requestConnection));
                                         while (responseConnection.getInputStream().read() != -1) {
                                             // Read data
                                         }
@@ -201,7 +203,7 @@ public abstract class AbstractLambdaPollLoop {
         context.addShutdownTask(() -> {
             running.set(false);
             try {
-                //note that interrupting does not seem to be 100% reliable in unblocking the thread
+                // note that interrupting does not seem to be 100% reliable in unblocking the thread
                 requestConnection.disconnect();
             } catch (Exception ignore) {
             }
@@ -216,9 +218,12 @@ public abstract class AbstractLambdaPollLoop {
     /**
      * Invoke actual app code with unmarshalled input.
      *
-     * @param input unmarshalled input (probably from json)
+     * @param input
+     *        unmarshalled input (probably from json)
      * @param context
+     *
      * @return Unmarshalled Java output (will probably be marshalled to json)
+     *
      * @throws Exception
      */
     protected abstract Object processRequest(Object input, AmazonLambdaContext context) throws Exception;
@@ -291,15 +296,18 @@ public abstract class AbstractLambdaPollLoop {
     }
 
     boolean abortGracefully(Exception ex) {
-        // if we are running in test mode, or native mode outside the lambda container, then don't output stack trace for socket errors
+        // if we are running in test mode, or native mode outside the lambda container, then don't output stack trace
+        // for socket errors
 
         boolean lambdaEnv = System.getenv("AWS_LAMBDA_RUNTIME_API") != null;
-        boolean testOrDevEnv = LaunchMode.current() == LaunchMode.TEST || LaunchMode.current() == LaunchMode.DEVELOPMENT;
+        boolean testOrDevEnv = LaunchMode.current() == LaunchMode.TEST
+                || LaunchMode.current() == LaunchMode.DEVELOPMENT;
         boolean graceful = ((ex instanceof SocketException) && testOrDevEnv)
                 || (ex instanceof UnknownHostException && !lambdaEnv);
 
         if (graceful)
-            log.warn("Aborting lambda poll loop: " + (lambdaEnv ? "no lambda container found" : "ending dev/test mode"));
+            log.warn(
+                    "Aborting lambda poll loop: " + (lambdaEnv ? "no lambda container found" : "ending dev/test mode"));
         return graceful;
     }
 

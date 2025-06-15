@@ -101,10 +101,9 @@ public class RedisClientMetricsTest {
             // ignore it
         }
 
-        redis.batch(List.of(
-                Request.cmd(Command.SET).arg("b1").arg("value"),
-                Request.cmd(Command.SET).arg("b2").arg("value"),
-                Request.cmd(Command.INCR).arg("c1"))).toCompletionStage().toCompletableFuture().join();
+        redis.batch(List.of(Request.cmd(Command.SET).arg("b1").arg("value"),
+                Request.cmd(Command.SET).arg("b2").arg("value"), Request.cmd(Command.INCR).arg("c1")))
+                .toCompletionStage().toCompletableFuture().join();
 
         Assertions.assertEquals(count + 1, registry.get("redis.commands.count").counter().count());
         Assertions.assertEquals(succ + 1, registry.get("redis.commands.success").counter().count());

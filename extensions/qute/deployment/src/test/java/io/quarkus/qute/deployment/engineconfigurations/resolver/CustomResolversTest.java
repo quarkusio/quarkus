@@ -21,10 +21,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CustomResolversTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    root -> root.addClasses(CustomValueResolver.class, CustomNamespaceResolver.class, ResolverBase.class)
-                            .addAsResource(new StringAsset("{bool.foo}::{custom:bar}"), "templates/foo.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addClasses(CustomValueResolver.class, CustomNamespaceResolver.class, ResolverBase.class)
+                    .addAsResource(new StringAsset("{bool.foo}::{custom:bar}"), "templates/foo.html"));
 
     @Inject
     Template foo;

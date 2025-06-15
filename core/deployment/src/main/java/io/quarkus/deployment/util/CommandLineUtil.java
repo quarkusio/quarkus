@@ -17,9 +17,13 @@ public final class CommandLineUtil {
     }
 
     /**
-     * @param toProcess The command line to translate.
+     * @param toProcess
+     *        The command line to translate.
+     *
      * @return The array of translated parts.
-     * @throws IllegalStateException in case of unbalanced quotes.
+     *
+     * @throws IllegalStateException
+     *         in case of unbalanced quotes.
      */
     public static String[] translateCommandline(String toProcess) {
         if ((toProcess == null) || (toProcess.length() == 0)) {

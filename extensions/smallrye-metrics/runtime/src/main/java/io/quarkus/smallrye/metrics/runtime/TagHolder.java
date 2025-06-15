@@ -3,8 +3,8 @@ package io.quarkus.smallrye.metrics.runtime;
 import org.eclipse.microprofile.metrics.Tag;
 
 /**
- * Tag class from MP Metrics API does not have a public default constructor so we use this custom wrapper
- * for passing tag definitions from processor to recorder and reconstructing the original Tag instances in runtime code.
+ * Tag class from MP Metrics API does not have a public default constructor so we use this custom wrapper for passing
+ * tag definitions from processor to recorder and reconstructing the original Tag instances in runtime code.
  */
 public class TagHolder {
 

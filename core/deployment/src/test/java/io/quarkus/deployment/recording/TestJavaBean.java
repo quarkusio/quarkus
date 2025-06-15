@@ -63,8 +63,8 @@ public class TestJavaBean {
         if (o == null || getClass() != o.getClass())
             return false;
         TestJavaBean that = (TestJavaBean) o;
-        boolean matchesSimple = ival == that.ival &&
-                Objects.equals(sval, that.sval) && Objects.equals(boxedIval, that.boxedIval);
+        boolean matchesSimple = ival == that.ival && Objects.equals(sval, that.sval)
+                && Objects.equals(boxedIval, that.boxedIval);
         if (!matchesSimple) {
             return false;
         }
@@ -94,10 +94,6 @@ public class TestJavaBean {
 
     @Override
     public String toString() {
-        return "TestJavaBean{" +
-                "sval='" + sval + '\'' +
-                ", ival=" + ival +
-                ", boxedIval=" + boxedIval +
-                '}';
+        return "TestJavaBean{" + "sval='" + sval + '\'' + ", ival=" + ival + ", boxedIval=" + boxedIval + '}';
     }
 }

@@ -18,8 +18,7 @@ import java.util.Properties;
 
 public class QuarkusGradleTestBase {
 
-    protected static File getProjectDir(final String projectName)
-            throws URISyntaxException, IOException {
+    protected static File getProjectDir(final String projectName) throws URISyntaxException, IOException {
         final URL projectUrl = Thread.currentThread().getContextClassLoader().getResource(projectName);
         if (projectUrl == null) {
             throw new IllegalStateException("Failed to locate test project " + projectName);

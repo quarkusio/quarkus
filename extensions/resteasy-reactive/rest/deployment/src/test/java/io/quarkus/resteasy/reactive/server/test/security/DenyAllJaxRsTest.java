@@ -31,52 +31,44 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class DenyAllJaxRsTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PermitAllResource.class, UnsecuredResource.class,
-                            TestIdentityProvider.class, UnsecuredResourceInterface.class,
-                            TestIdentityController.class, SpecialResource.class,
-                            UnsecuredSubResource.class, HelloResource.class, UnsecuredParentResource.class)
-                    .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
-                            "application.properties"))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(PermitAllResource.class, UnsecuredResource.class, TestIdentityProvider.class,
+                    UnsecuredResourceInterface.class, TestIdentityController.class, SpecialResource.class,
+                    UnsecuredSubResource.class, HelloResource.class, UnsecuredParentResource.class)
+            .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
+                    "application.properties"))
             .addBuildChainCustomizer(builder -> {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
                         // Here we add an AnnotationsTransformer in order to make sure that the security layer
                         // uses the proper set of transformers
-                        context.produce(
-                                new AnnotationsTransformerBuildItem(
-                                        AnnotationsTransformer.builder().appliesTo(AnnotationTarget.Kind.METHOD)
-                                                .transform(transformerContext -> {
-                                                    // This transformer auto-adds @GET and @Path if missing, thus emulating Renarde
-                                                    MethodInfo methodInfo = transformerContext.getTarget().asMethod();
-                                                    ClassInfo declaringClass = methodInfo.declaringClass();
-                                                    if (declaringClass.name().toString().equals(SpecialResource.class.getName())
-                                                            && !methodInfo.isConstructor()
-                                                            && !Modifier.isStatic(methodInfo.flags())) {
-                                                        if (methodInfo.declaredAnnotation(GET.class.getName()) == null) {
-                                                            // auto-add it
-                                                            transformerContext.transform().add(GET.class).done();
-                                                        }
-                                                        if (methodInfo.declaredAnnotation(Path.class.getName()) == null) {
-                                                            // auto-add it
-                                                            transformerContext.transform().add(Path.class,
-                                                                    AnnotationValue.createStringValue("value",
-                                                                            methodInfo.name()))
-                                                                    .done();
-                                                        }
-                                                    }
-                                                })));
+                        context.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer.builder()
+                                .appliesTo(AnnotationTarget.Kind.METHOD).transform(transformerContext -> {
+                                    // This transformer auto-adds @GET and @Path if missing, thus emulating Renarde
+                                    MethodInfo methodInfo = transformerContext.getTarget().asMethod();
+                                    ClassInfo declaringClass = methodInfo.declaringClass();
+                                    if (declaringClass.name().toString().equals(SpecialResource.class.getName())
+                                            && !methodInfo.isConstructor() && !Modifier.isStatic(methodInfo.flags())) {
+                                        if (methodInfo.declaredAnnotation(GET.class.getName()) == null) {
+                                            // auto-add it
+                                            transformerContext.transform().add(GET.class).done();
+                                        }
+                                        if (methodInfo.declaredAnnotation(Path.class.getName()) == null) {
+                                            // auto-add it
+                                            transformerContext.transform().add(Path.class,
+                                                    AnnotationValue.createStringValue("value", methodInfo.name()))
+                                                    .done();
+                                        }
+                                    }
+                                })));
                     }
                 }).produces(AnnotationsTransformerBuildItem.class).build();
             });
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -118,10 +110,7 @@ public class DenyAllJaxRsTest {
         String path = "/unsecured/interface-overridden-declared-on-interface";
         assertStatus(path, 200, 401);
         // check that response comes from the overridden method
-        given().auth().preemptive()
-                .basic("admin", "admin").get(path)
-                .then()
-                .body(Matchers.is("implementor-response"));
+        given().auth().preemptive().basic("admin", "admin").get(path).then().body(Matchers.is("implementor-response"));
     }
 
     @Test
@@ -173,11 +162,7 @@ public class DenyAllJaxRsTest {
 
     @Test
     public void testServerExceptionMapper() {
-        given()
-                .get("/hello")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("unauthorizedExceptionMapper"));
+        given().get("/hello").then().statusCode(200).body(Matchers.equalTo("unauthorizedExceptionMapper"));
     }
 
     @Test
@@ -189,17 +174,9 @@ public class DenyAllJaxRsTest {
     }
 
     private void assertStatus(String path, int status, int anonStatus) {
-        given().auth().preemptive()
-                .basic("admin", "admin").get(path)
-                .then()
-                .statusCode(status);
-        given().auth().preemptive()
-                .basic("user", "user").get(path)
-                .then()
-                .statusCode(status);
-        when().get(path)
-                .then()
-                .statusCode(anonStatus);
+        given().auth().preemptive().basic("admin", "admin").get(path).then().statusCode(status);
+        given().auth().preemptive().basic("user", "user").get(path).then().statusCode(status);
+        when().get(path).then().statusCode(anonStatus);
 
     }
 

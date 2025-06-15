@@ -18,8 +18,8 @@ public class AdditionalSubstitutionsBuildStep {
     private void zoneIdSubstitutions(BuildProducer<ObjectSubstitutionBuildItem> producer) {
         try {
             /*
-             * We can't refer to these classes as they are package private but we need a handle on need
-             * because the bytecode recorder needs to have the actual class registered and not a super class
+             * We can't refer to these classes as they are package private but we need a handle on need because the
+             * bytecode recorder needs to have the actual class registered and not a super class
              */
 
             Class<ZoneId> zoneRegionClass = (Class<ZoneId>) Class.forName("java.time.ZoneRegion");

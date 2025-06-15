@@ -29,8 +29,8 @@ public class BouncyCastleEndpoint {
     @Path("listProviders")
     public String listProviders() {
         return Arrays.asList(Security.getProviders()).stream()
-                .filter(p -> (p.getName().equals("BC") || p.getName().equals("SunPKCS11")))
-                .map(p -> p.getName()).collect(Collectors.joining(","));
+                .filter(p -> (p.getName().equals("BC") || p.getName().equals("SunPKCS11"))).map(p -> p.getName())
+                .collect(Collectors.joining(","));
     }
 
     @GET

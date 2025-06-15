@@ -11,11 +11,9 @@ import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.spring.security.runtime.interceptor.accessor.StringPropertyAccessor;
 
 /**
- * Instances of these classes are created in order to check if the value of property of method parameter
- * inside a Spring Security expression matches the principal name
- *
- * Access to the property of the object is performed by delegating to a purpose generated
- * accessor
+ * Instances of these classes are created in order to check if the value of property of method parameter inside a Spring
+ * Security expression matches the principal name Access to the property of the object is performed by delegating to a
+ * purpose generated accessor
  */
 public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCheck {
 
@@ -26,12 +24,13 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
     private final CheckType checkType;
 
     private PrincipalNameFromParameterObjectSecurityCheck(int index, String expectedParameterClass,
-            String stringPropertyAccessorClass, String propertyName, CheckType checkType) throws ClassNotFoundException {
+            String stringPropertyAccessorClass, String propertyName, CheckType checkType)
+            throws ClassNotFoundException {
         this.index = index;
         this.expectedParameterClass = Class.forName(expectedParameterClass, false,
                 Thread.currentThread().getContextClassLoader());
-        this.stringPropertyAccessorClass = (Class<? extends StringPropertyAccessor>) Class.forName(stringPropertyAccessorClass,
-                false, Thread.currentThread().getContextClassLoader());
+        this.stringPropertyAccessorClass = (Class<? extends StringPropertyAccessor>) Class
+                .forName(stringPropertyAccessorClass, false, Thread.currentThread().getContextClassLoader());
         this.propertyName = propertyName;
         this.checkType = checkType;
     }
@@ -39,8 +38,8 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
     public static PrincipalNameFromParameterObjectSecurityCheck of(int index, String expectedParameterClass,
             String stringPropertyAccessorClass, String propertyName, CheckType checkType) {
         try {
-            return new PrincipalNameFromParameterObjectSecurityCheck(index, expectedParameterClass, stringPropertyAccessorClass,
-                    propertyName, checkType);
+            return new PrincipalNameFromParameterObjectSecurityCheck(index, expectedParameterClass,
+                    stringPropertyAccessorClass, propertyName, checkType);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -88,9 +87,8 @@ public class PrincipalNameFromParameterObjectSecurityCheck implements SecurityCh
     }
 
     private IllegalStateException genericNotApplicableException(String className, String methodName) {
-        return new IllegalStateException(
-                "PrincipalNameFromParameterObjectSecurityCheck with index " + index + " cannot be applied to '" + className
-                        + "#" + methodName + "'");
+        return new IllegalStateException("PrincipalNameFromParameterObjectSecurityCheck with index " + index
+                + " cannot be applied to '" + className + "#" + methodName + "'");
     }
 
     public enum CheckType {

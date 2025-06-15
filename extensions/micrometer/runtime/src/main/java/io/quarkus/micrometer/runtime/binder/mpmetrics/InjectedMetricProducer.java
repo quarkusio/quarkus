@@ -9,12 +9,9 @@ import org.eclipse.microprofile.metrics.annotation.Metric;
 import org.jboss.logging.Logger;
 
 /**
- * Create default producer methods for {literal @}Inject {literal @}Metric
- * annotations requiring {@code Meter}, {@code Timer}, {@code Counter},
- * and {@code Histogram}.
- *
- * Due to build-time processing, {literal @}Metric annotations always have
- * a name value that has been resolved according to MP Metrics naming conventions.
+ * Create default producer methods for {literal @}Inject {literal @}Metric annotations requiring {@code Meter},
+ * {@code Timer}, {@code Counter}, and {@code Histogram}. Due to build-time processing, {literal @}Metric annotations
+ * always have a name value that has been resolved according to MP Metrics naming conventions.
  */
 @SuppressWarnings("unused")
 @Singleton
@@ -35,12 +32,9 @@ class InjectedMetricProducer {
     }
 
     /**
-     * For a programmatic concurrent gauge, create a gauge around
-     * a simple implementation that uses a {@code LongAdder}.
-     * The metrics gathered this way will not be as rich as with the
-     * {@code LongTimerTask}-based metrics used with the
-     * {literal @}ConcurrentGauge annotation, but is the best the API
-     * semantics allow (decrement/increment).
+     * For a programmatic concurrent gauge, create a gauge around a simple implementation that uses a {@code LongAdder}.
+     * The metrics gathered this way will not be as rich as with the {@code LongTimerTask}-based metrics used with the
+     * {literal @}ConcurrentGauge annotation, but is the best the API semantics allow (decrement/increment).
      */
     @Produces
     ConcurrentGauge getConcurrentGauge(InjectionPoint ip) {

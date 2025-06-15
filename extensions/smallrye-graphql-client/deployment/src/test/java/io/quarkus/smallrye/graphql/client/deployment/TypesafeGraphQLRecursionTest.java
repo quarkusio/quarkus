@@ -17,13 +17,11 @@ public class TypesafeGraphQLRecursionTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RecursiveApi.class, Team.class, Hero.class))
+            .withApplicationRoot((jar) -> jar.addClasses(RecursiveApi.class, Team.class, Hero.class))
             .assertException(t -> {
                 assertEquals(IllegalStateException.class, t.getClass());
-                assertTrue(t.getMessage().equals(EXPECTED_THROWN_MESSAGE),
-                        "Wrong thrown error message.\nExpected:" + EXPECTED_THROWN_MESSAGE + "\nActual:" +
-                                t.getMessage());
+                assertTrue(t.getMessage().equals(EXPECTED_THROWN_MESSAGE), "Wrong thrown error message.\nExpected:"
+                        + EXPECTED_THROWN_MESSAGE + "\nActual:" + t.getMessage());
 
             });
 

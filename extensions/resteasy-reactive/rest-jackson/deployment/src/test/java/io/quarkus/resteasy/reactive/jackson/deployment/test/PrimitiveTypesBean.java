@@ -23,10 +23,10 @@ public class PrimitiveTypesBean {
     private boolean booleanPrimitive;
     private Boolean booleanInstance;
 
-    public PrimitiveTypesBean(char charPrimitive, Character characterPrimitive, short shortPrimitive, Short shortInstance,
-            int intPrimitive, Integer integerInstance, long longPrimitive, Long longInstance, float floatPrimitive,
-            Float floatInstance, double doublePrimitive, Double doubleInstance, boolean booleanPrimitive,
-            Boolean booleanInstance) {
+    public PrimitiveTypesBean(char charPrimitive, Character characterPrimitive, short shortPrimitive,
+            Short shortInstance, int intPrimitive, Integer integerInstance, long longPrimitive, Long longInstance,
+            float floatPrimitive, Float floatInstance, double doublePrimitive, Double doubleInstance,
+            boolean booleanPrimitive, Boolean booleanInstance) {
         this.charPrimitive = charPrimitive;
         this.characterPrimitive = characterPrimitive;
         this.shortPrimitive = shortPrimitive;

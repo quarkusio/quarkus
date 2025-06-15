@@ -18,7 +18,6 @@ public interface LiquibaseMongodbConfig {
 
     /**
      * Flag to enable / disable Liquibase.
-     *
      */
     @WithDefault("true")
     boolean enabled();
@@ -47,8 +46,7 @@ public interface LiquibaseMongodbConfig {
     boolean cleanAtStart();
 
     /**
-     * The parameters to be passed to the changelog.
-     * Defined as key value pairs.
+     * The parameters to be passed to the changelog. Defined as key value pairs.
      */
     Map<String, String> changeLogParameters();
 

@@ -69,20 +69,17 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final PersistentLoginManager loginManager;
     private final Event<FormAuthenticationEvent> formAuthEvent;
 
-    //the temp encryption key, persistent across dev mode restarts
+    // the temp encryption key, persistent across dev mode restarts
     static volatile String encryptionKey;
 
     @Inject
-    FormAuthenticationMechanism(
-            VertxHttpConfig httpConfig,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            Event<FormAuthenticationEvent> formAuthEvent,
-            BeanManager beanManager,
+    FormAuthenticationMechanism(VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            Event<FormAuthenticationEvent> formAuthEvent, BeanManager beanManager,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
         String key;
         if (httpConfig.encryptionKey().isEmpty()) {
             if (encryptionKey != null) {
-                //persist across dev mode restarts
+                // persist across dev mode restarts
                 key = encryptionKey;
             } else {
                 byte[] data = new byte[32];
@@ -96,8 +93,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         FormAuthConfig form = httpBuildTimeConfig.auth().form();
         FormAuthRuntimeConfig runtimeForm = httpConfig.auth().form();
         this.loginManager = new PersistentLoginManager(key, runtimeForm.cookieName(), runtimeForm.timeout().toMillis(),
-                runtimeForm.newCookieInterval().toMillis(), runtimeForm.httpOnlyCookie(), runtimeForm.cookieSameSite().name(),
-                runtimeForm.cookiePath().orElse(null), runtimeForm.cookieMaxAge().map(Duration::toSeconds).orElse(-1L));
+                runtimeForm.newCookieInterval().toMillis(), runtimeForm.httpOnlyCookie(),
+                runtimeForm.cookieSameSite().name(), runtimeForm.cookiePath().orElse(null),
+                runtimeForm.cookieMaxAge().map(Duration::toSeconds).orElse(-1L));
         this.loginPage = startWithSlash(runtimeForm.loginPage().orElse(null));
         this.errorPage = startWithSlash(runtimeForm.errorPage().orElse(null));
         this.landingPage = startWithSlash(runtimeForm.landingPage().orElse(null));
@@ -116,10 +114,9 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.formAuthEvent = this.isFormAuthEventObserver ? formAuthEvent : null;
     }
 
-    public FormAuthenticationMechanism(String loginPage, String postLocation,
-            String usernameParameter, String passwordParameter, String errorPage, String landingPage,
-            boolean redirectAfterLogin, String locationCookie, String cookieSameSite, String cookiePath,
-            PersistentLoginManager loginManager) {
+    public FormAuthenticationMechanism(String loginPage, String postLocation, String usernameParameter,
+            String passwordParameter, String errorPage, String landingPage, boolean redirectAfterLogin,
+            String locationCookie, String cookieSameSite, String cookiePath, PersistentLoginManager loginManager) {
         this.loginPage = loginPage;
         this.postLocation = postLocation;
         this.usernameParameter = usernameParameter;
@@ -159,9 +156,12 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                 return;
                             }
                             securityContext
-                                    .authenticate(HttpSecurityUtils
-                                            .setRoutingContextAttribute(new UsernamePasswordAuthenticationRequest(jUsername,
-                                                    new PasswordCredential(jPassword.toCharArray())), exchange))
+                                    .authenticate(
+                                            HttpSecurityUtils
+                                                    .setRoutingContextAttribute(
+                                                            new UsernamePasswordAuthenticationRequest(jUsername,
+                                                                    new PasswordCredential(jPassword.toCharArray())),
+                                                            exchange))
                                     .subscribe().with(new Consumer<SecurityIdentity>() {
                                         @Override
                                         public void accept(SecurityIdentity identity) {
@@ -174,9 +174,11 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
                                                 if (redirectToLandingPage
                                                         || exchange.request().getCookie(locationCookie) != null) {
                                                     handleRedirectBack(exchange);
-                                                    //we  have authenticated, but we want to just redirect back to the original page
-                                                    //so we don't actually authenticate the current request
-                                                    //instead we have just set a cookie so the redirected request will be authenticated
+                                                    // we have authenticated, but we want to just redirect back to the
+                                                    // original page
+                                                    // so we don't actually authenticate the current request
+                                                    // instead we have just set a cookie so the redirected request will
+                                                    // be authenticated
                                                 } else {
                                                     exchange.response().setStatusCode(200);
                                                     exchange.response().end();
@@ -232,8 +234,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         if (!requestUri.getAuthority().equals(redirectUri.getAuthority())
                 || !requestUri.getScheme().equals(redirectUri.getScheme())) {
             log.errorf("Location cookie value %s does not match the current request URI %s's scheme, host or port",
-                    redirectUriString,
-                    requestURIString);
+                    redirectUriString, requestURIString);
             throw new AuthenticationCompletionException();
         }
     }
@@ -260,14 +261,13 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
 
         if (context.normalizedPath().endsWith(postLocation) && context.request().method().equals(HttpMethod.POST)) {
-            //we always re-auth if it is a post to the auth URL
+            // we always re-auth if it is a post to the auth URL
             context.put(HttpAuthenticationMechanism.class.getName(), this);
-            return runFormAuth(context, identityProviderManager)
-                    .onItem().ifNotNull().transform(new Function<SecurityIdentity, SecurityIdentity>() {
+            return runFormAuth(context, identityProviderManager).onItem().ifNotNull()
+                    .transform(new Function<SecurityIdentity, SecurityIdentity>() {
                         @Override
                         public SecurityIdentity apply(SecurityIdentity identity) {
                             // used for logout
@@ -280,9 +280,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             PersistentLoginManager.RestoreResult result = loginManager.restore(context);
             if (result != null) {
                 context.put(HttpAuthenticationMechanism.class.getName(), this);
-                Uni<SecurityIdentity> ret = identityProviderManager
-                        .authenticate(HttpSecurityUtils
-                                .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
+                Uni<SecurityIdentity> ret = identityProviderManager.authenticate(HttpSecurityUtils
+                        .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
                 return ret.onItem().invoke(new Consumer<SecurityIdentity>() {
                     @Override
                     public void accept(SecurityIdentity securityIdentity) {
@@ -325,12 +324,14 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     @Override
     public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
-        return new HashSet<>(Arrays.asList(UsernamePasswordAuthenticationRequest.class, TrustedAuthenticationRequest.class));
+        return new HashSet<>(
+                Arrays.asList(UsernamePasswordAuthenticationRequest.class, TrustedAuthenticationRequest.class));
     }
 
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
-        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM));
+        return Uni.createFrom()
+                .item(new HttpCredentialTransport(HttpCredentialTransport.Type.POST, postLocation, FORM));
     }
 
     public static void logout(SecurityIdentity securityIdentity) {

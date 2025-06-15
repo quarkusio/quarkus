@@ -18,12 +18,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnknownConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(EchoClient.class)
+            .withApplicationRoot((jar) -> jar.addClass(EchoClient.class)
                     .addAsResource("restclient-config-test-application.properties", "application.properties"))
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
-            .assertLogRecords(logRecords -> assertFalse(logRecords.stream()
-                    .map(LogRecord::getMessage)
+            .assertLogRecords(logRecords -> assertFalse(logRecords.stream().map(LogRecord::getMessage)
                     .anyMatch(message -> message.startsWith("Unrecognized configuration key"))));
 
     @Inject

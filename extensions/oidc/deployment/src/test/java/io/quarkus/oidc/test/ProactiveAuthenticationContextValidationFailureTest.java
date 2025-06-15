@@ -15,11 +15,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ProactiveAuthenticationContextValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    // starting the dev service would be a waste
-                    .addClass(StepUpAuthResource.class)
-                    .addAsResource(new StringAsset("quarkus.devservices.enabled=false"), "application.properties"))
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(jar -> jar
+            // starting the dev service would be a waste
+            .addClass(StepUpAuthResource.class)
+            .addAsResource(new StringAsset("quarkus.devservices.enabled=false"), "application.properties"))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 Assertions.assertNotNull(rootCause);

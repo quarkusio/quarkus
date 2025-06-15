@@ -23,7 +23,8 @@ public class ResponseBuilderImplTest {
         assertEquals("//[0:0:0:0:0:0:0:1]/prefix/host", response.getLocation().toString());
 
         response = ResponseBuilderImpl.ok().contentLocation(URI.create("/host")).build();
-        assertEquals("//[0:0:0:0:0:0:0:1]/host", response.getHeaders().getFirst(HttpHeaders.CONTENT_LOCATION).toString());
+        assertEquals("//[0:0:0:0:0:0:0:1]/host",
+                response.getHeaders().getFirst(HttpHeaders.CONTENT_LOCATION).toString());
     }
 
 }

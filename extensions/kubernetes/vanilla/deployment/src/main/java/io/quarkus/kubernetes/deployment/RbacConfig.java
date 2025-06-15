@@ -103,8 +103,8 @@ public interface RbacConfig {
 
     interface RoleBindingConfig {
         /**
-         * Name of the RoleBinding resource to be generated. If not provided, it will use the application name plus the role
-         * ref name.
+         * Name of the RoleBinding resource to be generated. If not provided, it will use the application name plus the
+         * role ref name.
          */
         Optional<String> name();
 
@@ -115,8 +115,8 @@ public interface RbacConfig {
         Map<String, String> labels();
 
         /**
-         * The name of the Role resource to use by the RoleRef element in the generated Role Binding resource.
-         * By default, it's "view" role name.
+         * The name of the Role resource to use by the RoleRef element in the generated Role Binding resource. By
+         * default, it's "view" role name.
          */
         Optional<String> roleName();
 
@@ -133,9 +133,8 @@ public interface RbacConfig {
 
     interface ClusterRoleBindingConfig {
         /**
-         * Name of the ClusterRoleBinding resource to be generated. If not provided, it will use the application name plus the
-         * role
-         * ref name.
+         * Name of the ClusterRoleBinding resource to be generated. If not provided, it will use the application name
+         * plus the role ref name.
          */
         Optional<String> name();
 
@@ -146,7 +145,8 @@ public interface RbacConfig {
         Map<String, String> labels();
 
         /**
-         * The name of the ClusterRole resource to use by the RoleRef element in the generated ClusterRoleBinding resource.
+         * The name of the ClusterRole resource to use by the RoleRef element in the generated ClusterRoleBinding
+         * resource.
          */
         String roleName();
 
@@ -190,8 +190,8 @@ public interface RbacConfig {
         Optional<String> name();
 
         /**
-         * The "kind" resource to use by the Subject element in the generated Role Binding resource.
-         * By default, it uses the "ServiceAccount" kind.
+         * The "kind" resource to use by the Subject element in the generated Role Binding resource. By default, it uses
+         * the "ServiceAccount" kind.
          */
         @WithDefault("ServiceAccount")
         String kind();
@@ -202,8 +202,8 @@ public interface RbacConfig {
         Optional<String> apiGroup();
 
         /**
-         * The "namespace" resource to use by the Subject element in the generated Role Binding resource.
-         * By default, it will use the same as provided in the generated resources.
+         * The "namespace" resource to use by the Subject element in the generated Role Binding resource. By default, it
+         * will use the same as provided in the generated resources.
          */
         Optional<String> namespace();
     }

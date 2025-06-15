@@ -21,7 +21,8 @@ import io.quarkus.hibernate.validator.runtime.jaxrs.JaxrsEndPointValidated;
  */
 public class MethodValidatedAnnotationsTransformer implements AnnotationsTransformer {
 
-    private static final Logger LOGGER = Logger.getLogger(MethodValidatedAnnotationsTransformer.class.getPackage().getName());
+    private static final Logger LOGGER = Logger
+            .getLogger(MethodValidatedAnnotationsTransformer.class.getPackage().getName());
 
     private final Set<DotName> consideredAnnotations;
     private final Map<DotName, Set<SimpleMethodSignatureKey>> methodsWithInheritedValidation;
@@ -47,7 +48,8 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
         if (requiresValidation(method)) {
             if (Modifier.isStatic(method.flags())) {
                 // We don't support validating methods on static methods yet as it used to not be supported by CDI/Weld
-                // Supporting it will require some work in Hibernate Validator so we are going back to the old behavior of ignoring them but we log a warning.
+                // Supporting it will require some work in Hibernate Validator so we are going back to the old behavior
+                // of ignoring them but we log a warning.
                 LOGGER.warnf(
                         "Hibernate Validator does not support constraints on static methods yet. Constraints on %s are ignored.",
                         method.declaringClass().name().toString() + "#" + method.toString());
@@ -55,7 +57,8 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
             }
 
             if (isJaxrsMethod(method)) {
-                transformationContext.transform().add(DotName.createSimple(JaxrsEndPointValidated.class.getName())).done();
+                transformationContext.transform().add(DotName.createSimple(JaxrsEndPointValidated.class.getName()))
+                        .done();
             } else {
                 transformationContext.transform().add(DotName.createSimple(MethodValidated.class.getName())).done();
             }
@@ -71,7 +74,8 @@ public class MethodValidatedAnnotationsTransformer implements AnnotationsTransfo
 
         // This method has no annotations of its own: look for inherited annotations
 
-        Set<SimpleMethodSignatureKey> validatedMethods = methodsWithInheritedValidation.get(method.declaringClass().name());
+        Set<SimpleMethodSignatureKey> validatedMethods = methodsWithInheritedValidation
+                .get(method.declaringClass().name());
         if (validatedMethods == null || validatedMethods.isEmpty()) {
             return false;
         }

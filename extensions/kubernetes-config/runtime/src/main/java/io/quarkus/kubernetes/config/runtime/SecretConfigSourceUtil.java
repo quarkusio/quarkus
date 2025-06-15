@@ -32,7 +32,8 @@ public class SecretConfigSourceUtil extends AbstractKubernetesConfigSourceUtil {
     }
 
     @Override
-    ConfigSource createPropertiesConfigSource(String kubernetesConfigSourceName, String fileName, String input, int ordinal) {
+    ConfigSource createPropertiesConfigSource(String kubernetesConfigSourceName, String fileName, String input,
+            int ordinal) {
         return new SecretStringInputPropertiesConfigSource(kubernetesConfigSourceName, fileName, input, ordinal);
     }
 
@@ -57,7 +58,8 @@ public class SecretConfigSourceUtil extends AbstractKubernetesConfigSourceUtil {
 
         private static final String NAME_PREFIX = "SecretLiteralDataPropertiesConfigSource[secret=";
 
-        public SecretLiteralDataPropertiesConfigSource(String secretName, Map<String, String> propertyMap, int ordinal) {
+        public SecretLiteralDataPropertiesConfigSource(String secretName, Map<String, String> propertyMap,
+                int ordinal) {
             super(NAME_PREFIX + secretName + "]", decodeMapValues(propertyMap), ordinal);
         }
     }

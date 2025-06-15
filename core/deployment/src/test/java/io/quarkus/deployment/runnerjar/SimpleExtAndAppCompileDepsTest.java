@@ -17,12 +17,14 @@ public class SimpleExtAndAppCompileDepsTest extends BootstrapFromOriginalJarTest
         final TsArtifact coreExtRtTransitiveDep = TsArtifact.jar("core-ext-rt-transitive-dep");
         addToExpectedLib(coreExtRtTransitiveDep);
 
-        final TsArtifact coreExtRtDirectDep = TsArtifact.jar("core-ext-rt-direct-dep").addDependency(coreExtRtTransitiveDep);
+        final TsArtifact coreExtRtDirectDep = TsArtifact.jar("core-ext-rt-direct-dep")
+                .addDependency(coreExtRtTransitiveDep);
         addToExpectedLib(coreExtRtDirectDep);
 
         final TsArtifact coreExtDepTransitiveDep = TsArtifact.jar("core-ext-dep-transitive-dep");
 
-        final TsArtifact coreExtDepDirectDep = TsArtifact.jar("core-ext-dep-direct-dep").addDependency(coreExtDepTransitiveDep);
+        final TsArtifact coreExtDepDirectDep = TsArtifact.jar("core-ext-dep-direct-dep")
+                .addDependency(coreExtDepTransitiveDep);
 
         final TsQuarkusExt coreExt = new TsQuarkusExt("core-ext");
         coreExt.getRuntime().addDependency(coreExtRtDirectDep);
@@ -54,11 +56,8 @@ public class SimpleExtAndAppCompileDepsTest extends BootstrapFromOriginalJarTest
         final TsArtifact appDirectDep = TsArtifact.jar("app-direct-dep").addDependency(appTransitiveDep);
         addToExpectedLib(appDirectDep);
 
-        final TsArtifact appJar = TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(ext1)
-                .addDependency(ext2)
+        final TsArtifact appJar = TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(ext1).addDependency(ext2)
                 .addDependency(appDirectDep);
         return appJar;
     }

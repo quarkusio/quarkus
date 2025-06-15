@@ -40,18 +40,17 @@ class KubernetesServiceBindingConfigSourceFactoryTest {
         Path path = Paths.get("src/test/resources/k8s");
         KubernetesServiceBindingConfigSourceFactory configSourceFactory = new KubernetesServiceBindingConfigSourceFactory();
         Iterable<ConfigSource> configSources = configSourceFactory.getConfigSources(getServiceBindings(path.toString()),
-                List.of(
-                        serviceBindings -> {
-                            for (ServiceBinding serviceBinding : serviceBindings) {
-                                if ("test-type-1".equals(serviceBinding.getType())) {
-                                    return Optional.of(new ServiceBindingConfigSource("test",
-                                            Map.of("key", serviceBinding.getProperties().get("test-secret-key"))));
-                                }
-                            }
+                List.of(serviceBindings -> {
+                    for (ServiceBinding serviceBinding : serviceBindings) {
+                        if ("test-type-1".equals(serviceBinding.getType())) {
                             return Optional.of(new ServiceBindingConfigSource("test",
-                                    Map.of("key", ServiceBinding.matchingByType("test-type-1", serviceBindings).get(0)
-                                            .getProperties().get("test-secret-key"))));
-                        }));
+                                    Map.of("key", serviceBinding.getProperties().get("test-secret-key"))));
+                        }
+                    }
+                    return Optional.of(new ServiceBindingConfigSource("test",
+                            Map.of("key", ServiceBinding.matchingByType("test-type-1", serviceBindings).get(0)
+                                    .getProperties().get("test-secret-key"))));
+                }));
 
         assertThat(configSources).hasSize(3).extracting("name").containsOnly("test", "service-binding-test-name-raw",
                 "service-binding-test-k8s-raw");

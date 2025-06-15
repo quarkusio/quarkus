@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.arc.Subclass;
 
 /**
- * Tests class normalization, which translates into getting the "original" class, without all the specializations instances of
- * {@link io.quarkus.arc.Subclass}. <br />
+ * Tests class normalization, which translates into getting the "original" class, without all the specializations
+ * instances of {@link io.quarkus.arc.Subclass}. <br />
  * There's no need to be a @{@link io.quarkus.test.junit.QuarkusTest} because no Quarkus related feature is required.
  */
 class ArcProxyBeanMetaDataClassNormalizerTest {
@@ -48,8 +48,8 @@ class ArcProxyBeanMetaDataClassNormalizerTest {
     }
 
     /**
-     * Simulates an object injected through {@link io.quarkus.test.InjectMock}
-     * or {@code io.quarkus.test.junit.mockito.InjectSpy}.
+     * Simulates an object injected through {@link io.quarkus.test.InjectMock} or
+     * {@code io.quarkus.test.junit.mockito.InjectSpy}.
      */
     private static class SecondSubclass extends FirstSubclass {
     }

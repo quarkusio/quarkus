@@ -21,12 +21,12 @@ public final class MetricsCapabilityBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Test for a known metrics system to allow selective initialization of metrics
-     * based using a known API. Avoid using deployment module artifacts. Ensure that
-     * metrics API dependencies remain optional / compile-time only.
+     * Test for a known metrics system to allow selective initialization of metrics based using a known API. Avoid using
+     * deployment module artifacts. Ensure that metrics API dependencies remain optional / compile-time only.
      *
-     * @return true if this factory supports the named metrics system. Arbitrary
-     *         strings are allowed. Constants are present for a few.
+     * @return true if this factory supports the named metrics system. Arbitrary strings are allowed. Constants are
+     *         present for a few.
+     *
      * @see io.quarkus.runtime.metrics.MetricsFactory#MICROMETER
      * @see io.quarkus.runtime.metrics.MetricsFactory#MP_METRICS
      */

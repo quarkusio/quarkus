@@ -11,18 +11,14 @@ public class TargetGAVGroup {
     static final Pattern OK_ID = Pattern.compile("[0-9A-Za-z_.-]+");
 
     static final String DEFAULT_GAV = CreateProjectHelper.DEFAULT_GROUP_ID + ":"
-            + CreateProjectHelper.DEFAULT_ARTIFACT_ID + ":"
-            + CreateProjectHelper.DEFAULT_VERSION;
+            + CreateProjectHelper.DEFAULT_ARTIFACT_ID + ":" + CreateProjectHelper.DEFAULT_VERSION;
 
     String groupId = CreateProjectHelper.DEFAULT_GROUP_ID;
     String artifactId = CreateProjectHelper.DEFAULT_ARTIFACT_ID;
     String version = CreateProjectHelper.DEFAULT_VERSION;
 
     @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]ARTIFACT-ID[:VERSION]", description = "Java project identifiers%n"
-            + "  default: " + DEFAULT_GAV + "%n"
-            + "  Examples:%n"
-            + "     my-project%n"
-            + "     my.group:my-project%n"
+            + "  default: " + DEFAULT_GAV + "%n" + "  Examples:%n" + "     my-project%n" + "     my.group:my-project%n"
             + "     my.group:my-project:0.1%n")
     String gav = null;
 
@@ -35,16 +31,16 @@ public class TargetGAVGroup {
                 int firstPos = gav.indexOf(":");
                 int lastPos = gav.lastIndexOf(":");
                 if (firstPos < 0) {
-                    // artifact-id  -- use defaults for group id and version (common/demo)
+                    // artifact-id -- use defaults for group id and version (common/demo)
                     artifactId = gav;
                 } else {
-                    // g::   -- (uncommon)
-                    // g::v  -- (uncommon)
-                    // g:a   -- COMMON
-                    // g:a:  -- (uncommon alternate)
+                    // g:: -- (uncommon)
+                    // g::v -- (uncommon)
+                    // g:a -- COMMON
+                    // g:a: -- (uncommon alternate)
                     // g:a:v -- COMMON
-                    // :a:   -- (uncommon alternate)
-                    // :a:v  -- (uncommon)
+                    // :a: -- (uncommon alternate)
+                    // :a:v -- (uncommon)
                     if (firstPos != 0) {
                         groupId = gav.substring(0, firstPos);
                     }
@@ -86,7 +82,7 @@ public class TargetGAVGroup {
 
     @Override
     public String toString() {
-        return "TargetGAVGroup [groupId=" + groupId + ", artifactId=" + artifactId + ", version=" + version + ", gav=" + gav
-                + "]";
+        return "TargetGAVGroup [groupId=" + groupId + ", artifactId=" + artifactId + ", version=" + version + ", gav="
+                + gav + "]";
     }
 }

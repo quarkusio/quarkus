@@ -37,8 +37,7 @@ public class UpxCompressionBuildStep {
 
     @BuildStep(onlyIf = NativeBuild.class)
     public void compress(NativeConfig nativeConfig, NativeImageRunnerBuildItem nativeImageRunner,
-            NativeImageBuildItem image,
-            BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
+            NativeImageBuildItem image, BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
         if (nativeConfig.compression().level().isEmpty()) {
@@ -67,8 +66,8 @@ public class UpxCompressionBuildStep {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
         } else {
-            log.error("Unable to compress the native executable. Either install `upx` from https://upx.github.io/" +
-                    " on your machine, or enable in-container build using `-Dquarkus.native.container-build=true`.");
+            log.error("Unable to compress the native executable. Either install `upx` from https://upx.github.io/"
+                    + " on your machine, or enable in-container build using `-Dquarkus.native.container-build=true`.");
             throw new IllegalStateException("Unable to compress the native executable: `upx` not available");
         }
         log.infof("Native executable compressed: %s", image.getPath().toFile().getAbsolutePath());
@@ -77,17 +76,14 @@ public class UpxCompressionBuildStep {
 
     private boolean runUpxFromHost(File upx, File executable, NativeConfig nativeConfig) {
         List<String> extraArgs = nativeConfig.compression().additionalArgs().orElse(Collections.emptyList());
-        List<String> args = Stream.of(
-                Stream.of(upx.getAbsolutePath()),
-                nativeConfig.compression().level().stream().mapToObj(this::getCompressionLevel),
-                extraArgs.stream(),
-                Stream.of(executable.getAbsolutePath()))
-                .flatMap(Function.identity())
-                .collect(Collectors.toList());
+        List<String> args = Stream
+                .of(Stream.of(upx.getAbsolutePath()),
+                        nativeConfig.compression().level().stream().mapToObj(this::getCompressionLevel),
+                        extraArgs.stream(), Stream.of(executable.getAbsolutePath()))
+                .flatMap(Function.identity()).collect(Collectors.toList());
         log.infof("Executing %s", String.join(" ", args));
         final ProcessBuilder processBuilder = new ProcessBuilder(args)
-                .directory(executable.getAbsoluteFile().getParentFile())
-                .redirectOutput(ProcessBuilder.Redirect.PIPE)
+                .directory(executable.getAbsoluteFile().getParentFile()).redirectOutput(ProcessBuilder.Redirect.PIPE)
                 .redirectError(ProcessBuilder.Redirect.PIPE);
         Process process = null;
         try {
@@ -156,8 +152,7 @@ public class UpxCompressionBuildStep {
 
         log.infof("Compress native executable using: %s", String.join(" ", commandLine));
         final ProcessBuilder processBuilder = new ProcessBuilder(commandLine)
-                .redirectOutput(ProcessBuilder.Redirect.PIPE)
-                .redirectError(ProcessBuilder.Redirect.PIPE);
+                .redirectOutput(ProcessBuilder.Redirect.PIPE).redirectError(ProcessBuilder.Redirect.PIPE);
         Process process = null;
         try {
             process = processBuilder.start();

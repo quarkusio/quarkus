@@ -32,9 +32,8 @@ import io.smallrye.mutiny.Uni;
 public class FailingInInterceptorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage())
                     .addClasses(MyFailingInterceptor.class, GreeterBean.class, HelloRequest.class, HelloService.class));
 
     @GrpcClient
@@ -44,8 +43,7 @@ public class FailingInInterceptorTest {
     void test() {
         Uni<HelloReply> result = greeter.sayHello(HelloRequest.newBuilder().setName("ServiceA").build());
         assertThatThrownBy(() -> result.await().atMost(Duration.ofSeconds(4)))
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasMessageContaining("INVALID_ARGUMENT");
+                .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("INVALID_ARGUMENT");
     }
 
     @ApplicationScoped
@@ -55,19 +53,18 @@ public class FailingInInterceptorTest {
         @Override
         public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
                 ServerCallHandler<ReqT, RespT> next) {
-            return next
-                    .startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
+            return next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
 
-                        @Override
-                        public void sendMessage(RespT message) {
-                            throw new IllegalArgumentException("BOOM");
-                        }
+                @Override
+                public void sendMessage(RespT message) {
+                    throw new IllegalArgumentException("BOOM");
+                }
 
-                        @Override
-                        public void close(Status status, Metadata trailers) {
-                            super.close(status, trailers);
-                        }
-                    }, headers);
+                @Override
+                public void close(Status status, Metadata trailers) {
+                    super.close(status, trailers);
+                }
+            }, headers);
         }
     }
 

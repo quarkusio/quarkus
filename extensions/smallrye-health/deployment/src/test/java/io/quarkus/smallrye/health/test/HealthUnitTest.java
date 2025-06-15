@@ -14,20 +14,16 @@ import io.restassured.parsing.Parser;
 class HealthUnitTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BasicHealthCheck.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(BasicHealthCheck.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     void testHealth() {
         // the health check does not set a content type, so we need to force the parser
         try {
             RestAssured.defaultParser = Parser.JSON;
-            RestAssured.when().get("/q/health/live").then()
-                    .body("status", is("UP"),
-                            "checks.status", contains("UP"),
-                            "checks.name", contains("basic"));
+            RestAssured.when().get("/q/health/live").then().body("status", is("UP"), "checks.status", contains("UP"),
+                    "checks.name", contains("basic"));
         } finally {
             RestAssured.reset();
         }

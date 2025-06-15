@@ -19,33 +19,16 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
 
     @BeforeAll
     static void configureRegistryAndMavenRepo() {
-        TestRegistryClientBuilder.newInstance()
-                .baseDir(registryConfigDir())
-                .newRegistry("registry.acme.org")
-                .newPlatform("org.acme.quarkus.platform")
-                .newStream("2.0")
-                .newRelease("2.0.0")
-                .quarkusVersion(getCurrentQuarkusVersion())
-                .addCoreMember()
-                .alignPluginsOnQuarkusVersion()
-                .addDefaultCodestartExtensions()
-                .release()
-                .newMember("acme-bom").addExtension("acme-quarkus-supersonic").addExtension("acme-quarkus-subatomic")
-                .release().stream().platform()
-                .newStream("1.0")
-                .newRelease("1.0.0")
-                .quarkusVersion(getCurrentQuarkusVersion())
-                .addCoreMember()
-                .alignPluginsOnQuarkusVersion()
-                .addDefaultCodestartExtensions()
-                .release()
-                .newMember("acme-bom").addExtension("acme-quarkus-supersonic").addExtension("acme-quarkus-subatomic")
-                .registry()
+        TestRegistryClientBuilder.newInstance().baseDir(registryConfigDir()).newRegistry("registry.acme.org")
+                .newPlatform("org.acme.quarkus.platform").newStream("2.0").newRelease("2.0.0")
+                .quarkusVersion(getCurrentQuarkusVersion()).addCoreMember().alignPluginsOnQuarkusVersion()
+                .addDefaultCodestartExtensions().release().newMember("acme-bom").addExtension("acme-quarkus-supersonic")
+                .addExtension("acme-quarkus-subatomic").release().stream().platform().newStream("1.0")
+                .newRelease("1.0.0").quarkusVersion(getCurrentQuarkusVersion()).addCoreMember()
+                .alignPluginsOnQuarkusVersion().addDefaultCodestartExtensions().release().newMember("acme-bom")
+                .addExtension("acme-quarkus-supersonic").addExtension("acme-quarkus-subatomic").registry()
                 .newNonPlatformCatalog(getCurrentQuarkusVersion())
-                .addExtension("org.acme", "acme-quarkiverse-extension", "1.0")
-                .registry()
-                .clientBuilder()
-                .build();
+                .addExtension("org.acme", "acme-quarkiverse-extension", "1.0").registry().clientBuilder().build();
     }
 
     @Test
@@ -66,10 +49,12 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
                 UP_TO_DATE_ICON.iconOrMessage() + "       org.acme.quarkus.platform:quarkus-bom:pom:2.0.0",
                 UP_TO_DATE_ICON.iconOrMessage() + "       org.acme.quarkus.platform:acme-bom:pom:2.0.0");
 
-        assertPlatformBomExtensions(infoResult.stdout, ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "2.0.0"),
+        assertPlatformBomExtensions(infoResult.stdout,
+                ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "2.0.0"),
                 UP_TO_DATE_ICON.iconOrMessage() + "       io.quarkus:quarkus-arc");
 
-        assertPlatformBomExtensions(infoResult.stdout, ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "2.0.0"),
+        assertPlatformBomExtensions(infoResult.stdout,
+                ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "2.0.0"),
                 UP_TO_DATE_ICON.iconOrMessage() + "       org.acme.quarkus.platform:acme-quarkus-supersonic");
 
         assertRegistryExtensions(infoResult.stdout, "registry.acme.org",
@@ -96,9 +81,11 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
         assertQuarkusPlatformBoms(infoResult.stdout,
                 UP_TO_DATE_ICON.iconOrMessage() + "       org.acme.quarkus.platform:quarkus-bom:pom:2.0.0",
                 UP_TO_DATE_ICON.iconOrMessage() + "       org.acme.quarkus.platform:acme-bom:pom:2.0.0");
-        assertPlatformBomExtensions(infoResult.stdout, ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "2.0.0"),
+        assertPlatformBomExtensions(infoResult.stdout,
+                ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "2.0.0"),
                 UP_TO_DATE_ICON.iconOrMessage() + "       io.quarkus:quarkus-arc");
-        assertPlatformBomExtensions(infoResult.stdout, ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "2.0.0"),
+        assertPlatformBomExtensions(infoResult.stdout,
+                ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "2.0.0"),
                 UP_TO_DATE_ICON.iconOrMessage() + "       org.acme.quarkus.platform:acme-quarkus-supersonic",
                 "-       org.acme.quarkus.platform:acme-quarkus-subatomic:[1.0.0 -> managed]");
         assertRegistryExtensions(infoResult.stdout, "registry.acme.org",
@@ -108,8 +95,7 @@ public class MavenProjectInfoAndUpdateTest extends RegistryClientBuilderTestBase
         assertThat(updateResult.getExitCode()).isEqualTo(0);
 
         assertThat(updateResult.stdout)
-                .contains(
-                        "-       org.acme.quarkus.platform:acme-quarkus-subatomic:[1.0.0 -> managed]");
+                .contains("-       org.acme.quarkus.platform:acme-quarkus-subatomic:[1.0.0 -> managed]");
         assertQuarkusPlatformBomUpdates(updateResult.stdout,
                 ArtifactCoords.pom("org.acme.quarkus.platform", "quarkus-bom", "[2.0.0 -> 1.0.0]"),
                 ArtifactCoords.pom("org.acme.quarkus.platform", "acme-bom", "[2.0.0 -> 1.0.0]"));

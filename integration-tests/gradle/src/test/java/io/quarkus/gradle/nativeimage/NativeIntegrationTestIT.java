@@ -1,7 +1,5 @@
 package io.quarkus.gradle.nativeimage;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.File;
 
 import org.assertj.core.api.SoftAssertions;
@@ -23,7 +21,8 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative");
 
-        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
+        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME,
+                BuildResult.FROM_CACHE);
         soft.assertThat(projectDir.toPath().resolve("build/code-with-quarkus-1.0.0-SNAPSHOT-runner")).isRegularFile()
                 .isExecutable();
     }
@@ -34,7 +33,8 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
                 "-Dquarkus.package.output-name=test");
-        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
+        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME,
+                BuildResult.FROM_CACHE);
         soft.assertThat(projectDir.toPath().resolve("build/test-runner")).isRegularFile().isExecutable();
     }
 
@@ -44,7 +44,8 @@ public class NativeIntegrationTestIT extends QuarkusNativeGradleITBase {
 
         final BuildResult testResult = runGradleWrapper(projectDir, "clean", "testNative",
                 "-Dquarkus.package.jar.add-runner-suffix=false");
-        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME, BuildResult.FROM_CACHE);
+        soft.assertThat(testResult.getTasks().get(":testNative")).isIn(BuildResult.SUCCESS_OUTCOME,
+                BuildResult.FROM_CACHE);
         soft.assertThat(projectDir.toPath().resolve("build/code-with-quarkus-1.0.0-SNAPSHOT")).isRegularFile()
                 .isExecutable();
     }

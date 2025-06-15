@@ -37,20 +37,21 @@ public class StaticResourcesProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     HotDeploymentWatchedFileBuildItem indexHtmlFile() {
         String staticRoot = StaticResourcesRecorder.META_INF_RESOURCES + "/index.html";
-        return new HotDeploymentWatchedFileBuildItem(staticRoot, !QuarkusClassLoader.isResourcePresentAtRuntime(staticRoot));
+        return new HotDeploymentWatchedFileBuildItem(staticRoot,
+                !QuarkusClassLoader.isResourcePresentAtRuntime(staticRoot));
     }
 
     @BuildStep
     void collectStaticResources(Capabilities capabilities,
             List<AdditionalStaticResourceBuildItem> additionalStaticResources,
-            BuildProducer<StaticResourcesBuildItem> staticResources,
-            LaunchModeBuildItem launchModeBuildItem) {
+            BuildProducer<StaticResourcesBuildItem> staticResources, LaunchModeBuildItem launchModeBuildItem) {
         if (capabilities.isPresent(Capability.SERVLET)) {
             // Servlet container handles static resources
             return;
         }
         Set<StaticResourcesBuildItem.Entry> paths = getClasspathResources();
-        // We shouldn't add them in test and dev-mode (as they are handled by the GeneratedStaticResourcesProcessor), but for backward compatibility we keep it for now
+        // We shouldn't add them in test and dev-mode (as they are handled by the GeneratedStaticResourcesProcessor),
+        // but for backward compatibility we keep it for now
         for (AdditionalStaticResourceBuildItem bi : additionalStaticResources) {
             paths.add(new StaticResourcesBuildItem.Entry(bi.getPath(), bi.isDirectory()));
         }
@@ -127,11 +128,12 @@ public class StaticResourcesProcessor {
     /**
      * Visits all {@code META-INF/resources} directories and their content found on the runtime classpath
      *
-     * @param visitor visitor implementation
+     * @param visitor
+     *        visitor implementation
      */
     private static void visitRuntimeMetaInfResources(PathVisitor visitor) {
-        final List<ClassPathElement> elements = QuarkusClassLoader.getElements(StaticResourcesRecorder.META_INF_RESOURCES,
-                false);
+        final List<ClassPathElement> elements = QuarkusClassLoader
+                .getElements(StaticResourcesRecorder.META_INF_RESOURCES, false);
         if (!elements.isEmpty()) {
             for (var element : elements) {
                 if (element.isRuntime()) {

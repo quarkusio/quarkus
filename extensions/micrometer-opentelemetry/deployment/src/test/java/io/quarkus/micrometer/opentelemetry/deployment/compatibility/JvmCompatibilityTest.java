@@ -22,23 +22,19 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class JvmCompatibilityTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Util.class,
-                                    PingPongResource.class,
-                                    PingPongResource.PingPongRestClient.class)
-                            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
-                            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
-                            .add(new StringAsset("""
-                                    quarkus.otel.metrics.exporter=in-memory\n
-                                    quarkus.otel.metric.export.interval=300ms\n
-                                    quarkus.micrometer.binder-enabled-default=false\n
-                                    quarkus.micrometer.binder.jvm=true\n
-                                    quarkus.redis.devservices.enabled=false\n
-                                    """),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class)
+            .addClasses(Util.class, PingPongResource.class, PingPongResource.PingPongRestClient.class)
+            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .add(new StringAsset("""
+                    quarkus.otel.metrics.exporter=in-memory\n
+                    quarkus.otel.metric.export.interval=300ms\n
+                    quarkus.micrometer.binder-enabled-default=false\n
+                    quarkus.micrometer.binder.jvm=true\n
+                    quarkus.redis.devservices.enabled=false\n
+                    """), "application.properties"));
 
     @Inject
     protected InMemoryMetricExporter metricExporter;
@@ -53,19 +49,13 @@ public class JvmCompatibilityTest {
         metricDataList.forEach(System.out::println);
 
         final MetricData metricData = metricDataList.stream()
-                .max(Comparator.comparingInt(data -> data.getData().getPoints().size()))
-                .get();
+                .max(Comparator.comparingInt(data -> data.getData().getPoints().size())).get();
 
-        assertThat(metricData.getInstrumentationScopeInfo().getName())
-                .isEqualTo("io.opentelemetry.micrometer-1.5");
+        assertThat(metricData.getInstrumentationScopeInfo().getName()).isEqualTo("io.opentelemetry.micrometer-1.5");
 
-        assertThat(metricData)
-                .hasName("jvm.threads.started")
-                .hasDescription("The total number of application threads started in the JVM")
-                .hasUnit("threads")
-                .hasDoubleSumSatisfying(doubleSumAssert -> doubleSumAssert
-                        .isMonotonic()
-                        .isCumulative()
+        assertThat(metricData).hasName("jvm.threads.started")
+                .hasDescription("The total number of application threads started in the JVM").hasUnit("threads")
+                .hasDoubleSumSatisfying(doubleSumAssert -> doubleSumAssert.isMonotonic().isCumulative()
                         .hasPointsSatisfying(point -> point
                                 .satisfies(actual -> assertThat(actual.getValue()).isGreaterThanOrEqualTo(1.0))
                                 .hasAttributesSatisfying(attributes -> attributes.isEmpty())));
@@ -79,19 +69,15 @@ public class JvmCompatibilityTest {
         metricDataList.forEach(System.out::println);
 
         final MetricData metricData = metricDataList.stream()
-                .max(Comparator.comparingInt(data -> data.getData().getPoints().size()))
-                .get();
+                .max(Comparator.comparingInt(data -> data.getData().getPoints().size())).get();
 
-        assertThat(metricData.getInstrumentationScopeInfo().getName())
-                .isEqualTo("io.opentelemetry.micrometer-1.5");
+        assertThat(metricData.getInstrumentationScopeInfo().getName()).isEqualTo("io.opentelemetry.micrometer-1.5");
 
-        assertThat(metricData)
-                .hasName("jvm.classes.loaded")
+        assertThat(metricData).hasName("jvm.classes.loaded")
                 .hasDescription("The number of classes that are currently loaded in the Java virtual machine")
                 .hasUnit("classes")
-                .hasDoubleGaugeSatisfying(doubleSumAssert -> doubleSumAssert
-                        .hasPointsSatisfying(point -> point
-                                .satisfies(actual -> assertThat(actual.getValue()).isGreaterThanOrEqualTo(1.0))
+                .hasDoubleGaugeSatisfying(doubleSumAssert -> doubleSumAssert.hasPointsSatisfying(
+                        point -> point.satisfies(actual -> assertThat(actual.getValue()).isGreaterThanOrEqualTo(1.0))
                                 .hasAttributesSatisfying(attributes -> attributes.isEmpty())));
     }
 }

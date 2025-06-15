@@ -14,13 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class KafkaClientMetricsDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.kafka.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withEmptyApplication();
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withEmptyApplication();
 
     @Inject
     Instance<KafkaEventObserver> kafkaEventObservers;

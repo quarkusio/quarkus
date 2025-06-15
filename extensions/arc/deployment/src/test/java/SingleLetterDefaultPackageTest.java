@@ -12,8 +12,7 @@ public class SingleLetterDefaultPackageTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(B.class, C.class, L.class)
+            .withApplicationRoot((jar) -> jar.addClasses(B.class, C.class, L.class)
                     .addAsResource(new StringAsset("simpleBean.baz=1"), "application.properties"));
 
     @Inject

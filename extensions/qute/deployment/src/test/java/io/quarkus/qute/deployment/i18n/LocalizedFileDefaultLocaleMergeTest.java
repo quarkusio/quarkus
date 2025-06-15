@@ -16,8 +16,7 @@ public class LocalizedFileDefaultLocaleMergeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Messages.class)
+            .withApplicationRoot((jar) -> jar.addClass(Messages.class)
                     .addAsResource(new StringAsset("hello=Hi!\ngoodbye=Bye"), "messages/msg_en.properties"))
             .overrideConfigKey("quarkus.default-locale", "en");
 

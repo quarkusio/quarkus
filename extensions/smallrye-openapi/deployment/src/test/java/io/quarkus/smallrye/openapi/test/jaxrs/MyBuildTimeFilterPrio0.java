@@ -24,10 +24,7 @@ public class MyBuildTimeFilterPrio0 implements OASFilter {
 
     @Override
     public void filterOpenAPI(OpenAPI aOpenAPI) {
-        String currentDesc = Optional
-                .ofNullable(aOpenAPI.getInfo())
-                .map(Info::getDescription)
-                .orElse("");
+        String currentDesc = Optional.ofNullable(aOpenAPI.getInfo()).map(Info::getDescription).orElse("");
         aOpenAPI.setInfo(OASFactory.createInfo().description(currentDesc + "0"));
     }
 

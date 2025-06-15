@@ -10,9 +10,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation which can be used to associate OIDC tenant configurations with the endpoint classes and methods.
- * When placed on injection points, this annotation can be used to select a tenant associated
- * with the {@link TenantIdentityProvider}.
+ * Annotation which can be used to associate OIDC tenant configurations with the endpoint classes and methods. When
+ * placed on injection points, this annotation can be used to select a tenant associated with the
+ * {@link TenantIdentityProvider}.
  */
 @Target({ TYPE, METHOD, FIELD, PARAMETER })
 @Retention(RetentionPolicy.RUNTIME)

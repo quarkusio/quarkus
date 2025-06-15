@@ -5,8 +5,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * An interface extending the metrics exposed for the Vert.x HTTP server.
  * <p>
- * The Vert.x HTTP metrics are managed by Vert.x, and are exposed by the Vert.x metrics SPI.
- * However, some of the metrics are not exposed by the SPI, and are only available through the Vert.x HTTP SPI.
+ * The Vert.x HTTP metrics are managed by Vert.x, and are exposed by the Vert.x metrics SPI. However, some of the
+ * metrics are not exposed by the SPI, and are only available through the Vert.x HTTP SPI.
  * <p>
  * Thus, we need to extend the Vert.x HTTP metrics SPI to expose these metrics.
  */

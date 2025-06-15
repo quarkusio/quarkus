@@ -7,8 +7,6 @@ import io.vertx.ext.web.Router;
 public class CompileCorrectlyEndpoint {
 
     void addConfigRoute(@Observes Router router) {
-        router.route("/correct")
-                .produces("text/plain")
-                .handler(rc -> rc.response().end("correct"));
+        router.route("/correct").produces("text/plain").handler(rc -> rc.response().end("correct"));
     }
 }

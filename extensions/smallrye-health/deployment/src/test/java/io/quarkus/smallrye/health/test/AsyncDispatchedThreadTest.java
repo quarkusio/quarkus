@@ -23,28 +23,21 @@ import io.smallrye.mutiny.Uni;
 class AsyncDispatchedThreadTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(LivenessHealthCheckCapturingThread.class, ReadinessHealthCheckCapturingThread.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(LivenessHealthCheckCapturingThread.class, ReadinessHealthCheckCapturingThread.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     void check() {
-        RestAssured.when().get("/q/health/live").then()
-                .body("status", is("UP"),
-                        "checks.status", contains("UP"),
-                        "checks.name", contains("my-liveness-check"),
-                        "checks.data.thread[0]", stringContainsInOrder("loop"),
-                        "checks.data.thread[0]", not(stringContainsInOrder("executor-thread")),
-                        "checks.data.request[0]", is(true));
+        RestAssured.when().get("/q/health/live").then().body("status", is("UP"), "checks.status", contains("UP"),
+                "checks.name", contains("my-liveness-check"), "checks.data.thread[0]", stringContainsInOrder("loop"),
+                "checks.data.thread[0]", not(stringContainsInOrder("executor-thread")), "checks.data.request[0]",
+                is(true));
 
-        RestAssured.when().get("/q/health/ready").then()
-                .body("status", is("UP"),
-                        "checks.status", contains("UP"),
-                        "checks.name", contains("my-readiness-check"),
-                        "checks.data.thread[0]", stringContainsInOrder("loop"),
-                        "checks.data.thread[0]", not(stringContainsInOrder("executor-thread")),
-                        "checks.data.request[0]", is(true));
+        RestAssured.when().get("/q/health/ready").then().body("status", is("UP"), "checks.status", contains("UP"),
+                "checks.name", contains("my-readiness-check"), "checks.data.thread[0]", stringContainsInOrder("loop"),
+                "checks.data.thread[0]", not(stringContainsInOrder("executor-thread")), "checks.data.request[0]",
+                is(true));
     }
 
     @ApplicationScoped
@@ -52,11 +45,10 @@ class AsyncDispatchedThreadTest {
     public static class LivenessHealthCheckCapturingThread implements AsyncHealthCheck {
         @Override
         public Uni<HealthCheckResponse> call() {
-            return Uni.createFrom().item(HealthCheckResponse.named("my-liveness-check")
-                    .up()
-                    .withData("thread", Thread.currentThread().getName())
-                    .withData("request", Arc.container().requestContext().isActive())
-                    .build());
+            return Uni.createFrom()
+                    .item(HealthCheckResponse.named("my-liveness-check").up()
+                            .withData("thread", Thread.currentThread().getName())
+                            .withData("request", Arc.container().requestContext().isActive()).build());
         }
     }
 
@@ -65,11 +57,10 @@ class AsyncDispatchedThreadTest {
     public static class ReadinessHealthCheckCapturingThread implements AsyncHealthCheck {
         @Override
         public Uni<HealthCheckResponse> call() {
-            return Uni.createFrom().item(HealthCheckResponse.named("my-readiness-check")
-                    .up()
-                    .withData("thread", Thread.currentThread().getName())
-                    .withData("request", Arc.container().requestContext().isActive())
-                    .build());
+            return Uni.createFrom()
+                    .item(HealthCheckResponse.named("my-readiness-check").up()
+                            .withData("thread", Thread.currentThread().getName())
+                            .withData("request", Arc.container().requestContext().isActive()).build());
         }
     }
 

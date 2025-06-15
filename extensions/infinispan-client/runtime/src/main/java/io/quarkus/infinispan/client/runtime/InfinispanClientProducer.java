@@ -62,8 +62,7 @@ public class InfinispanClientProducer {
     @Inject
     private Instance<InfinispanClientsBuildTimeConfig> infinispanClientsBuildTimeConfigHandle;
 
-    private void registerSchemaInServer(String infinispanConfigName,
-            Map<String, Properties> properties,
+    private void registerSchemaInServer(String infinispanConfigName, Map<String, Properties> properties,
             RemoteCacheManager cacheManager) {
         RemoteCache<String, String> protobufMetadataCache = null;
         Properties namedProperties = properties.get(infinispanConfigName);
@@ -73,8 +72,8 @@ public class InfinispanClientProducer {
         if (initializers != null) {
             for (SerializationContextInitializer initializer : initializers) {
                 if (protobufMetadataCache == null) {
-                    protobufMetadataCache = cacheManager.getCache(
-                            ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                    protobufMetadataCache = cacheManager
+                            .getCache(ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
                 }
                 protobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
             }
@@ -84,8 +83,8 @@ public class InfinispanClientProducer {
                     for (SerializationContextInitializer initializer : initializers) {
                         RemoteCache<String, String> backupProtobufMetadataCache = null;
                         if (backupProtobufMetadataCache == null) {
-                            backupProtobufMetadataCache = cacheManager.getCache(
-                                    ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                            backupProtobufMetadataCache = cacheManager
+                                    .getCache(ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
                         }
                         backupProtobufMetadataCache.put(initializer.getProtoFileName(), initializer.getProtoFile());
                     }
@@ -102,8 +101,8 @@ public class InfinispanClientProducer {
                     String fileName = keyString.substring(PROTOBUF_FILE_PREFIX.length());
                     String fileContents = (String) property.getValue();
                     if (protobufMetadataCache == null) {
-                        protobufMetadataCache = cacheManager.getCache(
-                                ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                        protobufMetadataCache = cacheManager
+                                .getCache(ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
                     }
                     protobufMetadataCache.put(fileName, fileContents);
                 }
@@ -122,8 +121,8 @@ public class InfinispanClientProducer {
                             String fileName = keyString.substring(PROTOBUF_FILE_PREFIX.length());
                             String fileContents = (String) property.getValue();
                             if (backupProtobufMetadataCache == null) {
-                                backupProtobufMetadataCache = cacheManager.getCache(
-                                        ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
+                                backupProtobufMetadataCache = cacheManager
+                                        .getCache(ProtobufMetadataManagerConstants.PROTOBUF_METADATA_CACHE_NAME);
                             }
                             backupProtobufMetadataCache.put(fileName, fileContents);
                         }
@@ -161,9 +160,12 @@ public class InfinispanClientProducer {
      * Configures the client using the client name
      *
      * @return the configuration builder based on the provided properties
-     * @throws RuntimeException if the cache configuration file is not present in the resources folder
+     *
+     * @throws RuntimeException
+     *         if the cache configuration file is not present in the resources folder
      */
-    private ConfigurationBuilder builderFromProperties(String infinispanClientName, Map<String, Properties> propertiesMap) {
+    private ConfigurationBuilder builderFromProperties(String infinispanClientName,
+            Map<String, Properties> propertiesMap) {
         // If you are changing this method, you will most likely have to change replaceProperties as well
         ConfigurationBuilder builder = new ConfigurationBuilder();
         Properties properties = propertiesMap.get(infinispanClientName);
@@ -204,7 +206,8 @@ public class InfinispanClientProducer {
             if (infinispanClientRuntimeConfig.authUsername().isPresent()) {
                 log.warn(
                         "Use 'quarkus.infinispan-client.username' instead of the deprecated 'quarkus.infinispan-client.auth-username'");
-                properties.put(ConfigurationProperties.AUTH_USERNAME, infinispanClientRuntimeConfig.authUsername().get());
+                properties.put(ConfigurationProperties.AUTH_USERNAME,
+                        infinispanClientRuntimeConfig.authUsername().get());
             }
 
             if (infinispanClientRuntimeConfig.username().isPresent()) {
@@ -214,7 +217,8 @@ public class InfinispanClientProducer {
             if (infinispanClientRuntimeConfig.authPassword().isPresent()) {
                 log.warn(
                         "Use 'quarkus.infinispan-client.password' instead of the deprecated 'quarkus.infinispan-client.auth-password'");
-                properties.put(ConfigurationProperties.AUTH_PASSWORD, infinispanClientRuntimeConfig.authPassword().get());
+                properties.put(ConfigurationProperties.AUTH_PASSWORD,
+                        infinispanClientRuntimeConfig.authPassword().get());
             }
 
             if (infinispanClientRuntimeConfig.password().isPresent()) {
@@ -235,7 +239,8 @@ public class InfinispanClientProducer {
             properties.put(ConfigurationProperties.AUTH_REALM, infinispanClientRuntimeConfig.authRealm().get());
         }
         if (infinispanClientRuntimeConfig.authServerName().isPresent()) {
-            properties.put(ConfigurationProperties.AUTH_SERVER_NAME, infinispanClientRuntimeConfig.authServerName().get());
+            properties.put(ConfigurationProperties.AUTH_SERVER_NAME,
+                    infinispanClientRuntimeConfig.authServerName().get());
         }
 
         if (infinispanClientRuntimeConfig.saslMechanism().isPresent()) {
@@ -249,22 +254,22 @@ public class InfinispanClientProducer {
                     infinispanClientRuntimeConfig.keyStorePassword().get());
         }
         if (infinispanClientRuntimeConfig.keyStoreType().isPresent()) {
-            properties.put(ConfigurationProperties.KEY_STORE_TYPE,
-                    infinispanClientRuntimeConfig.keyStoreType().get());
+            properties.put(ConfigurationProperties.KEY_STORE_TYPE, infinispanClientRuntimeConfig.keyStoreType().get());
         }
         if (infinispanClientRuntimeConfig.keyAlias().isPresent()) {
-            properties.put(ConfigurationProperties.KEY_ALIAS,
-                    infinispanClientRuntimeConfig.keyAlias().get());
+            properties.put(ConfigurationProperties.KEY_ALIAS, infinispanClientRuntimeConfig.keyAlias().get());
         }
         if (infinispanClientRuntimeConfig.trustStore().isPresent()) {
-            properties.put(ConfigurationProperties.TRUST_STORE_FILE_NAME, infinispanClientRuntimeConfig.trustStore().get());
+            properties.put(ConfigurationProperties.TRUST_STORE_FILE_NAME,
+                    infinispanClientRuntimeConfig.trustStore().get());
         }
         if (infinispanClientRuntimeConfig.trustStorePassword().isPresent()) {
             properties.put(ConfigurationProperties.TRUST_STORE_PASSWORD,
                     infinispanClientRuntimeConfig.trustStorePassword().get());
         }
         if (infinispanClientRuntimeConfig.trustStoreType().isPresent()) {
-            properties.put(ConfigurationProperties.TRUST_STORE_TYPE, infinispanClientRuntimeConfig.trustStoreType().get());
+            properties.put(ConfigurationProperties.TRUST_STORE_TYPE,
+                    infinispanClientRuntimeConfig.trustStoreType().get());
         }
 
         if (infinispanClientRuntimeConfig.sslProvider().isPresent()) {
@@ -303,12 +308,12 @@ public class InfinispanClientProducer {
 
         if (infinispanClientBuildTimeConfig != null) {
             for (Map.Entry<String, InfinispanClientBuildTimeConfig.RemoteCacheConfig> buildCacheConfig : infinispanClientBuildTimeConfig
-                    .cache()
-                    .entrySet()) {
+                    .cache().entrySet()) {
                 String cacheName = buildCacheConfig.getKey();
                 // Do this if the cache config is only present in the build time configuration
                 if (!infinispanClientRuntimeConfig.cache().containsKey(cacheName)) {
-                    InfinispanClientBuildTimeConfig.RemoteCacheConfig buildCacheConfigValue = buildCacheConfig.getValue();
+                    InfinispanClientBuildTimeConfig.RemoteCacheConfig buildCacheConfigValue = buildCacheConfig
+                            .getValue();
                     if (buildCacheConfig.getValue().configurationResource().isPresent()) {
                         URL configFile = Thread.currentThread().getContextClassLoader()
                                 .getResource(buildCacheConfigValue.configurationResource().get());
@@ -319,16 +324,14 @@ public class InfinispanClientProducer {
         }
 
         for (Map.Entry<String, InfinispanClientRuntimeConfig.RemoteCacheConfig> cacheConfig : infinispanClientRuntimeConfig
-                .cache()
-                .entrySet()) {
+                .cache().entrySet()) {
             String cacheName = cacheConfig.getKey();
             InfinispanClientRuntimeConfig.RemoteCacheConfig runtimeCacheConfig = cacheConfig.getValue();
             URL configFile = null;
             // Check if the build time resource file configuration exists
             if (infinispanClientBuildTimeConfig != null) {
-                InfinispanClientBuildTimeConfig.RemoteCacheConfig buildtimeCacheConfig = infinispanClientBuildTimeConfig.cache()
-                        .get(
-                                cacheName);
+                InfinispanClientBuildTimeConfig.RemoteCacheConfig buildtimeCacheConfig = infinispanClientBuildTimeConfig
+                        .cache().get(cacheName);
                 if (buildtimeCacheConfig != null && buildtimeCacheConfig.configurationResource().isPresent()) {
                     configFile = Thread.currentThread().getContextClassLoader()
                             .getResource(buildtimeCacheConfig.configurationResource().get());
@@ -358,13 +361,13 @@ public class InfinispanClientProducer {
                 builder.remoteCache(cacheName).nearCacheMode(runtimeCacheConfig.nearCacheMode().get());
             }
             if (runtimeCacheConfig.nearCacheUseBloomFilter().isPresent()) {
-                builder.remoteCache(cacheName).nearCacheUseBloomFilter(runtimeCacheConfig.nearCacheUseBloomFilter().get());
+                builder.remoteCache(cacheName)
+                        .nearCacheUseBloomFilter(runtimeCacheConfig.nearCacheUseBloomFilter().get());
             }
         }
 
         for (Map.Entry<String, InfinispanClientRuntimeConfig.BackupClusterConfig> backupCluster : infinispanClientRuntimeConfig
-                .backupCluster()
-                .entrySet()) {
+                .backupCluster().entrySet()) {
             InfinispanClientRuntimeConfig.BackupClusterConfig backupClusterConfig = backupCluster.getValue();
             ClusterConfigurationBuilder clusterConfigurationBuilder = builder.addCluster(backupCluster.getKey());
             clusterConfigurationBuilder.addClusterNodes(backupClusterConfig.hosts());
@@ -391,8 +394,7 @@ public class InfinispanClientProducer {
             BeanManager beanManager) {
         SerializationContext serializationContext = marshaller.getSerializationContext();
 
-        Set<SerializationContextInitializer> initializers = (Set) properties
-                .get(PROTOBUF_INITIALIZERS);
+        Set<SerializationContextInitializer> initializers = (Set) properties.get(PROTOBUF_INITIALIZERS);
         if (initializers != null) {
             for (SerializationContextInitializer initializer : initializers) {
                 initializer.registerSchema(serializationContext);
@@ -423,8 +425,7 @@ public class InfinispanClientProducer {
         Set<Bean<Schema>> schemaBeans = (Set) beanManager.getBeans(Schema.class);
         for (Bean<Schema> schemaBean : schemaBeans) {
             CreationalContext<Schema> ctx = beanManager.createCreationalContext(schemaBean);
-            Schema schema = (Schema) beanManager.getReference(schemaBean, Schema.class,
-                    ctx);
+            Schema schema = (Schema) beanManager.getReference(schemaBean, Schema.class, ctx);
             FileDescriptorSource fds = FileDescriptorSource.fromString(schema.getName(), schema.toString());
             serializationContext.registerProtoFiles(fds);
             // Register all the fds so they can be queried
@@ -464,16 +465,14 @@ public class InfinispanClientProducer {
         if (InfinispanClientUtil.isDefault(clientName)) {
             cacheManager = Arc.container().instance(RemoteCacheManager.class, Default.Literal.INSTANCE).get();
         } else {
-            cacheManager = Arc.container().instance(RemoteCacheManager.class, NamedLiteral.of(clientName))
-                    .get();
+            cacheManager = Arc.container().instance(RemoteCacheManager.class, NamedLiteral.of(clientName)).get();
         }
 
         if (cacheManager != null && cacheName != null && !cacheName.isEmpty()) {
             RemoteCache<K, V> cache = cacheManager.getCache(cacheName);
             if (cache == null) {
                 log.warn("Attempt to create cache using minimal default config");
-                return cacheManager.administration()
-                        .getOrCreateCache(cacheName, DEFAULT_CONFIG);
+                return cacheManager.administration().getOrCreateCache(cacheName, DEFAULT_CONFIG);
             }
             return cache;
         }
@@ -482,8 +481,7 @@ public class InfinispanClientProducer {
             RemoteCache<K, V> cache = cacheManager.getCache();
             if (cache == null) {
                 log.warn("Attempt to create cache using minimal default config");
-                return cacheManager.administration()
-                        .getOrCreateCache(cacheName, DEFAULT_CONFIG);
+                return cacheManager.administration().getOrCreateCache(cacheName, DEFAULT_CONFIG);
             }
             return cache;
         }

@@ -42,19 +42,17 @@ public class GradleUtils {
     public static List<Dependency> listProjectBoms(Project project) {
         final Configuration impl = project.getConfigurations().getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
         List<Dependency> boms = new ArrayList<>();
-        impl.getIncoming().getDependencies()
-                .forEach(d -> {
-                    if (!(d instanceof ModuleDependency)) {
-                        return;
-                    }
-                    final ModuleDependency module = (ModuleDependency) d;
-                    final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
-                    if (category != null
-                            && (Category.ENFORCED_PLATFORM.equals(category.getName())
-                                    || Category.REGULAR_PLATFORM.equals(category.getName()))) {
-                        boms.add(d);
-                    }
-                });
+        impl.getIncoming().getDependencies().forEach(d -> {
+            if (!(d instanceof ModuleDependency)) {
+                return;
+            }
+            final ModuleDependency module = (ModuleDependency) d;
+            final Category category = module.getAttributes().getAttribute(Category.CATEGORY_ATTRIBUTE);
+            if (category != null && (Category.ENFORCED_PLATFORM.equals(category.getName())
+                    || Category.REGULAR_PLATFORM.equals(category.getName()))) {
+                boms.add(d);
+            }
+        });
         return boms;
     }
 

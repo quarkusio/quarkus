@@ -23,14 +23,11 @@ public class StaticInitConfigInjectionMissingValueFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(StaticInitBean.class))
-            .assertException(t -> {
-                assertThat(t).isInstanceOf(IllegalStateException.class)
-                        .hasMessageContainingAll(
-                                "A runtime config property value differs from the value that was injected during the static intialization phase",
-                                "the runtime value of '" + PROPERTY_NAME
-                                        + "' is [gizmo] but the value [null] was injected into io.quarkus.arc.test.config.staticinit.StaticInitConfigInjectionMissingValueFailureTest$StaticInitBean#value");
+            .withApplicationRoot(root -> root.addClasses(StaticInitBean.class)).assertException(t -> {
+                assertThat(t).isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
+                        "A runtime config property value differs from the value that was injected during the static intialization phase",
+                        "the runtime value of '" + PROPERTY_NAME
+                                + "' is [gizmo] but the value [null] was injected into io.quarkus.arc.test.config.staticinit.StaticInitConfigInjectionMissingValueFailureTest$StaticInitBean#value");
             });
 
     @Test

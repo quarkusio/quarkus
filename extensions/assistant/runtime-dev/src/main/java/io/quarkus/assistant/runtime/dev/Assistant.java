@@ -9,7 +9,8 @@ import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
 /**
- * This is the Assistant for Quarkus Dev Mode. The actual implementation will be provided by another extension (eg. Chappie)
+ * This is the Assistant for Quarkus Dev Mode. The actual implementation will be provided by another extension (eg.
+ * Chappie)
  */
 public interface Assistant {
 
@@ -24,27 +25,36 @@ public interface Assistant {
      * Explain and suggest a fix for an exception in the user code
      *
      * @param <T>
-     * @param systemMessage System wide context
-     * @param userMessage User specific context
-     * @param stacktrace The exception stacktrace
-     * @param path The path to the effective class causing this exception
+     * @param systemMessage
+     *        System wide context
+     * @param userMessage
+     *        User specific context
+     * @param stacktrace
+     *        The exception stacktrace
+     * @param path
+     *        The path to the effective class causing this exception
+     *
      * @return
      */
-    <T> CompletionStage<T> exception(Optional<String> systemMessage, String userMessage, String stacktrace,
-            Path path);
+    <T> CompletionStage<T> exception(Optional<String> systemMessage, String userMessage, String stacktrace, Path path);
 
     /**
      * Assist the developer with something
      *
-     * @param <T> The response
-     * @param systemMessageTemplate System wide context
-     * @param userMessageTemplate User specific context
-     * @param variables variables that can be used in the templates
-     * @param paths Paths to workspace files (optional)
+     * @param <T>
+     *        The response
+     * @param systemMessageTemplate
+     *        System wide context
+     * @param userMessageTemplate
+     *        User specific context
+     * @param variables
+     *        variables that can be used in the templates
+     * @param paths
+     *        Paths to workspace files (optional)
+     *
      * @return
      */
-    <T> CompletionStage<T> assist(Optional<String> systemMessageTemplate,
-            String userMessageTemplate,
+    <T> CompletionStage<T> assist(Optional<String> systemMessageTemplate, String userMessageTemplate,
             Map<String, String> variables, List<Path> paths);
 
     default ExceptionBuilder exceptionBuilder() {

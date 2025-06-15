@@ -24,7 +24,6 @@ public class VertxOutputStream extends AsyncOutputStream {
 
     /**
      * Construct a new instance. No write timeout is configured.
-     *
      */
     public VertxOutputStream(VertxHttpResponse response, BufferAllocator allocator) {
         this.allocator = allocator;

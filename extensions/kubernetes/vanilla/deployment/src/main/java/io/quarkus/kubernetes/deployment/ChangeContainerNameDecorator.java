@@ -37,16 +37,12 @@ public class ChangeContainerNameDecorator extends ApplicationContainerDecorator<
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] {
-                ApplyRequestsMemoryDecorator.class, AddEnvVarDecorator.class, AddMountDecorator.class,
+        return new Class[] { ApplyRequestsMemoryDecorator.class, AddEnvVarDecorator.class, AddMountDecorator.class,
                 AddPortDecorator.class, ApplyArgsDecorator.class, ApplyCommandDecorator.class,
-                ApplyImagePullPolicyDecorator.class,
-                ApplyLimitsCpuDecorator.class, ApplyLimitsMemoryDecorator.class, ApplyPortNameDecorator.class,
-                ApplyRequestsCpuDecorator.class,
-                ApplyWorkingDirDecorator.class, ResourceProvidingDecorator.class, AddSidecarDecorator.class,
-                AddInitContainerDecorator.class,
-                AddLivenessProbeDecorator.class, AddReadinessProbeDecorator.class, ApplyImageDecorator.class
-        };
+                ApplyImagePullPolicyDecorator.class, ApplyLimitsCpuDecorator.class, ApplyLimitsMemoryDecorator.class,
+                ApplyPortNameDecorator.class, ApplyRequestsCpuDecorator.class, ApplyWorkingDirDecorator.class,
+                ResourceProvidingDecorator.class, AddSidecarDecorator.class, AddInitContainerDecorator.class,
+                AddLivenessProbeDecorator.class, AddReadinessProbeDecorator.class, ApplyImageDecorator.class };
     }
 
 }

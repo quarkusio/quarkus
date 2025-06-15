@@ -9,8 +9,9 @@ import io.smallrye.mutiny.Uni;
 /**
  * A subclass can be used to wrap the injected {@link UniAsserter} and customize the default behavior.
  * <p>
- * Specifically, it can intercept selected methods and perform some additional logic. The {@link #transformUni(Supplier)} method
- * can be used to transform the provided {@link Uni} supplier for assertion and {@link UniAsserter#execute(Supplier)} methods.
+ * Specifically, it can intercept selected methods and perform some additional logic. The
+ * {@link #transformUni(Supplier)} method can be used to transform the provided {@link Uni} supplier for assertion and
+ * {@link UniAsserter#execute(Supplier)} methods.
  * <p>
  * For example, it can be used to perform all assertions within the scope of a database transaction:
  *
@@ -63,7 +64,6 @@ import io.smallrye.mutiny.Uni;
  *     }
  * }
  * </pre>
- *
  */
 public abstract class UniAsserterInterceptor implements UnwrappableUniAsserter {
 
@@ -79,6 +79,7 @@ public abstract class UniAsserterInterceptor implements UnwrappableUniAsserter {
      *
      * @param <T>
      * @param uniSupplier
+     *
      * @return
      */
     protected <T> Supplier<Uni<T>> transformUni(Supplier<Uni<T>> uniSupplier) {

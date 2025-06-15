@@ -6,8 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that a field should be injected with a resource that is pre-configured
- * to use the correct test URL.
+ * Indicates that a field should be injected with a resource that is pre-configured to use the correct test URL.
  * <p>
  * This could be a String or URL object, or some other HTTP/Websocket based client.
  * <p>
@@ -24,6 +23,7 @@ public @interface TestHTTPResource {
 
     /**
      * @return If the URL should use the HTTPS protocol and SSL port
+     *
      * @deprecated use #tls instead
      */
     @Deprecated(since = "3.10", forRemoval = true)

@@ -23,13 +23,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigPropertiesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(MyEntityForDefaultPU.class.getPackage())
-                    .addPackage(MyEntityForOverridesPU.class.getPackage()))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addPackage(MyEntityForDefaultPU.class.getPackage())
+                            .addPackage(MyEntityForOverridesPU.class.getPackage()))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.packages", MyEntityForDefaultPU.class.getPackageName())
-            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".packages", MyEntityForOverridesPU.class.getPackageName())
+            .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".packages",
+                    MyEntityForOverridesPU.class.getPackageName())
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".datasource", "<default>")
             // Overrides to test that Quarkus configuration properties are taken into account
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".flush.mode", "always");

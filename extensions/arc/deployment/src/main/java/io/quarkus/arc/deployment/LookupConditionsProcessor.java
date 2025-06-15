@@ -39,11 +39,9 @@ public class LookupConditionsProcessor {
     private static final String STRING_VALUE = "stringValue";
     private static final String LOOKUP_IF_MISSING = "lookupIfMissing";
 
-    private static final MethodDescriptor SUPPRESS_IF_PROPERTY = MethodDescriptor.ofMethod(
-            SuppressConditions.class,
+    private static final MethodDescriptor SUPPRESS_IF_PROPERTY = MethodDescriptor.ofMethod(SuppressConditions.class,
             "suppressIfProperty", boolean.class, String.class, String.class, boolean.class);
-    private static final MethodDescriptor SUPPRESS_UNLESS_PROPERTY = MethodDescriptor.ofMethod(
-            SuppressConditions.class,
+    private static final MethodDescriptor SUPPRESS_UNLESS_PROPERTY = MethodDescriptor.ofMethod(SuppressConditions.class,
             "suppressUnlessProperty", boolean.class, String.class, String.class, boolean.class);
 
     @BuildStep
@@ -72,9 +70,9 @@ public class LookupConditionsProcessor {
                                     AnnotationValue lookupIfMissingValue = ifProperty.value(LOOKUP_IF_MISSING);
                                     boolean lookupIfMissing = lookupIfMissingValue != null
                                             && lookupIfMissingValue.asBoolean();
-                                    ResultHandle result = suppressed.invokeStaticMethod(
-                                            SUPPRESS_IF_PROPERTY, suppressed.load(propertyName),
-                                            suppressed.load(expectedStringValue), suppressed.load(lookupIfMissing));
+                                    ResultHandle result = suppressed.invokeStaticMethod(SUPPRESS_IF_PROPERTY,
+                                            suppressed.load(propertyName), suppressed.load(expectedStringValue),
+                                            suppressed.load(lookupIfMissing));
                                     suppressed.ifTrue(result).trueBranch().returnValue(suppressed.load(true));
                                 }
                                 for (AnnotationInstance unlessProperty : unlessPropertyList) {
@@ -83,9 +81,9 @@ public class LookupConditionsProcessor {
                                     AnnotationValue lookupIfMissingValue = unlessProperty.value(LOOKUP_IF_MISSING);
                                     boolean lookupIfMissing = lookupIfMissingValue != null
                                             && lookupIfMissingValue.asBoolean();
-                                    ResultHandle result = suppressed.invokeStaticMethod(
-                                            SUPPRESS_UNLESS_PROPERTY, suppressed.load(propertyName),
-                                            suppressed.load(expectedStringValue), suppressed.load(lookupIfMissing));
+                                    ResultHandle result = suppressed.invokeStaticMethod(SUPPRESS_UNLESS_PROPERTY,
+                                            suppressed.load(propertyName), suppressed.load(expectedStringValue),
+                                            suppressed.load(lookupIfMissing));
                                     suppressed.ifTrue(result).trueBranch().returnValue(suppressed.load(true));
                                 }
                             }
@@ -97,8 +95,8 @@ public class LookupConditionsProcessor {
         }));
     }
 
-    List<AnnotationInstance> findAnnotations(AnnotationTarget target, DotName annotationName, DotName containingAnnotationName,
-            IndexView index) {
+    List<AnnotationInstance> findAnnotations(AnnotationTarget target, DotName annotationName,
+            DotName containingAnnotationName, IndexView index) {
         AnnotationInstance annotation;
         AnnotationInstance container;
         switch (target.kind()) {

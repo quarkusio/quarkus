@@ -54,15 +54,13 @@ public class WebSocketsSecurityEventsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("""
-                            quarkus.http.auth.permission.roles.paths=/http-upgrade-config-endpoint*
-                            quarkus.http.auth.permission.roles.policy=roles
-                            quarkus.http.auth.policy.roles.roles-allowed=http-upgrade-config
-                            """), "application.properties")
-                    .addClasses(WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            HttpUpgradeAnnotationEndpoint.class, HttpUpgradeConfigEndpoint.class, OnTextMessageEndpoint.class,
-                            SecurityEventObserver.class));
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("""
+                    quarkus.http.auth.permission.roles.paths=/http-upgrade-config-endpoint*
+                    quarkus.http.auth.permission.roles.policy=roles
+                    quarkus.http.auth.policy.roles.roles-allowed=http-upgrade-config
+                    """), "application.properties").addClasses(WSClient.class, TestIdentityProvider.class,
+                    TestIdentityController.class, HttpUpgradeAnnotationEndpoint.class, HttpUpgradeConfigEndpoint.class,
+                    OnTextMessageEndpoint.class, SecurityEventObserver.class));
 
     @TestHTTPResource("http-upgrade-annotation-endpoint")
     URI httpUpgradeAnnotationEndpoint;
@@ -216,7 +214,8 @@ public class WebSocketsSecurityEventsTest {
                 .get(RoutingContext.class.getName());
         Assertions.assertNotNull(routingContext);
         authorizationSuccessEvent = assertAuthorizationSuccessEvent(eventObserver.authorizationSuccessAsyncEvents);
-        routingContext = (RoutingContext) authorizationSuccessEvent.getEventProperties().get(RoutingContext.class.getName());
+        routingContext = (RoutingContext) authorizationSuccessEvent.getEventProperties()
+                .get(RoutingContext.class.getName());
         Assertions.assertNotNull(routingContext);
     }
 

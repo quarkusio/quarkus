@@ -27,9 +27,8 @@ public class KeyedMultiInjectionWithKeyedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MsgMetadata.class, ProcessorIngestingPayload.class, MyKeyValueExtractor.class, Source.class,
-                            Sink.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MsgMetadata.class, ProcessorIngestingPayload.class,
+                    MyKeyValueExtractor.class, Source.class, Sink.class));
 
     @Inject
     Sink sink;
@@ -82,8 +81,8 @@ public class KeyedMultiInjectionWithKeyedTest {
 
         @Outgoing("source")
         public Multi<Message<String>> source() {
-            return Multi.createFrom().range(1, 11)
-                    .map(i -> Message.of(Integer.toString(i), Metadata.of(new MsgMetadata("key-" + (i % 2 == 0 ? 0 : 1)))));
+            return Multi.createFrom().range(1, 11).map(
+                    i -> Message.of(Integer.toString(i), Metadata.of(new MsgMetadata("key-" + (i % 2 == 0 ? 0 : 1)))));
         }
 
     }

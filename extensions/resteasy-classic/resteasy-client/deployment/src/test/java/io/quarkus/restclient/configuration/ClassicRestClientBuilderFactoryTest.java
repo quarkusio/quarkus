@@ -13,13 +13,14 @@ public class ClassicRestClientBuilderFactoryTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(EchoClientWithoutAnnotation.class, EchoClientWithConfigKey.class,
-                    EchoClientWithEmptyPath.class, EchoResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EchoClientWithoutAnnotation.class,
+                    EchoClientWithConfigKey.class, EchoClientWithEmptyPath.class, EchoResource.class))
             .withConfigurationResource("factory-test-application.properties");
 
     @Test
     public void testAnnotatedClientClass() {
-        RestClientBuilder restClientBuilder = RestClientBuilderFactory.getInstance().newBuilder(EchoClientWithConfigKey.class);
+        RestClientBuilder restClientBuilder = RestClientBuilderFactory.getInstance()
+                .newBuilder(EchoClientWithConfigKey.class);
         EchoClientWithConfigKey restClient = restClientBuilder.build(EchoClientWithConfigKey.class);
 
         assertThat(restClient.echo("Hello")).contains("Hello");

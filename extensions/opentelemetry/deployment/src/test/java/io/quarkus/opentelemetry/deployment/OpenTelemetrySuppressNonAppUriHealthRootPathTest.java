@@ -22,20 +22,17 @@ import io.restassured.RestAssured;
 public class OpenTelemetrySuppressNonAppUriHealthRootPathTest {
 
     @RegisterExtension
-    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, TestSpanExporter.class, TestSpanExporterProvider.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .add(new StringAsset(
-                            """
-                                    quarkus.otel.traces.exporter=test-span-exporter
-                                    quarkus.otel.metrics.exporter=none
-                                    quarkus.otel.bsp.export.timeout=1s
-                                    quarkus.otel.bsp.schedule.delay=50
-                                    quarkus.smallrye-health.root-path=/observe/health
-                                    """),
-                            "application.properties"));
+    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addClasses(HelloResource.class, TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .add(new StringAsset("""
+                    quarkus.otel.traces.exporter=test-span-exporter
+                    quarkus.otel.metrics.exporter=none
+                    quarkus.otel.bsp.export.timeout=1s
+                    quarkus.otel.bsp.schedule.delay=50
+                    quarkus.smallrye-health.root-path=/observe/health
+                    """), "application.properties"));
 
     @Test
     void test() {
@@ -46,19 +43,10 @@ public class OpenTelemetrySuppressNonAppUriHealthRootPathTest {
         RestAssured.get("/observe/health/live").then().statusCode(200);
 
         // Valid trace
-        RestAssured.given()
-                .get("/hello")
-                .then()
-                .statusCode(200);
+        RestAssured.given().get("/hello").then().statusCode(200);
         // Get span names
         List<String> spans = Arrays.asList(
-                RestAssured.given()
-                        .get("/hello/spans")
-                        .then()
-                        .statusCode(200)
-                        .extract().body()
-                        .asString()
-                        .split(";"));
+                RestAssured.given().get("/hello/spans").then().statusCode(200).extract().body().asString().split(";"));
 
         assertThat(spans).containsExactly("GET /hello");
     }
@@ -82,8 +70,7 @@ public class OpenTelemetrySuppressNonAppUriHealthRootPathTest {
         @GET
         @Path("/spans")
         public String greetingsInsertAtLeast() {
-            String spanNames = spanExporter.getFinishedSpanItemsAtLeast(1).stream()
-                    .map(SpanData::getName)
+            String spanNames = spanExporter.getFinishedSpanItemsAtLeast(1).stream().map(SpanData::getName)
                     .reduce((s1, s2) -> s1 + ";" + s2).orElse("");
             System.out.println(spanNames);
             return spanNames;

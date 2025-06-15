@@ -173,9 +173,8 @@ public class OutputOptionMixin implements MessageWriter {
 
     @Override
     public String toString() {
-        return "OutputOptions [testMode=" + cliTestMode
-                + ", showErrors=" + showErrors
-                + ", verbose=" + getVerbose() + "]";
+        return "OutputOptions [testMode=" + cliTestMode + ", showErrors=" + showErrors + ", verbose=" + getVerbose()
+                + "]";
     }
 
 }

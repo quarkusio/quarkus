@@ -17,8 +17,7 @@ public class LiquibaseExtensionMigrateAtStartDefaultDatasourceConfigActiveFalseT
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/changeLog.xml", "db/changeLog.xml"))
+            .withApplicationRoot((jar) -> jar.addAsResource("db/changeLog.xml", "db/changeLog.xml"))
             .overrideConfigKey("quarkus.datasource.active", "false")
             .overrideConfigKey("quarkus.liquibase.migrate-at-start", "true");
 
@@ -28,12 +27,12 @@ public class LiquibaseExtensionMigrateAtStartDefaultDatasourceConfigActiveFalseT
     @Test
     @DisplayName("If the default datasource is deactivated, even if migrate-at-start is enabled, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibase.get().getConfiguration())
-                .isInstanceOf(InactiveBeanException.class)
+        assertThatThrownBy(() -> liquibase.get().getConfiguration()).isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
                         "Liquibase for datasource '<default>' was deactivated automatically because this datasource was deactivated",
                         "Datasource '<default>' was deactivated through configuration properties.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic
+                        // hints
                         "To activate the datasource, set configuration property 'quarkus.datasource.active'"
                                 + " to 'true' and configure datasource '<default>'",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");

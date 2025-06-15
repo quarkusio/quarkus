@@ -7,14 +7,13 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 /**
- * Verify that the metrics handler works on the expected path
- * when quarkus.http.root-path and quarkus.http.non-application-root-path are set.
+ * Verify that the metrics handler works on the expected path when quarkus.http.root-path and
+ * quarkus.http.non-application-root-path are set.
  */
 public class MetricsHandlerPathTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.http.root-path", "/custom")
             .overrideConfigKey("quarkus.http.non-application-root-path", "/framework");
 
@@ -23,9 +22,7 @@ public class MetricsHandlerPathTest {
         RestAssured.basePath = "/";
         RestAssured.when()
                 // no need to prepend the /custom here because it will be reflected in RestAssured.basePath
-                .get("/framework/metrics")
-                .then()
-                .statusCode(200);
+                .get("/framework/metrics").then().statusCode(200);
     }
 
 }

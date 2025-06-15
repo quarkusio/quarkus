@@ -73,8 +73,7 @@ public class QuarkusFaultToleranceOperationProvider implements FaultToleranceOpe
                 return false;
             }
             CacheKey cacheKey = (CacheKey) o;
-            return Objects.equals(beanClass, cacheKey.beanClass)
-                    && Objects.equals(method, cacheKey.method);
+            return Objects.equals(beanClass, cacheKey.beanClass) && Objects.equals(method, cacheKey.method);
         }
 
         @Override

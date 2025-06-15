@@ -52,12 +52,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         validateLongitude(longitude);
         validateLatitude(latitude);
 
-        RedisCommand cmd = RedisCommand.of(Command.GEOADD)
-                .put(marshaller.encode(key))
-                .putAll(args.toArgs())
-                .put(longitude)
-                .put(latitude)
-                .put(marshaller.encode(member));
+        RedisCommand cmd = RedisCommand.of(Command.GEOADD).put(marshaller.encode(key)).putAll(args.toArgs())
+                .put(longitude).put(latitude).put(marshaller.encode(member));
 
         return execute(cmd);
     }
@@ -67,12 +63,9 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         notNullOrEmpty(items, "items");
         doesNotContainNull(items, "items");
 
-        RedisCommand cmd = RedisCommand.of(Command.GEOADD)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.GEOADD).put(marshaller.encode(key));
         for (GeoItem<V> item : items) {
-            cmd
-                    .put(Double.toString(item.longitude()))
-                    .put(Double.toString(item.latitude()))
+            cmd.put(Double.toString(item.longitude())).put(Double.toString(item.latitude()))
                     .put(marshaller.encode(item.member()));
         }
         return execute(cmd);
@@ -84,9 +77,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         doesNotContainNull(items, "items");
         nonNull(args, "args");
 
-        RedisCommand cmd = RedisCommand.of(Command.GEOADD)
-                .put(marshaller.encode(key))
-                .put(args);
+        RedisCommand cmd = RedisCommand.of(Command.GEOADD).put(marshaller.encode(key)).put(args);
 
         for (GeoItem<V> item : items) {
             cmd.put(Double.toString(item.longitude()));
@@ -103,11 +94,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         nonNull(to, "to");
         nonNull(unit, "unit");
 
-        return execute(RedisCommand.of(Command.GEODIST)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(from))
-                .put(marshaller.encode(to))
-                .put(unit.toString()));
+        return execute(RedisCommand.of(Command.GEODIST).put(marshaller.encode(key)).put(marshaller.encode(from))
+                .put(marshaller.encode(to)).put(unit.toString()));
     }
 
     Uni<Response> _geohash(K key, V... members) {
@@ -128,8 +116,7 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         notNullOrEmpty(members, "members");
         doesNotContainNull(members, "members");
 
-        RedisCommand cmd = RedisCommand.of(Command.GEOPOS)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.GEOPOS).put(marshaller.encode(key));
         for (V member : members) {
             cmd.put(marshaller.encode(member));
         }
@@ -144,9 +131,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         validateLatitude(latitude);
         nonNull(unit, "unit");
 
-        return execute(RedisCommand.of(Command.GEORADIUS)
-                .put(marshaller.encode(key)).put(longitude).put(latitude).put(radius)
-                .put(unit.toString()));
+        return execute(RedisCommand.of(Command.GEORADIUS).put(marshaller.encode(key)).put(longitude).put(latitude)
+                .put(radius).put(unit.toString()));
     }
 
     Uni<Response> _georadius(K key, double longitude, double latitude, double radius, GeoUnit unit,
@@ -157,10 +143,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         positive(radius, "radius");
         nonNull(unit, "unit");
         nonNull(geoArgs, "geoArgs");
-        return execute(RedisCommand.of(Command.GEORADIUS)
-                .put(marshaller.encode(key)).put(longitude).put(latitude).put(radius)
-                .put(unit.toString())
-                .putArgs(geoArgs));
+        return execute(RedisCommand.of(Command.GEORADIUS).put(marshaller.encode(key)).put(longitude).put(latitude)
+                .put(radius).put(unit.toString()).putArgs(geoArgs));
     }
 
     Uni<Response> _georadius(K key, double longitude, double latitude, double radius, GeoUnit unit,
@@ -171,10 +155,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         positive(radius, "radius");
         nonNull(unit, "unit");
         nonNull(geoArgs, "geoArgs");
-        return execute(RedisCommand.of(Command.GEORADIUS)
-                .put(marshaller.encode(key)).put(longitude).put(latitude).put(radius)
-                .put(unit.toString())
-                .putArgs(geoArgs, keyCodec));
+        return execute(RedisCommand.of(Command.GEORADIUS).put(marshaller.encode(key)).put(longitude).put(latitude)
+                .put(radius).put(unit.toString()).putArgs(geoArgs, keyCodec));
     }
 
     Uni<Response> _georadiusbymember(K key, V member, double distance, GeoUnit unit, GeoRadiusArgs geoArgs) {
@@ -183,9 +165,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         positive(distance, "distance");
         nonNull(unit, "unit");
         nonNull(geoArgs, "geoArgs");
-        return execute(RedisCommand.of(Command.GEORADIUSBYMEMBER).put(marshaller.encode(key)).put(marshaller.encode(member))
-                .put(distance).put(unit.toString())
-                .putArgs(geoArgs));
+        return execute(RedisCommand.of(Command.GEORADIUSBYMEMBER).put(marshaller.encode(key))
+                .put(marshaller.encode(member)).put(distance).put(unit.toString()).putArgs(geoArgs));
     }
 
     Uni<Response> _georadiusbymember(K key, V member, double distance, GeoUnit unit) {
@@ -204,25 +185,21 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
         nonNull(unit, "unit");
         nonNull(geoArgs, "geoArgs");
         return execute(RedisCommand.of(Command.GEORADIUSBYMEMBER).put(marshaller.encode(key))
-                .put(marshaller.encode(member))
-                .put(distance).put(unit.toString())
-                .putArgs(geoArgs, keyCodec));
+                .put(marshaller.encode(member)).put(distance).put(unit.toString()).putArgs(geoArgs, keyCodec));
     }
 
     Uni<Response> _geosearch(K key, GeoSearchArgs<V> geoArgs) {
         nonNull(key, "key");
         nonNull(geoArgs, "geoArgs");
-        return execute(RedisCommand.of(Command.GEOSEARCH).put(marshaller.encode(key))
-                .putArgs(geoArgs, valueCodec));
+        return execute(RedisCommand.of(Command.GEOSEARCH).put(marshaller.encode(key)).putArgs(geoArgs, valueCodec));
     }
 
     Uni<Response> _geosearchstore(K destination, K key, GeoSearchStoreArgs<V> args, boolean storeDist) {
         nonNull(destination, "destination");
         nonNull(key, "key");
         nonNull(args, "args");
-        return execute(RedisCommand.of(Command.GEOSEARCHSTORE).put(marshaller.encode(destination)).put(marshaller.encode(key))
-                .putArgs(args, valueCodec)
-                .putFlag(storeDist, "STOREDIST"));
+        return execute(RedisCommand.of(Command.GEOSEARCHSTORE).put(marshaller.encode(destination))
+                .put(marshaller.encode(key)).putArgs(args, valueCodec).putFlag(storeDist, "STOREDIST"));
     }
 
     List<String> decodeHashList(Response r) {
@@ -258,8 +235,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
 
             if (!withCoordinates && !withHash && !withDistance) {
                 // Redis only return the member.
-                list.add(new GeoValue<>(marshaller.decode(typeOfValue, response), OptionalDouble.empty(), OptionalLong.empty(),
-                        OptionalDouble.empty(), OptionalDouble.empty()));
+                list.add(new GeoValue<>(marshaller.decode(typeOfValue, response), OptionalDouble.empty(),
+                        OptionalLong.empty(), OptionalDouble.empty(), OptionalDouble.empty()));
                 continue;
             }
 
@@ -287,8 +264,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
                 // Only coordinates
                 double longitude = parseDouble(response.get(1).get(0));
                 double latitude = parseDouble(response.get(1).get(1));
-                list.add(new GeoValue<>(member, OptionalDouble.empty(), OptionalLong.empty(), OptionalDouble.of(longitude),
-                        OptionalDouble.of(latitude)));
+                list.add(new GeoValue<>(member, OptionalDouble.empty(), OptionalLong.empty(),
+                        OptionalDouble.of(longitude), OptionalDouble.of(latitude)));
             } else if (withDistance && !withHash) {
                 // Only distance
                 double dist = parseDouble(response.get(1));
@@ -303,8 +280,8 @@ class AbstractGeoCommands<K, V> extends AbstractRedisCommands {
                 // Distance and Hash
                 double dist = parseDouble(response.get(1));
                 long hash = response.get(2).toLong();
-                list.add(new GeoValue<>(member, OptionalDouble.of(dist), OptionalLong.of(hash),
-                        OptionalDouble.empty(), OptionalDouble.empty()));
+                list.add(new GeoValue<>(member, OptionalDouble.of(dist), OptionalLong.of(hash), OptionalDouble.empty(),
+                        OptionalDouble.empty()));
             }
         }
         return list;

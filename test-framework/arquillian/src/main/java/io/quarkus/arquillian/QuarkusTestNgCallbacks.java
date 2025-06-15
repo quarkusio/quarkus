@@ -14,8 +14,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 
 /**
- * Note that we cannot use event.getExecutor().invoke() directly because the callbacks would be invoked upon the original test
- * class instance and not the real test instance.
+ * Note that we cannot use event.getExecutor().invoke() directly because the callbacks would be invoked upon the
+ * original test class instance and not the real test instance.
  * <p>
  * This class works for TestNG only, see {@link QuarkusJunitCallbacks} for Junit bits
  */
@@ -27,8 +27,8 @@ public class QuarkusTestNgCallbacks {
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> beforeClasses = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), beforeClasses, (Class<? extends Annotation>) testInstance.getClass()
-                    .getClassLoader().loadClass(BeforeClass.class.getName()));
+            collectCallbacks(testInstance.getClass(), beforeClasses, (Class<? extends Annotation>) testInstance
+                    .getClass().getClassLoader().loadClass(BeforeClass.class.getName()));
             for (Method m : beforeClasses) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {
@@ -43,8 +43,8 @@ public class QuarkusTestNgCallbacks {
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> afterClasses = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), afterClasses, (Class<? extends Annotation>) testInstance.getClass()
-                    .getClassLoader().loadClass(AfterClass.class.getName()));
+            collectCallbacks(testInstance.getClass(), afterClasses, (Class<? extends Annotation>) testInstance
+                    .getClass().getClassLoader().loadClass(AfterClass.class.getName()));
             for (Method m : afterClasses) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {
@@ -59,10 +59,10 @@ public class QuarkusTestNgCallbacks {
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> afterMethods = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), afterMethods, (Class<? extends Annotation>) testInstance.getClass()
-                    .getClassLoader().loadClass(AfterMethod.class.getName()));
-            collectCallbacks(testInstance.getClass(), afterMethods, (Class<? extends Annotation>) testInstance.getClass()
-                    .getClassLoader().loadClass(AfterTest.class.getName()));
+            collectCallbacks(testInstance.getClass(), afterMethods, (Class<? extends Annotation>) testInstance
+                    .getClass().getClassLoader().loadClass(AfterMethod.class.getName()));
+            collectCallbacks(testInstance.getClass(), afterMethods, (Class<? extends Annotation>) testInstance
+                    .getClass().getClassLoader().loadClass(AfterTest.class.getName()));
             for (Method m : afterMethods) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {
@@ -77,10 +77,10 @@ public class QuarkusTestNgCallbacks {
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         if (testInstance != null) {
             List<Method> beforeMethods = new ArrayList<>();
-            collectCallbacks(testInstance.getClass(), beforeMethods, (Class<? extends Annotation>) testInstance.getClass()
-                    .getClassLoader().loadClass(BeforeMethod.class.getName()));
-            collectCallbacks(testInstance.getClass(), beforeMethods, (Class<? extends Annotation>) testInstance.getClass()
-                    .getClassLoader().loadClass(BeforeTest.class.getName()));
+            collectCallbacks(testInstance.getClass(), beforeMethods, (Class<? extends Annotation>) testInstance
+                    .getClass().getClassLoader().loadClass(BeforeMethod.class.getName()));
+            collectCallbacks(testInstance.getClass(), beforeMethods, (Class<? extends Annotation>) testInstance
+                    .getClass().getClassLoader().loadClass(BeforeTest.class.getName()));
             for (Method m : beforeMethods) {
                 // we don't know the values for parameterized methods that TestNG allows, we just skip those
                 if (m.getParameterCount() == 0) {
@@ -91,7 +91,8 @@ public class QuarkusTestNgCallbacks {
         }
     }
 
-    private static void collectCallbacks(Class<?> testClass, List<Method> callbacks, Class<? extends Annotation> annotation) {
+    private static void collectCallbacks(Class<?> testClass, List<Method> callbacks,
+            Class<? extends Annotation> annotation) {
         for (Method m : testClass.getDeclaredMethods()) {
             if (m.isAnnotationPresent(annotation)) {
                 addIfNotPresent(callbacks, m);

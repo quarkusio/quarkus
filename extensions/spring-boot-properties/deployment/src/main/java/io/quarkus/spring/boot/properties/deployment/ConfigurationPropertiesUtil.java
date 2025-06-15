@@ -33,16 +33,19 @@ final class ConfigurationPropertiesUtil {
      * Generates code that uses Config#getValue for simple objects, or SmallRyeConfig#getValues if it is a Collection
      * type.
      *
-     * @param propertyName Property name that needs to be fetched
-     * @param resultType Type to which the property value needs to be converted to
-     * @param declaringClass Config class where the type was encountered
-     * @param bytecodeCreator Where the bytecode will be generated
-     * @param config Reference to the MP config object
+     * @param propertyName
+     *        Property name that needs to be fetched
+     * @param resultType
+     *        Type to which the property value needs to be converted to
+     * @param declaringClass
+     *        Config class where the type was encountered
+     * @param bytecodeCreator
+     *        Where the bytecode will be generated
+     * @param config
+     *        Reference to the MP config object
      */
-    static ResultHandle createReadMandatoryValueAndConvertIfNeeded(String propertyName,
-            Type resultType,
-            DotName declaringClass,
-            BytecodeCreator bytecodeCreator, ResultHandle config) {
+    static ResultHandle createReadMandatoryValueAndConvertIfNeeded(String propertyName, Type resultType,
+            DotName declaringClass, BytecodeCreator bytecodeCreator, ResultHandle config) {
 
         if (isMap(resultType)) {
             throw new DeploymentException(
@@ -51,16 +54,16 @@ final class ConfigurationPropertiesUtil {
         if (isCollection(resultType)) {
             ResultHandle smallryeConfig = bytecodeCreator.checkCast(config, SmallRyeConfig.class);
 
-            Class<?> factoryToUse = DotNames.SET.equals(resultType.name()) ? HashSetFactory.class : ArrayListFactory.class;
-            ResultHandle collectionFactory = bytecodeCreator.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(factoryToUse, "getInstance", factoryToUse));
+            Class<?> factoryToUse = DotNames.SET.equals(resultType.name()) ? HashSetFactory.class
+                    : ArrayListFactory.class;
+            ResultHandle collectionFactory = bytecodeCreator
+                    .invokeStaticMethod(MethodDescriptor.ofMethod(factoryToUse, "getInstance", factoryToUse));
 
-            return bytecodeCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValues", Collection.class, String.class,
-                            Class.class, IntFunction.class),
-                    smallryeConfig,
+            return bytecodeCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValues",
+                    Collection.class, String.class, Class.class, IntFunction.class), smallryeConfig,
                     bytecodeCreator.load(propertyName),
-                    bytecodeCreator.loadClassFromTCCL(determineSingleGenericType(resultType, declaringClass).name().toString()),
+                    bytecodeCreator.loadClassFromTCCL(
+                            determineSingleGenericType(resultType, declaringClass).name().toString()),
                     collectionFactory);
         } else {
             return bytecodeCreator.invokeInterfaceMethod(
@@ -71,18 +74,22 @@ final class ConfigurationPropertiesUtil {
     }
 
     /**
-     * Generates code that uses Config#getOptionalValue for simple objects, or SmallRyeConfig#getOptionalValues if it
-     * is a Collection type.
+     * Generates code that uses Config#getOptionalValue for simple objects, or SmallRyeConfig#getOptionalValues if it is
+     * a Collection type.
      *
-     * @param propertyName Property name that needs to be fetched
-     * @param resultType Type to which the property value needs to be converted to
-     * @param declaringClass Config class where the type was encountered
-     * @param bytecodeCreator Where the bytecode will be generated
-     * @param config Reference to the MP config object
+     * @param propertyName
+     *        Property name that needs to be fetched
+     * @param resultType
+     *        Type to which the property value needs to be converted to
+     * @param declaringClass
+     *        Config class where the type was encountered
+     * @param bytecodeCreator
+     *        Where the bytecode will be generated
+     * @param config
+     *        Reference to the MP config object
      */
     static ReadOptionalResponse createReadOptionalValueAndConvertIfNeeded(String propertyName, Type resultType,
-            DotName declaringClass,
-            BytecodeCreator bytecodeCreator, ResultHandle config) {
+            DotName declaringClass, BytecodeCreator bytecodeCreator, ResultHandle config) {
 
         ResultHandle optionalValue;
         if (isMap(resultType)) {
@@ -92,17 +99,19 @@ final class ConfigurationPropertiesUtil {
         if (isCollection(resultType)) {
             ResultHandle smallryeConfig = bytecodeCreator.checkCast(config, SmallRyeConfig.class);
 
-            Class<?> factoryToUse = DotNames.SET.equals(resultType.name()) ? HashSetFactory.class : ArrayListFactory.class;
-            ResultHandle collectionFactory = bytecodeCreator.invokeStaticMethod(
-                    MethodDescriptor.ofMethod(factoryToUse, "getInstance", factoryToUse));
+            Class<?> factoryToUse = DotNames.SET.equals(resultType.name()) ? HashSetFactory.class
+                    : ArrayListFactory.class;
+            ResultHandle collectionFactory = bytecodeCreator
+                    .invokeStaticMethod(MethodDescriptor.ofMethod(factoryToUse, "getInstance", factoryToUse));
 
-            optionalValue = bytecodeCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(SmallRyeConfig.class, "getOptionalValues", Optional.class, String.class,
-                            Class.class, IntFunction.class),
-                    smallryeConfig,
-                    bytecodeCreator.load(propertyName),
-                    bytecodeCreator.loadClassFromTCCL(determineSingleGenericType(resultType, declaringClass).name().toString()),
-                    collectionFactory);
+            optionalValue = bytecodeCreator
+                    .invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(SmallRyeConfig.class, "getOptionalValues", Optional.class,
+                                    String.class, Class.class, IntFunction.class),
+                            smallryeConfig, bytecodeCreator.load(propertyName),
+                            bytecodeCreator.loadClassFromTCCL(
+                                    determineSingleGenericType(resultType, declaringClass).name().toString()),
+                            collectionFactory);
         } else {
             optionalValue = bytecodeCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
@@ -111,12 +120,12 @@ final class ConfigurationPropertiesUtil {
                     bytecodeCreator.loadClassFromTCCL(resultType.name().toString()));
         }
 
-        ResultHandle isPresent = bytecodeCreator
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class), optionalValue);
+        ResultHandle isPresent = bytecodeCreator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class), optionalValue);
         BranchResult isPresentBranch = bytecodeCreator.ifNonZero(isPresent);
         BytecodeCreator isPresentTrue = isPresentBranch.trueBranch();
-        ResultHandle value = isPresentTrue.invokeVirtualMethod(MethodDescriptor.ofMethod(Optional.class, "get", Object.class),
-                optionalValue);
+        ResultHandle value = isPresentTrue
+                .invokeVirtualMethod(MethodDescriptor.ofMethod(Optional.class, "get", Object.class), optionalValue);
         return new ReadOptionalResponse(value, isPresentTrue, isPresentBranch.falseBranch());
     }
 
@@ -135,26 +144,24 @@ final class ConfigurationPropertiesUtil {
     }
 
     private static boolean isCollection(final Type resultType) {
-        return DotNames.COLLECTION.equals(resultType.name()) ||
-                DotNames.LIST.equals(resultType.name()) ||
-                DotNames.SET.equals(resultType.name());
+        return DotNames.COLLECTION.equals(resultType.name()) || DotNames.LIST.equals(resultType.name())
+                || DotNames.SET.equals(resultType.name());
     }
 
     private static boolean isMap(final Type resultType) {
-        return DotNames.MAP.equals(resultType.name()) ||
-                DotNames.HASH_MAP.equals(resultType.name());
+        return DotNames.MAP.equals(resultType.name()) || DotNames.HASH_MAP.equals(resultType.name());
     }
 
     static Type determineSingleGenericType(Type type, DotName declaringClass) {
         if (!(type.kind() == Type.Kind.PARAMETERIZED_TYPE)) {
-            throw new IllegalArgumentException("Type " + type.name().toString() + " which is used in class " + declaringClass
-                    + " must define a generic argument");
+            throw new IllegalArgumentException("Type " + type.name().toString() + " which is used in class "
+                    + declaringClass + " must define a generic argument");
         }
 
         ParameterizedType parameterizedType = type.asParameterizedType();
         if (parameterizedType.arguments().size() != 1) {
-            throw new IllegalArgumentException("Type " + type.name().toString() + " which is used in class " + declaringClass
-                    + " must define a single generic argument");
+            throw new IllegalArgumentException("Type " + type.name().toString() + " which is used in class "
+                    + declaringClass + " must define a single generic argument");
         }
 
         return type.asParameterizedType().arguments().get(0);
@@ -164,14 +171,13 @@ final class ConfigurationPropertiesUtil {
         // We need to register for reflection in case an implicit converter is required.
         if (!ConfigBuildStep.isHandledByProducers(type)) {
             if (type.kind() != Type.Kind.ARRAY) {
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
             }
         }
     }
 
     static class ReadOptionalResponse {
-        private final ResultHandle value; //this is only valid within 'isPresentTrue'
+        private final ResultHandle value; // this is only valid within 'isPresentTrue'
         private final BytecodeCreator isPresentTrue;
         private final BytecodeCreator isPresentFalse;
 

@@ -49,8 +49,7 @@ public class ComposeFileTest {
         ComposeServiceDefinition redis = services.get("redis");
         assertNotNull(redis);
         assertEquals("redis", redis.getServiceName());
-        assertTrue(redis.getPorts().stream()
-                .anyMatch(p -> p.getPort() == 6379));
+        assertTrue(redis.getPorts().stream().anyMatch(p -> p.getPort() == 6379));
         assertTrue(redis.getProfiles().isEmpty());
 
         // Test Kafka service with profile
@@ -77,8 +76,7 @@ public class ComposeFileTest {
         assertNotNull(db);
 
         // Test ports
-        assertTrue(db.getPorts().stream()
-                .anyMatch(p -> p.getPort() == 5432));
+        assertTrue(db.getPorts().stream().anyMatch(p -> p.getPort() == 5432));
 
         // Test labels
         Map<String, Object> labels = db.getLabels();

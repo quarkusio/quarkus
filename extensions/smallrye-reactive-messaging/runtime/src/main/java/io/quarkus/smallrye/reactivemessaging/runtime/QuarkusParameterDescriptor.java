@@ -7,8 +7,8 @@ import java.util.stream.Collectors;
 import io.smallrye.reactive.messaging.MethodParameterDescriptor;
 
 /**
- * A Quarkus specific implementation of the {@link MethodParameterDescriptor} class.
- * It uses data discovered at build-time to provide the data required at runtime.
+ * A Quarkus specific implementation of the {@link MethodParameterDescriptor} class. It uses data discovered at
+ * build-time to provide the data required at runtime.
  */
 public class QuarkusParameterDescriptor implements MethodParameterDescriptor {
 

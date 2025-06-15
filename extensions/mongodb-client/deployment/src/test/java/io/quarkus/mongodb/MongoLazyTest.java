@@ -39,11 +39,8 @@ class MongoLazyTest extends MongoTestBase {
     }
 
     private Double getMetric(String name) {
-        Meter metric = meterRegistry.getMeters()
-                .stream()
-                .filter(mtr -> mtr.getId().getName().contains(name))
-                .findFirst()
-                .orElse(null);
+        Meter metric = meterRegistry.getMeters().stream().filter(mtr -> mtr.getId().getName().contains(name))
+                .findFirst().orElse(null);
         return metric == null ? null : metric.measure().iterator().next().getValue();
     }
 

@@ -10,6 +10,7 @@ import io.quarkus.arc.SyntheticCreationalContext;
  * Configures a mock of a bean.
  *
  * @param <T>
+ *
  * @see QuarkusComponentTestExtension#mock(Class)
  */
 public interface MockBeanConfigurator<T> {
@@ -34,6 +35,7 @@ public interface MockBeanConfigurator<T> {
      * Set the function used to create a new bean instance and register this configurator.
      *
      * @param create
+     *
      * @return the test extension
      */
     QuarkusComponentTestExtensionBuilder create(Function<SyntheticCreationalContext<T>, T> create);

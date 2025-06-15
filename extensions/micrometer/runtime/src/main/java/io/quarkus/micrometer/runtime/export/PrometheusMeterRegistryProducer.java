@@ -15,7 +15,8 @@ import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exemplars.ExemplarSampler;
 
 /**
- * This producer is only registered if the {@code quarkus.micrometer.export.prometheus.default-registry} is set to {@code true}.
+ * This producer is only registered if the {@code quarkus.micrometer.export.prometheus.default-registry} is set to
+ * {@code true}.
  */
 public class PrometheusMeterRegistryProducer {
 

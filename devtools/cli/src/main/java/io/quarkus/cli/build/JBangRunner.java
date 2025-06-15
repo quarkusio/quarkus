@@ -31,8 +31,8 @@ public class JBangRunner implements BuildSystemRunner {
 
     String mainPath;
 
-    public JBangRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, RegistryClientMixin registryClient,
-            Path projectRoot) {
+    public JBangRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions,
+            RegistryClientMixin registryClient, Path projectRoot) {
         this.output = output;
         this.registryClient = registryClient;
         this.projectRoot = projectRoot;
@@ -55,9 +55,8 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
-            String category)
-            throws Exception {
+    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable,
+            String searchPattern, String category) throws Exception {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }
 
@@ -114,14 +113,14 @@ public class JBangRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params,
+            String filter) {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }
 
     @Override
     public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
-            DebugOptions debugOptions,
-            List<String> params) {
+            DebugOptions debugOptions, List<String> params) {
         throw new UnsupportedOperationException("Not there yet. ;)");
     }
 
@@ -137,8 +136,7 @@ public class JBangRunner implements BuildSystemRunner {
 
     @Override
     public File getExecutable() {
-        return ExecuteUtil.findExecutable(otherWrapper,
-                "Unable to find the jbang executable, is it in your path?",
+        return ExecuteUtil.findExecutable(otherWrapper, "Unable to find the jbang executable, is it in your path?",
                 output);
     }
 

@@ -25,7 +25,8 @@ public class DecoratorOfExternalBeanTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClass(MyDecorator.class))
             // we need a non-application archive, so cannot use `withAdditionalDependency()`
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement", Version.getVersion())));
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement", Version.getVersion())));
 
     @Inject
     SomeBeanInExternalLibrary bean;

@@ -38,14 +38,16 @@ public class EffectiveConfigTest {
 
     @Test
     void fromProjectProperties() {
-        EffectiveConfig effectiveConfig = EffectiveConfig.builder().withProjectProperties(Map.of("quarkus.foo", "bar")).build();
+        EffectiveConfig effectiveConfig = EffectiveConfig.builder().withProjectProperties(Map.of("quarkus.foo", "bar"))
+                .build();
 
         soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.foo", "bar");
     }
 
     @Test
     void fromForcedProperties() {
-        EffectiveConfig effectiveConfig = EffectiveConfig.builder().withTaskProperties(Map.of("quarkus.foo", "bar")).build();
+        EffectiveConfig effectiveConfig = EffectiveConfig.builder().withTaskProperties(Map.of("quarkus.foo", "bar"))
+                .build();
 
         soft.assertThat(effectiveConfig.getValues()).containsEntry("quarkus.foo", "bar");
     }

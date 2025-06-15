@@ -11,8 +11,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GlobalProxyPasswordTest extends ProxyTestBase {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Client1.class, ViaHeaderReturningResource.class))
+            .withApplicationRoot(jar -> jar.addClasses(Client1.class, ViaHeaderReturningResource.class))
             .withConfigurationResource("global-proxy-password-test-application.properties");
 
     @RestClient

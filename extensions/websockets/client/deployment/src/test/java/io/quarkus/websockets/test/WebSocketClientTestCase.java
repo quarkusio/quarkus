@@ -29,14 +29,12 @@ public class WebSocketClientTestCase {
     static HttpServer server;
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestWebSocketClient.class);
-                }
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestWebSocketClient.class);
+        }
+    });
 
     @BeforeAll
     public static void startVertxWebsocket() throws ExecutionException, InterruptedException {

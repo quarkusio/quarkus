@@ -25,12 +25,10 @@ public interface ArcConfig {
     /**
      * <ul>
      * <li>If set to {@code all} (or {@code true}) the container will attempt to remove all unused beans.</li>
-     * <li>If set to {@code none} (or {@code false}) no beans will ever be removed even if they are unused (according to the
-     * criteria set out
-     * below)</li>
-     * <li>If set to {@code fwk}, then all unused beans will be removed, except the unused beans whose classes are declared in
-     * the
-     * application code</li>
+     * <li>If set to {@code none} (or {@code false}) no beans will ever be removed even if they are unused (according to
+     * the criteria set out below)</li>
+     * <li>If set to {@code fwk}, then all unused beans will be removed, except the unused beans whose classes are
+     * declared in the application code</li>
      * </ul>
      * <p>
      * An unused bean:
@@ -41,7 +39,8 @@ public interface ArcConfig {
      * <li>does not have a name,</li>
      * <li>does not declare an observer,</li>
      * <li>does not declare any producer which is eligible for injection to any injection point,</li>
-     * <li>is not directly eligible for injection into any {@link jakarta.enterprise.inject.Instance} injection point</li>
+     * <li>is not directly eligible for injection into any {@link jakarta.enterprise.inject.Instance} injection
+     * point</li>
      * </ul>
      *
      * @see UnremovableBeanBuildItem
@@ -57,33 +56,29 @@ public interface ArcConfig {
     boolean autoInjectFields();
 
     /**
-     * If set to true, the bytecode of unproxyable beans will be transformed. This ensures that a proxy/subclass
-     * can be created properly. If the value is set to false, then an exception is thrown at build time indicating that a
-     * subclass/proxy could not be created.
-     *
-     * Quarkus performs the following transformations when this setting is enabled:
+     * If set to true, the bytecode of unproxyable beans will be transformed. This ensures that a proxy/subclass can be
+     * created properly. If the value is set to false, then an exception is thrown at build time indicating that a
+     * subclass/proxy could not be created. Quarkus performs the following transformations when this setting is enabled:
      * <ul>
      * <li>Remove 'final' modifier from classes and methods when a proxy is required.
      * <li>Create a no-args constructor if needed.
-     * <li>Makes private no-args constructors package-private if necessary.
-     * </ul
+     * <li>Makes private no-args constructors package-private if necessary. </ul
      */
     @WithDefault("true")
     boolean transformUnproxyableClasses();
 
     /**
      * If set to true, the bytecode of private fields that are injection points will be transformed to package private.
-     * This ensures that field injection can be performed completely reflection-free.
-     * If the value is set to false, then a reflection fallback is used to perform the injection.
+     * This ensures that field injection can be performed completely reflection-free. If the value is set to false, then
+     * a reflection fallback is used to perform the injection.
      */
     @WithDefault("true")
     boolean transformPrivateInjectedFields();
 
     /**
      * If set to true (the default), the build fails if a private method that is neither an observer nor a producer, is
-     * annotated with an interceptor binding.
-     * An example of this is the use of {@code Transactional} on a private method of a bean.
-     * If set to false, Quarkus simply logs a warning that the annotation will be ignored.
+     * annotated with an interceptor binding. An example of this is the use of {@code Transactional} on a private method
+     * of a bean. If set to false, Quarkus simply logs a warning that the annotation will be ignored.
      */
     @WithDefault("true")
     boolean failOnInterceptedPrivateMethod();
@@ -96,18 +91,21 @@ public interface ArcConfig {
      * <li>a fully qualified class name, i.e. {@code org.acme.Foo}</li>
      * <li>a simple class name as defined by {@link Class#getSimpleName()}, i.e. {@code Foo}</li>
      * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, matches a package</li>
-     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
+     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the
+     * value</li>
      * </ul>
-     * Each element value is used to match an alternative bean class, an alternative stereotype annotation type or a bean class
-     * that declares an alternative producer. If any value matches then the priority of {@link Integer#MAX_VALUE} is used for
-     * the relevant bean. The priority declared via {@link jakarta.annotation.Priority} is overridden.
+     * Each element value is used to match an alternative bean class, an alternative stereotype annotation type or a
+     * bean class that declares an alternative producer. If any value matches then the priority of
+     * {@link Integer#MAX_VALUE} is used for the relevant bean. The priority declared via
+     * {@link jakarta.annotation.Priority} is overridden.
      */
     Optional<List<String>> selectedAlternatives();
 
     /**
-     * If set to true then {@code jakarta.enterprise.inject.Produces} is automatically added to all non-void methods that are
-     * annotated with a scope annotation, a stereotype or a qualifier, and are not annotated with {@code Inject} or
-     * {@code Produces}, and no parameter is annotated with {@code Disposes}, {@code Observes} or {@code ObservesAsync}.
+     * If set to true then {@code jakarta.enterprise.inject.Produces} is automatically added to all non-void methods
+     * that are annotated with a scope annotation, a stereotype or a qualifier, and are not annotated with
+     * {@code Inject} or {@code Produces}, and no parameter is annotated with {@code Disposes}, {@code Observes} or
+     * {@code ObservesAsync}.
      */
     @WithDefault("true")
     boolean autoProducerMethods();
@@ -120,24 +118,25 @@ public interface ArcConfig {
      * <li>a fully qualified class name, i.e. {@code org.acme.Foo}</li>
      * <li>a simple class name as defined by {@link Class#getSimpleName()}, i.e. {@code Foo}</li>
      * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, matches a package</li>
-     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
+     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the
+     * value</li>
      * </ul>
-     * If any element value matches a discovered type then the type is excluded from discovery, i.e. no beans and observer
-     * methods are created from this type.
+     * If any element value matches a discovered type then the type is excluded from discovery, i.e. no beans and
+     * observer methods are created from this type.
      */
     Optional<List<String>> excludeTypes();
 
     /**
-     * List of types that should be considered unremovable regardless of whether they are directly used or not.
-     * This is a configuration option equivalent to using {@link io.quarkus.arc.Unremovable} annotation.
-     *
+     * List of types that should be considered unremovable regardless of whether they are directly used or not. This is
+     * a configuration option equivalent to using {@link io.quarkus.arc.Unremovable} annotation.
      * <p>
      * An element value can be:
      * <ul>
      * <li>a fully qualified class name, i.e. {@code org.acme.Foo}</li>
      * <li>a simple class name as defined by {@link Class#getSimpleName()}, i.e. {@code Foo}</li>
      * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, matches a package</li>
-     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the value</li>
+     * <li>a package name with suffix {@code .**}, i.e. {@code org.acme.**}, matches a package that starts with the
+     * value</li>
      * </ul>
      * If any element value matches a discovered bean, then such a bean is considered unremovable.
      *
@@ -149,16 +148,16 @@ public interface ArcConfig {
     /**
      * Artifacts that should be excluded from discovery.
      * <p>
-     * These artifacts would be otherwise scanned for beans, i.e. they
-     * contain a Jandex index or a beans.xml descriptor.
+     * These artifacts would be otherwise scanned for beans, i.e. they contain a Jandex index or a beans.xml descriptor.
      */
     @ConfigDocSection
     @ConfigDocMapKey("dependency-name")
     Map<String, IndexDependencyConfig> excludeDependency();
 
     /**
-     * If set to true then the container attempts to detect "unused removed beans" false positives during programmatic lookup at
-     * runtime. You can disable this feature to conserve some memory when running your application in production.
+     * If set to true then the container attempts to detect "unused removed beans" false positives during programmatic
+     * lookup at runtime. You can disable this feature to conserve some memory when running your application in
+     * production.
      *
      * @see ArcConfig#removeUnusedBeans
      */
@@ -166,25 +165,26 @@ public interface ArcConfig {
     boolean detectUnusedFalsePositives();
 
     /**
-     * If set to true then the container attempts to detect <i>wrong</i> usages of annotations and eventually fails the build to
-     * prevent unexpected behavior of a Quarkus application.
+     * If set to true then the container attempts to detect <i>wrong</i> usages of annotations and eventually fails the
+     * build to prevent unexpected behavior of a Quarkus application.
      * <p>
-     * A typical example is {@code @jakarta.ejb.Singleton} which is often confused with {@code @jakarta.inject.Singleton}. As a
-     * result a component annotated with {@code @jakarta.ejb.Singleton} would be completely ignored. Another example is an inner
-     * class annotated with a scope annotation - this component would be again completely ignored.
+     * A typical example is {@code @jakarta.ejb.Singleton} which is often confused with
+     * {@code @jakarta.inject.Singleton}. As a result a component annotated with {@code @jakarta.ejb.Singleton} would be
+     * completely ignored. Another example is an inner class annotated with a scope annotation - this component would be
+     * again completely ignored.
      */
     @WithDefault("true")
     boolean detectWrongAnnotations();
 
     /**
-     * If set to {@code true}, the container will perform additional validations mandated by the CDI specification.
-     * Some improvements on top of the CDI specification may be disabled. Applications that work as expected
-     * in the strict mode should work without a change in the default, non-strict mode.
+     * If set to {@code true}, the container will perform additional validations mandated by the CDI specification. Some
+     * improvements on top of the CDI specification may be disabled. Applications that work as expected in the strict
+     * mode should work without a change in the default, non-strict mode.
      * <p>
-     * The strict mode is mainly introduced to allow passing the CDI Lite TCK. Applications are recommended
-     * to use the default, non-strict mode, which makes CDI more convenient to use. The "strictness" of
-     * the strict mode (the set of additional validations and the set of disabled improvements on top of
-     * the CDI specification) may change over time.
+     * The strict mode is mainly introduced to allow passing the CDI Lite TCK. Applications are recommended to use the
+     * default, non-strict mode, which makes CDI more convenient to use. The "strictness" of the strict mode (the set of
+     * additional validations and the set of disabled improvements on top of the CDI specification) may change over
+     * time.
      * <p>
      * Note that {@link #transformUnproxyableClasses} and {@link #removeUnusedBeans} also has effect on specification
      * compatibility. You may want to disable these features to get behavior closer to the specification.
@@ -208,8 +208,8 @@ public interface ArcConfig {
      * A package string representation can be:
      * <ul>
      * <li>a full name of the package, i.e. {@code org.acme.foo}</li>
-     * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, which matches a package that starts with provided
-     * value</li>
+     * <li>a package name with suffix {@code .*}, i.e. {@code org.acme.*}, which matches a package that starts with
+     * provided value</li>
      */
     Optional<List<String>> ignoredSplitPackages();
 
@@ -219,12 +219,12 @@ public interface ArcConfig {
     ArcContextPropagationConfig contextPropagation();
 
     /**
-     * If set to {@code true}, the container should try to optimize the contexts for some of the scopes. If set to {@code auto}
-     * then optimize the contexts if there's less than 1000 beans in the application. If set to {@code false} do not optimize
-     * the contexts.
+     * If set to {@code true}, the container should try to optimize the contexts for some of the scopes. If set to
+     * {@code auto} then optimize the contexts if there's less than 1000 beans in the application. If set to
+     * {@code false} do not optimize the contexts.
      * <p>
-     * Typically, some implementation parts of the context for {@link jakarta.enterprise.context.ApplicationScoped} could be
-     * pregenerated during build.
+     * Typically, some implementation parts of the context for {@link jakarta.enterprise.context.ApplicationScoped}
+     * could be pregenerated during build.
      */
     @WithDefault("auto")
     @ConfigDocIgnore
@@ -242,7 +242,8 @@ public interface ArcConfig {
 
     default boolean shouldEnableBeanRemoval() {
         final String lowerCase = removeUnusedBeans().toLowerCase();
-        return "all".equals(lowerCase) || "true".equals(lowerCase) || "fwk".equals(lowerCase) || "framework".equals(lowerCase);
+        return "all".equals(lowerCase) || "true".equals(lowerCase) || "fwk".equals(lowerCase)
+                || "framework".equals(lowerCase);
     }
 
     default boolean shouldOnlyKeepAppBeans() {

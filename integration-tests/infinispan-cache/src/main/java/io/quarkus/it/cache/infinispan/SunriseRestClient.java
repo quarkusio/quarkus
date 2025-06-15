@@ -35,8 +35,8 @@ public interface SunriseRestClient {
     Integer getSunriseTimeInvocations();
 
     /*
-     * The following methods wouldn't make sense in a real-life application but it's not relevant here. We only need to check if
-     * the caching annotations work as intended with the rest-client extension.
+     * The following methods wouldn't make sense in a real-life application but it's not relevant here. We only need to
+     * check if the caching annotations work as intended with the rest-client extension.
      */
 
     @DELETE

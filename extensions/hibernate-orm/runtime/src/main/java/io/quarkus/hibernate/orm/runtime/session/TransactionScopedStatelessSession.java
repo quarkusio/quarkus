@@ -53,10 +53,8 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     private final Instance<RequestScopedStatelessSessionHolder> requestScopedSessions;
 
     public TransactionScopedStatelessSession(TransactionManager transactionManager,
-            TransactionSynchronizationRegistry transactionSynchronizationRegistry,
-            SessionFactory sessionFactory,
-            String unitName,
-            boolean requestScopedSessionEnabled,
+            TransactionSynchronizationRegistry transactionSynchronizationRegistry, SessionFactory sessionFactory,
+            String unitName, boolean requestScopedSessionEnabled,
             Instance<RequestScopedStatelessSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -82,8 +80,8 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         } else if (requestScopedSessionEnabled) {
             if (Arc.container().requestContext().isActive()) {
                 RequestScopedStatelessSessionHolder requestScopedSessions = this.requestScopedSessions.get();
-                return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
-                        false, false);
+                return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory), false,
+                        false);
             } else {
                 throw new ContextNotActiveException(
                         "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active."
@@ -91,11 +89,10 @@ public class TransactionScopedStatelessSession implements StatelessSession {
                                 + " or @ActivateRequestContext if you have valid reasons not to use transactions.");
             }
         } else {
-            throw new ContextNotActiveException(
-                    "Cannot use the StatelessSession because no transaction is active."
-                            + " Consider adding @Transactional to your method to automatically activate a transaction,"
-                            + " or set '" + HibernateOrmRuntimeConfig.extensionPropertyKey("request-scoped.enabled")
-                            + "' to 'true' if you have valid reasons not to use transactions.");
+            throw new ContextNotActiveException("Cannot use the StatelessSession because no transaction is active."
+                    + " Consider adding @Transactional to your method to automatically activate a transaction,"
+                    + " or set '" + HibernateOrmRuntimeConfig.extensionPropertyKey("request-scoped.enabled")
+                    + "' to 'true' if you have valid reasons not to use transactions.");
         }
     }
 
@@ -138,7 +135,7 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     @Override
     public Query createQuery(String qlString) {
         checkBlocking();
-        //TODO: this needs some thought for how it works outside a tx
+        // TODO: this needs some thought for how it works outside a tx
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createQuery(qlString);
         }

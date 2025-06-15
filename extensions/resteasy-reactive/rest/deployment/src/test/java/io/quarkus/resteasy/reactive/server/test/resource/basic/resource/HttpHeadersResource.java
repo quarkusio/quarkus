@@ -35,13 +35,11 @@ public class HttpHeadersResource {
             sb.append("getRequestHeaders= ");
             for (String header : myHeaders) {
                 if (keys.contains(header)) {
-                    sb.append("Found " + header + ": " +
-                            hs.getRequestHeader(header) + "; ");
+                    sb.append("Found " + header + ": " + hs.getRequestHeader(header) + "; ");
                 }
             }
         } catch (Throwable ex) {
-            sb.append("Unexpected exception thrown in getRequestHeaders: " +
-                    ex.getMessage());
+            sb.append("Unexpected exception thrown in getRequestHeaders: " + ex.getMessage());
             StringWriter errors = new StringWriter();
             ex.printStackTrace(new PrintWriter(errors));
             logger.error(errors.toString());
@@ -62,8 +60,7 @@ public class HttpHeadersResource {
                 sb.append(tmp.toString() + "; ");
             }
         } catch (Throwable ex) {
-            sb.append("Unexpected exception thrown in getAcceptableLanguages: " +
-                    ex.getMessage());
+            sb.append("Unexpected exception thrown in getAcceptableLanguages: " + ex.getMessage());
             StringWriter errors = new StringWriter();
             ex.printStackTrace(new PrintWriter(errors));
             logger.error(errors.toString());

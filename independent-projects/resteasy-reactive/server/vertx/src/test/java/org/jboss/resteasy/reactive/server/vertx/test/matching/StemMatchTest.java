@@ -14,32 +14,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class StemMatchTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SpecificResource.class, GeneralResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(SpecificResource.class, GeneralResource.class);
+        }
+    });
 
     @Test
     public void testPathMatchSpecifics() {
-        given()
-                .when().get("/hello/foo")
-                .then()
-                .statusCode(200)
-                .body(is("general:foo"));
-        given()
-                .when().get("/hello/prefix-foo")
-                .then()
-                .statusCode(200)
-                .body(is("prefix:foo"));
-        given()
-                .when().get("/hello/foo/bar")
-                .then()
-                .statusCode(200)
-                .body(is("specific:foo"));
+        given().when().get("/hello/foo").then().statusCode(200).body(is("general:foo"));
+        given().when().get("/hello/prefix-foo").then().statusCode(200).body(is("prefix:foo"));
+        given().when().get("/hello/foo/bar").then().statusCode(200).body(is("specific:foo"));
     }
 
 }

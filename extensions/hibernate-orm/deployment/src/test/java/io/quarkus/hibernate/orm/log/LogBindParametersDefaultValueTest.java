@@ -14,9 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class LogBindParametersDefaultValueTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(MyEntity.class))
             .withConfigurationResource("application.properties")
             // Expect no trace
             .setLogRecordPredicate(record -> record.getMessage().contains("binding parameter"))

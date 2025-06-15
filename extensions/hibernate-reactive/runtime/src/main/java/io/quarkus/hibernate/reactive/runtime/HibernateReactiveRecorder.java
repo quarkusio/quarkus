@@ -19,7 +19,8 @@ public class HibernateReactiveRecorder {
     /**
      * The feature needs to be initialized, even if it's not enabled.
      *
-     * @param enabled Set to false if it's not being enabled, to log appropriately.
+     * @param enabled
+     *        Set to false if it's not being enabled, to log appropriately.
      */
     public void callHibernateReactiveFeatureInit(boolean enabled) {
         HibernateReactive.featureInit(enabled);
@@ -44,14 +45,12 @@ public class HibernateReactiveRecorder {
                 // See io/quarkus/hibernate/orm/runtime/JPAConfig.getEntityManagerFactory:96
                 if (jpaConfig.getDeactivatedPersistenceUnitNames()
                         .contains(HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME)) {
-                    throw new IllegalStateException(
-                            "Cannot retrieve the Mutiny.SessionFactory for persistence unit "
-                                    + HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME
-                                    + ": Hibernate Reactive was deactivated through configuration properties");
+                    throw new IllegalStateException("Cannot retrieve the Mutiny.SessionFactory for persistence unit "
+                            + HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME
+                            + ": Hibernate Reactive was deactivated through configuration properties");
                 }
 
-                SessionFactory sessionFactory = jpaConfig
-                        .getEntityManagerFactory(persistenceUnitName)
+                SessionFactory sessionFactory = jpaConfig.getEntityManagerFactory(persistenceUnitName)
                         .unwrap(SessionFactory.class);
 
                 return sessionFactory.unwrap(Mutiny.SessionFactory.class);

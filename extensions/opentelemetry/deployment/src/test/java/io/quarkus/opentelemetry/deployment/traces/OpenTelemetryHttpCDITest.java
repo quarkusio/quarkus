@@ -34,15 +34,11 @@ import io.restassured.RestAssured;
 
 public class OpenTelemetryHttpCDITest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClass(TestUtil.class)
-                            .addClass(HelloResource.class)
-                            .addClass(HelloBean.class)
-                            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
-                            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClass(TestUtil.class).addClass(HelloResource.class).addClass(HelloBean.class)
+            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .withConfigurationResource("resource-config/application-no-metrics.properties");
 
     @Inject
@@ -55,10 +51,7 @@ public class OpenTelemetryHttpCDITest {
 
     @Test
     void telemetry() {
-        RestAssured.when()
-                .get("/hello").then()
-                .statusCode(200)
-                .body(is("hello"));
+        RestAssured.when().get("/hello").then().statusCode(200).body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
@@ -77,10 +70,7 @@ public class OpenTelemetryHttpCDITest {
 
     @Test
     void withSpan() {
-        RestAssured.when()
-                .get("/hello/withSpan").then()
-                .statusCode(200)
-                .body(is("hello"));
+        RestAssured.when().get("/hello/withSpan").then().statusCode(200).body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
 

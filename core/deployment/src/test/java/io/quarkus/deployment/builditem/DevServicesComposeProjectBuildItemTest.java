@@ -22,64 +22,38 @@ class DevServicesComposeProjectBuildItemTest {
     @BeforeEach
     void setUp() {
         // Create container info for postgres
-        ContainerInfo postgresInfo = new ContainerInfo(
-                "postgres123456789",
-                new String[] { "postgres" },
-                "postgres:13",
-                "running",
-                Map.of("default", new String[] { "default" }),
-                Collections.emptyMap(),
-                new ContainerInfo.ContainerPort[] {
-                        new ContainerInfo.ContainerPort("0.0.0.0", 5432, 5432, "tcp")
-                });
+        ContainerInfo postgresInfo = new ContainerInfo("postgres123456789", new String[] { "postgres" }, "postgres:13",
+                "running", Map.of("default", new String[] { "default" }), Collections.emptyMap(),
+                new ContainerInfo.ContainerPort[] { new ContainerInfo.ContainerPort("0.0.0.0", 5432, 5432, "tcp") });
         RunningContainer postgresContainer = new RunningContainer(postgresInfo, Collections.emptyMap());
 
         // Create container info for mysql
-        ContainerInfo mysqlInfo = new ContainerInfo(
-                "mysql123456789",
-                new String[] { "mysql" },
-                "mysql:8",
-                "running",
-                Map.of("default", new String[] { "default" }),
-                Collections.emptyMap(),
-                new ContainerInfo.ContainerPort[] {
-                        new ContainerInfo.ContainerPort("0.0.0.0", 3306, 3306, "tcp")
-                });
+        ContainerInfo mysqlInfo = new ContainerInfo("mysql123456789", new String[] { "mysql" }, "mysql:8", "running",
+                Map.of("default", new String[] { "default" }), Collections.emptyMap(),
+                new ContainerInfo.ContainerPort[] { new ContainerInfo.ContainerPort("0.0.0.0", 3306, 3306, "tcp") });
         RunningContainer mysqlContainer = new RunningContainer(mysqlInfo, Collections.emptyMap());
 
         // Create container info for redis
-        ContainerInfo redisInfo = new ContainerInfo(
-                "redis123456789",
-                new String[] { "redis" },
-                "redis:6",
-                "running",
-                Map.of("default", new String[] { "default" }),
-                Collections.emptyMap(),
-                new ContainerInfo.ContainerPort[] {
-                        new ContainerInfo.ContainerPort("0.0.0.0", 6379, 6379, "tcp")
-                });
+        ContainerInfo redisInfo = new ContainerInfo("redis123456789", new String[] { "redis" }, "redis:6", "running",
+                Map.of("default", new String[] { "default" }), Collections.emptyMap(),
+                new ContainerInfo.ContainerPort[] { new ContainerInfo.ContainerPort("0.0.0.0", 6379, 6379, "tcp") });
         RunningContainer redisContainer = new RunningContainer(redisInfo, Collections.emptyMap());
 
         // Create container info for ignored container
         Map<String, String> ignoredLabels = new HashMap<>();
         ignoredLabels.put(DevServicesComposeProjectBuildItem.COMPOSE_IGNORE, "true");
-        ContainerInfo ignoredInfo = new ContainerInfo(
-                "ignored123456789",
-                new String[] { "ignored" },
-                "ignored:latest",
-                "running",
-                Map.of("default", new String[] { "default" }),
-                ignoredLabels,
-                new ContainerInfo.ContainerPort[] {
-                        new ContainerInfo.ContainerPort("0.0.0.0", 8080, 8080, "tcp")
-                });
+        ContainerInfo ignoredInfo = new ContainerInfo("ignored123456789", new String[] { "ignored" }, "ignored:latest",
+                "running", Map.of("default", new String[] { "default" }), ignoredLabels,
+                new ContainerInfo.ContainerPort[] { new ContainerInfo.ContainerPort("0.0.0.0", 8080, 8080, "tcp") });
         RunningContainer ignoredContainer = new RunningContainer(ignoredInfo, Collections.emptyMap());
 
         // Create the build item with the containers
         Map<String, List<RunningContainer>> composeServices = new HashMap<>();
-        composeServices.put("default", Arrays.asList(postgresContainer, mysqlContainer, redisContainer, ignoredContainer));
+        composeServices.put("default",
+                Arrays.asList(postgresContainer, mysqlContainer, redisContainer, ignoredContainer));
 
-        buildItem = new DevServicesComposeProjectBuildItem("test-project", "default", composeServices, Collections.emptyMap());
+        buildItem = new DevServicesComposeProjectBuildItem("test-project", "default", composeServices,
+                Collections.emptyMap());
     }
 
     @Test
@@ -96,20 +70,16 @@ class DevServicesComposeProjectBuildItemTest {
 
         // Test locating with non-existent port
         // The port filtering should work correctly
-        ContainerInfo postgresInfoWithoutPort = new ContainerInfo(
-                "postgres123456789",
-                new String[] { "postgres" },
-                "postgres:13",
-                "running",
-                Map.of("default", new String[] { "default" }),
-                Collections.emptyMap(),
+        ContainerInfo postgresInfoWithoutPort = new ContainerInfo("postgres123456789", new String[] { "postgres" },
+                "postgres:13", "running", Map.of("default", new String[] { "default" }), Collections.emptyMap(),
                 new ContainerInfo.ContainerPort[] {}); // Empty ports array
-        RunningContainer postgresContainerWithoutPort = new RunningContainer(postgresInfoWithoutPort, Collections.emptyMap());
+        RunningContainer postgresContainerWithoutPort = new RunningContainer(postgresInfoWithoutPort,
+                Collections.emptyMap());
 
         Map<String, List<RunningContainer>> servicesWithoutPort = new HashMap<>();
         servicesWithoutPort.put("default", List.of(postgresContainerWithoutPort));
-        DevServicesComposeProjectBuildItem buildItemWithoutPort = new DevServicesComposeProjectBuildItem(
-                "test-project", "default", servicesWithoutPort, Collections.emptyMap());
+        DevServicesComposeProjectBuildItem buildItemWithoutPort = new DevServicesComposeProjectBuildItem("test-project",
+                "default", servicesWithoutPort, Collections.emptyMap());
 
         result = buildItemWithoutPort.locate(List.of("postgres"), 5432);
         assertTrue(result.isPresent());

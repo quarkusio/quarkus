@@ -15,8 +15,7 @@ public class DefaultPicocliCommandLineFactory implements PicocliCommandLineFacto
     private final CommandLine.IFactory picocliFactory;
 
     public DefaultPicocliCommandLineFactory(@TopCommand Instance<Object> topCommand,
-            PicocliConfiguration picocliConfiguration,
-            CommandLine.IFactory picocliFactory) {
+            PicocliConfiguration picocliConfiguration, CommandLine.IFactory picocliFactory) {
         this.topCommand = topCommand;
         this.picocliConfiguration = picocliConfiguration;
         this.picocliFactory = picocliFactory;

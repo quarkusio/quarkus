@@ -15,19 +15,17 @@ import io.smallrye.config.ExpressionConfigSourceInterceptor;
 import io.smallrye.config.Priorities;
 
 /**
- * Override the expression expansion for test urls so they can be sanitized. A simple interceptor does not work
- * because the test urls values are nested expressions, so when the default expression interceptor runs, either we get
- * the full value expanded or the value unexpanded. In most cases, the test urls are used as expressions, so we need to
- * intercept the expression expansion directly to rewrite what we need.
+ * Override the expression expansion for test urls so they can be sanitized. A simple interceptor does not work because
+ * the test urls values are nested expressions, so when the default expression interceptor runs, either we get the full
+ * value expanded or the value unexpanded. In most cases, the test urls are used as expressions, so we need to intercept
+ * the expression expansion directly to rewrite what we need.
  */
 @Priority(Priorities.LIBRARY + 299)
 public class TestHTTPConfigSourceInterceptor extends ExpressionConfigSourceInterceptor {
     @Override
     public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
-        if (name.equals(TEST_URL_KEY) ||
-                name.equals(TEST_MANAGEMENT_URL_KEY) ||
-                name.equals(TEST_URL_SSL_KEY) ||
-                name.equals(TEST_MANAGEMENT_URL_SSL_KEY)) {
+        if (name.equals(TEST_URL_KEY) || name.equals(TEST_MANAGEMENT_URL_KEY) || name.equals(TEST_URL_SSL_KEY)
+                || name.equals(TEST_MANAGEMENT_URL_SSL_KEY)) {
 
             return sanitizeUrl(super.getValue(context, name));
         } else if (name.equals(HTTP_ROOT_PATH_KEY) || name.equals(MANAGEMENT_ROOT_PATH_KEY)) {
@@ -36,8 +34,8 @@ public class TestHTTPConfigSourceInterceptor extends ExpressionConfigSourceInter
                     || configValue.getRawValue().startsWith("/")) {
                 return configValue;
             }
-            return configValue.from().withValue("/" + configValue.getValue()).withRawValue("/" + configValue.getRawValue())
-                    .build();
+            return configValue.from().withValue("/" + configValue.getValue())
+                    .withRawValue("/" + configValue.getRawValue()).build();
         }
 
         return context.proceed(name);

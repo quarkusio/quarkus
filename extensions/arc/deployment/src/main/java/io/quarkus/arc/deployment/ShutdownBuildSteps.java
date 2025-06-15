@@ -39,16 +39,13 @@ public class ShutdownBuildSteps {
     @BuildStep
     AutoAddScopeBuildItem addScope(CustomScopeAnnotationsBuildItem customScopes) {
         // Class with no built-in scope annotation but with @Shutdown annotation
-        return AutoAddScopeBuildItem.builder()
-                .defaultScope(BuiltinScope.APPLICATION)
+        return AutoAddScopeBuildItem.builder().defaultScope(BuiltinScope.APPLICATION)
                 .anyMethodMatches(new Predicate<MethodInfo>() {
                     @Override
                     public boolean test(MethodInfo m) {
                         return m.hasAnnotation(SHUTDOWN_NAME);
                     }
-                })
-                .reason("Found classes containing @Shutdown annotation.")
-                .build();
+                }).reason("Found classes containing @Shutdown annotation.").build();
     }
 
     @BuildStep
@@ -76,14 +73,12 @@ public class ShutdownBuildSteps {
             // Collect all non-static no-args methods annotated with @Shutdown
             for (MethodInfo method : beanClass.methods()) {
                 if (annotationStore.hasAnnotation(method, SHUTDOWN_NAME)) {
-                    if (!method.isSynthetic()
-                            && !Modifier.isPrivate(method.flags())
-                            && !Modifier.isStatic(method.flags())
-                            && method.parametersCount() == 0) {
+                    if (!method.isSynthetic() && !Modifier.isPrivate(method.flags())
+                            && !Modifier.isStatic(method.flags()) && method.parametersCount() == 0) {
                         shutdownMethods.add(method);
                     } else {
-                        LOG.warnf("Ignored an invalid @Shutdown method declared on %s: %s", method.declaringClass().name(),
-                                method);
+                        LOG.warnf("Ignored an invalid @Shutdown method declared on %s: %s",
+                                method.declaringClass().name(), method);
                     }
                 }
             }
@@ -98,10 +93,9 @@ public class ShutdownBuildSteps {
         }
     }
 
-    private void registerShutdownObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo bean, String id,
-            int priority, MethodInfo shutdownMethod) {
-        ObserverConfigurator configurator = observerRegistration.getContext().configure()
-                .beanClass(bean.getBeanClass())
+    private void registerShutdownObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo bean,
+            String id, int priority, MethodInfo shutdownMethod) {
+        ObserverConfigurator configurator = observerRegistration.getContext().configure().beanClass(bean.getBeanClass())
                 .observedType(ShutdownEvent.class);
         configurator.id(id);
         configurator.priority(priority);
@@ -112,15 +106,15 @@ public class ShutdownBuildSteps {
                     mc.load(bean.getIdentifier()));
             if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
                 ResultHandle creationalContext = mc.newInstance(
-                        MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                        beanHandle);
+                        MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), beanHandle);
                 // Create a dependent instance
                 ResultHandle instance = mc.invokeInterfaceMethod(StartupBuildSteps.CONTEXTUAL_CREATE, beanHandle,
                         creationalContext);
                 TryBlock tryBlock = mc.tryBlock();
                 tryBlock.invokeVirtualMethod(MethodDescriptor.of(shutdownMethod), instance);
                 CatchBlockCreator catchBlock = tryBlock.addCatch(Exception.class);
-                catchBlock.invokeInterfaceMethod(StartupBuildSteps.CONTEXTUAL_DESTROY, beanHandle, instance, creationalContext);
+                catchBlock.invokeInterfaceMethod(StartupBuildSteps.CONTEXTUAL_DESTROY, beanHandle, instance,
+                        creationalContext);
                 catchBlock.throwException(RuntimeException.class, "Error destroying bean with @Shutdown method",
                         catchBlock.getCaughtException());
                 // Destroy the instance immediately
@@ -129,8 +123,7 @@ public class ShutdownBuildSteps {
                 // Obtains the instance from the context
                 // InstanceHandle<Foo> handle = Arc.container().instance(bean);
                 ResultHandle instanceHandle = mc.invokeInterfaceMethod(StartupBuildSteps.ARC_CONTAINER_INSTANCE,
-                        containerHandle,
-                        beanHandle);
+                        containerHandle, beanHandle);
                 ResultHandle instance = mc.invokeInterfaceMethod(StartupBuildSteps.INSTANCE_HANDLE_GET, instanceHandle);
                 mc.invokeVirtualMethod(MethodDescriptor.of(shutdownMethod), instance);
             }

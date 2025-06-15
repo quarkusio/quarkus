@@ -31,32 +31,32 @@ public final class ModelMerger {
     }
 
     /**
-     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the list of
-     * target/ directories found in the parent directory scanned).
+     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the
+     * list of target/ directories found in the parent directory scanned).
      */
     public static MergedModel mergeModel(List<Path> buildOutputDirectories) {
         return mergeModel(null, buildOutputDirectories);
     }
 
     /**
-     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the list of
-     * target/ directories found in the parent directory scanned).
+     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the
+     * list of target/ directories found in the parent directory scanned).
      */
     public static MergedModel mergeModel(JavadocRepository javadocRepository, List<Path> buildOutputDirectories) {
         return mergeModel(javadocRepository, buildOutputDirectories, false);
     }
 
     /**
-     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the list of
-     * target/ directories found in the parent directory scanned).
+     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the
+     * list of target/ directories found in the parent directory scanned).
      */
     public static MergedModel mergeModel(List<Path> buildOutputDirectories, boolean mergeCommonOrInternalExtensions) {
         return mergeModel(null, buildOutputDirectories, mergeCommonOrInternalExtensions);
     }
 
     /**
-     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the list of
-     * target/ directories found in the parent directory scanned).
+     * Merge all the resolved models obtained from a list of build output directories (e.g. in the case of Maven, the
+     * list of target/ directories found in the parent directory scanned).
      */
     public static MergedModel mergeModel(JavadocRepository javadocRepository, List<Path> buildOutputDirectories,
             boolean mergeCommonOrInternalExtensions) {
@@ -183,7 +183,8 @@ public final class ModelMerger {
     }
 
     private static ConfigRootKey getConfigRootKey(JavadocRepository javadocRepository, ConfigRoot configRoot) {
-        return new ConfigRootKey(configRoot.getTopLevelPrefix(), getConfigRootDescription(javadocRepository, configRoot));
+        return new ConfigRootKey(configRoot.getTopLevelPrefix(),
+                getConfigRootDescription(javadocRepository, configRoot));
     }
 
     // here we only return a description if all the qualified names of the config root have a similar description

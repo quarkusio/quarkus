@@ -32,22 +32,14 @@ public class JPATestValidationResource {
             em.flush();
             return "OK";
         } catch (ConstraintViolationException exception) {
-            return exception.getConstraintViolations()
-                    .stream()
-                    .map(s -> s.getMessage())
-                    .collect(Collectors.joining());
+            return exception.getConstraintViolations().stream().map(s -> s.getMessage()).collect(Collectors.joining());
         }
     }
 
     @GET
     public String ddl() {
-        return "nullable: " + em.getEntityManagerFactory()
-                .unwrap(SessionFactoryImplementor.class)
-                .getMappingMetamodel()
-                .getEntityDescriptor(MyEntity.class)
-                .getEntityMappingType()
-                .getAttributeMapping(0)
-                .getAttributeMetadata()
-                .isNullable();
+        return "nullable: " + em.getEntityManagerFactory().unwrap(SessionFactoryImplementor.class).getMappingMetamodel()
+                .getEntityDescriptor(MyEntity.class).getEntityMappingType().getAttributeMapping(0)
+                .getAttributeMetadata().isNullable();
     }
 }

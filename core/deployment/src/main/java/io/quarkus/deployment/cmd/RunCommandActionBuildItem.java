@@ -13,9 +13,8 @@ public final class RunCommandActionBuildItem extends MultiBuildItem {
     private Path logFile;
     private boolean needsLogfile;
 
-    public RunCommandActionBuildItem(String commandName, List<String> args, Path workingDirectory, String startedExpression,
-            Path logFile,
-            boolean needsLogfile) {
+    public RunCommandActionBuildItem(String commandName, List<String> args, Path workingDirectory,
+            String startedExpression, Path logFile, boolean needsLogfile) {
         this.args = args;
         this.commandName = commandName;
         this.workingDirectory = workingDirectory;

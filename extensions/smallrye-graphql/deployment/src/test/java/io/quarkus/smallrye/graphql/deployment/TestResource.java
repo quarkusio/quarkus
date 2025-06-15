@@ -106,11 +106,8 @@ public class TestResource {
 
     public GraphQLSchema.Builder addMyOwnEnum(@Observes GraphQLSchema.Builder builder) {
 
-        GraphQLEnumType myOwnEnum = GraphQLEnumType.newEnum()
-                .name("SomeEnum")
-                .description("Adding some enum type")
-                .value("value1")
-                .value("value2").build();
+        GraphQLEnumType myOwnEnum = GraphQLEnumType.newEnum().name("SomeEnum").description("Adding some enum type")
+                .value("value1").value("value2").build();
 
         return builder.additionalType(myOwnEnum);
     }

@@ -38,16 +38,10 @@ public class BlockingExceptionMapperTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class,
-                            ClientUsingNotBlockingExceptionMapper.class,
-                            ClientUsingBlockingExceptionMapper.class,
-                            ClientUsingBlockingExceptionMapperWithAnnotation.class,
-                            ClientUsingBothExceptionMappers.class,
-                            NotBlockingExceptionMapper.class,
-                            BlockingExceptionMapper.class,
-                            ClientResource.class,
-                            Resource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, ClientUsingNotBlockingExceptionMapper.class,
+                    ClientUsingBlockingExceptionMapper.class, ClientUsingBlockingExceptionMapperWithAnnotation.class,
+                    ClientUsingBothExceptionMappers.class, NotBlockingExceptionMapper.class,
+                    BlockingExceptionMapper.class, ClientResource.class, Resource.class)
                     .addAsResource(
                             new StringAsset(setUrlForClass(ClientUsingNotBlockingExceptionMapper.class) + "\n"
                                     + setUrlForClass(ClientUsingBlockingExceptionMapper.class) + "\n"
@@ -116,10 +110,8 @@ public class BlockingExceptionMapperTest {
 
     @Test
     public void shouldUseWorkerThreadUsingProgrammaticApproach() {
-        var client = RestClientBuilder.newBuilder()
-                .baseUri(UriBuilder.fromUri("http://localhost:8081").build())
-                .register(BlockingExceptionMapper.class)
-                .build(Client.class);
+        var client = RestClientBuilder.newBuilder().baseUri(UriBuilder.fromUri("http://localhost:8081").build())
+                .register(BlockingExceptionMapper.class).build(Client.class);
 
         RuntimeException exception = assertThrows(RuntimeException.class, client::blocking);
         assertThat(EVENT_LOOP_THREAD_USED_BY_MAPPER.get()).isFalse();

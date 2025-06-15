@@ -30,8 +30,8 @@ import io.vertx.httpproxy.ProxyRequest;
 import io.vertx.httpproxy.ProxyResponse;
 
 /**
- * A simple implementation of {@link DevServicesRestClientProxyProvider} that creates a pass-through proxy
- * based on {@code vertx-http-proxy}
+ * A simple implementation of {@link DevServicesRestClientProxyProvider} that creates a pass-through proxy based on
+ * {@code vertx-http-proxy}
  */
 public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServicesRestClientProxyProvider {
 
@@ -73,8 +73,7 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
         HttpProxy proxy = HttpProxy.reverseProxy(proxyClient);
         int targetPort = determineOriginPort(baseUri);
         String targetHost = baseUri.getHost();
-        proxy.origin(targetPort, targetHost)
-                .addInterceptor(new AuthoritySettingInterceptor(targetPort, targetHost));
+        proxy.origin(targetPort, targetHost).addInterceptor(new AuthoritySettingInterceptor(targetPort, targetHost));
 
         HttpServer proxyServer = vertx.get().createHttpServer();
         Integer proxyPort = findRandomPort();
@@ -86,21 +85,16 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
     }
 
     protected void logStartup(String className, Integer port) {
-        log.info("Started HTTP proxy server on http://localhost:" + port + " for REST Client '" + className
-                + "'");
+        log.info("Started HTTP proxy server on http://localhost:" + port + " for REST Client '" + className + "'");
     }
 
     private Vertx createVertx() {
-        try (var ignored = ResettableSystemProperties.of(
-                DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
-            return Vertx.vertx(
-                    new VertxOptions()
-                            .setFileSystemOptions(
-                                    new FileSystemOptions().setFileCachingEnabled(false).setClassPathResolvingEnabled(false))
-                            .setMetricsOptions(new MetricsOptions().setEnabled(false))
-                            .setEventLoopPoolSize(2)
-                            .setWorkerPoolSize(2)
-                            .setInternalBlockingPoolSize(2));
+        try (var ignored = ResettableSystemProperties.of(DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
+            return Vertx.vertx(new VertxOptions()
+                    .setFileSystemOptions(
+                            new FileSystemOptions().setFileCachingEnabled(false).setClassPathResolvingEnabled(false))
+                    .setMetricsOptions(new MetricsOptions().setEnabled(false)).setEventLoopPoolSize(2)
+                    .setWorkerPoolSize(2).setInternalBlockingPoolSize(2));
         }
     }
 
@@ -123,8 +117,7 @@ public class VertxHttpProxyDevServicesRestClientProxyProvider implements DevServ
     }
 
     /**
-     * This class sets the Host HTTP Header in order to avoid having services being blocked
-     * for presenting a wrong value
+     * This class sets the Host HTTP Header in order to avoid having services being blocked for presenting a wrong value
      */
     private static class AuthoritySettingInterceptor implements ProxyInterceptor {
 

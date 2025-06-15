@@ -28,13 +28,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ExcludeTypesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ExcludeTypesTest.class, Pong.class, Alpha.class, Bravo.class, Charlie.class, Bar.class,
-                            Baz.class, Magic.class, MagicInterceptor.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.arc.exclude-types=Alpha,io.quarkus.arc.test.exclude.Bravo,io.quarkus.arc.test.exclude.bar.*,,io.quarkus.arc.test.exclude.baz.**,MagicInterceptor"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(ExcludeTypesTest.class, Pong.class, Alpha.class, Bravo.class, Charlie.class, Bar.class,
+                    Baz.class, Magic.class, MagicInterceptor.class)
+            .addAsResource(new StringAsset(
+                    "quarkus.arc.exclude-types=Alpha,io.quarkus.arc.test.exclude.Bravo,io.quarkus.arc.test.exclude.bar.*,,io.quarkus.arc.test.exclude.baz.**,MagicInterceptor"),
+                    "application.properties"));
 
     @Inject
     Instance<Object> instance;

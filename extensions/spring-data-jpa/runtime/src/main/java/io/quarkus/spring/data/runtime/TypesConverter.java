@@ -55,7 +55,7 @@ public final class TypesConverter {
             int pageSize = pageable.getPageSize();
             return new io.quarkus.panache.common.Page(pageNumber, pageSize);
         }
-        return null; //PanacheQueryImpl#list properly handles null
+        return null; // PanacheQueryImpl#list properly handles null
     }
 
     public static io.quarkus.panache.common.Sort pageToPanacheSort(org.springframework.data.domain.Pageable pageable) {

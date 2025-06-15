@@ -12,9 +12,7 @@ public class YearMonthParamConverter extends TemporalParamConverter<YearMonth> {
 
     // lifted from the JDK as PARSER is private...
     private static final DateTimeFormatter PARSER = new DateTimeFormatterBuilder()
-            .appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD)
-            .appendLiteral('-')
-            .appendValue(MONTH_OF_YEAR, 2)
+            .appendValue(YEAR, 4, 10, SignStyle.EXCEEDS_PAD).appendLiteral('-').appendValue(MONTH_OF_YEAR, 2)
             .toFormatter();
 
     // this can be called by generated code

@@ -25,10 +25,8 @@ class QuarkusMavenWorkspaceBuilder {
     static WorkspaceModule toProjectModule(MavenProject project) {
         final Build build = project.getBuild();
 
-        final WorkspaceModule.Mutable moduleBuilder = WorkspaceModule.builder()
-                .setModuleId(getId(project))
-                .setModuleDir(project.getBasedir().toPath())
-                .setBuildDir(Path.of(build.getDirectory()));
+        final WorkspaceModule.Mutable moduleBuilder = WorkspaceModule.builder().setModuleId(getId(project))
+                .setModuleDir(project.getBasedir().toPath()).setBuildDir(Path.of(build.getDirectory()));
 
         final Path classesDir = Path.of(build.getOutputDirectory());
         final Path generatedSourcesDir = Path.of(build.getDirectory(), "generated-sources/annotations");
@@ -46,9 +44,10 @@ class QuarkusMavenWorkspaceBuilder {
 
         final Path testClassesDir = Path.of(build.getTestOutputDirectory());
         final List<SourceDir> testSources = new ArrayList<>(project.getCompileSourceRoots().size());
-        project.getTestCompileSourceRoots().forEach(s -> testSources.add(new DefaultSourceDir(Path.of(s), testClassesDir,
-                // FIXME: do tests have generated sources?
-                null)));
+        project.getTestCompileSourceRoots()
+                .forEach(s -> testSources.add(new DefaultSourceDir(Path.of(s), testClassesDir,
+                        // FIXME: do tests have generated sources?
+                        null)));
         final List<SourceDir> testResources = new ArrayList<>(build.getTestResources().size());
         for (Resource r : build.getTestResources()) {
             testResources.add(new DefaultSourceDir(Path.of(r.getDirectory()),

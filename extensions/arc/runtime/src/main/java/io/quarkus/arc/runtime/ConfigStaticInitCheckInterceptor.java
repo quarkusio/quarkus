@@ -21,8 +21,8 @@ import io.smallrye.config.inject.ConfigProducer;
 
 /**
  * Intercepts the producer methods declared on {@link ConfigProducer} and records the config value during the static
- * initialization phase unless the injection point is annotated with {@link StaticInitSafe}. It's no-op for any other execution
- * mode.
+ * initialization phase unless the injection point is annotated with {@link StaticInitSafe}. It's no-op for any other
+ * execution mode.
  */
 @ConfigStaticInitCheck
 @Priority(jakarta.interceptor.Interceptor.Priority.PLATFORM_BEFORE)
@@ -61,8 +61,7 @@ public class ConfigStaticInitCheckInterceptor {
                 configProperty = ((ConfigProperty) qualifier);
             }
         }
-        if (configProperty == null
-                || injectionPoint.getAnnotated().isAnnotationPresent(StaticInitSafe.class)) {
+        if (configProperty == null || injectionPoint.getAnnotated().isAnnotationPresent(StaticInitSafe.class)) {
             return;
         }
         String propertyName = configProperty.name();

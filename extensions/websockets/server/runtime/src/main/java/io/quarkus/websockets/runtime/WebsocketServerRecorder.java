@@ -51,9 +51,9 @@ public class WebsocketServerRecorder {
             @Override
             public ServerWebSocketContainer create(ObjectIntrospecter objectIntrospecter, ClassLoader classLoader,
                     Supplier<EventLoopGroup> eventLoopSupplier, List<ContextSetupHandler> contextSetupHandlers,
-                    boolean dispatchToWorker, InetSocketAddress clientBindAddress, WebSocketReconnectHandler reconnectHandler,
-                    Supplier<Executor> executorSupplier, List<Extension> installedExtensions, int maxFrameSize,
-                    Supplier<Principal> currentUserSupplier) {
+                    boolean dispatchToWorker, InetSocketAddress clientBindAddress,
+                    WebSocketReconnectHandler reconnectHandler, Supplier<Executor> executorSupplier,
+                    List<Extension> installedExtensions, int maxFrameSize, Supplier<Principal> currentUserSupplier) {
                 return new VertxServerWebSocketContainer(objectIntrospecter, classLoader, eventLoopSupplier,
                         contextSetupHandlers, dispatchToWorker, clientBindAddress, reconnectHandler, executorSupplier,
                         installedExtensions, maxFrameSize, currentUserSupplier) {
@@ -61,7 +61,7 @@ public class WebsocketServerRecorder {
                     protected VertxWebSocketHttpExchange createHttpExchange(RoutingContext routingContext) {
                         QuarkusHttpUser user = (QuarkusHttpUser) routingContext.user();
                         if (user != null) {
-                            //close the connection when the identity expires
+                            // close the connection when the identity expires
                             Long expire = user.getSecurityIdentity().getAttribute("quarkus.identity.expire-time");
                             if (expire != null) {
                                 ((ConnectionBase) routingContext.request().connection()).channel().eventLoop()

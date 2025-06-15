@@ -14,22 +14,16 @@ import io.restassured.RestAssured;
 public class RawMultipartTestCase {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(EchoResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(EchoResource.class);
+        }
+    });
 
     @Test
     public void testHelloEndpoint() {
-        RestAssured.given()
-                .when()
-                .multiPart("testName", "testValue")
-                .post("/echo")
-                .then()
-                .statusCode(200)
+        RestAssured.given().when().multiPart("testName", "testValue").post("/echo").then().statusCode(200)
                 .body(Matchers.containsString("testValue"));
     }
 

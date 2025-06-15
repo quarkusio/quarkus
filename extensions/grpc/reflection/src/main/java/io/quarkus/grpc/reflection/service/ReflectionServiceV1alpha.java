@@ -26,9 +26,10 @@ public class ReflectionServiceV1alpha extends MutinyServerReflectionGrpc.ServerR
     }
 
     @Override
-    public Multi<Reflection.ServerReflectionResponse> serverReflectionInfo(Multi<Reflection.ServerReflectionRequest> request) {
-        return request
-                .onItem().transform(new Function<Reflection.ServerReflectionRequest, Reflection.ServerReflectionResponse>() {
+    public Multi<Reflection.ServerReflectionResponse> serverReflectionInfo(
+            Multi<Reflection.ServerReflectionRequest> request) {
+        return request.onItem()
+                .transform(new Function<Reflection.ServerReflectionRequest, Reflection.ServerReflectionResponse>() {
                     @Override
                     public Reflection.ServerReflectionResponse apply(Reflection.ServerReflectionRequest req) {
                         switch (req.getMessageRequestCase()) {
@@ -58,34 +59,27 @@ public class ReflectionServiceV1alpha extends MutinyServerReflectionGrpc.ServerR
                     public Reflection.ServiceResponse apply(String s) {
                         return Reflection.ServiceResponse.newBuilder().setName(s).build();
                     }
-                })
-                .collect(new Supplier<Reflection.ListServiceResponse.Builder>() {
+                }).collect(new Supplier<Reflection.ListServiceResponse.Builder>() {
                     @Override
                     public Reflection.ListServiceResponse.Builder get() {
                         return Reflection.ListServiceResponse.newBuilder();
                     }
-                },
-                        new BiConsumer<Reflection.ListServiceResponse.Builder, Reflection.ServiceResponse>() {
-                            @Override
-                            public void accept(Reflection.ListServiceResponse.Builder builder,
-                                    Reflection.ServiceResponse value) {
-                                builder.addService(value);
-                            }
-                        },
-                        new BiConsumer<Reflection.ListServiceResponse.Builder, Reflection.ListServiceResponse.Builder>() { // NOSONAR
-                            @Override
-                            public void accept(Reflection.ListServiceResponse.Builder b1,
-                                    Reflection.ListServiceResponse.Builder b2) {
-                                b1.addAllService(b2.getServiceList());
-                            }
-                        })
-                .build();
+                }, new BiConsumer<Reflection.ListServiceResponse.Builder, Reflection.ServiceResponse>() {
+                    @Override
+                    public void accept(Reflection.ListServiceResponse.Builder builder,
+                            Reflection.ServiceResponse value) {
+                        builder.addService(value);
+                    }
+                }, new BiConsumer<Reflection.ListServiceResponse.Builder, Reflection.ListServiceResponse.Builder>() { // NOSONAR
+                    @Override
+                    public void accept(Reflection.ListServiceResponse.Builder b1,
+                            Reflection.ListServiceResponse.Builder b2) {
+                        b1.addAllService(b2.getServiceList());
+                    }
+                }).build();
 
-        return Reflection.ServerReflectionResponse.newBuilder()
-                .setValidHost(request.getHost())
-                .setOriginalRequest(request)
-                .setListServicesResponse(response)
-                .build();
+        return Reflection.ServerReflectionResponse.newBuilder().setValidHost(request.getHost())
+                .setOriginalRequest(request).setListServicesResponse(response).build();
     }
 
     private Reflection.ServerReflectionResponse getFileByName(Reflection.ServerReflectionRequest request) {
@@ -126,20 +120,16 @@ public class ReflectionServiceV1alpha extends MutinyServerReflectionGrpc.ServerR
         Set<Integer> extensions = index.getExtensionNumbersOfType(type);
         if (extensions != null) {
             Reflection.ExtensionNumberResponse.Builder builder = Reflection.ExtensionNumberResponse.newBuilder()
-                    .setBaseTypeName(type)
-                    .addAllExtensionNumber(extensions);
-            return Reflection.ServerReflectionResponse.newBuilder()
-                    .setValidHost(request.getHost())
-                    .setOriginalRequest(request)
-                    .setAllExtensionNumbersResponse(builder)
-                    .build();
+                    .setBaseTypeName(type).addAllExtensionNumber(extensions);
+            return Reflection.ServerReflectionResponse.newBuilder().setValidHost(request.getHost())
+                    .setOriginalRequest(request).setAllExtensionNumbersResponse(builder).build();
         } else {
             return getErrorResponse(request, Status.Code.NOT_FOUND, "Type not found.");
         }
     }
 
-    private Reflection.ServerReflectionResponse getServerReflectionResponse(
-            Reflection.ServerReflectionRequest request, FileDescriptor fd) {
+    private Reflection.ServerReflectionResponse getServerReflectionResponse(Reflection.ServerReflectionRequest request,
+            FileDescriptor fd) {
         Reflection.FileDescriptorResponse.Builder fdRBuilder = Reflection.FileDescriptorResponse.newBuilder();
 
         // Traverse the descriptors to get the full list of dependencies and add them to the builder
@@ -157,22 +147,16 @@ public class ReflectionServiceV1alpha extends MutinyServerReflectionGrpc.ServerR
                 }
             }
         }
-        return Reflection.ServerReflectionResponse.newBuilder()
-                .setValidHost(request.getHost())
-                .setOriginalRequest(request)
-                .setFileDescriptorResponse(fdRBuilder)
-                .build();
+        return Reflection.ServerReflectionResponse.newBuilder().setValidHost(request.getHost())
+                .setOriginalRequest(request).setFileDescriptorResponse(fdRBuilder).build();
     }
 
-    private Reflection.ServerReflectionResponse getErrorResponse(
-            Reflection.ServerReflectionRequest request, Status.Code code, String message) {
-        return Reflection.ServerReflectionResponse.newBuilder()
-                .setValidHost(request.getHost())
+    private Reflection.ServerReflectionResponse getErrorResponse(Reflection.ServerReflectionRequest request,
+            Status.Code code, String message) {
+        return Reflection.ServerReflectionResponse.newBuilder().setValidHost(request.getHost())
                 .setOriginalRequest(request)
                 .setErrorResponse(
-                        Reflection.ErrorResponse.newBuilder()
-                                .setErrorCode(code.value())
-                                .setErrorMessage(message))
+                        Reflection.ErrorResponse.newBuilder().setErrorCode(code.value()).setErrorMessage(message))
                 .build();
 
     }

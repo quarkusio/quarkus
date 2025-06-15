@@ -38,16 +38,14 @@ class LogHandlerProcessor {
 
     @BuildStep
     void nativeSupport(BuildProducer<ServiceProviderBuildItem> servicesProducer) {
-        servicesProducer.produce(
-                new ServiceProviderBuildItem(ConfigurableLogRecordExporterProvider.class.getName(),
-                        LogsExporterCDIProvider.class.getName()));
+        servicesProducer.produce(new ServiceProviderBuildItem(ConfigurableLogRecordExporterProvider.class.getName(),
+                LogsExporterCDIProvider.class.getName()));
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(OpenTelemetrySdkBuildItem.class)
-    LogHandlerBuildItem build(OpenTelemetryLogRecorder recorder,
-            OTelRuntimeConfig config,
+    LogHandlerBuildItem build(OpenTelemetryLogRecorder recorder, OTelRuntimeConfig config,
             BeanContainerBuildItem beanContainerBuildItem) {
         return new LogHandlerBuildItem(recorder.initializeHandler(beanContainerBuildItem.getValue(), config));
     }
@@ -56,14 +54,12 @@ class LogHandlerProcessor {
         OTelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
-            return otelBuildConfig.logs().enabled()
-                    .map(new Function<Boolean, Boolean>() {
-                        @Override
-                        public Boolean apply(Boolean enabled) {
-                            return otelBuildConfig.enabled() && enabled;
-                        }
-                    })
-                    .orElseGet(() -> otelBuildConfig.enabled());
+            return otelBuildConfig.logs().enabled().map(new Function<Boolean, Boolean>() {
+                @Override
+                public Boolean apply(Boolean enabled) {
+                    return otelBuildConfig.enabled() && enabled;
+                }
+            }).orElseGet(() -> otelBuildConfig.enabled());
         }
     }
 }

@@ -8,8 +8,8 @@ import io.smallrye.mutiny.Multi;
 public interface ReactiveHashScanCursor<K, V> extends ReactiveCursor<Map<K, V>> {
 
     /**
-     * Produces a {@code Multi} emitting each entry from hash individually.
-     * Unlike {@link #next()} which provides the entries by batch, this method returns them one by one.
+     * Produces a {@code Multi} emitting each entry from hash individually. Unlike {@link #next()} which provides the
+     * entries by batch, this method returns them one by one.
      *
      * @return the multi
      */

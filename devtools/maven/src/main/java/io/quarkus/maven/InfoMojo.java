@@ -9,8 +9,8 @@ import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 
 /**
- * Log Quarkus-specific project information, such as imported Quarkus platform BOMs,
- * Quarkus extensions found among the project dependencies, etc.
+ * Log Quarkus-specific project information, such as imported Quarkus platform BOMs, Quarkus extensions found among the
+ * project dependencies, etc.
  */
 @Mojo(name = "info", requiresProject = true)
 public class InfoMojo extends QuarkusProjectStateMojoBase {

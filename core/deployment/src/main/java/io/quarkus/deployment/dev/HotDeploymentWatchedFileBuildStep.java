@@ -21,7 +21,8 @@ public class HotDeploymentWatchedFileBuildStep {
         RuntimeUpdatesProcessor processor = RuntimeUpdatesProcessor.INSTANCE;
         if (processor != null || launchModeBuildItem.isAuxiliaryApplication()) {
 
-            Map<String, Boolean> watchedFilePaths = files.stream().filter(HotDeploymentWatchedFileBuildItem::hasLocation)
+            Map<String, Boolean> watchedFilePaths = files.stream()
+                    .filter(HotDeploymentWatchedFileBuildItem::hasLocation)
                     .collect(Collectors.toMap(HotDeploymentWatchedFileBuildItem::getLocation,
                             HotDeploymentWatchedFileBuildItem::isRestartNeeded,
                             (isRestartNeeded1, isRestartNeeded2) -> isRestartNeeded1 || isRestartNeeded2));

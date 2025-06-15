@@ -22,10 +22,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TriggerNextFireTimeZoneTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Jobs.class);
-            });
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Jobs.class);
+    });
 
     @Inject
     Scheduler scheduler;

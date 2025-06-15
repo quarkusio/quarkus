@@ -18,10 +18,7 @@ public class ListCommand extends GcurlBaseCommand {
 
     @Override
     protected void execute(MutinyServerReflectionGrpc.MutinyServerReflectionStub stub) {
-        ServerReflectionRequest request = ServerReflectionRequest
-                .newBuilder()
-                .setListServices("dummy")
-                .build();
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setListServices("dummy").build();
         Multi<ServerReflectionResponse> response = stub.serverReflectionInfo(Multi.createFrom().item(request));
         response.toUni().map(r -> {
             List<ServiceResponse> serviceList = r.getListServicesResponse().getServiceList();

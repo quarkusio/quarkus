@@ -49,10 +49,11 @@ public class SecurityConstrainer {
         if (runtimeConfigReady) {
             boolean securityEventsEnabled = ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
                     Boolean.class);
-            this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
-                    AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
+            this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent,
+                    AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
         } else {
-            // static interceptors are initialized during the static init, therefore we need to initialize the helper lazily
+            // static interceptors are initialized during the static init, therefore we need to initialize the helper
+            // lazily
             this.securityEventHelper = SecurityEventHelper.lazilyOf(authZSuccessEvent, authZFailureEvent,
                     AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, beanManager);
         }
@@ -66,10 +67,10 @@ public class SecurityConstrainer {
                 identity = securityIdentityAssociation.get().getIdentity();
             } catch (BlockingOperationNotAllowedException blockingException) {
                 throw new BlockingOperationNotAllowedException(
-                        "Blocking security check attempted in code running on the event loop. " +
-                                "Make the secured method return an async type, i.e. Uni, Multi or CompletionStage, or " +
-                                "use an authentication mechanism that sets the SecurityIdentity in a blocking manner " +
-                                "prior to delegating the call",
+                        "Blocking security check attempted in code running on the event loop. "
+                                + "Make the secured method return an async type, i.e. Uni, Multi or CompletionStage, or "
+                                + "use an authentication mechanism that sets the SecurityIdentity in a blocking manner "
+                                + "prior to delegating the call",
                         blockingException);
             }
             if (securityEventHelper.fireEventOnFailure()) {
@@ -92,12 +93,12 @@ public class SecurityConstrainer {
         SecurityCheck securityCheck = storage.getSecurityCheck(method);
         if (securityCheck != null) {
             if (!securityCheck.isPermitAll()) {
-                return securityIdentityAssociation.get().getDeferredIdentity()
-                        .onItem()
+                return securityIdentityAssociation.get().getDeferredIdentity().onItem()
                         .transformToUni(new Function<SecurityIdentity, Uni<?>>() {
                             @Override
                             public Uni<?> apply(SecurityIdentity securityIdentity) {
-                                Uni<?> checkResult = securityCheck.nonBlockingApply(securityIdentity, method, parameters);
+                                Uni<?> checkResult = securityCheck.nonBlockingApply(securityIdentity, method,
+                                        parameters);
                                 if (securityEventHelper.fireEventOnFailure()) {
                                     checkResult = checkResult.onFailure().invoke(new Consumer<Throwable>() {
                                         @Override
@@ -131,9 +132,8 @@ public class SecurityConstrainer {
             // get identity from event if auth already finished
             identity = (SecurityIdentity) additionalEventProps.get(SecurityIdentity.class.getName());
         }
-        securityEventHelper.fireSuccessEvent(
-                new AuthorizationSuccessEvent(identity, securityCheckName, additionalEventPropsSupplier.get(),
-                        MethodDescription.ofMethod(method)));
+        securityEventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(identity, securityCheckName,
+                additionalEventPropsSupplier.get(), MethodDescription.ofMethod(method)));
     }
 
     private void fireAuthZFailureEvent(SecurityIdentity identity, Throwable failure, SecurityCheck securityCheck,

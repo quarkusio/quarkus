@@ -14,19 +14,19 @@ import io.smallrye.config.WithName;
 public interface RestClientReactiveConfig {
 
     /**
-     * By default, RESTEasy Reactive uses text/plain content type for String values
-     * and application/json for everything else.
+     * By default, RESTEasy Reactive uses text/plain content type for String values and application/json for everything
+     * else.
      * <p>
-     * MicroProfile Rest Client spec requires the implementations to always default to application/json.
-     * This build item disables the "smart" behavior of RESTEasy Reactive to comply to the spec
+     * MicroProfile Rest Client spec requires the implementations to always default to application/json. This build item
+     * disables the "smart" behavior of RESTEasy Reactive to comply to the spec
      */
     @WithName("disable-smart-produces")
     @WithDefault("false")
     boolean disableSmartProduces();
 
     /**
-     * Whether providers (filters, etc.) annotated with {@link jakarta.ws.rs.ext.Provider} should be
-     * automatically registered for all the clients in the application.
+     * Whether providers (filters, etc.) annotated with {@link jakarta.ws.rs.ext.Provider} should be automatically
+     * registered for all the clients in the application.
      */
     @WithName("provider-autodiscovery")
     @WithDefault("true")

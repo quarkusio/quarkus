@@ -28,39 +28,29 @@ import io.quarkus.test.QuarkusUnitTest;
 class RuntimeParamConverterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(ParamConverterEndpoint.class, OptionalIntegerParamConverterProvider.class,
-                                    OptionalIntegerParamConverter.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(ParamConverterEndpoint.class,
+                    OptionalIntegerParamConverterProvider.class, OptionalIntegerParamConverter.class);
+        }
+    });
 
     @Test
     void sendParameters() {
-        given().queryParam("number", 22)
-                .when().get("/param-converter")
-                .then()
-                .statusCode(200)
+        given().queryParam("number", 22).when().get("/param-converter").then().statusCode(200)
                 .body(Matchers.is("Hello, 22!"));
     }
 
     @Test
     void doNotSendParameters() {
-        given().when().get("/param-converter")
-                .then()
-                .statusCode(200)
+        given().when().get("/param-converter").then().statusCode(200)
                 .body(Matchers.is("Hello, world! No number was provided."));
     }
 
     @Test
     void sendEmptyParameter() {
-        given().queryParam("number", "")
-                .when().get("/param-converter")
-                .then()
-                .statusCode(200)
+        given().queryParam("number", "").when().get("/param-converter").then().statusCode(200)
                 .body(Matchers.is("Hello, world! No number was provided."));
     }
 

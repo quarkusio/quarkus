@@ -42,7 +42,8 @@ public class JandexUtilTest {
         final Index index = index(Single.class, AbstractSingle.class);
         final DotName impl = DotName.createSimple(AbstractSingle.class.getName());
         List<Type> ret = JandexUtil.resolveTypeParameters(impl, SIMPLE, index);
-        assertThat(ret).hasSize(1).allMatch(t -> t.kind() == Kind.TYPE_VARIABLE && t.asTypeVariable().identifier().equals("S"));
+        assertThat(ret).hasSize(1)
+                .allMatch(t -> t.kind() == Kind.TYPE_VARIABLE && t.asTypeVariable().identifier().equals("S"));
     }
 
     @Test
@@ -151,8 +152,8 @@ public class JandexUtilTest {
 
     @Test
     public void testErasedGenerics() {
-        final Index index = index(Repo.class, BoundedRepo.class, ErasedRepo1.class, MultiBoundedRepo.class, ErasedRepo2.class,
-                A.class);
+        final Index index = index(Repo.class, BoundedRepo.class, ErasedRepo1.class, MultiBoundedRepo.class,
+                ErasedRepo2.class, A.class);
         checkRepoArg(index, ErasedRepo1.class, Repo.class, A.class);
         checkRepoArg(index, ErasedRepo2.class, Repo.class, A.class);
     }
@@ -235,7 +236,8 @@ public class JandexUtilTest {
     public static class ExtendsExtendsSimpleWithParamImpl implements ExtendsExtendsSimpleWithParam<Double> {
     }
 
-    public static class ExtendsExtendsSimpleGenericParam implements ExtendsExtendsSimpleWithParam<Map<String, List<String>>> {
+    public static class ExtendsExtendsSimpleGenericParam
+            implements ExtendsExtendsSimpleWithParam<Map<String, List<String>>> {
     }
 
     public abstract static class AbstractMultipleT1Impl<S> implements MultipleT1<String> {
@@ -320,14 +322,12 @@ public class JandexUtilTest {
     }
 
     private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, Class<?> expectedArg) {
-        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
-                index);
+        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass), index);
         assertThat(args).extracting(Type::name).containsOnly(name(expectedArg));
     }
 
     private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, Class<?>... expectedArgs) {
-        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
-                index);
+        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass), index);
         DotName[] expectedArgNames = new DotName[expectedArgs.length];
         for (int i = 0; i < expectedArgs.length; i++) {
             expectedArgNames[i] = name(expectedArgs[i]);
@@ -336,8 +336,7 @@ public class JandexUtilTest {
     }
 
     private void checkRepoArg(Index index, Class<?> baseClass, Class<?> soughtClass, String expectedArg) {
-        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass),
-                index);
+        List<Type> args = JandexUtil.resolveTypeParameters(name(baseClass), name(soughtClass), index);
         assertThat(args).singleElement().satisfies(t -> {
             assertThat(t.toString()).isEqualTo(expectedArg);
         });

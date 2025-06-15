@@ -58,8 +58,8 @@ public class MultipartOutputResource {
         MultipartFormDataOutput form = new MultipartFormDataOutput();
         form.addFormData("name", RESPONSE_NAME, MediaType.TEXT_PLAIN_TYPE);
         form.addFormData("custom-surname", RESPONSE_SURNAME, MediaType.TEXT_PLAIN_TYPE);
-        form.addFormData("custom-status", RESPONSE_STATUS, MediaType.TEXT_PLAIN_TYPE)
-                .getHeaders().putSingle("extra-header", "extra-value");
+        form.addFormData("custom-status", RESPONSE_STATUS, MediaType.TEXT_PLAIN_TYPE).getHeaders()
+                .putSingle("extra-header", "extra-value");
         form.addFormData("values", RESPONSE_VALUES, MediaType.TEXT_PLAIN_TYPE);
         form.addFormData("active", RESPONSE_ACTIVE, MediaType.TEXT_PLAIN_TYPE);
         return form;

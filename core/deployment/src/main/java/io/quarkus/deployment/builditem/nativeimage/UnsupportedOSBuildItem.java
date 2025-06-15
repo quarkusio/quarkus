@@ -7,8 +7,7 @@ import static io.quarkus.dev.console.QuarkusConsole.IS_WINDOWS;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Native-image might not be supported for a particular
- * extension on a given OS or architecture.
+ * Native-image might not be supported for a particular extension on a given OS or architecture.
  */
 public final class UnsupportedOSBuildItem extends MultiBuildItem {
 

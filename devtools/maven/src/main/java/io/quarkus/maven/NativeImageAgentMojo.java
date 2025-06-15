@@ -35,9 +35,8 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
 
     public NativeImageAgentMojo() {
         // Exclude resource configuration for resources that Quarkus takes care of registering.
-        resourceSkipPattern = discardPattern("application.properties", "jakarta", "jboss",
-                "logging.properties", "microprofile",
-                "quarkus", "slf4j", "smallrye", "vertx");
+        resourceSkipPattern = discardPattern("application.properties", "jakarta", "jboss", "logging.properties",
+                "microprofile", "quarkus", "slf4j", "smallrye", "vertx");
     }
 
     @Override
@@ -62,8 +61,8 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
                 if (reflectConfigJsonPath.toFile().exists()) {
                     Files.copy(reflectConfigJsonPath, targetPath.resolve("reflect-config.json"),
                             StandardCopyOption.REPLACE_EXISTING);
-                    Files.copy(basePath.resolve("serialization-config.json"), targetPath.resolve("serialization-config.json"),
-                            StandardCopyOption.REPLACE_EXISTING);
+                    Files.copy(basePath.resolve("serialization-config.json"),
+                            targetPath.resolve("serialization-config.json"), StandardCopyOption.REPLACE_EXISTING);
                     Files.copy(basePath.resolve("jni-config.json"), targetPath.resolve("jni-config.json"),
                             StandardCopyOption.REPLACE_EXISTING);
                     Files.copy(basePath.resolve("proxy-config.json"), targetPath.resolve("proxy-config.json"),
@@ -77,8 +76,9 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
                 } else {
                     final Path reflectOriginsTxtPath = basePath.resolve("reflect-origins.txt");
                     if (reflectOriginsTxtPath.toFile().exists()) {
-                        getLog().info("Native image agent configuration origin files exist, inspect them manually inside "
-                                + basePath);
+                        getLog().info(
+                                "Native image agent configuration origin files exist, inspect them manually inside "
+                                        + basePath);
                     }
                 }
             } catch (IOException e) {
@@ -90,8 +90,9 @@ public class NativeImageAgentMojo extends QuarkusBootstrapMojo {
     }
 
     private void transformJsonObject(Path base, String name, Path target, JsonTransform transform) throws IOException {
-        getLog().debug("Discarding resources from native image configuration that match the following regular expression: "
-                + resourceSkipPattern);
+        getLog().debug(
+                "Discarding resources from native image configuration that match the following regular expression: "
+                        + resourceSkipPattern);
         final String original = Files.readString(base.resolve(name));
         final JsonObject jsonRead = JsonReader.of(original).read();
         final Json.JsonObjectBuilder jsonBuilder = Json.object(false, true);

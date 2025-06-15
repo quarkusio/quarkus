@@ -20,14 +20,15 @@ public class ConsoleHelper {
         }
         boolean colorEnabled = consoleConfig.color().orElse(QuarkusConsole.hasColorSupport());
         QuarkusConsole.installed = true;
-        //if there is no color we need a basic console
-        //note that we never enable input for tests
-        //surefire communicates of stdin, so this can mess with it
+        // if there is no color we need a basic console
+        // note that we never enable input for tests
+        // surefire communicates of stdin, so this can mess with it
         boolean inputSupport = !test && !config.disableConsoleInput().orElse(consoleConfig.disableInput());
         if (!inputSupport) {
-            //note that in this case we don't hold onto anything from this class loader
-            //which is important for the test suite
-            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
+            // note that in this case we don't hold onto anything from this class loader
+            // which is important for the test suite
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT,
+                    System.console());
             return;
         }
         try {
@@ -55,9 +56,9 @@ public class ConsoleHelper {
                         connection.setSignalHandler(event -> {
                             switch (event) {
                                 case INT:
-                                    //todo: why does async exit not work here
-                                    //Quarkus.asyncExit();
-                                    //end(conn);
+                                    // todo: why does async exit not work here
+                                    // Quarkus.asyncExit();
+                                    // end(conn);
                                     new Thread(new Runnable() {
                                         @Override
                                         public void run() {
@@ -73,9 +74,8 @@ public class ConsoleHelper {
                                 queue.add(-1);
                             }
                         });
-                        QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled,
-                                inputSupport,
-                                connection::write, new Supplier<Integer>() {
+                        QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, inputSupport, connection::write,
+                                new Supplier<Integer>() {
                                     @Override
                                     public Integer get() {
                                         try {
@@ -89,7 +89,8 @@ public class ConsoleHelper {
                 }
             });
         } catch (IOException e) {
-            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
+            QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT,
+                    System.console());
         }
         QuarkusConsole.installRedirects();
     }

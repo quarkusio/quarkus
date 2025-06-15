@@ -33,7 +33,8 @@ public class StartDevServicesAndRunCommandHandler implements BiConsumer<Object, 
         consumer.accept(cmds);
     }
 
-    private void addLaunchCommand(List list, RunCommandActionBuildItem item, Map<String, String> devServicesProperties) {
+    private void addLaunchCommand(List list, RunCommandActionBuildItem item,
+            Map<String, String> devServicesProperties) {
         List<String> effectiveArgs;
         List<String> originalArgs = item.getArgs();
         if (devServicesProperties.isEmpty()) {

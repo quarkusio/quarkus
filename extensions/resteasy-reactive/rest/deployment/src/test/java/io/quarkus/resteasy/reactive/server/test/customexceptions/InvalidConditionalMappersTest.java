@@ -21,19 +21,17 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidConditionalMappersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class, Mappers.class);
-                }
-            }).assertException(t -> {
-                String message = t.getMessage();
-                assertTrue(message.contains("@ServerExceptionMapper"));
-                assertTrue(message.contains("request"));
-                assertTrue(message.contains(Mappers.class.getName()));
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class, Mappers.class);
+        }
+    }).assertException(t -> {
+        String message = t.getMessage();
+        assertTrue(message.contains("@ServerExceptionMapper"));
+        assertTrue(message.contains("request"));
+        assertTrue(message.contains(Mappers.class.getName()));
+    });
 
     @Test
     public void test() {

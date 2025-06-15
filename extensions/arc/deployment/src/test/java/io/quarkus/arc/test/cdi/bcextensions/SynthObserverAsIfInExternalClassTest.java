@@ -31,11 +31,11 @@ public class SynthObserverAsIfInExternalClassTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class, MyExtension.class, MySyntheticObserver.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, MyExtension.class, MySyntheticObserver.class)
                     .addAsServiceProvider(BuildCompatibleExtension.class, MyExtension.class))
             // we need a non-application archive, so cannot use `withAdditionalDependency()`
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement", Version.getVersion())));
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement", Version.getVersion())));
 
     @Inject
     MyBean bean;
@@ -62,8 +62,7 @@ public class SynthObserverAsIfInExternalClassTest {
     public static class MyExtension implements BuildCompatibleExtension {
         @Synthesis
         public void synthesis(SyntheticComponents syn) {
-            syn.addObserver(String.class)
-                    .declaringClass(SomeClassInExternalLibrary.class)
+            syn.addObserver(String.class).declaringClass(SomeClassInExternalLibrary.class)
                     .observeWith(MySyntheticObserver.class);
         }
     }

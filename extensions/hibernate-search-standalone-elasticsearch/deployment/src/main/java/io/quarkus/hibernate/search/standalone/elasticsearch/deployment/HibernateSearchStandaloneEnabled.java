@@ -5,8 +5,7 @@ import java.util.function.BooleanSupplier;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneBuildTimeConfig;
 
 /**
- * Supplier that can be used to only run build steps
- * if the Hibernate Search extension is enabled.
+ * Supplier that can be used to only run build steps if the Hibernate Search extension is enabled.
  */
 public class HibernateSearchStandaloneEnabled implements BooleanSupplier {
 

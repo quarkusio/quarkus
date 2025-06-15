@@ -38,26 +38,23 @@ public class SuspendResumeStressTest {
     private static volatile ExecutorService executorService;
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep(new BuildStep() {
                 @Override
-                public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
+                public void execute(BuildContext context) {
+                    context.produce(new MethodScannerBuildItem(new MethodScanner() {
                         @Override
-                        public void execute(BuildContext context) {
-                            context.produce(new MethodScannerBuildItem(new MethodScanner() {
-                                @Override
-                                public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
-                                        Map<String, Object> methodContext) {
-                                    return Collections.singletonList(new Custom());
-                                }
-                            }));
+                        public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                                Map<String, Object> methodContext) {
+                            return Collections.singletonList(new Custom());
                         }
-                    }).produces(MethodScannerBuildItem.class).build();
+                    }));
                 }
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class));
+            }).produces(MethodScannerBuildItem.class).build();
+        }
+    }).withApplicationRoot((jar) -> jar.addClass(HelloResource.class));
 
     @Test
     public void testSuspendResumeStressTest() {
@@ -84,7 +81,8 @@ public class SuspendResumeStressTest {
 
     public static class Custom implements HandlerChainCustomizer {
         @Override
-        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+                ServerResourceMethod resourceMethod) {
             List<ServerRestHandler> handlers = new ArrayList<>();
             for (int i = 0; i < 100; ++i) {
                 handlers.add(new ResumeHandler());

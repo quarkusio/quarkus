@@ -33,10 +33,8 @@ public class InjectJobTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Starter.class, Service.class, CountDownLatchProducer.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(Starter.class, Service.class, CountDownLatchProducer.class)
+                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"), "application.properties"));
 
     @Test
     public void testSimpleScheduledJobs() throws InterruptedException {
@@ -66,15 +64,9 @@ public class InjectJobTest {
     public static class Starter {
 
         void onStart(@Observes StartupEvent event, Scheduler quartz) throws SchedulerException {
-            JobDetail job = JobBuilder.newJob(ServiceJob.class)
-                    .withIdentity("myJob", "myGroup")
-                    .build();
-            Trigger trigger = TriggerBuilder.newTrigger()
-                    .withIdentity("myTrigger", "myGroup")
-                    .startNow()
-                    .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                            .withIntervalInSeconds(1)
-                            .repeatForever())
+            JobDetail job = JobBuilder.newJob(ServiceJob.class).withIdentity("myJob", "myGroup").build();
+            Trigger trigger = TriggerBuilder.newTrigger().withIdentity("myTrigger", "myGroup").startNow()
+                    .withSchedule(SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(1).repeatForever())
                     .build();
             quartz.scheduleJob(job, trigger);
         }

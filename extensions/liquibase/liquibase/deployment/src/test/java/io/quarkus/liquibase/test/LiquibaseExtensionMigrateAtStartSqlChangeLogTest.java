@@ -22,8 +22,7 @@ public class LiquibaseExtensionMigrateAtStartSqlChangeLogTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/sql/changeLog.sql")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/sql/changeLog.sql")
                     .addAsResource("migrate-at-start-sql-config.properties", "application.properties"));
 
     @Test

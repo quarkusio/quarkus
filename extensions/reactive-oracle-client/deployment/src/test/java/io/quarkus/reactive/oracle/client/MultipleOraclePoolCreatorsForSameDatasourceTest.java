@@ -15,10 +15,8 @@ public class MultipleOraclePoolCreatorsForSameDatasourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(CustomCredentialsProvider.class)
-                    .addClass(CredentialsTestResource.class)
-                    .addClass(LocalhostOraclePoolCreator.class)
+            .withApplicationRoot((jar) -> jar.addClass(CustomCredentialsProvider.class)
+                    .addClass(CredentialsTestResource.class).addClass(LocalhostOraclePoolCreator.class)
                     .addClass(AnotherOraclePoolCreator.class)
                     .addAsResource("application-credentials-with-erroneous-url.properties", "application.properties"))
             .setExpectedException(DeploymentException.class);

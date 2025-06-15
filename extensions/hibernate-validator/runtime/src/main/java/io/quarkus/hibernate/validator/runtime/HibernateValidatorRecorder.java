@@ -81,17 +81,15 @@ public class HibernateValidatorRecorder {
     }
 
     public Function<SyntheticCreationalContext<HibernateValidatorFactory>, HibernateValidatorFactory> hibernateValidatorFactory(
-            Set<Class<?>> classesToBeValidated,
-            Set<String> detectedBuiltinConstraints, Set<Class<?>> valueExtractorClasses,
-            boolean hasXmlConfiguration, boolean jpaInClasspath,
+            Set<Class<?>> classesToBeValidated, Set<String> detectedBuiltinConstraints,
+            Set<Class<?>> valueExtractorClasses, boolean hasXmlConfiguration, boolean jpaInClasspath,
             LocalesBuildTimeConfig localesBuildTimeConfig,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) {
         return new Function<>() {
             @Override
             public HibernateValidatorFactory apply(SyntheticCreationalContext<HibernateValidatorFactory> context) {
                 PredefinedScopeHibernateValidatorConfiguration configuration = Validation
-                        .byProvider(PredefinedScopeHibernateValidator.class)
-                        .configure();
+                        .byProvider(PredefinedScopeHibernateValidator.class).configure();
 
                 if (!hasXmlConfiguration) {
                     configuration.ignoreXmlConfiguration();
@@ -111,14 +109,16 @@ public class HibernateValidatorRecorder {
                 configuration.builtinConstraints(detectedBuiltinConstraints)
                         .initializeBeanMetaData(classesToBeValidated)
                         // Locales, Locale ROOT means all locales in this setting.
-                        .locales(localesBuildTimeConfig.locales().contains(Locale.ROOT) ? Set.of(Locale.getAvailableLocales())
+                        .locales(localesBuildTimeConfig.locales().contains(Locale.ROOT)
+                                ? Set.of(Locale.getAvailableLocales())
                                 : localesBuildTimeConfig.locales())
                         .defaultLocale(localesBuildTimeConfig.defaultLocale().orElse(Locale.getDefault()))
                         .beanMetaDataClassNormalizer(new ArcProxyBeanMetaDataClassNormalizer());
 
-                if (hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().isPresent()) {
-                    configuration.constraintExpressionLanguageFeatureLevel(
-                            hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().get());
+                if (hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel()
+                        .isPresent()) {
+                    configuration.constraintExpressionLanguageFeatureLevel(hibernateValidatorBuildTimeConfig
+                            .expressionLanguage().constraintExpressionFeatureLevel().get());
                 }
 
                 Instance<ConstraintValidatorFactory> configuredConstraintValidatorFactory = context
@@ -170,10 +170,10 @@ public class HibernateValidatorRecorder {
                 configuration.failFast(hibernateValidatorBuildTimeConfig.failFast());
                 configuration.allowOverridingMethodAlterParameterConstraint(
                         hibernateValidatorBuildTimeConfig.methodValidation().allowOverridingParameterConstraints());
-                configuration.allowParallelMethodsDefineParameterConstraints(
-                        hibernateValidatorBuildTimeConfig.methodValidation().allowParameterConstraintsOnParallelMethods());
-                configuration.allowMultipleCascadedValidationOnReturnValues(
-                        hibernateValidatorBuildTimeConfig.methodValidation().allowMultipleCascadedValidationOnReturnValues());
+                configuration.allowParallelMethodsDefineParameterConstraints(hibernateValidatorBuildTimeConfig
+                        .methodValidation().allowParameterConstraintsOnParallelMethods());
+                configuration.allowMultipleCascadedValidationOnReturnValues(hibernateValidatorBuildTimeConfig
+                        .methodValidation().allowMultipleCascadedValidationOnReturnValues());
 
                 Instance<ScriptEvaluatorFactory> configuredScriptEvaluatorFactory = context
                         .getInjectedReference(INSTANCE_SCRIPT_EVALUATOR_TYPE_LITERAL);
@@ -235,12 +235,13 @@ public class HibernateValidatorRecorder {
         };
     }
 
-    public Function<SyntheticCreationalContext<Validator>, Validator> hibernateValidator(String hibernateValidatorFactoryName) {
+    public Function<SyntheticCreationalContext<Validator>, Validator> hibernateValidator(
+            String hibernateValidatorFactoryName) {
         return new Function<>() {
             @Override
             public Validator apply(SyntheticCreationalContext<Validator> context) {
-                HibernateValidatorFactory hibernateValidatorFactory = context
-                        .getInjectedReference(HibernateValidatorFactory.class, NamedLiteral.of(hibernateValidatorFactoryName));
+                HibernateValidatorFactory hibernateValidatorFactory = context.getInjectedReference(
+                        HibernateValidatorFactory.class, NamedLiteral.of(hibernateValidatorFactoryName));
 
                 return hibernateValidatorFactory.getValidator();
             }
@@ -289,6 +290,7 @@ public class HibernateValidatorRecorder {
     // this is done in order to ensure that HibernateValidatorFactory is fully initialized at static init
     // so completely in heap and ready to go when a native image is built
     public void hibernateValidatorFactoryInit(BeanContainer beanContainer) {
-        HibernateValidatorFactory hibernateValidatorFactory = beanContainer.beanInstance(HibernateValidatorFactory.class);
+        HibernateValidatorFactory hibernateValidatorFactory = beanContainer
+                .beanInstance(HibernateValidatorFactory.class);
     }
 }

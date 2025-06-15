@@ -23,20 +23,16 @@ import io.quarkus.grpc.server.services.MutinyTestService;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Test services exposed by the gRPC server implemented using the Mutiny gRPC model.
- * Communication uses plain-text.
+ * Test services exposed by the gRPC server implemented using the Mutiny gRPC model. Communication uses plain-text.
  */
 public class MutinyGrpcServiceWithPlainTextTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true).setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
-                                    GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
-                                    MutinyGreeterGrpc.class,
-                                    HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
-                                    EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
-                                    TestServiceGrpc.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MutinyHelloService.class,
+                    MutinyTestService.class, AssertHelper.class, GreeterGrpc.class, Greeter.class, GreeterBean.class,
+                    HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class, HelloRequestOrBuilder.class,
+                    HelloReplyOrBuilder.class, EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
+                    TestServiceGrpc.class));
 
 }

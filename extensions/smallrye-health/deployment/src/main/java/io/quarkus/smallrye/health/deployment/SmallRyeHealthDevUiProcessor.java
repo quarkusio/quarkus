@@ -21,26 +21,19 @@ public class SmallRyeHealthDevUiProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     CardPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            SmallRyeHealthBuildTimeConfig config,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            LaunchModeBuildItem launchModeBuildItem,
-            SmallRyeHealthRecorder unused) {
+            SmallRyeHealthBuildTimeConfig config, ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
+            LaunchModeBuildItem launchModeBuildItem, SmallRyeHealthRecorder unused) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
         String path = nonApplicationRootPathBuildItem.resolveManagementPath(config.rootPath(),
                 managementBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
 
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("Health")
-                .icon("font-awesome-solid:stethoscope")
-                .componentLink("qwc-smallrye-health-ui.js")
-                .dynamicLabelJsonRPCMethodName("getStatus")
+        pageBuildItem.addPage(Page.webComponentPageBuilder().title("Health").icon("font-awesome-solid:stethoscope")
+                .componentLink("qwc-smallrye-health-ui.js").dynamicLabelJsonRPCMethodName("getStatus")
                 .streamingLabelJsonRPCMethodName("streamStatus"));
 
-        pageBuildItem.addPage(Page.externalPageBuilder("Raw")
-                .icon("font-awesome-solid:heart-circle-bolt")
-                .url(path, path)
-                .isJsonContent());
+        pageBuildItem.addPage(Page.externalPageBuilder("Raw").icon("font-awesome-solid:heart-circle-bolt")
+                .url(path, path).isJsonContent());
 
         return pageBuildItem;
     }

@@ -44,9 +44,8 @@ public class MethodDescription {
         if (o == null || getClass() != o.getClass())
             return false;
         MethodDescription that = (MethodDescription) o;
-        return className.equals(that.className) &&
-                methodName.equals(that.methodName) &&
-                Arrays.equals(parameterTypes, that.parameterTypes);
+        return className.equals(that.className) && methodName.equals(that.methodName)
+                && Arrays.equals(parameterTypes, that.parameterTypes);
     }
 
     @Override

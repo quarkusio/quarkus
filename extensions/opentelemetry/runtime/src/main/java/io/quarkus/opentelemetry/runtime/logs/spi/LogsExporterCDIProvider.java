@@ -21,10 +21,8 @@ public class LogsExporterCDIProvider implements ConfigurableLogRecordExporterPro
     public LogRecordExporter createExporter(ConfigProperties configProperties) {
         Instance<LogRecordExporter> exporters = CDI.current().select(LogRecordExporter.class, Any.Literal.INSTANCE);
         if (log.isDebugEnabled()) {
-            log.debug("available exporters: " + exporters.stream()
-                    .map(e -> e.getClass().getName())
-                    .reduce((a, b) -> a + ", " + b)
-                    .orElse("none"));
+            log.debug("available exporters: " + exporters.stream().map(e -> e.getClass().getName())
+                    .reduce((a, b) -> a + ", " + b).orElse("none"));
         }
         if (exporters.isUnsatisfied()) {
             return NoopLogRecordExporter.INSTANCE;

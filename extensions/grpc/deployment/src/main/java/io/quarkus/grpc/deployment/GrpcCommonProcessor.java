@@ -10,9 +10,8 @@ import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 public class GrpcCommonProcessor {
 
     /**
-     * Index the gRPC stubs.
-     * This is used to allows application find the classes generated from the proto file included in the dependency at build
-     * time.
+     * Index the gRPC stubs. This is used to allows application find the classes generated from the proto file included
+     * in the dependency at build time.
      * <p>
      * See <a href="https://github.com/quarkusio/quarkus/issues/37312">#37312</a>
      */

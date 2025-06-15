@@ -30,9 +30,9 @@ public interface OidcConfig {
     Map<String, OidcTenantConfig> namedTenants();
 
     /**
-     * Default TokenIntrospection and UserInfo Cache configuration.
-     * It is used for all the tenants if it is enabled with the build-time 'quarkus.oidc.default-token-cache-enabled' property
-     * ('true' by default) and also activated, see its `max-size` property.
+     * Default TokenIntrospection and UserInfo Cache configuration. It is used for all the tenants if it is enabled with
+     * the build-time 'quarkus.oidc.default-token-cache-enabled' property ('true' by default) and also activated, see
+     * its `max-size` property.
      */
     @ConfigDocSection
     TokenCache tokenCache();
@@ -48,8 +48,7 @@ public interface OidcConfig {
      */
     interface TokenCache {
         /**
-         * Maximum number of cache entries.
-         * Set it to a positive value if the cache has to be enabled.
+         * Maximum number of cache entries. Set it to a positive value if the cache has to be enabled.
          */
         @WithDefault("0")
         int maxSize();
@@ -61,8 +60,8 @@ public interface OidcConfig {
         Duration timeToLive();
 
         /**
-         * Clean up timer interval.
-         * If this property is set then a timer will check and remove the stale entries periodically.
+         * Clean up timer interval. If this property is set then a timer will check and remove the stale entries
+         * periodically.
          */
         Optional<Duration> cleanUpTimerInterval();
     }

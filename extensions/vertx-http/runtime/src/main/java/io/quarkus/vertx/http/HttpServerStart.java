@@ -3,8 +3,8 @@ package io.quarkus.vertx.http;
 import io.vertx.core.http.HttpServerOptions;
 
 /**
- * Quarkus fires a CDI event of this type asynchronously when the HTTP server starts listening
- * on the configured host and port.
+ * Quarkus fires a CDI event of this type asynchronously when the HTTP server starts listening on the configured host
+ * and port.
  *
  * <pre>
  * &#064;ApplicationScoped

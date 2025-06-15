@@ -30,16 +30,12 @@ public class ExceptionInWriterTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest runner = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Greeting.class, GreetingResource.class,
-                            GreetingWriter.class, GreetingException.class, GreetingExceptionMapper.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Greeting.class, GreetingResource.class, GreetingWriter.class,
+                    GreetingException.class, GreetingExceptionMapper.class));
 
     @Test
     void nullHeaderTest() {
-        when()
-                .get("/greeting")
-                .then().statusCode(200)
-                .body(is("fallback"));
+        when().get("/greeting").then().statusCode(200).body(is("fallback"));
     }
 
     @Path("/greeting")
@@ -80,8 +76,8 @@ public class ExceptionInWriterTest {
         }
 
         @Override
-        public void writeTo(Greeting greeting, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+        public void writeTo(Greeting greeting, Class<?> type, Type genericType, Annotation[] annotations,
+                MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
                 throws IOException, WebApplicationException {
 
             doWrite(greeting, entityStream);

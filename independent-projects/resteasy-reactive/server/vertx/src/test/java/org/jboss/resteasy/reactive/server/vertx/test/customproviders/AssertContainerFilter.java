@@ -34,8 +34,9 @@ public class AssertContainerFilter {
     }
 
     @ServerRequestFilter
-    public void whatever(Request request, HttpServerRequest httpServerRequest, SimpleResourceInfo simplifiedResourceInfo,
-            ResourceInfo resourceInfo, ResteasyReactiveContainerRequestContext resteasyReactiveContainerRequestContext,
+    public void whatever(Request request, HttpServerRequest httpServerRequest,
+            SimpleResourceInfo simplifiedResourceInfo, ResourceInfo resourceInfo,
+            ResteasyReactiveContainerRequestContext resteasyReactiveContainerRequestContext,
             ContainerRequestContext containerRequestContext, RoutingContext routingContext) {
         assertNotNull(someBean);
         assertTrue(RequestImpl.class.isAssignableFrom(request.getClass()));
@@ -43,8 +44,8 @@ public class AssertContainerFilter {
         assertTrue(ResteasyReactiveSimplifiedResourceInfo.class.isAssignableFrom(simplifiedResourceInfo.getClass()));
         assertTrue(ResteasyReactiveResourceInfo.class.isAssignableFrom(resourceInfo.getClass()));
         assertNotNull(resteasyReactiveContainerRequestContext);
-        assertTrue(
-                PreventAbortResteasyReactiveContainerRequestContext.class.isAssignableFrom(containerRequestContext.getClass()));
+        assertTrue(PreventAbortResteasyReactiveContainerRequestContext.class
+                .isAssignableFrom(containerRequestContext.getClass()));
         assertNotNull(routingContext);
         httpServerRequest.response().headers().set("h1", "true");
     }

@@ -20,8 +20,8 @@ public class IsDockerWorking extends IsContainerRuntimeWorking {
     private static class DockerBinaryStrategy implements Strategy {
         @Override
         public Result get() {
-            if (ContainerRuntimeUtil.detectContainerRuntime(false,
-                    ContainerRuntime.DOCKER, ContainerRuntime.PODMAN) != UNAVAILABLE) {
+            if (ContainerRuntimeUtil.detectContainerRuntime(false, ContainerRuntime.DOCKER,
+                    ContainerRuntime.PODMAN) != UNAVAILABLE) {
                 return Result.AVAILABLE;
             } else {
                 return Result.UNKNOWN;

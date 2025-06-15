@@ -17,17 +17,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateGlobalOverrideTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Globals.class, User.class)
-                    .addAsResource(new StringAsset(
-                            // Note that we need to override the param declaration as well
-                            "{@io.quarkus.qute.deployment.globals.User user}Hello {user.name}!"),
-                            "templates/hello.txt")
-                    .addAsResource(new StringAsset(
-                            // We don't need to override the param declaration for @CheckedTemplate
-                            "Hello {user.name}!"),
-                            "templates/foo/hello.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(Globals.class, User.class).addAsResource(new StringAsset(
+                    // Note that we need to override the param declaration as well
+                    "{@io.quarkus.qute.deployment.globals.User user}Hello {user.name}!"), "templates/hello.txt")
+            .addAsResource(new StringAsset(
+                    // We don't need to override the param declaration for @CheckedTemplate
+                    "Hello {user.name}!"), "templates/foo/hello.txt"));
 
     @CheckedTemplate(basePath = "foo")
     static class Templates {

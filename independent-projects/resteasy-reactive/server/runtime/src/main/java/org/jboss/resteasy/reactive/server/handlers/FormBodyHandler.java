@@ -43,8 +43,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
     @Override
     public void configure(RuntimeConfiguration configuration) {
         formParserFactory = FormParserFactory.builder(false, executorSupplier)
-                .addParser(new MultiPartParserDefinition(executorSupplier)
-                        .setFileSizeThreshold(0)
+                .addParser(new MultiPartParserDefinition(executorSupplier).setFileSizeThreshold(0)
                         .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
                         .setMaxEntitySize(configuration.limits().maxBodySize().orElse(-1L))
                         .setMaxParameters(configuration.limits().maxParameters())
@@ -83,7 +82,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
             return;
         }
         if (BlockingOperationSupport.isBlockingAllowed()) {
-            //blocking IO approach
+            // blocking IO approach
             CapturingInputStream cis = null;
             if (alsoSetInputStream) {
                 // the TCK allows the body to be read as a form param and also as a body param
@@ -113,7 +112,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                 }
             });
         } else {
-            //parse will auto resume
+            // parse will auto resume
             factory.parse();
         }
     }

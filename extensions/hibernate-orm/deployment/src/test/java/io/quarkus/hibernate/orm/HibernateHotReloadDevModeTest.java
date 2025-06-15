@@ -22,20 +22,18 @@ public class HibernateHotReloadDevModeTest {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, MyEntityTestResource.class)
-                    .add(new StringAsset(
-                            //TODO: we can't use devservices here because of issues with the class loading
-                            //sometimes the external application.properties is picked up and sometimes it isn't
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, MyEntityTestResource.class).add(
+                    new StringAsset(
+                            // TODO: we can't use devservices here because of issues with the class loading
+                            // sometimes the external application.properties is picked up and sometimes it isn't
                             ContinuousTestingTestUtils.appProperties(
                                     "quarkus.hibernate-orm.schema-management.strategy=drop-and-create",
                                     "quarkus.datasource.jdbc.url=jdbc:h2:mem:test",
                                     "%test.quarkus.datasource.jdbc.url=jdbc:h2:mem:testrunner")),
-                            "application.properties")
-                    .addAsResource("import.sql"))
-            .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(HibernateET.class)
-                    .addAsResource(new StringAsset("INSERT INTO MyEntity(id, name) VALUES(1, 'TEST ENTITY');"), "import.sql"));
+                    "application.properties").addAsResource("import.sql"))
+            .setTestArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addClass(HibernateET.class).addAsResource(
+                            new StringAsset("INSERT INTO MyEntity(id, name) VALUES(1, 'TEST ENTITY');"), "import.sql"));
 
     @Test
     public void testAddNewFieldToEntity() {
@@ -46,14 +44,10 @@ public class HibernateHotReloadDevModeTest {
         TEST.modifySourceFile(MyEntity.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
-                return s.replace("private String name;", "private String name;public String tag;    " +
-                        "public String getTag() {\n" +
-                        "        return tag;\n" +
-                        "    }\n" +
-                        "\n" +
-                        "    public void setTag(String tag) {\n" +
-                        "        this.tag = tag;\n" +
-                        "    }")
+                return s.replace("private String name;",
+                        "private String name;public String tag;    " + "public String getTag() {\n"
+                                + "        return tag;\n" + "    }\n" + "\n" + "    public void setTag(String tag) {\n"
+                                + "        this.tag = tag;\n" + "    }")
                         .replace("\"MyEntity:\" + name", "\"MyEntity:\" + name + \":\" + tag");
             }
         });

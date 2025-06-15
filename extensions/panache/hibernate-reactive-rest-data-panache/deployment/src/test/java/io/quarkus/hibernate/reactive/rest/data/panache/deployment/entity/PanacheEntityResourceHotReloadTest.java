@@ -9,11 +9,11 @@ public class PanacheEntityResourceHotReloadTest extends AbstractHotReloadTest {
 
     @RegisterExtension
     public final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
-                            Item.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+            .withApplicationRoot(
+                    (jar) -> jar
+                            .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class,
+                                    AbstractItem.class, Item.class)
+                            .addAsResource("application.properties").addAsResource("import.sql"));
 
     @Override
     protected QuarkusDevModeTest getTestArchive() {

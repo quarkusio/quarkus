@@ -12,10 +12,9 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Contains transitive {@link io.quarkus.security.PermissionsAllowed} instances.
- * The {@link io.quarkus.security.PermissionsAllowed} annotation supports meta-annotation
- * defined by users. Methods and classes annotated with these meta-annotations are collected
- * and new {@link AnnotationInstance}s are created for them.
+ * Contains transitive {@link io.quarkus.security.PermissionsAllowed} instances. The
+ * {@link io.quarkus.security.PermissionsAllowed} annotation supports meta-annotation defined by users. Methods and
+ * classes annotated with these meta-annotations are collected and new {@link AnnotationInstance}s are created for them.
  * Newly created instances are carried in the {@link #transitiveInstances} field.
  */
 public final class PermissionsAllowedMetaAnnotationBuildItem extends SimpleBuildItem {
@@ -57,9 +56,7 @@ public final class PermissionsAllowedMetaAnnotationBuildItem extends SimpleBuild
         if (empty) {
             return Optional.empty();
         }
-        return transitiveInstances
-                .stream()
-                .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
+        return transitiveInstances.stream().filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
                 .filter(ai -> ai.target().asClass().name().equals(classInfo.name()))
                 // not repeatable on class-level, therefore we can just find the first one
                 .findFirst();

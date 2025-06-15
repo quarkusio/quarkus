@@ -19,8 +19,7 @@ public class VertxOptionsCustomizerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(MyCustomizer.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyCustomizer.class));
 
     @Inject
     Vertx vertx;

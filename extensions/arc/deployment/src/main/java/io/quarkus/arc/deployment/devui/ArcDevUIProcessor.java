@@ -36,10 +36,8 @@ public class ArcDevUIProcessor {
 
         List<DevBeanInfo> beans = beanInfos.getBeans();
         if (!beans.isEmpty()) {
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .icon("font-awesome-solid:egg")
-                    .componentLink("qwc-arc-beans.js")
-                    .staticLabel(String.valueOf(beans.size())));
+            pageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:egg")
+                    .componentLink("qwc-arc-beans.js").staticLabel(String.valueOf(beans.size())));
 
             pageBuildItem.addBuildTimeData(BEANS, toDevBeanWithInterceptorInfo(beans, beanInfos));
 
@@ -49,50 +47,40 @@ public class ArcDevUIProcessor {
 
         List<DevObserverInfo> observers = beanInfos.getObservers();
         if (!observers.isEmpty()) {
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .icon("font-awesome-solid:eye")
-                    .componentLink("qwc-arc-observers.js")
-                    .staticLabel(String.valueOf(observers.size())));
+            pageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:eye")
+                    .componentLink("qwc-arc-observers.js").staticLabel(String.valueOf(observers.size())));
 
             pageBuildItem.addBuildTimeData(OBSERVERS, observers);
         }
 
         List<DevInterceptorInfo> interceptors = beanInfos.getInterceptors();
         if (!interceptors.isEmpty()) {
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .icon("font-awesome-solid:traffic-light")
-                    .componentLink("qwc-arc-interceptors.js")
-                    .staticLabel(String.valueOf(interceptors.size())));
+            pageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:traffic-light")
+                    .componentLink("qwc-arc-interceptors.js").staticLabel(String.valueOf(interceptors.size())));
 
             pageBuildItem.addBuildTimeData(INTERCEPTORS, interceptors);
         }
 
         List<DevDecoratorInfo> decorators = beanInfos.getDecorators();
         if (!decorators.isEmpty()) {
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .icon("font-awesome-solid:traffic-light")
-                    .componentLink("qwc-arc-decorators.js")
-                    .staticLabel(String.valueOf(decorators.size())));
+            pageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:traffic-light")
+                    .componentLink("qwc-arc-decorators.js").staticLabel(String.valueOf(decorators.size())));
 
             pageBuildItem.addBuildTimeData(DECORATORS, decorators);
         }
 
         if (config.devMode().monitoringEnabled()) {
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .icon("font-awesome-solid:fire")
+            pageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:fire")
                     .componentLink("qwc-arc-fired-events.js"));
 
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .icon("font-awesome-solid:diagram-project")
+            pageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:diagram-project")
                     .componentLink("qwc-arc-invocation-trees.js"));
         }
 
         int removedComponents = beanInfos.getRemovedComponents();
         if (removedComponents > 0) {
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .icon("font-awesome-solid:trash-can")
-                    .componentLink("qwc-arc-removed-components.js")
-                    .staticLabel(String.valueOf(removedComponents)));
+            pageBuildItem.addPage(Page.webComponentPageBuilder().icon("font-awesome-solid:trash-can")
+                    .componentLink("qwc-arc-removed-components.js").staticLabel(String.valueOf(removedComponents)));
 
             pageBuildItem.addBuildTimeData(REMOVED_BEANS, beanInfos.getRemovedBeans());
             pageBuildItem.addBuildTimeData(REMOVED_DECORATORS, beanInfos.getRemovedDecorators());
@@ -110,7 +98,8 @@ public class ArcDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void registerMonitoringComponents(ArcConfig config, BuildProducer<AdditionalBeanBuildItem> beans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationTransformers,
-            CustomScopeAnnotationsBuildItem customScopes, List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+            CustomScopeAnnotationsBuildItem customScopes,
+            List<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         if (!config.devMode().monitoringEnabled()) {
             return;
         }
@@ -119,17 +108,13 @@ public class ArcDevUIProcessor {
                     "Dev UI problem: monitoring of CDI business method invocations not possible\n\t- quarkus.arc.transform-unproxyable-classes was set to false and therefore it would not be possible to apply interceptors to unproxyable bean classes\n\t- please disable the monitoring feature via quarkus.arc.dev-mode.monitoring-enabled=false or enable unproxyable classes transformation");
         }
         // Register beans
-        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                .addBeanClasses(EventsMonitor.class, InvocationTree.class, InvocationsMonitor.class,
-                        InvocationInterceptor.class,
-                        Monitored.class)
-                .build());
+        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(EventsMonitor.class,
+                InvocationTree.class, InvocationsMonitor.class, InvocationInterceptor.class, Monitored.class).build());
 
         // Add @Monitored to all beans
         Set<DotName> skipNames = Set.of(DotName.createSimple(InvocationTree.class),
                 DotName.createSimple(InvocationsMonitor.class), DotName.createSimple(EventsMonitor.class));
-        annotationTransformers.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer
-                .appliedToClass()
+        annotationTransformers.produce(new AnnotationsTransformerBuildItem(AnnotationsTransformer.appliedToClass()
                 .whenClass(c -> (customScopes.isScopeDeclaredOn(c)
                         || isAdditionalBeanDefiningAnnotationOn(c, beanDefiningAnnotations))
                         && !skipClass(c, skipNames))
@@ -147,7 +132,8 @@ public class ArcDevUIProcessor {
         return false;
     }
 
-    private List<DevBeanWithInterceptorInfo> toDevBeanWithInterceptorInfo(List<DevBeanInfo> beans, DevBeanInfos devBeanInfos) {
+    private List<DevBeanWithInterceptorInfo> toDevBeanWithInterceptorInfo(List<DevBeanInfo> beans,
+            DevBeanInfos devBeanInfos) {
         List<DevBeanWithInterceptorInfo> l = new ArrayList<>();
         for (DevBeanInfo dbi : beans) {
             l.add(new DevBeanWithInterceptorInfo(dbi, devBeanInfos));

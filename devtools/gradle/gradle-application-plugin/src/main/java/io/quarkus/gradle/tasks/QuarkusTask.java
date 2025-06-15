@@ -59,8 +59,8 @@ public abstract class QuarkusTask extends DefaultTask {
             return workerExecutor.classLoaderIsolation();
         }
 
-        return workerExecutor.processIsolation(processWorkerSpec -> configureProcessWorkerSpec(processWorkerSpec,
-                configMap, forkOptionsSupplier));
+        return workerExecutor.processIsolation(
+                processWorkerSpec -> configureProcessWorkerSpec(processWorkerSpec, configMap, forkOptionsSupplier));
     }
 
     private void configureProcessWorkerSpec(ProcessWorkerSpec processWorkerSpec, Map<String, String> configMap,
@@ -75,7 +75,8 @@ public abstract class QuarkusTask extends DefaultTask {
         }
 
         String quarkusWorkerMaxHeap = System.getProperty("quarkus.gradle-worker.max-heap");
-        if (quarkusWorkerMaxHeap != null && forkOptions.getAllJvmArgs().stream().noneMatch(arg -> arg.startsWith("-Xmx"))) {
+        if (quarkusWorkerMaxHeap != null
+                && forkOptions.getAllJvmArgs().stream().noneMatch(arg -> arg.startsWith("-Xmx"))) {
             forkOptions.jvmArgs("-Xmx" + quarkusWorkerMaxHeap);
         }
 

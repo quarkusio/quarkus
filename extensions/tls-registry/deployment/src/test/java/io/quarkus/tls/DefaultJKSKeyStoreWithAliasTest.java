@@ -23,9 +23,7 @@ import io.smallrye.certs.junit5.Certificates;
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-alias-jks", password = "password", formats = { Format.JKS }, aliases = {
                 @Alias(name = "alias1", password = "alias-password", subjectAlternativeNames = "dns:acme.org"),
-                @Alias(name = "alias2", password = "alias-password-2")
-        })
-})
+                @Alias(name = "alias2", password = "alias-password-2") }) })
 public class DefaultJKSKeyStoreWithAliasTest {
 
     private static final String configuration = """
@@ -37,8 +35,7 @@ public class DefaultJKSKeyStoreWithAliasTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;

@@ -17,14 +17,11 @@ public class AsyncDataTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class)
                     .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.asyncdata.Client client}"
-                            + "{#for token in client.tokens}"
-                            + "{token}:{/for}"), "templates/test1.html")
+                            + "{#for token in client.tokens}" + "{token}:{/for}"), "templates/test1.html")
                     .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.asyncdata.Client client}"
-                            + "{#for token in tokens}"
-                            + "{token}:{/for}"), "templates/test2.html")
+                            + "{#for token in tokens}" + "{token}:{/for}"), "templates/test2.html")
                     .addAsResource(new StringAsset("{token}"), "templates/test3.html"));
 
     @Inject

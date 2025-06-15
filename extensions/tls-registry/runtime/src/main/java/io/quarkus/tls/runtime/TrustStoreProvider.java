@@ -11,7 +11,9 @@ public interface TrustStoreProvider {
     /**
      * Returns the truststore and options to be used for [re]loading the state of a TLS configuration
      *
-     * @param vertx the managed vertx instance
+     * @param vertx
+     *        the managed vertx instance
+     *
      * @return the truststore and options
      */
     TrustStoreAndTrustOptions getTrustStore(Vertx vertx);

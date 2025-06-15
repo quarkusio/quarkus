@@ -24,17 +24,15 @@ public class PsqlCommand implements Command {
 
     @Override
     public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-        //todo: should this work for non-dev services stuff as well? What about non-default datasources
+        // todo: should this work for non-dev services stuff as well? What about non-default datasources
         try {
             URI uri;
             if (devServicesLauncherConfigResultBuildItem.getConfig().containsKey(JDBC_DATASOURCE__URL_KEY)) {
-                uri = new URI(
-                        devServicesLauncherConfigResultBuildItem.getConfig().get(JDBC_DATASOURCE__URL_KEY)
-                                .substring("jdbc:".length()));
+                uri = new URI(devServicesLauncherConfigResultBuildItem.getConfig().get(JDBC_DATASOURCE__URL_KEY)
+                        .substring("jdbc:".length()));
             } else if (devServicesLauncherConfigResultBuildItem.getConfig().containsKey(REACTIVE_DATASOURCE__URL_KEY)) {
-                uri = new URI(
-                        devServicesLauncherConfigResultBuildItem.getConfig().get(REACTIVE_DATASOURCE__URL_KEY)
-                                .substring("vertx-reactive:".length()));
+                uri = new URI(devServicesLauncherConfigResultBuildItem.getConfig().get(REACTIVE_DATASOURCE__URL_KEY)
+                        .substring("vertx-reactive:".length()));
             } else {
                 throw new RuntimeException("Unable to determine datasource URL");
             }

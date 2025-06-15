@@ -51,9 +51,8 @@ class ReactiveServerRecorder {
     }
 
     /**
-     * Because this can be called when a start event has not been completely handled
-     * (this happens when request processing failed because a Resource method could not be identified),
-     * we need to handle that event as well.
+     * Because this can be called when a start event has not been completely handled (this happens when request
+     * processing failed because a Resource method could not be identified), we need to handle that event as well.
      */
     public ReactiveServerRecorder recordEndEvent() {
         if (!startEventHandled) {
@@ -77,7 +76,8 @@ class ReactiveServerRecorder {
                 durationEvent.commit();
             }
         } else {
-            // this shouldn't happen, but if it does due to an error on our side, the request processing shouldn't be botched because of it
+            // this shouldn't happen, but if it does due to an error on our side, the request processing shouldn't be
+            // botched because of it
         }
 
         return this;

@@ -40,8 +40,8 @@ public class QuarkusArcBeanContainer extends AbstractCdiBeanContainer {
     }
 
     @Override
-    protected <B> ContainedBeanImplementor<B> createBean(Class<B> beanType,
-            BeanLifecycleStrategy lifecycleStrategy, BeanInstanceProducer fallbackProducer) {
+    protected <B> ContainedBeanImplementor<B> createBean(Class<B> beanType, BeanLifecycleStrategy lifecycleStrategy,
+            BeanInstanceProducer fallbackProducer) {
         ContainedBeanImplementor<B> bean = lifecycleStrategy.createBean(beanType, fallbackProducer, this);
         bean.initialize();
         return bean;
@@ -50,15 +50,14 @@ public class QuarkusArcBeanContainer extends AbstractCdiBeanContainer {
     @Override
     protected <B> ContainedBeanImplementor<B> createBean(String name, Class<B> beanType,
             BeanLifecycleStrategy lifecycleStrategy, BeanInstanceProducer fallbackProducer) {
-        ContainedBeanImplementor<B> bean = lifecycleStrategy.createBean(name, beanType,
-                fallbackProducer, this);
+        ContainedBeanImplementor<B> bean = lifecycleStrategy.createBean(name, beanType, fallbackProducer, this);
         bean.initialize();
         return bean;
     }
 
     /**
-     * This will happen after Hibernate ORM is stopped;
-     * see io.quarkus.hibernate.orm.runtime.JPAConfig#destroy(java.lang.Object).
+     * This will happen after Hibernate ORM is stopped; see
+     * io.quarkus.hibernate.orm.runtime.JPAConfig#destroy(java.lang.Object).
      */
     @PreDestroy
     public void destroy() {

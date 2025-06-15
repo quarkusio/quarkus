@@ -21,9 +21,8 @@ import io.vertx.core.http.CookieSameSite;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * A class that manages persistent logins.
- * This is done by encoding an expiry time, and the current username into an encrypted cookie
- * TODO: make this pluggable
+ * A class that manages persistent logins. This is done by encoding an expiry time, and the current username into an
+ * encrypted cookie TODO: make this pluggable
  */
 public class PersistentLoginManager {
 
@@ -41,8 +40,9 @@ public class PersistentLoginManager {
     private final String cookiePath;
     private final long maxAgeSeconds;
 
-    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieIntervalMillis,
-            boolean httpOnlyCookie, String cookieSameSite, String cookiePath, long maxAgeSeconds) {
+    public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis,
+            long newCookieIntervalMillis, boolean httpOnlyCookie, String cookieSameSite, String cookiePath,
+            long maxAgeSeconds) {
         this.cookieName = cookieName;
         this.newCookieIntervalMillis = newCookieIntervalMillis;
         this.timeoutMillis = timeoutMillis;
@@ -113,7 +113,8 @@ public class PersistentLoginManager {
         }
     }
 
-    public void save(SecurityIdentity identity, RoutingContext context, RestoreResult restoreResult, boolean secureCookie) {
+    public void save(SecurityIdentity identity, RoutingContext context, RestoreResult restoreResult,
+            boolean secureCookie) {
         save(identity.getPrincipal().getName(), context, cookieName, restoreResult, secureCookie);
     }
 
@@ -142,11 +143,8 @@ public class PersistentLoginManager {
             message.put(encrypted);
             String cookieValue = Base64.getEncoder().encodeToString(message.array());
 
-            Cookie cookie = Cookie.cookie(cookieName, cookieValue)
-                    .setPath(cookiePath)
-                    .setSameSite(cookieSameSite)
-                    .setSecure(secureCookie)
-                    .setHttpOnly(httpOnlyCookie);
+            Cookie cookie = Cookie.cookie(cookieName, cookieValue).setPath(cookiePath).setSameSite(cookieSameSite)
+                    .setSecure(secureCookie).setHttpOnly(httpOnlyCookie);
             if (maxAgeSeconds >= 0) {
                 cookie.setMaxAge(maxAgeSeconds);
             }

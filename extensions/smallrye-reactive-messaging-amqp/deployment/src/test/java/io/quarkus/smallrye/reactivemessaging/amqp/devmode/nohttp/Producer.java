@@ -13,8 +13,6 @@ import io.smallrye.mutiny.Multi;
 public class Producer {
     @Outgoing("source")
     public Flow.Publisher<Long> generate() {
-        return Multi.createFrom().ticks().every(Duration.ofMillis(200))
-                .onOverflow().drop()
-                .map(i -> i * 1);
+        return Multi.createFrom().ticks().every(Duration.ofMillis(200)).onOverflow().drop().map(i -> i * 1);
     }
 }

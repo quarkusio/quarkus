@@ -16,32 +16,27 @@ public class ResteasyReactiveDevUIProcessor {
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
         // Endpoints
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .componentLink("qwc-resteasy-reactive-endpoints.js")
-                .title("Endpoints")
-                .icon("font-awesome-solid:plug"));
+        cardPageBuildItem.addPage(Page.webComponentPageBuilder().componentLink("qwc-resteasy-reactive-endpoints.js")
+                .title("Endpoints").icon("font-awesome-solid:plug"));
 
         // Endpoint Scores
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .componentLink("qwc-resteasy-reactive-endpoint-scores.js")
-                .title("Endpoint scores")
-                .icon("font-awesome-solid:chart-bar"));
+        cardPageBuildItem
+                .addPage(Page.webComponentPageBuilder().componentLink("qwc-resteasy-reactive-endpoint-scores.js")
+                        .title("Endpoint scores").icon("font-awesome-solid:chart-bar"));
 
         // Exception mappers
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .componentLink("qwc-resteasy-reactive-exception-mappers.js")
-                .title("Exception Mappers")
-                .icon("font-awesome-solid:bomb"));
+        cardPageBuildItem
+                .addPage(Page.webComponentPageBuilder().componentLink("qwc-resteasy-reactive-exception-mappers.js")
+                        .title("Exception Mappers").icon("font-awesome-solid:bomb"));
 
         // Parameter converter providers
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .componentLink("qwc-resteasy-reactive-parameter-converter-providers.js")
-                .title("Parameter converter providers")
-                .icon("font-awesome-solid:arrow-right-arrow-left"));
+        cardPageBuildItem.addPage(
+                Page.webComponentPageBuilder().componentLink("qwc-resteasy-reactive-parameter-converter-providers.js")
+                        .title("Parameter converter providers").icon("font-awesome-solid:arrow-right-arrow-left"));
 
         // Custom Card
         // For now, we don't display the score as it might be confusing for people using blocking
-        //cardPageBuildItem.setCustomCard("qwc-resteasy-reactive-card.js");
+        // cardPageBuildItem.setCustomCard("qwc-resteasy-reactive-card.js");
 
         cardPageProducer.produce(cardPageBuildItem);
     }

@@ -14,10 +14,8 @@ public class ParamDeclarationWrongClassTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Foo.class)
-                    .addAsResource(new StringAsset("{@org.acme.Foo foo}"
-                            + "{foo.name}"), "templates/foo.html"))
+            .withApplicationRoot((jar) -> jar.addClass(Foo.class)
+                    .addAsResource(new StringAsset("{@org.acme.Foo foo}" + "{foo.name}"), "templates/foo.html"))
             .setExpectedException(TemplateException.class);
 
     @Test

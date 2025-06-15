@@ -53,10 +53,8 @@ public class TransactionalHyperLogLogCommandsTest extends DatasourceTestBase {
     public void hllReactive() {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalHyperLogLogCommands<String, String> hll = tx.hyperloglog(String.class);
-            return hll.pfadd(key, "a", "b", "c", "d")
-                    .chain(() -> hll.pfcount(key))
-                    .chain(() -> hll.pfadd(key, "a", "d", "e"))
-                    .chain(() -> hll.pfcount(key));
+            return hll.pfadd(key, "a", "b", "c", "d").chain(() -> hll.pfcount(key))
+                    .chain(() -> hll.pfadd(key, "a", "d", "e")).chain(() -> hll.pfcount(key));
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(4);
         assertThat(result.discarded()).isFalse();

@@ -66,32 +66,27 @@ public final class JandexUtil {
 
     public static IndexView createCalculatingIndex(Path path) {
         Index index = createIndex(path);
-        return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>());
+        return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(),
+                new ConcurrentHashMap<>());
     }
 
     public static IndexView createCalculatingIndex(IndexView index) {
-        return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(), new ConcurrentHashMap<>());
+        return new CalculatingIndexView(index, Thread.currentThread().getContextClassLoader(),
+                new ConcurrentHashMap<>());
     }
 
     /**
-     * Returns the captured generic types of an interface given a class that at some point in the class
-     * hierarchy implements the interface.
-     *
-     * The list contains the types in the same order as they are generic parameters defined on the interface
-     *
-     * A result is only returned if and only if all the generics where captured. If any of them where not defined by the class
-     * an exception is thrown.
-     *
-     * Also note that all parts of the class/interface hierarchy must be in the supplied index
-     *
-     * As an example, imagine the following class:
+     * Returns the captured generic types of an interface given a class that at some point in the class hierarchy
+     * implements the interface. The list contains the types in the same order as they are generic parameters defined on
+     * the interface A result is only returned if and only if all the generics where captured. If any of them where not
+     * defined by the class an exception is thrown. Also note that all parts of the class/interface hierarchy must be in
+     * the supplied index As an example, imagine the following class:
      *
      * <pre>
      *
      * class MyList implements List&lt;String&gt; {
      *     ...
      * }
-     *
      * </pre>
      *
      * If we call
@@ -109,8 +104,7 @@ public final class JandexUtil {
         final ClassInfo inputClassInfo = fetchFromIndex(input, index);
 
         Type startingType = getType(inputClassInfo, index);
-        final List<Type> result = findParametersRecursively(startingType, target,
-                new HashSet<>(), index);
+        final List<Type> result = findParametersRecursively(startingType, target, new HashSet<>(), index);
         // null means not found
         if (result == null) {
             return Collections.emptyList();
@@ -135,11 +129,11 @@ public final class JandexUtil {
     }
 
     /**
-     * Finds the type arguments passed from the starting type to the given target type, mapping
-     * generics when found, on the way down. Returns null if not found.
+     * Finds the type arguments passed from the starting type to the given target type, mapping generics when found, on
+     * the way down. Returns null if not found.
      */
-    private static List<Type> findParametersRecursively(Type type, DotName target,
-            Set<DotName> visitedTypes, IndexView index) {
+    private static List<Type> findParametersRecursively(Type type, DotName target, Set<DotName> visitedTypes,
+            IndexView index) {
         DotName name = type.name();
         // cache results first
         if (!visitedTypes.add(name)) {
@@ -184,10 +178,11 @@ public final class JandexUtil {
     }
 
     /**
-     * Maps any type parameters in typeArgumentsFromSupertype from the type parameters declared in appliedType's declaration
-     * to the type arguments we passed in appliedType
+     * Maps any type parameters in typeArgumentsFromSupertype from the type parameters declared in appliedType's
+     * declaration to the type arguments we passed in appliedType
      */
-    private static List<Type> mapTypeArguments(Type appliedType, List<Type> typeArgumentsFromSupertype, IndexView index) {
+    private static List<Type> mapTypeArguments(Type appliedType, List<Type> typeArgumentsFromSupertype,
+            IndexView index) {
         // no type arguments to map
         if (typeArgumentsFromSupertype.isEmpty()) {
             return typeArgumentsFromSupertype;
@@ -253,8 +248,7 @@ public final class JandexUtil {
                 return containsTypeParameters(type.asArrayType().constituent());
             case PARAMETERIZED_TYPE:
                 ParameterizedType parameterizedType = type.asParameterizedType();
-                if (parameterizedType.owner() != null
-                        && containsTypeParameters(parameterizedType.owner()))
+                if (parameterizedType.owner() != null && containsTypeParameters(parameterizedType.owner()))
                     return true;
                 return containsTypeParameters(parameterizedType.arguments());
             case TYPE_VARIABLE:
@@ -312,7 +306,9 @@ public final class JandexUtil {
      * method. For classes, it will return the class itself. For type annotations, it will return the class enclosing
      * the annotated type usage.
      *
-     * @param annotationInstance the annotation whose enclosing class to look up
+     * @param annotationInstance
+     *        the annotation whose enclosing class to look up
+     *
      * @return the enclosing class
      */
     public static ClassInfo getEnclosingClass(AnnotationInstance annotationInstance) {
@@ -342,11 +338,17 @@ public final class JandexUtil {
      * Returns true if the given Jandex ClassInfo is a subclass of the given <tt>parentName</tt>. Note that this will
      * not check interfaces.
      *
-     * @param index the index to use to look up super classes.
-     * @param info the ClassInfo we want to check.
-     * @param parentName the name of the superclass we want to find.
+     * @param index
+     *        the index to use to look up super classes.
+     * @param info
+     *        the ClassInfo we want to check.
+     * @param parentName
+     *        the name of the superclass we want to find.
+     *
      * @return true if the given ClassInfo has <tt>parentName</tt> as a superclass.
-     * @throws RuntimeException if one of the superclasses is not indexed.
+     *
+     * @throws RuntimeException
+     *         if one of the superclasses is not indexed.
      */
     public static boolean isSubclassOf(IndexView index, ClassInfo info, DotName parentName) {
         if (info.superName().equals(DOTNAME_OBJECT) || info.superName().equals(DOTNAME_RECORD)) {
@@ -369,10 +371,15 @@ public final class JandexUtil {
     /**
      * Returns true if the given Jandex ClassInfo is a subclass of or inherits the given <tt>name</tt>.
      *
-     * @param index the index to use to look up super classes.
-     * @param info the ClassInfo we want to check.
-     * @param name the name of the superclass or interface we want to find.
-     * @throws RuntimeException if one of the superclasses is not indexed.
+     * @param index
+     *        the index to use to look up super classes.
+     * @param info
+     *        the ClassInfo we want to check.
+     * @param name
+     *        the name of the superclass or interface we want to find.
+     *
+     * @throws RuntimeException
+     *         if one of the superclasses is not indexed.
      */
     public static boolean isImplementorOf(IndexView index, ClassInfo info, DotName name) {
         return isImplementorOf(index, info, name, Collections.emptySet());
@@ -381,11 +388,17 @@ public final class JandexUtil {
     /**
      * Returns true if the given Jandex ClassInfo is a subclass of or inherits the given <tt>name</tt>.
      *
-     * @param index the index to use to look up super classes.
-     * @param info the ClassInfo we want to check.
-     * @param name the name of the superclass or interface we want to find.
-     * @param additionalIgnoredSuperClasses return false if the class has any of these as a superclass.
-     * @throws RuntimeException if one of the superclasses is not indexed.
+     * @param index
+     *        the index to use to look up super classes.
+     * @param info
+     *        the ClassInfo we want to check.
+     * @param name
+     *        the name of the superclass or interface we want to find.
+     * @param additionalIgnoredSuperClasses
+     *        return false if the class has any of these as a superclass.
+     *
+     * @throws RuntimeException
+     *         if one of the superclasses is not indexed.
      */
     public static boolean isImplementorOf(IndexView index, ClassInfo info, DotName name,
             Set<DotName> additionalIgnoredSuperClasses) {

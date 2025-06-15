@@ -48,7 +48,8 @@ public class EncodedParamTest {
         @GET
         @Path("/projects/{projectId}/repository/files/{filePath:.+}/raw")
         @Produces(MediaType.TEXT_PLAIN)
-        public String getRawFile(@PathParam("projectId") Integer projectId, @PathParam("filePath") @Encoded String filePath) {
+        public String getRawFile(@PathParam("projectId") Integer projectId,
+                @PathParam("filePath") @Encoded String filePath) {
             return filePath;
         }
 

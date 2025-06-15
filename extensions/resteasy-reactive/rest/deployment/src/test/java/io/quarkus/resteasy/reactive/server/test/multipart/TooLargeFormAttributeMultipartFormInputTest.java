@@ -35,20 +35,18 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
     private static final java.nio.file.Path uploadDir = Paths.get("file-uploads");
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, Status.class, FormDataBase.class, OtherPackageFormDataBase.class,
-                                    FormData.class)
-                            .addAsResource(new StringAsset(
-                                    // keep the files around so we can assert the outcome
-                                    "quarkus.http.body.delete-uploaded-files-on-end=false\nquarkus.http.body.uploads-directory="
-                                            + uploadDir.toString() + "\n"),
-                                    "application.properties");
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(
+                    Resource.class, Status.class, FormDataBase.class, OtherPackageFormDataBase.class, FormData.class)
+                    .addAsResource(new StringAsset(
+                            // keep the files around so we can assert the outcome
+                            "quarkus.http.body.delete-uploaded-files-on-end=false\nquarkus.http.body.uploads-directory="
+                                    + uploadDir.toString() + "\n"),
+                            "application.properties");
+        }
+    });
 
     private final File FORM_ATTR_SOURCE_FILE = new File("./src/test/resources/larger-than-default-form-attribute.txt");
     private final File HTML_FILE = new File("./src/test/resources/test.html");
@@ -74,19 +72,10 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
         }
         fileContents = sb.toString();
         Assertions.assertTrue(fileContents.length() > HttpServerOptions.DEFAULT_MAX_FORM_ATTRIBUTE_SIZE);
-        given()
-                .multiPart("active", "true")
-                .multiPart("num", "25")
-                .multiPart("status", "WORKING")
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .multiPart("xmlFile", XML_FILE, "text/xml")
-                .multiPart("txtFile", TXT_FILE, "text/plain")
-                .multiPart("name", fileContents)
-                .accept("text/plain")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(413);
+        given().multiPart("active", "true").multiPart("num", "25").multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML_FILE, "text/html").multiPart("xmlFile", XML_FILE, "text/xml")
+                .multiPart("txtFile", TXT_FILE, "text/plain").multiPart("name", fileContents).accept("text/plain")
+                .when().post("/test").then().statusCode(413);
 
         // ensure that no files where created on disk
         // as RESTEasy Reactive doesn't wait for the files to be deleted before returning the HTTP response,

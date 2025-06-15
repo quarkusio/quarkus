@@ -16,10 +16,8 @@ import io.vertx.core.json.JsonArray;
 public class CodeChangeTest {
 
     @RegisterExtension
-    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SomeSource.class, SomeSink.class, SomeProcessor.class));
+    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(SomeSource.class, SomeSink.class, SomeProcessor.class));
 
     @Test
     public void testUpdatingCode() {

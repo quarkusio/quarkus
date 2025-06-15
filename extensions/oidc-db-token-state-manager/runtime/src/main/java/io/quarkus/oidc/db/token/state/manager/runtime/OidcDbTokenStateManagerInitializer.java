@@ -45,55 +45,40 @@ public class OidcDbTokenStateManagerInitializer {
     }
 
     private static void periodicallyDeleteExpiredTokens(Vertx vertx, Pool pool, long delayBetweenChecks) {
-        timerId = vertx
-                .setPeriodic(5000, delayBetweenChecks, new Handler<Long>() {
+        timerId = vertx.setPeriodic(5000, delayBetweenChecks, new Handler<Long>() {
 
-                    private final AtomicBoolean deleteInProgress = new AtomicBoolean(false);
+            private final AtomicBoolean deleteInProgress = new AtomicBoolean(false);
 
-                    @Override
-                    public void handle(Long aLong) {
-                        if (deleteInProgress.compareAndSet(false, true)) {
+            @Override
+            public void handle(Long aLong) {
+                if (deleteInProgress.compareAndSet(false, true)) {
 
-                            final long deleteExpiresIn = now() - EXPIRED_EXTRA_GRACE;
-                            Uni.createFrom().completionStage(
-                                    pool
-                                            .query("DELETE FROM oidc_db_token_state_manager WHERE expires_in < "
-                                                    + deleteExpiresIn)
-                                            .execute()
-                                            .toCompletionStage())
-                                    .subscribe()
-                                    .with(
-                                            new Consumer<RowSet<Row>>() {
-                                                @Override
-                                                public void accept(RowSet<Row> ignored) {
-                                                    // success
-                                                    deleteInProgress.set(false);
-                                                }
-                                            },
-                                            new Consumer<Throwable>() {
-                                                @Override
-                                                public void accept(Throwable t) {
-                                                    LOG.errorf("Failed to expired OIDC token states from database: %s",
-                                                            t.getMessage());
-                                                    deleteInProgress.set(false);
-                                                }
-                                            });
-                        }
-                    }
-                });
+                    final long deleteExpiresIn = now() - EXPIRED_EXTRA_GRACE;
+                    Uni.createFrom().completionStage(
+                            pool.query("DELETE FROM oidc_db_token_state_manager WHERE expires_in < " + deleteExpiresIn)
+                                    .execute().toCompletionStage())
+                            .subscribe().with(new Consumer<RowSet<Row>>() {
+                                @Override
+                                public void accept(RowSet<Row> ignored) {
+                                    // success
+                                    deleteInProgress.set(false);
+                                }
+                            }, new Consumer<Throwable>() {
+                                @Override
+                                public void accept(Throwable t) {
+                                    LOG.errorf("Failed to expired OIDC token states from database: %s", t.getMessage());
+                                    deleteInProgress.set(false);
+                                }
+                            });
+                }
+            }
+        });
     }
 
     private static void createDatabaseTable(Pool pool, String createTableDdl, boolean supportsIfTableNotExists) {
         LOG.debugf("Creating database table with query: %s", createTableDdl);
-        String errMsg = Uni
-                .createFrom()
-                .completionStage(
-                        pool
-                                .query(createTableDdl)
-                                .execute()
-                                .toCompletionStage())
-                .onItemOrFailure()
-                .transformToUni(new BiFunction<RowSet<Row>, Throwable, Uni<? extends String>>() {
+        String errMsg = Uni.createFrom().completionStage(pool.query(createTableDdl).execute().toCompletionStage())
+                .onItemOrFailure().transformToUni(new BiFunction<RowSet<Row>, Throwable, Uni<? extends String>>() {
                     @Override
                     public Uni<String> apply(RowSet<Row> rows, Throwable throwable) {
                         if (throwable != null) {
@@ -105,14 +90,10 @@ public class OidcDbTokenStateManagerInitializer {
                             }
                         }
                         // assert table exists
-                        return Uni
-                                .createFrom()
-                                .completionStage(pool
-                                        // use MAX in order to limit response size
-                                        // and LIMIT clause is not supported by all the databases
-                                        .query("SELECT MAX(id) FROM oidc_db_token_state_manager")
-                                        .execute()
-                                        .toCompletionStage())
+                        return Uni.createFrom().completionStage(pool
+                                // use MAX in order to limit response size
+                                // and LIMIT clause is not supported by all the databases
+                                .query("SELECT MAX(id) FROM oidc_db_token_state_manager").execute().toCompletionStage())
                                 .map(new Function<RowSet<Row>, String>() {
                                     @Override
                                     public String apply(RowSet<Row> rows) {
@@ -123,8 +104,7 @@ public class OidcDbTokenStateManagerInitializer {
                                         // table does not exist
                                         return FAILED_TO_CREATE_DB_TABLE;
                                     }
-                                })
-                                .onFailure().recoverWithItem(new Function<Throwable, String>() {
+                                }).onFailure().recoverWithItem(new Function<Throwable, String>() {
                                     @Override
                                     public String apply(Throwable throwable) {
                                         LOG.error("Create database query failed with: ", throwable);
@@ -132,9 +112,7 @@ public class OidcDbTokenStateManagerInitializer {
                                     }
                                 });
                     }
-                })
-                .await()
-                .indefinitely();
+                }).await().indefinitely();
         if (errMsg != null) {
             throw new RuntimeException("OIDC Token State Manager failed to create database table: " + errMsg);
         }

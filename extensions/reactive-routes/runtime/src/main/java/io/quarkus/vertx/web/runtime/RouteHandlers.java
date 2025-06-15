@@ -17,7 +17,7 @@ public final class RouteHandlers {
             @Override
             public void handle(Void aVoid) {
                 var headers = response.headers();
-                //use a listener to set the content type if it has not been set
+                // use a listener to set the content type if it has not been set
                 if (!headers.contains(CONTENT_TYPE)) {
                     String acceptableContentType = context.getAcceptableContentType();
                     // we can use add because we know already there's no content type

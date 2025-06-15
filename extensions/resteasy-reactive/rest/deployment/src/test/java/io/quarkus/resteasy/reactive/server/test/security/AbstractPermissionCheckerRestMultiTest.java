@@ -26,50 +26,20 @@ public abstract class AbstractPermissionCheckerRestMultiTest {
 
     @Test
     public void testReturnRestMultiAsMulti() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .queryParam("user", "Georgios")
-                .get("/test/public-multi")
-                .then()
-                .statusCode(201)
-                .header("header1", "value header 1");
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .queryParam("user", "Georgios")
-                .get("/test/secured-multi")
-                .then()
-                .statusCode(201)
-                .header("header1", "value header 1");
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .queryParam("user", "Sergey")
-                .get("/test/secured-multi")
-                .then()
-                .statusCode(403)
-                .header("header1", Matchers.nullValue());
+        RestAssured.given().auth().preemptive().basic("user", "user").queryParam("user", "Georgios")
+                .get("/test/public-multi").then().statusCode(201).header("header1", "value header 1");
+        RestAssured.given().auth().preemptive().basic("user", "user").queryParam("user", "Georgios")
+                .get("/test/secured-multi").then().statusCode(201).header("header1", "value header 1");
+        RestAssured.given().auth().preemptive().basic("user", "user").queryParam("user", "Sergey")
+                .get("/test/secured-multi").then().statusCode(403).header("header1", Matchers.nullValue());
     }
 
     @Test
     public void testReturnRestMulti() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .queryParam("user", "Georgios")
-                .get("/test/secured-rest-multi")
-                .then()
-                .statusCode(201)
-                .header("header1", "value header 1");
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .queryParam("user", "Sergey")
-                .get("/test/secured-rest-multi")
-                .then()
-                .statusCode(403)
-                .header("header1", Matchers.nullValue());
+        RestAssured.given().auth().preemptive().basic("user", "user").queryParam("user", "Georgios")
+                .get("/test/secured-rest-multi").then().statusCode(201).header("header1", "value header 1");
+        RestAssured.given().auth().preemptive().basic("user", "user").queryParam("user", "Sergey")
+                .get("/test/secured-rest-multi").then().statusCode(403).header("header1", Matchers.nullValue());
     }
 
     @Path("/test")
@@ -79,10 +49,8 @@ public abstract class AbstractPermissionCheckerRestMultiTest {
         @Path("public-multi")
         @Produces(MediaType.APPLICATION_OCTET_STREAM)
         public Multi<Byte> publicMethod(@QueryParam("user") String user) {
-            return RestMulti.fromMultiData(Multi.createFrom().<Byte> empty())
-                    .status(201)
-                    .header("header1", "value header 1")
-                    .build();
+            return RestMulti.fromMultiData(Multi.createFrom().<Byte> empty()).status(201)
+                    .header("header1", "value header 1").build();
         }
 
         @PermissionsAllowed("secured")
@@ -90,10 +58,8 @@ public abstract class AbstractPermissionCheckerRestMultiTest {
         @Path("secured-multi")
         @Produces(MediaType.APPLICATION_OCTET_STREAM)
         public Multi<Byte> securedMethod(@QueryParam("user") String user) {
-            return RestMulti.fromMultiData(Multi.createFrom().<Byte> empty())
-                    .status(201)
-                    .header("header1", "value header 1")
-                    .build();
+            return RestMulti.fromMultiData(Multi.createFrom().<Byte> empty()).status(201)
+                    .header("header1", "value header 1").build();
         }
 
         @PermissionsAllowed("secured")
@@ -101,10 +67,8 @@ public abstract class AbstractPermissionCheckerRestMultiTest {
         @Path("secured-rest-multi")
         @Produces(MediaType.APPLICATION_OCTET_STREAM)
         public RestMulti<Byte> securedMethodRestMulti(@QueryParam("user") String user) {
-            return RestMulti.fromMultiData(Multi.createFrom().<Byte> empty())
-                    .status(201)
-                    .header("header1", "value header 1")
-                    .build();
+            return RestMulti.fromMultiData(Multi.createFrom().<Byte> empty()).status(201)
+                    .header("header1", "value header 1").build();
         }
 
         @PermissionChecker(value = "secured")

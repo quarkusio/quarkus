@@ -22,9 +22,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ValidatorBeanInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(TestBean.class, TestConstraint.class, TestInjectedBean.class, TestInjectionValidator.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestBean.class,
+                    TestConstraint.class, TestInjectedBean.class, TestInjectionValidator.class));
 
     @Inject
     Validator validator;

@@ -40,8 +40,7 @@ public final class ConfigMappingBuildItem extends MultiBuildItem {
             return false;
         }
         final ConfigMappingBuildItem that = (ConfigMappingBuildItem) o;
-        return configClass.equals(that.configClass) &&
-                prefix.equals(that.prefix);
+        return configClass.equals(that.configClass) && prefix.equals(that.prefix);
     }
 
     @Override

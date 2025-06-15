@@ -17,8 +17,8 @@ import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 /**
- * Quarkus specific health check factory that runs blocking and reactive
- * health checks with different executors provided by {@link MutinyHelper}.
+ * Quarkus specific health check factory that runs blocking and reactive health checks with different executors provided
+ * by {@link MutinyHelper}.
  */
 @Singleton
 public class QuarkusAsyncHealthCheckFactory extends AsyncHealthCheckFactory {

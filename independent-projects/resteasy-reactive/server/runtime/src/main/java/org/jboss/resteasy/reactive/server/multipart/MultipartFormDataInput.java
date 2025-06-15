@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * Used when a Resource method needs to read all the parts of a multipart input without apriori knowledge of the structure of
- * the requests
+ * Used when a Resource method needs to read all the parts of a multipart input without apriori knowledge of the
+ * structure of the requests
  */
 public interface MultipartFormDataInput {
 

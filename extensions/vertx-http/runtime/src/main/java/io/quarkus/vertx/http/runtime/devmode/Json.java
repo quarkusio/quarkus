@@ -52,9 +52,10 @@ public final class Json {
     }
 
     /**
-     *
      * @param ignoreEmptyBuilders
+     *
      * @return the new JSON array builder
+     *
      * @see JsonBuilder#ignoreEmptyBuilders
      */
     public static JsonArrayBuilder array(boolean ignoreEmptyBuilders) {
@@ -62,7 +63,6 @@ public final class Json {
     }
 
     /**
-     *
      * @return the new JSON object builder, empty builders are not ignored
      */
     public static JsonObjectBuilder object() {
@@ -70,9 +70,10 @@ public final class Json {
     }
 
     /**
-     *
      * @param ignoreEmptyBuilders
+     *
      * @return the new JSON object builder
+     *
      * @see JsonBuilder#ignoreEmptyBuilders
      */
     public static JsonObjectBuilder object(boolean ignoreEmptyBuilders) {
@@ -84,35 +85,32 @@ public final class Json {
         protected final boolean ignoreEmptyBuilders;
 
         /**
-         *
-         * @param ignoreEmptyBuilders If set to true all empty builders added to this builder will be ignored during
-         *        {@link #build()}
+         * @param ignoreEmptyBuilders
+         *        If set to true all empty builders added to this builder will be ignored during {@link #build()}
          */
         JsonBuilder(boolean ignoreEmptyBuilders) {
             this.ignoreEmptyBuilders = ignoreEmptyBuilders;
         }
 
         /**
-         *
          * @return <code>true</code> if there are no elements/properties, <code>false</code> otherwise
          */
         public abstract boolean isEmpty();
 
         /**
-         *
          * @return a string representation
          */
         public abstract String build();
 
         /**
-         *
          * @param value
+         *
          * @return <code>true</code> if the value is null or an empty builder and {@link #ignoreEmptyBuilders} is set to
-         *         <code>true</code>, <code>false</code>
-         *         otherwise
+         *         <code>true</code>, <code>false</code> otherwise
          */
         protected boolean isIgnored(Object value) {
-            return value == null || (ignoreEmptyBuilders && value instanceof JsonBuilder && ((JsonBuilder<?>) value).isEmpty());
+            return value == null
+                    || (ignoreEmptyBuilders && value instanceof JsonBuilder && ((JsonBuilder<?>) value).isEmpty());
         }
 
         protected boolean isValuesEmpty(Collection<Object> values) {
@@ -331,7 +329,9 @@ public final class Json {
      * Escape quotation mark, reverse solidus and control characters (U+0000 through U+001F).
      *
      * @param value
+     *
      * @return escaped value
+     *
      * @see <a href="https://www.ietf.org/rfc/rfc4627.txt">https://www.ietf.org/rfc/rfc4627.txt</a>
      */
     static String escape(String value) {

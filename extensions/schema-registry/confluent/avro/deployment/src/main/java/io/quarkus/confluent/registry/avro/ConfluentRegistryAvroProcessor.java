@@ -28,9 +28,10 @@ public class ConfluentRegistryAvroProcessor {
     @BuildStep
     FeatureBuildItem featureAndCheckDependency(CurateOutcomeBuildItem cp) {
         if (findConfluentSerde(cp.getApplicationModel().getDependencies()).isEmpty()) {
-            LOGGER.warnf("The application uses the `quarkus-confluent-registry-avro` extension, but does not " +
-                    "depend on `%s:%s`. Note that this dependency is only available from the `%s` Maven " +
-                    "repository. Check %s for more details.",
+            LOGGER.warnf(
+                    "The application uses the `quarkus-confluent-registry-avro` extension, but does not "
+                            + "depend on `%s:%s`. Note that this dependency is only available from the `%s` Maven "
+                            + "repository. Check %s for more details.",
                     CONFLUENT_GROUP_ID, CONFLUENT_ARTIFACT_ID, CONFLUENT_REPO, GUIDE_URL);
         }
 
@@ -40,9 +41,8 @@ public class ConfluentRegistryAvroProcessor {
     @BuildStep
     public void confluentRegistryAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.confluent.kafka.serializers.KafkaAvroDeserializer",
-                        "io.confluent.kafka.serializers.KafkaAvroSerializer").methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.confluent.kafka.serializers.KafkaAvroDeserializer",
+                "io.confluent.kafka.serializers.KafkaAvroSerializer").methods().build());
     }
 
     @BuildStep

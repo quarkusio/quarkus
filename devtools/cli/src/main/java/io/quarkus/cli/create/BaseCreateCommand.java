@@ -66,8 +66,7 @@ public class BaseCreateCommand implements Callable<Integer> {
     private Path projectRootPath;
 
     /**
-     * Project directory name, used with {@link #outputPath} to
-     * compute {@link #projectRootPath}.
+     * Project directory name, used with {@link #outputPath} to compute {@link #projectRootPath}.
      *
      * @see #setExtensionId(String)
      * @see #setSingleProjectGAV(TargetGAVGroup)
@@ -75,10 +74,10 @@ public class BaseCreateCommand implements Callable<Integer> {
     private String projectDirName;
 
     /**
-     * If a targetDirectory parameter was not specified, and this was,
-     * set this as output path.
+     * If a targetDirectory parameter was not specified, and this was, set this as output path.
      *
-     * @param testOutputDirectory The path to use as the output directory if the target directory was not specified, or null
+     * @param testOutputDirectory
+     *        The path to use as the output directory if the target directory was not specified, or null
      */
     public void setTestOutputDirectory(Path testOutputDirectory) {
         if (testOutputDirectory != null && targetDirectory == null) {
@@ -99,8 +98,9 @@ public class BaseCreateCommand implements Callable<Integer> {
     }
 
     /**
-     * @param targetGav Group, Artifact, and Version for the single-module project.
-     *        The artifactId is used as the directory name.
+     * @param targetGav
+     *        Group, Artifact, and Version for the single-module project. The artifactId is used as the directory
+     *        name.
      */
     public void setSingleProjectGAV(TargetGAVGroup targetGav) {
         projectDirName = targetGav.getArtifactId();
@@ -111,7 +111,8 @@ public class BaseCreateCommand implements Callable<Integer> {
     }
 
     /**
-     * @param extensionId Extension id to be used as project directory name
+     * @param extensionId
+     *        Extension id to be used as project directory name
      */
     public void setExtensionId(String extensionId) {
         projectDirName = extensionId;
@@ -120,9 +121,11 @@ public class BaseCreateCommand implements Callable<Integer> {
     /**
      * Resolve and remember the configured project directory.
      *
-     * @param dryRun If true, warn that the directory already exists; otherwise, print an error message.
-     * @return true IFF configured project root directory already exists and this is not a dry run;
-     *         in other words, return true if caller should exit with an error.
+     * @param dryRun
+     *        If true, warn that the directory already exists; otherwise, print an error message.
+     *
+     * @return true IFF configured project root directory already exists and this is not a dry run; in other words,
+     *         return true if caller should exit with an error.
      */
     public boolean checkProjectRootAlreadyExists(boolean dryRun) {
         if (projectRootPath == null) {
@@ -158,8 +161,10 @@ public class BaseCreateCommand implements Callable<Integer> {
     /**
      * Add explicitly specified and sourceType-implied extensions
      *
-     * @param extensions Explicitly specified extensions
-     * @param sourceType Type of source (Kotlin, Java, Scala)
+     * @param extensions
+     *        Explicitly specified extensions
+     * @param sourceType
+     *        Type of source (Kotlin, Java, Scala)
      */
     public void setSourceTypeExtensions(Set<String> extensions, SourceType sourceType) {
         extensions = CreateProjectHelper.sanitizeExtensions(extensions);
@@ -195,16 +200,21 @@ public class BaseCreateCommand implements Callable<Integer> {
     /**
      * Create a new single-module project.
      *
-     * @param buildTool The build tool the project should use (maven, gradle, jbang)
-     * @param targetVersion The target quarkus version
-     * @param properties Additional properties that should be used while creating the properties
-     * @param extensions requested extensions
+     * @param buildTool
+     *        The build tool the project should use (maven, gradle, jbang)
+     * @param targetVersion
+     *        The target quarkus version
+     * @param properties
+     *        Additional properties that should be used while creating the properties
+     * @param extensions
+     *        requested extensions
+     *
      * @return Quarkus command invocation that can be printed (dry-run) or run to create the project
+     *
      * @throws RegistryResolutionException
      */
     public QuarkusCommandInvocation build(BuildTool buildTool, TargetQuarkusPlatformGroup targetVersion,
-            Map<String, String> properties, Collection<String> extensions)
-            throws RegistryResolutionException {
+            Map<String, String> properties, Collection<String> extensions) throws RegistryResolutionException {
 
         CreateProjectHelper.handleSpringConfiguration(values);
         output.debug("Creating an app using the following settings: %s", values);
@@ -220,15 +230,20 @@ public class BaseCreateCommand implements Callable<Integer> {
             }
         });
 
-        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, output, extensions);
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetVersion, buildTool, output,
+                extensions);
 
         return new QuarkusCommandInvocation(qp, values);
     }
 
     /**
-     * @param buildTool The build tool the project should use (maven, gradle, jbang)
-     * @param targetVersion The target quarkus version
+     * @param buildTool
+     *        The build tool the project should use (maven, gradle, jbang)
+     * @param targetVersion
+     *        The target quarkus version
+     *
      * @return Resolved QuarkusProject for the given build tool and target quarkus version
+     *
      * @throws RegistryResolutionException
      */
     public QuarkusProject getExtensionVersions(BuildTool buildTool, TargetQuarkusPlatformGroup targetVersion)
@@ -243,22 +258,15 @@ public class BaseCreateCommand implements Callable<Integer> {
     }
 
     public String toString() {
-        return "BaseCreateCommand ["
-                + "outputPath=" + outputPath
-                + ", registryClient=" + registryClient
-                + ", projectDirName=" + projectDirName
-                + ", projectRootPath=" + projectRootPath
-                + ", targetDirectory=" + targetDirectory
-                + ", values=" + values + "]";
+        return "BaseCreateCommand [" + "outputPath=" + outputPath + ", registryClient=" + registryClient
+                + ", projectDirName=" + projectDirName + ", projectRootPath=" + projectRootPath + ", targetDirectory="
+                + targetDirectory + ", values=" + values + "]";
     }
 
     public void dryRun(BuildTool buildTool, QuarkusCommandInvocation invocation, OutputOptionMixin output) {
         CommandLine.Help help = spec.commandLine().getHelp();
-        output.printText(new String[] {
-                "\nA new project would have been created in",
-                "\t" + projectRoot().toString(),
-                "\nThe project would have been created using the following settings:\n"
-        });
+        output.printText(new String[] { "\nA new project would have been created in", "\t" + projectRoot().toString(),
+                "\nThe project would have been created using the following settings:\n" });
         Map<String, String> dryRunOutput = new TreeMap<>();
         for (Map.Entry<String, Object> entry : values.entrySet()) {
             dryRunOutput.put(prettyName(entry.getKey()), entry.getValue().toString());
@@ -280,8 +288,7 @@ public class BaseCreateCommand implements Callable<Integer> {
             final char c = builder.charAt(i);
             if (c == '-' || c == '.') {
                 builder.replace(i, i + 1, " ");
-                builder.replace(i + 1, i + 2,
-                        String.valueOf(Character.toUpperCase(builder.charAt(i + 1))));
+                builder.replace(i + 1, i + 2, String.valueOf(Character.toUpperCase(builder.charAt(i + 1))));
             }
         }
         return builder.toString();

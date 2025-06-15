@@ -65,6 +65,7 @@ public class RolesEndpoint {
      * Validate that the SecurityContext#getUserPrincipal is a JsonWebToken
      *
      * @param sec
+     *
      * @return
      */
     @GET

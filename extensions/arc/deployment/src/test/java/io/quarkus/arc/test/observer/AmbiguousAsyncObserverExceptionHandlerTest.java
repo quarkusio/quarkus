@@ -18,9 +18,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AmbiguousAsyncObserverExceptionHandlerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(MyFirstAsyncObserverExceptionHandler.class, MySecondAsyncObserverExceptionHandler.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(MyFirstAsyncObserverExceptionHandler.class, MySecondAsyncObserverExceptionHandler.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertTrue(rootCause instanceof AmbiguousResolutionException);

@@ -21,12 +21,8 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
     @Override
     default <R> SpanOperation receiveRequest(
             // The Vert.x context passed to use is already duplicated.
-            final Context context,
-            final SpanKind kind,
-            final TracingPolicy policy,
-            final R request,
-            final String operation,
-            final Iterable<Map.Entry<String, String>> headers,
+            final Context context, final SpanKind kind, final TracingPolicy policy, final R request,
+            final String operation, final Iterable<Map.Entry<String, String>> headers,
             final TagExtractor<R> tagExtractor) {
 
         if (TracingPolicy.IGNORE == policy) {
@@ -51,10 +47,7 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
     @Override
     default <R> void sendResponse(
             // The Vert.x context passed to use is already duplicated.
-            final Context context,
-            final R response,
-            final SpanOperation spanOperation,
-            final Throwable failure,
+            final Context context, final R response, final SpanOperation spanOperation, final Throwable failure,
             final TagExtractor<R> tagExtractor) {
 
         if (spanOperation == null) {
@@ -76,13 +69,8 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
     @Override
     default <R> SpanOperation sendRequest(
             // This context is not duplicated, so we need to do it.
-            final Context context,
-            final SpanKind kind,
-            final TracingPolicy policy,
-            final R request,
-            final String operation,
-            final BiConsumer<String, String> headers,
-            final TagExtractor<R> tagExtractor) {
+            final Context context, final SpanKind kind, final TracingPolicy policy, final R request,
+            final String operation, final BiConsumer<String, String> headers, final TagExtractor<R> tagExtractor) {
 
         if (TracingPolicy.IGNORE == policy) {
             return null;
@@ -112,12 +100,11 @@ public interface InstrumenterVertxTracer<REQ, RESP> extends VertxTracer<SpanOper
 
     @Override
     default <R> void receiveResponse(
-            // This context is not duplicated, so we need to do it, but we can't duplicate it again because it was already done in
-            // io.quarkus.opentelemetry.runtime.tracing.vertx.OpenTelemetryVertxTracer.sendRequest, but we don't use it so it should be ok.
-            final Context context,
-            final R response,
-            final SpanOperation spanOperation,
-            final Throwable failure,
+            // This context is not duplicated, so we need to do it, but we can't duplicate it again because it was
+            // already done in
+            // io.quarkus.opentelemetry.runtime.tracing.vertx.OpenTelemetryVertxTracer.sendRequest, but we don't use it
+            // so it should be ok.
+            final Context context, final R response, final SpanOperation spanOperation, final Throwable failure,
             final TagExtractor<R> tagExtractor) {
 
         if (spanOperation == null) {

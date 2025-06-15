@@ -22,7 +22,6 @@ public class EnversEmbeddableSetOrdinalFieldNameTestCase {
 
     @Test
     public void testDoNotAuditOptimisticLockingFieldAsNonDefault() {
-        RestAssured.when().get("/envers-embeddable-set-ordinal-field-name").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-embeddable-set-ordinal-field-name").then().body(is("OK"));
     }
 }

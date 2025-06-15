@@ -15,13 +15,13 @@ public class ORMReactiveCompatbilityDefaultOnlyBlockingUnitTest extends Compatib
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClasses(Hero.class)
-                    .addAsResource("complexMultilineImports.sql", "import.sql"))
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this triggers Agroal
-            ))
-            .withConfigurationResource("application-unittest-onlyblocking.properties")
+            .withApplicationRoot(
+                    jar -> jar.addClasses(Hero.class).addAsResource("complexMultilineImports.sql", "import.sql"))
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion()) // this
+                                                                                                                                                                                                                                                                                                                        // triggers
+                                                                                                                                                                                                                                                                                                                        // Agroal
+                    )).withConfigurationResource("application-unittest-onlyblocking.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.reactive", "false")
             .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)

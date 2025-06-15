@@ -16,12 +16,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AdditionalContentTypeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("Empty txt"), "templates/foo.txt")
-                    .addAsResource(new StringAsset("Empty graphql"), "templates/foo.graphql")
-                    .addAsResource(new StringAsset("quarkus.qute.content-types.graphql=application/graphql\n"
-                            + "quarkus.qute.suffixes=txt,graphql"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("Empty txt"), "templates/foo.txt")
+            .addAsResource(new StringAsset("Empty graphql"), "templates/foo.graphql")
+            .addAsResource(new StringAsset(
+                    "quarkus.qute.content-types.graphql=application/graphql\n" + "quarkus.qute.suffixes=txt,graphql"),
+                    "application.properties"));
 
     @Inject
     Template foo;
@@ -33,8 +33,7 @@ public class AdditionalContentTypeTest {
         assertEquals("Empty txt",
                 foo.instance().setAttribute(SELECTED_VARIANT, Variant.forContentType("text/plain")).render());
         // foo.txt is used by default because it's first in the quarkus.qute.suffixes list
-        assertEquals("Empty txt",
-                foo.instance().render());
+        assertEquals("Empty txt", foo.instance().render());
     }
 
 }

@@ -91,13 +91,15 @@ public class RestClientCDIDelegateBuilder<T> {
         if (restClientConfig.logging().isPresent()) {
             RestClientsConfig.RestClientLoggingConfig loggingConfig = restClientConfig.logging().get();
             builder.property(QuarkusRestClientProperties.LOGGING_SCOPE,
-                    loggingConfig.scope().isPresent() ? LoggingScope.forName(loggingConfig.scope().get()) : LoggingScope.NONE);
+                    loggingConfig.scope().isPresent() ? LoggingScope.forName(loggingConfig.scope().get())
+                            : LoggingScope.NONE);
             builder.property(QuarkusRestClientProperties.LOGGING_BODY_LIMIT, loggingConfig.bodyLimit());
         }
     }
 
     private void configureCustomProperties(QuarkusRestClientBuilder builder) {
-        Optional<String> encoder = oneOf(restClientConfig.multipartPostEncoderMode(), configRoot.multipartPostEncoderMode());
+        Optional<String> encoder = oneOf(restClientConfig.multipartPostEncoderMode(),
+                configRoot.multipartPostEncoderMode());
         if (encoder != null && encoder.isPresent()) {
             PausableHttpPostRequestEncoder.EncoderMode mode = PausableHttpPostRequestEncoder.EncoderMode
                     .valueOf(encoder.get().toUpperCase(Locale.ROOT));
@@ -137,8 +139,7 @@ public class RestClientCDIDelegateBuilder<T> {
             builder.userAgent(userAgent.get());
         }
 
-        Optional<Integer> maxChunkSize = oneOf(
-                restClientConfig.maxChunkSize().map(intChunkSize()),
+        Optional<Integer> maxChunkSize = oneOf(restClientConfig.maxChunkSize().map(intChunkSize()),
                 restClientConfig.multipart().maxChunkSize().isPresent()
                         ? Optional.of(restClientConfig.multipart().maxChunkSize().getAsInt())
                         : Optional.empty(),
@@ -148,7 +149,8 @@ public class RestClientCDIDelegateBuilder<T> {
                         : Optional.empty());
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
-        Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableCompression(), configRoot.enableCompression());
+        Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableCompression(),
+                configRoot.enableCompression());
         if (enableCompressions.isPresent()) {
             builder.enableCompression(enableCompressions.get());
         }
@@ -205,7 +207,8 @@ public class RestClientCDIDelegateBuilder<T> {
             builder.property(QuarkusRestClientProperties.MAX_REDIRECTS, maxRedirects.getAsInt());
         }
 
-        Optional<Boolean> maybeFollowRedirects = oneOf(restClientConfig.followRedirects(), configRoot.followRedirects());
+        Optional<Boolean> maybeFollowRedirects = oneOf(restClientConfig.followRedirects(),
+                configRoot.followRedirects());
         if (maybeFollowRedirects.isPresent()) {
             builder.followRedirects(maybeFollowRedirects.get());
         }
@@ -258,7 +261,8 @@ public class RestClientCDIDelegateBuilder<T> {
             registerKeyStore(maybeKeyStore.get(), builder);
         }
 
-        Optional<String> maybeHostnameVerifier = oneOf(restClientConfig.hostnameVerifier(), configRoot.hostnameVerifier());
+        Optional<String> maybeHostnameVerifier = oneOf(restClientConfig.hostnameVerifier(),
+                configRoot.hostnameVerifier());
         if (maybeHostnameVerifier.isPresent()) {
             registerHostnameVerifier(maybeHostnameVerifier.get(), builder);
         }
@@ -276,13 +280,11 @@ public class RestClientCDIDelegateBuilder<T> {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not find hostname verifier class " + verifier, e);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(
-                    "Failed to instantiate hostname verifier class " + verifier
-                            + ". Make sure it has a public, no-argument constructor",
-                    e);
+            throw new RuntimeException("Failed to instantiate hostname verifier class " + verifier
+                    + ". Make sure it has a public, no-argument constructor", e);
         } catch (ClassCastException e) {
-            throw new RuntimeException("The provided hostname verifier " + verifier + " is not an instance of HostnameVerifier",
-                    e);
+            throw new RuntimeException(
+                    "The provided hostname verifier " + verifier + " is not an instance of HostnameVerifier", e);
         }
     }
 
@@ -300,8 +302,8 @@ public class RestClientCDIDelegateBuilder<T> {
             try (InputStream input = locateStream(keyStorePath)) {
                 keyStore.load(input, password.toCharArray());
             } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
-                throw new IllegalArgumentException("Failed to initialize trust store from classpath resource " + keyStorePath,
-                        e);
+                throw new IllegalArgumentException(
+                        "Failed to initialize trust store from classpath resource " + keyStorePath, e);
             }
 
             builder.keyStore(keyStore, password);
@@ -325,8 +327,8 @@ public class RestClientCDIDelegateBuilder<T> {
             try (InputStream input = locateStream(trustStorePath)) {
                 trustStore.load(input, password.toCharArray());
             } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
-                throw new IllegalArgumentException("Failed to initialize trust store from classpath resource " + trustStorePath,
-                        e);
+                throw new IllegalArgumentException(
+                        "Failed to initialize trust store from classpath resource " + trustStorePath, e);
             }
 
             builder.trustStore(trustStore, password);
@@ -395,16 +397,12 @@ public class RestClientCDIDelegateBuilder<T> {
 
     private void configureBaseUrl(QuarkusRestClientBuilder builder) {
         Optional<String> propertyOptional = oneOf(restClientConfig.uriReload(), restClientConfig.urlReload());
-        if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
-                && propertyOptional.isEmpty()) {
+        if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty()) && propertyOptional.isEmpty()) {
             String propertyPrefix = configKey != null ? configKey : "\"" + jaxrsInterface.getName() + "\"";
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Unable to determine the proper baseUrl/baseUri. " +
-                                    "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
-                                    +
-                                    "or by adding '%s' or '%s' to your Quarkus configuration",
-                            String.format(REST_URL_FORMAT, propertyPrefix), String.format(REST_URI_FORMAT, propertyPrefix)));
+            throw new IllegalArgumentException(String.format("Unable to determine the proper baseUrl/baseUri. "
+                    + "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
+                    + "or by adding '%s' or '%s' to your Quarkus configuration",
+                    String.format(REST_URL_FORMAT, propertyPrefix), String.format(REST_URI_FORMAT, propertyPrefix)));
         }
         String baseUrl = propertyOptional.orElse(baseUriFromAnnotation);
 

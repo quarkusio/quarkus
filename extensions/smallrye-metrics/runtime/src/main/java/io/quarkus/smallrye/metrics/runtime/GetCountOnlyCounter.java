@@ -3,8 +3,8 @@ package io.quarkus.smallrye.metrics.runtime;
 import org.eclipse.microprofile.metrics.Counter;
 
 /**
- * A helper abstract class for implementing counters which only need a getCount method.
- * Other methods throw an exception.
+ * A helper abstract class for implementing counters which only need a getCount method. Other methods throw an
+ * exception.
  */
 public abstract class GetCountOnlyCounter implements Counter {
 

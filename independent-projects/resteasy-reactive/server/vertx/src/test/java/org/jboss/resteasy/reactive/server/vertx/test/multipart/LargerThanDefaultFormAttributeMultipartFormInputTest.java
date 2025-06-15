@@ -31,13 +31,11 @@ import io.vertx.core.http.HttpServerOptions;
 public class LargerThanDefaultFormAttributeMultipartFormInputTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setMaxFormAttributeSize(120000)
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setMaxFormAttributeSize(120000)
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, Data.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, Data.class);
                 }
             });
 
@@ -53,15 +51,8 @@ public class LargerThanDefaultFormAttributeMultipartFormInputTest {
         fileContents = sb.toString();
 
         Assertions.assertTrue(fileContents.length() > HttpServerOptions.DEFAULT_MAX_FORM_ATTRIBUTE_SIZE);
-        given()
-                .multiPart("text", fileContents)
-                .accept("text/plain")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.TEXT)
-                .body(equalTo(fileContents));
+        given().multiPart("text", fileContents).accept("text/plain").when().post("/test").then().statusCode(200)
+                .contentType(ContentType.TEXT).body(equalTo(fileContents));
     }
 
     @Path("/test")

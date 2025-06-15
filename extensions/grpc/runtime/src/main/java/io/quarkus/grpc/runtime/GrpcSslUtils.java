@@ -30,8 +30,7 @@ public class GrpcSslUtils {
      *
      * @return whether plain text is used.
      */
-    static boolean applySslOptions(GrpcServerConfiguration config, HttpServerOptions options)
-            throws IOException {
+    static boolean applySslOptions(GrpcServerConfiguration config, HttpServerOptions options) throws IOException {
         // Disable plain-text if the ssl configuration is set.
         if (config.plainText() && (config.ssl().certificate().isPresent() || config.ssl().keyStore().isPresent())) {
             LOGGER.info("Disabling gRPC plain-text as the SSL certificate is configured");
@@ -70,8 +69,7 @@ public class GrpcSslUtils {
             byte[] data = getFileContent(keyStorePath);
             switch (type) {
                 case "pkcs12": {
-                    PfxOptions o = new PfxOptions()
-                            .setValue(Buffer.buffer(data));
+                    PfxOptions o = new PfxOptions().setValue(Buffer.buffer(data));
                     if (sslConfig.keyStorePassword().isPresent()) {
                         o.setPassword(sslConfig.keyStorePassword().get());
                     }
@@ -85,8 +83,7 @@ public class GrpcSslUtils {
                     break;
                 }
                 case "jks": {
-                    JksOptions o = new JksOptions()
-                            .setValue(Buffer.buffer(data));
+                    JksOptions o = new JksOptions().setValue(Buffer.buffer(data));
                     if (sslConfig.keyStorePassword().isPresent()) {
                         o.setPassword(sslConfig.keyStorePassword().get());
                     }
@@ -145,12 +142,11 @@ public class GrpcSslUtils {
         return data;
     }
 
-    private static void createPemKeyCertOptions(Path certFile, Path keyFile,
-            HttpServerOptions serverOptions) throws IOException {
+    private static void createPemKeyCertOptions(Path certFile, Path keyFile, HttpServerOptions serverOptions)
+            throws IOException {
         final byte[] cert = getFileContent(certFile);
         final byte[] key = getFileContent(keyFile);
-        PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions()
-                .setCertValue(Buffer.buffer(cert))
+        PemKeyCertOptions pemKeyCertOptions = new PemKeyCertOptions().setCertValue(Buffer.buffer(cert))
                 .setKeyValue(Buffer.buffer(key));
         serverOptions.setPemKeyCertOptions(pemKeyCertOptions);
     }
@@ -160,16 +156,12 @@ public class GrpcSslUtils {
         byte[] data = getFileContent(trustStoreFile);
         switch (trustStoreFileType) {
             case "pkcs12": {
-                PfxOptions options = new PfxOptions()
-                        .setPassword(trustStorePassword)
-                        .setValue(Buffer.buffer(data));
+                PfxOptions options = new PfxOptions().setPassword(trustStorePassword).setValue(Buffer.buffer(data));
                 serverOptions.setPfxTrustOptions(options);
                 break;
             }
             case "jks": {
-                JksOptions options = new JksOptions()
-                        .setPassword(trustStorePassword)
-                        .setValue(Buffer.buffer(data));
+                JksOptions options = new JksOptions().setPassword(trustStorePassword).setValue(Buffer.buffer(data));
                 serverOptions.setTrustStoreOptions(options);
                 break;
             }

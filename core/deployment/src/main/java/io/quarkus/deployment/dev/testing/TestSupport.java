@@ -112,13 +112,12 @@ public class TestSupport implements TestController {
     /**
      * returns the current status of the test runner.
      * <p>
-     * This is expressed in terms of test run ids, where -1 signifies
-     * no result.
+     * This is expressed in terms of test run ids, where -1 signifies no result.
      */
     public RunStatus getStatus() {
         long last = -1;
-        //get the running test id before the current status
-        //otherwise there is a race where they both could be -1 even though it has started
+        // get the running test id before the current status
+        // otherwise there is a race where they both could be -1 even though it has started
         long runningTestRunId = getRunningTestRunId();
         TestRunResults tr = testRunResults;
         if (tr != null) {
@@ -156,8 +155,8 @@ public class TestSupport implements TestController {
 
     public void init() {
         if (moduleRunners.isEmpty()) {
-            TestWatchedFiles.setWatchedFilesListener(
-                    (paths, predicates) -> RuntimeUpdatesProcessor.INSTANCE.setWatchedFilePaths(paths, predicates, true));
+            TestWatchedFiles.setWatchedFilesListener((paths, predicates) -> RuntimeUpdatesProcessor.INSTANCE
+                    .setWatchedFilePaths(paths, predicates, true));
             final Pattern includeModulePattern = getCompiledPatternOrNull(config.includeModulePattern());
             final Pattern excludeModulePattern = getCompiledPatternOrNull(config.excludeModulePattern());
             for (var module : context.getAllModules()) {
@@ -165,14 +164,14 @@ public class TestSupport implements TestController {
                 if (config.onlyTestApplicationModule() && !mainModule) {
                     continue;
                 } else if (includeModulePattern != null) {
-                    if (!includeModulePattern
-                            .matcher(module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
+                    if (!includeModulePattern.matcher(
+                            module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
                             .matches()) {
                         continue;
                     }
                 } else if (excludeModulePattern != null) {
-                    if (excludeModulePattern
-                            .matcher(module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
+                    if (excludeModulePattern.matcher(
+                            module.getArtifactKey().getGroupId() + ":" + module.getArtifactKey().getArtifactId())
                             .matches()) {
                         continue;
                     }
@@ -180,18 +179,13 @@ public class TestSupport implements TestController {
 
                 try {
                     final Path projectDir = Path.of(module.getProjectDirectory());
-                    final QuarkusBootstrap.Builder bootstrapConfig = curatedApplication.getQuarkusBootstrap().clonedBuilder()
-                            .setMode(QuarkusBootstrap.Mode.TEST)
-                            .setAssertionsEnabled(true)
-                            .setDisableClasspathCache(false)
-                            .setIsolateDeployment(true)
-                            .setExistingModel(null)
-                            .setBaseClassLoader(getClass().getClassLoader().getParent())
-                            .setTest(true)
+                    final QuarkusBootstrap.Builder bootstrapConfig = curatedApplication.getQuarkusBootstrap()
+                            .clonedBuilder().setMode(QuarkusBootstrap.Mode.TEST).setAssertionsEnabled(true)
+                            .setDisableClasspathCache(false).setIsolateDeployment(true).setExistingModel(null)
+                            .setBaseClassLoader(getClass().getClassLoader().getParent()).setTest(true)
                             .setAuxiliaryApplication(true)
                             .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
-                            .setProjectRoot(projectDir)
-                            .setApplicationRoot(getRootPaths(module, mainModule))
+                            .setProjectRoot(projectDir).setApplicationRoot(getRootPaths(module, mainModule))
                             .clearLocalArtifacts();
 
                     final QuarkusClassLoader ctParentFirstCl;
@@ -213,15 +207,17 @@ public class TestSupport implements TestController {
                         final ApplicationModel testModel = appModelFactory.resolveAppModel().getApplicationModel();
                         bootstrapConfig.setExistingModel(testModel);
 
-                        // TODO I don't think we should have both this and AppMakerHelper, doing apparently the same thing?
+                        // TODO I don't think we should have both this and AppMakerHelper, doing apparently the same
+                        // thing?
 
                         QuarkusClassLoader.Builder clBuilder = null;
                         var currentParentFirst = curatedApplication.getApplicationModel().getParentFirst();
                         for (ResolvedDependency d : testModel.getDependencies()) {
                             if (d.isClassLoaderParentFirst() && !currentParentFirst.contains(d.getKey())) {
                                 if (clBuilder == null) {
-                                    clBuilder = QuarkusClassLoader.builder("Continuous Testing Parent-First"
-                                            + curatedApplication.getClassLoaderNameSuffix(),
+                                    clBuilder = QuarkusClassLoader.builder(
+                                            "Continuous Testing Parent-First"
+                                                    + curatedApplication.getClassLoaderNameSuffix(),
                                             getClass().getClassLoader().getParent(), false);
                                 }
                                 clBuilder.addNormalPriorityElement(ClassPathElement.fromDependency(d));
@@ -240,9 +236,9 @@ public class TestSupport implements TestController {
                         }
                     }
 
-                    //we always want to propagate parent first
-                    //so it is consistent. Some modules may not have quarkus dependencies
-                    //so they won't load junit parent first without this
+                    // we always want to propagate parent first
+                    // so it is consistent. Some modules may not have quarkus dependencies
+                    // so they won't load junit parent first without this
                     for (var i : curatedApplication.getApplicationModel().getDependencies()) {
                         if (i.isClassLoaderParentFirst()) {
                             bootstrapConfig.addParentFirstArtifact(i.getKey());
@@ -250,12 +246,12 @@ public class TestSupport implements TestController {
                     }
                     var testCuratedApplication = bootstrapConfig.build().bootstrap();
                     if (mainModule) {
-                        //horrible hack
-                        //we really need a compiler per module but we are not setup for this yet
-                        //if a module has test scoped dependencies that are not in the application then
-                        //compilation can fail
-                        //note that we already have a similar issue with provided scoped deps, and so far nobody
-                        //has complained much
+                        // horrible hack
+                        // we really need a compiler per module but we are not setup for this yet
+                        // if a module has test scoped dependencies that are not in the application then
+                        // compilation can fail
+                        // note that we already have a similar issue with provided scoped deps, and so far nobody
+                        // has complained much
                         compiler = new QuarkusCompiler(testCuratedApplication, compilationProviders, context);
                     }
                     var testRunner = new ModuleTestRunner(this, testCuratedApplication, module);
@@ -344,9 +340,12 @@ public class TestSupport implements TestController {
     }
 
     /**
-     * @param classScanResult The changed classes
-     * @param reRunFailures If failures should be re-run
-     * @param runningQueued If this is running queued up changes, so we expect 'testsRunning' to be true
+     * @param classScanResult
+     *        The changed classes
+     * @param reRunFailures
+     *        If failures should be re-run
+     * @param runningQueued
+     *        If this is running queued up changes, so we expect 'testsRunning' to be true
      */
     private void runTests(ClassScanResult classScanResult, boolean reRunFailures, boolean runningQueued) {
         if (compileProblem != null) {
@@ -369,7 +368,7 @@ public class TestSupport implements TestController {
                     return;
                 }
                 if (testsQueued) {
-                    if (queuedChanges != null) { //if this is null a full run is scheduled
+                    if (queuedChanges != null) { // if this is null a full run is scheduled
                         this.queuedChanges = ClassScanResult.merge(this.queuedChanges, classScanResult);
                     }
                 } else {
@@ -496,7 +495,7 @@ public class TestSupport implements TestController {
         }
         listener.listenerRegistered(this);
         if (run) {
-            //run outside lock
+            // run outside lock
             listener.testsEnabled();
         }
     }
@@ -504,12 +503,12 @@ public class TestSupport implements TestController {
     /**
      * HUGE HACK
      * <p>
-     * config is driven from the outer dev mode startup, if the user modified test
-     * related config in application.properties it will cause a re-test, but the
-     * values will not be applied until a dev mode restart happens.
+     * config is driven from the outer dev mode startup, if the user modified test related config in
+     * application.properties it will cause a re-test, but the values will not be applied until a dev mode restart
+     * happens.
      * <p>
-     * We also can't apply this as part of the test startup, as it is too
-     * late and the filters have already been resolved.
+     * We also can't apply this as part of the test startup, as it is too late and the filters have already been
+     * resolved.
      * <p>
      * We manually check for configuration changes and apply them.
      */
@@ -518,10 +517,14 @@ public class TestSupport implements TestController {
 
         List<String> includeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-tags").orElse(null);
         List<String> excludeTags = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-tags").orElse(null);
-        String includePattern = updatedConfig.getOptionalValue("quarkus.test.include-pattern", String.class).orElse(null);
-        String excludePattern = updatedConfig.getOptionalValue("quarkus.test.exclude-pattern", String.class).orElse(null);
-        List<String> includeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-engines").orElse(null);
-        List<String> excludeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-engines").orElse(null);
+        String includePattern = updatedConfig.getOptionalValue("quarkus.test.include-pattern", String.class)
+                .orElse(null);
+        String excludePattern = updatedConfig.getOptionalValue("quarkus.test.exclude-pattern", String.class)
+                .orElse(null);
+        List<String> includeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.include-engines")
+                .orElse(null);
+        List<String> excludeEngines = getTrimmedListFromConfig(updatedConfig, "quarkus.test.exclude-engines")
+                .orElse(null);
         TestType testType = updatedConfig.getOptionalValue("quarkus.test.type", TestType.class).orElse(TestType.ALL);
 
         if (!firstRun) {
@@ -571,8 +574,7 @@ public class TestSupport implements TestController {
 
     private Optional<List<String>> getTrimmedListFromConfig(SmallRyeConfig updatedConfig, String property) {
         return updatedConfig.getOptionalValue(property, String.class)
-                .map(t -> Arrays.stream(t.split(",")).map(String::trim)
-                        .collect(Collectors.toList()));
+                .map(t -> Arrays.stream(t.split(",")).map(String::trim).collect(Collectors.toList()));
     }
 
     public boolean isStarted() {
@@ -712,11 +714,8 @@ public class TestSupport implements TestController {
         }
         for (TestClassResult i : currentState().getFailingClasses()) {
             for (TestResult failed : i.getFailing()) {
-                log.error(
-                        "Test " + failed.getDisplayName() + " failed "
-                                + failed.getTestExecutionResult().getStatus()
-                                + "\n",
-                        failed.getTestExecutionResult().getThrowable().get());
+                log.error("Test " + failed.getDisplayName() + " failed " + failed.getTestExecutionResult().getStatus()
+                        + "\n", failed.getTestExecutionResult().getThrowable().get());
             }
         }
     }

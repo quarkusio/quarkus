@@ -25,10 +25,7 @@ final class RuntimeBytecodeProvider implements BytecodeProvider {
     }
 
     @Override
-    public ReflectionOptimizer getReflectionOptimizer(
-            Class clazz,
-            String[] getterNames,
-            String[] setterNames,
+    public ReflectionOptimizer getReflectionOptimizer(Class clazz, String[] getterNames, String[] setterNames,
             Class[] types) {
         return null;
     }

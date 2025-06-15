@@ -16,9 +16,8 @@ import io.restassured.response.Response;
 public class SessionContextTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    (jar) -> jar.addClasses(TestServlet.class, Foo.class, ObservingBean.class, SessionScopedObserver.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(TestServlet.class, Foo.class, ObservingBean.class, SessionScopedObserver.class));
 
     @Test
     public void testServlet() {

@@ -19,9 +19,9 @@ public class RemoveOptionalFromSecretEnvSourceDecorator extends ApplicationConta
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { AddEnvVarDecorator.class,
-                AddSecretVolumeDecorator.class, AddSecretVolumeToRevisionDecorator.class,
-                AddConfigMapVolumeToRevisionDecorator.class, AddConfigMapVolumeDecorator.class };
+        return new Class[] { AddEnvVarDecorator.class, AddSecretVolumeDecorator.class,
+                AddSecretVolumeToRevisionDecorator.class, AddConfigMapVolumeToRevisionDecorator.class,
+                AddConfigMapVolumeDecorator.class };
     }
 
 }

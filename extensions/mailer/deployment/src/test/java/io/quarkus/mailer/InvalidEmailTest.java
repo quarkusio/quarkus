@@ -18,8 +18,7 @@ public class InvalidEmailTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Sender.class));
+            .withApplicationRoot(root -> root.addClasses(Sender.class));
 
     @Inject
     MockMailbox mockMailbox;
@@ -70,12 +69,7 @@ public class InvalidEmailTest {
         ReactiveMailer mailer;
 
         Uni<Void> send(List<String> to, List<String> cc, List<String> bcc) {
-            Mail mail = new Mail()
-                    .setTo(to)
-                    .setCc(cc)
-                    .setBcc(bcc)
-                    .setSubject("Test")
-                    .setText("Hello!");
+            Mail mail = new Mail().setTo(to).setCc(cc).setBcc(bcc).setSubject("Test").setText("Hello!");
             return mailer.send(mail);
         }
     }

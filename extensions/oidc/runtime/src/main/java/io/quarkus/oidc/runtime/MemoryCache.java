@@ -18,8 +18,7 @@ public class MemoryCache<T> {
     private final Duration cacheTimeToLive;
     private final int cacheSize;
 
-    public MemoryCache(Vertx vertx, Optional<Duration> cleanUpTimerInterval,
-            Duration cacheTimeToLive, int cacheSize) {
+    public MemoryCache(Vertx vertx, Optional<Duration> cleanUpTimerInterval, Duration cacheTimeToLive, int cacheSize) {
         this.cacheTimeToLive = cacheTimeToLive;
         this.cacheSize = cacheSize;
         init(vertx, cleanUpTimerInterval);

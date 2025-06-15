@@ -47,8 +47,8 @@ public class BeanParamParser {
     private static List<Item> parseInternal(ClassInfo beanParamClass, IndexView index,
             Set<ClassInfo> processedBeanParamClasses) {
         if (!processedBeanParamClasses.add(beanParamClass)) {
-            throw new IllegalArgumentException("Cycle detected in BeanParam annotations; already processed class "
-                    + beanParamClass.name());
+            throw new IllegalArgumentException(
+                    "Cycle detected in BeanParam annotations; already processed class " + beanParamClass.name());
         }
 
         try {
@@ -56,48 +56,50 @@ public class BeanParamParser {
 
             // Parse class tree recursively
             if (!JandexUtil.DOTNAME_OBJECT.equals(beanParamClass.superName())) {
-                resultList
-                        .addAll(parseInternal(index.getClassByName(beanParamClass.superName()), index,
-                                processedBeanParamClasses));
+                resultList.addAll(parseInternal(index.getClassByName(beanParamClass.superName()), index,
+                        processedBeanParamClasses));
             }
 
-            resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, QUERY_PARAM,
-                    (annotationValue, fieldInfo) -> new QueryParamItem(fieldInfo.name(), annotationValue,
-                            fieldInfo.hasDeclaredAnnotation(ENCODED),
-                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
-                            fieldInfo.type()),
-                    (annotationValue, getterMethod) -> new QueryParamItem(getterMethod.name(), annotationValue,
-                            getterMethod.hasDeclaredAnnotation(ENCODED),
-                            new GetterExtractor(getterMethod),
-                            getterMethod.returnType())));
+            resultList
+                    .addAll(paramItemsForFieldsAndMethods(beanParamClass, QUERY_PARAM,
+                            (annotationValue, fieldInfo) -> new QueryParamItem(fieldInfo.name(), annotationValue,
+                                    fieldInfo.hasDeclaredAnnotation(ENCODED),
+                                    new FieldExtractor(null, fieldInfo.name(),
+                                            fieldInfo.declaringClass().name().toString()),
+                                    fieldInfo.type()),
+                            (annotationValue, getterMethod) -> new QueryParamItem(getterMethod.name(), annotationValue,
+                                    getterMethod.hasDeclaredAnnotation(ENCODED), new GetterExtractor(getterMethod),
+                                    getterMethod.returnType())));
 
-            resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_QUERY_PARAM,
-                    (annotationValue, fieldInfo) -> new QueryParamItem(fieldInfo.name(),
-                            annotationValue != null ? annotationValue : fieldInfo.name(),
-                            fieldInfo.hasDeclaredAnnotation(ENCODED),
-                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
-                            fieldInfo.type()),
-                    (annotationValue, getterMethod) -> new QueryParamItem(getterMethod.name(),
-                            annotationValue != null ? annotationValue : getterName(getterMethod),
-                            getterMethod.hasDeclaredAnnotation(ENCODED),
-                            new GetterExtractor(getterMethod),
-                            getterMethod.returnType())));
+            resultList
+                    .addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_QUERY_PARAM,
+                            (annotationValue, fieldInfo) -> new QueryParamItem(fieldInfo.name(),
+                                    annotationValue != null ? annotationValue : fieldInfo.name(),
+                                    fieldInfo.hasDeclaredAnnotation(ENCODED),
+                                    new FieldExtractor(null, fieldInfo.name(),
+                                            fieldInfo.declaringClass().name().toString()),
+                                    fieldInfo.type()),
+                            (annotationValue, getterMethod) -> new QueryParamItem(getterMethod.name(),
+                                    annotationValue != null ? annotationValue : getterName(getterMethod),
+                                    getterMethod.hasDeclaredAnnotation(ENCODED), new GetterExtractor(getterMethod),
+                                    getterMethod.returnType())));
 
-            resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, BEAN_PARAM,
-                    (annotationValue, fieldInfo) -> {
+            resultList
+                    .addAll(paramItemsForFieldsAndMethods(beanParamClass, BEAN_PARAM, (annotationValue, fieldInfo) -> {
                         Type type = fieldInfo.type();
                         if (type.kind() == Type.Kind.CLASS) {
                             DotName beanParamClassName = type.asClassType().name();
-                            List<Item> subBeanParamItems = parseInternal(index.getClassByName(beanParamClassName), index,
-                                    processedBeanParamClasses);
+                            List<Item> subBeanParamItems = parseInternal(index.getClassByName(beanParamClassName),
+                                    index, processedBeanParamClasses);
                             return new BeanParamItem(fieldInfo.name(), subBeanParamItems, beanParamClassName.toString(),
-                                    new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()));
+                                    new FieldExtractor(null, fieldInfo.name(),
+                                            fieldInfo.declaringClass().name().toString()));
                         } else {
-                            throw new IllegalArgumentException("BeanParam annotation used on a field that is not an object: "
-                                    + beanParamClass.name() + "." + fieldInfo.name());
+                            throw new IllegalArgumentException(
+                                    "BeanParam annotation used on a field that is not an object: "
+                                            + beanParamClass.name() + "." + fieldInfo.name());
                         }
-                    },
-                    (annotationValue, getterMethod) -> {
+                    }, (annotationValue, getterMethod) -> {
                         Type returnType = getterMethod.returnType();
                         List<Item> items = parseInternal(index.getClassByName(returnType.name()), index,
                                 processedBeanParamClasses);
@@ -107,8 +109,7 @@ public class BeanParamParser {
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, COOKIE_PARAM,
                     (annotationValue, fieldInfo) -> new CookieParamItem(fieldInfo.name(), annotationValue,
-                            new FieldExtractor(null, fieldInfo.name(),
-                                    fieldInfo.declaringClass().name().toString()),
+                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type().name().toString()),
                     (annotationValue, getterMethod) -> new CookieParamItem(getterMethod.name(), annotationValue,
                             new GetterExtractor(getterMethod), getterMethod.returnType().name().toString())));
@@ -116,8 +117,7 @@ public class BeanParamParser {
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_COOKIE_PARAM,
                     (annotationValue, fieldInfo) -> new CookieParamItem(fieldInfo.name(),
                             annotationValue != null ? annotationValue : fieldInfo.name(),
-                            new FieldExtractor(null, fieldInfo.name(),
-                                    fieldInfo.declaringClass().name().toString()),
+                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type().name().toString()),
                     (annotationValue, getterMethod) -> new CookieParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue : getterName(getterMethod),
@@ -152,8 +152,8 @@ public class BeanParamParser {
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_PATH_PARAM,
                     (annotationValue, fieldInfo) -> new PathParamItem(fieldInfo.name(),
-                            annotationValue != null ? annotationValue : fieldInfo.name(), fieldInfo.type().name().toString(),
-                            fieldInfo.hasDeclaredAnnotation(ENCODED),
+                            annotationValue != null ? annotationValue : fieldInfo.name(),
+                            fieldInfo.type().name().toString(), fieldInfo.hasDeclaredAnnotation(ENCODED),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
                     (annotationValue, getterMethod) -> new PathParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue : getterName(getterMethod),
@@ -162,31 +162,25 @@ public class BeanParamParser {
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, FORM_PARAM,
                     (annotationValue, fieldInfo) -> new FormParamItem(fieldInfo.name(), annotationValue,
-                            fieldInfo.type(), AsmUtil.getSignature(fieldInfo.type()),
-                            fieldInfo.name(),
+                            fieldInfo.type(), AsmUtil.getSignature(fieldInfo.type()), fieldInfo.name(),
                             partType(fieldInfo), fileName(fieldInfo), fieldInfo.hasDeclaredAnnotation(ENCODED),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
                     (annotationValue, getterMethod) -> new FormParamItem(getterMethod.name(), annotationValue,
-                            getterMethod.returnType(),
-                            AsmUtil.getSignature(getterMethod.returnType()),
-                            getterMethod.name(),
-                            partType(getterMethod), fileName(getterMethod), getterMethod.hasDeclaredAnnotation(ENCODED),
-                            new GetterExtractor(getterMethod))));
+                            getterMethod.returnType(), AsmUtil.getSignature(getterMethod.returnType()),
+                            getterMethod.name(), partType(getterMethod), fileName(getterMethod),
+                            getterMethod.hasDeclaredAnnotation(ENCODED), new GetterExtractor(getterMethod))));
 
             resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_FORM_PARAM,
                     (annotationValue, fieldInfo) -> new FormParamItem(fieldInfo.name(),
-                            annotationValue != null ? annotationValue : fieldInfo.name(),
-                            fieldInfo.type(), AsmUtil.getSignature(fieldInfo.type()),
-                            fieldInfo.name(),
-                            partType(fieldInfo), fileName(fieldInfo), fieldInfo.hasDeclaredAnnotation(ENCODED),
+                            annotationValue != null ? annotationValue : fieldInfo.name(), fieldInfo.type(),
+                            AsmUtil.getSignature(fieldInfo.type()), fieldInfo.name(), partType(fieldInfo),
+                            fileName(fieldInfo), fieldInfo.hasDeclaredAnnotation(ENCODED),
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString())),
                     (annotationValue, getterMethod) -> new FormParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue : getterName(getterMethod),
-                            getterMethod.returnType(),
-                            AsmUtil.getSignature(getterMethod.returnType()),
-                            getterMethod.name(),
-                            partType(getterMethod), fileName(getterMethod), getterMethod.hasDeclaredAnnotation(ENCODED),
-                            new GetterExtractor(getterMethod))));
+                            getterMethod.returnType(), AsmUtil.getSignature(getterMethod.returnType()),
+                            getterMethod.name(), partType(getterMethod), fileName(getterMethod),
+                            getterMethod.hasDeclaredAnnotation(ENCODED), new GetterExtractor(getterMethod))));
 
             return resultList;
 
@@ -244,15 +238,17 @@ public class BeanParamParser {
         }
 
         if (getter == null) {
-            throw new IllegalArgumentException(
-                    "No getter corresponding to " + methodInfo.declaringClass().name() + "#" + methodInfo.name() + " found");
+            throw new IllegalArgumentException("No getter corresponding to " + methodInfo.declaringClass().name() + "#"
+                    + methodInfo.name() + " found");
         }
         return getter;
     }
 
-    private static <T extends Item> List<T> paramItemsForFieldsAndMethods(ClassInfo beanParamClass, DotName parameterType,
-            BiFunction<String, FieldInfo, T> fieldExtractor, BiFunction<String, MethodInfo, T> methodExtractor) {
-        return ParamTypeAnnotations.of(beanParamClass, parameterType).itemsForFieldsAndMethods(fieldExtractor, methodExtractor);
+    private static <T extends Item> List<T> paramItemsForFieldsAndMethods(ClassInfo beanParamClass,
+            DotName parameterType, BiFunction<String, FieldInfo, T> fieldExtractor,
+            BiFunction<String, MethodInfo, T> methodExtractor) {
+        return ParamTypeAnnotations.of(beanParamClass, parameterType).itemsForFieldsAndMethods(fieldExtractor,
+                methodExtractor);
     }
 
     private BeanParamParser() {
@@ -266,8 +262,7 @@ public class BeanParamParser {
             this.beanParamClass = beanParamClass;
 
             List<AnnotationInstance> relevantAnnotations = beanParamClass.annotationsMap().get(parameterType);
-            this.annotations = relevantAnnotations == null
-                    ? Collections.emptyList()
+            this.annotations = relevantAnnotations == null ? Collections.emptyList()
                     : relevantAnnotations.stream().filter(this::isFieldOrMethodAnnotation).collect(Collectors.toList());
         }
 
@@ -275,7 +270,8 @@ public class BeanParamParser {
             return new ParamTypeAnnotations(beanParamClass, parameterType);
         }
 
-        private <T extends Item> List<T> itemsForFieldsAndMethods(BiFunction<String, FieldInfo, T> itemFromFieldExtractor,
+        private <T extends Item> List<T> itemsForFieldsAndMethods(
+                BiFunction<String, FieldInfo, T> itemFromFieldExtractor,
                 BiFunction<String, MethodInfo, T> itemFromMethodExtractor) {
             return annotations.stream()
                     .map(annotation -> toItem(annotation, itemFromFieldExtractor, itemFromMethodExtractor))

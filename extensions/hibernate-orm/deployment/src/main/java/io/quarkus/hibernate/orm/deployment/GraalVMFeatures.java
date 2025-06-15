@@ -13,8 +13,7 @@ import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
- * Activates the native-image features included in the module
- * org.hibernate:hibernate-graalvm.
+ * Activates the native-image features included in the module org.hibernate:hibernate-graalvm.
  */
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public class GraalVMFeatures {
@@ -25,13 +24,12 @@ public class GraalVMFeatures {
     }
 
     // TODO try to limit registration to those that are actually needed, based on configuration + mapping.
-    //   https://github.com/quarkusio/quarkus/pull/32433#issuecomment-1497615958
+    // https://github.com/quarkusio/quarkus/pull/32433#issuecomment-1497615958
     @BuildStep
     ReflectiveClassBuildItem registerGeneratorAndOptimizerClassesForReflections() {
-        return ReflectiveClassBuildItem
-                .builder(Stream.concat(GENERATORS.stream(), OPTIMIZERS.stream()).map(DotName::toString).toArray(String[]::new))
-                .reason(ClassNames.GRAAL_VM_FEATURES.toString())
-                .build();
+        return ReflectiveClassBuildItem.builder(
+                Stream.concat(GENERATORS.stream(), OPTIMIZERS.stream()).map(DotName::toString).toArray(String[]::new))
+                .reason(ClassNames.GRAAL_VM_FEATURES.toString()).build();
     }
 
     // Workaround for https://hibernate.atlassian.net/browse/HHH-16809
@@ -40,8 +38,7 @@ public class GraalVMFeatures {
     ReflectiveClassBuildItem registerJdbcArrayTypesForReflection() {
         return ReflectiveClassBuildItem
                 .builder(ClassNames.JDBC_JAVA_TYPES.stream().map(d -> d.toString() + "[]").toArray(String[]::new))
-                .reason(ClassNames.GRAAL_VM_FEATURES.toString())
-                .build();
+                .reason(ClassNames.GRAAL_VM_FEATURES.toString()).build();
     }
 
     // Workaround for https://hibernate.atlassian.net/browse/HHH-18975
@@ -49,8 +46,7 @@ public class GraalVMFeatures {
     ReflectiveClassBuildItem registerNamingStrategiesForReflections() {
         return ReflectiveClassBuildItem
                 .builder(ClassNames.NAMING_STRATEGIES.stream().map(DotName::toString).toArray(String[]::new))
-                .reason(ClassNames.GRAAL_VM_FEATURES.toString())
-                .build();
+                .reason(ClassNames.GRAAL_VM_FEATURES.toString()).build();
     }
 
 }

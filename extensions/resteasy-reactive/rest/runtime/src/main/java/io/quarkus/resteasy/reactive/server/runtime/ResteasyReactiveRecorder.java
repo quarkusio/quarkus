@@ -110,18 +110,14 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     }
 
     public RuntimeValue<Deployment> createDeployment(String applicationPath, DeploymentInfo info,
-            BeanContainer beanContainer,
-            ShutdownContext shutdownContext,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            RequestContextFactory contextFactory,
-            BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
-            LaunchMode launchMode,
-            boolean servletPresent) {
+            BeanContainer beanContainer, ShutdownContext shutdownContext, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            RequestContextFactory contextFactory, BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
+            LaunchMode launchMode, boolean servletPresent) {
 
         info.setServletPresent(servletPresent);
 
-        CurrentRequestManager
-                .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));
+        CurrentRequestManager.setCurrentRequestInstance(
+                new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));
 
         BlockingOperationSupport.setIoThreadDetector(new BlockingOperationSupport.IOThreadDetector() {
             @Override
@@ -142,22 +138,20 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         if (contextFactory == null) {
             contextFactory = new RequestContextFactory() {
                 @Override
-                public ResteasyReactiveRequestContext createContext(Deployment deployment,
-                        Object context, ThreadSetupAction requestContext,
-                        ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+                public ResteasyReactiveRequestContext createContext(Deployment deployment, Object context,
+                        ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
+                        ServerRestHandler[] abortHandlerChain) {
                     return new QuarkusResteasyReactiveRequestContext(deployment, (RoutingContext) context,
-                            requestContext,
-                            handlerChain,
-                            abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation);
+                            requestContext, handlerChain, abortHandlerChain,
+                            launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation);
                 }
 
             };
         }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
-                VTHREAD_EXECUTOR_SUPPLIER,
-                closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
-                httpBuildTimeConfig.rootPath());
+                VTHREAD_EXECUTOR_SUPPLIER, closeTaskHandler, contextFactory,
+                new ArcThreadSetupAction(beanContainer.requestContext()), httpBuildTimeConfig.rootPath());
         Deployment deployment = runtimeDeploymentManager.deploy();
         DisabledRestEndpoints.set(deployment.getDisabledEndpoints());
         initClassFactory.createInstance().getInstance().init(deployment);
@@ -186,8 +180,10 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
 
             @Override
             public void accept(RoutingContext routingContext) {
-                // remove default auth failure handler so that exception is not handled by both failure and abort handlers
-                if (routingContext.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof FailingDefaultAuthFailureHandler) {
+                // remove default auth failure handler so that exception is not handled by both failure and abort
+                // handlers
+                if (routingContext
+                        .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof FailingDefaultAuthFailureHandler) {
                     routingContext.remove(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
                 }
             }
@@ -197,15 +193,16 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     }
 
     public Handler<RoutingContext> failureHandler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue,
-            boolean noCustomAuthCompletionExMapper, boolean noCustomAuthFailureExMapper, boolean noCustomAuthRedirectExMapper,
-            boolean proactive) {
+            boolean noCustomAuthCompletionExMapper, boolean noCustomAuthFailureExMapper,
+            boolean noCustomAuthRedirectExMapper, boolean proactive) {
         final RestInitialHandler restInitialHandler = restInitialHandlerRuntimeValue.getValue();
         // process auth failures with abort handlers
         return new Handler<>() {
             @Override
             public void handle(RoutingContext event) {
 
-                // special handling when proactive auth is enabled as then we know default auth failure handler already run
+                // special handling when proactive auth is enabled as then we know default auth failure handler already
+                // run
                 if (proactive && event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
                     // we want to prevent repeated handling of exceptions if user don't want to handle exception himself
                     // we do not pass exception to abort handlers if proactive auth is enabled and user did not
@@ -244,8 +241,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 if (isOtherAuthFailure) {
                     removeMarkAsOtherAuthenticationFailure(event);
                     restInitialHandler.beginProcessing(event, failure);
-                } else if (failure instanceof AuthenticationException
-                        || failure instanceof UnauthorizedException || failure instanceof ForbiddenException) {
+                } else if (failure instanceof AuthenticationException || failure instanceof UnauthorizedException
+                        || failure instanceof ForbiddenException) {
                     restInitialHandler.beginProcessing(event, failure);
                 } else {
                     event.next();
@@ -262,11 +259,12 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
     /**
      * This is Quarkus specific.
      * <p>
-     * We have a strategy around handling the Application class and build time init, that allows for the singletons
-     * to still work.
+     * We have a strategy around handling the Application class and build time init, that allows for the singletons to
+     * still work.
      *
      * @param applicationClass
      * @param singletonClassesEmpty
+     *
      * @return
      */
     public Supplier<Application> handleApplication(final Class<? extends Application> applicationClass,
@@ -345,7 +343,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return ClientProxy::unwrap;
     }
 
-    public Supplier<Boolean> disableIfPropertyMatches(String propertyName, String propertyValue, boolean disableIfMissing) {
+    public Supplier<Boolean> disableIfPropertyMatches(String propertyName, String propertyValue,
+            boolean disableIfMissing) {
         return new Supplier<>() {
             @Override
             public Boolean get() {
@@ -363,8 +362,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return new ServerSerialisers();
     }
 
-    public Handler<RoutingContext> defaultAuthFailureHandler(
-            RuntimeValue<Deployment> deployment, boolean setTemplatePath) {
+    public Handler<RoutingContext> defaultAuthFailureHandler(RuntimeValue<Deployment> deployment,
+            boolean setTemplatePath) {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext event) {
@@ -386,8 +385,9 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             @Override
             public Boolean get() {
                 try {
-                    return !Arc.container().select(Class.forName(className, false, Thread.currentThread()
-                            .getContextClassLoader())).isResolvable();
+                    return !Arc.container()
+                            .select(Class.forName(className, false, Thread.currentThread().getContextClassLoader()))
+                            .isResolvable();
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException("Unable to determine if bean '" + className + "' is available", e);
                 }

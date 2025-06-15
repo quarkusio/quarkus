@@ -19,8 +19,9 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Logout.ClearSiteData;
 public final class LogoutConfigBuilder {
     private record LogoutImpl(Optional<String> path, Optional<String> postLogoutPath, String postLogoutUriParam,
             Map<String, String> extraParams, OidcTenantConfig.Backchannel backchannel,
-            OidcTenantConfig.Frontchannel frontchannel,
-            Optional<Set<ClearSiteData>> clearSiteData) implements OidcTenantConfig.Logout {
+            OidcTenantConfig.Frontchannel frontchannel, Optional<Set<ClearSiteData>> clearSiteData)
+            implements
+                OidcTenantConfig.Logout {
     }
 
     private record FrontchannelImpl(Optional<String> path) implements OidcTenantConfig.Frontchannel {
@@ -54,7 +55,9 @@ public final class LogoutConfigBuilder {
     }
 
     /**
-     * @param path {@link OidcTenantConfig.Frontchannel#path()}
+     * @param path
+     *        {@link OidcTenantConfig.Frontchannel#path()}
+     *
      * @return this builder
      */
     public LogoutConfigBuilder frontchannelPath(String path) {
@@ -63,7 +66,9 @@ public final class LogoutConfigBuilder {
     }
 
     /**
-     * @param path {@link OidcTenantConfig.Logout#path()}
+     * @param path
+     *        {@link OidcTenantConfig.Logout#path()}
+     *
      * @return this builder
      */
     public LogoutConfigBuilder path(String path) {
@@ -72,7 +77,9 @@ public final class LogoutConfigBuilder {
     }
 
     /**
-     * @param postLogoutPath {@link OidcTenantConfig.Logout#postLogoutPath()}
+     * @param postLogoutPath
+     *        {@link OidcTenantConfig.Logout#postLogoutPath()}
+     *
      * @return this builder
      */
     public LogoutConfigBuilder postLogoutPath(String postLogoutPath) {
@@ -81,7 +88,9 @@ public final class LogoutConfigBuilder {
     }
 
     /**
-     * @param postLogoutUriParam {@link OidcTenantConfig.Logout#postLogoutUriParam()}
+     * @param postLogoutUriParam
+     *        {@link OidcTenantConfig.Logout#postLogoutUriParam()}
+     *
      * @return this builder
      */
     public LogoutConfigBuilder postLogoutUriParam(String postLogoutUriParam) {
@@ -90,8 +99,11 @@ public final class LogoutConfigBuilder {
     }
 
     /**
-     * @param extraParamKey {@link OidcTenantConfig.Logout#extraParams()} key
-     * @param extraParamValue {@link OidcTenantConfig.Logout#extraParams()} value
+     * @param extraParamKey
+     *        {@link OidcTenantConfig.Logout#extraParams()} key
+     * @param extraParamValue
+     *        {@link OidcTenantConfig.Logout#extraParams()} value
+     *
      * @return this builder
      */
     public LogoutConfigBuilder extraParam(String extraParamKey, String extraParamValue) {
@@ -102,7 +114,9 @@ public final class LogoutConfigBuilder {
     }
 
     /**
-     * @param extraParams {@link OidcTenantConfig.Logout#extraParams()}
+     * @param extraParams
+     *        {@link OidcTenantConfig.Logout#extraParams()}
+     *
      * @return this builder
      */
     public LogoutConfigBuilder extraParams(Map<String, String> extraParams) {
@@ -123,7 +137,9 @@ public final class LogoutConfigBuilder {
     }
 
     /**
-     * @param clear site data directives {@link OidcTenantConfig.Logout#clearSiteData()}
+     * @param clear
+     *        site data directives {@link OidcTenantConfig.Logout#clearSiteData()}
+     *
      * @return this builder
      */
     public LogoutConfigBuilder clearSiteData(List<ClearSiteData> directives) {
@@ -133,7 +149,9 @@ public final class LogoutConfigBuilder {
     }
 
     /**
-     * @param backchannel {@link OidcTenantConfig.Logout#backchannel()}
+     * @param backchannel
+     *        {@link OidcTenantConfig.Logout#backchannel()}
+     *
      * @return this builder
      */
     public LogoutConfigBuilder backchannel(OidcTenantConfig.Backchannel backchannel) {
@@ -161,8 +179,8 @@ public final class LogoutConfigBuilder {
      * @return built {@link OidcTenantConfig.Logout}
      */
     public OidcTenantConfig.Logout build() {
-        return new LogoutImpl(path, postLogoutPath, postLogoutUriParam, Map.copyOf(extraParams), backchannel, frontchannel,
-                clearSiteData);
+        return new LogoutImpl(path, postLogoutPath, postLogoutUriParam, Map.copyOf(extraParams), backchannel,
+                frontchannel, clearSiteData);
     }
 
     /**
@@ -171,7 +189,9 @@ public final class LogoutConfigBuilder {
     public static final class BackchannelBuilder {
 
         private record BackchannelImpl(Optional<String> path, int tokenCacheSize, Duration tokenCacheTimeToLive,
-                Optional<Duration> cleanUpTimerInterval, String logoutTokenKey) implements OidcTenantConfig.Backchannel {
+                Optional<Duration> cleanUpTimerInterval, String logoutTokenKey)
+                implements
+                    OidcTenantConfig.Backchannel {
         }
 
         private final LogoutConfigBuilder logoutBuilder;
@@ -196,7 +216,9 @@ public final class LogoutConfigBuilder {
         }
 
         /**
-         * @param cleanUpTimerInterval {@link OidcTenantConfig.Backchannel#cleanUpTimerInterval()}
+         * @param cleanUpTimerInterval
+         *        {@link OidcTenantConfig.Backchannel#cleanUpTimerInterval()}
+         *
          * @return this builder
          */
         public BackchannelBuilder cleanUpTimerInterval(Duration cleanUpTimerInterval) {
@@ -205,7 +227,9 @@ public final class LogoutConfigBuilder {
         }
 
         /**
-         * @param logoutTokenKey {@link OidcTenantConfig.Backchannel#logoutTokenKey()}
+         * @param logoutTokenKey
+         *        {@link OidcTenantConfig.Backchannel#logoutTokenKey()}
+         *
          * @return this builder
          */
         public BackchannelBuilder logoutTokenKey(String logoutTokenKey) {
@@ -214,7 +238,9 @@ public final class LogoutConfigBuilder {
         }
 
         /**
-         * @param tokenCacheTimeToLive {@link OidcTenantConfig.Backchannel#tokenCacheTimeToLive()}
+         * @param tokenCacheTimeToLive
+         *        {@link OidcTenantConfig.Backchannel#tokenCacheTimeToLive()}
+         *
          * @return this builder
          */
         public BackchannelBuilder tokenCacheTimeToLive(Duration tokenCacheTimeToLive) {
@@ -223,7 +249,9 @@ public final class LogoutConfigBuilder {
         }
 
         /**
-         * @param tokenCacheSize {@link OidcTenantConfig.Backchannel#tokenCacheSize()}
+         * @param tokenCacheSize
+         *        {@link OidcTenantConfig.Backchannel#tokenCacheSize()}
+         *
          * @return this builder
          */
         public BackchannelBuilder tokenCacheSize(int tokenCacheSize) {
@@ -232,7 +260,9 @@ public final class LogoutConfigBuilder {
         }
 
         /**
-         * @param path {@link OidcTenantConfig.Backchannel#path()}
+         * @param path
+         *        {@link OidcTenantConfig.Backchannel#path()}
+         *
          * @return this builder
          */
         public BackchannelBuilder path(String path) {
@@ -263,7 +293,8 @@ public final class LogoutConfigBuilder {
          * @return built {@link OidcTenantConfig.Backchannel}
          */
         public OidcTenantConfig.Backchannel build() {
-            return new BackchannelImpl(path, tokenCacheSize, tokenCacheTimeToLive, cleanUpTimerInterval, logoutTokenKey);
+            return new BackchannelImpl(path, tokenCacheSize, tokenCacheTimeToLive, cleanUpTimerInterval,
+                    logoutTokenKey);
         }
     }
 }

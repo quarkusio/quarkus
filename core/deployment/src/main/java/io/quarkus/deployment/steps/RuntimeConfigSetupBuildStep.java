@@ -20,24 +20,22 @@ public class RuntimeConfigSetupBuildStep {
     private static final String RUNTIME_CONFIG_STARTUP_TASK_CLASS_NAME = "io.quarkus.deployment.steps.RuntimeConfigSetup";
 
     /**
-     * Generates a StartupTask that sets up the final runtime configuration and thus runs before any StartupTask that uses
-     * runtime configuration.
-     * If there are recorders that produce a ConfigSourceProvider, these objects are used to set up the final runtime
-     * configuration
+     * Generates a StartupTask that sets up the final runtime configuration and thus runs before any StartupTask that
+     * uses runtime configuration. If there are recorders that produce a ConfigSourceProvider, these objects are used to
+     * set up the final runtime configuration
      */
     @BuildStep
     @Produce(RuntimeConfigSetupCompleteBuildItem.class)
-    void setupRuntimeConfig(
-            BuildProducer<GeneratedClassBuildItem> generatedClass,
+    void setupRuntimeConfig(BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<MainBytecodeRecorderBuildItem> mainBytecodeRecorder) {
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
 
         try (ClassCreator clazz = ClassCreator.builder().classOutput(classOutput)
-                .className(RUNTIME_CONFIG_STARTUP_TASK_CLASS_NAME)
-                .interfaces(StartupTask.class).build()) {
+                .className(RUNTIME_CONFIG_STARTUP_TASK_CLASS_NAME).interfaces(StartupTask.class).build()) {
 
             try (MethodCreator method = clazz.getMethodCreator("deploy", void.class, StartupContext.class)) {
-                method.invokeVirtualMethod(ofMethod(StartupContext.class, "setCurrentBuildStepName", void.class, String.class),
+                method.invokeVirtualMethod(
+                        ofMethod(StartupContext.class, "setCurrentBuildStepName", void.class, String.class),
                         method.getMethodParam(0), method.load("RuntimeConfigSetupBuildStep.setupRuntimeConfig"));
 
                 method.invokeStaticMethod(C_CREATE_RUN_TIME_CONFIG);

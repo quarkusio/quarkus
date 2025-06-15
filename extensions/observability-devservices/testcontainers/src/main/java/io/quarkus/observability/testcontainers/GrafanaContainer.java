@@ -25,9 +25,6 @@ public abstract class GrafanaContainer<T extends GrafanaContainer<T, C>, C exten
     }
 
     protected WaitStrategy waitStrategy() {
-        return Wait.forHttp("/")
-                .forPort(config.grafanaPort())
-                .forStatusCode(200)
-                .withStartupTimeout(config.timeout());
+        return Wait.forHttp("/").forPort(config.grafanaPort()).forStatusCode(200).withStartupTimeout(config.timeout());
     }
 }

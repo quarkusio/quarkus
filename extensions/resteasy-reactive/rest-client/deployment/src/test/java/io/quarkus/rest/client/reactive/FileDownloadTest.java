@@ -26,8 +26,7 @@ public class FileDownloadTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, RedirectingResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, RedirectingResource.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.follow-redirects", "true");
 
     @TestHTTPResource

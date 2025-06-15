@@ -32,9 +32,9 @@ import io.vertx.ext.web.RoutingContext;
 public class EagerSecurityHandler implements ServerRestHandler {
 
     /**
-     * Used when no endpoint security checks were detected, no default Jakarta REST security is in place, and
-     * we have this handler in place for whether Jakarta REST specific HTTP Permissions are required
-     * is determined when runtime config is available.
+     * Used when no endpoint security checks were detected, no default Jakarta REST security is in place, and we have
+     * this handler in place for whether Jakarta REST specific HTTP Permissions are required is determined when runtime
+     * config is available.
      */
     private static final EagerSecurityHandler HTTP_PERMS_ONLY = new EagerSecurityHandler(null, false, null);
 
@@ -42,7 +42,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
     private final boolean isDefaultJaxRsSecCheck;
     private final MethodDescription invokedMethodDesc;
 
-    private EagerSecurityHandler(SecurityCheck check, boolean isDefaultJaxRsSecCheck, MethodDescription invokedMethodDesc) {
+    private EagerSecurityHandler(SecurityCheck check, boolean isDefaultJaxRsSecCheck,
+            MethodDescription invokedMethodDesc) {
         this.check = check;
         this.isDefaultJaxRsSecCheck = isDefaultJaxRsSecCheck;
         this.invokedMethodDesc = invokedMethodDesc;
@@ -77,7 +78,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 check = Uni.createFrom().deferred(new Supplier<Uni<?>>() {
                     @Override
                     public Uni<?> get() {
-                        return EagerSecurityContext.getInstance().getPermissionCheck(requestContext, null, invokedMethodDesc);
+                        return EagerSecurityContext.getInstance().getPermissionCheck(requestContext, null,
+                                invokedMethodDesc);
                     }
                 });
             }
@@ -91,11 +93,10 @@ public class EagerSecurityHandler implements ServerRestHandler {
                         .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                                return EagerSecurityContext.getInstance().getPermissionCheck(requestContext, securityIdentity,
-                                        invokedMethodDesc);
+                                return EagerSecurityContext.getInstance().getPermissionCheck(requestContext,
+                                        securityIdentity, invokedMethodDesc);
                             }
-                        })
-                        .chain(checkRequiringIdentity);
+                        }).chain(checkRequiringIdentity);
             }
         }
 
@@ -160,17 +161,17 @@ public class EagerSecurityHandler implements ServerRestHandler {
                             var unauthorizedException = new UnauthorizedException();
                             if (EagerSecurityContext.getEventHelper().fireEventOnFailure()) {
                                 EagerSecurityContext.getEventHelper()
-                                        .fireFailureEvent(new AuthorizationFailureEvent(securityIdentity, unauthorizedException,
-                                                check.getClass().getName(), createEventPropsWithRoutingCtx(requestContext),
-                                                invokedMethodDesc));
+                                        .fireFailureEvent(new AuthorizationFailureEvent(securityIdentity,
+                                                unauthorizedException, check.getClass().getName(),
+                                                createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
                             }
                             throw unauthorizedException;
                         }
                         // security check will be performed by CDI interceptor
                         return Uni.createFrom().nullItem();
                     } else {
-                        return EagerSecurityContext.getInstance().runSecurityCheck(check, invokedMethodDesc, requestContext,
-                                securityIdentity);
+                        return EagerSecurityContext.getInstance().runSecurityCheck(check, invokedMethodDesc,
+                                requestContext, securityIdentity);
                     }
                 }
             };
@@ -186,7 +187,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
 
     public static final class HttpPermissionsOnlyCustomizer implements HandlerChainCustomizer {
         @Override
-        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+                ServerResourceMethod resourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
                 return List.of(HTTP_PERMS_ONLY);
             }
@@ -230,7 +232,8 @@ public class EagerSecurityHandler implements ServerRestHandler {
                 ServerResourceMethod serverResourceMethod) {
             if (phase == Phase.AFTER_MATCH) {
                 final SecurityCheckInfo info = getSecurityCheckInfo(serverResourceMethod);
-                return List.of(new EagerSecurityHandler(info.check, info.isDefaultJaxRsSecCheck, info.invokedMethodDesc));
+                return List
+                        .of(new EagerSecurityHandler(info.check, info.isDefaultJaxRsSecCheck, info.invokedMethodDesc));
             }
 
             if (phase == Phase.BEFORE_METHOD_INVOKE && requiresMethodArguments(serverResourceMethod)) {

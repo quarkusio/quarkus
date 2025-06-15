@@ -24,8 +24,7 @@ public class VerticleWithClassNameDeploymentTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanDeployingAVerticleFromClass.class, MyVerticle.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanDeployingAVerticleFromClass.class, MyVerticle.class));
 
     @Test
     public void testDeploymentOfVerticleUsingClassName() {
@@ -42,8 +41,7 @@ public class VerticleWithClassNameDeploymentTest {
 
         public void init(@Observes StartupEvent ev) throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(1);
-            vertx.deployVerticle(MyVerticle.class.getName(),
-                    new DeploymentOptions().setInstances(2),
+            vertx.deployVerticle(MyVerticle.class.getName(), new DeploymentOptions().setInstances(2),
                     ar -> latch.countDown());
             latch.await();
         }
@@ -53,8 +51,7 @@ public class VerticleWithClassNameDeploymentTest {
 
         @Override
         public void start(Promise<Void> done) {
-            vertx.createHttpServer()
-                    .requestHandler(req -> req.response().end("OK-" + Thread.currentThread().getName()))
+            vertx.createHttpServer().requestHandler(req -> req.response().end("OK-" + Thread.currentThread().getName()))
                     .listen(8080, ar -> done.handle(ar.mapEmpty()));
         }
 

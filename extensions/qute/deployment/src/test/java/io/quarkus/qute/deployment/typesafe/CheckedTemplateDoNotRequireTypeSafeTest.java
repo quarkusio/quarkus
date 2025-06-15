@@ -13,11 +13,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CheckedTemplateDoNotRequireTypeSafeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Templates.class)
-                    .addAsResource(new StringAsset("Hello {name}!{any}"),
-                            "templates/CheckedTemplateDoNotRequireTypeSafeTest/hola.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Templates.class).addAsResource(new StringAsset("Hello {name}!{any}"),
+                    "templates/CheckedTemplateDoNotRequireTypeSafeTest/hola.txt"));
 
     @Test
     public void testValidation() {

@@ -25,8 +25,7 @@ public class RestEasyMutinyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MutinyResource.class, MutinyInjector.class, Async.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MutinyResource.class, MutinyInjector.class, Async.class));
 
     @TestHTTPResource
     URL url;
@@ -35,11 +34,8 @@ public class RestEasyMutinyTest {
 
     @BeforeEach
     public void before() {
-        client = ((ResteasyClientBuilder) ClientBuilder.newBuilder())
-                .readTimeout(5, TimeUnit.SECONDS)
-                .connectionCheckoutTimeout(5, TimeUnit.SECONDS)
-                .connectTimeout(5, TimeUnit.SECONDS)
-                .build();
+        client = ((ResteasyClientBuilder) ClientBuilder.newBuilder()).readTimeout(5, TimeUnit.SECONDS)
+                .connectionCheckoutTimeout(5, TimeUnit.SECONDS).connectTimeout(5, TimeUnit.SECONDS).build();
         value.set(null);
     }
 

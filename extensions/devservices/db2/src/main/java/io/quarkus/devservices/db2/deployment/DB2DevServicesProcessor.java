@@ -41,20 +41,21 @@ public class DB2DevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupDB2(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevServicesConfig devServicesConfig) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, DevServicesConfig devServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.DB2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
+                    Optional<Duration> startupTimeout) {
 
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
-                String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
-                String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
-                String effectiveDbName = containerConfig.getDbName().orElse(
-                        DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+                String effectiveUsername = containerConfig.getUsername()
+                        .orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
+                String effectivePassword = containerConfig.getPassword()
+                        .orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
+                String effectiveDbName = containerConfig.getDbName()
+                        .orElse(DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
                 Supplier<RunningDevServicesDatasource> maybe = () -> {
                     QuarkusDb2Container container = new QuarkusDb2Container(containerConfig.getImageName(),
@@ -62,10 +63,8 @@ public class DB2DevServicesProcessor {
                             useSharedNetwork);
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
-                    container.withUsername(effectiveUsername)
-                            .withPassword(effectivePassword)
-                            .withDatabaseName(effectiveDbName)
-                            .withReuse(containerConfig.isReuse());
+                    container.withUsername(effectiveUsername).withPassword(effectivePassword)
+                            .withDatabaseName(effectiveDbName).withReuse(containerConfig.isReuse());
                     Labels.addDataSourceLabel(container, datasourceName);
                     Volumes.addVolumes(container, containerConfig.getVolumes());
 
@@ -81,17 +80,15 @@ public class DB2DevServicesProcessor {
 
                     LOG.info("Dev Services for IBM Db2 started.");
 
-                    return new RunningDevServicesDatasource(container.getContainerId(),
-                            container.getEffectiveJdbcUrl(),
-                            container.getReactiveUrl(),
-                            container.getUsername(),
-                            container.getPassword(),
+                    return new RunningDevServicesDatasource(container.getContainerId(), container.getEffectiveJdbcUrl(),
+                            container.getReactiveUrl(), container.getUsername(), container.getPassword(),
                             new ContainerShutdownCloseable(container, "IBM Db2"));
                 };
-                List<String> images = List.of(containerConfig.getImageName()
-                        .orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")),
+                List<String> images = List.of(
+                        containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")),
                         "db2");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, DB2_PORT, launchMode, useSharedNetwork)
+                return ComposeLocator
+                        .locateContainer(composeProjectBuildItem, images, DB2_PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(maybe);
             }
@@ -104,8 +101,8 @@ public class DB2DevServicesProcessor {
 
         private final String hostName;
 
-        public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort,
-                String defaultNetworkId, boolean useSharedNetwork) {
+        public QuarkusDb2Container(Optional<String> imageName, OptionalInt fixedExposedPort, String defaultNetworkId,
+                boolean useSharedNetwork) {
             super(DockerImageName.parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2")))
                     .asCompatibleSubstituteFor(DockerImageName.parse("icr.io/db2_community/db2")));
             this.fixedExposedPort = fixedExposedPort;

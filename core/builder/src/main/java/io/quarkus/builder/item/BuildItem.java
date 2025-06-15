@@ -3,9 +3,8 @@ package io.quarkus.builder.item;
 import java.lang.reflect.Modifier;
 
 /**
- * A build item which can be produced or consumed. Any item
- * which implements {@link AutoCloseable} will be automatically closed when the build
- * is completed, unless it is explicitly marked as a final build result in which case closure is
+ * A build item which can be produced or consumed. Any item which implements {@link AutoCloseable} will be automatically
+ * closed when the build is completed, unless it is explicitly marked as a final build result in which case closure is
  * the responsibility of whomever invoked the build execution.
  * <p>
  * Resources should be fine-grained as possible, ideally describing only one aspect of the build process.

@@ -21,9 +21,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ExecutorServiceBeanTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> {
+    });
 
     @Inject
     ExecutorService executorService;

@@ -20,14 +20,11 @@ import io.smallrye.config.WithUnnamedKey;
 public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
 
     /**
-     * Whether Hibernate Search should be active for this persistence unit at runtime.
-     *
-     * If Hibernate Search is not active, it won't index Hibernate ORM entities,
-     * and accessing the SearchMapping/SearchSession of the relevant persistence unit
-     * for search or other operation will not be possible.
-     *
-     * Note that if Hibernate Search is disabled (i.e. `quarkus.hibernate-search-orm.enabled` is set to `false`),
-     * it won't be active for any persistence unit, and setting this property to `true` will fail.
+     * Whether Hibernate Search should be active for this persistence unit at runtime. If Hibernate Search is not
+     * active, it won't index Hibernate ORM entities, and accessing the SearchMapping/SearchSession of the relevant
+     * persistence unit for search or other operation will not be possible. Note that if Hibernate Search is disabled
+     * (i.e. `quarkus.hibernate-search-orm.enabled` is set to `false`), it won't be active for any persistence unit, and
+     * setting this property to `true` will fail.
      *
      * @asciidoclet
      */
@@ -44,8 +41,8 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     Map<String, HibernateSearchBackendElasticsearchRuntimeConfig> backends();
 
     /**
-     * Configuration for automatic creation and validation of the Elasticsearch schema:
-     * indexes, their mapping, their settings.
+     * Configuration for automatic creation and validation of the Elasticsearch schema: indexes, their mapping, their
+     * settings.
      */
     SchemaManagementConfig schemaManagement();
 
@@ -199,11 +196,11 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         /**
          * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
          * <p>
-         * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
-         * indexing.
+         * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used
+         * when indexing.
          *
-         * @deprecated This property is deprecated with no alternative to replace it.
-         *             In the future, a dirty check will always be performed when considering whether to trigger reindexing.
+         * @deprecated This property is deprecated with no alternative to replace it. In the future, a dirty check will
+         *             always be performed when considering whether to trigger reindexing.
          */
         @WithDefault("true")
         @Deprecated
@@ -324,10 +321,9 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     interface MultiTenancyConfig {
 
         /**
-         * An exhaustive list of all tenant identifiers that may be used by the application when multi-tenancy is enabled.
-         *
-         * Mainly useful when using the {@code outbox-polling} coordination strategy,
-         * since it involves setting up one background processor per tenant.
+         * An exhaustive list of all tenant identifiers that may be used by the application when multi-tenancy is
+         * enabled. Mainly useful when using the {@code outbox-polling} coordination strategy, since it involves setting
+         * up one background processor per tenant.
          *
          * @asciidoclet
          */

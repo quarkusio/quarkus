@@ -13,8 +13,8 @@ import jakarta.inject.Qualifier;
 
 /**
  * <p>
- * Use this annotation on a field, a constructor parameter or a method parameter to inject a {@link Cache} and interact with it
- * programmatically e.g. store, retrieve or delete cache values.
+ * Use this annotation on a field, a constructor parameter or a method parameter to inject a {@link Cache} and interact
+ * with it programmatically e.g. store, retrieve or delete cache values.
  * </p>
  * <p>
  * Field injection example:

@@ -86,10 +86,8 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<BeanDefiningAnnotationBuildItem> additionalBda,
             Optional<MetricsCapabilityBuildItem> metricsCapability,
-            Optional<OpenTelemetrySdkBuildItem> openTelemetrySdk,
-            BuildProducer<SystemPropertyBuildItem> systemProperty,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            Optional<OpenTelemetrySdkBuildItem> openTelemetrySdk, BuildProducer<SystemPropertyBuildItem> systemProperty,
+            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems) {
 
@@ -102,7 +100,8 @@ public class SmallRyeFaultToleranceProcessor {
         serviceProvider.produce(new ServiceProviderBuildItem(ConfigSourceInterceptor.class.getName(),
                 SmallRyeFaultToleranceConfigRelocate.class.getName()));
         // make sure this is initialised at runtime, otherwise it will get a non-initialised ContextPropagationManager
-        runtimeInitializedClassBuildItems.produce(new RuntimeInitializedClassBuildItem(RunnableWrapper.class.getName()));
+        runtimeInitializedClassBuildItems
+                .produce(new RuntimeInitializedClassBuildItem(RunnableWrapper.class.getName()));
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
@@ -134,7 +133,8 @@ public class SmallRyeFaultToleranceProcessor {
             for (String memberName : List.of("result", "exception")) {
                 AnnotationValue member = annotation.value(memberName);
                 if (member != null) {
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(member.asClass().name().toString()).build());
+                    reflectiveClass
+                            .produce(ReflectiveClassBuildItem.builder(member.asClass().name().toString()).build());
                 }
             }
         }
@@ -167,23 +167,17 @@ public class SmallRyeFaultToleranceProcessor {
         for (DotName ftAnnotation : DotNames.FT_ANNOTATIONS) {
             builder.addBeanClass(ftAnnotation.toString());
         }
-        builder
-                .addBeanClasses(
-                        ExecutorHolder.class,
-                        StrategyCache.class,
-                        QuarkusFallbackHandlerProvider.class,
-                        QuarkusBeforeRetryHandlerProvider.class,
-                        QuarkusAsyncExecutorProvider.class,
-                        CircuitBreakerMaintenanceImpl.class,
-                        RequestContextIntegration.class,
-                        SpecCompatibility.class,
-                        Enablement.class);
+        builder.addBeanClasses(ExecutorHolder.class, StrategyCache.class, QuarkusFallbackHandlerProvider.class,
+                QuarkusBeforeRetryHandlerProvider.class, QuarkusAsyncExecutorProvider.class,
+                CircuitBreakerMaintenanceImpl.class, RequestContextIntegration.class, SpecCompatibility.class,
+                Enablement.class);
 
         int metricsProviders = 0;
         if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MP_METRICS)) {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicroProfileMetricsProvider");
             metricsProviders++;
-        } else if (metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
+        } else if (metricsCapability.isPresent()
+                && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)) {
             builder.addBeanClass("io.smallrye.faulttolerance.metrics.MicrometerProvider");
             metricsProviders++;
         }
@@ -201,8 +195,10 @@ public class SmallRyeFaultToleranceProcessor {
         beans.produce(builder.build());
 
         // TODO FT should be smart enough and only initialize the stuff in the recorder if it's really needed
-        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration - interceptors
-        // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
+        // The FaultToleranceInterceptor needs to be registered as unremovable due to the rest-client integration -
+        // interceptors
+        // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on
+        // interfaces
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(FaultToleranceInterceptor.class, QuarkusFaultToleranceOperationProvider.class,
                         QuarkusExistingCircuitBreakerNames.class, CdiSpi.EagerDependencies.class,
@@ -228,10 +224,10 @@ public class SmallRyeFaultToleranceProcessor {
                     }
                     Config config = ConfigProvider.getConfig();
 
-                    OptionalInt priority = config.getValue("mp.fault.tolerance.interceptor.priority", OptionalInt.class);
+                    OptionalInt priority = config.getValue("mp.fault.tolerance.interceptor.priority",
+                            OptionalInt.class);
                     if (priority.isPresent()) {
-                        ctx.transform()
-                                .remove(ann -> ann.name().toString().equals(Priority.class.getName()))
+                        ctx.transform().remove(ann -> ann.name().toString().equals(Priority.class.getName()))
                                 .add(Priority.class, AnnotationValue.createIntegerValue("value", priority.getAsInt()))
                                 .done();
                     }
@@ -243,12 +239,9 @@ public class SmallRyeFaultToleranceProcessor {
     @BuildStep
     // needs to be RUNTIME_INIT because we need to read MP Config
     @Record(ExecutionTime.RUNTIME_INIT)
-    void processFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder,
-            RecorderContext recorderContext,
-            ValidationPhaseBuildItem validationPhase,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            AnnotationProxyBuildItem annotationProxy,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+    void processFaultToleranceAnnotations(SmallRyeFaultToleranceRecorder recorder, RecorderContext recorderContext,
+            ValidationPhaseBuildItem validationPhase, BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            AnnotationProxyBuildItem annotationProxy, BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors,
@@ -256,14 +249,14 @@ public class SmallRyeFaultToleranceProcessor {
 
         Config config = ConfigProvider.getConfig();
 
-        Set<String> exceptionConfigs = Set.of("CircuitBreaker/failOn", "CircuitBreaker/skipOn",
-                "Fallback/applyOn", "Fallback/skipOn", "Retry/retryOn", "Retry/abortOn");
+        Set<String> exceptionConfigs = Set.of("CircuitBreaker/failOn", "CircuitBreaker/skipOn", "Fallback/applyOn",
+                "Fallback/skipOn", "Retry/retryOn", "Retry/abortOn");
 
         for (String exceptionConfig : exceptionConfigs) {
             Optional<String[]> exceptionNames = config.getOptionalValue(exceptionConfig, String[].class);
             if (exceptionNames.isPresent()) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get())
-                        .reason(getClass().getName()).build());
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(exceptionNames.get()).reason(getClass().getName()).build());
             }
         }
 
@@ -289,8 +282,8 @@ public class SmallRyeFaultToleranceProcessor {
                     String id = idAnn.value().asString();
                     existingGuards.computeIfAbsent(id, ignored -> new HashSet<>()).add(info.toString());
                     if ("global".equals(id)) {
-                        exceptions.add(new DefinitionException("Guard/TypedGuard with identifier 'global' is not allowed: "
-                                + info));
+                        exceptions.add(new DefinitionException(
+                                "Guard/TypedGuard with identifier 'global' is not allowed: " + info));
                     }
                 });
             }
@@ -302,8 +295,8 @@ public class SmallRyeFaultToleranceProcessor {
 
             if (scanner.hasFTAnnotations(beanClass)) {
                 for (String exceptionConfig : exceptionConfigs) {
-                    Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
-                            + "/" + exceptionConfig, String[].class);
+                    Optional<String[]> exceptionNames = config
+                            .getOptionalValue(beanClass.name().toString() + "/" + exceptionConfig, String[].class);
                     if (exceptionNames.isPresent()) {
                         reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get())
                                 .reason(getClass().getName()).build());
@@ -325,13 +318,14 @@ public class SmallRyeFaultToleranceProcessor {
 
                         if (annotationStore.hasAnnotation(method, DotNames.BLOCKING)
                                 && annotationStore.hasAnnotation(method, DotNames.NON_BLOCKING)) {
-                            exceptions.add(
-                                    new DefinitionException("Both @Blocking and @NonBlocking present on '" + method + "'"));
+                            exceptions.add(new DefinitionException(
+                                    "Both @Blocking and @NonBlocking present on '" + method + "'"));
                         }
 
                         for (String exceptionConfig : exceptionConfigs) {
-                            Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
-                                    + "/" + method.name() + "/" + exceptionConfig, String[].class);
+                            Optional<String[]> exceptionNames = config.getOptionalValue(
+                                    beanClass.name().toString() + "/" + method.name() + "/" + exceptionConfig,
+                                    String[].class);
                             if (exceptionNames.isPresent()) {
                                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(exceptionNames.get())
                                         .reason(getClass().getName()).build());
@@ -339,13 +333,16 @@ public class SmallRyeFaultToleranceProcessor {
                         }
 
                         if (annotationStore.hasAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME)) {
-                            AnnotationInstance ann = annotationStore.getAnnotation(method, DotNames.CIRCUIT_BREAKER_NAME);
-                            existingCircuitBreakerNames.computeIfAbsent(ann.value().asString(), ignored -> new HashSet<>())
+                            AnnotationInstance ann = annotationStore.getAnnotation(method,
+                                    DotNames.CIRCUIT_BREAKER_NAME);
+                            existingCircuitBreakerNames
+                                    .computeIfAbsent(ann.value().asString(), ignored -> new HashSet<>())
                                     .add(method + " @ " + method.declaringClass());
                         }
 
                         if (annotationStore.hasAnnotation(method, DotNames.APPLY_GUARD)) {
-                            expectedGuards.add(annotationStore.getAnnotation(method, DotNames.APPLY_GUARD).value().asString());
+                            expectedGuards.add(
+                                    annotationStore.getAnnotation(method, DotNames.APPLY_GUARD).value().asString());
                         }
                     }
                 });
@@ -358,11 +355,13 @@ public class SmallRyeFaultToleranceProcessor {
 
                 if (annotationStore.hasAnnotation(beanClass, DotNames.BLOCKING)
                         && annotationStore.hasAnnotation(beanClass, DotNames.NON_BLOCKING)) {
-                    exceptions.add(new DefinitionException("Both @Blocking and @NonBlocking present on '" + beanClass + "'"));
+                    exceptions.add(
+                            new DefinitionException("Both @Blocking and @NonBlocking present on '" + beanClass + "'"));
                 }
 
                 if (annotationStore.hasAnnotation(beanClass, DotNames.APPLY_GUARD)) {
-                    expectedGuards.add(annotationStore.getAnnotation(beanClass, DotNames.APPLY_GUARD).value().asString());
+                    expectedGuards
+                            .add(annotationStore.getAnnotation(beanClass, DotNames.APPLY_GUARD).value().asString());
                 }
             }
         }
@@ -371,27 +370,30 @@ public class SmallRyeFaultToleranceProcessor {
 
         for (Map.Entry<String, Set<String>> entry : existingCircuitBreakerNames.entrySet()) {
             if (entry.getValue().size() > 1) {
-                exceptions.add(new DefinitionException("Multiple circuit breakers have the same name '"
-                        + entry.getKey() + "': " + entry.getValue()));
+                exceptions.add(new DefinitionException(
+                        "Multiple circuit breakers have the same name '" + entry.getKey() + "': " + entry.getValue()));
             }
         }
 
         for (DotName backoffAnnotation : DotNames.BACKOFF_ANNOTATIONS) {
             for (AnnotationInstance it : index.getAnnotations(backoffAnnotation)) {
                 if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
-                    exceptions.add(new DefinitionException("Backoff annotation @" + backoffAnnotation.withoutPackagePrefix()
-                            + " present on '" + it.target() + "', but @Retry is missing"));
+                    exceptions.add(
+                            new DefinitionException("Backoff annotation @" + backoffAnnotation.withoutPackagePrefix()
+                                    + " present on '" + it.target() + "', but @Retry is missing"));
                 }
             }
         }
         for (AnnotationInstance it : index.getAnnotations(DotNames.RETRY_WHEN)) {
             if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
-                exceptions.add(new DefinitionException("@RetryWhen present on '" + it.target() + "', but @Retry is missing"));
+                exceptions.add(
+                        new DefinitionException("@RetryWhen present on '" + it.target() + "', but @Retry is missing"));
             }
         }
         for (AnnotationInstance it : index.getAnnotations(DotNames.BEFORE_RETRY)) {
             if (!annotationStore.hasAnnotation(it.target(), DotNames.RETRY)) {
-                exceptions.add(new DefinitionException("@BeforeRetry present on '" + it.target() + "', but @Retry is missing"));
+                exceptions.add(new DefinitionException(
+                        "@BeforeRetry present on '" + it.target() + "', but @Retry is missing"));
             }
         }
 
@@ -403,8 +405,8 @@ public class SmallRyeFaultToleranceProcessor {
         }
         for (String expectedGuard : expectedGuards) {
             if (!existingGuards.containsKey(expectedGuard)) {
-                exceptions.add(new DefinitionException("Guard/TypedGuard with identifier '" + expectedGuard
-                        + "' expected, but does not exist"));
+                exceptions.add(new DefinitionException(
+                        "Guard/TypedGuard with identifier '" + expectedGuard + "' expected, but does not exist"));
             }
         }
 

@@ -66,8 +66,7 @@ final class ClassConfigurationPropertiesUtil {
     private final BuildProducer<ConfigPropertyBuildItem> configProperties;
 
     ClassConfigurationPropertiesUtil(IndexView applicationIndex, YamlListObjectHandler yamlListObjectHandler,
-            ClassCreator producerClassCreator,
-            Capabilities capabilities,
+            ClassCreator producerClassCreator, Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ConfigPropertyBuildItem> configProperties) {
@@ -113,23 +112,22 @@ final class ClassConfigurationPropertiesUtil {
 
             for (DotName configClass : configClasses) {
                 String configClassStr = configClass.toString();
-                FieldCreator fieldCreator = classCreator
-                        .getFieldCreator(
-                                configClass.isInner() ? configClass.local()
-                                        : configClass.withoutPackagePrefix() + "_" + HashUtil.sha1(configClassStr),
-                                configClassStr)
-                        .setModifiers(Modifier.PUBLIC); // done to prevent warning during the build
+                FieldCreator fieldCreator = classCreator.getFieldCreator(
+                        configClass.isInner() ? configClass.local()
+                                : configClass.withoutPackagePrefix() + "_" + HashUtil.sha1(configClassStr),
+                        configClassStr).setModifiers(Modifier.PUBLIC); // done to prevent warning during the build
                 fieldCreator.addAnnotation(Inject.class);
 
                 configClassToFieldDescriptor.put(configClass, fieldCreator.getFieldDescriptor());
             }
 
-            try (MethodCreator methodCreator = classCreator.getMethodCreator("onStartup", void.class, StartupEvent.class)) {
+            try (MethodCreator methodCreator = classCreator.getMethodCreator("onStartup", void.class,
+                    StartupEvent.class)) {
                 methodCreator.getParameterAnnotations(0).addAnnotation(Observes.class);
                 for (DotName configClass : configClasses) {
                     /*
-                     * We call toString on the bean which ensure that bean is created thus ensuring
-                     * validation is actually performed
+                     * We call toString on the bean which ensure that bean is created thus ensuring validation is
+                     * actually performed
                      */
                     ResultHandle field = methodCreator.readInstanceField(configClassToFieldDescriptor.get(configClass),
                             methodCreator.getThis());
@@ -146,15 +144,12 @@ final class ClassConfigurationPropertiesUtil {
      * @return true if the configuration class needs validation
      */
     boolean addProducerMethodForClassConfigProperties(ClassLoader classLoader, ClassInfo configPropertiesClassInfo,
-            String prefixStr, ConfigMapping.NamingStrategy namingStrategy,
-            boolean failOnMismatchingMember,
+            String prefixStr, ConfigMapping.NamingStrategy namingStrategy, boolean failOnMismatchingMember,
             ConfigurationPropertiesMetadataBuildItem.InstanceFactory instanceFactory) {
 
         if ((instanceFactory == null) && !configPropertiesClassInfo.hasNoArgsConstructor()) {
-            throw new IllegalArgumentException(
-                    "Class " + configPropertiesClassInfo + " which is annotated with "
-                            + ConfigurationPropertiesProcessor.CONFIGURATION_PROPERTIES
-                            + " must contain a no-arg constructor");
+            throw new IllegalArgumentException("Class " + configPropertiesClassInfo + " which is annotated with "
+                    + ConfigurationPropertiesProcessor.CONFIGURATION_PROPERTIES + " must contain a no-arg constructor");
         }
 
         String configObjectClassStr = configPropertiesClassInfo.name().toString();
@@ -168,26 +163,18 @@ final class ClassConfigurationPropertiesUtil {
 
         /*
          * Add a method like this:
-         *
-         * @Produces
-         * public SomeClass produceSomeClass(Config config) {
-         *
-         * }
-         *
-         * or
-         *
-         * @Produces
-         * public SomeClass produceSomeClass(Config config, Validator validator) {
-         *
-         * }
+         * 
+         * @Produces public SomeClass produceSomeClass(Config config) { } or
+         * 
+         * @Produces public SomeClass produceSomeClass(Config config, Validator validator) { }
          */
 
         String methodName = "produce" + configPropertiesClassInfo.name().withoutPackagePrefix();
-        try (MethodCreator methodCreator = producerClassCreator.getMethodCreator(
-                methodName, configObjectClassStr, produceMethodParameterTypes)) {
+        try (MethodCreator methodCreator = producerClassCreator.getMethodCreator(methodName, configObjectClassStr,
+                produceMethodParameterTypes)) {
             methodCreator.addAnnotation(Produces.class);
-            ResultHandle configObject = populateConfigObject(classLoader, configPropertiesClassInfo, prefixStr, namingStrategy,
-                    failOnMismatchingMember, instanceFactory, methodCreator);
+            ResultHandle configObject = populateConfigObject(classLoader, configPropertiesClassInfo, prefixStr,
+                    namingStrategy, failOnMismatchingMember, instanceFactory, methodCreator);
 
             if (needsValidation) {
                 createValidationCodePath(methodCreator, configObject, prefixStr);
@@ -201,8 +188,8 @@ final class ClassConfigurationPropertiesUtil {
 
     private static boolean needsValidation() {
         /*
-         * Hibernate Validator has minimum overhead if the class is unconstrained,
-         * so we'll just pass all config classes to it if it's present
+         * Hibernate Validator has minimum overhead if the class is unconstrained, so we'll just pass all config classes
+         * to it if it's present
          */
         return isHibernateValidatorInClasspath();
     }
@@ -217,8 +204,7 @@ final class ClassConfigurationPropertiesUtil {
     }
 
     private ResultHandle populateConfigObject(ClassLoader classLoader, ClassInfo configClassInfo, String prefixStr,
-            ConfigMapping.NamingStrategy namingStrategy,
-            boolean failOnMismatchingMember,
+            ConfigMapping.NamingStrategy namingStrategy, boolean failOnMismatchingMember,
             ConfigurationPropertiesMetadataBuildItem.InstanceFactory instanceFactory, MethodCreator methodCreator) {
         String configObjectClassStr = configClassInfo.name().toString();
         ResultHandle configObject;
@@ -235,10 +221,9 @@ final class ClassConfigurationPropertiesUtil {
         ClassInfo currentClassInHierarchy = configClassInfo;
         while (true) {
             if (!Modifier.isPublic(currentClassInHierarchy.flags())) {
-                throw new IllegalArgumentException(
-                        "Class '" + configObjectClassStr + "' which is annotated with '"
-                                + ConfigurationPropertiesProcessor.CONFIGURATION_PROPERTIES
-                                + "' must be public, as must be the case for all of its super classes");
+                throw new IllegalArgumentException("Class '" + configObjectClassStr + "' which is annotated with '"
+                        + ConfigurationPropertiesProcessor.CONFIGURATION_PROPERTIES
+                        + "' must be public, as must be the case for all of its super classes");
             }
 
             // For each field of the class try to pull it out of MP Config and call the corresponding setter
@@ -265,8 +250,8 @@ final class ClassConfigurationPropertiesUtil {
                 if (setter == null) {
                     if (!Modifier.isPublic(field.flags()) || Modifier.isFinal(field.flags())) {
                         String message = "Configuration properties class '" + configClassInfo
-                                + "' does not have a setter for field '"
-                                + field.name() + "' nor is the field a public non-final field.";
+                                + "' does not have a setter for field '" + field.name()
+                                + "' nor is the field a public non-final field.";
                         if (failOnMismatchingMember) {
                             throw new IllegalArgumentException(message);
                         } else {
@@ -282,8 +267,8 @@ final class ClassConfigurationPropertiesUtil {
                 }
 
                 /*
-                 * If the object is part of the application we are dealing with a nested object
-                 * What we do is simply recursively build it up based by adding the field name to the config name prefix
+                 * If the object is part of the application we are dealing with a nested object What we do is simply
+                 * recursively build it up based by adding the field name to the config name prefix
                  */
                 DotName fieldTypeDotName = fieldType.name();
                 ClassInfo fieldTypeClassInfo = applicationIndex.getClassByName(fieldType.name());
@@ -316,12 +301,13 @@ final class ClassConfigurationPropertiesUtil {
                         }
 
                         ResultHandle nestedConfigObject = populateConfigObject(classLoader, fieldTypeClassInfo,
-                                getFullConfigName(prefixStr, namingStrategy, field), namingStrategy, failOnMismatchingMember,
-                                null, methodCreator);
-                        createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, nestedConfigObject);
+                                getFullConfigName(prefixStr, namingStrategy, field), namingStrategy,
+                                failOnMismatchingMember, null, methodCreator);
+                        createWriteValue(methodCreator, configObject, field, setter, useFieldAccess,
+                                nestedConfigObject);
                     } else {
-                        LOGGER.warn("Nested configuration class '" + fieldTypeClassInfo
-                                + "' declared in '" + currentClassInHierarchy.name() + "." + field.name() + "' is either an "
+                        LOGGER.warn("Nested configuration class '" + fieldTypeClassInfo + "' declared in '"
+                                + currentClassInHierarchy.name() + "." + field.name() + "' is either an "
                                 + "interface or does not have a non-args constructor, so this field will not be initialized");
                     }
                 } else {
@@ -334,27 +320,25 @@ final class ClassConfigurationPropertiesUtil {
                         if (genericType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                             ConfigurationPropertiesUtil.registerImplicitConverter(genericType, reflectiveClasses);
                             ResultHandle setterValue = methodCreator.invokeInterfaceMethod(
-                                    MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
-                                            Class.class),
+                                    MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class,
+                                            String.class, Class.class),
                                     mpConfig, methodCreator.load(fullConfigName),
                                     methodCreator.loadClassFromTCCL(genericType.name().toString()));
                             createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
                         } else {
                             // convert the String value and populate an Optional with it
                             ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil
-                                    .createReadOptionalValueAndConvertIfNeeded(
-                                            fullConfigName,
-                                            genericType, field.declaringClass().name(), methodCreator, mpConfig);
+                                    .createReadOptionalValueAndConvertIfNeeded(fullConfigName, genericType,
+                                            field.declaringClass().name(), methodCreator, mpConfig);
                             createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
                                     useFieldAccess,
-                                    readOptionalResponse.getIsPresentTrue().invokeStaticMethod(
-                                            MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
+                                    readOptionalResponse.getIsPresentTrue().invokeStaticMethod(MethodDescriptor
+                                            .ofMethod(Optional.class, "of", Optional.class, Object.class),
                                             readOptionalResponse.getValue()));
 
                             // set Optional.empty if the value isn't set
                             createWriteValue(readOptionalResponse.getIsPresentFalse(), configObject, field, setter,
-                                    useFieldAccess,
-                                    readOptionalResponse.getIsPresentFalse().invokeStaticMethod(
+                                    useFieldAccess, readOptionalResponse.getIsPresentFalse().invokeStaticMethod(
                                             MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class)));
                         }
                     } else if (ConfigurationPropertiesUtil.isListOfObject(fieldType)) {
@@ -363,8 +347,8 @@ final class ClassConfigurationPropertiesUtil {
                                     "Support for List of objects in classes annotated with '@ConfigProperties' is only possible via the 'quarkus-config-yaml' extension. Offending field is '"
                                             + field.name() + "' of class '" + field.declaringClass().name().toString());
                         }
-                        ResultHandle setterValue = yamlListObjectHandler.handle(new YamlListObjectHandler.FieldMember(field),
-                                methodCreator, mpConfig,
+                        ResultHandle setterValue = yamlListObjectHandler.handle(
+                                new YamlListObjectHandler.FieldMember(field), methodCreator, mpConfig,
                                 getEffectiveConfigName(namingStrategy, field), fullConfigName);
                         createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
                     } else {
@@ -377,8 +361,7 @@ final class ClassConfigurationPropertiesUtil {
             }
 
             ConfigPropertyBuildItemCandidateUtil.removePropertiesWithDefaultValue(classLoader,
-                    currentClassInHierarchy.name().toString(),
-                    configPropertyBuildItemCandidates);
+                    currentClassInHierarchy.name().toString(), configPropertyBuildItemCandidates);
 
             DotName superClassDotName = currentClassInHierarchy.superName();
             if (superClassDotName.equals(DotNames.OBJECT)) {
@@ -409,42 +392,41 @@ final class ClassConfigurationPropertiesUtil {
     // creates the bytecode needed to populate anything other than a nested config object or an optional
     private static void populateTypicalProperty(MethodCreator methodCreator, ResultHandle configObject,
             List<ConfigPropertyBuildItemCandidate> configPropertyBuildItemCandidates, ClassInfo currentClassInHierarchy,
-            FieldInfo field, boolean useFieldAccess, Type fieldType, MethodInfo setter,
-            ResultHandle mpConfig, String fullConfigName) {
+            FieldInfo field, boolean useFieldAccess, Type fieldType, MethodInfo setter, ResultHandle mpConfig,
+            String fullConfigName) {
         /*
-         * We want to support cases where the Config class defines a default value for fields
-         * by simply specifying the default value in its constructor
-         * For such cases the strategy we follow is that when a requested property does not exist
-         * we check the value from the corresponding getter (or read the field value if possible)
-         * and if the value is not null we don't fail
+         * We want to support cases where the Config class defines a default value for fields by simply specifying the
+         * default value in its constructor For such cases the strategy we follow is that when a requested property does
+         * not exist we check the value from the corresponding getter (or read the field value if possible) and if the
+         * value is not null we don't fail
          */
         if (shouldCheckForDefaultValue(currentClassInHierarchy, field)) {
-            ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil.createReadOptionalValueAndConvertIfNeeded(
-                    fullConfigName,
-                    fieldType, field.declaringClass().name(), methodCreator, mpConfig);
+            ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil
+                    .createReadOptionalValueAndConvertIfNeeded(fullConfigName, fieldType, field.declaringClass().name(),
+                            methodCreator, mpConfig);
 
             // call the setter if the optional contained data
-            createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
-                    useFieldAccess,
+            createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter, useFieldAccess,
                     readOptionalResponse.getValue());
         } else {
             /*
-             * In this case we want a missing property to cause an exception that we don't handle
-             * So we call config.getValue making sure to handle collection values
+             * In this case we want a missing property to cause an exception that we don't handle So we call
+             * config.getValue making sure to handle collection values
              */
             ResultHandle setterValue = ConfigurationPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded(
-                    fullConfigName, fieldType,
-                    field.declaringClass().name(), methodCreator, mpConfig);
+                    fullConfigName, fieldType, field.declaringClass().name(), methodCreator, mpConfig);
             createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
 
         }
-        if (field.type().kind() != Type.Kind.PRIMITIVE) { // the JVM assigns primitive types a default even though it doesn't show up in the bytecode
+        if (field.type().kind() != Type.Kind.PRIMITIVE) { // the JVM assigns primitive types a default even though it
+                                                          // doesn't show up in the bytecode
             configPropertyBuildItemCandidates
                     .add(new ConfigPropertyBuildItemCandidate(field.name(), fullConfigName, fieldType));
         }
     }
 
-    private static String getFullConfigName(String prefixStr, ConfigMapping.NamingStrategy namingStrategy, FieldInfo field) {
+    private static String getFullConfigName(String prefixStr, ConfigMapping.NamingStrategy namingStrategy,
+            FieldInfo field) {
         return prefixStr + "." + getEffectiveConfigName(namingStrategy, field);
     }
 
@@ -487,15 +469,13 @@ final class ClassConfigurationPropertiesUtil {
         }
     }
 
-    private static void createSetterCall(BytecodeCreator bytecodeCreator, ResultHandle configObject,
-            MethodInfo setter, ResultHandle value) {
-        bytecodeCreator.invokeVirtualMethod(
-                MethodDescriptor.of(setter),
-                configObject, value);
+    private static void createSetterCall(BytecodeCreator bytecodeCreator, ResultHandle configObject, MethodInfo setter,
+            ResultHandle value) {
+        bytecodeCreator.invokeVirtualMethod(MethodDescriptor.of(setter), configObject, value);
     }
 
-    private static void createFieldWrite(BytecodeCreator bytecodeCreator, ResultHandle configObject,
-            FieldInfo field, ResultHandle value) {
+    private static void createFieldWrite(BytecodeCreator bytecodeCreator, ResultHandle configObject, FieldInfo field,
+            ResultHandle value) {
         bytecodeCreator.writeInstanceField(FieldDescriptor.of(field), configObject, value);
     }
 
@@ -510,16 +490,15 @@ final class ClassConfigurationPropertiesUtil {
     }
 
     /**
-     * Create code that uses the validator in order to validate the entire object
-     * If errors are found an IllegalArgumentException is thrown and the message
-     * is constructed by calling the previously generated VIOLATION_SET_TO_STRING_METHOD
+     * Create code that uses the validator in order to validate the entire object If errors are found an
+     * IllegalArgumentException is thrown and the message is constructed by calling the previously generated
+     * VIOLATION_SET_TO_STRING_METHOD
      */
     private static void createValidationCodePath(MethodCreator bytecodeCreator, ResultHandle configObject,
             String configPrefix) {
         ResultHandle validationResult = bytecodeCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(VALIDATOR_CLASS, "validate", Set.class, Object.class, Class[].class),
-                bytecodeCreator.getMethodParam(1), configObject,
-                bytecodeCreator.newArray(Class.class, 0));
+                bytecodeCreator.getMethodParam(1), configObject, bytecodeCreator.newArray(Class.class, 0));
         ResultHandle constraintSetIsEmpty = bytecodeCreator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(Set.class, "isEmpty", boolean.class), validationResult);
         BranchResult constraintSetIsEmptyBranch = bytecodeCreator.ifNonZero(constraintSetIsEmpty);
@@ -528,7 +507,8 @@ final class ClassConfigurationPropertiesUtil {
         BytecodeCreator constraintSetIsEmptyFalse = constraintSetIsEmptyBranch.falseBranch();
 
         ResultHandle exception = constraintSetIsEmptyFalse.newInstance(
-                MethodDescriptor.ofConstructor(CONSTRAINT_VIOLATION_EXCEPTION_CLASS, Set.class.getName()), validationResult);
+                MethodDescriptor.ofConstructor(CONSTRAINT_VIOLATION_EXCEPTION_CLASS, Set.class.getName()),
+                validationResult);
         constraintSetIsEmptyFalse.throwException(exception);
     }
 }

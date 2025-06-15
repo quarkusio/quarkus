@@ -87,17 +87,16 @@ public class ResteasyReactiveDeploymentManager {
         int minChunkSize = 128;
         int outputBufferSize = 8192;
         /**
-         * By default, we assume a default produced media type of "text/plain"
-         * for String endpoint return types. If this is disabled, the default
-         * produced media type will be "[text/plain, *&sol;*]" which is more
-         * expensive due to negotiation.
+         * By default, we assume a default produced media type of "text/plain" for String endpoint return types. If this
+         * is disabled, the default produced media type will be "[text/plain, *&sol;*]" which is more expensive due to
+         * negotiation.
          */
         private boolean singleDefaultProduces;
 
         /**
-         * When one of the quarkus-resteasy-reactive-jackson or quarkus-resteasy-reactive-jsonb extension are active
-         * and the result type of an endpoint is an application class or one of {@code Collection}, {@code List}, {@code Set} or
-         * {@code Map}, we assume the default return type is "application/json".
+         * When one of the quarkus-resteasy-reactive-jackson or quarkus-resteasy-reactive-jsonb extension are active and
+         * the result type of an endpoint is an application class or one of {@code Collection}, {@code List},
+         * {@code Set} or {@code Map}, we assume the default return type is "application/json".
          */
         private boolean defaultProduces;
 
@@ -114,8 +113,8 @@ public class ResteasyReactiveDeploymentManager {
 
         public ScanStep(IndexView nonCalculatingIndex) {
             index = JandexUtil.createCalculatingIndex(nonCalculatingIndex);
-            //we force the indexing of some internal classes
-            //so we can correctly detect their inheritors
+            // we force the indexing of some internal classes
+            // so we can correctly detect their inheritors
             index.getClassByName(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_READER);
             index.getClassByName(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER_ALL_WRITER);
             index.getClassByName(ResteasyReactiveServerDotNames.SERVER_MESSAGE_BODY_WRITER);
@@ -223,20 +222,14 @@ public class ResteasyReactiveDeploymentManager {
             List<ResourceClass> resourceClasses = new ArrayList<>();
             List<ResourceClass> subResourceClasses = new ArrayList<>();
 
-            ServerEndpointIndexer.Builder builder = new ServerEndpointIndexer.Builder()
-                    .setIndex(index)
-                    .setApplicationIndex(index)
-                    .addContextTypes(contextTypes)
+            ServerEndpointIndexer.Builder builder = new ServerEndpointIndexer.Builder().setIndex(index)
+                    .setApplicationIndex(index).addContextTypes(contextTypes)
                     .setAnnotationTransformations(annotationsTransformers)
                     .setScannedResourcePaths(resources.getScannedResourcePaths())
-                    .addParameterContainerTypes(parameterContainers)
-                    .setClassLevelExceptionMappers(new HashMap<>())
-                    .setAdditionalReaders(readers)
-                    .setAdditionalWriters(writers)
-                    .setInjectableBeans(new HashMap<>())
-                    .setConfig(
-                            new ResteasyReactiveConfig(inputBufferSize, minChunkSize, outputBufferSize, singleDefaultProduces,
-                                    defaultProduces))
+                    .addParameterContainerTypes(parameterContainers).setClassLevelExceptionMappers(new HashMap<>())
+                    .setAdditionalReaders(readers).setAdditionalWriters(writers).setInjectableBeans(new HashMap<>())
+                    .setConfig(new ResteasyReactiveConfig(inputBufferSize, minChunkSize, outputBufferSize,
+                            singleDefaultProduces, defaultProduces))
                     .setHttpAnnotationToMethod(resources.getHttpAnnotationToMethod())
                     .setApplicationScanningResult(applicationScanningResult)
                     .setRemovesTrailingSlash(removesTrailingSlash);
@@ -247,8 +240,7 @@ public class ResteasyReactiveDeploymentManager {
                 i.integrateWithIndexer(builder, index);
             }
 
-            ServerEndpointIndexer serverEndpointIndexer = builder
-                    .build();
+            ServerEndpointIndexer serverEndpointIndexer = builder.build();
             for (Map.Entry<DotName, ClassInfo> i : resources.getScannedResources().entrySet()) {
                 Optional<ResourceClass> res = serverEndpointIndexer.createEndpoints(i.getValue(), true);
                 if (res.isPresent()) {
@@ -267,16 +259,16 @@ public class ResteasyReactiveDeploymentManager {
                     .createResourceInterceptors(index, applicationScanningResult);
             DynamicFeatures dynamicFeatures = ResteasyReactiveFeatureScanner.createDynamicFeatures(index,
                     applicationScanningResult);
-            ParamConverterProviders paramConverters = ResteasyReactiveParamConverterScanner
-                    .createParamConverters(index, applicationScanningResult);
+            ParamConverterProviders paramConverters = ResteasyReactiveParamConverterScanner.createParamConverters(index,
+                    applicationScanningResult);
             ExceptionMapping exceptionMappers = ResteasyReactiveExceptionMappingScanner.createExceptionMappers(index,
                     applicationScanningResult);
             ContextResolvers contextResolvers = ResteasyReactiveContextResolverScanner.createContextResolvers(index,
                     applicationScanningResult);
             ScannedApplication scannedApplication = new ScannedApplication(resources, readers, writers,
-                    serializerScanningResult,
-                    applicationScanningResult, resourceClasses, subResourceClasses, scannedFeatures, resourceInterceptors,
-                    dynamicFeatures, paramConverters, exceptionMappers, contextResolvers);
+                    serializerScanningResult, applicationScanningResult, resourceClasses, subResourceClasses,
+                    scannedFeatures, resourceInterceptors, dynamicFeatures, paramConverters, exceptionMappers,
+                    contextResolvers);
 
             List<GeneratedClass> generatedClasses = new ArrayList<>();
             Map<String, List<BiFunction<String, ClassVisitor, ClassVisitor>>> transformers = new HashMap<>();
@@ -338,31 +330,29 @@ public class ResteasyReactiveDeploymentManager {
         public void addScannedSerializers() throws ClassNotFoundException {
             for (var i : sa.serializerScanningResult.getWriters()) {
                 serialisers.addWriter(classLoader.loadClass(i.getHandledClassName()),
-                        new ResourceWriter()
-                                .setMediaTypeStrings(i.getMediaTypeStrings())
-                                .setConstraint(i.getRuntimeType())
-                                .setBuiltin(i.isBuiltin())
+                        new ResourceWriter().setMediaTypeStrings(i.getMediaTypeStrings())
+                                .setConstraint(i.getRuntimeType()).setBuiltin(i.isBuiltin())
                                 .setPriority(i.getPriority())
                                 .setFactory(new ReflectionBeanFactory<>(i.getClassName())));
             }
             for (var i : sa.serializerScanningResult.getReaders()) {
                 serialisers.addReader(classLoader.loadClass(i.getHandledClassName()),
-                        new ResourceReader()
-                                .setMediaTypeStrings(i.getMediaTypeStrings())
-                                .setConstraint(i.getRuntimeType())
-                                .setBuiltin(i.isBuiltin())
+                        new ResourceReader().setMediaTypeStrings(i.getMediaTypeStrings())
+                                .setConstraint(i.getRuntimeType()).setBuiltin(i.isBuiltin())
                                 .setPriority(i.getPriority())
                                 .setFactory(new ReflectionBeanFactory<>(i.getClassName())));
             }
             for (var i : sa.writers.get()) {
                 serialisers.addWriter(classLoader.loadClass(i.getEntityClass()),
-                        new ResourceWriter().setFactory(ReflectiveContextInjectedBeanFactory.create(i.getHandlerClass()))
+                        new ResourceWriter()
+                                .setFactory(ReflectiveContextInjectedBeanFactory.create(i.getHandlerClass()))
                                 .setConstraint(i.getConstraint())
                                 .setMediaTypeStrings(Collections.singletonList(i.getMediaType())));
             }
             for (var i : sa.readers.get()) {
                 serialisers.addReader(classLoader.loadClass(i.getEntityClass()),
-                        new ResourceReader().setFactory(ReflectiveContextInjectedBeanFactory.create((i.getHandlerClass())))
+                        new ResourceReader()
+                                .setFactory(ReflectiveContextInjectedBeanFactory.create((i.getHandlerClass())))
                                 .setConstraint(i.getConstraint())
                                 .setMediaTypeStrings(Collections.singletonList(i.getMediaType())));
             }
@@ -370,16 +360,16 @@ public class ResteasyReactiveDeploymentManager {
 
         public void addBuiltinSerializers() {
             for (Serialisers.BuiltinReader builtinReader : ServerSerialisers.BUILTIN_READERS) {
-                serialisers.addReader(builtinReader.entityClass,
-                        new ResourceReader().setFactory(ReflectiveContextInjectedBeanFactory.create(builtinReader.readerClass))
-                                .setConstraint(builtinReader.constraint)
-                                .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));
+                serialisers.addReader(builtinReader.entityClass, new ResourceReader()
+                        .setFactory(ReflectiveContextInjectedBeanFactory.create(builtinReader.readerClass))
+                        .setConstraint(builtinReader.constraint)
+                        .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));
             }
             for (Serialisers.BuiltinWriter builtinReader : ServerSerialisers.BUILTIN_WRITERS) {
-                serialisers.addWriter(builtinReader.entityClass,
-                        new ResourceWriter().setFactory(ReflectiveContextInjectedBeanFactory.create(builtinReader.writerClass))
-                                .setConstraint(builtinReader.constraint)
-                                .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));
+                serialisers.addWriter(builtinReader.entityClass, new ResourceWriter()
+                        .setFactory(ReflectiveContextInjectedBeanFactory.create(builtinReader.writerClass))
+                        .setConstraint(builtinReader.constraint)
+                        .setMediaTypeStrings(Collections.singletonList(builtinReader.mediaType)).setBuiltin(true));
             }
         }
 
@@ -406,22 +396,17 @@ public class ResteasyReactiveDeploymentManager {
                 }
             }
 
-            DeploymentInfo info = new DeploymentInfo()
-                    .setResteasyReactiveConfig(new ResteasyReactiveConfig())
-                    .setFeatures(sa.scannedFeatures)
-                    .setInterceptors(sa.resourceInterceptors)
-                    .setDynamicFeatures(sa.dynamicFeatures)
-                    .setParamConverterProviders(sa.paramConverters)
-                    .setSerialisers(serialisers)
-                    .setExceptionMapping(sa.exceptionMappers)
-                    .setResourceClasses(sa.resourceClasses)
-                    .setCtxResolvers(sa.contextResolvers)
+            DeploymentInfo info = new DeploymentInfo().setResteasyReactiveConfig(new ResteasyReactiveConfig())
+                    .setFeatures(sa.scannedFeatures).setInterceptors(sa.resourceInterceptors)
+                    .setDynamicFeatures(sa.dynamicFeatures).setParamConverterProviders(sa.paramConverters)
+                    .setSerialisers(serialisers).setExceptionMapping(sa.exceptionMappers)
+                    .setResourceClasses(sa.resourceClasses).setCtxResolvers(sa.contextResolvers)
                     .setLocatableResourceClasses(sa.subResourceClasses)
                     .setFactoryCreator(ReflectiveContextInjectedBeanFactory.FACTORY)
                     .setApplicationSupplier(new Supplier<Application>() {
                         @Override
                         public Application get() {
-                            //TODO: make pluggable
+                            // TODO: make pluggable
                             if (sa.applicationScanningResult.getSelectedAppClass() == null) {
                                 return new Application();
                             } else {
@@ -429,8 +414,7 @@ public class ResteasyReactiveDeploymentManager {
                                     return (Application) Class
                                             .forName(sa.applicationScanningResult.getSelectedAppClass().name()
                                                     .toString(), false, classLoader)
-                                            .getDeclaredConstructor()
-                                            .newInstance();
+                                            .getDeclaredConstructor().newInstance();
                                 } catch (InstantiationException | IllegalAccessException | ClassNotFoundException
                                         | NoSuchMethodException | InvocationTargetException e) {
                                     throw new RuntimeException(e);
@@ -453,8 +437,7 @@ public class ResteasyReactiveDeploymentManager {
                 }
             };
             RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, executorSupplier,
-                    executorSupplier,
-                    closeTasks::add, requestContextFactory, ThreadSetupAction.NOOP, "/");
+                    executorSupplier, closeTasks::add, requestContextFactory, ThreadSetupAction.NOOP, "/");
             Deployment deployment = runtimeDeploymentManager.deploy();
             deployment.setRuntimeConfiguration(runtimeConfiguration);
             RestInitialHandler initialHandler = new RestInitialHandler(deployment);

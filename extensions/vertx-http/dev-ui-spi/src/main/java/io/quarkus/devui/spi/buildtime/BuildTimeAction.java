@@ -7,8 +7,8 @@ import java.util.function.Function;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
- * Define a action that can be executed against the deployment classpath in runtime
- * This means a call will still be make with Json-RPC to the backend, but fall through to this action
+ * Define a action that can be executed against the deployment classpath in runtime This means a call will still be make
+ * with Json-RPC to the backend, but fall through to this action
  */
 public class BuildTimeAction {
 
@@ -17,8 +17,7 @@ public class BuildTimeAction {
     private final BiFunction<Object, Map<String, String>, ?> assistantAction;
     private final RuntimeValue runtimeValue;
 
-    protected <T> BuildTimeAction(String methodName,
-            Function<Map<String, String>, T> action) {
+    protected <T> BuildTimeAction(String methodName, Function<Map<String, String>, T> action) {
 
         this.methodName = methodName;
         this.action = action;
@@ -26,8 +25,7 @@ public class BuildTimeAction {
         this.runtimeValue = null;
     }
 
-    protected <T> BuildTimeAction(String methodName,
-            BiFunction<Object, Map<String, String>, T> assistantAction) {
+    protected <T> BuildTimeAction(String methodName, BiFunction<Object, Map<String, String>, T> assistantAction) {
 
         this.methodName = methodName;
         this.action = null;
@@ -35,8 +33,7 @@ public class BuildTimeAction {
         this.runtimeValue = null;
     }
 
-    protected <T> BuildTimeAction(String methodName,
-            RuntimeValue runtimeValue) {
+    protected <T> BuildTimeAction(String methodName, RuntimeValue runtimeValue) {
 
         this.methodName = methodName;
         this.action = null;

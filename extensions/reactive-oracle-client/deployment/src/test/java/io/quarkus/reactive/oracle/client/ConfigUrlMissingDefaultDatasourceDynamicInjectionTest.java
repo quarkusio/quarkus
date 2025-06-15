@@ -58,11 +58,10 @@ public class ConfigUrlMissingDefaultDatasourceDynamicInjectionTest {
     private <T> void doTest(InjectableInstance<T> instance, Consumer<T> action) {
         var pool = instance.get();
         assertThat(pool).isNotNull();
-        assertThatThrownBy(() -> action.accept(pool))
-                .isInstanceOf(InactiveBeanException.class)
-                .hasMessageContainingAll("Datasource '<default>' was deactivated automatically because its URL is not set.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
-                        "To activate the datasource, set configuration property 'quarkus.datasource.reactive.url'",
-                        "Refer to https://quarkus.io/guides/datasource for guidance.");
+        assertThatThrownBy(() -> action.accept(pool)).isInstanceOf(InactiveBeanException.class).hasMessageContainingAll(
+                "Datasource '<default>' was deactivated automatically because its URL is not set.",
+                "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                "To activate the datasource, set configuration property 'quarkus.datasource.reactive.url'",
+                "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

@@ -22,22 +22,20 @@ import io.smallrye.common.annotation.Experimental;
 public @interface CustomDeserialization {
 
     /**
-     * A {@code BiFunction} that converts the global {@code ObjectMapper} and type for which a custom {@code ObjectReader} is
-     * needed
-     * (this type will be a generic type if the method returns such a generic type) and returns the instance of the custom
-     * {@code ObjectReader}.
+     * A {@code BiFunction} that converts the global {@code ObjectMapper} and type for which a custom
+     * {@code ObjectReader} is needed (this type will be a generic type if the method returns such a generic type) and
+     * returns the instance of the custom {@code ObjectReader}.
      * <p>
-     * Quarkus will construct one instance of this {@code BiFunction} for each JAX-RS resource method that is annotated with
-     * {@code CustomDeserialization} and once an instance is created it will be cached for subsequent usage by that resource
-     * method.
+     * Quarkus will construct one instance of this {@code BiFunction} for each JAX-RS resource method that is annotated
+     * with {@code CustomDeserialization} and once an instance is created it will be cached for subsequent usage by that
+     * resource method.
      * <p>
      * The {@code BiFunction} MUST contain a no-args constructor.
      * <p>
-     * Furthermore, it is advisable that it contains no state that is updated outside
-     * its constructor.
+     * Furthermore, it is advisable that it contains no state that is updated outside its constructor.
      * <p>
-     * Finally and most importantly, the {@code ObjectMapper} should NEVER be changed any way as it is the global ObjectMapper
-     * that is accessible to the entire Quarkus application.
+     * Finally and most importantly, the {@code ObjectMapper} should NEVER be changed any way as it is the global
+     * ObjectMapper that is accessible to the entire Quarkus application.
      */
     Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> value();
 }

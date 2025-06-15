@@ -68,8 +68,7 @@ class HibernateSearchElasticsearchProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    public void build(HibernateSearchElasticsearchRecorder recorder,
-            CombinedIndexBuildItem combinedIndexBuildItem,
+    public void build(HibernateSearchElasticsearchRecorder recorder, CombinedIndexBuildItem combinedIndexBuildItem,
             HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
@@ -98,8 +97,8 @@ class HibernateSearchElasticsearchProcessor {
                     .getOrDefault(puDescriptor.getPersistenceUnitName(), Collections.emptyMap());
             String puName = puDescriptor.getPersistenceUnitName();
             buildForPersistenceUnit(recorder, indexedAnnotationsForPU, puName, configByPU.get(puName),
-                    backendAndIndexNamesForSearchExtensions,
-                    configuredPersistenceUnits, staticIntegrations, runtimeIntegrations);
+                    backendAndIndexNamesForSearchExtensions, configuredPersistenceUnits, staticIntegrations,
+                    runtimeIntegrations);
         }
     }
 
@@ -111,9 +110,11 @@ class HibernateSearchElasticsearchProcessor {
             var backendName = annotation.value("backend");
             var indexName = annotation.value("index");
             Set<String> indexNames = result
-                    .computeIfAbsent(puName == null ? PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME : puName.asString(),
+                    .computeIfAbsent(
+                            puName == null ? PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME : puName.asString(),
                             ignored -> new LinkedHashMap<>())
-                    .computeIfAbsent(backendName == null ? null : backendName.asString(), ignored -> new LinkedHashSet<>());
+                    .computeIfAbsent(backendName == null ? null : backendName.asString(),
+                            ignored -> new LinkedHashSet<>());
             if (indexName != null) {
                 indexNames.add(indexName.asString());
             }
@@ -130,13 +131,14 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
         if (indexedAnnotationsForPU.isEmpty()) {
             // we don't have any indexed entity, we can disable Hibernate Search
-            staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createStaticInitInactiveListener()));
+            staticIntegrations
+                    .produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                            persistenceUnitName).setInitListener(recorder.createStaticInitInactiveListener()));
             // we need a runtime listener even when Hibernate Search is disabled,
             // just to let Hibernate Search boot up until the point where it checks whether it's enabled or not
-            runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName)
-                    .setInitListener(recorder.createRuntimeInitInactiveListener()));
+            runtimeIntegrations
+                    .produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
+                            persistenceUnitName).setInitListener(recorder.createRuntimeInitInactiveListener()));
             return;
         }
 
@@ -148,10 +150,11 @@ class HibernateSearchElasticsearchProcessor {
         }
 
         configuredPersistenceUnits
-                .produce(new HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(
-                        new HibernateSearchOrmElasticsearchMapperContext(persistenceUnitName,
-                                backendNamesForIndexedEntities, backendAndIndexNamesForSearchExtensions),
-                        puConfig));
+                .produce(
+                        new HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem(
+                                new HibernateSearchOrmElasticsearchMapperContext(persistenceUnitName,
+                                        backendNamesForIndexedEntities, backendAndIndexNamesForSearchExtensions),
+                                puConfig));
     }
 
     @BuildStep
@@ -185,8 +188,8 @@ class HibernateSearchElasticsearchProcessor {
             HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticConfigured) {
         // Make it possible to record the settings as bytecode:
-        recorderContext.registerSubstitution(ElasticsearchVersion.class,
-                String.class, ElasticsearchVersionSubstitution.class);
+        recorderContext.registerSubstitution(ElasticsearchVersion.class, String.class,
+                ElasticsearchVersionSubstitution.class);
 
         IndexView index = combinedIndexBuildItem.getIndex();
         Set<String> rootAnnotationMappedClassNames = collectRootAnnotationMappedClassNames(index);
@@ -206,16 +209,15 @@ class HibernateSearchElasticsearchProcessor {
                     xmlMappingRequired = true;
                 }
             }
-            staticConfigured.produce(
-                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
-                            .setInitListener(
-                                    // we cannot pass a config group to a recorder so passing the whole config
-                                    recorder.createStaticInitListener(
-                                            configuredPersistenceUnit.mapperContext,
-                                            buildTimeConfig,
-                                            rootAnnotationMappedClassNames,
-                                            integrationStaticInitListeners))
-                            .setXmlMappingRequired(xmlMappingRequired));
+            staticConfigured
+                    .produce(
+                            new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
+                                    .setInitListener(
+                                            // we cannot pass a config group to a recorder so passing the whole config
+                                            recorder.createStaticInitListener(configuredPersistenceUnit.mapperContext,
+                                                    buildTimeConfig, rootAnnotationMappedClassNames,
+                                                    integrationStaticInitListeners))
+                                    .setXmlMappingRequired(xmlMappingRequired));
         }
     }
 
@@ -264,9 +266,8 @@ class HibernateSearchElasticsearchProcessor {
             }
             runtimeConfigured.produce(
                     new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
-                            .setInitListener(
-                                    recorder.createRuntimeInitListener(configuredPersistenceUnit.mapperContext,
-                                            runtimeConfig, integrationRuntimeInitListeners)));
+                            .setInitListener(recorder.createRuntimeInitListener(configuredPersistenceUnit.mapperContext,
+                                    runtimeConfig, integrationRuntimeInitListeners)));
         }
     }
 
@@ -279,8 +280,7 @@ class HibernateSearchElasticsearchProcessor {
             return null;
         }
         var defaultPUDefaultBackendConfig = defaultPUConfig.backends().get(null);
-        if (defaultPUDefaultBackendConfig == null
-                || !defaultPUDefaultBackendConfig.version().isPresent()) {
+        if (defaultPUDefaultBackendConfig == null || !defaultPUDefaultBackendConfig.version().isPresent()) {
             // If the version is not set, the default backend is not in use.
             return null;
         }
@@ -293,8 +293,7 @@ class HibernateSearchElasticsearchProcessor {
         ElasticsearchVersion version = defaultPUDefaultBackendConfig.version().get();
         String hostsPropertyKey = backendPropertyKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, null, null,
                 "hosts");
-        return new DevservicesElasticsearchBuildItem(hostsPropertyKey,
-                version.versionString(),
+        return new DevservicesElasticsearchBuildItem(hostsPropertyKey, version.versionString(),
                 Distribution.valueOf(version.distribution().toString().toUpperCase()));
     }
 
@@ -329,17 +328,14 @@ class HibernateSearchElasticsearchProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = HibernateSearchManagementEnabled.class)
-    void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
-            HibernateSearchElasticsearchRecorder recorder,
+    void createManagementRoutes(BuildProducer<RouteBuildItem> routes, HibernateSearchElasticsearchRecorder recorder,
             HibernateSearchElasticsearchBuildTimeConfig hibernateSearchElasticsearchBuildTimeConfig) {
 
         String managementRootPath = hibernateSearchElasticsearchBuildTimeConfig.management().rootPath();
 
-        routes.produce(RouteBuildItem.newManagementRoute(
-                managementRootPath + (managementRootPath.endsWith("/") ? "" : "/") + "reindex")
+        routes.produce(RouteBuildItem
+                .newManagementRoute(managementRootPath + (managementRootPath.endsWith("/") ? "" : "/") + "reindex")
                 .withRoutePathConfigKey("quarkus.hibernate-search-orm.management.root-path")
-                .withRequestHandler(recorder.managementHandler())
-                .displayOnNotFoundPage()
-                .build());
+                .withRequestHandler(recorder.managementHandler()).displayOnNotFoundPage().build());
     }
 }

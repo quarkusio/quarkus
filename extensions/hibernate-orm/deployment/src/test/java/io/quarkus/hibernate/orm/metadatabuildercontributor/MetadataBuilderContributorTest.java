@@ -15,9 +15,7 @@ public class MetadataBuilderContributorTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(CustomMetadataBuilderContributor.class)
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addClass(CustomMetadataBuilderContributor.class)
                     .addAsResource("application-metadata-builder-contributor.properties", "application.properties"));
 
     @Inject
@@ -31,8 +29,7 @@ public class MetadataBuilderContributorTest {
         entityManager.persist(entity);
 
         assertThat(entityManager.createQuery("select addHardcodedSuffix(e.name) from MyEntity e", String.class)
-                .getSingleResult())
-                .isEqualTo("some_name_some_suffix");
+                .getSingleResult()).isEqualTo("some_name_some_suffix");
     }
 
 }

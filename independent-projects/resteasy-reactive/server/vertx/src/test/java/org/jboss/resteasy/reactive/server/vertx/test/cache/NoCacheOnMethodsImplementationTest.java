@@ -29,39 +29,29 @@ public class NoCacheOnMethodsImplementationTest {
                 public void accept(ResteasyReactiveDeploymentManager.ScanStep scanStep) {
                     scanStep.addMethodScanner(new CacheControlScanner());
                 }
-            })
-            .setArchiveProducer(new Supplier<>() {
+            }).setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(IResourceWithNoCache.class, ResourceWithNoCache.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(IResourceWithNoCache.class,
+                            ResourceWithNoCache.class);
                 }
             });
 
     @Test
     public void testWithFields() {
-        RestAssured.get("/test/withFields")
-                .then()
-                .statusCode(200)
-                .body(equalTo("withFields"))
-                .header("Cache-Control", "no-cache=\"f1\", no-cache=\"f2\"");
+        RestAssured.get("/test/withFields").then().statusCode(200).body(equalTo("withFields")).header("Cache-Control",
+                "no-cache=\"f1\", no-cache=\"f2\"");
     }
 
     @Test
     public void testWithoutFields() {
-        RestAssured.get("/test/withoutFields")
-                .then()
-                .statusCode(200)
-                .body(equalTo("withoutFields"))
+        RestAssured.get("/test/withoutFields").then().statusCode(200).body(equalTo("withoutFields"))
                 .header("Cache-Control", "no-cache");
     }
 
     @Test
     public void testWithoutAnnotation() {
-        RestAssured.get("/test/withoutAnnotation")
-                .then()
-                .statusCode(200)
-                .body(equalTo("withoutAnnotation"))
+        RestAssured.get("/test/withoutAnnotation").then().statusCode(200).body(equalTo("withoutAnnotation"))
                 .header("Cache-Control", nullValue());
     }
 

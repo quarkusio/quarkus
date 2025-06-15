@@ -30,16 +30,16 @@ public class ResteasyReactiveJsonRPCService {
                 e.put("className", endpoint.className);
                 e.put("httpMethod", endpoint.httpMethod);
                 e.put("fullPath", endpoint.fullPath);
-                e.put("producesHeaders", endpoint.produces.stream()
-                        .map(MediaType::toString)
-                        .collect(Collectors.toList()));
-                e.put("consumesHeaders", endpoint.consumes.stream()
-                        .map(MediaType::toString)
-                        .collect(Collectors.toList()));
+                e.put("producesHeaders",
+                        endpoint.produces.stream().map(MediaType::toString).collect(Collectors.toList()));
+                e.put("consumesHeaders",
+                        endpoint.consumes.stream().map(MediaType::toString).collect(Collectors.toList()));
 
                 JsonObject diagnostics = new JsonObject();
-                Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> sortedDiagnostics = new TreeMap<>(endpoint.diagnostics);
-                for (Map.Entry<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> diagnostic : sortedDiagnostics.entrySet()) {
+                Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> sortedDiagnostics = new TreeMap<>(
+                        endpoint.diagnostics);
+                for (Map.Entry<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> diagnostic : sortedDiagnostics
+                        .entrySet()) {
                     JsonArray diagnosticValues = new JsonArray();
                     for (ScoreSystem.Diagnostic value : diagnostic.getValue()) {
                         JsonObject diagnosticValue = new JsonObject();
@@ -51,8 +51,7 @@ public class ResteasyReactiveJsonRPCService {
                 }
                 e.put("diagnostics", diagnostics);
                 e.put("requestFilterEntries", endpoint.requestFilterEntries.stream()
-                        .map(ScoreSystem.RequestFilterEntry::getName)
-                        .collect(Collectors.toList()));
+                        .map(ScoreSystem.RequestFilterEntry::getName).collect(Collectors.toList()));
                 e.put("score", endpoint.score);
                 endpoints.add(e);
             }

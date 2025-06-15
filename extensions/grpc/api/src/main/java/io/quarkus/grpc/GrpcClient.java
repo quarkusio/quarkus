@@ -39,7 +39,9 @@ public @interface GrpcClient {
         /**
          * Creates a new instance of {@link Literal}.
          *
-         * @param value the name of the gRPC service, must not be {@code null}, must not be {@code blank}
+         * @param value
+         *        the name of the gRPC service, must not be {@code null}, must not be {@code blank}
+         *
          * @return the literal instance.
          */
         public static Literal of(String value) {

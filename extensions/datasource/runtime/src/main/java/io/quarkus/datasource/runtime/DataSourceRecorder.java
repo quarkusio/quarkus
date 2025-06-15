@@ -13,8 +13,7 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class DataSourceRecorder {
 
-    public RuntimeValue<DataSourceSupport> createDataSourceSupport(
-            DataSourcesBuildTimeConfig buildTimeConfig,
+    public RuntimeValue<DataSourceSupport> createDataSourceSupport(DataSourcesBuildTimeConfig buildTimeConfig,
             DataSourcesRuntimeConfig runtimeConfig) {
         Stream.Builder<String> excludedForHealthChecks = Stream.builder();
         for (Map.Entry<String, DataSourceBuildTimeConfig> dataSource : buildTimeConfig.dataSources().entrySet()) {

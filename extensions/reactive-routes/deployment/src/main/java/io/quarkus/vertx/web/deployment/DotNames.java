@@ -33,10 +33,10 @@ final class DotNames {
     static final DotName MUTINY_BUFFER = DotName.createSimple(io.vertx.mutiny.core.buffer.Buffer.class.getName());
     static final DotName HTTP_SERVER_RESPONSE = DotName.createSimple(HttpServerResponse.class.getName());
     static final DotName HTTP_SERVER_REQUEST = DotName.createSimple(HttpServerRequest.class.getName());
-    static final DotName MUTINY_HTTP_SERVER_RESPONSE = DotName.createSimple(
-            io.vertx.mutiny.core.http.HttpServerResponse.class.getName());
-    static final DotName MUTINY_HTTP_SERVER_REQUEST = DotName.createSimple(
-            io.vertx.mutiny.core.http.HttpServerRequest.class.getName());
+    static final DotName MUTINY_HTTP_SERVER_RESPONSE = DotName
+            .createSimple(io.vertx.mutiny.core.http.HttpServerResponse.class.getName());
+    static final DotName MUTINY_HTTP_SERVER_REQUEST = DotName
+            .createSimple(io.vertx.mutiny.core.http.HttpServerRequest.class.getName());
     static final DotName ROUTING_EXCHANGE = DotName.createSimple(RoutingExchange.class.getName());
     static final DotName ROUTING_CONTEXT = DotName.createSimple(RoutingContext.class.getName());
     static final DotName BODY = DotName.createSimple(Body.class.getName());

@@ -20,8 +20,7 @@ public class StatelessSessionWithinRequestScopeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
                     .addAsResource(EmptyAsset.INSTANCE, "import.sql"));
 
     @Inject
@@ -34,20 +33,20 @@ public class StatelessSessionWithinRequestScopeTest {
 
     @Test
     public void read() {
-        assertEquals(0L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
-                .getResultCount());
+        assertEquals(0L,
+                statelessSession
+                        .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
+                        .getResultCount());
     }
 
     @Test
     public void write() {
-        assertEquals(0L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
+        assertEquals(0L, statelessSession.createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
                 .getResultCount());
-        // TODO: On contrary to Session, it seems we don't prevent writes on StatelessSessions with no transaction active?
+        // TODO: On contrary to Session, it seems we don't prevent writes on StatelessSessions with no transaction
+        // active?
         statelessSession.insert(new MyEntity("john"));
-        assertEquals(1L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
+        assertEquals(1L, statelessSession.createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
                 .getResultCount());
     }
 

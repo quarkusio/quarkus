@@ -32,17 +32,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class PublisherSignatureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanProducingAPublisherOfMessage.class,
-                            BeanProducingAPublisherOfPayload.class,
-                            BeanProducingAPublisherBuilderOfMessage.class,
-                            BeanProducingAPublisherBuilderOfPayload.class,
-                            BeanProducingPayloads.class,
-                            BeanProducingMessages.class,
-                            BeanProducingPayloadsAsynchronously.class,
-                            BeanProducingMessagesAsynchronously.class,
-                            Spy.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(BeanProducingAPublisherOfMessage.class, BeanProducingAPublisherOfPayload.class,
+                    BeanProducingAPublisherBuilderOfMessage.class, BeanProducingAPublisherBuilderOfPayload.class,
+                    BeanProducingPayloads.class, BeanProducingMessages.class, BeanProducingPayloadsAsynchronously.class,
+                    BeanProducingMessagesAsynchronously.class, Spy.class));
 
     @Inject
     BeanProducingAPublisherOfMessage beanProducingAPublisherOfMessage;
@@ -95,9 +89,7 @@ public class PublisherSignatureTest {
 
         @Outgoing("A")
         public Publisher<Message<Integer>> produce() {
-            return ReactiveStreams.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-                    .map(Message::of)
-                    .buildRs();
+            return ReactiveStreams.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(Message::of).buildRs();
         }
 
         @Incoming("A")
@@ -111,8 +103,7 @@ public class PublisherSignatureTest {
     public static class BeanProducingAPublisherOfPayload extends Spy {
         @Outgoing("B")
         public Publisher<Integer> produce() {
-            return ReactiveStreams.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-                    .buildRs();
+            return ReactiveStreams.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).buildRs();
         }
 
         @Incoming("B")
@@ -125,8 +116,7 @@ public class PublisherSignatureTest {
     public static class BeanProducingAPublisherBuilderOfMessage extends Spy {
         @Outgoing("C")
         public PublisherBuilder<Message<Integer>> produce() {
-            return ReactiveStreams.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
-                    .map(Message::of);
+            return ReactiveStreams.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9).map(Message::of);
         }
 
         @Incoming("C")

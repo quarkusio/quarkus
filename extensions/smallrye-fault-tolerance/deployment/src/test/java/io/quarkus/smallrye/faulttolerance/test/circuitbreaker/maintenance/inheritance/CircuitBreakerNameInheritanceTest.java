@@ -12,9 +12,8 @@ import io.smallrye.faulttolerance.api.CircuitBreakerMaintenance;
 
 public class CircuitBreakerNameInheritanceTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SubCircuitBreakerService.class, SuperCircuitBreakerService.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(SubCircuitBreakerService.class, SuperCircuitBreakerService.class));
 
     @Inject
     CircuitBreakerMaintenance cb;

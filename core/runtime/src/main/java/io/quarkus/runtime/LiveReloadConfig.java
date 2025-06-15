@@ -23,8 +23,8 @@ public interface LiveReloadConfig {
     boolean enabled();
 
     /**
-     * Whether Quarkus should enable its ability to not do a full restart
-     * when changes to classes are compatible with JVM instrumentation.
+     * Whether Quarkus should enable its ability to not do a full restart when changes to classes are compatible with
+     * JVM instrumentation.
      * <p>
      * If this is set to true, Quarkus will perform class redefinition when possible.
      */
@@ -32,8 +32,8 @@ public interface LiveReloadConfig {
     boolean instrumentation();
 
     /**
-     * The names of additional resource files to watch for changes, triggering a reload on change. Directories are <em>not</em>
-     * supported.
+     * The names of additional resource files to watch for changes, triggering a reload on change. Directories are
+     * <em>not</em> supported.
      */
     Optional<List<String>> watchedResources();
 

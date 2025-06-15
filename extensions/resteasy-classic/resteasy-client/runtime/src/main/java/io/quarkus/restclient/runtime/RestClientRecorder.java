@@ -25,8 +25,7 @@ public class RestClientRecorder {
     }
 
     public void initializeResteasyProviderFactory(RuntimeValue<InjectorFactory> ifc, boolean useBuiltIn,
-            Set<String> providersToRegister,
-            Set<String> contributedProviders) {
+            Set<String> providersToRegister, Set<String> contributedProviders) {
         ResteasyProviderFactory clientProviderFactory = new ResteasyProviderFactoryImpl(RuntimeType.CLIENT,
                 new ResteasyProviderFactoryImpl()) {
             @Override
@@ -51,8 +50,7 @@ public class RestClientRecorder {
     }
 
     private static void registerProviders(ResteasyProviderFactory providerFactory, boolean useBuiltIn,
-            Set<String> providersToRegister,
-            Set<String> contributedProviders) {
+            Set<String> providersToRegister, Set<String> contributedProviders) {
         if (useBuiltIn) {
             RegisterBuiltin.register(providerFactory);
         } else {
@@ -66,10 +64,8 @@ public class RestClientRecorder {
             Boolean isBuiltIn) {
         for (String providerToRegister : providersToRegister) {
             try {
-                providerFactory
-                        .registerProvider(
-                                Thread.currentThread().getContextClassLoader().loadClass(providerToRegister.trim()),
-                                isBuiltIn);
+                providerFactory.registerProvider(
+                        Thread.currentThread().getContextClassLoader().loadClass(providerToRegister.trim()), isBuiltIn);
             } catch (ClassNotFoundException e) {
                 throw new RuntimeException("Unable to find class for provider " + providerToRegister, e);
             }

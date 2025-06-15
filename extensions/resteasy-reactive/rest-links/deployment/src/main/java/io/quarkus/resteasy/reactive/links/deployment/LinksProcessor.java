@@ -73,8 +73,8 @@ final class LinksProcessor {
         // Initialize links container
         LinksContainer linksContainer = getLinksContainer(resourceMethodEntriesBuildItem, index);
         // Implement getters to access link path parameter values
-        RuntimeValue<GetterAccessorsContainer> getterAccessorsContainer = implementPathParameterValueGetters(
-                index, classOutput, linksContainer, getterAccessorsContainerRecorder, bytecodeTransformersProducer);
+        RuntimeValue<GetterAccessorsContainer> getterAccessorsContainer = implementPathParameterValueGetters(index,
+                classOutput, linksContainer, getterAccessorsContainerRecorder, bytecodeTransformersProducer);
 
         linksProviderRecorder.setGetterAccessorsContainer(getterAccessorsContainer);
         linksProviderRecorder.setLinksContainer(linksContainer);
@@ -92,8 +92,8 @@ final class LinksProcessor {
         boolean isHalSupported = capabilities.isPresent(Capability.HAL);
         if (isHalSupported && isHalMediaTypeUsedInAnyResource(resourceMethodEntriesBuildItem.getEntries())) {
 
-            if (!capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB) && !capabilities.isPresent(
-                    Capability.RESTEASY_REACTIVE_JSON_JACKSON)) {
+            if (!capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JSONB)
+                    && !capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JACKSON)) {
 
                 throw new IllegalStateException("Cannot generate HAL endpoints without "
                         + "either 'quarkus-rest-jackson' or 'quarkus-rest-jsonb'");
@@ -107,14 +107,15 @@ final class LinksProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         boolean isHalSupported = capabilities.isPresent(Capability.HAL);
         if (isHalSupported) {
-            customResponseFilters.produce(
-                    new CustomContainerResponseFilterBuildItem(HalServerResponseFilter.class.getName()));
+            customResponseFilters
+                    .produce(new CustomContainerResponseFilterBuildItem(HalServerResponseFilter.class.getName()));
 
             additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ResteasyReactiveHalService.class));
         }
     }
 
-    private boolean isHalMediaTypeUsedInAnyResource(List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> entries) {
+    private boolean isHalMediaTypeUsedInAnyResource(
+            List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> entries) {
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : entries) {
             for (String mediaType : entry.getResourceMethod().getProduces()) {
                 if (RestMediaType.APPLICATION_HAL_JSON.equals(mediaType)) {
@@ -126,21 +127,22 @@ final class LinksProcessor {
         return false;
     }
 
-    private LinksContainer getLinksContainer(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem,
-            IndexView index) {
+    private LinksContainer getLinksContainer(
+            ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem, IndexView index) {
         LinksContainerFactory linksContainerFactory = new LinksContainerFactory();
         return linksContainerFactory.getLinksContainer(resourceMethodEntriesBuildItem.getEntries(), index);
     }
 
     /**
-     * For each path parameter implement a getter method in a class that holds its value.
-     * Then implement a getter accessor class that knows how to access that getter method to avoid using reflection later.
+     * For each path parameter implement a getter method in a class that holds its value. Then implement a getter
+     * accessor class that knows how to access that getter method to avoid using reflection later.
      */
     private RuntimeValue<GetterAccessorsContainer> implementPathParameterValueGetters(IndexView index,
             ClassOutput classOutput, LinksContainer linksContainer,
             GetterAccessorsContainerRecorder getterAccessorsContainerRecorder,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer) {
-        RuntimeValue<GetterAccessorsContainer> getterAccessorsContainer = getterAccessorsContainerRecorder.newContainer();
+        RuntimeValue<GetterAccessorsContainer> getterAccessorsContainer = getterAccessorsContainerRecorder
+                .newContainer();
         Set<GetterMetadata> implementedGetters = new HashSet<>();
 
         for (List<LinkInfo> linkInfos : linksContainer.getLinksMap().values()) {
@@ -159,9 +161,8 @@ final class LinksProcessor {
                             implementedGetters.add(getterMetadata);
                         }
 
-                        getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer,
-                                entityType, parameterName,
-                                getterMetadata.getGetterAccessorName());
+                        getterAccessorsContainerRecorder.addAccessor(getterAccessorsContainer, entityType,
+                                parameterName, getterMetadata.getGetterAccessorName());
                     }
                 }
             }
@@ -181,23 +182,20 @@ final class LinksProcessor {
             // N.B. as this module does not depend on any other module that could supply this @Id annotation
             // (like Panache), we need this general lookup
             // the order of preference for the annotations is @RestLinkId > @persistence.Id > id
-            FieldInfoSupplier byAnnotation = new FieldInfoSupplier(
-                    c -> {
-                        FieldInfo persistenceId = null;
-                        for (FieldInfo field : c.fields()) {
-                            // prefer RestLinId over Id
-                            if (field.hasAnnotation(RestLinkId.class)) {
-                                return field;
-                            }
-                            // keep the first found @persistence.Id annotation in case not @RestLinkId is found
-                            if (fieldAnnotatedWith(field, "persistence.Id") && persistenceId == null) {
-                                persistenceId = field;
-                            }
-                        }
-                        return persistenceId;
-                    },
-                    className,
-                    index);
+            FieldInfoSupplier byAnnotation = new FieldInfoSupplier(c -> {
+                FieldInfo persistenceId = null;
+                for (FieldInfo field : c.fields()) {
+                    // prefer RestLinId over Id
+                    if (field.hasAnnotation(RestLinkId.class)) {
+                        return field;
+                    }
+                    // keep the first found @persistence.Id annotation in case not @RestLinkId is found
+                    if (fieldAnnotatedWith(field, "persistence.Id") && persistenceId == null) {
+                        persistenceId = field;
+                    }
+                }
+                return persistenceId;
+            }, className, index);
             FieldInfo annotatedField = byAnnotation.get();
             if (annotatedField != null) {
                 fieldInfo = annotatedField;
@@ -219,7 +217,8 @@ final class LinksProcessor {
     /**
      * Validates if the given classname contains a field `id` or annotated with `@Id`
      *
-     * @throws IllegalStateException if the classname does not contain any sort of field identifier
+     * @throws IllegalStateException
+     *         if the classname does not contain any sort of field identifier
      */
     private void validateClassHasFieldId(IndexView index, String entityType) {
         // create a new independent class name that we can override
@@ -235,26 +234,23 @@ final class LinksProcessor {
     /**
      * Validates if the given classname contains a field `id` or annotated with `@Id`
      *
-     * @throws IllegalStateException if the classname does not contain any sort of field identifier
+     * @throws IllegalStateException
+     *         if the classname does not contain any sort of field identifier
      */
     private void validateRec(IndexView index, String entityType, ClassInfo classInfo) {
-        List<FieldInfo> fieldsNamedId = classInfo.fields().stream()
-                .filter(f -> f.name().equals("id"))
-                .toList();
+        List<FieldInfo> fieldsNamedId = classInfo.fields().stream().filter(f -> f.name().equals("id")).toList();
 
         List<AnnotationInstance> fieldsAnnotatedWithId = classInfo.fields().stream()
-                .flatMap(f -> f.annotations().stream())
-                .filter(a -> a.name().toString().endsWith("persistence.Id"))
+                .flatMap(f -> f.annotations().stream()).filter(a -> a.name().toString().endsWith("persistence.Id"))
                 .toList();
 
         List<AnnotationInstance> fieldsAnnotatedWithRestLinkId = classInfo.fields().stream()
-                .flatMap(f -> f.annotations(RestLinkId.class).stream())
-                .toList();
+                .flatMap(f -> f.annotations(RestLinkId.class).stream()).toList();
 
         // @RestLinkId annotation count > 1 is not allowed
         if (fieldsAnnotatedWithRestLinkId.size() > 1) {
-            throw new IllegalStateException("Cannot generate web links for the class " + entityType +
-                    " because it has multiple fields annotated with `@RestLinkId`, where a maximum of one is allowed");
+            throw new IllegalStateException("Cannot generate web links for the class " + entityType
+                    + " because it has multiple fields annotated with `@RestLinkId`, where a maximum of one is allowed");
         }
 
         // Id field found, break the loop
@@ -265,8 +261,8 @@ final class LinksProcessor {
         // Id field not found and hope is gone
         DotName superClassName = classInfo.superName();
         if (superClassName == null) {
-            throw new IllegalStateException("Cannot generate web links for the class " + entityType +
-                    " because it is either missing an `id` field, a field with an `@Id` annotation or a field with a `@RestLinkId annotation");
+            throw new IllegalStateException("Cannot generate web links for the class " + entityType
+                    + " because it is either missing an `id` field, a field with an `@Id` annotation or a field with a `@RestLinkId annotation");
         }
 
         // Id field not found but there's still hope
@@ -281,10 +277,9 @@ final class LinksProcessor {
      * Implement a field getter inside a class and create an accessor class which knows how to access it.
      */
     private void implementGetterWithAccessor(ClassOutput classOutput,
-            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer,
-            GetterMetadata getterMetadata) {
-        bytecodeTransformersProducer.produce(new BytecodeTransformerBuildItem(
-                getterMetadata.getEntityType(), GetterImplementor.getVisitorFunction(getterMetadata)));
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformersProducer, GetterMetadata getterMetadata) {
+        bytecodeTransformersProducer.produce(new BytecodeTransformerBuildItem(getterMetadata.getEntityType(),
+                GetterImplementor.getVisitorFunction(getterMetadata)));
         getterAccessorImplementor.implement(classOutput, getterMetadata);
     }
 

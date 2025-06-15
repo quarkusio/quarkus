@@ -18,7 +18,7 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
 
     private volatile Deployment deployment;
 
-    //the context path, guaranteed to have a trailing /
+    // the context path, guaranteed to have a trailing /
     private volatile String contextPath;
 
     @Override
@@ -27,7 +27,7 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
 
         String requestPath = request.normalizedPath();
         if (!requestPath.startsWith(contextPath)) {
-            //anything outside the context path we don't have anything to do with
+            // anything outside the context path we don't have anything to do with
             return CheckResult.permit();
         }
         if (!contextPath.equals("/")) {
@@ -55,7 +55,8 @@ public class ServletHttpSecurityPolicy implements HttpSecurityPolicy {
                     }
                 });
             } else {
-                return Uni.createFrom().failure(new RuntimeException("Unknown empty role semantic " + emptyRoleSemantic));
+                return Uni.createFrom()
+                        .failure(new RuntimeException("Unknown empty role semantic " + emptyRoleSemantic));
             }
         } else {
             return identity.map(new Function<SecurityIdentity, CheckResult>() {

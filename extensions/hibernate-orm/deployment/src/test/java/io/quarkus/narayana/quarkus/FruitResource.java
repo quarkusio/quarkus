@@ -41,8 +41,7 @@ public class FruitResource {
 
     @GET
     public List<Fruit> get() {
-        return entityManager.createNamedQuery("Fruits.findAll", Fruit.class)
-                .getResultList();
+        return entityManager.createNamedQuery("Fruits.findAll", Fruit.class).getResultList();
     }
 
     @GET
@@ -120,9 +119,7 @@ public class FruitResource {
                 exceptionJson.put("error", exception.getMessage());
             }
 
-            return Response.status(code)
-                    .entity(exceptionJson)
-                    .build();
+            return Response.status(code).entity(exceptionJson).build();
         }
 
     }

@@ -14,8 +14,7 @@ public class ContextualErrorMessagesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class, HelloClient2.class)
+            .withApplicationRoot((jar) -> jar.addClasses(EchoResource.class, HelloClient2.class)
                     .addAsResource(new StringAsset(
                             "quarkus.rest-client.hello2.url=http://localhost:${quarkus.http.test-port:8081}/wrong-url"),
                             "application.properties"));

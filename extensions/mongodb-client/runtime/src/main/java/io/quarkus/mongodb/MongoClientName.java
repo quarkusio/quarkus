@@ -11,10 +11,8 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * Marker annotation to select mongo connection of cluster configuration
- * Use name parameter to select it
- *
- * For example, if a mongo connection is configured like so in {@code application.properties}:
+ * Marker annotation to select mongo connection of cluster configuration Use name parameter to select it For example, if
+ * a mongo connection is configured like so in {@code application.properties}:
  *
  * <pre>
  * quarkus.mongodb.cluster1.connection-string=mongodb://localhost:27018

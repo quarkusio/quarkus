@@ -27,9 +27,7 @@ public class ApplicationScopedStatementInspectorTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(ApplicationStatementInspector.class))
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addClass(ApplicationStatementInspector.class))
             .withConfigurationResource("application.properties");
 
     @Inject

@@ -25,8 +25,7 @@ import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-credentials-provider-alias", password = "secret123!", formats = { Format.JKS,
-                Format.PKCS12 }, aliases = @Alias(name = "my-alias", password = "alias-secret123!", subjectAlternativeNames = "dns:acme.org"))
-})
+                Format.PKCS12 }, aliases = @Alias(name = "my-alias", password = "alias-secret123!", subjectAlternativeNames = "dns:acme.org")) })
 public class JKSKeyStoreWithAliasCredentialsProviderTest {
 
     private static final String configuration = """
@@ -36,9 +35,8 @@ public class JKSKeyStoreWithAliasCredentialsProviderTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(MyCredentialProvider.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(MyCredentialProvider.class)
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
@@ -63,8 +61,7 @@ public class JKSKeyStoreWithAliasCredentialsProviderTest {
     public static class MyCredentialProvider implements CredentialsProvider {
 
         private final Map<String, Map<String, String>> credentials = Map.of("tls",
-                Map.of(CredentialsProvider.PASSWORD_PROPERTY_NAME, "secret123!",
-                        "alias-password", "alias-secret123!"));
+                Map.of(CredentialsProvider.PASSWORD_PROPERTY_NAME, "secret123!", "alias-password", "alias-secret123!"));
 
         @Override
         public Map<String, String> getCredentials(String credentialsProviderName) {

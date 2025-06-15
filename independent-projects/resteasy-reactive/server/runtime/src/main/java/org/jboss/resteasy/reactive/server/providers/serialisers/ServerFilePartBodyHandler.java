@@ -27,12 +27,14 @@ public class ServerFilePartBodyHandler extends FilePartBodyHandler implements Se
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return FilePart.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(FilePart o, Type genericType, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(FilePart o, Type genericType, ServerRequestContext context)
+            throws WebApplicationException {
         ServerHttpResponse vertxResponse = context.serverResponse();
         vertxResponse.sendFile(o.file.getPath(), o.offset, o.count);
     }

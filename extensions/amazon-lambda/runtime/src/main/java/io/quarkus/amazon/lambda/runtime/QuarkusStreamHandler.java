@@ -10,11 +10,9 @@ import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import io.quarkus.runtime.Quarkus;
 
 /**
- * Intended to be used within a java runtime lambda deployment.
- * This handler is a tiny wrapper for the app-developer-defined lambda handler.
- * It delegates to a wrapper that uses arc to instantiate the
- * app-developer's handler. Jackson is used to (de)serialize input and output types of app-dev's handler.
- *
+ * Intended to be used within a java runtime lambda deployment. This handler is a tiny wrapper for the
+ * app-developer-defined lambda handler. It delegates to a wrapper that uses arc to instantiate the app-developer's
+ * handler. Jackson is used to (de)serialize input and output types of app-dev's handler.
  */
 public class QuarkusStreamHandler implements RequestStreamHandler {
     public QuarkusStreamHandler() {

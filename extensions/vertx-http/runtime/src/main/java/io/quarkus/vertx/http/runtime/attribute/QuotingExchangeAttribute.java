@@ -3,10 +3,7 @@ package io.quarkus.vertx.http.runtime.attribute;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Exchange attribute that wraps string attributes in quotes.
- *
- * This is mostly used
- *
+ * Exchange attribute that wraps string attributes in quotes. This is mostly used
  */
 public class QuotingExchangeAttribute implements ExchangeAttribute {
 

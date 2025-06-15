@@ -8,23 +8,26 @@ import jakarta.interceptor.AroundInvoke
 import jakarta.interceptor.Interceptor
 import jakarta.interceptor.InterceptorBinding
 import jakarta.interceptor.InvocationContext
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
 import java.io.IOException
 import java.util.Locale
 import kotlin.test.assertFailsWith
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 class KotlinInterceptorTest {
     @RegisterExtension
-    val container = ArcTestContainer(Converter::class.java, ToUpperCaseConverter::class.java,
-            FailingInterceptor::class.java, AlwaysFail::class.java)
+    val container =
+        ArcTestContainer(
+            Converter::class.java,
+            ToUpperCaseConverter::class.java,
+            FailingInterceptor::class.java,
+            AlwaysFail::class.java,
+        )
 
     @Test
     fun testInterceptionThrowsUnwrapped() {
         val converter = Arc.container().instance(ToUpperCaseConverter::class.java).get()
-        assertFailsWith<IOException> {
-            converter.convert("holA!")
-        }
+        assertFailsWith<IOException> { converter.convert("holA!") }
     }
 
     interface Converter<T> {

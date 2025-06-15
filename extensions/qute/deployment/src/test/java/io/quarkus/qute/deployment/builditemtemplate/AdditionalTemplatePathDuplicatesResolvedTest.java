@@ -21,8 +21,7 @@ public class AdditionalTemplatePathDuplicatesResolvedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt"))
+            .withApplicationRoot(root -> root.addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt"))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -32,15 +31,10 @@ public class AdditionalTemplatePathDuplicatesResolvedTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(TemplatePathBuildItem.builder()
-                                .path("hi.txt")
-                                .extensionInfo("test-ext")
-                                .content("Hello {name}!")
-                                .priority(100)
-                                .build());
+                        context.produce(TemplatePathBuildItem.builder().path("hi.txt").extensionInfo("test-ext")
+                                .content("Hello {name}!").priority(100).build());
                     }
-                }).produces(TemplatePathBuildItem.class)
-                        .build();
+                }).produces(TemplatePathBuildItem.class).build();
 
             }
         };

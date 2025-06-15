@@ -12,8 +12,7 @@ class ResettableSystemPropertiesTest {
     public void happyPath() {
         System.setProperty("prop1", "val1");
         assertThat(System.getProperty("prop1")).isEqualTo("val1");
-        try (var ignored = new ResettableSystemProperties(
-                Map.of("prop1", "val11", "prop2", "val2"))) {
+        try (var ignored = new ResettableSystemProperties(Map.of("prop1", "val11", "prop2", "val2"))) {
             assertThat(System.getProperty("prop1")).isEqualTo("val11");
             assertThat(System.getProperty("prop2")).isEqualTo("val2");
         }
@@ -26,8 +25,7 @@ class ResettableSystemPropertiesTest {
         System.setProperty("prop1", "val1");
         int initCount = System.getProperties().size();
         assertThat(System.getProperty("prop1")).isEqualTo("val1");
-        try (var ignored = new ResettableSystemProperties(
-                Map.of("prop1", "val11", "prop2", "val2"))) {
+        try (var ignored = new ResettableSystemProperties(Map.of("prop1", "val11", "prop2", "val2"))) {
             assertThat(System.getProperty("prop1")).isEqualTo("val11");
             assertThat(System.getProperty("prop2")).isEqualTo("val2");
 

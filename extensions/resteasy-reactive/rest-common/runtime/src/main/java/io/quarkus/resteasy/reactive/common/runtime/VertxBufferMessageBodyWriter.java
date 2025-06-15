@@ -18,7 +18,8 @@ public class VertxBufferMessageBodyWriter implements MessageBodyWriter<Buffer> {
     }
 
     public void writeTo(Buffer buffer, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         entityStream.write(buffer.getBytes());
     }
 }

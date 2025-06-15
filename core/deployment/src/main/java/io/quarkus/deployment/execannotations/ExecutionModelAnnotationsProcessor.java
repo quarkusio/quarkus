@@ -87,8 +87,8 @@ public class ExecutionModelAnnotationsProcessor {
     }
 
     /**
-     * @deprecated this method will be removed in Quarkus 3.24, which gives extensions 2 releases
-     *             to start producing {@code JsonRPCProvidersBuildItem} always, not just in dev mode
+     * @deprecated this method will be removed in Quarkus 3.24, which gives extensions 2 releases to start producing
+     *             {@code JsonRPCProvidersBuildItem} always, not just in dev mode
      */
     @Deprecated(since = "3.22", forRemoval = true)
     @BuildStep
@@ -99,8 +99,7 @@ public class ExecutionModelAnnotationsProcessor {
                 // gross hack to allow methods declared in Dev UI JSON RPC service classes,
                 // as the proper way (consuming `JsonRPCProvidersBuildItem`) only works in dev mode
                 String clazz = method.declaringClass().name().toString().toLowerCase(Locale.ROOT);
-                return clazz.startsWith("io.quarkus.")
-                        || clazz.startsWith("io.quarkiverse.")
+                return clazz.startsWith("io.quarkus.") || clazz.startsWith("io.quarkiverse.")
                         || clazz.endsWith("jsonrpcservice");
             }
         });

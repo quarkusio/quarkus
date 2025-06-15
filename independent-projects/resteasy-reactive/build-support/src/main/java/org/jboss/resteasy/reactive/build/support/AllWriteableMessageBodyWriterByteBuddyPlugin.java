@@ -34,8 +34,7 @@ public class AllWriteableMessageBodyWriterByteBuddyPlugin implements Plugin {
     @Override
     public boolean matches(TypeDescription typeDefinitions) {
         return hasSuperType(named(MessageBodyWriter.class.getName()))
-                .and(not(hasSuperType(named(AllWriteableMarker.class.getName()))))
-                .and(not(isInterface()))
+                .and(not(hasSuperType(named(AllWriteableMarker.class.getName())))).and(not(isInterface()))
                 .matches(typeDefinitions);
     }
 
@@ -64,9 +63,9 @@ public class AllWriteableMessageBodyWriterByteBuddyPlugin implements Plugin {
     }
 
     /**
-     * The idea here is to visit the {@code isWriteable} methods and determine if they return {@code true}.
-     * This visitor does not attempt to move up the class hierarchy - it only considers methods of the class itself.
-     * If the {@code isWriteable} methods do not exist, then the result is {@code false}
+     * The idea here is to visit the {@code isWriteable} methods and determine if they return {@code true}. This visitor
+     * does not attempt to move up the class hierarchy - it only considers methods of the class itself. If the
+     * {@code isWriteable} methods do not exist, then the result is {@code false}
      */
     private static class MessageBodyWriterIsWriteableClassVisitor extends ClassVisitor {
 
@@ -81,7 +80,8 @@ public class AllWriteableMessageBodyWriterByteBuddyPlugin implements Plugin {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor superMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("isWriteable")) {
                 // RR isWriteable
@@ -89,7 +89,8 @@ public class AllWriteableMessageBodyWriterByteBuddyPlugin implements Plugin {
                         + MediaType.class.getName().replace('.', '/') + ";)Z").equals(descriptor)) {
                     AtomicBoolean rrResult = new AtomicBoolean(false);
                     rrIsWritableResult = Optional.of(rrResult);
-                    return new MessageBodyWriterIsWriteableMethodVisitor(new CodeSizeEvaluator(superMethodVisitor), rrResult);
+                    return new MessageBodyWriterIsWriteableMethodVisitor(new CodeSizeEvaluator(superMethodVisitor),
+                            rrResult);
                 }
                 // JAX-RS isWriteable
                 else if (("(Ljava/lang/Class;Ljava/lang/reflect/Type;[Ljava/lang/annotation/Annotation;L"
@@ -117,7 +118,8 @@ public class AllWriteableMessageBodyWriterByteBuddyPlugin implements Plugin {
     }
 
     /**
-     * This visitor sets the {@code result} to {@code true} iff the method simply does {@code return true} and nothing else
+     * This visitor sets the {@code result} to {@code true} iff the method simply does {@code return true} and nothing
+     * else
      */
     private static class MessageBodyWriterIsWriteableMethodVisitor extends MethodVisitor {
 
@@ -148,10 +150,9 @@ public class AllWriteableMessageBodyWriterByteBuddyPlugin implements Plugin {
         @Override
         public void visitEnd() {
             super.visitEnd();
-            result.set(
-                    (insnCount == 2) && firstIsLoad1OnToStack && (secondIsIReturn) &&
-                    // ensures that no other instruction was visited
-                            (codeSizeEvaluator.getMaxSize() == 2) && (codeSizeEvaluator.getMinSize() == 2));
+            result.set((insnCount == 2) && firstIsLoad1OnToStack && (secondIsIReturn) &&
+            // ensures that no other instruction was visited
+                    (codeSizeEvaluator.getMaxSize() == 2) && (codeSizeEvaluator.getMinSize() == 2));
         }
     }
 }

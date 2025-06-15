@@ -43,7 +43,7 @@ public class SecurityContextFilter implements ContainerRequestFilter {
     public void filter(ContainerRequestContext requestContext) throws IOException {
         SecurityContext modified = requestContext.getSecurityContext();
         if (modified instanceof ServletSecurityContext || modified instanceof QuarkusResteasySecurityContext) {
-            //an original security context, it has not been modified
+            // an original security context, it has not been modified
             return;
         }
         Set<Credential> oldCredentials = old.getCredentials();

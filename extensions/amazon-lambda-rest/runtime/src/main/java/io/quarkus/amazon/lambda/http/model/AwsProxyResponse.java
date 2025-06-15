@@ -23,9 +23,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class AwsProxyResponse {
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Variables - Private
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     private int statusCode;
     private String statusDescription;
@@ -34,9 +34,9 @@ public class AwsProxyResponse {
     private String body;
     private boolean isBase64Encoded;
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Constructors
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     public AwsProxyResponse() {
 
@@ -56,9 +56,9 @@ public class AwsProxyResponse {
         this.body = body;
     }
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Methods - Public
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     public void addHeader(String key, String value) {
         if (this.multiValueHeaders == null) {
@@ -68,9 +68,9 @@ public class AwsProxyResponse {
         this.multiValueHeaders.add(key, value);
     }
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Methods - Getter/Setter
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     public int getStatusCode() {
         return statusCode;

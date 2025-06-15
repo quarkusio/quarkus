@@ -32,13 +32,13 @@ public class MongoClientRecorder {
             @Override
             public MongoClientSupport get() {
 
-                List<ConnectionPoolListener> connectionPoolListeners = new ArrayList<>(connectionPoolListenerSuppliers.size());
+                List<ConnectionPoolListener> connectionPoolListeners = new ArrayList<>(
+                        connectionPoolListenerSuppliers.size());
                 for (Supplier<ConnectionPoolListener> item : connectionPoolListenerSuppliers) {
                     connectionPoolListeners.add(item.get());
                 }
 
-                return new MongoClientSupport(bsonDiscriminators,
-                        connectionPoolListeners, disableSslSupport);
+                return new MongoClientSupport(bsonDiscriminators, connectionPoolListeners, disableSslSupport);
             }
         };
     }
@@ -76,10 +76,9 @@ public class MongoClientRecorder {
     }
 
     public RuntimeValue<ReactiveMongoClient> getReactiveClient(String name) {
-        return new RuntimeValue<>(
-                Arc.container()
-                        .instance(ReactiveMongoClient.class, literal(name + MongoClientBeanUtil.REACTIVE_CLIENT_NAME_SUFFIX))
-                        .get());
+        return new RuntimeValue<>(Arc.container()
+                .instance(ReactiveMongoClient.class, literal(name + MongoClientBeanUtil.REACTIVE_CLIENT_NAME_SUFFIX))
+                .get());
     }
 
     @SuppressWarnings("rawtypes")
@@ -110,8 +109,7 @@ public class MongoClientRecorder {
 
     /**
      * We need to perform some initialization work on the main thread to ensure that reactive operations (such as DNS
-     * resolution)
-     * don't end up being performed on the event loop
+     * resolution) don't end up being performed on the event loop
      */
     public void performInitialization(MongodbConfig config, RuntimeValue<Vertx> vertx) {
         MongoDnsClientProvider.vertx = vertx.getValue();

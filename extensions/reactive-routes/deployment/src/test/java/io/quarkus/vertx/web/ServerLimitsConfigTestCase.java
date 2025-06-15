@@ -12,10 +12,9 @@ public class ServerLimitsConfigTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestRoute.class)
-                    .addAsResource(new StringAsset("\nquarkus.http.limits.max-header-size=1K" +
-                            "\nquarkus.http.limits.max-body-size=2K"),
+            .withApplicationRoot((jar) -> jar.addClasses(TestRoute.class)
+                    .addAsResource(new StringAsset(
+                            "\nquarkus.http.limits.max-header-size=1K" + "\nquarkus.http.limits.max-body-size=2K"),
                             "application.properties"));
 
     @Test
@@ -26,11 +25,7 @@ public class ServerLimitsConfigTestCase {
             sb.append("h" + i);
         }
 
-        RestAssured.given()
-                .header("MAX-HEADER-SIZE", sb.toString())
-                .when()
-                .get("/test").then()
-                .statusCode(431);
+        RestAssured.given().header("MAX-HEADER-SIZE", sb.toString()).when().get("/test").then().statusCode(431);
     }
 
     @Test
@@ -48,10 +43,7 @@ public class ServerLimitsConfigTestCase {
         }
 
         try {
-            RestAssured.given()
-                    .body(body.toString())
-                    .post("/test")
-                    .then().statusCode(413);
+            RestAssured.given().body(body.toString()).post("/test").then().statusCode(413);
         } catch (Throwable t) {
             // Writing when the connection has been closed can lead to a WSAECONNABORTED
             // on Windows. Ignore since this is the case we are testing.
@@ -61,9 +53,6 @@ public class ServerLimitsConfigTestCase {
     @Test
     @DisplayName("Should return status code 200")
     public void testMaxEntityOk() {
-        RestAssured.given()
-                .body("OK")
-                .post("/test")
-                .then().statusCode(200);
+        RestAssured.given().body("OK").post("/test").then().statusCode(200);
     }
 }

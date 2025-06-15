@@ -17,8 +17,7 @@ public class InjectedLoggerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @Inject
     SimpleBean simpleBean;

@@ -49,10 +49,9 @@ public class FunqyHttpBuildStep {
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public void staticInit(FunqyHttpBindingRecorder binding,
-            BeanContainerBuildItem beanContainer, // dependency
-            Optional<FunctionInitializedBuildItem> hasFunctions,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+    public void staticInit(FunqyHttpBindingRecorder binding, BeanContainerBuildItem beanContainer, // dependency
+            Optional<FunctionInitializedBuildItem> hasFunctions, VertxHttpBuildTimeConfig httpBuildTimeConfig)
+            throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
 
@@ -63,15 +62,10 @@ public class FunqyHttpBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void boot(ShutdownContextBuildItem shutdown,
-            FunqyHttpBindingRecorder binding,
-            BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<RouteBuildItem> routes,
-            CoreVertxBuildItem vertx,
-            Optional<FunctionInitializedBuildItem> hasFunctions,
-            List<FunctionBuildItem> functions,
-            BeanContainerBuildItem beanContainer,
-            VertxHttpBuildTimeConfig httpConfig,
+    public void boot(ShutdownContextBuildItem shutdown, FunqyHttpBindingRecorder binding,
+            BuildProducer<FeatureBuildItem> feature, BuildProducer<RouteBuildItem> routes, CoreVertxBuildItem vertx,
+            Optional<FunctionInitializedBuildItem> hasFunctions, List<FunctionBuildItem> functions,
+            BeanContainerBuildItem beanContainer, VertxHttpBuildTimeConfig httpConfig,
             ExecutorBuildItem executorBuildItem) throws Exception {
 
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
@@ -79,10 +73,7 @@ public class FunqyHttpBuildStep {
         feature.produce(new FeatureBuildItem(FUNQY_HTTP_FEATURE));
 
         String rootPath = httpConfig.rootPath();
-        Handler<RoutingContext> handler = binding.start(rootPath,
-                vertx.getVertx(),
-                shutdown,
-                beanContainer.getValue(),
+        Handler<RoutingContext> handler = binding.start(rootPath, vertx.getVertx(), shutdown, beanContainer.getValue(),
                 executorBuildItem.getExecutorProxy());
 
         for (FunctionBuildItem function : functions) {
@@ -91,7 +82,7 @@ public class FunqyHttpBuildStep {
             else if (!rootPath.endsWith("/"))
                 rootPath += "/";
             String name = function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName();
-            //String path = rootPath + name;
+            // String path = rootPath + name;
             String path = "/" + name;
             routes.produce(RouteBuildItem.builder().route(path).handler(handler).build());
         }

@@ -20,7 +20,9 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
     /**
      * Find the item which matches the given configuration key.
      *
-     * @param name the configuration key (must not be {@code null})
+     * @param name
+     *        the configuration key (must not be {@code null})
+     *
      * @return the matching item
      */
     public T match(String name) {
@@ -31,7 +33,9 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
     /**
      * Find the item which matches the given configuration key iterator.
      *
-     * @param nameIterator the configuration key iterator (must not be {@code null})
+     * @param nameIterator
+     *        the configuration key iterator (must not be {@code null})
+     *
      * @return the matching item
      */
     public T match(NameIterator nameIterator) {
@@ -61,15 +65,17 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
     }
 
     /**
-     * Add a pattern to the map.
-     * The segments of the pattern are dot-separated.
-     * The special segment name {@code {*}} will match any single segment name.
-     * The special segment name {@code {**}} will eagerly match any segment name sequence.
+     * Add a pattern to the map. The segments of the pattern are dot-separated. The special segment name {@code {*}}
+     * will match any single segment name. The special segment name {@code {**}} will eagerly match any segment name
+     * sequence.
      *
-     * @param pattern the pattern (must not be {@code null})
-     * @param onMatch the value to return when the pattern is matched (must not be {@code null})
-     * @return {@code true} if the pattern is a new unique pattern, or if the pattern exists but the given value
-     *         is equal to the existing value; {@code false} if the pattern exists but the given value is not equal to the
+     * @param pattern
+     *        the pattern (must not be {@code null})
+     * @param onMatch
+     *        the value to return when the pattern is matched (must not be {@code null})
+     *
+     * @return {@code true} if the pattern is a new unique pattern, or if the pattern exists but the given value is
+     *         equal to the existing value; {@code false} if the pattern exists but the given value is not equal to the
      *         existing value
      */
     public boolean addPattern(String pattern, T onMatch) {
@@ -88,8 +94,8 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
         } else {
             nameIterator.next();
             try {
-                return children.computeIfAbsent(getKey(nameIterator), s -> new ConfigPatternMap<>()).addPattern(nameIterator,
-                        onMatch);
+                return children.computeIfAbsent(getKey(nameIterator), s -> new ConfigPatternMap<>())
+                        .addPattern(nameIterator, onMatch);
             } finally {
                 nameIterator.previous();
             }

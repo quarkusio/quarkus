@@ -14,9 +14,8 @@ import io.quarkus.runtime.annotations.ConfigDocEnumValue;
 
 public enum DatabaseOrmCompatibilityVersion {
     /**
-     * **Best-effort** compatibility with a database schema and data
-     * meant for Hibernate ORM 5.6,
-     * even though the version of Hibernate ORM shipped with Quarkus is different.
+     * **Best-effort** compatibility with a database schema and data meant for Hibernate ORM 5.6, even though the
+     * version of Hibernate ORM shipped with Quarkus is different.
      *
      * @asciidoclet
      */
@@ -33,7 +32,8 @@ public enum DatabaseOrmCompatibilityVersion {
                     // https://github.com/hibernate/hibernate-orm/blob/6.0/migration-guide.adoc#instant-mapping-changes
                     AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE, "TIMESTAMP",
                     // https://github.com/hibernate/hibernate-orm/blob/6.1/migration-guide.adoc#basic-arraycollection-mapping
-                    // Not changing this for now as there's no setting and affected users should be rare, and they can fix their code rather easily.
+                    // Not changing this for now as there's no setting and affected users should be rare, and they can
+                    // fix their code rather easily.
                     // https://github.com/hibernate/hibernate-orm/blob/6.1/migration-guide.adoc#enum-mapping-changes
                     // https://github.com/hibernate/hibernate-orm/blob/6.2/migration-guide.adoc#datatype-for-enums
                     // Not changing this because we cannot:
@@ -54,10 +54,8 @@ public enum DatabaseOrmCompatibilityVersion {
         }
     },
     /**
-     * No particular effort on compatibility:
-     * just assume the database schema and data are compatible
-     * with the "latest" version of Hibernate ORM,
-     * i.e. the version shipped with Quarkus.
+     * No particular effort on compatibility: just assume the database schema and data are compatible with the "latest"
+     * version of Hibernate ORM, i.e. the version shipped with Quarkus.
      *
      * @asciidoclet
      */
@@ -100,11 +98,8 @@ public enum DatabaseOrmCompatibilityVersion {
                 }
             }
             throw new IllegalArgumentException(String.format(Locale.ROOT,
-                    "Invalid ORM compatibility version: %1$s. Valid versions are: %2$s.",
-                    value,
-                    Arrays.stream(values())
-                            .map(v -> v.externalRepresentation)
-                            .collect(Collectors.toList())));
+                    "Invalid ORM compatibility version: %1$s. Valid versions are: %2$s.", value,
+                    Arrays.stream(values()).map(v -> v.externalRepresentation).collect(Collectors.toList())));
         }
     }
 }

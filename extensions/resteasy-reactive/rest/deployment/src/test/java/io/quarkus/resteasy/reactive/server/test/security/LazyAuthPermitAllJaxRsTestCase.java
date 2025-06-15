@@ -14,20 +14,14 @@ import io.restassured.RestAssured;
 
 public class LazyAuthPermitAllJaxRsTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PermitAllResource.class, PermitAllBlockingResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
-                            UnsecuredSubResource.class)
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(PermitAllResource.class, PermitAllBlockingResource.class, TestIdentityProvider.class,
+                    TestIdentityController.class, UnsecuredSubResource.class)
+            .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"), "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test

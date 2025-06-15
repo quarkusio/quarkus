@@ -32,8 +32,8 @@ import io.vertx.core.Vertx;
 public class RequestLeakDetectionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(MyRestAPI.class, MyRequestScopeBean.class, Barrier.class, Task.class)
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(MyRestAPI.class, MyRequestScopeBean.class, Barrier.class, Task.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
@@ -118,9 +118,7 @@ public class RequestLeakDetectionTest {
                     Assertions.assertEquals(r, val);
                     e.complete(bean.getValue());
                 });
-            })
-                    .map(i -> new Foo(Integer.toString(i)))
-                    .await().indefinitely();
+            }).map(i -> new Foo(Integer.toString(i))).await().indefinitely();
         }
     }
 

@@ -15,7 +15,8 @@ public class AccessTokenCredential extends TokenCredential {
     /**
      * Create AccessTokenCredential
      *
-     * @param accessToken - access token
+     * @param accessToken
+     *        - access token
      */
     public AccessTokenCredential(String accessToken) {
         this(accessToken, null);
@@ -24,8 +25,10 @@ public class AccessTokenCredential extends TokenCredential {
     /**
      * Create AccessTokenCredential
      *
-     * @param accessToken - access token
-     * @param refreshToken - refresh token which can be used to refresh this access token, may be null
+     * @param accessToken
+     *        - access token
+     * @param refreshToken
+     *        - refresh token which can be used to refresh this access token, may be null
      */
     public AccessTokenCredential(String accessToken, RefreshToken refreshToken) {
         super(accessToken, "bearer");

@@ -18,8 +18,7 @@ public abstract class ClassRolesAllowedParentResourceWithoutPath_PathOnInterface
     @Override
     public ClassRolesAllowedSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnParent_ClassRolesAllowed() {
         return new ClassRolesAllowedSubResourceWithoutPath(
-                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                        + SUB_IMPL_ON_PARENT + CLASS_ROLES_ALLOWED_PATH);
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_PARENT + CLASS_ROLES_ALLOWED_PATH);
     }
 
     @Override

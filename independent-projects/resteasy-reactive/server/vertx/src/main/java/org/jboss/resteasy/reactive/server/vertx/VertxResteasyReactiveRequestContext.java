@@ -68,8 +68,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
     ContinueState continueState = ContinueState.NONE;
 
-    public VertxResteasyReactiveRequestContext(Deployment deployment,
-            RoutingContext context,
+    public VertxResteasyReactiveRequestContext(Deployment deployment, RoutingContext context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
             ClassLoader devModeTccl) {
         super(deployment, requestContext, handlerChain, abortHandlerChain);
@@ -224,19 +223,14 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     }
 
     /**
-     * Retrieves the parameters from the current HTTP request as a
-     * {@link Map<String, List<String>>}, where the keys are parameter names
-     * and the values are lists of parameter values. This allows parameters
-     * to be extracted from the URL without knowing their names in advance.
+     * Retrieves the parameters from the current HTTP request as a {@link Map<String, List<String>>}, where the keys are
+     * parameter names and the values are lists of parameter values. This allows parameters to be extracted from the URL
+     * without knowing their names in advance. The method is used by {@link ParameterExtractor}, which works with
+     * characteristics such as parameter name, single/multiple values, and encoding. Since it's not always possible to
+     * distinguish between {@link Map} and {@link Multimap}, the method returns a unified {@link Map<String,
+     * List<String>>} for handling both cases downstream by {@link ParameterHandler}.
      *
-     * The method is used by {@link ParameterExtractor}, which works with characteristics
-     * such as parameter name, single/multiple values, and encoding. Since it's
-     * not always possible to distinguish between {@link Map} and {@link Multimap},
-     * the method returns a unified {@link Map<String, List<String>>} for handling
-     * both cases downstream by {@link ParameterHandler}.
-     *
-     * @return a {@link Map<String, List<String>>} containing the parameters and
-     *         their corresponding values.
+     * @return a {@link Map<String, List<String>>} containing the parameters and their corresponding values.
      */
     @Override
     public Map<String, List<String>> getQueryParamsMap() {
@@ -502,10 +496,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     public OutputStream createResponseOutputStream() {
         final ResteasyReactiveConfig config = getDeployment().getResteasyReactiveConfig();
         return new VertxOutputStream(
-                new ResteasyVertxJavaIoContext(
-                        context,
-                        config.getMinChunkSize(),
-                        config.getOutputBufferSize()));
+                new ResteasyVertxJavaIoContext(context, config.getMinChunkSize(), config.getOutputBufferSize()));
     }
 
     @Override

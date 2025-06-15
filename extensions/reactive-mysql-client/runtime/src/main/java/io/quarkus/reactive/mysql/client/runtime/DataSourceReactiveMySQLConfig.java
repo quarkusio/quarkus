@@ -24,8 +24,8 @@ public interface DataSourceReactiveMySQLConfig {
     /**
      * Desired security state of the connection to the server.
      * <p>
-     * See <a href="https://dev.mysql.com/doc/refman/8.0/en/connection-options.html#option_general_ssl-mode">MySQL Reference
-     * Manual</a>.
+     * See <a href="https://dev.mysql.com/doc/refman/8.0/en/connection-options.html#option_general_ssl-mode">MySQL
+     * Reference Manual</a>.
      */
     @ConfigDocDefault("disabled")
     Optional<SslMode> sslMode();
@@ -36,21 +36,20 @@ public interface DataSourceReactiveMySQLConfig {
     OptionalInt connectionTimeout();
 
     /**
-     * The authentication plugin the client should use.
-     * By default, it uses the plugin name specified by the server in the initial handshake packet.
+     * The authentication plugin the client should use. By default, it uses the plugin name specified by the server in
+     * the initial handshake packet.
      */
     @ConfigDocDefault("default")
     Optional<MySQLAuthenticationPlugin> authenticationPlugin();
 
     /**
-     * The maximum number of inflight database commands that can be pipelined.
-     * By default, pipelining is disabled.
+     * The maximum number of inflight database commands that can be pipelined. By default, pipelining is disabled.
      */
     OptionalInt pipeliningLimit();
 
     /**
-     * Whether to return the number of rows matched by the <em>WHERE</em> clause in <em>UPDATE</em> statements, instead of the
-     * number of rows actually changed.
+     * Whether to return the number of rows matched by the <em>WHERE</em> clause in <em>UPDATE</em> statements, instead
+     * of the number of rows actually changed.
      */
     @ConfigDocDefault("false")
     Optional<Boolean> useAffectedRows();

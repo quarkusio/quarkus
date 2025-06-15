@@ -12,8 +12,8 @@ public final class HibernateSearchOutboxPollingConfigUtil {
     private HibernateSearchOutboxPollingConfigUtil() {
     }
 
-    public static <T> void addCoordinationConfig(BiConsumer<String, Object> propertyCollector,
-            String configPath, T value) {
+    public static <T> void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String configPath,
+            T value) {
         addCoordinationConfig(propertyCollector, null, configPath, value);
     }
 
@@ -28,14 +28,15 @@ public final class HibernateSearchOutboxPollingConfigUtil {
         propertyCollector.accept(key, value);
     }
 
-    public static void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String tenantId, String configPath,
-            Optional<?> value) {
+    public static void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String tenantId,
+            String configPath, Optional<?> value) {
         addCoordinationConfig(propertyCollector, tenantId, configPath, value, Optional::isPresent, Optional::get);
     }
 
-    public static void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String tenantId, String configPath,
-            OptionalInt value) {
-        addCoordinationConfig(propertyCollector, tenantId, configPath, value, OptionalInt::isPresent, OptionalInt::getAsInt);
+    public static void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String tenantId,
+            String configPath, OptionalInt value) {
+        addCoordinationConfig(propertyCollector, tenantId, configPath, value, OptionalInt::isPresent,
+                OptionalInt::getAsInt);
     }
 
     public static <T> void addCoordinationConfig(BiConsumer<String, Object> propertyCollector, String tenantId,

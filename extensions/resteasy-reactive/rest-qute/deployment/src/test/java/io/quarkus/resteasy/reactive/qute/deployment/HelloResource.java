@@ -26,17 +26,17 @@ public class HelloResource {
     @CheckedTemplate
     public static class Templates {
         // GENERATED
-        //        {
-        //            Template template = Arc.container().instance(Engine.class).get().getTemplate("HelloResource/typedTemplate");
-        //            TemplateInstance instance = template.instance();
-        //            instance.data("name", name);
-        //            return instance;
-        //        }
+        // {
+        // Template template = Arc.container().instance(Engine.class).get().getTemplate("HelloResource/typedTemplate");
+        // TemplateInstance instance = template.instance();
+        // instance.data("name", name);
+        // return instance;
+        // }
 
         public static native TemplateInstance typedTemplate(String name, Map<String, Object> other);
 
-        public static native TemplateInstance typedTemplatePrimitives(boolean bool, byte b, short s, int i, long l, char c,
-                float f, double d);
+        public static native TemplateInstance typedTemplatePrimitives(boolean bool, byte b, short s, int i, long l,
+                char c, float f, double d);
     }
 
     @Inject

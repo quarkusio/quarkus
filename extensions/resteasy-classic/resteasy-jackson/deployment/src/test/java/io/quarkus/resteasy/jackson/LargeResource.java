@@ -18,7 +18,7 @@ public class LargeResource {
         Map<String, String> ret = new HashMap<>();
         for (int i = 0; i < 830; ++i) {
             if (i == 0) {
-                //hack to make this exactly 2 * 8191 bytes long, as tested by trial and error
+                // hack to make this exactly 2 * 8191 bytes long, as tested by trial and error
                 ret.put("key00", "value" + i);
             } else {
                 ret.put("key" + i, "value" + i);

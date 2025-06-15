@@ -18,12 +18,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class IgnoreExplicitForJoinedDefaultValueWithPersistenceXmlTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addAsManifestResource("META-INF/persistence-discriminator-ignore-explicit-for-joined-default-value.xml",
-                            "persistence.xml")
-                    .addAsResource("application-datasource-only.properties", "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class)
+            .addAsManifestResource("META-INF/persistence-discriminator-ignore-explicit-for-joined-default-value.xml",
+                    "persistence.xml")
+            .addAsResource("application-datasource-only.properties", "application.properties"));
 
     @Inject
     EntityManager em;
@@ -35,7 +33,7 @@ public class IgnoreExplicitForJoinedDefaultValueWithPersistenceXmlTest {
 
         // the PU is templatePU from the persistence.xml, not the default entity manager from application.properties
         assertEquals("templatePU", properties.get(PERSISTENCE_UNIT_NAME));
-        //If not defined in persistence.xml, internally hibernate-orm will assume false as default value
+        // If not defined in persistence.xml, internally hibernate-orm will assume false as default value
         assertEquals(null, properties.get("hibernate.discriminator.ignore_explicit_for_joined"));
     }
 }

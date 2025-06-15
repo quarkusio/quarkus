@@ -21,15 +21,11 @@ import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowDevModeDefaultTenantTestCase {
 
-    private static Class<?>[] testClasses = {
-            ProtectedResource.class,
-            UnprotectedResource.class
-    };
+    private static Class<?>[] testClasses = { ProtectedResource.class, UnprotectedResource.class };
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses)
                     .addAsResource("application-dev-mode-default-tenant.properties", "application.properties"));
 
     @Test
@@ -73,9 +69,8 @@ public class CodeFlowDevModeDefaultTenantTestCase {
                 fail("Exception is expected because an invalid scope is provided");
             } catch (FailingHttpStatusCodeException ex) {
                 assertEquals(401, ex.getStatusCode());
-                assertTrue(ex.getResponse().getContentAsString()
-                        .contains(
-                                "Authorization code flow has failed, error code: invalid_scope, error description: Invalid scopes: openid invalid-scope"),
+                assertTrue(ex.getResponse().getContentAsString().contains(
+                        "Authorization code flow has failed, error code: invalid_scope, error description: Invalid scopes: openid invalid-scope"),
                         "The reason behind 401 must be returned in devmode");
             }
         }

@@ -17,8 +17,7 @@ class BlockingExecutionHandler<ReqT> implements Callable<Void> {
     private final Object lock;
 
     public BlockingExecutionHandler(Consumer<ServerCall.Listener<ReqT>> consumer, Context grpcContext,
-            ServerCall.Listener<ReqT> delegate, InjectableContext.ContextState state,
-            ManagedContext requestContext,
+            ServerCall.Listener<ReqT> delegate, InjectableContext.ContextState state, ManagedContext requestContext,
             Object lock) {
         this.consumer = consumer;
         this.grpcContext = grpcContext;
@@ -31,9 +30,9 @@ class BlockingExecutionHandler<ReqT> implements Callable<Void> {
     @Override
     public Void call() {
         /*
-         * We lock here because with client side streaming different messages from the same request
-         * might be served by different worker threads. This guarantees memory consistency.
-         * The lock object is assumed to be the request's listener
+         * We lock here because with client side streaming different messages from the same request might be served by
+         * different worker threads. This guarantees memory consistency. The lock object is assumed to be the request's
+         * listener
          */
         synchronized (lock) {
             Context previous = grpcContext.attach();

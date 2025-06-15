@@ -67,8 +67,8 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
     }
 
     /**
-     * Also return the raw geohash-encoded sorted set score of the item, in the form of a 52 bit unsigned integer.
-     * This is only useful for low level hacks or debugging and is otherwise of little interest for the general user.
+     * Also return the raw geohash-encoded sorted set score of the item, in the form of a 52 bit unsigned integer. This
+     * is only useful for low level hacks or debugging and is otherwise of little interest for the general user.
      *
      * @return the current {@code GeoRadiusStoreArgs}
      **/
@@ -78,10 +78,12 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
     }
 
     /**
-     * By default, all the matching items are returned. It is possible to limit the results to the first N matching items
-     * by using the {@code COUNT &lt;count&gt;} option.
+     * By default, all the matching items are returned. It is possible to limit the results to the first N matching
+     * items by using the {@code COUNT &lt;count&gt;} option.
      *
-     * @param count the count value
+     * @param count
+     *        the count value
+     *
      * @return the current {@code GeoRadiusStoreArgs}
      **/
     public GeoRadiusStoreArgs<K> count(long count) {
@@ -92,9 +94,7 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
     /**
      * When ANY is provided the command will return as soon as enough matches are found, so the results may not be the
      * ones closest to the specified point, but on the other hand, the effort invested by the server is significantly
-     * lower.
-     *
-     * Using {@code ANY} requires {@code count} to be set.
+     * lower. Using {@code ANY} requires {@code count} to be set.
      *
      * @return the current {@code GeoRadiusStoreArgs}
      **/
@@ -106,7 +106,9 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
     /**
      * Store the items in a sorted set populated with their geospatial information.
      *
-     * @param storeKey the storeKey value
+     * @param storeKey
+     *        the storeKey value
+     *
      * @return the current {@code GeoRadiusStoreArgs}
      **/
     public GeoRadiusStoreArgs<K> storeKey(K storeKey) {
@@ -118,7 +120,9 @@ public class GeoRadiusStoreArgs<K> implements RedisCommandExtraArguments {
      * Store the items in a sorted set populated with their distance from the center as a floating point number, in the
      * same unit specified in the radius.
      *
-     * @param storeDistKey the storeDistKey value
+     * @param storeDistKey
+     *        the storeDistKey value
+     *
      * @return the current {@code GeoRadiusStoreArgs}
      **/
     public GeoRadiusStoreArgs<K> storeDistKey(K storeDistKey) {

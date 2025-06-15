@@ -32,7 +32,8 @@ public class TrustStoreUtils {
             return readTrustStore(path, trustStoreFileUrl, trustStoreSecret, trustStoreCertAlias, trustStoreFileType);
         } else if (Files.exists(path)) {
             try {
-                return readTrustStore(path, path.toUri().toURL(), trustStoreSecret, trustStoreCertAlias, trustStoreFileType);
+                return readTrustStore(path, path.toUri().toURL(), trustStoreSecret, trustStoreCertAlias,
+                        trustStoreFileType);
             } catch (MalformedURLException e) {
                 LOGGER.errorf("Keystore %s location is not a valid URL", path.toUri());
                 throw new RuntimeException(e);
@@ -74,8 +75,7 @@ public class TrustStoreUtils {
         }
     }
 
-    private static void addThumbprints(KeyStore keyStore, Set<String> allThumbprints, String alias)
-            throws Exception {
+    private static void addThumbprints(KeyStore keyStore, Set<String> allThumbprints, String alias) throws Exception {
         Entry entry = keyStore.getEntry(alias, null);
         if (entry instanceof TrustedCertificateEntry) {
             X509Certificate cert = (X509Certificate) ((TrustedCertificateEntry) entry).getTrustedCertificate();

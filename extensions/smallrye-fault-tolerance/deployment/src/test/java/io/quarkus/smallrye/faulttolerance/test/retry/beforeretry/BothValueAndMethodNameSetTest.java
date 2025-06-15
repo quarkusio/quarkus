@@ -13,9 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BothValueAndMethodNameSetTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BothValueAndMethodNameSetService.class))
-            .assertException(e -> {
+            .withApplicationRoot((jar) -> jar.addClasses(BothValueAndMethodNameSetService.class)).assertException(e -> {
                 assertEquals(DeploymentException.class, e.getClass());
                 assertTrue(e.getMessage().contains("Invalid @BeforeRetry"));
                 assertTrue(e.getMessage().contains(

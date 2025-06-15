@@ -9,16 +9,10 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Represents the differences between classes in a dev mode restart.
- *
- * This can be used to avoid repeating work on restart, e.g. re-using
- * old proxy definitions if nothing has changed for a given class.
- *
- * This will not always be present, it must be injected as an
- * optional dependency.
- *
- * This will never be generated if the previous restart was a failure
- * to avoid issues with inconsistent application state.
+ * Represents the differences between classes in a dev mode restart. This can be used to avoid repeating work on
+ * restart, e.g. re-using old proxy definitions if nothing has changed for a given class. This will not always be
+ * present, it must be injected as an optional dependency. This will never be generated if the previous restart was a
+ * failure to avoid issues with inconsistent application state.
  */
 public class ChangedClassesBuildItem extends SimpleBuildItem {
 

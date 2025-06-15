@@ -17,8 +17,7 @@ public class PassThroughResource {
 
     @GET
     public String invokeClient() {
-        HelloClient client = RestClientBuilder.newBuilder()
-                .baseUri(URI.create("stork://hello-service/hello"))
+        HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create("stork://hello-service/hello"))
                 .build(HelloClient.class);
         return client.hello();
     }

@@ -25,11 +25,9 @@ public class ProtectedResource {
     @GET
     public String getName() {
         AuthorizationCodeTokens tokens = context.get(AuthorizationCodeTokens.class.getName());
-        return idToken.getName()
-                + ", access token: " + (tokens.getAccessToken() != null)
-                + ", access_token_expires_in: " + (tokens.getAccessTokenExpiresIn() != null)
-                + ", access_token_scope: " + (tokens.getAccessTokenScope() != null)
-                + ", refresh_token: " + (tokens.getRefreshToken() != null);
+        return idToken.getName() + ", access token: " + (tokens.getAccessToken() != null)
+                + ", access_token_expires_in: " + (tokens.getAccessTokenExpiresIn() != null) + ", access_token_scope: "
+                + (tokens.getAccessTokenScope() != null) + ", refresh_token: " + (tokens.getRefreshToken() != null);
     }
 
     @GET

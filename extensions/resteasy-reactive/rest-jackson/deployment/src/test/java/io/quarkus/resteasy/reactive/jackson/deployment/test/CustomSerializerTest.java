@@ -51,8 +51,7 @@ public class CustomSerializerTest {
         final CustomData expected = new CustomData("test-data", FIXED_TIME);
         Assertions.assertThat(actual)
                 .usingComparatorForType(Comparator.comparing(OffsetDateTime::toInstant), OffsetDateTime.class)
-                .usingRecursiveComparison()
-                .isEqualTo(expected);
+                .usingRecursiveComparison().isEqualTo(expected);
     }
 
     @Path("custom-serializer")
@@ -91,8 +90,7 @@ public class CustomSerializerTest {
 
         @Override
         public void serialize(final CustomData customData, final JsonGenerator jsonGenerator,
-                final SerializerProvider serializerProvider)
-                throws IOException {
+                final SerializerProvider serializerProvider) throws IOException {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField("name", customData.getName());
             if (customData.getTime() != null) {

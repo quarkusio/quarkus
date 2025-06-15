@@ -36,8 +36,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
     private final int parameterIndex;
 
     public RequestDeserializeHandler(Class<?> type, Type genericType, List<MediaType> acceptableMediaTypes,
-            ServerSerialisers serialisers,
-            int parameterIndex) {
+            ServerSerialisers serialisers, int parameterIndex) {
         this.type = type;
         this.genericType = genericType;
         this.acceptableMediaTypes = acceptableMediaTypes;
@@ -59,8 +58,7 @@ public class RequestDeserializeHandler implements ServerRestHandler {
             }
 
             // We need to verify media type for sub-resources, this mimics what is done in {@code ClassRoutingHandler}
-            if (MediaTypeHelper.getFirstMatch(
-                    acceptableMediaTypes,
+            if (MediaTypeHelper.getFirstMatch(acceptableMediaTypes,
                     Collections.singletonList(effectiveRequestType)) == null) {
                 throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
             }
@@ -69,9 +67,11 @@ public class RequestDeserializeHandler implements ServerRestHandler {
         } else {
             effectiveRequestType = MediaType.APPLICATION_OCTET_STREAM_TYPE;
         }
-        List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, effectiveRequestType, RuntimeType.SERVER);
+        List<MessageBodyReader<?>> readers = serialisers.findReaders(null, type, effectiveRequestType,
+                RuntimeType.SERVER);
         if (readers.isEmpty()) {
-            log.debugv("No matching MessageBodyReader found for type {0} and media type {1}", type, effectiveRequestType);
+            log.debugv("No matching MessageBodyReader found for type {0} and media type {1}", type,
+                    effectiveRequestType);
             throw new NotSupportedException();
         }
         for (MessageBodyReader<?> reader : readers) {
@@ -83,12 +83,9 @@ public class RequestDeserializeHandler implements ServerRestHandler {
                         if (interceptors == null) {
                             result = readFrom(reader, requestContext, effectiveRequestType);
                         } else {
-                            result = new ReaderInterceptorContextImpl(requestContext,
-                                    getAnnotations(requestContext),
+                            result = new ReaderInterceptorContextImpl(requestContext, getAnnotations(requestContext),
                                     type, genericType, effectiveRequestType, reader, requestContext.getInputStream(),
-                                    interceptors,
-                                    serialisers)
-                                    .proceed();
+                                    interceptors, serialisers).proceed();
                         }
                     } catch (NoContentException e) {
                         throw new BadRequestException(e);
@@ -112,18 +109,18 @@ public class RequestDeserializeHandler implements ServerRestHandler {
             MediaType requestType) {
         if (reader instanceof ServerMessageBodyReader) {
             return ((ServerMessageBodyReader<?>) reader).isReadable(type, genericType,
-                    requestContext.getTarget().getLazyMethod(),
-                    requestType);
+                    requestContext.getTarget().getLazyMethod(), requestType);
         }
         return reader.isReadable(type, genericType, getAnnotations(requestContext), requestType);
     }
 
     @SuppressWarnings("unchecked")
-    public Object readFrom(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext, MediaType requestType)
-            throws IOException {
+    public Object readFrom(MessageBodyReader<?> reader, ResteasyReactiveRequestContext requestContext,
+            MediaType requestType) throws IOException {
         requestContext.requireCDIRequestScope();
         if (reader instanceof ServerMessageBodyReader) {
-            return ((ServerMessageBodyReader<?>) reader).readFrom((Class) type, genericType, requestType, requestContext);
+            return ((ServerMessageBodyReader<?>) reader).readFrom((Class) type, genericType, requestType,
+                    requestContext);
         }
         return reader.readFrom((Class) type, genericType, getAnnotations(requestContext), requestType,
                 requestContext.getHttpHeaders().getRequestHeaders(), requestContext.getInputStream());

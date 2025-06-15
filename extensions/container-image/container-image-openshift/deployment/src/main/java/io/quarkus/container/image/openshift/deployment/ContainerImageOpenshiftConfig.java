@@ -42,21 +42,18 @@ public interface ContainerImageOpenshiftConfig {
     BuildStrategy buildStrategy();
 
     /**
-     * The base image to be used when a container image is being produced for the jar build.
-     * The value of this property is used to create an ImageStream for the builder image used in the Openshift build.
-     * When it references images already available in the internal Openshift registry, the corresponding streams are used
-     * instead.
-     * When the application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi9/openjdk-21:1.21}
-     * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17:1.21} is used as the default.
+     * The base image to be used when a container image is being produced for the jar build. The value of this property
+     * is used to create an ImageStream for the builder image used in the Openshift build. When it references images
+     * already available in the internal Openshift registry, the corresponding streams are used instead. When the
+     * application is built against Java 21 or higher, {@code registry.access.redhat.com/ubi9/openjdk-21:1.21} is used
+     * as the default. Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17:1.21} is used as the default.
      */
     Optional<String> baseJvmImage();
 
     /**
-     * The base image to be used when a container image is being produced for the native binary build.
-     * The value of this property is used to create an ImageStream for the builder image used in the Openshift build.
-     * When it references images already available in the internal Openshift registry, the corresponding streams are used
-     * instead.
+     * The base image to be used when a container image is being produced for the native binary build. The value of this
+     * property is used to create an ImageStream for the builder image used in the Openshift build. When it references
+     * images already available in the internal Openshift registry, the corresponding streams are used instead.
      */
     @WithDefault(ContainerImages.QUARKUS_BINARY_S2I)
     String baseNativeImage();
@@ -84,26 +81,26 @@ public interface ContainerImageOpenshiftConfig {
     Optional<List<String>> nativeArguments();
 
     /**
-     * The directory where the jar is added during the assemble phase.
-     * This is dependent on the S2I image and should be supplied if a non default image is used.
+     * The directory where the jar is added during the assemble phase. This is dependent on the S2I image and should be
+     * supplied if a non default image is used.
      */
     Optional<String> jarDirectory();
 
     /**
-     * The resulting filename of the jar in the S2I image.
-     * This option may be used if the selected S2I image uses a fixed name for the jar.
+     * The resulting filename of the jar in the S2I image. This option may be used if the selected S2I image uses a
+     * fixed name for the jar.
      */
     Optional<String> jarFileName();
 
     /**
-     * The directory where the native binary is added during the assemble phase.
-     * This is dependent on the S2I image and should be supplied if a non-default image is used.
+     * The directory where the native binary is added during the assemble phase. This is dependent on the S2I image and
+     * should be supplied if a non-default image is used.
      */
     Optional<String> nativeBinaryDirectory();
 
     /**
-     * The resulting filename of the native binary in the S2I image.
-     * This option may be used if the selected S2I image uses a fixed name for the native binary.
+     * The resulting filename of the native binary in the S2I image. This option may be used if the selected S2I image
+     * uses a fixed name for the native binary.
      */
     Optional<String> nativeBinaryFileName();
 
@@ -120,8 +117,8 @@ public interface ContainerImageOpenshiftConfig {
     Logger.Level buildLogLevel();
 
     /**
-     * The image push secret to use for pushing to external registries.
-     * (see: https://cloud.redhat.com/blog/pushing-application-images-to-an-external-registry)
+     * The image push secret to use for pushing to external registries. (see:
+     * https://cloud.redhat.com/blog/pushing-application-images-to-an-external-registry)
      **/
     Optional<String> imagePushSecret();
 

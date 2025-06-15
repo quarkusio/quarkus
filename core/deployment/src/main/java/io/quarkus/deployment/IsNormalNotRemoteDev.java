@@ -7,8 +7,8 @@ import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 
 /**
- * boolean supplier that returns true if the application is running in normal
- * mode, but is not a remote dev client. Intended for use with {@link BuildStep#onlyIf()}
+ * boolean supplier that returns true if the application is running in normal mode, but is not a remote dev client.
+ * Intended for use with {@link BuildStep#onlyIf()}
  */
 public class IsNormalNotRemoteDev implements BooleanSupplier {
 

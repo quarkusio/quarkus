@@ -22,15 +22,13 @@ public class DevModeServiceCallingResource {
      */
     @GET
     public String get() {
-        Devmodetest.DevModeRequest request = Devmodetest.DevModeRequest.newBuilder()
-                .setService("my-service").build();
+        Devmodetest.DevModeRequest request = Devmodetest.DevModeRequest.newBuilder().setService("my-service").build();
         return "ORIGINAL_GET";
     }
 
     String responseFor(Multi<Devmodetest.DevModeResponse> response) {
         Devmodetest.DevModeResponse r = response.toUni().await().atMost(Duration.ofSeconds(10));
-        return r.getStatus() == Devmodetest.DevModeResponse.Status.NOT_SERVING
-                ? "OKAY"
+        return r.getStatus() == Devmodetest.DevModeResponse.Status.NOT_SERVING ? "OKAY"
                 : "UNEXPECTED_STATUS: " + r.getStatus();
     }
 }

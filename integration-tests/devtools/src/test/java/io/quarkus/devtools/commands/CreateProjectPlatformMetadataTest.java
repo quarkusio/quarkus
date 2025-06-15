@@ -35,14 +35,10 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
         final File file = new File("target/meta-rest");
         SnapshotTesting.deleteTestDirectory(file);
         createProject(BuildTool.MAVEN, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT");
-        assertThat(file.toPath().resolve("pom.xml"))
-                .exists()
-                .satisfies(checkContains("<id>redhat</id>"))
+        assertThat(file.toPath().resolve("pom.xml")).exists().satisfies(checkContains("<id>redhat</id>"))
                 .satisfies(checkContains("<url>https://maven.repository.redhat.com</url>"))
-                .satisfies(checkContains("<snapshots>"))
-                .satisfies(checkContains("<releases>"))
-                .satisfies(checkContains("<repositories>"))
-                .satisfies(checkContains("<pluginRepositories>"));
+                .satisfies(checkContains("<snapshots>")).satisfies(checkContains("<releases>"))
+                .satisfies(checkContains("<repositories>")).satisfies(checkContains("<pluginRepositories>"));
     }
 
     @Test
@@ -50,8 +46,7 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
         final File file = new File("target/meta-rest-gradle");
         SnapshotTesting.deleteTestDirectory(file);
         createProject(BuildTool.GRADLE, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT");
-        assertThat(file.toPath().resolve("build.gradle"))
-                .exists()
+        assertThat(file.toPath().resolve("build.gradle")).exists()
                 .satisfies(checkContains("maven { url \"https://maven.repository.redhat.com\" }"));
     }
 
@@ -60,8 +55,7 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
         final File file = new File("target/meta-rest-gradle-kts");
         SnapshotTesting.deleteTestDirectory(file);
         createProject(BuildTool.GRADLE_KOTLIN_DSL, file, "io.quarkus", "basic-rest", "1.0.0-SNAPSHOT");
-        assertThat(file.toPath().resolve("build.gradle.kts"))
-                .exists()
+        assertThat(file.toPath().resolve("build.gradle.kts")).exists()
                 .satisfies(checkContains("maven { url = uri(\"https://maven.repository.redhat.com\") }"));
     }
 
@@ -70,8 +64,8 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     }
 
     private Map<String, Object> getMetadata() throws java.io.IOException {
-        return JSON_MAPPER.reader().readValue(CreateProjectPlatformMetadataTest.class.getResource("/platform-metadata.json"),
-                Map.class);
+        return JSON_MAPPER.reader()
+                .readValue(CreateProjectPlatformMetadataTest.class.getResource("/platform-metadata.json"), Map.class);
     }
 
     private void createProject(BuildTool buildTool, File file, String groupId, String artifactId, String version)
@@ -80,11 +74,8 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
         final ExtensionCatalog spy = spy(platformDescriptor);
         when(spy.getMetadata()).thenReturn(getMetadata());
         QuarkusProject project = QuarkusProjectHelper.getProject(file.toPath(), spy, buildTool);
-        final QuarkusCommandOutcome result = new CreateProject(project)
-                .groupId(groupId)
-                .artifactId(artifactId)
-                .version(version)
-                .quarkusPluginVersion(buildTool == BuildTool.MAVEN ? "2.3.5" : "2.3.5-gradle")
+        final QuarkusCommandOutcome result = new CreateProject(project).groupId(groupId).artifactId(artifactId)
+                .version(version).quarkusPluginVersion(buildTool == BuildTool.MAVEN ? "2.3.5" : "2.3.5-gradle")
                 .execute();
         assertTrue(result.isSuccess());
     }

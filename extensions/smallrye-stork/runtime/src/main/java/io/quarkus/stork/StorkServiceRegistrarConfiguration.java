@@ -9,18 +9,14 @@ import io.smallrye.config.WithParentName;
 public interface StorkServiceRegistrarConfiguration {
 
     /**
-     * Configures service registrar type, e.g. "consul".
-     * A ServiceRegistrarProvider for the type has to be available
-     *
+     * Configures service registrar type, e.g. "consul". A ServiceRegistrarProvider for the type has to be available
      */
     String type();
 
     /**
-     * Service Registrar parameters.
-     * Check the documentation of the selected registrar type for available parameters
-     *
+     * Service Registrar parameters. Check the documentation of the selected registrar type for available parameters
      */
-    //    @ConfigItem(name = ConfigItem.PARENT)
+    // @ConfigItem(name = ConfigItem.PARENT)
     @WithParentName
     Map<String, String> parameters();
 

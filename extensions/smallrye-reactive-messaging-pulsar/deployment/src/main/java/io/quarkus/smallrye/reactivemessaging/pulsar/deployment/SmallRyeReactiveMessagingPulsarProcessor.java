@@ -44,11 +44,8 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
 
     @BuildStep
     public AdditionalBeanBuildItem runtimeConfig() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(PulsarRuntimeConfigProducer.class)
-                .addBeanClass(PulsarClientConfigCustomizer.class)
-                .setUnremovable()
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(PulsarRuntimeConfigProducer.class)
+                .addBeanClass(PulsarClientConfigCustomizer.class).setUnremovable().build();
     }
 
     @BuildStep
@@ -64,8 +61,7 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
 
     @BuildStep
     NativeImageResourceBuildItem nativeImageResources() {
-        return new NativeImageResourceBuildItem(
-                "org/asynchttpclient/config/ahc-default.properties",
+        return new NativeImageResourceBuildItem("org/asynchttpclient/config/ahc-default.properties",
                 "org/asynchttpclient/config/ahc.properties");
     }
 
@@ -134,16 +130,13 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
     }
 
     @BuildStep
-    public NativeImageConfigBuildItem pulsarRuntimeInitialized(
-            CombinedIndexBuildItem combinedIndex,
+    public NativeImageConfigBuildItem pulsarRuntimeInitialized(CombinedIndexBuildItem combinedIndex,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ExtensionSslNativeSupportBuildItem> nativeSslSupport) {
         nativeSslSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.MESSAGING_PULSAR));
         reflectiveClass.produce(ReflectiveClassBuildItem
-                .builder(ClientConfigurationData.class.getName(),
-                        ProducerConfigurationData.class.getName(),
-                        ConsumerConfigurationData.class.getName(),
-                        "org.apache.pulsar.client.impl.auth.oauth2.KeyFile",
+                .builder(ClientConfigurationData.class.getName(), ProducerConfigurationData.class.getName(),
+                        ConsumerConfigurationData.class.getName(), "org.apache.pulsar.client.impl.auth.oauth2.KeyFile",
                         "org.apache.pulsar.client.impl.auth.oauth2.protocol.Metadata",
                         "org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenResult",
                         "org.apache.pulsar.client.impl.auth.oauth2.protocol.TokenError",
@@ -154,19 +147,15 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                         "org.apache.pulsar.client.impl.schema.ProtobufNativeSchema$ProtoBufParsingInfo",
                         "org.apache.pulsar.client.impl.schema.ProtobufSchema$ProtoBufParsingInfo",
                         "org.apache.pulsar.common.schema.KeyValue")
-                .fields(true)
-                .methods(true)
-                .constructors(true)
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem
-                .builder("org.apache.pulsar.client.util.SecretsSerializer")
+                .fields(true).methods(true).constructors(true).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.apache.pulsar.client.util.SecretsSerializer")
                 .constructors().build());
 
         Collection<ClassInfo> authPluginClasses = combinedIndex.getIndex()
                 .getAllKnownImplementors(DotNames.PULSAR_AUTHENTICATION);
         for (ClassInfo authPluginClass : authPluginClasses) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(authPluginClass.name().toString())
-                    .constructors().build());
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(authPluginClass.name().toString()).constructors().build());
         }
 
         NativeImageConfigBuildItem.Builder nativeImageConfig = NativeImageConfigBuildItem.builder()
@@ -192,12 +181,10 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
                 .addRuntimeInitializedClass("org.asynchttpclient.ntlm.NtlmEngine")
                 .addRuntimeInitializedClass("sun.awt.dnd.SunDropTargetContextPeer$EventDispatcher");
         if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.common.util.Backoff")) {
-            nativeImageConfig
-                    .addRuntimeInitializedClass("org.apache.pulsar.common.util.Backoff");
+            nativeImageConfig.addRuntimeInitializedClass("org.apache.pulsar.common.util.Backoff");
         }
         if (QuarkusClassLoader.isClassPresentAtRuntime("org.apache.pulsar.client.impl.Backoff")) {
-            nativeImageConfig
-                    .addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff");
+            nativeImageConfig.addRuntimeInitializedClass("org.apache.pulsar.client.impl.Backoff");
         }
 
         return nativeImageConfig.build();

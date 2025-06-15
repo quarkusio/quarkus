@@ -27,15 +27,15 @@ import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 public class DynamicGraphQLClientInjectionWithQuarkusConfigTest {
 
-    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":" +
-            System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
+    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":"
+            + System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, Person.class, PersonDto.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql-client.people.url=" + url + "\n" +
-                            "quarkus.smallrye-graphql-client.people.header.My-Header=My-Value"),
+            .withApplicationRoot((jar) -> jar.addClasses(TestingGraphQLApi.class, Person.class, PersonDto.class)
+                    .addAsResource(
+                            new StringAsset("quarkus.smallrye-graphql-client.people.url=" + url + "\n"
+                                    + "quarkus.smallrye-graphql-client.people.header.My-Header=My-Value"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -47,16 +47,15 @@ public class DynamicGraphQLClientInjectionWithQuarkusConfigTest {
     public void checkInjectedClient() {
         Document query = document(
                 Operation.operation("PeopleQuery", field("people", field("firstName"), field("lastName"))));
-        List<Person> people = client.executeAsync(query)
-                .await().atMost(Duration.ofSeconds(30)).getList(Person.class, "people");
+        List<Person> people = client.executeAsync(query).await().atMost(Duration.ofSeconds(30)).getList(Person.class,
+                "people");
         assertEquals("John", people.get(0).getFirstName());
         assertEquals("Arthur", people.get(1).getFirstName());
     }
 
     @Test
     public void checkHeaders() throws ExecutionException, InterruptedException {
-        Document query = document(
-                Operation.operation(field("returnHeader", arg("key", "My-Header"))));
+        Document query = document(Operation.operation(field("returnHeader", arg("key", "My-Header"))));
         String header = client.executeSync(query).getData().getString("returnHeader");
         assertEquals("My-Value", header);
     }

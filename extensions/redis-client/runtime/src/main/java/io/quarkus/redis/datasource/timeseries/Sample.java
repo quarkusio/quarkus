@@ -27,10 +27,7 @@ public class Sample {
 
     @Override
     public String toString() {
-        return "Sample{" +
-                "timestamp=" + timestamp +
-                ", value=" + value +
-                '}';
+        return "Sample{" + "timestamp=" + timestamp + ", value=" + value + '}';
     }
 
     @Override

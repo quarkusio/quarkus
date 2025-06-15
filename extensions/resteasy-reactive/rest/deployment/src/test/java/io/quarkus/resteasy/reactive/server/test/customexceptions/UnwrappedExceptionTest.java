@@ -21,37 +21,32 @@ import io.restassured.RestAssured;
 public class UnwrappedExceptionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(ExceptionResource.class, ExceptionMappers.class, ExceptionUtil.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(ExceptionResource.class, ExceptionMappers.class,
+                    ExceptionUtil.class);
+        }
+    });
 
     @Test
     public void testWrapperWithUnmappedException() {
-        RestAssured.get("/hello/wrapperOfIAE")
-                .then().statusCode(500);
+        RestAssured.get("/hello/wrapperOfIAE").then().statusCode(500);
     }
 
     @Test
     public void testWrapperWithMappedException() {
-        RestAssured.get("/hello/wrapperOfISE")
-                .then().statusCode(999);
+        RestAssured.get("/hello/wrapperOfISE").then().statusCode(999);
     }
 
     @Test
     public void testUnmappedException() {
-        RestAssured.get("/hello/iae")
-                .then().statusCode(500);
+        RestAssured.get("/hello/iae").then().statusCode(500);
     }
 
     @Test
     public void testMappedException() {
-        RestAssured.get("/hello/ise")
-                .then().statusCode(999);
+        RestAssured.get("/hello/ise").then().statusCode(999);
     }
 
     @Path("hello")
@@ -59,7 +54,8 @@ public class UnwrappedExceptionTest {
 
         @Path("wrapperOfIAE")
         public String wrapperOfIAE() {
-            throw removeStackTrace(new ArcUndeclaredThrowableException(removeStackTrace(new IllegalArgumentException())));
+            throw removeStackTrace(
+                    new ArcUndeclaredThrowableException(removeStackTrace(new IllegalArgumentException())));
         }
 
         @Path("wrapperOfISE")

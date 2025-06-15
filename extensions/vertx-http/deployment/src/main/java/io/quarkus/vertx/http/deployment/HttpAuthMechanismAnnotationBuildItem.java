@@ -9,8 +9,8 @@ import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
 
 /**
- * Register {@link HttpAuthenticationMechanism} meta annotations.
- * This way, users can use {@link BasicAuthentication} instead of '@HttpAuthenticationMechanism("basic")'.
+ * Register {@link HttpAuthenticationMechanism} meta annotations. This way, users can use {@link BasicAuthentication}
+ * instead of '@HttpAuthenticationMechanism("basic")'.
  */
 public final class HttpAuthMechanismAnnotationBuildItem extends MultiBuildItem {
 

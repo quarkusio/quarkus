@@ -20,22 +20,15 @@ public class ConditionalDependencyTreeMojoTest extends DependencyTreeMojoTestBas
 
         var oilJar = TsArtifact.jar("quarkus-oil");
 
-        var capreseExt = new TsQuarkusExt("quarkus-caprese")
-                .setDependencyCondition(tomatoExt, mozzarellaExt, basilExt)
+        var capreseExt = new TsQuarkusExt("quarkus-caprese").setDependencyCondition(tomatoExt, mozzarellaExt, basilExt)
                 .addDependency(coreExt);
         capreseExt.getDeployment().addDependency(oilJar);
         capreseExt.install(repoBuilder);
 
-        var saladExt = new TsQuarkusExt("quarkus-salad")
-                .setConditionalDeps(capreseExt)
-                .addDependency(coreExt);
+        var saladExt = new TsQuarkusExt("quarkus-salad").setConditionalDeps(capreseExt).addDependency(coreExt);
 
-        app = TsArtifact.jar("app-with-conditional-deps")
-                .addDependency(tomatoExt)
-                .addDependency(mozzarellaExt)
-                .addDependency(basilExt)
-                .addDependency(saladExt)
-                .addDependency(oilJar);
+        app = TsArtifact.jar("app-with-conditional-deps").addDependency(tomatoExt).addDependency(mozzarellaExt)
+                .addDependency(basilExt).addDependency(saladExt).addDependency(oilJar);
 
         appModel = app.getPomModel();
         app.install(repoBuilder);

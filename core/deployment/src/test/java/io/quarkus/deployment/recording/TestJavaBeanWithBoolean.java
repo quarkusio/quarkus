@@ -23,12 +23,8 @@ public class TestJavaBeanWithBoolean {
 
     @Override
     public String toString() {
-        return "TestJavaBeanWithBoolean{" +
-                "bool=" + bool +
-                ", boxedBool=" + boxedBool +
-                ", boxedBoolWithIsGetter=" + boxedBoolWithIsGetter +
-                ", boxedBoolWithIsAndGetGetters=" + boxedBoolWithIsAndGetGetters +
-                '}';
+        return "TestJavaBeanWithBoolean{" + "bool=" + bool + ", boxedBool=" + boxedBool + ", boxedBoolWithIsGetter="
+                + boxedBoolWithIsGetter + ", boxedBoolWithIsAndGetGetters=" + boxedBoolWithIsAndGetGetters + '}';
     }
 
     @Override

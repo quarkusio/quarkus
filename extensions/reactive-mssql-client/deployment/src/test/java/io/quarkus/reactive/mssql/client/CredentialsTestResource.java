@@ -22,13 +22,11 @@ public class CredentialsTestResource {
     @Produces(MediaType.TEXT_PLAIN)
     public CompletionStage<String> connect() {
 
-        return client.query("SELECT 1").execute()
-                .map(mssqlRowSet -> {
-                    assertEquals(1, mssqlRowSet.size());
-                    assertEquals(1, mssqlRowSet.iterator().next().getInteger(0));
-                    return "OK";
-                })
-                .subscribeAsCompletionStage();
+        return client.query("SELECT 1").execute().map(mssqlRowSet -> {
+            assertEquals(1, mssqlRowSet.size());
+            assertEquals(1, mssqlRowSet.iterator().next().getInteger(0));
+            return "OK";
+        }).subscribeAsCompletionStage();
     }
 
 }

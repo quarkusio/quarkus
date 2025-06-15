@@ -27,8 +27,7 @@ import io.vertx.core.json.JsonObject;
 public class DynamicVerificationKeyResolver {
     private static final Logger LOG = Logger.getLogger(DynamicVerificationKeyResolver.class);
     private static final Set<String> KEY_HEADERS = Set.of(HeaderParameterNames.KEY_ID,
-            HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT,
-            HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
+            HeaderParameterNames.X509_CERTIFICATE_SHA256_THUMBPRINT, HeaderParameterNames.X509_CERTIFICATE_THUMBPRINT);
 
     private final OidcProviderClientImpl client;
     private final MemoryCache<Key> cache;
@@ -58,9 +57,9 @@ public class DynamicVerificationKeyResolver {
             return getChainResolver();
         }
 
-        return client.getJsonWebKeySet(new OidcRequestContextProperties(
-                Map.of(OidcRequestContextProperties.TOKEN, tokenCred.getToken(),
-                        OidcRequestContextProperties.TOKEN_CREDENTIAL, tokenCred)))
+        return client
+                .getJsonWebKeySet(new OidcRequestContextProperties(Map.of(OidcRequestContextProperties.TOKEN,
+                        tokenCred.getToken(), OidcRequestContextProperties.TOKEN_CREDENTIAL, tokenCred)))
                 .onItem().transformToUni(new Function<JsonWebKeySet, Uni<? extends VerificationKeyResolver>>() {
 
                     @Override
@@ -72,8 +71,8 @@ public class DynamicVerificationKeyResolver {
                             newKey = getKeyWithId(jwks, kid);
                             if (newKey == null) {
                                 // if `kid` was set then the key must exist
-                                return Uni.createFrom().failure(
-                                        new UnresolvableKeyException(String.format("JWK with kid '%s' is not available", kid)));
+                                return Uni.createFrom().failure(new UnresolvableKeyException(
+                                        String.format("JWK with kid '%s' is not available", kid)));
                             } else {
                                 cache.add(kid, newKey);
                             }
@@ -86,8 +85,8 @@ public class DynamicVerificationKeyResolver {
                                 newKey = getKeyWithS256Thumbprint(jwks, thumbprint);
                                 if (newKey == null) {
                                     // if only `x5tS256` was set then the key must exist
-                                    return Uni.createFrom().failure(
-                                            new UnresolvableKeyException(String.format(
+                                    return Uni.createFrom()
+                                            .failure(new UnresolvableKeyException(String.format(
                                                     "JWK with the SHA256 certificate thumbprint '%s' is not available",
                                                     thumbprint)));
                                 } else {
@@ -102,8 +101,9 @@ public class DynamicVerificationKeyResolver {
                                 newKey = getKeyWithThumbprint(jwks, thumbprint);
                                 if (newKey == null) {
                                     // if only `x5t` was set then the key must exist
-                                    return Uni.createFrom().failure(new UnresolvableKeyException(
-                                            String.format("JWK with the certificate thumbprint '%s' is not available",
+                                    return Uni.createFrom()
+                                            .failure(new UnresolvableKeyException(String.format(
+                                                    "JWK with the certificate thumbprint '%s' is not available",
                                                     thumbprint)));
                                 } else {
                                     cache.add(thumbprint, newKey);
@@ -115,11 +115,13 @@ public class DynamicVerificationKeyResolver {
                             newKey = jwks.getKeyWithoutKeyIdAndThumbprint("RSA");
                         }
 
-                        //                        if (newKey == null && tryAll && kid == null && thumbprint == null) {
-                        //                            LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are set,"
-                        //                                    + " falling back to trying all available keys");
-                        //                            newKey = jwks.findKeyInAllKeys(jws); // there is nothing to check the signature for in this method
-                        //                        }
+                        // if (newKey == null && tryAll && kid == null && thumbprint == null) {
+                        // LOG.debug("JWK is not available, neither 'kid' nor 'x5t#S256' nor 'x5t' token headers are
+                        // set,"
+                        // + " falling back to trying all available keys");
+                        // newKey = jwks.findKeyInAllKeys(jws); // there is nothing to check the signature for in this
+                        // method
+                        // }
 
                         if (newKey == null && chainResolverFallback != null) {
                             return getChainResolver();

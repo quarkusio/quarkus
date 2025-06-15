@@ -57,32 +57,25 @@ public class OidcDbTokenStateManagerProcessor {
             default:
                 throw new RuntimeException("Unknown Reactive Sql Client " + sqlClientBuildItem.reactiveClient);
         }
-        String deleteStatement = format("DELETE FROM oidc_db_token_state_manager WHERE id = %s", queryParamPlaceholders[0]);
+        String deleteStatement = format("DELETE FROM oidc_db_token_state_manager WHERE id = %s",
+                queryParamPlaceholders[0]);
         String getQuery = format(
                 "SELECT id_token, access_token, refresh_token, access_token_expires_in, access_token_scope FROM oidc_db_token_state_manager WHERE "
-                        +
-                        "id = %s",
+                        + "id = %s",
                 queryParamPlaceholders[0]);
-        String insertStatement = format("INSERT INTO oidc_db_token_state_manager (id_token, access_token, refresh_token," +
-                " access_token_expires_in, access_token_scope, expires_in, id) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                queryParamPlaceholders[0],
-                queryParamPlaceholders[1],
-                queryParamPlaceholders[2], queryParamPlaceholders[3], queryParamPlaceholders[4], queryParamPlaceholders[5],
+        String insertStatement = format(
+                "INSERT INTO oidc_db_token_state_manager (id_token, access_token, refresh_token,"
+                        + " access_token_expires_in, access_token_scope, expires_in, id) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                queryParamPlaceholders[0], queryParamPlaceholders[1], queryParamPlaceholders[2],
+                queryParamPlaceholders[3], queryParamPlaceholders[4], queryParamPlaceholders[5],
                 queryParamPlaceholders[6]);
-        return SyntheticBeanBuildItem
-                .configure(OidcDbTokenStateManager.class)
-                .alternative(true)
-                .priority(1)
-                .addType(TokenStateManager.class)
-                .unremovable()
-                .scope(Singleton.class)
-                .supplier(recorder.createTokenStateManager(insertStatement, deleteStatement, getQuery))
-                .done();
+        return SyntheticBeanBuildItem.configure(OidcDbTokenStateManager.class).alternative(true).priority(1)
+                .addType(TokenStateManager.class).unremovable().scope(Singleton.class)
+                .supplier(recorder.createTokenStateManager(insertStatement, deleteStatement, getQuery)).done();
     }
 
     @BuildStep
-    ReactiveSqlClientBuildItem validateReactiveSqlClient(
-            Capabilities capabilities) {
+    ReactiveSqlClientBuildItem validateReactiveSqlClient(Capabilities capabilities) {
         ReactiveSqlClientBuildItem sqlClientDbTable = null;
         for (String reactiveClient : SUPPORTED_REACTIVE_CLIENTS) {
             if (capabilities.isPresent(reactiveClient)) {
@@ -115,71 +108,47 @@ public class OidcDbTokenStateManagerProcessor {
         final boolean supportsIfTableNotExists;
         switch (sqlClientBuildItem.reactiveClient) {
             case REACTIVE_PG_CLIENT:
-                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager (" +
-                        "id VARCHAR(100) PRIMARY KEY, " +
-                        "id_token VARCHAR, " +
-                        "access_token VARCHAR, " +
-                        "refresh_token VARCHAR, " +
-                        "access_token_expires_in BIGINT, " +
-                        "access_token_scope VARCHAR, " +
-                        "expires_in BIGINT NOT NULL)";
+                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager ("
+                        + "id VARCHAR(100) PRIMARY KEY, " + "id_token VARCHAR, " + "access_token VARCHAR, "
+                        + "refresh_token VARCHAR, " + "access_token_expires_in BIGINT, "
+                        + "access_token_scope VARCHAR, " + "expires_in BIGINT NOT NULL)";
                 supportsIfTableNotExists = true;
                 break;
             case REACTIVE_MYSQL_CLIENT:
-                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager ("
-                        + "id VARCHAR(100), "
-                        + "id_token VARCHAR(5000) NULL, "
-                        + "access_token VARCHAR(5000) NULL, "
-                        + "refresh_token VARCHAR(5000) NULL, "
-                        + "access_token_expires_in BIGINT NULL, "
-                        + "access_token_scope VARCHAR(100) NULL, "
-                        + "expires_in BIGINT NOT NULL, "
+                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager (" + "id VARCHAR(100), "
+                        + "id_token VARCHAR(5000) NULL, " + "access_token VARCHAR(5000) NULL, "
+                        + "refresh_token VARCHAR(5000) NULL, " + "access_token_expires_in BIGINT NULL, "
+                        + "access_token_scope VARCHAR(100) NULL, " + "expires_in BIGINT NOT NULL, "
                         + "PRIMARY KEY (id))";
                 supportsIfTableNotExists = true;
                 break;
             case REACTIVE_MSSQL_CLIENT:
-                createTableDdl = "CREATE TABLE oidc_db_token_state_manager ("
-                        + "id NVARCHAR(100) PRIMARY KEY, "
-                        + "id_token NVARCHAR(MAX), "
-                        + "access_token NVARCHAR(MAX), "
-                        + "refresh_token NVARCHAR(MAX), "
-                        + "access_token_expires_in BIGINT, "
-                        + "access_token_scope NVARCHAR(100), "
+                createTableDdl = "CREATE TABLE oidc_db_token_state_manager (" + "id NVARCHAR(100) PRIMARY KEY, "
+                        + "id_token NVARCHAR(MAX), " + "access_token NVARCHAR(MAX), " + "refresh_token NVARCHAR(MAX), "
+                        + "access_token_expires_in BIGINT, " + "access_token_scope NVARCHAR(100), "
                         + "expires_in BIGINT NOT NULL)";
                 supportsIfTableNotExists = false;
                 break;
             case REACTIVE_DB2_CLIENT:
-                createTableDdl = "CREATE TABLE oidc_db_token_state_manager ("
-                        + "id VARCHAR(100) NOT NULL PRIMARY KEY, "
-                        + "id_token VARCHAR(4000), "
-                        + "access_token VARCHAR(4000), "
-                        + "refresh_token VARCHAR(4000), "
-                        + "access_token_expires_in BIGINT, "
-                        + "access_token_scope VARCHAR(100), "
+                createTableDdl = "CREATE TABLE oidc_db_token_state_manager (" + "id VARCHAR(100) NOT NULL PRIMARY KEY, "
+                        + "id_token VARCHAR(4000), " + "access_token VARCHAR(4000), " + "refresh_token VARCHAR(4000), "
+                        + "access_token_expires_in BIGINT, " + "access_token_scope VARCHAR(100), "
                         + "expires_in BIGINT NOT NULL)";
                 supportsIfTableNotExists = false;
                 break;
             case REACTIVE_ORACLE_CLIENT:
-                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager ("
-                        + "id VARCHAR2(100), "
-                        + "id_token VARCHAR2(4000), "
-                        + "access_token VARCHAR2(4000), "
-                        + "refresh_token VARCHAR2(4000), "
-                        + "access_token_expires_in NUMBER, "
-                        + "access_token_scope VARCHAR2(100), "
-                        + "expires_in NUMBER NOT NULL, "
-                        + "PRIMARY KEY (id))";
+                createTableDdl = "CREATE TABLE IF NOT EXISTS oidc_db_token_state_manager (" + "id VARCHAR2(100), "
+                        + "id_token VARCHAR2(4000), " + "access_token VARCHAR2(4000), "
+                        + "refresh_token VARCHAR2(4000), " + "access_token_expires_in NUMBER, "
+                        + "access_token_scope VARCHAR2(100), " + "expires_in NUMBER NOT NULL, " + "PRIMARY KEY (id))";
                 supportsIfTableNotExists = true;
                 break;
             default:
                 throw new ConfigurationException("Unknown Reactive Sql Client " + sqlClientBuildItem.reactiveClient);
         }
-        return SyntheticBeanBuildItem
-                .configure(OidcDbTokenStateManagerInitializerProperties.class)
+        return SyntheticBeanBuildItem.configure(OidcDbTokenStateManagerInitializerProperties.class)
                 .supplier(recorder.createDbTokenStateInitializerProps(createTableDdl, supportsIfTableNotExists))
-                .unremovable()
-                .scope(Dependent.class)
-                .done();
+                .unremovable().scope(Dependent.class).done();
     }
 
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)

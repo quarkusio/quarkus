@@ -55,33 +55,31 @@ import io.restassured.specification.RequestSpecification;
 public class AccessLogFileTestCase {
 
     @RegisterExtension
-    public static QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    Path logDirectory;
-                    try {
-                        logDirectory = Files.createTempDirectory("quarkus-tests");
-                        //backslash is an escape char, we need this to be properly formatted for windows
-                        Properties p = new Properties();
-                        p.setProperty("quarkus.http.access-log.enabled", "true");
-                        p.setProperty("quarkus.http.access-log.log-to-file", "true");
-                        p.setProperty("quarkus.http.access-log.base-file-name", "server");
-                        p.setProperty("quarkus.http.access-log.log-directory", logDirectory.toAbsolutePath().toString());
-                        p.setProperty("quarkus.http.access-log.pattern", "long");
-                        p.setProperty("quarkus.http.access-log.exclude-pattern", "/health|/liveliness");
-                        ByteArrayOutputStream out = new ByteArrayOutputStream();
-                        p.store(out, null);
+    public static QuarkusUnitTest unitTest = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            Path logDirectory;
+            try {
+                logDirectory = Files.createTempDirectory("quarkus-tests");
+                // backslash is an escape char, we need this to be properly formatted for windows
+                Properties p = new Properties();
+                p.setProperty("quarkus.http.access-log.enabled", "true");
+                p.setProperty("quarkus.http.access-log.log-to-file", "true");
+                p.setProperty("quarkus.http.access-log.base-file-name", "server");
+                p.setProperty("quarkus.http.access-log.log-directory", logDirectory.toAbsolutePath().toString());
+                p.setProperty("quarkus.http.access-log.pattern", "long");
+                p.setProperty("quarkus.http.access-log.exclude-pattern", "/health|/liveliness");
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                p.store(out, null);
 
-                        return ShrinkWrap.create(JavaArchive.class)
-                                .add(new ByteArrayAsset(out.toByteArray()),
-                                        "application.properties");
+                return ShrinkWrap.create(JavaArchive.class).add(new ByteArrayAsset(out.toByteArray()),
+                        "application.properties");
 
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            });
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    });
 
     @ConfigProperty(name = "quarkus.http.access-log.log-directory")
     Path logDirectory;
@@ -100,16 +98,15 @@ public class AccessLogFileTestCase {
     public void testSingleLogMessageToFile() throws IOException, InterruptedException {
         // issue the request with a specific HTTP protocol version, so that we can then verify
         // the protocol value logged in the access log file
-        final RestAssuredConfig http10Config = RestAssured.config().httpClient(
-                new HttpClientConfig().setParam(CoreProtocolPNames.PROTOCOL_VERSION, new ProtocolVersion("HTTP", 1, 0)));
+        final RestAssuredConfig http10Config = RestAssured.config().httpClient(new HttpClientConfig()
+                .setParam(CoreProtocolPNames.PROTOCOL_VERSION, new ProtocolVersion("HTTP", 1, 0)));
         final RequestSpecification requestSpec = new RequestSpecBuilder().setConfig(http10Config).build();
         final String paramValue = UUID.randomUUID().toString();
-        RestAssured.given(requestSpec).get("/health"); //should be ignored
-        RestAssured.given(requestSpec).get("/liveliness"); //should be ignored
+        RestAssured.given(requestSpec).get("/health"); // should be ignored
+        RestAssured.given(requestSpec).get("/liveliness"); // should be ignored
         RestAssured.given(requestSpec).get("/does-not-exist?foo=" + paramValue);
 
-        Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+        Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

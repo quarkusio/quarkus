@@ -15,9 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BothImportAndDataSqlTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("users1.sql", "data.sql")
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addAsResource("users1.sql", "data.sql")
                     .addAsResource("users2.sql", "import.sql")
                     .addClasses(User.class, LoginEvent.class, UserRepository.class))
             .withConfigurationResource("application.properties");

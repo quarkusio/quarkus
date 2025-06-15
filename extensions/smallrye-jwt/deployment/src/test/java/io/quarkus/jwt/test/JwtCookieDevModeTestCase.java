@@ -11,10 +11,7 @@ import io.restassured.RestAssured;
 
 public class JwtCookieDevModeTestCase {
 
-    private static Class<?>[] testClasses = {
-            DefaultGroupsEndpoint.class,
-            TokenUtils.class
-    };
+    private static Class<?>[] testClasses = { DefaultGroupsEndpoint.class, TokenUtils.class };
     /**
      * The test generated JWT token string
      */
@@ -22,11 +19,8 @@ public class JwtCookieDevModeTestCase {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("publicKey.pem")
-                    .addAsResource("privateKey.pem")
-                    .addAsResource("TokenNoGroups.json")
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addAsResource("publicKey.pem")
+                    .addAsResource("privateKey.pem").addAsResource("TokenNoGroups.json")
                     .addAsResource("applicationJwtCookieDev.properties", "application.properties"));
 
     @BeforeEach
@@ -53,18 +47,13 @@ public class JwtCookieDevModeTestCase {
     }
 
     private void testOKResponse(String cookieName) {
-        RestAssured.given()
-                .header("Cookie", cookieName + "=" + token)
-                .get("/endp/echo")
-                .then().assertThat().statusCode(200)
-                .body(equalTo("User"));
+        RestAssured.given().header("Cookie", cookieName + "=" + token).get("/endp/echo").then().assertThat()
+                .statusCode(200).body(equalTo("User"));
     }
 
     private void testBadResponse(String cookieName) {
-        RestAssured.given()
-                .header("Cookie", cookieName + "=" + token)
-                .get("/endp/echo")
-                .then().assertThat().statusCode(401);
+        RestAssured.given().header("Cookie", cookieName + "=" + token).get("/endp/echo").then().assertThat()
+                .statusCode(401);
     }
 
 }

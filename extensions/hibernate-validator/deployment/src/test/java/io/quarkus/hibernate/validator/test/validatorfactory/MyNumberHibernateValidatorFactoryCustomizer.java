@@ -15,9 +15,7 @@ public class MyNumberHibernateValidatorFactoryCustomizer implements HibernateVal
     public void customize(BaseHibernateValidatorConfiguration<?> configuration) {
         ConstraintMapping constraintMapping = configuration.createConstraintMapping();
 
-        constraintMapping
-                .constraintDefinition(Min.class)
-                .includeExistingValidators(false)
+        constraintMapping.constraintDefinition(Min.class).includeExistingValidators(false)
                 .validatedBy(MyNumValidator.class);
 
         configuration.addMapping(constraintMapping);

@@ -18,15 +18,11 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 public class ExceptionMapping {
 
     /**
-     * The idea behind having two different maps is the following:
-     * Under normal circumstances, mappers are added to the first map,
-     * and we don't need to track multiple mappings because the priority is enough
-     * to distinguish.
-     *
-     * However, in the case where ExceptionMapper classes may not be active at runtime
-     * (due to the presence of conditional bean annotations), then we need to track
-     * all the possible mappings and at runtime determine the one with the lowest priority
-     * value that is active.
+     * The idea behind having two different maps is the following: Under normal circumstances, mappers are added to the
+     * first map, and we don't need to track multiple mappings because the priority is enough to distinguish. However,
+     * in the case where ExceptionMapper classes may not be active at runtime (due to the presence of conditional bean
+     * annotations), then we need to track all the possible mappings and at runtime determine the one with the lowest
+     * priority value that is active.
      */
     final Map<String, ResourceExceptionMapper<? extends Throwable>> mappers = new HashMap<>();
     // this is going to be used when there are mappers that are removable at runtime
@@ -106,7 +102,8 @@ public class ExceptionMapping {
     public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
         for (var resourceExceptionMapper : mappers.values()) {
             if (resourceExceptionMapper.getFactory() == null) {
-                resourceExceptionMapper.setFactory((BeanFactory) factoryCreator.apply(resourceExceptionMapper.getClassName()));
+                resourceExceptionMapper
+                        .setFactory((BeanFactory) factoryCreator.apply(resourceExceptionMapper.getClassName()));
             }
         }
         for (var list : runtimeCheckMappers.values()) {

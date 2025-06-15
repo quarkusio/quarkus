@@ -4,7 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The bytes sent
- *
  */
 public class BytesSentAttribute implements ExchangeAttribute {
 

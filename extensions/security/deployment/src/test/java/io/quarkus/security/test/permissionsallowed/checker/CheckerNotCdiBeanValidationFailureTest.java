@@ -14,12 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CheckerNotCdiBeanValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .assertException(t -> {
-                Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
-                Assertions.assertTrue(t.getMessage().contains("@PermissionChecker declared on method 'checkSomeValue'"));
-                Assertions.assertTrue(t.getMessage().contains("no matching CDI bean could be found"));
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().assertException(t -> {
+        Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
+        Assertions.assertTrue(t.getMessage().contains("@PermissionChecker declared on method 'checkSomeValue'"));
+        Assertions.assertTrue(t.getMessage().contains("no matching CDI bean could be found"));
+    });
 
     @Test
     public void test() {

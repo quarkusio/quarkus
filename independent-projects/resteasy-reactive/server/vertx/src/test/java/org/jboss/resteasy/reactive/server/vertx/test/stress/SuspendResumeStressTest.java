@@ -47,9 +47,7 @@ public class SuspendResumeStressTest {
                         }
                     });
                 }
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class));
+            }).withApplicationRoot((jar) -> jar.addClass(HelloResource.class));
 
     @Test
     public void testSuspendResumeStressTest() {
@@ -76,7 +74,8 @@ public class SuspendResumeStressTest {
 
     public static class Custom implements HandlerChainCustomizer {
         @Override
-        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+                ServerResourceMethod resourceMethod) {
             List<ServerRestHandler> handlers = new ArrayList<>();
             for (int i = 0; i < 100; ++i) {
                 handlers.add(new ResumeHandler());

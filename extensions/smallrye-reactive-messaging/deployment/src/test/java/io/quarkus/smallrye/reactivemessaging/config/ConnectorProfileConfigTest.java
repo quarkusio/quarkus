@@ -20,10 +20,8 @@ public class ConnectorProfileConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DumbConnector.class, BeanUsingDummyConnector.class)
-                    .addAsResource(
-                            new File("src/test/resources/config/dummy-connector-with-profile.properties"),
+            .withApplicationRoot((jar) -> jar.addClasses(DumbConnector.class, BeanUsingDummyConnector.class)
+                    .addAsResource(new File("src/test/resources/config/dummy-connector-with-profile.properties"),
                             "application.properties"));
 
     @Inject

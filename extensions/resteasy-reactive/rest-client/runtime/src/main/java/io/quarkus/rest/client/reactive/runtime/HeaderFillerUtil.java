@@ -14,7 +14,8 @@ public final class HeaderFillerUtil {
     private HeaderFillerUtil() {
     }
 
-    public static boolean shouldAddHeader(String name, MultivaluedMap<String, String> headers, ClientRequestContext context) {
+    public static boolean shouldAddHeader(String name, MultivaluedMap<String, String> headers,
+            ClientRequestContext context) {
         String existingValue = headers.getFirst(name);
         if (existingValue == null) {
             // if the header is part of the existing headers, we should add it
@@ -26,7 +27,8 @@ public final class HeaderFillerUtil {
             if (defaultContentType == null) {
                 return true;
             } else {
-                // if the header is the Content-Type, then we should update if its current value equals what determined at build time (and therefore no other code has changed it)
+                // if the header is the Content-Type, then we should update if its current value equals what determined
+                // at build time (and therefore no other code has changed it)
                 return existingValue.equals(defaultContentType);
             }
         } else if (HttpHeaders.USER_AGENT.equals(name)) {

@@ -51,8 +51,7 @@ class GetterMetadata {
             return false;
         }
         GetterMetadata that = (GetterMetadata) o;
-        return entityType.equals(that.entityType)
-                && fieldType.equals(that.fieldType)
+        return entityType.equals(that.entityType) && fieldType.equals(that.fieldType)
                 && fieldName.equals(that.fieldName);
     }
 

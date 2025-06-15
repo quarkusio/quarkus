@@ -28,8 +28,7 @@ public class LiquibaseExtensionBaselineOnMigrateTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/changeLog.xml", "db/changeLog.xml")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("baseline-on-migrate.properties", "application.properties"));
 
     @Test

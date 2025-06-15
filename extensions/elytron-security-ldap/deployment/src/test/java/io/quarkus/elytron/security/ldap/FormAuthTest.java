@@ -10,18 +10,13 @@ import io.restassured.specification.RequestSpecification;
 public class FormAuthTest extends LdapSecurityRealmTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("form-auth/application.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("form-auth/application.properties", "application.properties"));
 
     @Override
     protected RequestSpecification setupAuth(String username, String password) {
-        return RestAssured.given()
-                .auth()
-                .form(username, password,
-                        new FormAuthConfig("j_security_check", "j_username", "j_password")
-                                .withLoggingEnabled());
+        return RestAssured.given().auth().form(username, password,
+                new FormAuthConfig("j_security_check", "j_username", "j_password").withLoggingEnabled());
     }
 
     protected int getAuthFailureStatusCode() {

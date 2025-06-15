@@ -22,20 +22,11 @@ public class DevServicesDatasourceContainerConfig {
     private final boolean reuse;
     private final boolean showLogs;
 
-    public DevServicesDatasourceContainerConfig(Optional<String> imageName,
-            Map<String, String> containerEnv,
-            Map<String, String> containerProperties,
-            Map<String, String> additionalJdbcUrlProperties,
-            OptionalInt port,
-            Optional<String> command,
-            Optional<String> dbName,
-            Optional<String> username,
-            Optional<String> password,
-            Optional<List<String>> initScriptPath,
-            Optional<List<String>> initPrivilegedScriptPath,
-            Map<String, String> volumes,
-            boolean reuse,
-            boolean showLogs) {
+    public DevServicesDatasourceContainerConfig(Optional<String> imageName, Map<String, String> containerEnv,
+            Map<String, String> containerProperties, Map<String, String> additionalJdbcUrlProperties, OptionalInt port,
+            Optional<String> command, Optional<String> dbName, Optional<String> username, Optional<String> password,
+            Optional<List<String>> initScriptPath, Optional<List<String>> initPrivilegedScriptPath,
+            Map<String, String> volumes, boolean reuse, boolean showLogs) {
         this.imageName = imageName;
         this.containerEnv = containerEnv;
         this.containerProperties = containerProperties;

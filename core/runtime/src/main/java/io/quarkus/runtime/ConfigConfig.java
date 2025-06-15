@@ -15,8 +15,7 @@ import io.smallrye.config.WithName;
  * Configuration.
  * <p>
  * We don't really use this, because these are configurations for the config itself, so it causes a chicken / egg
- * problem, but we need it for documentation purposes.
- * <br>
+ * problem, but we need it for documentation purposes. <br>
  * Relocation of the Config configurations to the Quarkus namespace is done in
  * {@link io.quarkus.runtime.configuration.ConfigUtils#configBuilder}.
  */
@@ -37,8 +36,8 @@ public interface ConfigConfig {
     Optional<String> profileParent();
 
     /**
-     * Additional config locations to be loaded with the Config. The configuration support multiple locations
-     * separated by a comma and each must represent a valid {@link java.net.URI}.
+     * Additional config locations to be loaded with the Config. The configuration support multiple locations separated
+     * by a comma and each must represent a valid {@link java.net.URI}.
      */
     @WithName("config.locations")
     Optional<List<URI>> locations();
@@ -51,8 +50,7 @@ public interface ConfigConfig {
     Optional<Boolean> mappingValidateUnknown();
 
     /**
-     * Enable logging of configuration values lookup in DEBUG log level.
-     * <br>
+     * Enable logging of configuration values lookup in DEBUG log level. <br>
      * The log of configuration values require the category set to <code>DEBUG</code> in the
      * <code>io.smallrye.config</code> category: <code>quarkus.log.category."io.smallrye.config".level=DEBUG</code>.
      */

@@ -3,10 +3,9 @@ package io.quarkus.deployment.builditem;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Indicates that the given class should be instantiated with the constructor with the most parameters
- * when the object is bytecode recorded.
- *
- * An alternative to {@link RecordableConstructorBuildItem} for when the objects cannot be annotated
+ * Indicates that the given class should be instantiated with the constructor with the most parameters when the object
+ * is bytecode recorded. An alternative to {@link RecordableConstructorBuildItem} for when the objects cannot be
+ * annotated
  */
 public final class RecordableConstructorBuildItem extends MultiBuildItem {
 

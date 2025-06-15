@@ -14,23 +14,19 @@ import io.quarkus.test.QuarkusUnitTest;
 public class VirtualThreadMetricsDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.virtual-threads.enabled", "true")
 
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withEmptyApplication();
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withEmptyApplication();
 
     @Inject
     BeanManager beans;
 
     @Test
     void testNoInstancePresentIfDisabled() {
-        assertTrue(
-                beans.createInstance().select()
-                        .stream().filter(this::isVirtualThreadCollector).findAny().isEmpty(),
+        assertTrue(beans.createInstance().select().stream().filter(this::isVirtualThreadCollector).findAny().isEmpty(),
                 "No VirtualThreadCollector expected");
     }
 

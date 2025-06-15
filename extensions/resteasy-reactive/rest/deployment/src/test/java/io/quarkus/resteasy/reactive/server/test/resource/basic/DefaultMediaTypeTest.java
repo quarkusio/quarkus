@@ -27,9 +27,12 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
- * @tpTestCaseDetails Regression test for JBEAP-2847. DefaultTextPlain should be used, if produce annotation is not
- *                    used in end-point.
+ *
+ * @tpTestCaseDetails Regression test for JBEAP-2847. DefaultTextPlain should be used, if produce annotation is not used
+ *                    in end-point.
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Default Media Type Test")
@@ -40,16 +43,15 @@ public class DefaultMediaTypeTest {
     static Client client;
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(DefaultMediaTypeCustomObject.class);
-                    war.addClasses(PortProviderUtil.class, DefaultMediaTypeResource.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClass(DefaultMediaTypeCustomObject.class);
+            war.addClasses(PortProviderUtil.class, DefaultMediaTypeResource.class);
+            return war;
+        }
+    });
 
     @BeforeEach
     public void init() {
@@ -68,6 +70,7 @@ public class DefaultMediaTypeTest {
 
     /**
      * @tpTestDetails Test Date object with produce annotation
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -78,15 +81,16 @@ public class DefaultMediaTypeTest {
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
         }
-        Response response = target.request().post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
+        Response response = target.request()
+                .post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
     }
 
     /**
-     * @tpTestDetails Test Date object without produce annotation
-     *                https://issues.jboss.org/browse/RESTEASY-1403
+     * @tpTestDetails Test Date object without produce annotation https://issues.jboss.org/browse/RESTEASY-1403
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -98,15 +102,16 @@ public class DefaultMediaTypeTest {
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
         }
-        Response response = target.request().post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
-        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
-                response.getStatus());
+        Response response = target.request()
+                .post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
     }
 
     /**
      * @tpTestDetails Test Foo object with produce annotation
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -117,15 +122,16 @@ public class DefaultMediaTypeTest {
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
         }
-        Response response = target.request().post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
+        Response response = target.request()
+                .post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
     }
 
     /**
-     * @tpTestDetails Test Foo object without produce annotation
-     *                https://issues.jboss.org/browse/RESTEASY-1403
+     * @tpTestDetails Test Foo object without produce annotation https://issues.jboss.org/browse/RESTEASY-1403
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -137,15 +143,16 @@ public class DefaultMediaTypeTest {
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
         }
-        Response response = target.request().post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
-        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
-                response.getStatus());
+        Response response = target.request()
+                .post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
     }
 
     /**
      * @tpTestDetails Test int primitive with produce annotation
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -156,7 +163,8 @@ public class DefaultMediaTypeTest {
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
         }
-        Response response = target.request().post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
+        Response response = target.request()
+                .post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
@@ -164,6 +172,7 @@ public class DefaultMediaTypeTest {
 
     /**
      * @tpTestDetails Test int primitive without produce annotation
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -174,15 +183,16 @@ public class DefaultMediaTypeTest {
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
         }
-        Response response = target.request().post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
-        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
-                response.getStatus());
+        Response response = target.request()
+                .post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
     }
 
     /**
      * @tpTestDetails Test Integer object with produce annotation
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -193,7 +203,8 @@ public class DefaultMediaTypeTest {
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
         }
-        Response response = target.request().post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
+        Response response = target.request()
+                .post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
         Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
@@ -201,6 +212,7 @@ public class DefaultMediaTypeTest {
 
     /**
      * @tpTestDetails Test Integer object without produce annotation
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -211,9 +223,9 @@ public class DefaultMediaTypeTest {
         for (int i = 0; i < 5000; i++) {
             baos.write(i);
         }
-        Response response = target.request().post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
-        Assertions.assertEquals(Response.Status.OK.getStatusCode(),
-                response.getStatus());
+        Response response = target.request()
+                .post(Entity.entity(baos.toByteArray(), MediaType.APPLICATION_OCTET_STREAM));
+        Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
         String responseContent = response.readEntity(String.class);
         LOG.debug(String.format("Response: %s", responseContent));
     }

@@ -8,10 +8,8 @@ import java.lang.annotation.Target;
 import jakarta.interceptor.InterceptorBinding;
 
 /**
- * Indicates that this method should be run in a rollback only reactive transaction.
- *
- * This allows the test method to modify the database as required, and then have
- * these changes reverted at the end of the method.
+ * Indicates that this method should be run in a rollback only reactive transaction. This allows the test method to
+ * modify the database as required, and then have these changes reverted at the end of the method.
  *
  * @see TestTransaction for JTA transactions.
  */

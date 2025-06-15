@@ -11,13 +11,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnsupportedClusteredJobConfigurationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleJobs.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.quartz.store-type=ram\nquarkus.quartz.clustered=true"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleJobs.class).addAsResource(
+                    new StringAsset("quarkus.quartz.store-type=ram\nquarkus.quartz.clustered=true"),
+                    "application.properties"));
 
     @Test
     public void shouldFailWhenConfiguringClusteredJobWithRamStore() {

@@ -21,8 +21,11 @@ public final class RemovedResourceBuildItem extends MultiBuildItem {
 
     /**
      * @deprecated In favor of {@link #RemovedResourceBuildItem(ArtifactKey, Set)}
-     * @param artifact artifact key
-     * @param resources resources to be removed from the application
+     *
+     * @param artifact
+     *        artifact key
+     * @param resources
+     *        resources to be removed from the application
      */
     @Deprecated(forRemoval = true)
     public RemovedResourceBuildItem(GACT artifact, Set<String> resources) {

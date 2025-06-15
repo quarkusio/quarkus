@@ -26,15 +26,14 @@
         <version.deploy.plugin>3.1.4</version.deploy.plugin>
         <version.enforcer.plugin>3.5.0</version.enforcer.plugin>
         <version.exec.plugin>3.5.1</version.exec.plugin>
-        <version.formatter.plugin>2.26.0</version.formatter.plugin>
         <version.gpg.plugin>3.2.7</version.gpg.plugin>
-        <version.impsort.plugin>1.12.0</version.impsort.plugin>
         <version.install.plugin>3.1.4</version.install.plugin>
         <version.javadoc.plugin>3.11.2</version.javadoc.plugin>
         <version.jar.plugin>3.4.2</version.jar.plugin>
         <version.plugin.plugin>3.15.1</version.plugin.plugin>
         <version.release.plugin>3.1.1</version.release.plugin>
         <version.resources.plugin>3.3.1</version.resources.plugin>
+        <version.spotless.plugin>2.44.5</version.spotless.plugin>
         <!-- Do not update for now as it is causing test issues in integration-tests/devmode
         java.lang.NoClassDefFoundError: com/salesforce/jprotoc/Generator -->
         <version.shade.plugin>3.2.1</version.shade.plugin>
@@ -362,35 +361,51 @@
                     </configuration>
                 </plugin>
                 <plugin>
-                    <groupId>net.revelc.code.formatter</groupId>
-                    <artifactId>formatter-maven-plugin</artifactId>
-                    <version>${version.formatter.plugin}</version>
-                    <dependencies>
-                        <dependency>
-                            <artifactId>quarkus-ide-config</artifactId>
-                            <groupId>io.quarkus</groupId>
-                            <version>${project.version}</version>
-                        </dependency>
-                    </dependencies>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>${version.spotless.plugin}</version>
                     <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/formatter-maven-plugin-${version.formatter.plugin}</cachedir>
-                        <configFile>eclipse-format.xml</configFile>
-                        <lineEnding>LF</lineEnding>
+                        <formats>
+                            <format>
+                                <trimTrailingWhitespace/>
+<!--                                 <endWithNewline/>-->
+                                <indent>
+                                    <spaces>true</spaces>
+                                    <spacesPerTab>2</spacesPerTab>
+                                </indent>
+                                <includes>
+                                    <include>.gitignore</include>
+                                </includes>
+                                <excludes>
+                                    <exclude>**gradlew**</exclude>
+                                    <exclude>**mvnw**</exclude>
+                                    <exclude>extensions/panache/**/pom.xml</exclude>
+                                    <exclude>test-framework/junit5/pom.xml</exclude>
+                                    <exclude>test-framework/security/pom.xml</exclude>
+                                </excludes>
+                            </format>
+                        </formats>
+                        <java>
+                            <eclipse>
+                                <file>${maven.multiModuleProjectDirectory}/independent-projects/ide-config/src/main/resources/eclipse-format.xml</file>
+                            </eclipse>
+                            <importOrder>
+                                <file>${maven.multiModuleProjectDirectory}/independent-projects/ide-config/src/main/resources/eclipse.importorder</file>
+                            </importOrder>
+                            <removeUnusedImports />
+                            <excludes>
+                                <!-- https://github.com/diffplug/spotless/issues/2491 -->
+                                <exclude>**/src/main/java/io/quarkus/rest/client/reactive/deployment/ClientContextResolverHandler.java</exclude>
+                                <exclude>**/src/main/java/io/quarkus/rest/client/reactive/deployment/ClientExceptionMapperHandler.java</exclude>
+                                <exclude>**/src/main/java/io/quarkus/rest/client/reactive/deployment/ClientRedirectHandler.java</exclude>
+                            </excludes>
+                        </java>
                         <skip>${format.skip}</skip>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>net.revelc.code</groupId>
-                    <artifactId>impsort-maven-plugin</artifactId>
-                    <version>${version.impsort.plugin}</version>
-                    <configuration>
-                        <!-- store outside of target to speed up formatting when mvn clean is used -->
-                        <cachedir>.cache/impsort-maven-plugin-${version.impsort.plugin}</cachedir>
-                        <groups>java.,javax.,jakarta.,org.,com.</groups>
-                        <staticGroups>*</staticGroups>
-                        <skip>${format.skip}</skip>
-                        <removeUnused>true</removeUnused>
+                        <kotlin>
+                            <ktfmt>
+                                <style>KOTLINLANG</style>
+                            </ktfmt>
+                        </kotlin>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -621,6 +636,58 @@
                         </plugin>
                     </plugins>
                 </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>format</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!no-format</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>apply</id>
+                                <goals>
+                                    <goal>apply</goal>
+                                </goals>
+                                <phase>process-sources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>validate</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>no-format</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>check</id>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                                <phase>verify</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>

@@ -25,19 +25,12 @@ public class ExcludedTransitiveConditionalDependencyTest extends BootstrapFromOr
         addToExpectedLib(extC.getRuntime());
         addToExpectedLib(extD.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extD, extB.getRuntime())
-                .addDependency(extA);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extD, extB.getRuntime()).addDependency(extA);
     }
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[] {
-                "ext-a",
-                "ext-c",
-                "ext-d"
-        };
+        return new String[] { "ext-a", "ext-c", "ext-d" };
     }
 }

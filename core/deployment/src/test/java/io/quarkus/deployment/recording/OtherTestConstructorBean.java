@@ -15,7 +15,7 @@ public class OtherTestConstructorBean {
     }
 
     public void setFirst(String first) {
-        //should not be called, as it was initialized in the constructor
+        // should not be called, as it was initialized in the constructor
         this.first = "Mrs " + first;
     }
 
@@ -43,9 +43,7 @@ public class OtherTestConstructorBean {
         if (o == null || getClass() != o.getClass())
             return false;
         OtherTestConstructorBean that = (OtherTestConstructorBean) o;
-        return age == that.age &&
-                Objects.equals(first, that.first) &&
-                Objects.equals(last, that.last);
+        return age == that.age && Objects.equals(first, that.first) && Objects.equals(last, that.last);
     }
 
     @Override

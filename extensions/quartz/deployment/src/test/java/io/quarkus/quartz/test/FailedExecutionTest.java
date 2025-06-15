@@ -19,8 +19,7 @@ public class FailedExecutionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FailedExecutionTest.Jobs.class));
+            .withApplicationRoot((jar) -> jar.addClasses(FailedExecutionTest.Jobs.class));
 
     static final CountDownLatch ERROR_LATCH = new CountDownLatch(2);
     static FailedExecution failedExecution;

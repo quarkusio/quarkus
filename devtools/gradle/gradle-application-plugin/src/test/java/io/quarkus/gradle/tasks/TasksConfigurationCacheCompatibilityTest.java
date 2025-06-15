@@ -35,15 +35,9 @@ public class TasksConfigurationCacheCompatibilityTest {
     Path testProjectDir;
 
     private static Stream<String> compatibleTasks() {
-        return Stream.of(
-                QUARKUS_GENERATE_CODE_TASK_NAME,
-                QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
-                QUARKUS_GENERATE_CODE_DEV_TASK_NAME,
-                QUARKUS_BUILD_DEP_TASK_NAME,
-                QUARKUS_BUILD_APP_PARTS_TASK_NAME,
-                QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME,
-                QUARKUS_BUILD_TASK_NAME,
-                "build");
+        return Stream.of(QUARKUS_GENERATE_CODE_TASK_NAME, QUARKUS_GENERATE_CODE_TESTS_TASK_NAME,
+                QUARKUS_GENERATE_CODE_DEV_TASK_NAME, QUARKUS_BUILD_DEP_TASK_NAME, QUARKUS_BUILD_APP_PARTS_TASK_NAME,
+                QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME, QUARKUS_BUILD_TASK_NAME, "build");
     }
 
     private static Stream<String> nonCompatibleQuarkusBuildTasks() {
@@ -57,9 +51,7 @@ public class TasksConfigurationCacheCompatibilityTest {
         FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
         FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
 
-        GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
+        GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir.toFile())
                 .withArguments(QUARKUS_GENERATE_CODE_TASK_NAME, "--info", "--stacktrace", "--build-cache",
                         "--configuration-cache")
                 .build();
@@ -126,18 +118,12 @@ public class TasksConfigurationCacheCompatibilityTest {
     }
 
     private BuildResult buildResult(String task, String configurationCacheCommand) {
-        return GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withArguments(task, "--info", "--stacktrace", "--build-cache", configurationCacheCommand)
-                .build();
+        return GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir.toFile())
+                .withArguments(task, "--info", "--stacktrace", "--build-cache", configurationCacheCommand).build();
     }
 
     private BuildResult buildResult(String task) {
-        return GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withArguments(task, "--info", "--stacktrace", "--build-cache")
-                .build();
+        return GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir.toFile())
+                .withArguments(task, "--info", "--stacktrace", "--build-cache").build();
     }
 }

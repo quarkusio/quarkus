@@ -19,12 +19,14 @@ public class ServerJsonObjectHandler extends JsonObjectHandler
         implements ServerMessageBodyWriter<JsonObject>, ServerMessageBodyReader<JsonObject> {
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return JsonObject.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(JsonObject o, Type genericType, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(JsonObject o, Type genericType, ServerRequestContext context)
+            throws WebApplicationException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try (JsonWriter writer = JsonpUtil.writer(out, context.getResponseMediaType())) {
             writer.writeObject(o);

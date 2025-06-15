@@ -15,10 +15,8 @@ public class PgPoolProducerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-default-datasource.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingBarePgClient.class)
-                    .addClass(BeanUsingMutinyPgClient.class));
+            .withConfigurationResource("application-default-datasource.properties").withApplicationRoot(
+                    (jar) -> jar.addClasses(BeanUsingBarePgClient.class).addClass(BeanUsingMutinyPgClient.class));
 
     @Inject
     BeanUsingBarePgClient beanUsingBare;
@@ -28,10 +26,7 @@ public class PgPoolProducerTest {
 
     @Test
     public void testVertxInjection() {
-        beanUsingBare.verify()
-                .thenCompose(v -> beanUsingMutiny.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingBare.verify().thenCompose(v -> beanUsingMutiny.verify()).toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -52,8 +47,7 @@ public class PgPoolProducerTest {
         io.vertx.mutiny.sqlclient.Pool pgClient;
 
         public CompletionStage<Void> verify() {
-            return pgClient.query("SELECT 1").execute()
-                    .onItem().ignore().andContinueWithNull()
+            return pgClient.query("SELECT 1").execute().onItem().ignore().andContinueWithNull()
                     .subscribeAsCompletionStage();
         }
     }

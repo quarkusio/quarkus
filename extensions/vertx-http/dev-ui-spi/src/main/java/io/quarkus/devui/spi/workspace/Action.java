@@ -12,8 +12,10 @@ import java.util.regex.Pattern;
 /**
  * Define an action in Dev UI Workspace.
  *
- * @param <T> The input
- * @param <R> The response
+ * @param <T>
+ *        The input
+ * @param <R>
+ *        The response
  */
 public class Action<T, R> {
     private final String label; // This is the label in the dropdown
@@ -23,17 +25,12 @@ public class Action<T, R> {
     private final Optional<Pattern> filter; // Filter to only apply on certain files
     private final Display display; // Response display for the UI
     private final DisplayType displayType; // Response display type
-    private final Function<Path, Path> pathConverter; // Convert the input path to something else. By default it will just stay the same
+    private final Function<Path, Path> pathConverter; // Convert the input path to something else. By default it will
+                                                      // just stay the same
 
-    protected Action(
-            String label,
-            String namespace,
-            Function<T, R> function,
-            BiFunction<Object, T, R> assistantFunction,
-            Optional<Pattern> filter,
-            Display display,
-            DisplayType displayType,
-            Function<Path, Path> pathConverter) {
+    protected Action(String label, String namespace, Function<T, R> function,
+            BiFunction<Object, T, R> assistantFunction, Optional<Pattern> filter, Display display,
+            DisplayType displayType, Function<Path, Path> pathConverter) {
 
         this.label = label;
         this.namespace = namespace;
@@ -97,13 +94,8 @@ public class Action<T, R> {
 
     @Override
     public String toString() {
-        return "Action {\n\tid=" + getId()
-                + ", \n\tlabel=" + label
-                + ", \n\tnamespace=" + namespace
-                + ", \n\tfilter=" + filter
-                + ", \n\tdisplay=" + display
-                + ", \n\tdisplayType=" + displayType
-                + "\n}";
+        return "Action {\n\tid=" + getId() + ", \n\tlabel=" + label + ", \n\tnamespace=" + namespace + ", \n\tfilter="
+                + filter + ", \n\tdisplay=" + display + ", \n\tdisplayType=" + displayType + "\n}";
     }
 
     public static ActionBuilder actionBuilder() {

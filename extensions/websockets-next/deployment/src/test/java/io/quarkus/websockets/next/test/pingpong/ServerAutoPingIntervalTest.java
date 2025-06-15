@@ -24,10 +24,9 @@ import io.vertx.core.http.WebSocketClient;
 public class ServerAutoPingIntervalTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class);
-            }).overrideConfigKey("quarkus.websockets-next.server.auto-ping-interval", "200ms");
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class);
+    }).overrideConfigKey("quarkus.websockets-next.server.auto-ping-interval", "200ms");
 
     @Inject
     Vertx vertx;
@@ -40,15 +39,13 @@ public class ServerAutoPingIntervalTest {
         WebSocketClient client = vertx.createWebSocketClient();
         try {
             CountDownLatch connectedLatch = new CountDownLatch(1);
-            client
-                    .connect(endUri.getPort(), endUri.getHost(), endUri.getPath())
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            connectedLatch.countDown();
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
-                    });
+            client.connect(endUri.getPort(), endUri.getHost(), endUri.getPath()).onComplete(r -> {
+                if (r.succeeded()) {
+                    connectedLatch.countDown();
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             assertTrue(connectedLatch.await(5, TimeUnit.SECONDS));
             // The pong message should be sent by the client automatically and should be identical to the ping message
             assertTrue(Endpoint.PONG.await(5, TimeUnit.SECONDS));

@@ -59,12 +59,12 @@ public class ReplacementDebugPage {
             }
         }
         for (String i : configErrors) {
-            toEdit.add(new CurrentConfig(i, "", "", ConfigProvider.getConfig().getOptionalValue(i, String.class).orElse(null),
-                    null));
+            toEdit.add(new CurrentConfig(i, "", "",
+                    ConfigProvider.getConfig().getOptionalValue(i, String.class).orElse(null), null));
         }
 
-        TemplateHtmlBuilder builder = new TemplateHtmlBuilder("Error restarting Quarkus", exception.getClass().getName(),
-                generateHeaderMessage(exception), List.of(), currentUri, toEdit);
+        TemplateHtmlBuilder builder = new TemplateHtmlBuilder("Error restarting Quarkus",
+                exception.getClass().getName(), generateHeaderMessage(exception), List.of(), currentUri, toEdit);
         builder.stack(exception);
         return builder.toString();
     }

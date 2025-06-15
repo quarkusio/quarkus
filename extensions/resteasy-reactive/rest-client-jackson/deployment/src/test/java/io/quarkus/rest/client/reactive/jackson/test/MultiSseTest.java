@@ -45,8 +45,7 @@ import io.smallrye.mutiny.Multi;
 
 public class MultiSseTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withEmptyApplication();
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
 
     @TestHTTPResource
     URI uri;
@@ -54,83 +53,61 @@ public class MultiSseTest {
     @Test
     void shouldConsume() {
         var resultList = new CopyOnWriteArrayList<>();
-        createClient()
-                .get()
-                .subscribe().with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(resultList).containsExactly("foo", "bar"));
+        createClient().get().subscribe().with(resultList::add);
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(resultList).containsExactly("foo", "bar"));
 
     }
 
     @Test
     void shouldReadBodyFromFailedResponse() {
         var errorBody = new AtomicReference<String>();
-        createClient()
-                .fail()
-                .subscribe().with(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
+        createClient().fail().subscribe().with(new Consumer<Object>() {
+            @Override
+            public void accept(Object o) {
 
-                    }
-                }, new Consumer<>() {
-                    @Override
-                    public void accept(Throwable t) {
-                        errorBody.set(t.getMessage());
-                    }
-                });
+            }
+        }, new Consumer<>() {
+            @Override
+            public void accept(Throwable t) {
+                errorBody.set(t.getMessage());
+            }
+        });
 
         await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(errorBody.get()).isEqualTo("invalid input provided"));
+                .untilAsserted(() -> assertThat(errorBody.get()).isEqualTo("invalid input provided"));
     }
 
     @Test
     void shouldConsumeJsonEntity() {
         var resultList = new CopyOnWriteArrayList<>();
-        createClient()
-                .getJson()
-                .subscribe().with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(resultList).containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar")));
+        createClient().getJson().subscribe().with(resultList::add);
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(
+                () -> assertThat(resultList).containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar")));
     }
 
     @Test
     void shouldConsumeAsParametrizedType() {
         var resultList = new CopyOnWriteArrayList<>();
-        createClient()
-                .getJsonAsMap()
-                .subscribe().with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(resultList).containsExactly(Map.of("name", "foo", "value", "bar"),
-                                Map.of("name", "chocolate", "value", "bar")));
+        createClient().getJsonAsMap().subscribe().with(resultList::add);
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertThat(resultList)
+                .containsExactly(Map.of("name", "foo", "value", "bar"), Map.of("name", "chocolate", "value", "bar")));
     }
 
     @Test
     void shouldSendPayloadAndConsume() {
         var resultList = new CopyOnWriteArrayList<>();
-        createClient()
-                .post("test")
-                .subscribe().with(resultList::add);
+        createClient().post("test").subscribe().with(resultList::add);
         await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(resultList).containsExactly("test", "test", "test"));
+                .untilAsserted(() -> assertThat(resultList).containsExactly("test", "test", "test"));
     }
 
     @Test
     void shouldSendPayloadAndConsumeAsParametrizedType() {
         var resultList = new CopyOnWriteArrayList<>();
-        createClient()
-                .postAndReadAsMap("test")
-                .subscribe().with(resultList::add);
+        createClient().postAndReadAsMap("test").subscribe().with(resultList::add);
         await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(resultList).containsExactly(
-                                Map.of("name", "foo", "value", "test"),
-                                Map.of("name", "foo", "value", "test"),
-                                Map.of("name", "foo", "value", "test")));
+                .untilAsserted(() -> assertThat(resultList).containsExactly(Map.of("name", "foo", "value", "test"),
+                        Map.of("name", "foo", "value", "test"), Map.of("name", "foo", "value", "test")));
     }
 
     /**
@@ -139,52 +116,41 @@ public class MultiSseTest {
     @Test
     void shouldRestStreamElementTypeOverwriteProducesAtClassLevel() {
         var resultList = new CopyOnWriteArrayList<>();
-        QuarkusRestClientBuilder.newBuilder().baseUri(uri)
-                .build(SeeWithRestStreamElementTypeClient.class)
-                .getJson()
-                .subscribe()
-                .with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(resultList)
-                                .containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar")));
+        QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(SeeWithRestStreamElementTypeClient.class).getJson()
+                .subscribe().with(resultList::add);
+        await().atMost(5, TimeUnit.SECONDS).untilAsserted(
+                () -> assertThat(resultList).containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar")));
     }
 
     @Test
     void shouldBeAbleReadEntireEvent() {
         var resultList = new CopyOnWriteArrayList<>();
-        createClient()
-                .event()
-                .subscribe().with(new Consumer<>() {
-                    @Override
-                    public void accept(SseEvent<Dto> event) {
-                        resultList.add(new EventContainer(event.id(), event.name(), event.data()));
-                    }
-                });
+        createClient().event().subscribe().with(new Consumer<>() {
+            @Override
+            public void accept(SseEvent<Dto> event) {
+                resultList.add(new EventContainer(event.id(), event.name(), event.data()));
+            }
+        });
         await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(resultList).containsExactly(
-                                new EventContainer("id0", "name0", new Dto("name0", "0")),
-                                new EventContainer("id1", "name1", new Dto("name1", "1"))));
+                .untilAsserted(() -> assertThat(resultList).containsExactly(
+                        new EventContainer("id0", "name0", new Dto("name0", "0")),
+                        new EventContainer("id1", "name1", new Dto("name1", "1"))));
     }
 
     @Test
     void shouldBeAbleReadEntireEventWhileAlsoBeingAbleToFilterEvents() {
         var resultList = new CopyOnWriteArrayList<>();
-        createClient()
-                .eventWithFilter()
-                .subscribe().with(new Consumer<>() {
-                    @Override
-                    public void accept(SseEvent<Dto> event) {
-                        resultList.add(new EventContainer(event.id(), event.name(), event.data()));
-                    }
-                });
+        createClient().eventWithFilter().subscribe().with(new Consumer<>() {
+            @Override
+            public void accept(SseEvent<Dto> event) {
+                resultList.add(new EventContainer(event.id(), event.name(), event.data()));
+            }
+        });
         await().atMost(5, TimeUnit.SECONDS)
-                .untilAsserted(
-                        () -> assertThat(resultList).containsExactly(
-                                new EventContainer("id", "n0", new Dto("name0", "0")),
-                                new EventContainer("id", "n1", new Dto("name1", "1")),
-                                new EventContainer("id", "n2", new Dto("name2", "2"))));
+                .untilAsserted(() -> assertThat(resultList).containsExactly(
+                        new EventContainer("id", "n0", new Dto("name0", "0")),
+                        new EventContainer("id", "n1", new Dto("name1", "1")),
+                        new EventContainer("id", "n2", new Dto("name2", "2"))));
     }
 
     static class EventContainer {
@@ -207,8 +173,7 @@ public class MultiSseTest {
                 return false;
             }
             EventContainer that = (EventContainer) o;
-            return Objects.equals(id, that.id) && Objects.equals(name, that.name)
-                    && Objects.equals(dto, that.dto);
+            return Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(dto, that.dto);
         }
 
         @Override
@@ -218,19 +183,13 @@ public class MultiSseTest {
 
         @Override
         public String toString() {
-            return "EventContainer{" +
-                    "id='" + id + '\'' +
-                    ", name='" + name + '\'' +
-                    ", dto=" + dto +
-                    '}';
+            return "EventContainer{" + "id='" + id + '\'' + ", name='" + name + '\'' + ", dto=" + dto + '}';
         }
     }
 
     private SseClient createClient() {
-        return QuarkusRestClientBuilder.newBuilder()
-                .baseUri(uri)
-                .register(new JacksonBasicMessageBodyReader(new ObjectMapper()))
-                .build(SseClient.class);
+        return QuarkusRestClientBuilder.newBuilder().baseUri(uri)
+                .register(new JacksonBasicMessageBodyReader(new ObjectMapper())).build(SseClient.class);
     }
 
     @Path("/sse")
@@ -339,10 +298,8 @@ public class MultiSseTest {
             try (sink) {
                 for (int i = 0; i < 2; i++) {
                     final OutboundSseEvent.Builder builder = sse.newEventBuilder();
-                    builder.id("id" + i)
-                            .mediaType(MediaType.APPLICATION_JSON_TYPE)
-                            .data(Dto.class, new Dto("name" + i, String.valueOf(i)))
-                            .name("name" + i);
+                    builder.id("id" + i).mediaType(MediaType.APPLICATION_JSON_TYPE)
+                            .data(Dto.class, new Dto("name" + i, String.valueOf(i))).name("name" + i);
 
                     sink.send(builder.build());
                 }
@@ -354,48 +311,28 @@ public class MultiSseTest {
         @Produces(MediaType.SERVER_SENT_EVENTS)
         public void eventWithFilter(@Context SseEventSink sink, @Context Sse sse) {
             try (sink) {
-                sink.send(sse.newEventBuilder()
-                        .id("id")
-                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
-                        .data(Dto.class, new Dto("name0", "0"))
-                        .name("n0")
-                        .build());
+                sink.send(sse.newEventBuilder().id("id").mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name0", "0")).name("n0").build());
 
-                sink.send(sse.newEventBuilder()
-                        .id("heartbeat")
-                        .comment("heartbeat")
-                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
-                        .build());
+                sink.send(sse.newEventBuilder().id("heartbeat").comment("heartbeat")
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE).build());
 
-                sink.send(sse.newEventBuilder()
-                        .id("id")
-                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
-                        .data(Dto.class, new Dto("name1", "1"))
-                        .name("n1")
-                        .build());
+                sink.send(sse.newEventBuilder().id("id").mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name1", "1")).name("n1").build());
 
-                sink.send(sse.newEventBuilder()
-                        .id("heartbeat")
-                        .comment("heartbeat")
-                        .build());
+                sink.send(sse.newEventBuilder().id("heartbeat").comment("heartbeat").build());
 
-                sink.send(sse.newEventBuilder()
-                        .id("id")
-                        .mediaType(MediaType.APPLICATION_JSON_TYPE)
-                        .data(Dto.class, new Dto("name2", "2"))
-                        .name("n2")
-                        .build());
+                sink.send(sse.newEventBuilder().id("id").mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .data(Dto.class, new Dto("name2", "2")).name("n2").build());
 
-                sink.send(sse.newEventBuilder()
-                        .id("end")
-                        .data("END")
-                        .build());
+                sink.send(sse.newEventBuilder().id("end").data("END").build());
             }
         }
     }
 
     @Path("/sse-rest-stream-element-type")
-    // The following annotation should be ignored because we're using `@RestStreamElementType(MediaType.APPLICATION_JSON)`.
+    // The following annotation should be ignored because we're using
+    // `@RestStreamElementType(MediaType.APPLICATION_JSON)`.
     @Produces(MediaType.APPLICATION_JSON)
     public static class SseWithRestStreamElementTypeResource {
         @GET
@@ -408,7 +345,8 @@ public class MultiSseTest {
 
     @RegisterRestClient
     @Path("/sse-rest-stream-element-type")
-    // The following annotation should be ignored because we're using `@RestStreamElementType(MediaType.APPLICATION_JSON)`.
+    // The following annotation should be ignored because we're using
+    // `@RestStreamElementType(MediaType.APPLICATION_JSON)`.
     @Produces(MediaType.APPLICATION_JSON)
     public interface SeeWithRestStreamElementTypeClient {
         @GET
@@ -446,10 +384,7 @@ public class MultiSseTest {
 
         @Override
         public String toString() {
-            return "Dto{" +
-                    "name='" + name + '\'' +
-                    ", value='" + value + '\'' +
-                    '}';
+            return "Dto{" + "name='" + name + '\'' + ", value='" + value + '\'' + '}';
         }
     }
 }

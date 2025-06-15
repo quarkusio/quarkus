@@ -29,19 +29,16 @@ public class DelegateNotIndexedTest {
                     buildChainBuilder.addBuildStep(new BuildStep() {
                         @Override
                         public void execute(BuildContext context) {
-                            context.produce(
-                                    new CapabilityBuildItem(Capability.AGROAL, "fakeProvider"));
+                            context.produce(new CapabilityBuildItem(Capability.AGROAL, "fakeProvider"));
                         }
                     }).produces(CapabilityBuildItem.class).build();
                 }
-            })
-            .assertException(t -> {
+            }).assertException(t -> {
                 assertEquals(ConfigurationException.class, t.getClass());
                 Assertions.assertTrue(t.getMessage().contains(
                         "Custom JDBC delegate implementation class 'org.acme.DoesNotExist' was not found in Jandex index"));
             })
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleJobs.class)
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleJobs.class)
                     .addAsResource(new StringAsset(
                             "quarkus.quartz.driver-delegate=org.acme.DoesNotExist\nquarkus.quartz.store-type=jdbc-cmt"),
                             "application.properties"));

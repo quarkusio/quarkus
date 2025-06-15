@@ -41,9 +41,8 @@ public class GradleGroovyProjectBuildFile extends GradleProjectBuildFile {
     }
 
     static boolean importBomInModel(Model model, ArtifactCoords coords) {
-        return addDependencyInModel(model,
-                String.format("    implementation %s%n",
-                        createDependencyCoordinatesString(coords, false, containsProperty(coords) ? '\"' : '\'')));
+        return addDependencyInModel(model, String.format("    implementation %s%n",
+                createDependencyCoordinatesString(coords, false, containsProperty(coords) ? '\"' : '\'')));
     }
 
     static boolean addDependencyInModel(Model model, ArtifactCoords coords, boolean managed) {

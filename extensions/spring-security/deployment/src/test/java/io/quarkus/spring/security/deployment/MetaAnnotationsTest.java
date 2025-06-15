@@ -25,14 +25,8 @@ public class MetaAnnotationsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            IsUser.class,
-                            IsUserOrAdmin.class,
-                            BeanWithMetaAnnotations.class,
-                            IdentityMock.class,
-                            AuthData.class,
-                            SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IsUser.class, IsUserOrAdmin.class,
+                    BeanWithMetaAnnotations.class, IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     BeanWithMetaAnnotations beanWithMetaAnnotations;
@@ -41,21 +35,20 @@ public class MetaAnnotationsTest {
     public void testPreAuthorizeMetaAnnotationIsUser() {
         assertFailureFor(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUser(), UnauthorizedException.class,
                 ANONYMOUS);
-        assertFailureFor(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUser(), ForbiddenException.class, ADMIN);
-        assertSuccess(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUser(), "preAuthorizeMetaAnnotationIsUser",
-                USER);
+        assertFailureFor(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUser(), ForbiddenException.class,
+                ADMIN);
+        assertSuccess(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUser(),
+                "preAuthorizeMetaAnnotationIsUser", USER);
     }
 
     @Test
     public void testPreAuthorizeMetaAnnotationIsUserOrAdmin() {
-        assertFailureFor(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUserOrAdmin(), UnauthorizedException.class,
-                ANONYMOUS);
+        assertFailureFor(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUserOrAdmin(),
+                UnauthorizedException.class, ANONYMOUS);
         assertSuccess(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUserOrAdmin(),
-                "preAuthorizeMetaAnnotationIsUserOrAdmin",
-                USER);
+                "preAuthorizeMetaAnnotationIsUserOrAdmin", USER);
         assertSuccess(() -> beanWithMetaAnnotations.preAuthorizeMetaAnnotationIsUserOrAdmin(),
-                "preAuthorizeMetaAnnotationIsUserOrAdmin",
-                ADMIN);
+                "preAuthorizeMetaAnnotationIsUserOrAdmin", ADMIN);
     }
 
     @Test
@@ -69,7 +62,8 @@ public class MetaAnnotationsTest {
     public void testIsSecuredWithSecuredAnnotation() {
         assertFailureFor(() -> beanWithMetaAnnotations.isSecuredWithSecuredAnnotation(), UnauthorizedException.class,
                 ANONYMOUS);
-        assertFailureFor(() -> beanWithMetaAnnotations.isSecuredWithSecuredAnnotation(), ForbiddenException.class, ADMIN);
+        assertFailureFor(() -> beanWithMetaAnnotations.isSecuredWithSecuredAnnotation(), ForbiddenException.class,
+                ADMIN);
         assertSuccess(() -> beanWithMetaAnnotations.isSecuredWithSecuredAnnotation(), "isSecuredWithSecuredAnnotation",
                 USER);
     }

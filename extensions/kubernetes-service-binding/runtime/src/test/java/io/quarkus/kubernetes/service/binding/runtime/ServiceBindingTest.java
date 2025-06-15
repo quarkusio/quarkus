@@ -26,14 +26,13 @@ class ServiceBindingTest {
         ServiceBinding binding = new ServiceBinding(root.resolve("test-name"));
         assertThat(binding.getType()).isEqualTo("test-type-2");
         assertThat(binding.getProvider()).isEqualTo("test-provider-2");
-        assertThat(binding.getProperties()).containsOnly(
-                entry("test-secret-key", "test-secret-value-2"),
+        assertThat(binding.getProperties()).containsOnly(entry("test-secret-key", "test-secret-value-2"),
                 entry("test-other-secret-key", "test-other-secret-value-2"));
     }
 
     @Test
     void testK8s() {
-        //When bindings are provided as a k8s configmap secret pairs data files will be symlinks to hidden directories
+        // When bindings are provided as a k8s configmap secret pairs data files will be symlinks to hidden directories
         ServiceBinding binding = new ServiceBinding(root.resolve("test-k8s"));
         assertThat(binding.getType()).isEqualTo("test-type-1");
         assertThat(binding.getProvider()).isEqualTo("test-provider-1");

@@ -7,11 +7,9 @@ import java.util.function.Supplier;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Used in conjunction with {@link RunOnVertxContext} (or similar annotations) in order to test assertions
- * on APIs that return {@link Uni} and whose execution needs to occur on a Vert.x Event Loop Thread (such as Hibernate Reactive
- * for example).
- *
- * The following example shows how this class is meant to be used:
+ * Used in conjunction with {@link RunOnVertxContext} (or similar annotations) in order to test assertions on APIs that
+ * return {@link Uni} and whose execution needs to occur on a Vert.x Event Loop Thread (such as Hibernate Reactive for
+ * example). The following example shows how this class is meant to be used:
  *
  * <pre>
  * &#64;QuarkusTest
@@ -20,19 +18,16 @@ import io.smallrye.mutiny.Uni;
  *     &#64;RunOnVertxContext
  *     &#64;Test
  *     public void someTest(UniAsserter asserter) {
- *         asserter
- *                 .assertNotNull(() -> MyAPI.someObject())
- *                 .assertEquals(() -> MyAPI.count(), 0L);
+ *         asserter.assertNotNull(() -> MyAPI.someObject()).assertEquals(() -> MyAPI.count(), 0L);
  *     }
  * }
  * </pre>
  *
- *
  * As can be seen in example, {@code UniAsserter} is used as parameter of a test method for a class annotated with
  * {@code QuarkusTest}.
  * <p>
- * As far as the API is concerned, each assertion in the pipeline is executed when the result of the corresponding Uni becomes
- * available.
+ * As far as the API is concerned, each assertion in the pipeline is executed when the result of the corresponding Uni
+ * becomes available.
  */
 public interface UniAsserter {
 
@@ -54,16 +49,15 @@ public interface UniAsserter {
     UniAsserter execute(Runnable c);
 
     /**
-     * Assert that the value of the {@code Uni} is equal to the expected value.
-     * If both are {@code null}, they are considered equal.
+     * Assert that the value of the {@code Uni} is equal to the expected value. If both are {@code null}, they are
+     * considered equal.
      *
      * @see Object#equals(Object)
      */
     <T> UniAsserter assertEquals(Supplier<Uni<T>> uni, T t);
 
     /**
-     * Assert that the value of the {@code Uni} is not equal to the expected value.
-     * Fails if both are {@code null}.
+     * Assert that the value of the {@code Uni} is not equal to the expected value. Fails if both are {@code null}.
      *
      * @see Object#equals(Object)
      */
@@ -93,7 +87,8 @@ public interface UniAsserter {
      */
     <T> UniAsserter assertNotNull(Supplier<Uni<T>> uni);
 
-    // WARNING: this method is called via reflection by io.quarkus.hibernate.reactive.panache.common.runtime.TestReactiveTransactionalInterceptor
+    // WARNING: this method is called via reflection by
+    // io.quarkus.hibernate.reactive.panache.common.runtime.TestReactiveTransactionalInterceptor
     @SuppressWarnings("unused")
     <T> UniAsserter surroundWith(Function<Uni<T>, Uni<T>> uni);
 
@@ -113,22 +108,24 @@ public interface UniAsserter {
     UniAsserter assertFalse(Supplier<Uni<Boolean>> uni);
 
     /**
-     * Used to determine whether the {@code Uni} contains the expected failure.
-     * The assertions fail if the {@code Uni} does not fail.
+     * Used to determine whether the {@code Uni} contains the expected failure. The assertions fail if the {@code Uni}
+     * does not fail.
      *
-     * @param c Consumer that performs custom assertions on whether the failure matches expectations. This allows
+     * @param c
+     *        Consumer that performs custom assertions on whether the failure matches expectations. This allows
      *        asserting on anything present in the {@code Throwable} like, the cause or the message
      */
     <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Consumer<Throwable> c);
 
     /**
-     * Used to determine whether the {@code Uni} contains the expected failure type.
-     * The assertions fail if the {@code Uni} does not fail.
+     * Used to determine whether the {@code Uni} contains the expected failure type. The assertions fail if the
+     * {@code Uni} does not fail.
      */
     <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Class<? extends Throwable> c);
 
     /**
      * @return the test data associated with the given key, or {@code null}
+     *
      * @see #putData(String, Object)
      */
     Object getData(String key);

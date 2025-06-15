@@ -15,7 +15,8 @@ import io.quarkus.rest.data.panache.deployment.utils.UniImplementor;
 
 public class HibernateReactiveResourceMethodListenerImplementor extends ResourceMethodListenerImplementor {
 
-    public HibernateReactiveResourceMethodListenerImplementor(ClassCreator cc, List<ClassInfo> resourceMethodListeners) {
+    public HibernateReactiveResourceMethodListenerImplementor(ClassCreator cc,
+            List<ClassInfo> resourceMethodListeners) {
         super(cc, resourceMethodListeners);
     }
 
@@ -31,7 +32,8 @@ public class HibernateReactiveResourceMethodListenerImplementor extends Resource
         return invokeUniMethodUsingId(ON_AFTER_DELETE_METHOD_NAME, methodCreator, uni, id);
     }
 
-    protected ResultHandle invokeUniMethodUsingEntity(String methodName, BytecodeCreator methodCreator, ResultHandle uni) {
+    protected ResultHandle invokeUniMethodUsingEntity(String methodName, BytecodeCreator methodCreator,
+            ResultHandle uni) {
         if (!hasListenerForMethod(methodName)) {
             return uni;
         }

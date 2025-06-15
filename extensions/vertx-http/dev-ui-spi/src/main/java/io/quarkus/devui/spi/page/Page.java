@@ -6,11 +6,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 /**
- * Define a page in Dev UI.
- * This is not a full web page, but rather the section in the middle where extensions can display data.
- * All pages (fragments) are rendered using Web components, but different builders exist to make it easy to define a page
- *
- * Navigation to this page is also defined here.
+ * Define a page in Dev UI. This is not a full web page, but rather the section in the middle where extensions can
+ * display data. All pages (fragments) are rendered using Web components, but different builders exist to make it easy
+ * to define a page Navigation to this page is also defined here.
  */
 public class Page {
     private final String icon; // Any font awesome icon
@@ -18,38 +16,32 @@ public class Page {
     private final String tooltip; // Add a tooltip to the link
     private final String title; // This is the display name and link title for the page
     private final String staticLabel; // This is optional extra info that might be displayed next to the link
-    private final String dynamicLabel; // This is optional extra info that might be displayed next to the link. This will override above static label. This expects a jsonRPC method name
-    private final String streamingLabel; // This is optional extra info that might be displayed next to the link. This will override above dynamic label. This expects a jsonRPC Multi method name
+    private final String dynamicLabel; // This is optional extra info that might be displayed next to the link. This
+                                       // will override above static label. This expects a jsonRPC method name
+    private final String streamingLabel; // This is optional extra info that might be displayed next to the link. This
+                                         // will override above dynamic label. This expects a jsonRPC Multi method name
 
     private final String componentName; // This is name of the component
     private final String componentLink; // This is a link to the component, excluding namespace
     private final Map<String, String> metadata; // Key value Metadata
 
-    private final boolean embed; // if the component is embedded in the page. true in all cases except maybe external pages
-    private final boolean includeInMenu; // if this link should be added to the submenu. true in all cases except maybe external pages
-    private final boolean internalComponent; // True if this component is provided by dev-ui (usually provided by the extension)
+    private final boolean embed; // if the component is embedded in the page. true in all cases except maybe external
+                                 // pages
+    private final boolean includeInMenu; // if this link should be added to the submenu. true in all cases except maybe
+                                         // external pages
+    private final boolean internalComponent; // True if this component is provided by dev-ui (usually provided by the
+                                             // extension)
 
     private String namespace = null; // The namespace can be the extension path or, if internal, qwc
-    private String namespaceLabel = null; // When more than one page belongs to the same namespace, we use the namespace as a title sometimes
+    private String namespaceLabel = null; // When more than one page belongs to the same namespace, we use the namespace
+                                          // as a title sometimes
     private String extensionId = null; // If this originates from an extension, then id. For internal this will be null;
 
     private String menuActionComponent = null; // Internal pages can set this
 
-    protected Page(String icon,
-            String color,
-            String tooltip,
-            String title,
-            String staticLabel,
-            String dynamicLabel,
-            String streamingLabel,
-            String componentName,
-            String componentLink,
-            Map<String, String> metadata,
-            boolean embed,
-            boolean includeInMenu,
-            boolean internalComponent,
-            String namespace,
-            String namespaceLabel,
+    protected Page(String icon, String color, String tooltip, String title, String staticLabel, String dynamicLabel,
+            String streamingLabel, String componentName, String componentLink, Map<String, String> metadata,
+            boolean embed, boolean includeInMenu, boolean internalComponent, String namespace, String namespaceLabel,
             String extensionId) {
 
         this.icon = icon;
@@ -184,33 +176,24 @@ public class Page {
 
     @Override
     public String toString() {
-        return "Page {\n\tid=" + getId()
-                + ", \n\ticon=" + icon
-                + ", \n\tcolor=" + color
-                + ", \n\ttooltip=" + tooltip
-                + ", \n\ttitle=" + title
-                + ", \n\tstaticLabel=" + staticLabel
-                + ", \n\tdynamicLabel=" + dynamicLabel
-                + ", \n\tstreamingLabel=" + streamingLabel
-                + ", \n\tnamespace=" + namespace
-                + ", \n\tnamespaceLabel=" + namespaceLabel
-                + ", \n\tcomponentName=" + componentName
-                + ", \n\tcomponentLink=" + componentLink
-                + ", \n\tembed=" + embed
-                + ", \n\tincludeInMenu=" + includeInMenu + "\n}";
+        return "Page {\n\tid=" + getId() + ", \n\ticon=" + icon + ", \n\tcolor=" + color + ", \n\ttooltip=" + tooltip
+                + ", \n\ttitle=" + title + ", \n\tstaticLabel=" + staticLabel + ", \n\tdynamicLabel=" + dynamicLabel
+                + ", \n\tstreamingLabel=" + streamingLabel + ", \n\tnamespace=" + namespace + ", \n\tnamespaceLabel="
+                + namespaceLabel + ", \n\tcomponentName=" + componentName + ", \n\tcomponentLink=" + componentLink
+                + ", \n\tembed=" + embed + ", \n\tincludeInMenu=" + includeInMenu + "\n}";
     }
 
     /**
-     * Here you provide the Web Component that should be rendered. You have full control over the page.
-     * You can use build time data if you made it available
+     * Here you provide the Web Component that should be rendered. You have full control over the page. You can use
+     * build time data if you made it available
      */
     public static WebComponentPageBuilder webComponentPageBuilder() {
         return new WebComponentPageBuilder();
     }
 
     /**
-     * Here you provide the Web Component that should be rendered. You have full control over the page.
-     * You can use build time data if you made it available
+     * Here you provide the Web Component that should be rendered. You have full control over the page. You can use
+     * build time data if you made it available
      */
     public static WebComponentPageBuilder assistantPageBuilder() {
         return new WebComponentPageBuilder("font-awesome-solid:robot", "var(--quarkus-assistant)",
@@ -218,8 +201,8 @@ public class Page {
     }
 
     /**
-     * Here you provide a url to an external resource. When code/markup, if can be displayed in a code view, when HTML it can
-     * render the HTML
+     * Here you provide a url to an external resource. When code/markup, if can be displayed in a code view, when HTML
+     * it can render the HTML
      */
     public static ExternalPageBuilder externalPageBuilder(String name) {
         return new ExternalPageBuilder(name);

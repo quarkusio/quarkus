@@ -26,9 +26,8 @@ public class QuarkusConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class, EchoClientWithConfigKey.class, MyResponseFilter.class,
-                            MyHostnameVerifier.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EchoResource.class, EchoClientWithConfigKey.class,
+                    MyResponseFilter.class, MyHostnameVerifier.class))
             .withConfigurationResource("restclient-config-test-application.properties");
 
     @RestClient
@@ -60,8 +59,7 @@ public class QuarkusConfigurationTest {
         assertTrue(clientConfig.url().isPresent());
         assertThat(clientConfig.url().get()).contains("localhost");
         assertTrue(clientConfig.providers().isPresent());
-        assertThat(clientConfig.providers().get())
-                .isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");
+        assertThat(clientConfig.providers().get()).isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");
         assertTrue(clientConfig.connectTimeout().isPresent());
         assertThat(clientConfig.connectTimeout().get()).isEqualTo(5000);
         assertTrue(clientConfig.readTimeout().isPresent());

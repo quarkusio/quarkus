@@ -54,47 +54,33 @@ class QuarkusSecurityWebAuthnProcessor {
 
     @BuildStep
     public void registerJacksonTypes(BuildProducer<ReflectiveHierarchyBuildItem> reflection) {
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AuthenticatorAssertionResponse.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AuthenticatorAttestationResponse.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticatorAssertionResponse.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticatorAttestationResponse.class).build());
         reflection.produce(ReflectiveHierarchyBuildItem.builder(AuthenticationRequest.class).build());
         reflection.produce(ReflectiveHierarchyBuildItem.builder(RegistrationRequest.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialCreationOptions.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRequestOptions.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRpEntity.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialUserEntity.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialParameters.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialType.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(PublicKeyCredential.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(AttestationObject.class).build());
-        reflection.produce(
-                ReflectiveHierarchyBuildItem.builder(CollectedClientData.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialCreationOptions.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRequestOptions.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialRpEntity.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialUserEntity.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialParameters.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(PublicKeyCredentialType.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(PublicKeyCredential.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(AttestationObject.class).build());
+        reflection.produce(ReflectiveHierarchyBuildItem.builder(CollectedClientData.class).build());
     }
 
     @BuildStep
     public void myBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
 
-        builder.addBeanClass(WebAuthnSecurity.class)
-                .addBeanClass(WebAuthnAuthenticatorStorage.class)
+        builder.addBeanClass(WebAuthnSecurity.class).addBeanClass(WebAuthnAuthenticatorStorage.class)
                 .addBeanClass(WebAuthnTrustedIdentityProvider.class);
         additionalBeans.produce(builder.build());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    public void setup(
-            WebAuthnRecorder recorder,
-            VertxWebRouterBuildItem vertxWebRouterBuildItem,
+    public void setup(WebAuthnRecorder recorder, VertxWebRouterBuildItem vertxWebRouterBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         recorder.setupRoutes(beanContainerBuildItem.getValue(), vertxWebRouterBuildItem.getHttpRouter(),
@@ -103,19 +89,16 @@ class QuarkusSecurityWebAuthnProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    SyntheticBeanBuildItem initWebAuthnAuth(
-            WebAuthnRecorder recorder) {
+    SyntheticBeanBuildItem initWebAuthnAuth(WebAuthnRecorder recorder) {
         return SyntheticBeanBuildItem.configure(WebAuthnAuthenticationMechanism.class)
-                .types(HttpAuthenticationMechanism.class)
-                .setRuntimeInit()
-                .scope(Singleton.class)
+                .types(HttpAuthenticationMechanism.class).setRuntimeInit().scope(Singleton.class)
                 .supplier(recorder.setupWebAuthnAuthenticationMechanism()).done();
     }
 
     @BuildStep
     List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
-        return List.of(
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(WebAuthn.class), WebAuthn.AUTH_MECHANISM_SCHEME));
+        return List.of(new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(WebAuthn.class),
+                WebAuthn.AUTH_MECHANISM_SCHEME));
     }
 
     public static class IsEnabled implements BooleanSupplier {

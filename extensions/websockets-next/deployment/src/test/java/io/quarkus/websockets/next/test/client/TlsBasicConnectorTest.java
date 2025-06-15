@@ -27,8 +27,7 @@ public class TlsBasicConnectorTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClasses(ServerEndpoint.class)
+            .withApplicationRoot(jar -> jar.addClasses(ServerEndpoint.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "keystore.jks")
                     .addAsResource(new File("target/certs/ssl-test-truststore.jks"), "truststore.jks"))
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "keystore.jks")
@@ -52,10 +51,7 @@ public class TlsBasicConnectorTest {
     }
 
     void assertClient(URI uri) {
-        WebSocketClientConnection connection = connector
-                .baseUri(uri)
-                .path("/{name}")
-                .pathParam("name", "Lu")
+        WebSocketClientConnection connection = connector.baseUri(uri).path("/{name}").pathParam("name", "Lu")
                 .connectAndAwait();
         assertTrue(connection.isOpen());
         assertTrue(connection.isSecure());

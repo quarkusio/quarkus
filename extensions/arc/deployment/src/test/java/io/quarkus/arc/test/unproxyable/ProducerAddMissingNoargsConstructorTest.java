@@ -15,9 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ProducerAddMissingNoargsConstructorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ProducerAddMissingNoargsConstructorTest.class, MyProducer.class, MyBean.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(ProducerAddMissingNoargsConstructorTest.class, MyProducer.class, MyBean.class));
 
     @Inject
     MyBean bean;

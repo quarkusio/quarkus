@@ -34,8 +34,8 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     boolean perModule;
 
     /**
-     * Version of the target platform (e.g: 2.0.0.Final)
-     * You may instead use stream to target the latest version of a specific platform stream.
+     * Version of the target platform (e.g: 2.0.0.Final) You may instead use stream to target the latest version of a
+     * specific platform stream.
      */
     @Parameter(property = "platformVersion", required = false)
     private String platformVersion;
@@ -53,9 +53,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private Boolean rewrite;
 
     /**
-     * Disable the rewrite feature.
-     *
-     * Deprecated: use -Drewrite=false instead
+     * Disable the rewrite feature. Deprecated: use -Drewrite=false instead
      */
     @Deprecated
     @Parameter(property = "noRewrite", required = false, defaultValue = "false")
@@ -68,9 +66,8 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
     private Boolean rewriteDryRun;
 
     /**
-     * Use custom io.quarkus:quarkus-update-recipes:LATEST coords (GAV) or just provide the version. This artifact should
-     * contain the
-     * base Quarkus update recipes to update a project.
+     * Use custom io.quarkus:quarkus-update-recipes:LATEST coords (GAV) or just provide the version. This artifact
+     * should contain the base Quarkus update recipes to update a project.
      */
     @Parameter(property = "quarkusUpdateRecipes", required = false)
     private String rewriteQuarkusUpdateRecipes;
@@ -119,7 +116,8 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
             }
         } catch (RegistryResolutionException e) {
             throw new MojoExecutionException(
-                    "Failed to resolve the recommended Quarkus extension catalog from the configured extension registries", e);
+                    "Failed to resolve the recommended Quarkus extension catalog from the configured extension registries",
+                    e);
         }
         final UpdateProject invoker = new UpdateProject(quarkusProject);
         invoker.targetCatalog(targetCatalog);
@@ -148,8 +146,7 @@ public class UpdateMojo extends QuarkusProjectStateMojoBase {
         try {
             final QuarkusCommandOutcome result = invoker.execute();
             if (!result.isSuccess()) {
-                throw new MojoExecutionException(
-                        "Failed to apply the updates: " + result.getMessage());
+                throw new MojoExecutionException("Failed to apply the updates: " + result.getMessage());
             }
         } catch (QuarkusUpdateExitErrorException e) {
             throw new MojoExecutionException(e.getMessage());

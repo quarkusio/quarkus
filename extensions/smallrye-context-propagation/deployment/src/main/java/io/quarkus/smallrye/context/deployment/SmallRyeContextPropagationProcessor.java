@@ -55,14 +55,13 @@ class SmallRyeContextPropagationProcessor {
 
     @BuildStep
     void registerBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans
-                .produce(AdditionalBeanBuildItem.unremovableOf(SmallRyeContextPropagationProvider.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(SmallRyeContextPropagationProvider.class));
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void buildStatic(SmallRyeContextPropagationRecorder recorder, List<ThreadContextProviderBuildItem> threadContextProviders)
-            throws ClassNotFoundException, IOException {
+    void buildStatic(SmallRyeContextPropagationRecorder recorder,
+            List<ThreadContextProviderBuildItem> threadContextProviders) throws ClassNotFoundException, IOException {
         List<ThreadContextProvider> discoveredProviders = new ArrayList<>();
         List<ContextManagerExtension> discoveredExtensions = new ArrayList<>();
         List<Class<?>> providers = threadContextProviders.stream().map(ThreadContextProviderBuildItem::getProvider)
@@ -72,18 +71,20 @@ class SmallRyeContextPropagationProcessor {
         for (Class<?> provider : providers) {
             try {
                 discoveredProviders.add((ThreadContextProvider) provider.getDeclaredConstructor().newInstance());
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + provider.getName(),
-                        e);
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
+                throw new RuntimeException(
+                        "Failed to instantiate declared ThreadContextProvider class: " + provider.getName(), e);
             }
         }
         for (Class<?> extension : ServiceUtil.classesNamedIn(Thread.currentThread().getContextClassLoader(),
                 "META-INF/services/" + ContextManagerExtension.class.getName())) {
             try {
                 discoveredExtensions.add((ContextManagerExtension) extension.getDeclaredConstructor().newInstance());
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-                throw new RuntimeException("Failed to instantiate declared ThreadContextProvider class: " + extension.getName(),
-                        e);
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
+                throw new RuntimeException(
+                        "Failed to instantiate declared ThreadContextProvider class: " + extension.getName(), e);
             }
         }
 
@@ -92,25 +93,19 @@ class SmallRyeContextPropagationProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void build(SmallRyeContextPropagationRecorder recorder,
-            ExecutorBuildItem executorBuildItem,
+    void build(SmallRyeContextPropagationRecorder recorder, ExecutorBuildItem executorBuildItem,
             ShutdownContextBuildItem shutdownContextBuildItem,
             BuildProducer<ContextPropagationInitializedBuildItem> cpInitializedBuildItem,
-            BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+            BuildProducer<FeatureBuildItem> feature, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         feature.produce(new FeatureBuildItem(Feature.SMALLRYE_CONTEXT_PROPAGATION));
 
         recorder.configureRuntime(executorBuildItem.getExecutorProxy(), shutdownContextBuildItem);
 
         // Synthetic bean for ManagedExecutor
-        syntheticBeans.produce(
-                SyntheticBeanBuildItem.configure(SmallRyeManagedExecutor.class)
-                        .scope(ApplicationScoped.class)
-                        .addType(ManagedExecutor.class)
-                        .defaultBean()
-                        .unremovable()
-                        .supplier(recorder.initializeManagedExecutor(executorBuildItem.getExecutorProxy()))
-                        .setRuntimeInit().done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(SmallRyeManagedExecutor.class)
+                .scope(ApplicationScoped.class).addType(ManagedExecutor.class).defaultBean().unremovable()
+                .supplier(recorder.initializeManagedExecutor(executorBuildItem.getExecutorProxy())).setRuntimeInit()
+                .done());
 
         cpInitializedBuildItem.produce(new ContextPropagationInitializedBuildItem());
     }
@@ -135,27 +130,22 @@ class SmallRyeContextPropagationProcessor {
                     return;
                 }
                 AnnotationTarget target = transformationContext.getAnnotationTarget();
-                AnnotationInstance meConfigInstance = Annotations.find(
-                        transformationContext.getAllTargetAnnotations(),
+                AnnotationInstance meConfigInstance = Annotations.find(transformationContext.getAllTargetAnnotations(),
                         DotNames.MANAGED_EXECUTOR_CONFIG);
-                AnnotationInstance tcConfigInstance = Annotations.find(
-                        transformationContext.getAllTargetAnnotations(),
+                AnnotationInstance tcConfigInstance = Annotations.find(transformationContext.getAllTargetAnnotations(),
                         DotNames.THREAD_CONTEXT_CONFIG);
                 String mpConfigIpName = null;
                 if (target.kind().equals(AnnotationTarget.Kind.FIELD)) {
                     if (meConfigInstance != null || tcConfigInstance != null) {
                         // create a unique name based on the injection point
-                        mpConfigIpName = target.asField().declaringClass().name().toString()
-                                + NAME_DELIMITER
+                        mpConfigIpName = target.asField().declaringClass().name().toString() + NAME_DELIMITER
                                 + target.asField().name();
                     }
                 } else if (target.kind().equals(AnnotationTarget.Kind.METHOD_PARAMETER)) {
                     if (meConfigInstance != null || tcConfigInstance != null) {
                         // create a unique name based on the injection point
                         mpConfigIpName = target.asMethodParameter().method().declaringClass().name().toString()
-                                + NAME_DELIMITER
-                                + target.asMethodParameter().method().name()
-                                + NAME_DELIMITER
+                                + NAME_DELIMITER + target.asMethodParameter().method().name() + NAME_DELIMITER
                                 + (target.asMethodParameter().position() + 1);
                     }
                 }
@@ -172,7 +162,8 @@ class SmallRyeContextPropagationProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void createSynthBeansForConfiguredInjectionPoints(BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
+    void createSynthBeansForConfiguredInjectionPoints(
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             SmallRyeContextPropagationRecorder recorder, BeanDiscoveryFinishedBuildItem bdFinishedBuildItem) {
         Map<String, ExecutorConfig> executorMap = new HashMap<>();
         Set<String> unconfiguredExecutorIPs = new HashSet<>();
@@ -192,10 +183,10 @@ class SmallRyeContextPropagationProcessor {
                                 && !ann.name().equals(io.quarkus.arc.processor.DotNames.DEFAULT))) {
                     continue;
                 }
-                AnnotationInstance meConfigInstance = Annotations.find(ipInfo.getAnnotationTarget().asField().annotations(),
-                        DotNames.MANAGED_EXECUTOR_CONFIG);
-                AnnotationInstance tcConfigInstance = Annotations.find(ipInfo.getAnnotationTarget().asField().annotations(),
-                        DotNames.THREAD_CONTEXT_CONFIG);
+                AnnotationInstance meConfigInstance = Annotations
+                        .find(ipInfo.getAnnotationTarget().asField().annotations(), DotNames.MANAGED_EXECUTOR_CONFIG);
+                AnnotationInstance tcConfigInstance = Annotations
+                        .find(ipInfo.getAnnotationTarget().asField().annotations(), DotNames.THREAD_CONTEXT_CONFIG);
 
                 // get the name from @NamedInstance qualifier
                 String nameValue = namedAnnotation.value().asString();
@@ -215,16 +206,13 @@ class SmallRyeContextPropagationProcessor {
                         // parse ME config annotation and store in a map
                         executorMap.putIfAbsent(nameValue,
                                 new ExecutorConfig(meConfigInstance.value("cleared"),
-                                        meConfigInstance.value("propagated"),
-                                        meConfigInstance.value("maxAsync"),
+                                        meConfigInstance.value("propagated"), meConfigInstance.value("maxAsync"),
                                         meConfigInstance.value("maxQueued")));
 
                     } else if (tcConfigInstance != null) {
                         // parse TC config annotation
-                        threadContextMap.putIfAbsent(nameValue,
-                                new ThreadConfig(tcConfigInstance.value("cleared"),
-                                        tcConfigInstance.value("propagated"),
-                                        tcConfigInstance.value("unchanged")));
+                        threadContextMap.putIfAbsent(nameValue, new ThreadConfig(tcConfigInstance.value("cleared"),
+                                tcConfigInstance.value("propagated"), tcConfigInstance.value("unchanged")));
                     }
                 }
             } else if (AnnotationTarget.Kind.METHOD_PARAMETER.equals(ipInfo.getAnnotationTarget().kind())) {
@@ -269,16 +257,13 @@ class SmallRyeContextPropagationProcessor {
                             // parse ME config annotation and store in a map
                             executorMap.putIfAbsent(nameValue,
                                     new ExecutorConfig(meConfigInstance.value("cleared"),
-                                            meConfigInstance.value("propagated"),
-                                            meConfigInstance.value("maxAsync"),
+                                            meConfigInstance.value("propagated"), meConfigInstance.value("maxAsync"),
                                             meConfigInstance.value("maxQueued")));
 
                         } else if (tcConfigInstance != null) {
                             // parse TC config annotation
-                            threadContextMap.putIfAbsent(nameValue,
-                                    new ThreadConfig(tcConfigInstance.value("cleared"),
-                                            tcConfigInstance.value("propagated"),
-                                            tcConfigInstance.value("unchanged")));
+                            threadContextMap.putIfAbsent(nameValue, new ThreadConfig(tcConfigInstance.value("cleared"),
+                                    tcConfigInstance.value("propagated"), tcConfigInstance.value("unchanged")));
                         }
                     }
                 }
@@ -287,22 +272,16 @@ class SmallRyeContextPropagationProcessor {
         }
         // check all unconfigured IPs, if we also found same name and configured ones, then drop these from the set
         unconfiguredExecutorIPs.removeAll(unconfiguredExecutorIPs.stream()
-                .filter((name) -> (executorMap.containsKey(name)))
-                .collect(Collectors.toSet()));
+                .filter((name) -> (executorMap.containsKey(name))).collect(Collectors.toSet()));
 
         unconfiguredContextIPs.removeAll(unconfiguredContextIPs.stream()
-                .filter((name) -> (threadContextMap.containsKey(name)))
-                .collect(Collectors.toSet()));
+                .filter((name) -> (threadContextMap.containsKey(name))).collect(Collectors.toSet()));
 
         // add beans for configured ManagedExecutors
         for (Map.Entry<String, ExecutorConfig> entry : executorMap.entrySet()) {
             syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(ManagedExecutor.class)
-                    .defaultBean()
-                    .unremovable()
-                    .setRuntimeInit()
-                    .scope(ApplicationScoped.class)
-                    .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", entry.getKey())
-                    .done()
+                    .defaultBean().unremovable().setRuntimeInit().scope(ApplicationScoped.class).addQualifier()
+                    .annotation(DotNames.NAMED_INSTANCE).addValue("value", entry.getKey()).done()
                     .supplier(recorder.initializeConfiguredManagedExecutor(entry.getValue().cleared,
                             entry.getValue().propagated, entry.getValue().maxAsync, entry.getValue().maxQueued))
                     // disposers should be unnecessary as all beans run on Quarkus thread pool
@@ -312,11 +291,8 @@ class SmallRyeContextPropagationProcessor {
         // add beans for unconfigured ManagedExecutors
         for (String ipName : unconfiguredExecutorIPs) {
             syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(ManagedExecutor.class)
-                    .defaultBean()
-                    .unremovable()
-                    .setRuntimeInit()
-                    .scope(ApplicationScoped.class)
-                    .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", ipName).done()
+                    .defaultBean().unremovable().setRuntimeInit().scope(ApplicationScoped.class).addQualifier()
+                    .annotation(DotNames.NAMED_INSTANCE).addValue("value", ipName).done()
                     .supplier(recorder.initializeConfiguredManagedExecutor(
                             ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.cleared(),
                             ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.propagated(),
@@ -329,15 +305,10 @@ class SmallRyeContextPropagationProcessor {
         // add beans for configured ThreadContext
         for (Map.Entry<String, ThreadConfig> entry : threadContextMap.entrySet()) {
             syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(ThreadContext.class)
-                    .defaultBean()
-                    .unremovable()
-                    .setRuntimeInit()
-                    .scope(ApplicationScoped.class)
-                    .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", entry.getKey())
-                    .done()
+                    .defaultBean().unremovable().setRuntimeInit().scope(ApplicationScoped.class).addQualifier()
+                    .annotation(DotNames.NAMED_INSTANCE).addValue("value", entry.getKey()).done()
                     .supplier(recorder.initializeConfiguredThreadContext(entry.getValue().cleared,
-                            entry.getValue().propagated,
-                            entry.getValue().unchanged))
+                            entry.getValue().propagated, entry.getValue().unchanged))
                     // disposers should be unnecessary as all beans run on Quarkus thread pool
                     .done());
         }
@@ -345,11 +316,8 @@ class SmallRyeContextPropagationProcessor {
         // add beans for unconfigured ThreadContext
         for (String ipName : unconfiguredContextIPs) {
             syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(ThreadContext.class)
-                    .defaultBean()
-                    .unremovable()
-                    .setRuntimeInit()
-                    .scope(ApplicationScoped.class)
-                    .addQualifier().annotation(DotNames.NAMED_INSTANCE).addValue("value", ipName).done()
+                    .defaultBean().unremovable().setRuntimeInit().scope(ApplicationScoped.class).addQualifier()
+                    .annotation(DotNames.NAMED_INSTANCE).addValue("value", ipName).done()
                     .supplier(recorder.initializeConfiguredThreadContext(
                             ThreadContextConfig.Literal.DEFAULT_INSTANCE.cleared(),
                             ThreadContextConfig.Literal.DEFAULT_INSTANCE.propagated(),
@@ -368,11 +336,14 @@ class SmallRyeContextPropagationProcessor {
 
         ExecutorConfig(AnnotationValue cleared, AnnotationValue propagated, AnnotationValue maxAsync,
                 AnnotationValue maxQueued) {
-            this.cleared = cleared == null ? ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.cleared() : cleared.asStringArray();
+            this.cleared = cleared == null ? ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.cleared()
+                    : cleared.asStringArray();
             this.propagated = propagated == null ? ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.propagated()
                     : propagated.asStringArray();
-            this.maxAsync = maxAsync == null ? ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.maxAsync() : maxAsync.asInt();
-            this.maxQueued = maxQueued == null ? ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.maxQueued() : maxQueued.asInt();
+            this.maxAsync = maxAsync == null ? ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.maxAsync()
+                    : maxAsync.asInt();
+            this.maxQueued = maxQueued == null ? ManagedExecutorConfig.Literal.DEFAULT_INSTANCE.maxQueued()
+                    : maxQueued.asInt();
         }
     }
 
@@ -382,7 +353,8 @@ class SmallRyeContextPropagationProcessor {
         String[] unchanged;
 
         ThreadConfig(AnnotationValue cleared, AnnotationValue propagated, AnnotationValue unchanged) {
-            this.cleared = cleared == null ? ThreadContextConfig.Literal.DEFAULT_INSTANCE.cleared() : cleared.asStringArray();
+            this.cleared = cleared == null ? ThreadContextConfig.Literal.DEFAULT_INSTANCE.cleared()
+                    : cleared.asStringArray();
             this.propagated = propagated == null ? ThreadContextConfig.Literal.DEFAULT_INSTANCE.propagated()
                     : propagated.asStringArray();
             this.unchanged = unchanged == null ? ThreadContextConfig.Literal.DEFAULT_INSTANCE.unchanged()

@@ -22,13 +22,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SpringPreAuthorizeWithExpressionsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            BeanWithAndOrExpressions.class,
-                            IdentityMock.class,
-                            AuthData.class,
-                            SecurityTestUtils.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(BeanWithAndOrExpressions.class, IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     private BeanWithAndOrExpressions bean;

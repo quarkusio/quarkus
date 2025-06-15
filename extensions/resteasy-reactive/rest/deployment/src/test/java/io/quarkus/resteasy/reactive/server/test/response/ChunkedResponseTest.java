@@ -35,27 +35,19 @@ public class ChunkedResponseTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class)
-                    .addAsResource(new StringAsset("quarkus.rest.output-buffer-size = 256"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class)
+                    .addAsResource(new StringAsset("quarkus.rest.output-buffer-size = 256"), "application.properties"));
 
     @Test
     void chunked() {
-        when()
-                .get("/hello/big")
-                .then().statusCode(200)
-                .body(equalTo(LARGE_HELLO_STRING))
-                .header("Transfer-encoding", "chunked");
+        when().get("/hello/big").then().statusCode(200).body(equalTo(LARGE_HELLO_STRING)).header("Transfer-encoding",
+                "chunked");
     }
 
     @Test
     void notChunked() {
-        when()
-                .get("/hello/small")
-                .then().statusCode(200)
-                .body(equalTo("hello"))
-                .header("Transfer-encoding", nullValue());
+        when().get("/hello/small").then().statusCode(200).body(equalTo("hello")).header("Transfer-encoding",
+                nullValue());
     }
 
     @Path("hello")
@@ -78,12 +70,14 @@ public class ChunkedResponseTest {
     public static class CustomStringMessageBodyWriter implements ServerMessageBodyWriter<String> {
 
         @Override
-        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+                MediaType mediaType) {
             return true;
         }
 
         @Override
-        public void writeResponse(String o, Type genericType, ServerRequestContext context) throws WebApplicationException {
+        public void writeResponse(String o, Type genericType, ServerRequestContext context)
+                throws WebApplicationException {
             context.serverResponse().end(o);
         }
 
@@ -99,7 +93,8 @@ public class ChunkedResponseTest {
     }
 
     @Provider
-    @Priority(Priorities.USER + 1) // the spec says that when it comes to writers, higher number means higher priority...
+    @Priority(Priorities.USER + 1) // the spec says that when it comes to writers, higher number means higher
+                                             // priority...
     public static final class CustomStringMessageBodyWriter2 extends CustomStringMessageBodyWriter {
 
         @Override

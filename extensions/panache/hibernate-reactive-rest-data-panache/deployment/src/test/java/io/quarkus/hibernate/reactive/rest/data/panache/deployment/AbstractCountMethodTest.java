@@ -11,8 +11,6 @@ public abstract class AbstractCountMethodTest {
 
     @Test
     void shouldGetTotalNumberOfEntities() {
-        given().get("/collections/count")
-                .then().statusCode(HttpStatus.SC_OK)
-                .and().body(is(equalTo("2")));
+        given().get("/collections/count").then().statusCode(HttpStatus.SC_OK).and().body(is(equalTo("2")));
     }
 }

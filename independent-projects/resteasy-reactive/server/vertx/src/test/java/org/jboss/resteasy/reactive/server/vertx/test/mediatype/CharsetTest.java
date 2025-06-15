@@ -20,48 +20,34 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class CharsetTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class);
+        }
+    });
 
     @Test
     public void testText() {
-        String contentType = when().get("/test/text")
-                .then()
-                .statusCode(200)
-                .extract().header("Content-Type");
+        String contentType = when().get("/test/text").then().statusCode(200).extract().header("Content-Type");
         assertEquals("text/plain;charset=UTF-8", contentType);
     }
 
     @Test
     public void testResponseText() {
-        String contentType = when().get("/test/response/text")
-                .then()
-                .statusCode(200)
-                .extract().header("Content-Type");
+        String contentType = when().get("/test/response/text").then().statusCode(200).extract().header("Content-Type");
         assertEquals("text/plain;charset=UTF-8", contentType);
     }
 
     @Test
     public void testJson() {
-        String contentType = when().get("/test/json")
-                .then()
-                .statusCode(200)
-                .extract().header("Content-Type");
+        String contentType = when().get("/test/json").then().statusCode(200).extract().header("Content-Type");
         assertEquals("application/json;charset=UTF-8", contentType);
     }
 
     @Test
     public void testImage() {
-        String contentType = when().get("/test/image")
-                .then()
-                .statusCode(200)
-                .extract().header("Content-Type");
+        String contentType = when().get("/test/image").then().statusCode(200).extract().header("Content-Type");
         assertEquals("image/png", contentType);
     }
 

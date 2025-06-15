@@ -18,17 +18,17 @@ public class NettyRecorder {
     // of the WARN message issued from this method. See comments in https://github.com/quarkusio/quarkus/pull/9246
     // for details
     public void eagerlyInitChannelId() {
-        //this class is slow to init and can block the IO thread and cause a warning
-        //we init it from a throwaway thread to stop this
-        //we do it from another thread so as not to affect start time
+        // this class is slow to init and can block the IO thread and cause a warning
+        // we init it from a throwaway thread to stop this
+        // we do it from another thread so as not to affect start time
         new Thread(new Runnable() {
             @Override
             public void run() {
                 long start = System.currentTimeMillis();
                 DefaultChannelId.newInstance();
                 if (System.currentTimeMillis() - start > 1000) {
-                    log.warn("Netty DefaultChannelId initialization (with io.netty.machineId" +
-                            " system property set to " + System.getProperty("io.netty.machineId")
+                    log.warn("Netty DefaultChannelId initialization (with io.netty.machineId"
+                            + " system property set to " + System.getProperty("io.netty.machineId")
                             + ") took more than a second");
                 }
             }

@@ -32,7 +32,8 @@ public class FallbackWithExceptionCauseChainTest {
                 .isExactlyInstanceOf(RuntimeException.class);
         assertThatCode(() -> fallbackWithBothSkipOnAndApplyOn.hello(new RuntimeException(new IOException())))
                 .doesNotThrowAnyException();
-        assertThatCode(() -> fallbackWithBothSkipOnAndApplyOn.hello(new RuntimeException(new ExpectedOutcomeException())))
+        assertThatCode(
+                () -> fallbackWithBothSkipOnAndApplyOn.hello(new RuntimeException(new ExpectedOutcomeException())))
                 .isExactlyInstanceOf(RuntimeException.class);
 
         assertThatCode(() -> fallbackWithBothSkipOnAndApplyOn.hello(new Exception()))
@@ -42,8 +43,7 @@ public class FallbackWithExceptionCauseChainTest {
         assertThatCode(() -> fallbackWithBothSkipOnAndApplyOn.hello(new Exception(new ExpectedOutcomeException())))
                 .isExactlyInstanceOf(Exception.class);
 
-        assertThatCode(() -> fallbackWithBothSkipOnAndApplyOn.hello(new IOException()))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithBothSkipOnAndApplyOn.hello(new IOException())).doesNotThrowAnyException();
         assertThatCode(() -> fallbackWithBothSkipOnAndApplyOn.hello(new IOException(new Exception())))
                 .doesNotThrowAnyException();
         assertThatCode(() -> fallbackWithBothSkipOnAndApplyOn.hello(new IOException(new ExpectedOutcomeException())))
@@ -59,24 +59,19 @@ public class FallbackWithExceptionCauseChainTest {
 
     @Test
     public void skipOn() {
-        assertThatCode(() -> fallbackWithSkipOn.hello(new RuntimeException()))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithSkipOn.hello(new RuntimeException())).doesNotThrowAnyException();
         assertThatCode(() -> fallbackWithSkipOn.hello(new RuntimeException(new IOException())))
                 .doesNotThrowAnyException();
         assertThatCode(() -> fallbackWithSkipOn.hello(new RuntimeException(new ExpectedOutcomeException())))
                 .isExactlyInstanceOf(RuntimeException.class);
 
-        assertThatCode(() -> fallbackWithSkipOn.hello(new Exception()))
-                .doesNotThrowAnyException();
-        assertThatCode(() -> fallbackWithSkipOn.hello(new Exception(new IOException())))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithSkipOn.hello(new Exception())).doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithSkipOn.hello(new Exception(new IOException()))).doesNotThrowAnyException();
         assertThatCode(() -> fallbackWithSkipOn.hello(new Exception(new ExpectedOutcomeException())))
                 .isExactlyInstanceOf(Exception.class);
 
-        assertThatCode(() -> fallbackWithSkipOn.hello(new IOException()))
-                .doesNotThrowAnyException();
-        assertThatCode(() -> fallbackWithSkipOn.hello(new IOException(new Exception())))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithSkipOn.hello(new IOException())).doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithSkipOn.hello(new IOException(new Exception()))).doesNotThrowAnyException();
         assertThatCode(() -> fallbackWithSkipOn.hello(new IOException(new ExpectedOutcomeException())))
                 .isExactlyInstanceOf(IOException.class);
 
@@ -97,17 +92,13 @@ public class FallbackWithExceptionCauseChainTest {
         assertThatCode(() -> fallbackWithApplyOn.hello(new RuntimeException(new ExpectedOutcomeException())))
                 .isExactlyInstanceOf(RuntimeException.class);
 
-        assertThatCode(() -> fallbackWithApplyOn.hello(new Exception()))
-                .isExactlyInstanceOf(Exception.class);
-        assertThatCode(() -> fallbackWithApplyOn.hello(new Exception(new IOException())))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithApplyOn.hello(new Exception())).isExactlyInstanceOf(Exception.class);
+        assertThatCode(() -> fallbackWithApplyOn.hello(new Exception(new IOException()))).doesNotThrowAnyException();
         assertThatCode(() -> fallbackWithApplyOn.hello(new Exception(new ExpectedOutcomeException())))
                 .isExactlyInstanceOf(Exception.class);
 
-        assertThatCode(() -> fallbackWithApplyOn.hello(new IOException()))
-                .doesNotThrowAnyException();
-        assertThatCode(() -> fallbackWithApplyOn.hello(new IOException(new Exception())))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithApplyOn.hello(new IOException())).doesNotThrowAnyException();
+        assertThatCode(() -> fallbackWithApplyOn.hello(new IOException(new Exception()))).doesNotThrowAnyException();
         assertThatCode(() -> fallbackWithApplyOn.hello(new IOException(new ExpectedOutcomeException())))
                 .doesNotThrowAnyException();
 

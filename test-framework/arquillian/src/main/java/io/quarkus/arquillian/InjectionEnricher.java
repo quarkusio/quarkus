@@ -46,7 +46,7 @@ public class InjectionEnricher implements TestEnricher {
 
     @Override
     public Object[] resolve(Method method) {
-        //we need to resolve from inside the
+        // we need to resolve from inside the
         if (method.getParameterCount() > 0) {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             try {
@@ -123,7 +123,8 @@ public class InjectionEnricher implements TestEnricher {
     public static class IsolatedEnricher implements BiFunction<Method, Object, Object[]> {
 
         @SuppressWarnings("unchecked")
-        private <T> T getInstanceByType(BeanManager manager, final int position, final Method method, CreationalContext<?> cc) {
+        private <T> T getInstanceByType(BeanManager manager, final int position, final Method method,
+                CreationalContext<?> cc) {
             return (T) manager.getInjectableReference(new MethodParameterInjectionPoint<T>(method, position), cc);
         }
 
@@ -148,8 +149,8 @@ public class InjectionEnricher implements TestEnricher {
                         String value = dataProviderMember.invoke(annotation).toString();
                         hasNonArquillianDataProvider = !value.equals("") && !value.equals("ARQUILLIAN_DATA_PROVIDER");
                         break;
-                    } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-                            | InvocationTargetException ignored) {
+                    } catch (NoSuchMethodException | SecurityException | IllegalAccessException
+                            | IllegalArgumentException | InvocationTargetException ignored) {
                     }
                 }
             }
@@ -164,8 +165,7 @@ public class InjectionEnricher implements TestEnricher {
             Class<?>[] parameterTypes = method.getParameterTypes();
             try {
                 // obtain the same method definition but from the TCCL
-                method = getClass().getClassLoader()
-                        .loadClass(method.getDeclaringClass().getName())
+                method = getClass().getClassLoader().loadClass(method.getDeclaringClass().getName())
                         .getMethod(method.getName(), convertToCL(parameterTypes, getClass().getClassLoader()));
             } catch (Throwable t) {
                 throw new RuntimeException(t);
@@ -174,8 +174,8 @@ public class InjectionEnricher implements TestEnricher {
                 try {
                     values[i] = getInstanceByType(beanManager, i, method, (CreationalContext<?>) creationalContext);
                 } catch (Exception e) {
-                    log.warn("InjectionEnricher tried to lookup method parameter of type "
-                            + parameterTypes[i] + " but caught exception", e);
+                    log.warn("InjectionEnricher tried to lookup method parameter of type " + parameterTypes[i]
+                            + " but caught exception", e);
                 }
             }
             return values;
@@ -194,7 +194,7 @@ public class InjectionEnricher implements TestEnricher {
 
         @Override
         public void close() throws IOException {
-            //don't think about this too much
+            // don't think about this too much
             if (closeable != null) {
                 closeable.close();
             } else {

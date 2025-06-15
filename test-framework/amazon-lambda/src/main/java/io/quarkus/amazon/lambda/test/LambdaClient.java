@@ -27,12 +27,12 @@ public class LambdaClient {
     static volatile LambdaException problem;
 
     static {
-        //a hack around class loading
-        //this is always loaded in the root class loader with jboss-logmanager,
-        //however it may also be loaded in an isolated CL when running in dev
-        //or test mode. If it is in an isolated CL we load the handler from
-        //the class on the system class loader so they are equal
-        //TODO: should this class go in its own module and be excluded from isolated class loading?
+        // a hack around class loading
+        // this is always loaded in the root class loader with jboss-logmanager,
+        // however it may also be loaded in an isolated CL when running in dev
+        // or test mode. If it is in an isolated CL we load the handler from
+        // the class on the system class loader so they are equal
+        // TODO: should this class go in its own module and be excluded from isolated class loading?
         ConcurrentHashMap<String, CompletableFuture<String>> requests = new ConcurrentHashMap<>();
         LinkedBlockingDeque<Map.Entry<String, String>> requestQueue = new LinkedBlockingDeque<>();
         ClassLoader cl = LambdaClient.class.getClassLoader();
@@ -41,7 +41,8 @@ public class LambdaClient {
             if (root.getClassLoader() != cl) {
                 requestQueue = (LinkedBlockingDeque<Map.Entry<String, String>>) root.getDeclaredField("REQUEST_QUEUE")
                         .get(null);
-                requests = (ConcurrentHashMap<String, CompletableFuture<String>>) root.getDeclaredField("REQUESTS").get(null);
+                requests = (ConcurrentHashMap<String, CompletableFuture<String>>) root.getDeclaredField("REQUESTS")
+                        .get(null);
             }
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -104,6 +105,7 @@ public class LambdaClient {
      * @param returnType
      * @param input
      * @param <T>
+     *
      * @return
      */
     @Deprecated
@@ -161,6 +163,7 @@ public class LambdaClient {
      * @param returnType
      * @param json
      * @param <T>
+     *
      * @return
      */
     @Deprecated

@@ -23,12 +23,11 @@ public class GraphQLSchemaUnavailableTest extends AbstractGraphQLTest {
     private static final Logger LOG = Logger.getLogger(GraphQLSchemaUnavailableTest.class);
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class, TestUnion.class, TestUnionMember.class)
-                    .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
+                    BusinessException.class, TestUnion.class, TestUnionMember.class)
+            .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testSchema() {

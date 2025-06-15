@@ -57,14 +57,12 @@ public class DifferentObjectMapperForClientAndServerTest {
      */
     @Test
     void serverShouldWrapRootElement() {
-        given().get("/server").then()
-                .statusCode(HttpStatus.SC_OK)
-                .body("Request.value", equalTo("good"));
+        given().get("/server").then().statusCode(HttpStatus.SC_OK).body("Request.value", equalTo("good"));
     }
 
     /**
-     * Because MyClientUnwrappingRootElement is using `@RegisterProvider(ClientObjectMapperUnwrappingRootElement.class)` which
-     * is configured with: `.enable(DeserializationFeature.UNWRAP_ROOT_VALUE)`.
+     * Because MyClientUnwrappingRootElement is using `@RegisterProvider(ClientObjectMapperUnwrappingRootElement.class)`
+     * which is configured with: `.enable(DeserializationFeature.UNWRAP_ROOT_VALUE)`.
      */
     @Test
     void shouldClientUseCustomObjectMapperUnwrappingRootElement() {
@@ -82,8 +80,8 @@ public class DifferentObjectMapperForClientAndServerTest {
     }
 
     /**
-     * Because MyClientNotUnwrappingRootElement uses `@ClientObjectMapper`
-     * which is configured with: `.disable(DeserializationFeature.UNWRAP_ROOT_VALUE)`.
+     * Because MyClientNotUnwrappingRootElement uses `@ClientObjectMapper` which is configured with:
+     * `.disable(DeserializationFeature.UNWRAP_ROOT_VALUE)`.
      */
     @Test
     void shouldClientUseCustomObjectMapperNotUnwrappingRootElement() {
@@ -128,8 +126,7 @@ public class DifferentObjectMapperForClientAndServerTest {
         @ClientObjectMapper
         static ObjectMapper objectMapper(ObjectMapper defaultObjectMapper) {
             CUSTOM_OBJECT_MAPPER_COUNT.incrementAndGet();
-            return defaultObjectMapper.copy()
-                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            return defaultObjectMapper.copy().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                     .disable(DeserializationFeature.UNWRAP_ROOT_VALUE);
         }
     }

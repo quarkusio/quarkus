@@ -13,15 +13,10 @@ public class DataNamespaceArrayValidationFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Item.class, OtherItem.class)
-                    .addAsResource(new StringAsset(
-                            "{@io.quarkus.qute.deployment.typesafe.Item item}\n" +
-                                    "{item.name}\n" +
-                                    "  {#for item in item.otherItems}\n" +
-                                    "    {data:item.otherItems[0].name}\n" +
-                                    "  {/for}\n"),
-                            "templates/item.html"))
+            .withApplicationRoot((jar) -> jar.addClasses(Item.class, OtherItem.class)
+                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Item item}\n"
+                            + "{item.name}\n" + "  {#for item in item.otherItems}\n"
+                            + "    {data:item.otherItems[0].name}\n" + "  {/for}\n"), "templates/item.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;
@@ -33,9 +28,8 @@ public class DataNamespaceArrayValidationFailureTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(
-                        te.getMessage().contains(
-                                "Property/method [name] not found on class [io.quarkus.qute.deployment.typesafe.OtherItem]"),
+                assertTrue(te.getMessage().contains(
+                        "Property/method [name] not found on class [io.quarkus.qute.deployment.typesafe.OtherItem]"),
                         te.getMessage());
             });
 

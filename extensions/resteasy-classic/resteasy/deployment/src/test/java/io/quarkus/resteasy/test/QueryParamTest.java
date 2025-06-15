@@ -39,8 +39,7 @@ public class QueryParamTest {
 
         @GET
         public String sayHello(@QueryParam("name") final Optional<List<String>> names) {
-            return HELLO + names.map(l -> l.stream().collect(Collectors.joining(AND)))
-                    .orElse(NOBODY);
+            return HELLO + names.map(l -> l.stream().collect(Collectors.joining(AND))).orElse(NOBODY);
         }
     }
 }

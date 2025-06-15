@@ -30,8 +30,8 @@ final class ConfigurationPropertiesMetadataBuildItem extends MultiBuildItem {
     }
 
     public ConfigurationPropertiesMetadataBuildItem(ClassInfo classInfo, String prefix,
-            ConfigMapping.NamingStrategy namingStrategy,
-            boolean failOnMismatchingMember, InstanceFactory instanceFactory) {
+            ConfigMapping.NamingStrategy namingStrategy, boolean failOnMismatchingMember,
+            InstanceFactory instanceFactory) {
         this.classInfo = classInfo;
         this.prefix = sanitisePrefix(prefix);
         this.namingStrategy = namingStrategy;
@@ -68,14 +68,12 @@ final class ConfigurationPropertiesMetadataBuildItem extends MultiBuildItem {
 
     private String getPrefixFromClassName(DotName className) {
         String simpleName = className.isInner() ? className.local() : className.withoutPackagePrefix();
-        return String.join("-",
-                (Iterable<String>) () -> withoutSuffix(lowerCase(camelHumpsIterator(simpleName)), "config", "configuration",
-                        "properties", "props"));
+        return String.join("-", (Iterable<String>) () -> withoutSuffix(lowerCase(camelHumpsIterator(simpleName)),
+                "config", "configuration", "properties", "props"));
     }
 
     /**
-     * Class that takes a {@link MethodCreator} and the config object class name
-     * and produces an instance of that class
+     * Class that takes a {@link MethodCreator} and the config object class name and produces an instance of that class
      */
     public interface InstanceFactory extends BiFunction<MethodCreator, String, ResultHandle> {
 

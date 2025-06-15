@@ -83,7 +83,8 @@ public class HibernateOrmCdiProcessor {
 
     private static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER_FACTORY,
             ClassNames.SESSION_FACTORY);
-    private static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER, ClassNames.SESSION);
+    private static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER,
+            ClassNames.SESSION);
     private static final List<DotName> STATELESS_SESSION_EXPOSED_TYPES = List.of(ClassNames.STATELESS_SESSION);
     private static final List<DotName> CRITERIA_BUILDER_EXPOSED_TYPES = List.of(ClassNames.CRITERIA_BUILDER,
             ClassNames.HIBERNATE_CRITERIA_BUILDER);
@@ -93,11 +94,8 @@ public class HibernateOrmCdiProcessor {
     private static final List<DotName> CACHE_EXPOSED_TYPES = List.of(ClassNames.CACHE, ClassNames.HIBERNATE_CACHE);
     private static final List<DotName> PERSISTENCE_UNIT_UTIL_EXPOSED_TYPES = List.of(ClassNames.PERSISTENCE_UNIT_UTIL);
 
-    private static final Set<DotName> PERSISTENCE_UNIT_EXTENSION_VALID_TYPES = Set.of(
-            ClassNames.TENANT_RESOLVER,
-            ClassNames.TENANT_CONNECTION_RESOLVER,
-            ClassNames.INTERCEPTOR,
-            ClassNames.STATEMENT_INSPECTOR,
+    private static final Set<DotName> PERSISTENCE_UNIT_EXTENSION_VALID_TYPES = Set.of(ClassNames.TENANT_RESOLVER,
+            ClassNames.TENANT_CONNECTION_RESOLVER, ClassNames.INTERCEPTOR, ClassNames.STATEMENT_INSPECTOR,
             ClassNames.FORMAT_MAPPER);
 
     @BuildStep
@@ -134,9 +132,9 @@ public class HibernateOrmCdiProcessor {
 
                 AnnotationValue persistenceUnitNameAnnotationValue = field.annotation(jpaAnnotation).value("unitName");
 
-                Transformation transformation = transformationContext.transform()
-                        .add(DotNames.INJECT);
-                if (persistenceUnitNameAnnotationValue == null || persistenceUnitNameAnnotationValue.asString().isEmpty()) {
+                Transformation transformation = transformationContext.transform().add(DotNames.INJECT);
+                if (persistenceUnitNameAnnotationValue == null
+                        || persistenceUnitNameAnnotationValue.asString().isEmpty()) {
                     transformation.add(DotNames.DEFAULT);
                 } else if (persistenceUnitDescriptors.size() == 1
                         && !impliedBlockingPersistenceUnitType.shouldGenerateImpliedBlockingPersistenceUnit()
@@ -158,18 +156,12 @@ public class HibernateOrmCdiProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void generateJpaConfigBean(HibernateOrmRecorder recorder,
-            Capabilities capabilities,
+    void generateJpaConfigBean(HibernateOrmRecorder recorder, Capabilities capabilities,
             HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(JPAConfig.class)
-                .addType(JPAConfig.class)
-                .scope(Singleton.class)
-                .unremovable()
-                .setRuntimeInit()
-                .supplier(recorder.jpaConfigSupplier(hibernateOrmRuntimeConfig))
-                .destroyer(JPAConfig.Destroyer.class);
+        ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(JPAConfig.class)
+                .addType(JPAConfig.class).scope(Singleton.class).unremovable().setRuntimeInit()
+                .supplier(recorder.jpaConfigSupplier(hibernateOrmRuntimeConfig)).destroyer(JPAConfig.Destroyer.class);
 
         // Add a synthetic dependency from JPAConfig to any datasource/pool,
         // so that JPAConfig is destroyed before the datasource/pool.
@@ -178,12 +170,14 @@ public class HibernateOrmCdiProcessor {
         // but that would force initialization of JPAConfig upon application shutdown,
         // which may cause cascading failures if the shutdown happened before JPAConfig was initialized.
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
-            configurator.addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
-                    new Type[] { ClassType.create(DotName.createSimple("io.vertx.sqlclient.Pool")) }, null),
+            configurator.addInjectionPoint(
+                    ParameterizedType.create(DotName.createSimple(Instance.class),
+                            new Type[] { ClassType.create(DotName.createSimple("io.vertx.sqlclient.Pool")) }, null),
                     AnnotationInstance.builder(Any.class).build());
         } else {
-            configurator.addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
-                    new Type[] { ClassType.create(DotName.createSimple(AgroalDataSource.class)) }, null),
+            configurator.addInjectionPoint(
+                    ParameterizedType.create(DotName.createSimple(Instance.class),
+                            new Type[] { ClassType.create(DotName.createSimple(AgroalDataSource.class)) }, null),
                     AnnotationInstance.builder(Any.class).build());
         }
 
@@ -198,8 +192,7 @@ public class HibernateOrmCdiProcessor {
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             ImpliedBlockingPersistenceUnitTypeBuildItem impliedBlockingPersistenceUnitType,
             List<JdbcDataSourceBuildItem> jdbcDataSources, // just make sure the datasources are initialized
-            Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (persistenceUnitDescriptors.isEmpty()) {
             // No persistence units have been configured so bail out
@@ -219,8 +212,8 @@ public class HibernateOrmCdiProcessor {
 
             produceSessionBeans(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName, true, true);
 
-            produceFactoryDependentBeans(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName,
-                    true, true, defaultQualifierInstance);
+            produceFactoryDependentBeans(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName, true, true,
+                    defaultQualifierInstance);
 
             return;
         }
@@ -250,7 +243,8 @@ public class HibernateOrmCdiProcessor {
             produceSessionFactoryBean(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName, isDefaultPU,
                     isNamedPU);
 
-            produceSessionBeans(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName, isDefaultPU, isNamedPU);
+            produceSessionBeans(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName, isDefaultPU,
+                    isNamedPU);
 
             produceFactoryDependentBeans(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName,
                     isDefaultPU, isNamedPU, sessionFactoryQualifier);
@@ -259,12 +253,9 @@ public class HibernateOrmCdiProcessor {
     }
 
     @BuildStep
-    void registerBeans(HibernateOrmConfig hibernateOrmConfig,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            Capabilities capabilities,
-            CombinedIndexBuildItem combinedIndex,
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
+    void registerBeans(HibernateOrmConfig hibernateOrmConfig, BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans, Capabilities capabilities,
+            CombinedIndexBuildItem combinedIndex, List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
         if (!hasEntities(jpaModel)) {
             return;
@@ -283,8 +274,7 @@ public class HibernateOrmCdiProcessor {
             unremovableClasses.add(RequestScopedStatelessSessionHolder.class);
         }
         additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()]))
-                .build());
+                .addBeanClasses(unremovableClasses.toArray(new Class<?>[unremovableClasses.size()])).build());
 
         // Some user-injectable beans are retrieved programmatically and shouldn't be removed
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AttributeConverter.class));
@@ -293,13 +283,13 @@ public class HibernateOrmCdiProcessor {
 
     @BuildStep
     void transformBeans(JpaModelBuildItem jpaModel, JpaModelIndexBuildItem indexBuildItem,
-            BeanDiscoveryFinishedBuildItem beans,
-            BuildProducer<BytecodeTransformerBuildItem> producer) {
+            BeanDiscoveryFinishedBuildItem beans, BuildProducer<BytecodeTransformerBuildItem> producer) {
         if (!hasEntities(jpaModel)) {
             return;
         }
 
-        // the idea here is to remove the 'private' modifier from all methods that are annotated with JPA Listener methods
+        // the idea here is to remove the 'private' modifier from all methods that are annotated with JPA Listener
+        // methods
         // and don't belong to entities
         CompositeIndex index = indexBuildItem.getIndex();
         for (DotName dotName : jpaModel.getPotentialCdiBeanClassNames()) {
@@ -307,7 +297,8 @@ public class HibernateOrmCdiProcessor {
                 continue;
             }
             ClassInfo classInfo = index.getClassByName(dotName);
-            List<BeanInfo> matchingBeans = beans.getBeans().stream().filter(bi -> bi.getBeanClass().equals(dotName)).toList();
+            List<BeanInfo> matchingBeans = beans.getBeans().stream().filter(bi -> bi.getBeanClass().equals(dotName))
+                    .toList();
             if (matchingBeans.size() == 1) {
                 ScopeInfo beanScope = matchingBeans.get(0).getScope();
                 for (DotName jpaListenerDotName : ClassNames.JPA_LISTENER_ANNOTATIONS) {
@@ -320,8 +311,8 @@ public class HibernateOrmCdiProcessor {
                         if (Modifier.isPrivate(method.flags())) {
                             if (beanScope.getDotName().equals(BuiltinScope.SINGLETON.getName())) {
                                 // we can safely transform in this case
-                                producer.produce(new BytecodeTransformerBuildItem(method.declaringClass().name().toString(),
-                                        new BiFunction<>() {
+                                producer.produce(new BytecodeTransformerBuildItem(
+                                        method.declaringClass().name().toString(), new BiFunction<>() {
                                             @Override
                                             public ClassVisitor apply(String cls, ClassVisitor clsVisitor) {
                                                 var classTransformer = new ClassTransformer(cls);
@@ -331,8 +322,10 @@ public class HibernateOrmCdiProcessor {
                                             }
                                         }));
                             } else {
-                                // we can't transform because the client proxy does not know about the transformation and
-                                // will therefore simply copy the private method which will then likely fail because it does
+                                // we can't transform because the client proxy does not know about the transformation
+                                // and
+                                // will therefore simply copy the private method which will then likely fail because it
+                                // does
                                 // not contain the injected fields
                                 throw new IllegalArgumentException(
                                         "Methods that are annotated with JPA Listener annotations should not be private. Offending method is '"
@@ -354,29 +347,27 @@ public class HibernateOrmCdiProcessor {
         // otherwise they won't be registered as qualifiers
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClasses(ClassNames.QUARKUS_PERSISTENCE_UNIT.toString(),
-                        ClassNames.PERSISTENCE_UNIT_EXTENSION.toString(),
-                        ClassNames.JSON_FORMAT.toString(),
+                        ClassNames.PERSISTENCE_UNIT_EXTENSION.toString(), ClassNames.JSON_FORMAT.toString(),
                         ClassNames.XML_FORMAT.toString())
                 .build());
 
         // Register the default scope for @PersistenceUnitExtension and make such beans unremovable by default
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ClassNames.PERSISTENCE_UNIT_EXTENSION, DotNames.APPLICATION_SCOPED,
-                        false));
+        beanDefiningAnnotations.produce(new BeanDefiningAnnotationBuildItem(ClassNames.PERSISTENCE_UNIT_EXTENSION,
+                DotNames.APPLICATION_SCOPED, false));
     }
 
     @BuildStep
     void validatePersistenceUnitExtensions(ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
-        List<Throwable> throwables = validationPhase.getContext()
-                .beans().withQualifier(ClassNames.PERSISTENCE_UNIT_EXTENSION)
+        List<Throwable> throwables = validationPhase.getContext().beans()
+                .withQualifier(ClassNames.PERSISTENCE_UNIT_EXTENSION)
                 .filter(beanInfo -> beanInfo.getTypes().stream().map(Type::name)
                         .noneMatch(PERSISTENCE_UNIT_EXTENSION_VALID_TYPES::contains))
-                .stream().map(beanInfo -> new IllegalStateException(String.format(Locale.ROOT,
+                .stream()
+                .map(beanInfo -> new IllegalStateException(String.format(Locale.ROOT,
                         "A @%s bean must implement one or more of the following types: %s. Invalid bean: %s",
                         DotNames.simpleName(ClassNames.PERSISTENCE_UNIT_EXTENSION),
-                        PERSISTENCE_UNIT_EXTENSION_VALID_TYPES,
-                        beanInfo)))
+                        PERSISTENCE_UNIT_EXTENSION_VALID_TYPES, beanInfo)))
                 .collect(Collectors.toList());
         if (!throwables.isEmpty()) {
             errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(throwables));
@@ -384,15 +375,12 @@ public class HibernateOrmCdiProcessor {
     }
 
     private static <T> ExtendedBeanConfigurator createSyntheticBean(String persistenceUnitName,
-            boolean isDefaultPersistenceUnit, boolean isNamedPersistenceUnit,
-            Class<T> type, List<DotName> allExposedTypes, boolean defaultBean) {
-        ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(type)
+            boolean isDefaultPersistenceUnit, boolean isNamedPersistenceUnit, Class<T> type,
+            List<DotName> allExposedTypes, boolean defaultBean) {
+        ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(type)
                 // NOTE: this is using ApplicationScope and not Singleton, by design, in order to be mockable
                 // See https://github.com/quarkusio/quarkus/issues/16437
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .setRuntimeInit();
+                .scope(ApplicationScoped.class).unremovable().setRuntimeInit();
 
         for (DotName exposedType : allExposedTypes) {
             configurator.addType(exposedType);
@@ -413,56 +401,35 @@ public class HibernateOrmCdiProcessor {
         return configurator;
     }
 
-    private void produceSessionBeans(
-            BuildProducer<SyntheticBeanBuildItem> producer,
-            HibernateOrmRecorder recorder,
-            String persistenceUnitName,
-            boolean isDefaultPU,
-            boolean isNamedPU) {
+    private void produceSessionBeans(BuildProducer<SyntheticBeanBuildItem> producer, HibernateOrmRecorder recorder,
+            String persistenceUnitName, boolean isDefaultPU, boolean isNamedPU) {
 
         // Create Session bean
-        producer.produce(createSyntheticBean(persistenceUnitName,
-                isDefaultPU, isNamedPU,
-                Session.class, SESSION_EXPOSED_TYPES, false)
-                .createWith(recorder.sessionSupplier(persistenceUnitName))
-                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
-                .done());
+        producer.produce(createSyntheticBean(persistenceUnitName, isDefaultPU, isNamedPU, Session.class,
+                SESSION_EXPOSED_TYPES, false).createWith(recorder.sessionSupplier(persistenceUnitName))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class))).done());
 
         // Create StatelessSession bean
-        producer.produce(createSyntheticBean(persistenceUnitName,
-                isDefaultPU, isNamedPU,
-                StatelessSession.class, STATELESS_SESSION_EXPOSED_TYPES, false)
+        producer.produce(createSyntheticBean(persistenceUnitName, isDefaultPU, isNamedPU, StatelessSession.class,
+                STATELESS_SESSION_EXPOSED_TYPES, false)
                 .createWith(recorder.statelessSessionSupplier(persistenceUnitName))
-                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class)))
-                .done());
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSessions.class))).done());
     }
 
-    private void produceSessionFactoryBean(
-            BuildProducer<SyntheticBeanBuildItem> producer,
-            HibernateOrmRecorder recorder,
-            String persistenceUnitName,
-            boolean isDefaultPU,
-            boolean isNamedPU) {
+    private void produceSessionFactoryBean(BuildProducer<SyntheticBeanBuildItem> producer,
+            HibernateOrmRecorder recorder, String persistenceUnitName, boolean isDefaultPU, boolean isNamedPU) {
 
-        producer.produce(createSyntheticBean(persistenceUnitName,
-                isDefaultPU, isNamedPU,
-                SessionFactory.class, SESSION_FACTORY_EXPOSED_TYPES, true)
-                .createWith(recorder.sessionFactorySupplier(persistenceUnitName))
-                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                .done());
+        producer.produce(createSyntheticBean(persistenceUnitName, isDefaultPU, isNamedPU, SessionFactory.class,
+                SESSION_FACTORY_EXPOSED_TYPES, true).createWith(recorder.sessionFactorySupplier(persistenceUnitName))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class))).done());
     }
 
-    private void produceFactoryDependentBeans(
-            BuildProducer<SyntheticBeanBuildItem> producer,
-            HibernateOrmRecorder recorder,
-            String persistenceUnitName,
-            boolean isDefaultPU,
-            boolean isNamedPU,
+    private void produceFactoryDependentBeans(BuildProducer<SyntheticBeanBuildItem> producer,
+            HibernateOrmRecorder recorder, String persistenceUnitName, boolean isDefaultPU, boolean isNamedPU,
             AnnotationInstance sessionFactoryQualifier) {
 
         // Create CriteriaBuilder bean
-        producer.produce(createSyntheticBean(persistenceUnitName,
-                isDefaultPU, isNamedPU,
+        producer.produce(createSyntheticBean(persistenceUnitName, isDefaultPU, isNamedPU,
                 HibernateCriteriaBuilder.class, CRITERIA_BUILDER_EXPOSED_TYPES, false)
                 .createWith(recorder.criteriaBuilderSupplier(persistenceUnitName))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(SessionFactory.class)),
@@ -470,8 +437,7 @@ public class HibernateOrmCdiProcessor {
                 .done());
 
         // Create Metamodel bean
-        producer.produce(createSyntheticBean(persistenceUnitName,
-                isDefaultPU, isNamedPU,
+        producer.produce(createSyntheticBean(persistenceUnitName, isDefaultPU, isNamedPU,
                 jakarta.persistence.metamodel.Metamodel.class, METAMODEL_EXPOSED_TYPES, false)
                 .createWith(recorder.metamodelSupplier(persistenceUnitName))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(SessionFactory.class)),
@@ -479,26 +445,21 @@ public class HibernateOrmCdiProcessor {
                 .done());
 
         // Create SchemaManager bean
-        producer.produce(createSyntheticBean(persistenceUnitName,
-                isDefaultPU, isNamedPU,
-                SchemaManager.class, SCHEMA_MANAGER_EXPOSED_TYPES, false)
-                .createWith(recorder.schemaManagerSupplier(persistenceUnitName))
+        producer.produce(createSyntheticBean(persistenceUnitName, isDefaultPU, isNamedPU, SchemaManager.class,
+                SCHEMA_MANAGER_EXPOSED_TYPES, false).createWith(recorder.schemaManagerSupplier(persistenceUnitName))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(SessionFactory.class)),
                         sessionFactoryQualifier)
                 .done());
 
         // Create Cache bean
-        producer.produce(createSyntheticBean(persistenceUnitName,
-                isDefaultPU, isNamedPU,
-                org.hibernate.Cache.class, CACHE_EXPOSED_TYPES, false)
-                .createWith(recorder.cacheSupplier(persistenceUnitName))
+        producer.produce(createSyntheticBean(persistenceUnitName, isDefaultPU, isNamedPU, org.hibernate.Cache.class,
+                CACHE_EXPOSED_TYPES, false).createWith(recorder.cacheSupplier(persistenceUnitName))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(SessionFactory.class)),
                         sessionFactoryQualifier)
                 .done());
 
         // Create PersistenceUnitUtil bean
-        producer.produce(createSyntheticBean(persistenceUnitName,
-                isDefaultPU, isNamedPU,
+        producer.produce(createSyntheticBean(persistenceUnitName, isDefaultPU, isNamedPU,
                 jakarta.persistence.PersistenceUnitUtil.class, PERSISTENCE_UNIT_UTIL_EXPOSED_TYPES, false)
                 .createWith(recorder.persistenceUnitUtilSupplier(persistenceUnitName))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(SessionFactory.class)),

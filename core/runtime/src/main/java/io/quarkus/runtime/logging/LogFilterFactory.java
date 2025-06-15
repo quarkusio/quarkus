@@ -4,9 +4,9 @@ import java.util.ServiceLoader;
 import java.util.logging.Filter;
 
 /**
- * Factory that allows for the creation of {@link Filter} classes annotated with {@link io.quarkus.logging.LoggingFilter}.
- * Implementations of this class are loaded via the {@link ServiceLoader} and the implementation selected is the one
- * with the lowest value returned from the {@code priority} method.
+ * Factory that allows for the creation of {@link Filter} classes annotated with
+ * {@link io.quarkus.logging.LoggingFilter}. Implementations of this class are loaded via the {@link ServiceLoader} and
+ * the implementation selected is the one with the lowest value returned from the {@code priority} method.
  */
 public interface LogFilterFactory {
 
@@ -38,8 +38,8 @@ public interface LogFilterFactory {
     }
 
     /**
-     * The default implementation used when no other implementation is found.
-     * This simply calls the class' no-arg constructor (and fails if one does not exist).
+     * The default implementation used when no other implementation is found. This simply calls the class' no-arg
+     * constructor (and fails if one does not exist).
      */
     class ReflectionLogFilterFactory implements LogFilterFactory {
 

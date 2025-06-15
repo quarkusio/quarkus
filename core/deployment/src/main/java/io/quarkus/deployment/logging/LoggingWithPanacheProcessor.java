@@ -35,28 +35,26 @@ public class LoggingWithPanacheProcessor {
         for (ClassInfo clazz : index.getIndex().getKnownUsers(QUARKUS_LOG_DOTNAME)) {
             String className = clazz.name().toString();
 
-            transformers.produce(new BytecodeTransformerBuildItem.Builder()
-                    .setClassToTransform(className)
-                    .setVisitorFunction((ignored, visitor) -> new AddLoggerFieldAndRewriteInvocations(visitor, className))
-                    .setClassReaderOptions(ClassReader.EXPAND_FRAMES)
-                    .setPriority(1000)
-                    .build());
+            transformers.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+                    .setVisitorFunction(
+                            (ignored, visitor) -> new AddLoggerFieldAndRewriteInvocations(visitor, className))
+                    .setClassReaderOptions(ClassReader.EXPAND_FRAMES).setPriority(1000).build());
         }
     }
 
     /**
      * Makes the following modifications to the visited class:
      * <ul>
-     * <li>adds a {@code private static final} field of type {@code org.jboss.logging.Logger}
-     * ({@code public} in case the class is an interface, to obey the JVMS rules);</li>
-     * <li>initializes the field (to {@code Logger.getLogger(className)}) at the beginning of the
-     * static initializer (creating one if missing);</li>
-     * <li>rewrites all invocations of {@code static} methods on {@code io.quarkus.logging.Log}
-     * to corresponding invocations of virtual methods on the logger field.</li>
+     * <li>adds a {@code private static final} field of type {@code org.jboss.logging.Logger} ({@code public} in case
+     * the class is an interface, to obey the JVMS rules);</li>
+     * <li>initializes the field (to {@code Logger.getLogger(className)}) at the beginning of the static initializer
+     * (creating one if missing);</li>
+     * <li>rewrites all invocations of {@code static} methods on {@code io.quarkus.logging.Log} to corresponding
+     * invocations of virtual methods on the logger field.</li>
      * </ul>
-     * Assumes that the set of {@code static} methods on {@code io.quarkus.runtime.logging.Log}
-     * is identical (when it comes to names, return types and parameter types) to the set of virtual methods
-     * on {@code org.jboss.logging.BasicLogger}.
+     * Assumes that the set of {@code static} methods on {@code io.quarkus.runtime.logging.Log} is identical (when it
+     * comes to names, return types and parameter types) to the set of virtual methods on
+     * {@code org.jboss.logging.BasicLogger}.
      */
     private static class AddLoggerFieldAndRewriteInvocations extends ClassVisitor {
         private final String className;
@@ -74,7 +72,8 @@ public class LoggingWithPanacheProcessor {
         }
 
         @Override
-        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        public void visit(int version, int access, String name, String signature, String superName,
+                String[] interfaces) {
             super.visit(version, access, name, signature, superName, interfaces);
             if ((access & Opcodes.ACC_INTERFACE) != 0) {
                 isInterface = true;
@@ -93,7 +92,8 @@ public class LoggingWithPanacheProcessor {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor visitor = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (visitor == null) {
                 return null;
@@ -115,7 +115,8 @@ public class LoggingWithPanacheProcessor {
                 }
 
                 @Override
-                public void visitMethodInsn(int opcode, String owner, String name, String descriptor, boolean isInterface) {
+                public void visitMethodInsn(int opcode, String owner, String name, String descriptor,
+                        boolean isInterface) {
                     if (!QUARKUS_LOG_BINARY_NAME.equals(owner)) {
                         super.visitMethodInsn(opcode, owner, name, descriptor, isInterface);
                         return;
@@ -133,10 +134,10 @@ public class LoggingWithPanacheProcessor {
                     // we move them from stack to local variables and restore later
                     if (!directStackManipulation) {
                         // stack: [arg1 arg2 arg3 arg4] locals: {}
-                        // stack: [arg1 arg2 arg3]      locals: {l1 = arg4}
-                        // stack: [arg1 arg2]           locals: {l1 = arg4 l2 = arg3}
-                        // stack: [arg1]                locals: {l1 = arg4 l2 = arg3 l3 = arg2}
-                        // stack: []                    locals: {l1 = arg4 l2 = arg3 l3 = arg2 l4 = arg1}
+                        // stack: [arg1 arg2 arg3] locals: {l1 = arg4}
+                        // stack: [arg1 arg2] locals: {l1 = arg4 l2 = arg3}
+                        // stack: [arg1] locals: {l1 = arg4 l2 = arg3 l3 = arg2}
+                        // stack: [] locals: {l1 = arg4 l2 = arg3 l3 = arg2 l4 = arg1}
                         locals = new int[numArgs];
                         for (int i = numArgs - 1; i >= 0; i--) {
                             locals[i] = newLocal(argTypes[i]);
@@ -159,10 +160,10 @@ public class LoggingWithPanacheProcessor {
                             super.visitInsn(Opcodes.POP);
                         }
                     } else {
-                        // stack: [logger]                     locals: {l1 = arg4 l2 = arg3 l3 = arg2 l4 = arg1}
-                        // stack: [logger arg1]                locals: {l1 = arg4 l2 = arg3 l3 = arg2}
-                        // stack: [logger arg1 arg2]           locals: {l1 = arg4 l2 = arg3}
-                        // stack: [logger arg1 arg2 arg3]      locals: {l1 = arg4}
+                        // stack: [logger] locals: {l1 = arg4 l2 = arg3 l3 = arg2 l4 = arg1}
+                        // stack: [logger arg1] locals: {l1 = arg4 l2 = arg3 l3 = arg2}
+                        // stack: [logger arg1 arg2] locals: {l1 = arg4 l2 = arg3}
+                        // stack: [logger arg1 arg2 arg3] locals: {l1 = arg4}
                         // stack: [logger arg1 arg2 arg3 arg4] locals: {}
                         for (int i = 0; i < numArgs; i++) {
                             visitor.visitVarInsn(argTypes[i].getOpcode(Opcodes.ILOAD), locals[i]);
@@ -176,7 +177,8 @@ public class LoggingWithPanacheProcessor {
                 public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle,
                         Object... bootstrapMethodArguments) {
 
-                    // we only transform method references, so skip if this indy doesn't bootstrap with a `LambdaMetafactory`
+                    // we only transform method references, so skip if this indy doesn't bootstrap with a
+                    // `LambdaMetafactory`
                     if (!LAMBDA_METAFACTORY.equals(bootstrapMethodHandle.getOwner())) {
                         super.visitInvokeDynamicInsn(name, descriptor, bootstrapMethodHandle, bootstrapMethodArguments);
                         return;
@@ -196,7 +198,8 @@ public class LoggingWithPanacheProcessor {
                         return;
                     }
 
-                    // we transform a static invocation to a virtual invocation, so need the target instance on the stack
+                    // we transform a static invocation to a virtual invocation, so need the target instance on the
+                    // stack
                     super.visitFieldInsn(Opcodes.GETSTATIC, classNameBinary, SYNTHETIC_LOGGER_FIELD_NAME,
                             JBOSS_LOGGER_DESCRIPTOR);
 
@@ -218,8 +221,7 @@ public class LoggingWithPanacheProcessor {
                 }
 
                 private boolean isDirectStackManipulationPossible(Type[] argTypes) {
-                    return argTypes.length == 0
-                            || argTypes.length == 1 && argTypes[0].getSize() == 1
+                    return argTypes.length == 0 || argTypes.length == 1 && argTypes[0].getSize() == 1
                             || argTypes.length == 2 && argTypes[0].getSize() == 1 && argTypes[1].getSize() == 1;
                 }
             };
@@ -251,8 +253,7 @@ public class LoggingWithPanacheProcessor {
 
         private void generateLoggerField() {
             // interface fields must be public static final per the JVMS
-            int access = isInterface
-                    ? Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL
+            int access = isInterface ? Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL
                     : Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC | Opcodes.ACC_FINAL;
             super.visitField(access, SYNTHETIC_LOGGER_FIELD_NAME, JBOSS_LOGGER_DESCRIPTOR, null, null);
             generatedLoggerField = true;

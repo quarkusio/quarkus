@@ -24,19 +24,18 @@ import io.quarkus.test.QuarkusUnitTest;
 
 class SubResourceParameterizedClassTest {
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class);
-                    war.addClasses(LanguageResourceImpl.class);
-                    war.addClasses(LanguageResource.class);
-                    war.addClasses(EnglishGreeterResource.class);
-                    war.addClasses(GreeterResource.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class);
+            war.addClasses(LanguageResourceImpl.class);
+            war.addClasses(LanguageResource.class);
+            war.addClasses(EnglishGreeterResource.class);
+            war.addClasses(GreeterResource.class);
+            return war;
+        }
+    });
 
     @Test
     void basicTest() {

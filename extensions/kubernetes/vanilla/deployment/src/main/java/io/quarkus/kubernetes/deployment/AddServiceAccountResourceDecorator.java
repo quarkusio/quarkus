@@ -31,16 +31,9 @@ public class AddServiceAccountResourceDecorator extends ResourceProvidingDecorat
 
         Map<String, String> saLabels = new HashMap<>();
         saLabels.putAll(labels);
-        getDeploymentMetadata(list, deploymentName)
-                .map(ObjectMeta::getLabels)
-                .ifPresent(saLabels::putAll);
+        getDeploymentMetadata(list, deploymentName).map(ObjectMeta::getLabels).ifPresent(saLabels::putAll);
 
-        list.addNewServiceAccountItem()
-                .withNewMetadata()
-                .withName(name)
-                .withNamespace(namespace)
-                .withLabels(saLabels)
-                .endMetadata()
-                .endServiceAccountItem();
+        list.addNewServiceAccountItem().withNewMetadata().withName(name).withNamespace(namespace).withLabels(saLabels)
+                .endMetadata().endServiceAccountItem();
     }
 }

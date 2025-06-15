@@ -101,9 +101,7 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    AdditionalBeanBuildItem initFormAuth(
-            HttpSecurityRecorder recorder,
-            VertxHttpBuildTimeConfig buildTimeConfig,
+    AdditionalBeanBuildItem initFormAuth(HttpSecurityRecorder recorder, VertxHttpBuildTimeConfig buildTimeConfig,
             BuildProducer<RouteBuildItem> filterBuildItemBuildProducer) {
         if (buildTimeConfig.auth().form().enabled()) {
             if (!buildTimeConfig.auth().proactive()) {
@@ -128,9 +126,7 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setMtlsCertificateRoleProperties(
-            HttpSecurityRecorder recorder,
-            VertxHttpConfig httpConfig,
+    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder, VertxHttpConfig httpConfig,
             VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (isMtlsClientAuthenticationEnabled(httpBuildTimeConfig)) {
             recorder.setMtlsCertificateRoleProperties(httpConfig);
@@ -138,35 +134,28 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
-    void detectBasicAuthImplicitlyRequired(
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+    void detectBasicAuthImplicitlyRequired(VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
             ApplicationIndexBuildItem applicationIndexBuildItem,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer,
             List<EagerSecurityInterceptorBindingBuildItem> eagerSecurityInterceptorBindings) {
         if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
             var appIndex = applicationIndexBuildItem.getIndex();
-            boolean noCustomAuthMechanismsDetected = beanRegistrationPhaseBuildItem
-                    .getContext()
-                    .beans()
-                    .filter(b -> b.hasType(AUTH_MECHANISM_NAME))
-                    .filter(BeanInfo::isClassBean)
-                    .filter(b -> appIndex.getClassByName(b.getBeanClass()) != null)
-                    .isEmpty();
+            boolean noCustomAuthMechanismsDetected = beanRegistrationPhaseBuildItem.getContext().beans()
+                    .filter(b -> b.hasType(AUTH_MECHANISM_NAME)).filter(BeanInfo::isClassBean)
+                    .filter(b -> appIndex.getClassByName(b.getBeanClass()) != null).isEmpty();
             // we can't decide whether custom mechanisms support basic auth or not
             if (noCustomAuthMechanismsDetected) {
-                systemPropertyProducer
-                        .produce(new SystemPropertyBuildItem(TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED, Boolean.TRUE.toString()));
+                systemPropertyProducer.produce(
+                        new SystemPropertyBuildItem(TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED, Boolean.TRUE.toString()));
                 if (!eagerSecurityInterceptorBindings.isEmpty()) {
-                    boolean basicAuthAnnotationUsed = eagerSecurityInterceptorBindings
-                            .stream()
+                    boolean basicAuthAnnotationUsed = eagerSecurityInterceptorBindings.stream()
                             .map(EagerSecurityInterceptorBindingBuildItem::getAnnotationBindings)
-                            .flatMap(Arrays::stream)
-                            .anyMatch(BASIC_AUTH_ANNOTATION_NAME::equals);
+                            .flatMap(Arrays::stream).anyMatch(BASIC_AUTH_ANNOTATION_NAME::equals);
                     // @BasicAuthentication is used, hence the basic authentication is required
                     if (basicAuthAnnotationUsed) {
-                        systemPropertyProducer
-                                .produce(new SystemPropertyBuildItem(BASIC_AUTH_ANNOTATION_DETECTED, Boolean.TRUE.toString()));
+                        systemPropertyProducer.produce(
+                                new SystemPropertyBuildItem(BASIC_AUTH_ANNOTATION_DETECTED, Boolean.TRUE.toString()));
                     }
                 }
             }
@@ -175,8 +164,7 @@ public class HttpSecurityProcessor {
 
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    SyntheticBeanBuildItem initBasicAuth(HttpSecurityRecorder recorder,
-            VertxHttpConfig httpConfig,
+    SyntheticBeanBuildItem initBasicAuth(HttpSecurityRecorder recorder, VertxHttpConfig httpConfig,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
 
@@ -186,11 +174,10 @@ public class HttpSecurityProcessor {
 
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(BasicAuthenticationMechanism.class)
-                .types(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class)
-                .scope(Singleton.class)
-                .supplier(recorder.basicAuthenticationMechanismBean(httpConfig, httpBuildTimeConfig.auth().form().enabled()))
-                .setRuntimeInit()
-                .unremovable();
+                .types(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class).scope(Singleton.class)
+                .supplier(recorder.basicAuthenticationMechanismBean(httpConfig,
+                        httpBuildTimeConfig.auth().form().enabled()))
+                .setRuntimeInit().unremovable();
         if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
             configurator.defaultBean();
         }
@@ -205,14 +192,14 @@ public class HttpSecurityProcessor {
 
     private static boolean applicationBasicAuthRequired(VertxHttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
-        //basic auth explicitly disabled
+        // basic auth explicitly disabled
         if (httpBuildTimeConfig.auth().basic().isPresent() && !httpBuildTimeConfig.auth().basic().get()) {
             return false;
         }
         if (!httpBuildTimeConfig.auth().basic().orElse(false)) {
             if ((httpBuildTimeConfig.auth().form().enabled() || isMtlsClientAuthenticationEnabled(httpBuildTimeConfig))
                     || managementBuildTimeConfig.auth().basic().orElse(false)) {
-                //if form auth is enabled and we are not then we don't install
+                // if form auth is enabled and we are not then we don't install
                 return false;
             }
         }
@@ -222,12 +209,10 @@ public class HttpSecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupAuthenticationMechanisms(
-            HttpSecurityRecorder recorder,
+    void setupAuthenticationMechanisms(HttpSecurityRecorder recorder,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
-            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandlerBuildItem,
-            Capabilities capabilities,
+            Optional<HttpAuthenticationHandlerBuildItem> authenticationHandlerBuildItem, Capabilities capabilities,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
         if (!httpBuildTimeConfig.auth().form().enabled() && httpBuildTimeConfig.auth().basic().orElse(false)) {
@@ -235,17 +220,14 @@ public class HttpSecurityProcessor {
         }
 
         if (capabilities.isPresent(Capability.SECURITY)) {
-            beanProducer
-                    .produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                            .addBeanClass(VertxBlockingSecurityExecutor.class).setDefaultScope(APPLICATION_SCOPED).build());
-            beanProducer
-                    .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(HttpAuthenticator.class)
-                            .addBeanClass(HttpAuthorizer.class).build());
+            beanProducer.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClass(VertxBlockingSecurityExecutor.class).setDefaultScope(APPLICATION_SCOPED).build());
+            beanProducer.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClass(HttpAuthenticator.class).addBeanClass(HttpAuthorizer.class).build());
             beanProducer.produce(AdditionalBeanBuildItem.unremovableOf(PathMatchingHttpSecurityPolicy.class));
-            filterBuildItemBuildProducer
-                    .produce(new FilterBuildItem(
-                            recorder.getHttpAuthenticatorHandler(authenticationHandlerBuildItem.get().handler),
-                            FilterBuildItem.AUTHENTICATION));
+            filterBuildItemBuildProducer.produce(new FilterBuildItem(
+                    recorder.getHttpAuthenticatorHandler(authenticationHandlerBuildItem.get().handler),
+                    FilterBuildItem.AUTHENTICATION));
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(recorder.permissionCheckHandler(), FilterBuildItem.AUTHORIZATION));
         }
@@ -258,10 +240,8 @@ public class HttpSecurityProcessor {
             BuildProducer<HttpAuthenticationHandlerBuildItem> authenticationHandlerProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             var authConfig = httpBuildTimeConfig.auth();
-            authenticationHandlerProducer.produce(
-                    new HttpAuthenticationHandlerBuildItem(
-                            recorder.authenticationMechanismHandler(authConfig.proactive(),
-                                    authConfig.propagateSecurityIdentity())));
+            authenticationHandlerProducer.produce(new HttpAuthenticationHandlerBuildItem(recorder
+                    .authenticationMechanismHandler(authConfig.proactive(), authConfig.propagateSecurityIdentity())));
         }
     }
 
@@ -306,23 +286,21 @@ public class HttpSecurityProcessor {
         Set<MethodInfo> methodsWithoutRbacAnnotations = new HashSet<>();
 
         Predicate<ClassInfo> useClassLevelSecurity = useClassLevelSecurity(classSecurityAnnotations);
-        DotName[] mechNames = Stream
-                .concat(Stream.of(AUTH_MECHANISM_NAME), additionalHttpAuthMechAnnotations.stream().map(s -> s.annotationName))
-                .flatMap(mechName -> {
+        DotName[] mechNames = Stream.concat(Stream.of(AUTH_MECHANISM_NAME),
+                additionalHttpAuthMechAnnotations.stream().map(s -> s.annotationName)).flatMap(mechName -> {
                     var instances = combinedIndexBuildItem.getIndex().getAnnotations(mechName);
                     if (!instances.isEmpty()) {
                         // e.g. collect @Basic without @RolesAllowed, @PermissionsAllowed, ..
                         methodsWithoutRbacAnnotations
                                 .addAll(collectMethodsWithoutRbacAnnotation(collectAnnotatedMethods(instances)));
-                        methodsWithoutRbacAnnotations
-                                .addAll(collectClassMethodsWithoutRbacAnnotation(collectAnnotatedClasses(instances,
-                                        useClassLevelSecurity.negate())));
+                        methodsWithoutRbacAnnotations.addAll(collectClassMethodsWithoutRbacAnnotation(
+                                collectAnnotatedClasses(instances, useClassLevelSecurity.negate())));
                         // class-level security; this registers @Authenticated if no RBAC is explicitly declared
                         collectAnnotatedClasses(instances, useClassLevelSecurity).stream()
                                 .filter(Predicate.not(HttpSecurityUtils::hasSecurityAnnotation))
-                                .forEach(c -> registerClassSecurityCheckProducer.produce(
-                                        new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
-                                                .builder(Authenticated.class).buildWithTarget(c))));
+                                .forEach(c -> registerClassSecurityCheckProducer
+                                        .produce(new RegisterClassSecurityCheckBuildItem(c.name(),
+                                                AnnotationInstance.builder(Authenticated.class).buildWithTarget(c))));
                         return Stream.of(mechName);
                     } else {
                         return Stream.empty();
@@ -333,8 +311,8 @@ public class HttpSecurityProcessor {
             validateAuthMechanismAnnotationUsage(capabilities, buildTimeConfig, mechNames);
 
             // register method interceptor that will be run before security checks
-            Map<String, String> knownBindingValues = additionalHttpAuthMechAnnotations.stream()
-                    .collect(Collectors.toMap(item -> item.annotationName.toString(), item -> item.authMechanismScheme));
+            Map<String, String> knownBindingValues = additionalHttpAuthMechAnnotations.stream().collect(
+                    Collectors.toMap(item -> item.annotationName.toString(), item -> item.authMechanismScheme));
             bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(
                     recorder.authMechanismSelectionInterceptorCreator(), knownBindingValues, mechNames));
             recorder.selectAuthMechanismViaAnnotation();
@@ -342,8 +320,8 @@ public class HttpSecurityProcessor {
             // make all @HttpAuthenticationMechanism annotation targets authenticated by default
             if (!methodsWithoutRbacAnnotations.isEmpty()) {
                 // @RolesAllowed("**") == @Authenticated
-                additionalSecuredMethodsProducer.produce(
-                        new AdditionalSecuredMethodsBuildItem(methodsWithoutRbacAnnotations, Optional.of(List.of("**"))));
+                additionalSecuredMethodsProducer.produce(new AdditionalSecuredMethodsBuildItem(
+                        methodsWithoutRbacAnnotations, Optional.of(List.of("**"))));
             }
         }
     }
@@ -355,10 +333,8 @@ public class HttpSecurityProcessor {
             BuildProducer<EagerSecurityInterceptorMethodsBuildItem> methodsProducer,
             BuildProducer<EagerSecurityInterceptorClassesBuildItem> classesProducer) {
         if (!interceptorBindings.isEmpty()) {
-            Map<DotName, Boolean> bindingToRequiresSecCheckFlag = interceptorBindings.stream()
-                    .flatMap(ib -> Arrays
-                            .stream(ib.getAnnotationBindings())
-                            .map(b -> Map.entry(b, ib.requiresSecurityCheck())))
+            Map<DotName, Boolean> bindingToRequiresSecCheckFlag = interceptorBindings.stream().flatMap(
+                    ib -> Arrays.stream(ib.getAnnotationBindings()).map(b -> Map.entry(b, ib.requiresSecurityCheck())))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             var index = indexBuildItem.getIndex();
             Map<AnnotationTarget, List<EagerSecurityInterceptorBindingBuildItem>> cache = new HashMap<>();
@@ -371,9 +347,9 @@ public class HttpSecurityProcessor {
             addInterceptedEndpoints(interceptorBindings, index, AnnotationTarget.Kind.CLASS, result, cache,
                     useClassLevelSecurity, classResult);
             if (!result.isEmpty()) {
-                result.forEach((annotationBinding, bindingValueToInterceptedMethods) -> methodsProducer.produce(
-                        new EagerSecurityInterceptorMethodsBuildItem(bindingValueToInterceptedMethods, annotationBinding,
-                                bindingToRequiresSecCheckFlag.get(annotationBinding))));
+                result.forEach((annotationBinding, bindingValueToInterceptedMethods) -> methodsProducer
+                        .produce(new EagerSecurityInterceptorMethodsBuildItem(bindingValueToInterceptedMethods,
+                                annotationBinding, bindingToRequiresSecCheckFlag.get(annotationBinding))));
             }
             if (!classResult.isEmpty()) {
                 classResult.forEach((annotationBinding, bindingValueToInterceptedClasses) -> classesProducer
@@ -391,8 +367,7 @@ public class HttpSecurityProcessor {
             List<EagerSecurityInterceptorClassesBuildItem> interceptorClasses,
             List<EagerSecurityInterceptorMethodsBuildItem> interceptorMethods) {
         if (!interceptorMethods.isEmpty() || !interceptorClasses.isEmpty()) {
-            final var bindingNameToInterceptorCreator = interceptorBindings
-                    .stream()
+            final var bindingNameToInterceptorCreator = interceptorBindings.stream()
                     .flatMap(binding -> Arrays.stream(binding.getAnnotationBindings())
                             .map(name -> Map.entry(name, binding.getInterceptorCreator())))
                     .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -401,14 +376,15 @@ public class HttpSecurityProcessor {
             final var methodDescriptionToInterceptor = new HashMap<RuntimeValue<MethodDescription>, Consumer<RoutingContext>>();
             for (EagerSecurityInterceptorMethodsBuildItem interceptorMethod : interceptorMethods) {
                 var interceptorCreator = bindingNameToInterceptorCreator.get(interceptorMethod.interceptorBinding);
-                for (Map.Entry<String, List<MethodInfo>> e : interceptorMethod.bindingValueToInterceptedMethods.entrySet()) {
+                for (Map.Entry<String, List<MethodInfo>> e : interceptorMethod.bindingValueToInterceptedMethods
+                        .entrySet()) {
                     var annotationValue = e.getKey();
                     var annotatedMethods = e.getValue();
                     var interceptor = recorder.createEagerSecurityInterceptor(interceptorCreator, annotationValue);
                     for (MethodInfo method : annotatedMethods) {
                         // transform method info to description
-                        final RuntimeValue<MethodDescription> methodDescription = methodCache
-                                .computeIfAbsent(method, mi -> {
+                        final RuntimeValue<MethodDescription> methodDescription = methodCache.computeIfAbsent(method,
+                                mi -> {
                                     String[] paramTypes = mi.parameterTypes().stream().map(t -> t.name().toString())
                                             .toArray(String[]::new);
                                     String className = mi.declaringClass().name().toString();
@@ -439,12 +415,10 @@ public class HttpSecurityProcessor {
                 });
             }
 
-            producer.produce(SyntheticBeanBuildItem
-                    .configure(EagerSecurityInterceptorStorage.class)
-                    .scope(ApplicationScoped.class)
-                    .supplier(recorder.createSecurityInterceptorStorage(methodDescriptionToInterceptor, classNameToInterceptor))
-                    .unremovable()
-                    .done());
+            producer.produce(SyntheticBeanBuildItem.configure(EagerSecurityInterceptorStorage.class)
+                    .scope(ApplicationScoped.class).supplier(recorder
+                            .createSecurityInterceptorStorage(methodDescriptionToInterceptor, classNameToInterceptor))
+                    .unremovable().done());
         }
     }
 
@@ -453,8 +427,8 @@ public class HttpSecurityProcessor {
     void addRoutingCtxToSecurityEventsForCdiBeans(HttpSecurityRecorder recorder, Capabilities capabilities,
             BuildProducer<AdditionalSecurityConstrainerEventPropsBuildItem> producer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            producer.produce(
-                    new AdditionalSecurityConstrainerEventPropsBuildItem(recorder.createAdditionalSecEventPropsSupplier()));
+            producer.produce(new AdditionalSecurityConstrainerEventPropsBuildItem(
+                    recorder.createAdditionalSecEventPropsSupplier()));
         }
     }
 
@@ -466,9 +440,7 @@ public class HttpSecurityProcessor {
         }
         var methodToPolicy = combinedIndex.getIndex()
                 // @AuthorizationPolicy(name = "policy-name")
-                .getAnnotations(AUTHORIZATION_POLICY)
-                .stream()
-                .flatMap(ai -> {
+                .getAnnotations(AUTHORIZATION_POLICY).stream().flatMap(ai -> {
                     var policyName = ai.value("name").asString();
                     if (policyName.isBlank()) {
                         var targetName = ai.target().kind() == AnnotationTarget.Kind.CLASS
@@ -478,16 +450,14 @@ public class HttpSecurityProcessor {
                                 The @AuthorizationPolicy annotation placed on '%s' must not have blank policy name.
                                 """.formatted(targetName));
                     }
-                    return getPolicyTargetEndpointCandidates(ai.target())
-                            .map(mi -> Map.entry(mi, policyName));
-                })
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                    return getPolicyTargetEndpointCandidates(ai.target()).map(mi -> Map.entry(mi, policyName));
+                }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         return new AuthorizationPolicyInstancesBuildItem(methodToPolicy);
     }
 
     /**
-     * Implements {@link io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage} as a bean.
-     * If no {@link AuthorizationPolicy} are detected, generated bean will look like this:
+     * Implements {@link io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage} as a bean. If no
+     * {@link AuthorizationPolicy} are detected, generated bean will look like this:
      *
      * <pre>
      * {@code
@@ -504,13 +474,12 @@ public class HttpSecurityProcessor {
      * }
      * </pre>
      *
-     * On the other hand, if {@link AuthorizationPolicy} is detected, <code>getMethodToPolicyName</code> returns
-     * method descriptions of detected annotation instances.
+     * On the other hand, if {@link AuthorizationPolicy} is detected, <code>getMethodToPolicyName</code> returns method
+     * descriptions of detected annotation instances.
      */
     @BuildStep
     void generateAuthorizationPolicyStorage(BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer,
-            Capabilities capabilities,
-            AuthorizationPolicyInstancesBuildItem authZPolicyInstancesItem,
+            Capabilities capabilities, AuthorizationPolicyInstancesBuildItem authZPolicyInstancesItem,
             BuildProducer<AdditionalSecurityAnnotationBuildItem> additionalSecurityAnnotationProducer) {
         if (!capabilities.isPresent(Capability.SECURITY)) {
             return;
@@ -531,8 +500,8 @@ public class HttpSecurityProcessor {
                 constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AuthorizationPolicyStorage.class),
                         constructor.getThis());
 
-                var mapDescriptorType = DescriptorUtils.typeToString(
-                        ParameterizedType.create(Map.class, Type.create(MethodDescription.class), Type.create(String.class)));
+                var mapDescriptorType = DescriptorUtils.typeToString(ParameterizedType.create(Map.class,
+                        Type.create(MethodDescription.class), Type.create(String.class)));
                 if (authZPolicyInstancesItem.methodToPolicyName.isEmpty()) {
                     // generate:
                     // protected Map<MethodDescription, String> getMethodToPolicyName() { Map.of(); }
@@ -562,8 +531,8 @@ public class HttpSecurityProcessor {
                     // === constructor
                     // initializes 'methodToPolicyName' private field in the constructor
                     // this.methodToPolicyName = new MethodsToPolicyBuilder()
-                    //      .addMethodToPolicyName(policyName, className, methodName, parameterTypes)
-                    //      .build();
+                    // .addMethodToPolicyName(policyName, className, methodName, parameterTypes)
+                    // .build();
 
                     // create builder
                     var builder = constructor.newInstance(
@@ -571,8 +540,8 @@ public class HttpSecurityProcessor {
 
                     var addMethodToPolicyNameType = MethodDescriptor.ofMethod(
                             AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, "addMethodToPolicyName",
-                            AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, String.class, String.class, String.class,
-                            String[].class);
+                            AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, String.class, String.class,
+                            String.class, String[].class);
                     for (var e : authZPolicyInstancesItem.methodToPolicyName.entrySet()) {
                         MethodInfo securedMethod = e.getKey();
                         String policyNameStr = e.getValue();
@@ -584,8 +553,9 @@ public class HttpSecurityProcessor {
                         // String declaringClassName
                         var declaringClassName = constructor.load(securedMethod.declaringClass().name().toString());
                         // String[] paramTypes
-                        var paramTypes = constructor.marshalAsArray(String[].class, securedMethod.parameterTypes().stream()
-                                .map(pt -> pt.name().toString()).map(constructor::load).toArray(ResultHandle[]::new));
+                        var paramTypes = constructor.marshalAsArray(String[].class,
+                                securedMethod.parameterTypes().stream().map(pt -> pt.name().toString())
+                                        .map(constructor::load).toArray(ResultHandle[]::new));
 
                         // builder.addMethodToPolicyName(policyName, className, methodName, paramTypes)
                         builder = constructor.invokeVirtualMethod(addMethodToPolicyNameType, builder, policyName,
@@ -593,11 +563,10 @@ public class HttpSecurityProcessor {
                     }
 
                     // builder.build()
-                    var resultMapType = DescriptorUtils
-                            .typeToString(ParameterizedType.create(Map.class, TypeVariable.create(MethodDescription.class),
-                                    TypeVariable.create(String.class)));
-                    var buildMethodType = MethodDescriptor.ofMethod(AuthorizationPolicyStorage.MethodsToPolicyBuilder.class,
-                            "build", resultMapType);
+                    var resultMapType = DescriptorUtils.typeToString(ParameterizedType.create(Map.class,
+                            TypeVariable.create(MethodDescription.class), TypeVariable.create(String.class)));
+                    var buildMethodType = MethodDescriptor
+                            .ofMethod(AuthorizationPolicyStorage.MethodsToPolicyBuilder.class, "build", resultMapType);
                     var resultMap = constructor.invokeVirtualMethod(buildMethodType, builder);
                     // assign builder to the private field
                     constructor.writeInstanceField(methodToPolicyNameField.getFieldDescriptor(), constructor.getThis(),
@@ -617,7 +586,8 @@ public class HttpSecurityProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
-    IgnoredContextLocalDataKeysBuildItem dontPropagateSecurityIdentityToDuplicateContext(HttpSecurityRecorder recorder) {
+    IgnoredContextLocalDataKeysBuildItem dontPropagateSecurityIdentityToDuplicateContext(
+            HttpSecurityRecorder recorder) {
         return new IgnoredContextLocalDataKeysBuildItem(recorder.getSecurityIdentityContextKeySupplier());
     }
 
@@ -638,18 +608,16 @@ public class HttpSecurityProcessor {
             }
             return Stream.of(method);
         }
-        return target.asClass().methods().stream()
-                .filter(HttpSecurityProcessor::hasProperEndpointModifiers)
+        return target.asClass().methods().stream().filter(HttpSecurityProcessor::hasProperEndpointModifiers)
                 .filter(mi -> !HttpSecurityUtils.hasSecurityAnnotation(mi));
     }
 
     private static void validateAuthMechanismAnnotationUsage(Capabilities capabilities,
-            VertxHttpBuildTimeConfig buildTimeConfig,
-            DotName[] annotationNames) {
-        if (buildTimeConfig.auth().proactive()
-                || (capabilities.isMissing(Capability.RESTEASY_REACTIVE) && capabilities.isMissing(Capability.RESTEASY)
-                        && capabilities.isMissing(Capability.WEBSOCKETS_NEXT))) {
-            throw new ConfigurationException("Annotations '" + Arrays.toString(annotationNames) + "' can only be used when"
+            VertxHttpBuildTimeConfig buildTimeConfig, DotName[] annotationNames) {
+        if (buildTimeConfig.auth().proactive() || (capabilities.isMissing(Capability.RESTEASY_REACTIVE)
+                && capabilities.isMissing(Capability.RESTEASY) && capabilities.isMissing(Capability.WEBSOCKETS_NEXT))) {
+            throw new ConfigurationException("Annotations '" + Arrays.toString(annotationNames)
+                    + "' can only be used when"
                     + " proactive authentication is disabled and either Quarkus REST, RESTEasy Classic or WebSockets Next"
                     + " extension is present");
         }
@@ -660,40 +628,25 @@ public class HttpSecurityProcessor {
     }
 
     public static Set<MethodInfo> collectClassMethodsWithoutRbacAnnotation(Collection<ClassInfo> classes) {
-        return classes
-                .stream()
-                .filter(c -> !HttpSecurityUtils.hasSecurityAnnotation(c))
-                .map(ClassInfo::methods)
-                .flatMap(Collection::stream)
-                .filter(HttpSecurityProcessor::hasProperEndpointModifiers)
-                .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m))
-                .collect(Collectors.toSet());
+        return classes.stream().filter(c -> !HttpSecurityUtils.hasSecurityAnnotation(c)).map(ClassInfo::methods)
+                .flatMap(Collection::stream).filter(HttpSecurityProcessor::hasProperEndpointModifiers)
+                .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m)).collect(Collectors.toSet());
     }
 
     public static Set<MethodInfo> collectMethodsWithoutRbacAnnotation(Collection<MethodInfo> methods) {
-        return methods
-                .stream()
-                .filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m))
-                .collect(Collectors.toSet());
+        return methods.stream().filter(m -> !HttpSecurityUtils.hasSecurityAnnotation(m)).collect(Collectors.toSet());
     }
 
     public static Set<ClassInfo> collectAnnotatedClasses(Collection<AnnotationInstance> instances,
             Predicate<ClassInfo> filter) {
-        return instances
-                .stream()
-                .map(AnnotationInstance::target)
-                .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
-                .map(AnnotationTarget::asClass)
-                .filter(filter)
-                .collect(Collectors.toSet());
+        return instances.stream().map(AnnotationInstance::target)
+                .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS).map(AnnotationTarget::asClass)
+                .filter(filter).collect(Collectors.toSet());
     }
 
     private static Set<MethodInfo> collectAnnotatedMethods(Collection<AnnotationInstance> instances) {
-        return instances
-                .stream()
-                .map(AnnotationInstance::target)
-                .filter(target -> target.kind() == AnnotationTarget.Kind.METHOD)
-                .map(AnnotationTarget::asMethod)
+        return instances.stream().map(AnnotationInstance::target)
+                .filter(target -> target.kind() == AnnotationTarget.Kind.METHOD).map(AnnotationTarget::asMethod)
                 .collect(Collectors.toSet());
     }
 
@@ -715,8 +668,7 @@ public class HttpSecurityProcessor {
     private static void addInterceptedEndpoints(List<EagerSecurityInterceptorBindingBuildItem> interceptorBindings,
             IndexView index, AnnotationTarget.Kind appliesTo, Map<DotName, Map<String, List<MethodInfo>>> result,
             Map<AnnotationTarget, List<EagerSecurityInterceptorBindingBuildItem>> cache,
-            Predicate<ClassInfo> hasClassLevelSecurity,
-            Map<DotName, Map<String, Set<String>>> classResult) {
+            Predicate<ClassInfo> hasClassLevelSecurity, Map<DotName, Map<String, Set<String>>> classResult) {
         for (EagerSecurityInterceptorBindingBuildItem interceptorBinding : interceptorBindings) {
             for (DotName annotationBinding : interceptorBinding.getAnnotationBindings()) {
                 Map<String, List<MethodInfo>> bindingValueToInterceptedMethods = new HashMap<>();
@@ -735,7 +687,8 @@ public class HttpSecurityProcessor {
                             if (appliedBindings.contains(interceptorBinding)) {
                                 throw new RuntimeException(
                                         "Only one of the '%s' annotations can be applied on the '%s' class".formatted(
-                                                Arrays.toString(interceptorBinding.getAnnotationBindings()), interceptedClass));
+                                                Arrays.toString(interceptorBinding.getAnnotationBindings()),
+                                                interceptedClass));
                             } else {
                                 appliedBindings.add(interceptorBinding);
                             }
@@ -775,8 +728,10 @@ public class HttpSecurityProcessor {
                         } else if (hasClassLevelSecurity.test(mi.declaringClass())) {
                             throw new RuntimeException(
                                     ("Security annotations '%s' cannot be applied on the '%s' method, "
-                                            + "please move the annotations to the class-level instead").formatted(
-                                                    Arrays.toString(Arrays.stream(interceptorBinding.getAnnotationBindings())
+                                            + "please move the annotations to the class-level instead")
+                                            .formatted(
+                                                    Arrays.toString(Arrays
+                                                            .stream(interceptorBinding.getAnnotationBindings())
                                                             .toArray()),
                                                     mi.declaringClass().name() + "#" + mi));
                         } else {

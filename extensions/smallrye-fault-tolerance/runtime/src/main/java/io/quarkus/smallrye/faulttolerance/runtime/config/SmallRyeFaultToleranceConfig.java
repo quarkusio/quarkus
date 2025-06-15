@@ -39,8 +39,8 @@ import io.smallrye.faulttolerance.api.RetryWhen;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface SmallRyeFaultToleranceConfig {
     /**
-     * Whether fault tolerance strategies are enabled. Note that {@code @Fallback}
-     * is always enabled, this applies to all other strategies.
+     * Whether fault tolerance strategies are enabled. Note that {@code @Fallback} is always enabled, this applies to
+     * all other strategies.
      */
     @ConfigDocDefault("true")
     Optional<Boolean> enabled();
@@ -53,27 +53,22 @@ public interface SmallRyeFaultToleranceConfig {
     Optional<Boolean> metricsEnabled();
 
     /**
-     * Whether SmallRye Fault Tolerance should be compatible with the MicroProfile
-     * Fault Tolerance specification.
+     * Whether SmallRye Fault Tolerance should be compatible with the MicroProfile Fault Tolerance specification.
      */
     @ConfigDocDefault("false")
     Optional<Boolean> mpCompatibility();
 
     /**
-     * Configuration of fault tolerance strategies; either global, per class, or per method.
-     * Keys are:
-     *
+     * Configuration of fault tolerance strategies; either global, per class, or per method. Keys are:
      * <ul>
      * <li>{@code global}: for global configuration</li>
      * <li>{@code "<classname>"}: for per class configuration</li>
      * <li>{@code "<classname>/<methodname>"}: for per method configuration</li>
      * </ul>
-     *
-     * Note that configuration follows the MicroProfile Fault Tolerance specification.
-     * That is, if an annotation is present on a method, the configuration must be per method;
-     * if an annotation is present on a class, the configuration must be per class.
-     * Global configuration is a fallback for both per method and per class configuration,
-     * but per class configuration is <em>not</em> a fallback for per method configuration.
+     * Note that configuration follows the MicroProfile Fault Tolerance specification. That is, if an annotation is
+     * present on a method, the configuration must be per method; if an annotation is present on a class, the
+     * configuration must be per class. Global configuration is a fallback for both per method and per class
+     * configuration, but per class configuration is <em>not</em> a fallback for per method configuration.
      */
     @WithParentName
     @ConfigDocMapKey("<identifier>")
@@ -158,10 +153,9 @@ public interface SmallRyeFaultToleranceConfig {
             Optional<Boolean> enabled();
 
             /**
-             * The {@link io.smallrye.common.annotation.Identifier @Identifier}
-             * of the {@link io.smallrye.faulttolerance.api.Guard Guard}
-             * or {@link io.smallrye.faulttolerance.api.TypedGuard TypedGuard}
-             * to use on the annotated method.
+             * The {@link io.smallrye.common.annotation.Identifier @Identifier} of the
+             * {@link io.smallrye.faulttolerance.api.Guard Guard} or {@link io.smallrye.faulttolerance.api.TypedGuard
+             * TypedGuard} to use on the annotated method.
              *
              * @see ApplyGuard#value()
              */
@@ -215,9 +209,9 @@ public interface SmallRyeFaultToleranceConfig {
             OptionalInt value();
 
             /**
-             * The maximum number of queued asynchronous invocations. Asynchronous invocations are queued
-             * when the number of concurrent invocations in progress has already reached the maximum.
-             * Synchronous invocations are not queued at all and are rejected immediately.
+             * The maximum number of queued asynchronous invocations. Asynchronous invocations are queued when the
+             * number of concurrent invocations in progress has already reached the maximum. Synchronous invocations are
+             * not queued at all and are rejected immediately.
              *
              * @see Bulkhead#waitingTaskQueue()
              */
@@ -311,8 +305,8 @@ public interface SmallRyeFaultToleranceConfig {
             Optional<Boolean> enabled();
 
             /**
-             * The multiplicative factor used when determining a delay between two retries. A delay is computed
-             * as {@code factor * previousDelay}, resulting in an exponential growth.
+             * The multiplicative factor used when determining a delay between two retries. A delay is computed as
+             * {@code factor * previousDelay}, resulting in an exponential growth.
              *
              * @see ExponentialBackoff#factor()
              */
@@ -351,8 +345,8 @@ public interface SmallRyeFaultToleranceConfig {
             Optional<Class<? extends Throwable>[]> applyOn();
 
             /**
-             * The exception types that are not considered failures and hence should not trigger fallback.
-             * Takes priority over {@link #applyOn()}.
+             * The exception types that are not considered failures and hence should not trigger fallback. Takes
+             * priority over {@link #applyOn()}.
              *
              * @see Fallback#skipOn()
              */
@@ -398,8 +392,8 @@ public interface SmallRyeFaultToleranceConfig {
             Optional<Boolean> enabled();
 
             /**
-             * Minimum time between two consecutive invocations. If the time between two consecutive
-             * invocations is shorter, the second invocation is rejected.
+             * Minimum time between two consecutive invocations. If the time between two consecutive invocations is
+             * shorter, the second invocation is rejected.
              *
              * @see RateLimit#minSpacing()
              */
@@ -453,8 +447,8 @@ public interface SmallRyeFaultToleranceConfig {
             Optional<Boolean> enabled();
 
             /**
-             * The exception types that are not considered failures and hence should not be retried.
-             * Takes priority over {@link #retryOn()}.
+             * The exception types that are not considered failures and hence should not be retried. Takes priority over
+             * {@link #retryOn()}.
              *
              * @see Retry#abortOn()
              */
@@ -477,9 +471,8 @@ public interface SmallRyeFaultToleranceConfig {
             Optional<ChronoUnit> delayUnit();
 
             /**
-             * The maximum jitter to apply for the delay between retry attempts.
-             * The actual delay will be in the interval {@code [delay - jitter, delay + jitter]},
-             * but will not be negative.
+             * The maximum jitter to apply for the delay between retry attempts. The actual delay will be in the
+             * interval {@code [delay - jitter, delay + jitter]}, but will not be negative.
              *
              * @see Retry#jitter()
              */
@@ -533,8 +526,8 @@ public interface SmallRyeFaultToleranceConfig {
             Optional<Boolean> enabled();
 
             /**
-             * Class of the predicate that will be used to determine whether the invocation should be retried
-             * if the guarded method has thrown an exception.
+             * Class of the predicate that will be used to determine whether the invocation should be retried if the
+             * guarded method has thrown an exception.
              *
              * @see RetryWhen#exception()
              */
@@ -542,8 +535,8 @@ public interface SmallRyeFaultToleranceConfig {
             Optional<Class<? extends Predicate<Throwable>>> exception();
 
             /**
-             * Class of the predicate that will be used to determine whether the invocation should be retried
-             * if the guarded method has returned a result.
+             * Class of the predicate that will be used to determine whether the invocation should be retried if the
+             * guarded method has returned a result.
              *
              * @see RetryWhen#result()
              */

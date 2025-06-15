@@ -176,8 +176,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         Executor exec = Executors.newSingleThreadExecutor();
         try {
             exec = (Executor) Class.forName("java.util.concurrent.Executors")
-                    .getMethod("newVirtualThreadPerTaskExecutor")
-                    .invoke(null);
+                    .getMethod("newVirtualThreadPerTaskExecutor").invoke(null);
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException
                 | IllegalAccessException e) {
             e.printStackTrace();
@@ -206,8 +205,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
 
     public ResteasyReactiveUnitTest assertException(Consumer<Throwable> assertException) {
         if (this.assertException != null) {
-            throw new IllegalStateException("Don't set the asserted or excepted exception twice"
-                    + " to avoid shadowing out the first call.");
+            throw new IllegalStateException(
+                    "Don't set the asserted or excepted exception twice" + " to avoid shadowing out the first call.");
         }
         this.assertException = assertException;
         return this;
@@ -225,8 +224,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
 
     public ResteasyReactiveUnitTest assertLogRecords(Consumer<List<LogRecord>> assertLogRecords) {
         if (this.assertLogRecords != null) {
-            throw new IllegalStateException("Don't set the a log record assertion twice"
-                    + " to avoid shadowing out the first call.");
+            throw new IllegalStateException(
+                    "Don't set the a log record assertion twice" + " to avoid shadowing out the first call.");
         }
         this.assertLogRecords = assertLogRecords;
         return this;
@@ -236,6 +235,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
      * Customize the application root.
      *
      * @param applicationRootConsumer
+     *
      * @return self
      */
     public ResteasyReactiveUnitTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
@@ -311,7 +311,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
 
     }
 
-    private void doDeployment() throws MalformedURLException, InterruptedException, ExecutionException, ClassNotFoundException {
+    private void doDeployment()
+            throws MalformedURLException, InterruptedException, ExecutionException, ClassNotFoundException {
         FieldInjectionFeature fieldInjectionSupport = new FieldInjectionFeature();
         IndexView nonCalcIndex = JandexUtil.createIndex(deploymentDir);
         ResteasyReactiveDeploymentManager.ScanStep scanStep = ResteasyReactiveDeploymentManager.start(nonCalcIndex);
@@ -336,9 +337,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         });
         scanStep.addFeatureScanner(
                 new FilterFeature(Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of()));
-        scanStep.addFeatureScanner(
-                new ServerExceptionMappingFeature(Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT),
-                        Set.of()));
+        scanStep.addFeatureScanner(new ServerExceptionMappingFeature(
+                Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of()));
         scanCustomizers.forEach((c) -> c.accept(scanStep));
 
         ResteasyReactiveDeploymentManager.ScanResult scanned = scanStep.scan();
@@ -391,8 +391,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
             }
         });
 
-        ResteasyReactiveDeploymentManager.PreparedApplication prepared = scanned
-                .prepare(testClassLoader, ReflectiveContextInjectedBeanFactory.STRING_FACTORY);
+        ResteasyReactiveDeploymentManager.PreparedApplication prepared = scanned.prepare(testClassLoader,
+                ReflectiveContextInjectedBeanFactory.STRING_FACTORY);
 
         prepared.addScannedSerializers();
         prepared.addBuiltinSerializers();
@@ -400,8 +400,8 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
                 fileContentTypes, defaultCharset, Optional.empty(), maxFormAttributeSize, maxParameters);
-        ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
-                new VertxRequestContextFactory(), executor);
+        ResteasyReactiveDeploymentManager.RunnableApplication application = prepared
+                .createApplication(runtimeConfiguration, new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());
 
         ResteasyReactiveVertxHandler handler = new ResteasyReactiveVertxHandler(ev -> {
@@ -430,7 +430,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
             if (assertLogRecords != null) {
                 assertLogRecords.accept(inMemoryLogHandler.records);
             }
-            //rootLogger.setHandlers(originalHandlers);
+            // rootLogger.setHandlers(originalHandlers);
             inMemoryLogHandler.clearRecords();
 
             System.clearProperty("test.url");

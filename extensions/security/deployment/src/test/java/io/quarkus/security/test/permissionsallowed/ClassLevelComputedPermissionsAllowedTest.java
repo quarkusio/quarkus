@@ -51,8 +51,7 @@ public class ClassLevelComputedPermissionsAllowedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     AutodetectParamsBean autodetectParamsBean;
@@ -65,12 +64,15 @@ public class ClassLevelComputedPermissionsAllowedTest {
         var anonymous = new AuthData(null, true, null, CHECKING_PERMISSION);
         var user = new AuthData(Collections.singleton("user"), false, "user", CHECKING_PERMISSION);
 
-        // secured class methods have exactly same parameters as Permission constructor (except of permission name and actions)
+        // secured class methods have exactly same parameters as Permission constructor (except of permission name and
+        // actions)
         assertSuccess(() -> autodetectParamsBean.autodetect("hello", "world", "!"), SUCCESS, user);
         assertFailureFor(() -> autodetectParamsBean.autodetect("what", "ever", "?"), ForbiddenException.class, user);
-        assertFailureFor(() -> autodetectParamsBean.autodetect("what", "ever", "?"), UnauthorizedException.class, anonymous);
+        assertFailureFor(() -> autodetectParamsBean.autodetect("what", "ever", "?"), UnauthorizedException.class,
+                anonymous);
         assertSuccess(autodetectParamsBean.autodetectNonBlocking("hello", "world", "!"), SUCCESS, user);
-        assertFailureFor(autodetectParamsBean.autodetectNonBlocking("what", "ever", "?"), ForbiddenException.class, user);
+        assertFailureFor(autodetectParamsBean.autodetectNonBlocking("what", "ever", "?"), ForbiddenException.class,
+                user);
         assertFailureFor(autodetectParamsBean.autodetectNonBlocking("what", "ever", "?"), UnauthorizedException.class,
                 anonymous);
     }
@@ -81,12 +83,14 @@ public class ClassLevelComputedPermissionsAllowedTest {
 
         // secured class methods have multiple params and Permission constructor selects one of them
         assertSuccess(() -> explicitlyMatchedParamsBean.autodetect("hello", "world", "!"), SUCCESS, user);
-        assertFailureFor(() -> explicitlyMatchedParamsBean.autodetect("what", "ever", "?"), ForbiddenException.class, user);
-        assertSuccess(explicitlyMatchedParamsBean.autodetectNonBlocking("hello", "world", "!"), SUCCESS, user);
-        assertFailureFor(explicitlyMatchedParamsBean.autodetectNonBlocking("what", "ever", "?"), ForbiddenException.class,
+        assertFailureFor(() -> explicitlyMatchedParamsBean.autodetect("what", "ever", "?"), ForbiddenException.class,
                 user);
+        assertSuccess(explicitlyMatchedParamsBean.autodetectNonBlocking("hello", "world", "!"), SUCCESS, user);
+        assertFailureFor(explicitlyMatchedParamsBean.autodetectNonBlocking("what", "ever", "?"),
+                ForbiddenException.class, user);
 
-        // differs from above in params number, which means number of different methods can be secured via class-level annotation
+        // differs from above in params number, which means number of different methods can be secured via class-level
+        // annotation
         assertSuccess(() -> explicitlyMatchedParamsBean.autodetect("world"), SUCCESS, user);
         assertFailureFor(() -> explicitlyMatchedParamsBean.autodetect("ever"), ForbiddenException.class, user);
         assertSuccess(explicitlyMatchedParamsBean.autodetectNonBlocking("world"), SUCCESS, user);
@@ -132,7 +136,8 @@ public class ClassLevelComputedPermissionsAllowedTest {
     public static class AllStrAutodetectedPermission extends Permission {
         private final boolean pass;
 
-        public AllStrAutodetectedPermission(String name, String[] actions, String exclamationMark, String world, String hello) {
+        public AllStrAutodetectedPermission(String name, String[] actions, String exclamationMark, String world,
+                String hello) {
             super(name);
             this.pass = "hello".equals(hello) && "world".equals(world) && "!".equals(exclamationMark);
         }

@@ -14,13 +14,14 @@ public abstract class OidcCommonConfigBuilder<T> {
             Optional<String> trustStoreFileType, Optional<String> trustStoreProvider) implements OidcCommonConfig.Tls {
         private TlsImpl(String tlsConfigurationName) {
             this(Optional.ofNullable(tlsConfigurationName), Optional.empty(), Optional.empty(), Optional.empty(),
-                    Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                    Optional.empty(), Optional.empty(), Optional.empty());
+                    Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
+                    Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
         }
     }
 
-    private record ProxyImpl(Optional<String> host, int port, Optional<String> username,
-            Optional<String> password) implements OidcCommonConfig.Proxy {
+    private record ProxyImpl(Optional<String> host, int port, Optional<String> username, Optional<String> password)
+            implements
+                OidcCommonConfig.Proxy {
     }
 
     protected static class OidcCommonConfigImpl implements OidcCommonConfig {
@@ -47,7 +48,8 @@ public abstract class OidcCommonConfigBuilder<T> {
             this.useBlockingDnsLookup = builder.useBlockingDnsLookup;
             this.maxPoolSize = builder.maxPoolSize;
             this.followRedirects = builder.followRedirects;
-            this.proxy = new ProxyImpl(builder.proxyHost, builder.proxyPort, builder.proxyUsername, builder.proxyPassword);
+            this.proxy = new ProxyImpl(builder.proxyHost, builder.proxyPort, builder.proxyUsername,
+                    builder.proxyPassword);
             this.tls = builder.tls;
         }
 
@@ -142,7 +144,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     protected abstract T getBuilder();
 
     /**
-     * @param authServerUrl {@link OidcCommonConfig#authServerUrl()}
+     * @param authServerUrl
+     *        {@link OidcCommonConfig#authServerUrl()}
+     *
      * @return T builder
      */
     public T authServerUrl(String authServerUrl) {
@@ -151,7 +155,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param discoveryEnabled {@link OidcCommonConfig#discoveryEnabled()}
+     * @param discoveryEnabled
+     *        {@link OidcCommonConfig#discoveryEnabled()}
+     *
      * @return T builder
      */
     public T discoveryEnabled(boolean discoveryEnabled) {
@@ -160,7 +166,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param registrationPath {@link OidcCommonConfig#registrationPath()}
+     * @param registrationPath
+     *        {@link OidcCommonConfig#registrationPath()}
+     *
      * @return T builder
      */
     public T registrationPath(String registrationPath) {
@@ -169,7 +177,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param connectionDelay {@link OidcCommonConfig#connectionDelay()}
+     * @param connectionDelay
+     *        {@link OidcCommonConfig#connectionDelay()}
+     *
      * @return T builder
      */
     public T connectionDelay(Duration connectionDelay) {
@@ -178,7 +188,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param connectionRetryCount {@link OidcCommonConfig#connectionRetryCount()}
+     * @param connectionRetryCount
+     *        {@link OidcCommonConfig#connectionRetryCount()}
+     *
      * @return T builder
      */
     public T connectionRetryCount(int connectionRetryCount) {
@@ -187,7 +199,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param connectionTimeout {@link OidcCommonConfig#connectionTimeout()}
+     * @param connectionTimeout
+     *        {@link OidcCommonConfig#connectionTimeout()}
+     *
      * @return T builder
      */
     public T connectionTimeout(Duration connectionTimeout) {
@@ -196,7 +210,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param useBlockingDnsLookup {@link OidcCommonConfig#useBlockingDnsLookup()}
+     * @param useBlockingDnsLookup
+     *        {@link OidcCommonConfig#useBlockingDnsLookup()}
+     *
      * @return T builder
      */
     public T useBlockingDnsLookup(boolean useBlockingDnsLookup) {
@@ -205,7 +221,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param maxPoolSize {@link OidcCommonConfig#maxPoolSize()}
+     * @param maxPoolSize
+     *        {@link OidcCommonConfig#maxPoolSize()}
+     *
      * @return T builder
      */
     public T maxPoolSize(int maxPoolSize) {
@@ -214,7 +232,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param followRedirects {@link OidcCommonConfig#followRedirects()}
+     * @param followRedirects
+     *        {@link OidcCommonConfig#followRedirects()}
+     *
      * @return T builder
      */
     public T followRedirects(boolean followRedirects) {
@@ -223,8 +243,11 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param host {@link OidcCommonConfig.Proxy#host()}
-     * @param port {@link OidcCommonConfig.Proxy#port()}
+     * @param host
+     *        {@link OidcCommonConfig.Proxy#host()}
+     * @param port
+     *        {@link OidcCommonConfig.Proxy#port()}
+     *
      * @return T builder
      */
     public T proxy(String host, int port) {
@@ -234,10 +257,15 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param host {@link OidcCommonConfig.Proxy#host()}
-     * @param port {@link OidcCommonConfig.Proxy#port()}
-     * @param username {@link OidcCommonConfig.Proxy#username()}
-     * @param password {@link OidcCommonConfig.Proxy#password()}
+     * @param host
+     *        {@link OidcCommonConfig.Proxy#host()}
+     * @param port
+     *        {@link OidcCommonConfig.Proxy#port()}
+     * @param username
+     *        {@link OidcCommonConfig.Proxy#username()}
+     * @param password
+     *        {@link OidcCommonConfig.Proxy#password()}
+     *
      * @return T builder
      */
     public T proxy(String host, int port, String username, String password) {
@@ -249,7 +277,9 @@ public abstract class OidcCommonConfigBuilder<T> {
     }
 
     /**
-     * @param tlsConfigurationName {@link OidcCommonConfig.Tls#tlsConfigurationName()}
+     * @param tlsConfigurationName
+     *        {@link OidcCommonConfig.Tls#tlsConfigurationName()}
+     *
      * @return T builder
      */
     public T tlsConfigurationName(String tlsConfigurationName) {

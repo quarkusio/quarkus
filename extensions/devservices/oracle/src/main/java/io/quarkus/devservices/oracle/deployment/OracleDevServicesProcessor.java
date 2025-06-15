@@ -37,8 +37,8 @@ public class OracleDevServicesProcessor {
     private static final Logger LOG = Logger.getLogger(OracleDevServicesProcessor.class);
 
     /**
-     * This is the container name as defined by the Testcontainer's OracleContainer:
-     * does not necessarily match the container name that Quarkus will default to use.
+     * This is the container name as defined by the Testcontainer's OracleContainer: does not necessarily match the
+     * container name that Quarkus will default to use.
      */
     public static final String ORIGINAL_IMAGE_NAME = "gvenzl/oracle-xe";
     public static final int PORT = 1521;
@@ -48,41 +48,40 @@ public class OracleDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupOracle(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevServicesConfig devServicesConfig) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, DevServicesConfig devServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.ORACLE, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
+                    Optional<Duration> startupTimeout) {
 
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
 
-                String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
-                String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
-                String effectiveDbName = containerConfig.getDbName().orElse(
-                        DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+                String effectiveUsername = containerConfig.getUsername()
+                        .orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
+                String effectivePassword = containerConfig.getPassword()
+                        .orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
+                String effectiveDbName = containerConfig.getDbName()
+                        .orElse(DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
                 Supplier<RunningDevServicesDatasource> startService = () -> {
 
-                    QuarkusOracleServerContainer container = new QuarkusOracleServerContainer(containerConfig.getImageName(),
-                            containerConfig.getFixedExposedPort(),
-                            composeProjectBuildItem.getDefaultNetworkId(),
-                            useSharedNetwork);
+                    QuarkusOracleServerContainer container = new QuarkusOracleServerContainer(
+                            containerConfig.getImageName(), containerConfig.getFixedExposedPort(),
+                            composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork);
                     startupTimeout.ifPresent(container::withStartupTimeout);
 
-                    container.withUsername(effectiveUsername)
-                            .withPassword(effectivePassword)
-                            .withDatabaseName(effectiveDbName)
-                            .withReuse(containerConfig.isReuse());
+                    container.withUsername(effectiveUsername).withPassword(effectivePassword)
+                            .withDatabaseName(effectiveDbName).withReuse(containerConfig.isReuse());
                     Labels.addDataSourceLabel(container, datasourceName);
                     Volumes.addVolumes(container, containerConfig.getVolumes());
 
                     container.withEnv(containerConfig.getContainerEnv());
 
                     // We need to limit the maximum amount of CPUs being used by the container;
-                    // otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot it.
+                    // otherwise the hardcoded memory configuration of the DB might not be enough to successfully boot
+                    // it.
                     // See https://github.com/gvenzl/oci-oracle-xe/issues/64
                     // I choose to limit it to "2 cpus": should be more than enough for any local testing needs,
                     // and keeps things simple.
@@ -105,17 +104,15 @@ public class OracleDevServicesProcessor {
 
                     LOG.info("Dev Services for Oracle started.");
 
-                    return new RunningDevServicesDatasource(container.getContainerId(),
-                            container.getEffectiveJdbcUrl(),
-                            container.getReactiveUrl(),
-                            container.getUsername(),
-                            container.getPassword(),
+                    return new RunningDevServicesDatasource(container.getContainerId(), container.getEffectiveJdbcUrl(),
+                            container.getReactiveUrl(), container.getUsername(), container.getPassword(),
                             new ContainerShutdownCloseable(container, "Oracle"));
                 };
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")),
                         "oracle");
-                return ComposeLocator.locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
+                return ComposeLocator
+                        .locateContainer(composeProjectBuildItem, images, PORT, launchMode, useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(startService);
             }
@@ -130,8 +127,7 @@ public class OracleDevServicesProcessor {
 
         public QuarkusOracleServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork) {
-            super(DockerImageName
-                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")))
+            super(DockerImageName.parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("oracle")))
                     .asCompatibleSubstituteFor(OracleDevServicesProcessor.ORIGINAL_IMAGE_NAME));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

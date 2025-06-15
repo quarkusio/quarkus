@@ -15,9 +15,8 @@ import io.smallrye.reactive.messaging.TracingMetadata;
  * Intercepts outgoing messages from Reactive Messaging connectors.
  * <p>
  * For outgoing messages, if the message doesn't already contain a tracing metadata, it attaches one with the current
- * OpenTelemetry context.
- * Reactive messaging outbound connectors, if tracing is supported, will use that context as parent span to trace outbound
- * message transmission.
+ * OpenTelemetry context. Reactive messaging outbound connectors, if tracing is supported, will use that context as
+ * parent span to trace outbound message transmission.
  */
 @ApplicationScoped
 public class ReactiveMessagingTracingOutgoingDecorator implements SubscriberDecorator {
@@ -26,8 +25,8 @@ public class ReactiveMessagingTracingOutgoingDecorator implements SubscriberDeco
      * Outgoing messages
      */
     @Override
-    public Multi<? extends Message<?>> decorate(Multi<? extends Message<?>> toBeSubscribed,
-            List<String> channelName, boolean isConnector) {
+    public Multi<? extends Message<?>> decorate(Multi<? extends Message<?>> toBeSubscribed, List<String> channelName,
+            boolean isConnector) {
         Multi<? extends Message<?>> multi = toBeSubscribed;
         if (isConnector) {
             // add TracingMetadata to the outgoing message if it doesn't exist already

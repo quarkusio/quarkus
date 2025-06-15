@@ -13,19 +13,14 @@ public class OpenApiWithResteasyPathHttpRootDefaultPathTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(new StringAsset("quarkus.http.root-path=/http-root-path\n" +
-                            "quarkus.rest.path=/resteasy-path"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class).addAsResource(
+                    new StringAsset("quarkus.http.root-path=/http-root-path\n" + "quarkus.rest.path=/resteasy-path"),
+                    "application.properties"));
 
     @Test
     public void testOpenApiResteasyPathHttpRootDefaultPath() {
-        RestAssured.given().queryParam("format", "JSON")
-                .when().get(OPEN_API_PATH)
-                .then()
-                .header("Content-Type", "application/json;charset=UTF-8")
-                .body("openapi", Matchers.startsWith("3.1"))
+        RestAssured.given().queryParam("format", "JSON").when().get(OPEN_API_PATH).then()
+                .header("Content-Type", "application/json;charset=UTF-8").body("openapi", Matchers.startsWith("3.1"))
                 .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/http-root-path/resteasy-path/resource"));
     }

@@ -34,10 +34,8 @@ import io.smallrye.mutiny.Multi;
 public class GrpcHealthTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addClass(HelloService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage()).addClass(HelloService.class))
             .withConfigurationResource("health-config.properties");
 
     @Inject
@@ -54,7 +52,8 @@ public class GrpcHealthTest {
 
     @Test
     public void shouldGetHealthServiceHealthInfo() {
-        ServingStatus defaultStatus = healthConsumer.checkStatus(builder -> builder.setService("grpc.health.v1.Health"));
+        ServingStatus defaultStatus = healthConsumer
+                .checkStatus(builder -> builder.setService("grpc.health.v1.Health"));
         assertThat(defaultStatus).isEqualTo(ServingStatus.SERVING);
     }
 
@@ -98,8 +97,8 @@ public class GrpcHealthTest {
     }
 
     private void gatherStatusesToList(String serviceName, List<ServingStatus> statusList1) {
-        healthConsumer.getStatusStream(builder -> builder.setService(serviceName))
-                .map(HealthCheckResponse::getStatus).subscribe().with(statusList1::add);
+        healthConsumer.getStatusStream(builder -> builder.setService(serviceName)).map(HealthCheckResponse::getStatus)
+                .subscribe().with(statusList1::add);
     }
 
     private void awaitExactStatusList(List<ServingStatus> statusList, ServingStatus... statuses) {

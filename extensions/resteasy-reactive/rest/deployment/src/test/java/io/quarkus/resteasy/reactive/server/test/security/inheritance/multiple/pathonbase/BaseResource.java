@@ -23,14 +23,16 @@ public class BaseResource implements BaseResource_First_Interface {
 
     @POST
     @RolesAllowed("admin")
-    @Path(MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH + METHOD_ROLES_ALLOWED_PATH)
+    @Path(MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH
+            + METHOD_ROLES_ALLOWED_PATH)
     public String multipleInheritance_ClassPathOnBase_ImplOnBase_ImplWithPath_MethodRolesAllowed(JsonObject array) {
         return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH
                 + METHOD_ROLES_ALLOWED_PATH;
     }
 
     @POST
-    @Path(MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH + NO_SECURITY_ANNOTATION_PATH)
+    @Path(MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH
+            + NO_SECURITY_ANNOTATION_PATH)
     public String multipleInheritance_ClassPathOnBase_ImplOnBase_ImplWithPath_NoAnnotation(JsonObject array) {
         return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH
                 + NO_SECURITY_ANNOTATION_PATH;
@@ -40,44 +42,44 @@ public class BaseResource implements BaseResource_First_Interface {
     @Override
     public String multipleInheritance_ClassPathOnBase_ImplOnBase_FirstInterface_InterfaceMethodWithPath_MethodRolesAllowed(
             JsonObject array) {
-        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + FIRST_INTERFACE + INTERFACE_METHOD_WITH_PATH
-                + METHOD_ROLES_ALLOWED_PATH;
+        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + FIRST_INTERFACE
+                + INTERFACE_METHOD_WITH_PATH + METHOD_ROLES_ALLOWED_PATH;
     }
 
     @Override
     public String multipleInheritance_ClassPathOnBase_ImplOnBase_FirstInterface_InterfaceMethodWithPath_NoAnnotation(
             JsonObject array) {
-        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + FIRST_INTERFACE + INTERFACE_METHOD_WITH_PATH
-                + NO_SECURITY_ANNOTATION_PATH;
+        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + FIRST_INTERFACE
+                + INTERFACE_METHOD_WITH_PATH + NO_SECURITY_ANNOTATION_PATH;
     }
 
     @RolesAllowed("admin")
     @Override
     public String multipleInheritance_ClassPathOnBase_ImplOnBase_SecondInterface_InterfaceMethodWithPath_MethodRolesAllowed(
             JsonObject array) {
-        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + SECOND_INTERFACE + INTERFACE_METHOD_WITH_PATH
-                + METHOD_ROLES_ALLOWED_PATH;
+        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + SECOND_INTERFACE
+                + INTERFACE_METHOD_WITH_PATH + METHOD_ROLES_ALLOWED_PATH;
     }
 
     @Override
     public String multipleInheritance_ClassPathOnBase_ImplOnBase_SecondInterface_InterfaceMethodWithPath_NoAnnotation(
             JsonObject array) {
-        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + SECOND_INTERFACE + INTERFACE_METHOD_WITH_PATH
-                + NO_SECURITY_ANNOTATION_PATH;
+        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + SECOND_INTERFACE
+                + INTERFACE_METHOD_WITH_PATH + NO_SECURITY_ANNOTATION_PATH;
     }
 
     @RolesAllowed("admin")
     @Override
     public String multipleInheritance_ClassPathOnBase_ImplOnBase_ThirdInterface_InterfaceMethodWithPath_MethodRolesAllowed(
             JsonObject array) {
-        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + THIRD_INTERFACE + INTERFACE_METHOD_WITH_PATH
-                + METHOD_ROLES_ALLOWED_PATH;
+        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + THIRD_INTERFACE
+                + INTERFACE_METHOD_WITH_PATH + METHOD_ROLES_ALLOWED_PATH;
     }
 
     @Override
     public String multipleInheritance_ClassPathOnBase_ImplOnBase_ThirdInterface_InterfaceMethodWithPath_NoAnnotation(
             JsonObject array) {
-        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + THIRD_INTERFACE + INTERFACE_METHOD_WITH_PATH
-                + NO_SECURITY_ANNOTATION_PATH;
+        return MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + THIRD_INTERFACE
+                + INTERFACE_METHOD_WITH_PATH + NO_SECURITY_ANNOTATION_PATH;
     }
 }

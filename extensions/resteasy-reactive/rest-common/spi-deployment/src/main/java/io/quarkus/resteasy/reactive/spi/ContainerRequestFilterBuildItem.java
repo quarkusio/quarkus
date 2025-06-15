@@ -42,7 +42,8 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
         return filterSourceMethod;
     }
 
-    public static final class Builder extends AbstractInterceptorBuildItem.Builder<ContainerRequestFilterBuildItem, Builder> {
+    public static final class Builder
+            extends AbstractInterceptorBuildItem.Builder<ContainerRequestFilterBuildItem, Builder> {
         boolean preMatching = false;
         boolean nonBlockingRequired = false;
         boolean withFormRead = false;

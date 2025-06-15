@@ -19,7 +19,8 @@ public class RestDataPanacheExceptionMapper {
         LOGGER.warnf(exception, "Mapping an unhandled %s", exception.getClass().getSimpleName());
         RestResponse<Response> response = throwableToResponse(exception, exception.getMessage());
         if (response == null) {
-            response = RestResponse.status(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(), exception.getMessage());
+            response = RestResponse.status(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(),
+                    exception.getMessage());
         }
 
         return response;

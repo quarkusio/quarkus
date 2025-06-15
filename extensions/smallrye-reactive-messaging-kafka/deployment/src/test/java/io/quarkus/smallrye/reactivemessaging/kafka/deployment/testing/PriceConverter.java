@@ -9,12 +9,12 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment.testing;
 //
 //@ApplicationScoped
 public class PriceConverter {
-    //    private static final double CONVERSION_RATE = 0.88;
+    // private static final double CONVERSION_RATE = 0.88;
     //
-    //    @Incoming("prices")
-    //    @Outgoing("processed-prices")
-    //    @Broadcast
-    //    public double process(int priceInUsd) {
-    //        return priceInUsd * CONVERSION_RATE;
-    //    }
+    // @Incoming("prices")
+    // @Outgoing("processed-prices")
+    // @Broadcast
+    // public double process(int priceInUsd) {
+    // return priceInUsd * CONVERSION_RATE;
+    // }
 }

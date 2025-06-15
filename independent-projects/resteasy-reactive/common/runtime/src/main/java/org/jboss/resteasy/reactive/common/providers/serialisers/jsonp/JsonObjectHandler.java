@@ -20,7 +20,8 @@ public class JsonObjectHandler implements MessageBodyReader<JsonObject>, Message
     }
 
     public void writeTo(JsonObject o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         try (JsonWriter writer = JsonpUtil.writer(entityStream, mediaType)) {
             writer.writeObject(o);
         }
@@ -33,7 +34,8 @@ public class JsonObjectHandler implements MessageBodyReader<JsonObject>, Message
 
     @Override
     public JsonObject readFrom(Class<JsonObject> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return JsonpUtil.reader(entityStream, mediaType).readObject();
     }
 }

@@ -17,10 +17,8 @@ public class ClientWithImplementationsInvalidTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyClient.class, MyImplementation.class))
-            .withConfigurationResource("client-with-implementations.properties")
-            .assertException(t -> {
+            .withApplicationRoot((jar) -> jar.addClasses(MyClient.class, MyImplementation.class))
+            .withConfigurationResource("client-with-implementations.properties").assertException(t -> {
                 assertThat(t).hasCauseInstanceOf(UnsatisfiedResolutionException.class);
             });
 

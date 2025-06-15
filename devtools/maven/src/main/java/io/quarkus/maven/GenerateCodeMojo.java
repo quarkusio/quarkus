@@ -85,15 +85,12 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
             final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
-            final Method initAndRun = codeGenerator.getMethod("initAndRun", QuarkusClassLoader.class, PathCollection.class,
-                    Path.class, Path.class,
-                    Consumer.class, ApplicationModel.class, Properties.class, String.class,
-                    boolean.class);
-            initAndRun.invoke(null, deploymentClassLoader, sourceParents,
-                    generatedSourcesDir(test), buildDir().toPath(),
-                    sourceRegistrar, curatedApplication.getApplicationModel(), getBuildSystemProperties(false),
-                    launchMode.name(),
-                    test);
+            final Method initAndRun = codeGenerator.getMethod("initAndRun", QuarkusClassLoader.class,
+                    PathCollection.class, Path.class, Path.class, Consumer.class, ApplicationModel.class,
+                    Properties.class, String.class, boolean.class);
+            initAndRun.invoke(null, deploymentClassLoader, sourceParents, generatedSourcesDir(test),
+                    buildDir().toPath(), sourceRegistrar, curatedApplication.getApplicationModel(),
+                    getBuildSystemProperties(false), launchMode.name(), test);
         } catch (Exception any) {
             throw new MojoExecutionException("Quarkus code generation phase has failed", any);
         } finally {
@@ -101,8 +98,10 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
             if (deploymentClassLoader != null) {
                 deploymentClassLoader.close();
             }
-            // In case of the test mode, we can't share the application model with the test plugins, so we are closing it right away,
-            // but we are serializing the application model so the test plugins can deserialize it from disk instead of re-initializing
+            // In case of the test mode, we can't share the application model with the test plugins, so we are closing
+            // it right away,
+            // but we are serializing the application model so the test plugins can deserialize it from disk instead of
+            // re-initializing
             // the resolver and re-resolving it as part of the test bootstrap
             if (test && curatedApplication != null) {
                 var appModel = curatedApplication.getApplicationModel();
@@ -141,6 +140,7 @@ public class GenerateCodeMojo extends QuarkusBootstrapMojo {
     }
 
     private Path generatedSourcesDir(boolean test) {
-        return test ? buildDir().toPath().resolve("generated-test-sources") : buildDir().toPath().resolve("generated-sources");
+        return test ? buildDir().toPath().resolve("generated-test-sources")
+                : buildDir().toPath().resolve("generated-sources");
     }
 }

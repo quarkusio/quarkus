@@ -21,7 +21,8 @@ public class ByteArrayInputStreamDeserializer extends JsonDeserializer<ByteArray
             byte[] decode = BASE64_DECODER.decode(text);
             return new ByteArrayInputStream(decode);
         } catch (IllegalArgumentException e) {
-            throw new InvalidFormatException(p, "Expected a base64 encoded byte array", text, ByteArrayInputStream.class);
+            throw new InvalidFormatException(p, "Expected a base64 encoded byte array", text,
+                    ByteArrayInputStream.class);
         }
     }
 }

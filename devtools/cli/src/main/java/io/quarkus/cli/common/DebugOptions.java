@@ -34,10 +34,8 @@ public class DebugOptions {
     public boolean suspend = false;
 
     public String getJvmDebugParameter() {
-        return "-agentlib:jdwp=transport=dt_socket"
-                + ",address=" + host + ":" + port
-                + ",server=" + (mode == DebugMode.listen ? "y" : "n")
-                + ",suspend=" + (suspend ? "y" : "n");
+        return "-agentlib:jdwp=transport=dt_socket" + ",address=" + host + ":" + port + ",server="
+                + (mode == DebugMode.listen ? "y" : "n") + ",suspend=" + (suspend ? "y" : "n");
     }
 
     public void addDebugArguments(Collection<String> args, Collection<String> jvmArgs) {

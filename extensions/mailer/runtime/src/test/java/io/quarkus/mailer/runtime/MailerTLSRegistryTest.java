@@ -114,8 +114,7 @@ public class MailerTLSRegistryTest extends FakeSmtpTestBase {
         });
 
         Assertions.assertThatThrownBy(() -> mailer.send(getMail()).await().indefinitely())
-                .isInstanceOf(CompletionException.class)
-                .hasCauseInstanceOf(SSLHandshakeException.class);
+                .isInstanceOf(CompletionException.class).hasCauseInstanceOf(SSLHandshakeException.class);
     }
 
     @Test

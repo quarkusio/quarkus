@@ -12,8 +12,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * This needs to run before the Vert.x layer sees the "end" of the response.
- * HttpFilter meets that requirement. Filter does not.
+ * This needs to run before the Vert.x layer sees the "end" of the response. HttpFilter meets that requirement. Filter
+ * does not.
  */
 public class VertxMeterBinderUndertowServletFilter extends HttpFilter {
 

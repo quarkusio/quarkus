@@ -179,7 +179,8 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
         if (data != null) {
             return data;
         }
-        if ((dataContentType() == null || dataContentType().startsWith("application/json")) && !byte[].class.equals(dataType)) {
+        if ((dataContentType() == null || dataContentType().startsWith("application/json"))
+                && !byte[].class.equals(dataType)) {
             try {
                 data = reader.readValue(event.get("data"));
                 return data;
@@ -195,7 +196,8 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
                         if ("base64".equals(dce)) {
                             isBase64 = true;
                         } else {
-                            throw new RuntimeException("Cannot deserialize data for data-content-encoding: '" + dce + "'.");
+                            throw new RuntimeException(
+                                    "Cannot deserialize data for data-content-encoding: '" + dce + "'.");
                         }
                     }
                     if (isBase64) {

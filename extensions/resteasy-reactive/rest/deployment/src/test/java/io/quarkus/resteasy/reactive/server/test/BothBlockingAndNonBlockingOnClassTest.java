@@ -19,14 +19,12 @@ import io.smallrye.common.annotation.NonBlocking;
 public class BothBlockingAndNonBlockingOnClassTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class);
-                }
-            }).setExpectedException(DeploymentException.class);
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class);
+        }
+    }).setExpectedException(DeploymentException.class);
 
     @Test
     public void test() {

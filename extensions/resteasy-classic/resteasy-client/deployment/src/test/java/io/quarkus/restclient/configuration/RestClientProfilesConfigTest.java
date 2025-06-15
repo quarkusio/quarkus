@@ -11,9 +11,8 @@ public class RestClientProfilesConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class,
-                            EchoClient.class, EchoClientWithConfigKey.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(EchoResource.class, EchoClient.class, EchoClientWithConfigKey.class))
             .withConfigurationResource("profiles-application.properties");
 
     @RestClient

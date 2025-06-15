@@ -18,11 +18,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SinglePersistenceUnitsCdiTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionUtils.class)
-                    .addClass(DefaultPUEntity.class)
-                    .addAsResource("application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClass(TransactionUtils.class).addClass(DefaultPUEntity.class).addAsResource("application.properties"));
 
     @Inject
     SearchMapping defaultPUMapping;
@@ -35,10 +32,8 @@ public class SinglePersistenceUnitsCdiTest {
 
     @Test
     public void testDefaultMapping() {
-        assertThat(defaultPUMapping.allIndexedEntities())
-                .hasSize(1)
-                .element(0)
-                .returns(DefaultPUEntity.class, SearchIndexedEntity::javaClass);
+        assertThat(defaultPUMapping.allIndexedEntities()).hasSize(1).element(0).returns(DefaultPUEntity.class,
+                SearchIndexedEntity::javaClass);
     }
 
     @Test
@@ -46,12 +41,9 @@ public class SinglePersistenceUnitsCdiTest {
     public void testDefaultSession() {
         DefaultPUEntity entity = new DefaultPUEntity("someText");
         inTransaction(() -> defaultPUSession.toEntityManager().persist(entity));
-        inTransaction(() -> assertThat(defaultPUSession.search(DefaultPUEntity.class)
-                .where(f -> f.matchAll())
-                .fetchHits(20))
-                .hasSize(1)
-                .element(0)
-                .returns(entity.getId(), DefaultPUEntity::getId));
+        inTransaction(
+                () -> assertThat(defaultPUSession.search(DefaultPUEntity.class).where(f -> f.matchAll()).fetchHits(20))
+                        .hasSize(1).element(0).returns(entity.getId(), DefaultPUEntity::getId));
     }
 
     private void inTransaction(Runnable runnable) {

@@ -9,7 +9,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.gizmo.BytecodeCreator;
 
 /**
- * This build item can be used to contribute logic to the generated method body of {@link InjectableBean#isSuppressed()}.
+ * This build item can be used to contribute logic to the generated method body of
+ * {@link InjectableBean#isSuppressed()}.
  */
 final class SuppressConditionGeneratorBuildItem extends MultiBuildItem {
 

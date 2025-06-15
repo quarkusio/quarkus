@@ -53,8 +53,8 @@ public class EventServerTest {
         Assertions.assertEquals("\"hello\"", json);
         next.close();
 
-        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response")
-                .request().post(Entity.json("\"good day\""));
+        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response").request()
+                .post(Entity.json("\"good day\""));
         Assertions.assertEquals(204, sendResponse.getStatus());
         sendResponse.close();
 

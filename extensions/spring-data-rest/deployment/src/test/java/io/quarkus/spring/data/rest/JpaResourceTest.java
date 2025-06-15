@@ -31,53 +31,39 @@ import io.restassured.response.Response;
 class JpaResourceTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AbstractEntity.class, Record.class, JpaRecordsRepository.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+            .withApplicationRoot((jar) -> jar.addClasses(AbstractEntity.class, Record.class, JpaRecordsRepository.class)
+                    .addAsResource("application.properties").addAsResource("import.sql"));
 
     @Test
     void shouldGet() {
-        given().accept("application/json")
-                .when().get("/jpa-records/1")
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(1)))
-                .and().body("name", is(equalTo("first")));
+        given().accept("application/json").when().get("/jpa-records/1").then().statusCode(200).and()
+                .body("id", is(equalTo(1))).and().body("name", is(equalTo("first")));
     }
 
     @Test
     void shouldNotGetNonExistent() {
-        given().accept("application/json")
-                .when().get("/jpa-records/1000")
-                .then().statusCode(404);
+        given().accept("application/json").when().get("/jpa-records/1000").then().statusCode(404);
     }
 
     @Test
     void shouldGetHal() {
-        given().accept("application/hal+json")
-                .when().get("/jpa-records/1")
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(1)))
-                .and().body("name", is(equalTo("first")))
-                .and().body("_links.add.href", endsWith("/jpa-records"))
-                .and().body("_links.list.href", endsWith("/jpa-records"))
-                .and().body("_links.self.href", endsWith("/jpa-records/1"))
-                .and().body("_links.update.href", endsWith("/jpa-records/1"))
-                .and().body("_links.remove.href", endsWith("/jpa-records/1"));
+        given().accept("application/hal+json").when().get("/jpa-records/1").then().statusCode(200).and()
+                .body("id", is(equalTo(1))).and().body("name", is(equalTo("first"))).and()
+                .body("_links.add.href", endsWith("/jpa-records")).and()
+                .body("_links.list.href", endsWith("/jpa-records")).and()
+                .body("_links.self.href", endsWith("/jpa-records/1")).and()
+                .body("_links.update.href", endsWith("/jpa-records/1")).and()
+                .body("_links.remove.href", endsWith("/jpa-records/1"));
     }
 
     @Test
     void shouldNotGetNonExistentHal() {
-        given().accept("application/hal+json")
-                .when().get("/jpa-records/1000")
-                .then().statusCode(404);
+        given().accept("application/hal+json").when().get("/jpa-records/1000").then().statusCode(404);
     }
 
     @Test
     void shouldList() {
-        Response response = given().accept("application/json")
-                .when().get("/jpa-records")
-                .thenReturn();
+        Response response = given().accept("application/json").when().get("/jpa-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).contains(1, 2);
@@ -91,12 +77,9 @@ class JpaResourceTest {
 
     @Test
     void shouldListHal() {
-        given().accept("application/hal+json")
-                .when().get("/jpa-records")
-                .then().statusCode(200).log().all()
-                .and().body("_embedded.jpa-records.id", hasItems(1, 2))
-                .and().body("_embedded.jpa-records.name", hasItems("first", "second"))
-                .and()
+        given().accept("application/hal+json").when().get("/jpa-records").then().statusCode(200).log().all().and()
+                .body("_embedded.jpa-records.id", hasItems(1, 2)).and()
+                .body("_embedded.jpa-records.name", hasItems("first", "second")).and()
                 .body("_embedded.jpa-records._links.add.href",
                         hasItems(endsWith("/jpa-records"), endsWith("/jpa-records")))
                 .and()
@@ -111,26 +94,21 @@ class JpaResourceTest {
                 .and()
                 .body("_embedded.jpa-records._links.remove.href",
                         hasItems(endsWith("/jpa-records/1"), endsWith("/jpa-records/2")))
-                .and().body("_links.add.href", endsWith("/jpa-records"))
-                .and().body("_links.list.href", endsWith("/jpa-records"))
-                .and().body("_links.first.href", endsWith("/jpa-records?page=0&size=20"))
-                .and().body("_links.last.href", endsWith("/jpa-records?page=0&size=20"));
+                .and().body("_links.add.href", endsWith("/jpa-records")).and()
+                .body("_links.list.href", endsWith("/jpa-records")).and()
+                .body("_links.first.href", endsWith("/jpa-records?page=0&size=20")).and()
+                .body("_links.last.href", endsWith("/jpa-records?page=0&size=20"));
     }
 
     @Test
     void shouldListFirstPage() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/jpa-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/jpa-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        Response response = given().accept("application/json")
-                .and().queryParam("page", 0)
-                .and().queryParam("size", 1)
-                .when().get("/jpa-records")
-                .thenReturn();
+        Response response = given().accept("application/json").and().queryParam("page", 0).and().queryParam("size", 1)
+                .when().get("/jpa-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).containsOnly(ids.get(0));
@@ -145,56 +123,40 @@ class JpaResourceTest {
 
     @Test
     void shouldListFirstPageHal() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/jpa-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/jpa-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        given().accept("application/hal+json")
-                .and().queryParam("page", 0)
-                .and().queryParam("size", 1)
-                .when().get("/jpa-records")
-                .then().statusCode(200)
-                .and().body("_embedded.jpa-records.id", contains(ids.get(0)))
-                .and().body("_embedded.jpa-records.name", contains(names.get(0)))
-                .and()
+        given().accept("application/hal+json").and().queryParam("page", 0).and().queryParam("size", 1).when()
+                .get("/jpa-records").then().statusCode(200).and().body("_embedded.jpa-records.id", contains(ids.get(0)))
+                .and().body("_embedded.jpa-records.name", contains(names.get(0))).and()
                 .body("_embedded.jpa-records._links.add.href",
                         hasItems(endsWith("/jpa-records"), endsWith("/jpa-records")))
                 .and()
                 .body("_embedded.jpa-records._links.list.href",
                         hasItems(endsWith("/jpa-records"), endsWith("/jpa-records")))
+                .and().body("_embedded.jpa-records._links.self.href", contains(endsWith("/jpa-records/" + ids.get(0))))
                 .and()
-                .body("_embedded.jpa-records._links.self.href",
-                        contains(endsWith("/jpa-records/" + ids.get(0))))
+                .body("_embedded.jpa-records._links.update.href", contains(endsWith("/jpa-records/" + ids.get(0))))
                 .and()
-                .body("_embedded.jpa-records._links.update.href",
-                        contains(endsWith("/jpa-records/" + ids.get(0))))
-                .and()
-                .body("_embedded.jpa-records._links.remove.href",
-                        contains(endsWith("/jpa-records/" + ids.get(0))))
-                .and().body("_links.add.href", endsWith("/jpa-records"))
-                .and().body("_links.list.href", endsWith("/jpa-records"))
-                .and().body("_links.first.href", endsWith("/jpa-records?page=0&size=1"))
-                .and().body("_links.last.href", endsWith("/jpa-records?page=" + lastPage + "&size=1"))
-                .and().body("_links.next.href", endsWith("/jpa-records?page=1&size=1"));
+                .body("_embedded.jpa-records._links.remove.href", contains(endsWith("/jpa-records/" + ids.get(0))))
+                .and().body("_links.add.href", endsWith("/jpa-records")).and()
+                .body("_links.list.href", endsWith("/jpa-records")).and()
+                .body("_links.first.href", endsWith("/jpa-records?page=0&size=1")).and()
+                .body("_links.last.href", endsWith("/jpa-records?page=" + lastPage + "&size=1")).and()
+                .body("_links.next.href", endsWith("/jpa-records?page=1&size=1"));
     }
 
     @Test
     void shouldListLastPage() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/jpa-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/jpa-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        Response response = given().accept("application/json")
-                .and().queryParam("page", lastPage)
-                .and().queryParam("size", 1)
-                .when().get("/jpa-records")
-                .thenReturn();
+        Response response = given().accept("application/json").and().queryParam("page", lastPage).and()
+                .queryParam("size", 1).when().get("/jpa-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).containsOnly(ids.get(lastPage));
@@ -209,67 +171,52 @@ class JpaResourceTest {
 
     @Test
     void shouldListLastPageHal() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/jpa-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/jpa-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        given().accept("application/hal+json")
-                .and().queryParam("page", lastPage)
-                .and().queryParam("size", 1)
-                .when().get("/jpa-records")
-                .then().statusCode(200)
-                .and().body("_embedded.jpa-records.id", contains(ids.get(lastPage)))
-                .and().body("_embedded.jpa-records.name", contains(names.get(lastPage)))
-                .and()
+        given().accept("application/hal+json").and().queryParam("page", lastPage).and().queryParam("size", 1).when()
+                .get("/jpa-records").then().statusCode(200).and()
+                .body("_embedded.jpa-records.id", contains(ids.get(lastPage))).and()
+                .body("_embedded.jpa-records.name", contains(names.get(lastPage))).and()
                 .body("_embedded.jpa-records._links.add.href",
                         hasItems(endsWith("/jpa-records"), endsWith("/jpa-records")))
                 .and()
                 .body("_embedded.jpa-records._links.list.href",
                         hasItems(endsWith("/jpa-records"), endsWith("/jpa-records")))
                 .and()
-                .body("_embedded.jpa-records._links.self.href",
-                        contains(endsWith("/jpa-records/" + ids.get(lastPage))))
+                .body("_embedded.jpa-records._links.self.href", contains(endsWith("/jpa-records/" + ids.get(lastPage))))
                 .and()
                 .body("_embedded.jpa-records._links.update.href",
                         contains(endsWith("/jpa-records/" + ids.get(lastPage))))
                 .and()
                 .body("_embedded.jpa-records._links.remove.href",
                         contains(endsWith("/jpa-records/" + ids.get(lastPage))))
-                .and().body("_links.add.href", endsWith("/jpa-records"))
-                .and().body("_links.list.href", endsWith("/jpa-records"))
-                .and().body("_links.first.href", endsWith("/jpa-records?page=0&size=1"))
-                .and().body("_links.last.href", endsWith("/jpa-records?page=" + lastPage + "&size=1"))
-                .and().body("_links.previous.href", endsWith("/jpa-records?page=" + (lastPage - 1) + "&size=1"));
+                .and().body("_links.add.href", endsWith("/jpa-records")).and()
+                .body("_links.list.href", endsWith("/jpa-records")).and()
+                .body("_links.first.href", endsWith("/jpa-records?page=0&size=1")).and()
+                .body("_links.last.href", endsWith("/jpa-records?page=" + lastPage + "&size=1")).and()
+                .body("_links.previous.href", endsWith("/jpa-records?page=" + (lastPage - 1) + "&size=1"));
     }
 
     @Test
     void shouldNotGetNonExistentPage() {
-        given().accept("application/json")
-                .and().queryParam("page", 100)
-                .when().get("/jpa-records")
-                .then().statusCode(200)
-                .and().body("id", is(empty()));
+        given().accept("application/json").and().queryParam("page", 100).when().get("/jpa-records").then()
+                .statusCode(200).and().body("id", is(empty()));
     }
 
     @Test
     void shouldNotGetNegativePageOrSize() {
-        given().accept("application/json")
-                .and().queryParam("page", -1)
-                .and().queryParam("size", -1)
-                .when().get("/jpa-records")
-                .then().statusCode(200)
+        given().accept("application/json").and().queryParam("page", -1).and().queryParam("size", -1).when()
+                .get("/jpa-records").then().statusCode(200)
                 // Invalid page and size parameters are replaced with defaults
                 .and().body("id", hasItems(1, 2));
     }
 
     @Test
     void shouldListAscending() {
-        Response response = given().accept("application/json")
-                .when().get("/jpa-records?sort=name,id")
-                .thenReturn();
+        Response response = given().accept("application/json").when().get("/jpa-records?sort=name,id").thenReturn();
 
         List<String> actualNames = response.body().jsonPath().getList("name");
         List<String> expectedNames = new LinkedList<>(actualNames);
@@ -279,9 +226,7 @@ class JpaResourceTest {
 
     @Test
     void shouldListDescending() {
-        Response response = given().accept("application/json")
-                .when().get("/jpa-records?sort=-name,id")
-                .thenReturn();
+        Response response = given().accept("application/json").when().get("/jpa-records?sort=-name,id").thenReturn();
 
         List<String> actualNames = response.body().jsonPath().getList("name");
         List<String> expectedNames = new LinkedList<>(actualNames);
@@ -291,11 +236,8 @@ class JpaResourceTest {
 
     @Test
     void shouldCreate() {
-        Response response = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-create\"}")
-                .when().post("/jpa-records")
-                .thenReturn();
+        Response response = given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-create\"}").when().post("/jpa-records").thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
 
         String location = response.header("Location");
@@ -304,20 +246,14 @@ class JpaResourceTest {
         assertThat(body.getInt("id")).isEqualTo(id);
         assertThat(body.getString("name")).isEqualTo("test-create");
 
-        given().accept("application/json")
-                .when().get(location)
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(id)))
+        given().accept("application/json").when().get(location).then().statusCode(200).and().body("id", is(equalTo(id)))
                 .and().body("name", is(equalTo("test-create")));
     }
 
     @Test
     void shouldCreateHal() {
-        Response response = given().accept("application/hal+json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-create-hal\"}")
-                .when().post("/jpa-records")
-                .thenReturn();
+        Response response = given().accept("application/hal+json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-create-hal\"}").when().post("/jpa-records").thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
 
         String location = response.header("Location");
@@ -331,20 +267,14 @@ class JpaResourceTest {
         assertThat(body.getString("_links.update.href")).endsWith("/jpa-records/" + id);
         assertThat(body.getString("_links.remove.href")).endsWith("/jpa-records/" + id);
 
-        given().accept("application/json")
-                .when().get(location)
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(id)))
+        given().accept("application/json").when().get(location).then().statusCode(200).and().body("id", is(equalTo(id)))
                 .and().body("name", is(equalTo("test-create-hal")));
     }
 
     @Test
     void shouldCreateAndUpdate() {
-        Response createResponse = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-update-create\"}")
-                .when().post("/jpa-records/")
-                .thenReturn();
+        Response createResponse = given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-update-create\"}").when().post("/jpa-records/").thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 
         String location = createResponse.header("Location");
@@ -353,26 +283,17 @@ class JpaResourceTest {
         assertThat(body.getInt("id")).isEqualTo(id);
         assertThat(body.getString("name")).isEqualTo("test-update-create");
 
-        given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"" + id + "\", \"name\": \"test-update\"}")
-                .when().put(location)
-                .then()
+        given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"id\": \"" + id + "\", \"name\": \"test-update\"}").when().put(location).then()
                 .statusCode(204);
-        given().accept("application/json")
-                .when().get(location)
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(id)))
+        given().accept("application/json").when().get(location).then().statusCode(200).and().body("id", is(equalTo(id)))
                 .and().body("name", is(equalTo("test-update")));
     }
 
     @Test
     void shouldCreateAndUpdateHal() {
-        Response createResponse = given().accept("application/hal+json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-update-create-hal\"}")
-                .when().post("/jpa-records/")
-                .thenReturn();
+        Response createResponse = given().accept("application/hal+json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-update-create-hal\"}").when().post("/jpa-records/").thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 
         String location = createResponse.header("Location");
@@ -386,39 +307,27 @@ class JpaResourceTest {
         assertThat(body.getString("_links.update.href")).endsWith("/jpa-records/" + id);
         assertThat(body.getString("_links.remove.href")).endsWith("/jpa-records/" + id);
 
-        given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"" + id + "\", \"name\": \"test-update-hal\"}")
-                .when().put(location)
-                .then()
+        given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"id\": \"" + id + "\", \"name\": \"test-update-hal\"}").when().put(location).then()
                 .statusCode(204);
-        given().accept("application/json")
-                .when().get(location)
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(id)))
+        given().accept("application/json").when().get(location).then().statusCode(200).and().body("id", is(equalTo(id)))
                 .and().body("name", is(equalTo("test-update-hal")));
     }
 
     @Test
     void shouldCreateAndDelete() {
-        Response createResponse = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-delete\"}")
-                .when().post("/jpa-records")
-                .thenReturn();
+        Response createResponse = given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-delete\"}").when().post("/jpa-records").thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 
         String location = createResponse.header("Location");
-        when().delete(location)
-                .then().statusCode(204);
-        when().get(location)
-                .then().statusCode(404);
+        when().delete(location).then().statusCode(204);
+        when().get(location).then().statusCode(404);
     }
 
     @Test
     void shouldNotDeleteNonExistent() {
-        when().delete("/jpa-records/1000")
-                .then().statusCode(404);
+        when().delete("/jpa-records/1000").then().statusCode(404);
     }
 
     private void assertLinks(Headers headers, Map<String, String> expectedLinks) {

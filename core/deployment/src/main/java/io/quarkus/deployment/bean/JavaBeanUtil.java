@@ -26,7 +26,8 @@ public class JavaBeanUtil {
         return "set" + capitalize(name);
     }
 
-    // See conventions expressed by https://docs.oracle.com/javase/7/docs/api/java/beans/Introspector.html#decapitalize(java.lang.String)
+    // See conventions expressed by
+    // https://docs.oracle.com/javase/7/docs/api/java/beans/Introspector.html#decapitalize(java.lang.String)
     public static String capitalize(String name) {
         if (name != null && name.length() != 0) {
             if (name.length() > 1 && Character.isUpperCase(name.charAt(1))) {
@@ -41,7 +42,8 @@ public class JavaBeanUtil {
         }
     }
 
-    // See conventions expressed by https://docs.oracle.com/javase/7/docs/api/java/beans/Introspector.html#decapitalize(java.lang.String)
+    // See conventions expressed by
+    // https://docs.oracle.com/javase/7/docs/api/java/beans/Introspector.html#decapitalize(java.lang.String)
     public static String decapitalize(String name) {
         if (name != null && name.length() != 0) {
             if (name.length() > 1 && Character.isUpperCase(name.charAt(1))) {
@@ -59,7 +61,8 @@ public class JavaBeanUtil {
     /**
      * Returns the corresponding property name for a getter method name
      *
-     * @throws IllegalArgumentException if the method name does not follow the getter name convention
+     * @throws IllegalArgumentException
+     *         if the method name does not follow the getter name convention
      */
     public static String getPropertyNameFromGetter(String methodName) {
         if (methodName.startsWith(GET)) {

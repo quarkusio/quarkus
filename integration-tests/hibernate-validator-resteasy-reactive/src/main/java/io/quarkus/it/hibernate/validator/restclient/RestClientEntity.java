@@ -19,10 +19,7 @@ public class RestClientEntity {
 
     @Override
     public String toString() {
-        return "RestClientEntity{" +
-                "number=" + number +
-                ", string='" + string + '\'' +
-                '}';
+        return "RestClientEntity{" + "number=" + number + ", string='" + string + '\'' + '}';
     }
 
     public interface ErrorGroup {

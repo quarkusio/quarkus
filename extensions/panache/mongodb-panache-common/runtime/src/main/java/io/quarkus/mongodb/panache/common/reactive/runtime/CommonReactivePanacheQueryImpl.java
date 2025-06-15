@@ -38,13 +38,15 @@ public class CommonReactivePanacheQueryImpl<Entity> {
 
     private OptionalInt batchSize = OptionalInt.empty();
 
-    public CommonReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Bson mongoQuery, Bson sort) {
+    public CommonReactivePanacheQueryImpl(ReactiveMongoCollection<? extends Entity> collection, Bson mongoQuery,
+            Bson sort) {
         this.collection = collection;
         this.mongoQuery = mongoQuery;
         this.sort = sort;
     }
 
-    private CommonReactivePanacheQueryImpl(CommonReactivePanacheQueryImpl previousQuery, Bson projections, Class<?> type) {
+    private CommonReactivePanacheQueryImpl(CommonReactivePanacheQueryImpl previousQuery, Bson projections,
+            Class<?> type) {
         this.collection = previousQuery.collection.withDocumentClass(type);
         this.mongoQuery = previousQuery.mongoQuery;
         this.sort = previousQuery.sort;
@@ -128,13 +130,12 @@ public class CommonReactivePanacheQueryImpl<Entity> {
 
     private void checkPagination() {
         if (page == null) {
-            throw new UnsupportedOperationException(
-                    "Cannot call a page related method, "
-                            + "call page(Page) or page(int, int) to initiate pagination first");
+            throw new UnsupportedOperationException("Cannot call a page related method, "
+                    + "call page(Page) or page(int, int) to initiate pagination first");
         }
         if (range != null) {
-            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
-                    "call page(Page) or page(int, int) to initiate pagination first");
+            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, "
+                    + "call page(Page) or page(int, int) to initiate pagination first");
         }
     }
 

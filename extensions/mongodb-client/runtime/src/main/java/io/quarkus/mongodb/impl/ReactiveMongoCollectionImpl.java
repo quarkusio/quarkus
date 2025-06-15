@@ -282,8 +282,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
-            AggregateOptions options) {
+    public Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, AggregateOptions options) {
         return Multi.createFrom().publisher(apply(options, collection.aggregate(clientSession, pipeline)));
     }
 
@@ -419,8 +418,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public <D> Multi<D> mapReduce(String mapFunction, String reduceFunction, Class<D> clazz,
-            MapReduceOptions options) {
+    public <D> Multi<D> mapReduce(String mapFunction, String reduceFunction, Class<D> clazz, MapReduceOptions options) {
         return Multi.createFrom().publisher(apply(options, collection.mapReduce(mapFunction, reduceFunction, clazz)));
     }
 
@@ -444,8 +442,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Uni<BulkWriteResult> bulkWrite(List<? extends WriteModel<? extends T>> requests,
-            BulkWriteOptions options) {
+    public Uni<BulkWriteResult> bulkWrite(List<? extends WriteModel<? extends T>> requests, BulkWriteOptions options) {
         return Wrappers.toUni(collection.bulkWrite(requests, options));
     }
 
@@ -456,8 +453,8 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Uni<BulkWriteResult> bulkWrite(ClientSession clientSession,
-            List<? extends WriteModel<? extends T>> requests, BulkWriteOptions options) {
+    public Uni<BulkWriteResult> bulkWrite(ClientSession clientSession, List<? extends WriteModel<? extends T>> requests,
+            BulkWriteOptions options) {
         return Wrappers.toUni(collection.bulkWrite(clientSession, requests, options));
     }
 
@@ -579,8 +576,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, Bson update,
-            UpdateOptions options) {
+    public Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, Bson update, UpdateOptions options) {
         return Wrappers.toUni(collection.updateOne(clientSession, filter, update, options));
     }
 
@@ -621,8 +617,7 @@ public class ReactiveMongoCollectionImpl<T> implements ReactiveMongoCollection<T
     }
 
     @Override
-    public Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, Bson update,
-            UpdateOptions options) {
+    public Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, Bson update, UpdateOptions options) {
         return Wrappers.toUni(collection.updateMany(clientSession, filter, update, options));
     }
 

@@ -12,12 +12,12 @@ import jakarta.ws.rs.container.ResourceInfo;
 import jakarta.ws.rs.core.UriInfo;
 
 /**
- * When used on a method, then an implementation of {@link jakarta.ws.rs.container.ContainerResponseContext} is generated
- * that calls the annotated method with the proper arguments
+ * When used on a method, then an implementation of {@link jakarta.ws.rs.container.ContainerResponseContext} is
+ * generated that calls the annotated method with the proper arguments
  * <p>
- * The idea behind using this is to make it much to write a {@code ServerResponseFilter} as all the necessary information
- * is passed as arguments to the method instead of forcing the author to use a mix of {@code @Context} and programmatic CDI
- * look-ups.
+ * The idea behind using this is to make it much to write a {@code ServerResponseFilter} as all the necessary
+ * information is passed as arguments to the method instead of forcing the author to use a mix of {@code @Context} and
+ * programmatic CDI look-ups.
  * <p>
  * An example filter could look like this:
  *
@@ -47,16 +47,13 @@ import jakarta.ws.rs.core.UriInfo;
  * <li>{@link SimpleResourceInfo}
  * <li>{@link Throwable} - The thrown exception - or {@code null} if no exception was thrown
  * </ul>
- *
  * The return type of the method must be either be of type {@code void} or {@code Uni<Void>}.
  * <ul>
  * <li>{@code void} should be used when filtering does not need to perform any blocking operations.
  * <li>{@code Uni<Void>} should be used when filtering needs to perform a blocking operations.
  * </ul>
- *
  * Another important thing to note is that if {@link ContainerRequestContext} is used as a request parameter, calling
- * {@code abortWith}
- * is prohibited by the JAX-RS specification.
+ * {@code abortWith} is prohibited by the JAX-RS specification.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

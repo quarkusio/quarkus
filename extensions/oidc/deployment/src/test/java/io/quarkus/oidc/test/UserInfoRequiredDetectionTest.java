@@ -32,32 +32,30 @@ import io.vertx.ext.web.RoutingContext;
 public class UserInfoRequiredDetectionTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UserInfoResource.class, UserInfoEndpoint.class, OidcStartup.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    """
-                                            quarkus.oidc.tenant-paths=/user-info/default-tenant-random
-                                            quarkus.oidc.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
-                                            quarkus.oidc.named-2.auth-server-url=${quarkus.oidc.auth-server-url}
-                                            quarkus.oidc.named-2.tenant-paths=/user-info/named-tenant-2
-                                            quarkus.oidc.named-2.discovery-enabled=false
-                                            quarkus.oidc.named-2.jwks-path=protocol/openid-connect/certs
-                                            quarkus.oidc.named-3.auth-server-url=${quarkus.oidc.auth-server-url}
-                                            quarkus.oidc.named-3.tenant-paths=/user-info/named-tenant-3
-                                            quarkus.oidc.named-3.discovery-enabled=false
-                                            quarkus.oidc.named-3.jwks-path=protocol/openid-connect/certs
-                                            quarkus.oidc.named-3.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
-                                            quarkus.oidc.named-3.authentication.user-info-required=false
-                                            quarkus.http.auth.proactive=false
-                                            """),
-                            "application.properties"));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClasses(UserInfoResource.class, UserInfoEndpoint.class, OidcStartup.class).addAsResource(
+                    new StringAsset(
+                            """
+                                    quarkus.oidc.tenant-paths=/user-info/default-tenant-random
+                                    quarkus.oidc.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
+                                    quarkus.oidc.named-2.auth-server-url=${quarkus.oidc.auth-server-url}
+                                    quarkus.oidc.named-2.tenant-paths=/user-info/named-tenant-2
+                                    quarkus.oidc.named-2.discovery-enabled=false
+                                    quarkus.oidc.named-2.jwks-path=protocol/openid-connect/certs
+                                    quarkus.oidc.named-3.auth-server-url=${quarkus.oidc.auth-server-url}
+                                    quarkus.oidc.named-3.tenant-paths=/user-info/named-tenant-3
+                                    quarkus.oidc.named-3.discovery-enabled=false
+                                    quarkus.oidc.named-3.jwks-path=protocol/openid-connect/certs
+                                    quarkus.oidc.named-3.user-info-path=http://${quarkus.http.host}:${quarkus.http.port}/user-info-endpoint
+                                    quarkus.oidc.named-3.authentication.user-info-required=false
+                                    quarkus.http.auth.proactive=false
+                                    """),
+                    "application.properties"));
 
     @Test
     public void testDefaultTenant() {
-        RestAssured.given().auth().oauth2(getAccessToken()).get("/user-info/default-tenant-random").then().statusCode(200)
-                .body(Matchers.is("alice"));
+        RestAssured.given().auth().oauth2(getAccessToken()).get("/user-info/default-tenant-random").then()
+                .statusCode(200).body(Matchers.is("alice"));
     }
 
     @Test
@@ -79,15 +77,14 @@ public class UserInfoRequiredDetectionTest {
     }
 
     private static String getAccessToken() {
-        return new KeycloakTestClient().getAccessToken("alice", "alice", "quarkus-service-app", "secret", List.of("openid"));
+        return new KeycloakTestClient().getAccessToken("alice", "alice", "quarkus-service-app", "secret",
+                List.of("openid"));
     }
 
     public static class UserInfoEndpoint {
         void observe(@Observes Router router) {
-            router.route("/user-info-endpoint").order(1).handler(rc -> rc.response().setStatusCode(200).end("{" +
-                    "   \"sub\": \"123456789\"," +
-                    "   \"preferred_username\": \"alice\"" +
-                    "  }"));
+            router.route("/user-info-endpoint").order(1).handler(rc -> rc.response().setStatusCode(200)
+                    .end("{" + "   \"sub\": \"123456789\"," + "   \"preferred_username\": \"alice\"" + "  }"));
         }
     }
 
@@ -177,16 +174,13 @@ public class UserInfoRequiredDetectionTest {
         private static OidcTenantConfig createDefaultTenant(OidcConfig oidcConfig) {
             // this enhances 'application.properties' configuration with a tenant path
             return OidcTenantConfig.builder(OidcConfig.getDefaultTenant(oidcConfig))
-                    .tenantPaths("/extra-default-tenant-path")
-                    .build();
+                    .tenantPaths("/extra-default-tenant-path").build();
         }
 
         private static OidcTenantConfig createNamedTenant(String authServerUrl, String host, String port) {
-            return OidcTenantConfig.authServerUrl(authServerUrl)
-                    .tenantId("named")
+            return OidcTenantConfig.authServerUrl(authServerUrl).tenantId("named")
                     .tenantPaths("/user-info/named-tenant-random")
-                    .userInfoPath("http://%s:%s/user-info-endpoint".formatted(host, port))
-                    .build();
+                    .userInfoPath("http://%s:%s/user-info-endpoint".formatted(host, port)).build();
         }
     }
 }

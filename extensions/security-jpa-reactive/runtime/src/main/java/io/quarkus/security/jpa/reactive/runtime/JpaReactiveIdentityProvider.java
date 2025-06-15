@@ -37,24 +37,23 @@ public abstract class JpaReactiveIdentityProvider implements IdentityProvider<Us
             public Uni<SecurityIdentity> apply(Mutiny.Session session) {
                 session.setFlushMode(FlushMode.MANUAL);
                 session.setDefaultReadOnly(true);
-                return authenticate(session, request)
-                        .onFailure(new Predicate<Throwable>() {
-                            @Override
-                            public boolean test(Throwable throwable) {
-                                return throwable instanceof SecurityException || throwable instanceof NonUniqueResultException;
-                            }
-                        })
-                        .transform(new Function<Throwable, Throwable>() {
-                            @Override
-                            public Throwable apply(Throwable throwable) {
-                                LOG.debug("Authentication failed", throwable);
-                                return new AuthenticationFailedException(throwable);
-                            }
-                        });
+                return authenticate(session, request).onFailure(new Predicate<Throwable>() {
+                    @Override
+                    public boolean test(Throwable throwable) {
+                        return throwable instanceof SecurityException || throwable instanceof NonUniqueResultException;
+                    }
+                }).transform(new Function<Throwable, Throwable>() {
+                    @Override
+                    public Throwable apply(Throwable throwable) {
+                        LOG.debug("Authentication failed", throwable);
+                        return new AuthenticationFailedException(throwable);
+                    }
+                });
             }
         });
     }
 
-    public abstract Uni<SecurityIdentity> authenticate(Mutiny.Session session, UsernamePasswordAuthenticationRequest request);
+    public abstract Uni<SecurityIdentity> authenticate(Mutiny.Session session,
+            UsernamePasswordAuthenticationRequest request);
 
 }

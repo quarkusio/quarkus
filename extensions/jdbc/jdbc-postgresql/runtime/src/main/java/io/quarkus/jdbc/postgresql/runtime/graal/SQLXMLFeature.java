@@ -24,9 +24,9 @@ public final class SQLXMLFeature implements Feature {
     public void beforeAnalysis(BeforeAnalysisAccess access) {
         Class<?> pgSQLXMLClass = access.findClassByName("io.quarkus.jdbc.postgresql.runtime.graal.PgSQLXML");
         try {
-            //Only if this method is ever invoked, then it's possible that field {@link PgSQLXML#domResult }
-            //is ever non-null, and only in that case the XML parsing facilities pulled in by the driver
-            //end up being necessary.
+            // Only if this method is ever invoked, then it's possible that field {@link PgSQLXML#domResult }
+            // is ever non-null, and only in that case the XML parsing facilities pulled in by the driver
+            // end up being necessary.
             final Method triggerMethod = pgSQLXMLClass.getMethod("setResult", Class.class);
             access.registerReachabilityHandler(this::identifiedXMLProcessingInDriver, triggerMethod);
         } catch (Exception e) {

@@ -11,9 +11,8 @@ import org.jboss.logging.Logger;
 /**
  * Attribute parser for exchange attributes. This builds an attribute from a string definition.
  * <p>
- * This uses a service loader mechanism to allow additional token types to be loaded. Token definitions are loaded
- * from the provided class loader.
- *
+ * This uses a service loader mechanism to allow additional token types to be loaded. Token definitions are loaded from
+ * the provided class loader.
  */
 public class ExchangeAttributeParser {
 
@@ -28,12 +27,13 @@ public class ExchangeAttributeParser {
 
     public ExchangeAttributeParser(final ClassLoader classLoader, List<ExchangeAttributeWrapper> wrappers) {
         this.wrappers = wrappers;
-        ServiceLoader<ExchangeAttributeBuilder> loader = ServiceLoader.load(ExchangeAttributeBuilder.class, classLoader);
+        ServiceLoader<ExchangeAttributeBuilder> loader = ServiceLoader.load(ExchangeAttributeBuilder.class,
+                classLoader);
         final List<ExchangeAttributeBuilder> builders = new ArrayList<>();
         for (ExchangeAttributeBuilder instance : loader) {
             builders.add(instance);
         }
-        //sort with the highest priority first
+        // sort with the highest priority first
         builders.sort(new Comparator<ExchangeAttributeBuilder>() {
             @Override
             public int compare(ExchangeAttributeBuilder o1, ExchangeAttributeBuilder o2) {
@@ -49,17 +49,18 @@ public class ExchangeAttributeParser {
      * <p>
      * Tokens are created according to the following rules:
      * <p>
-     * %<?a - % followed by an optional < and a single character. %% is an escape for a literal %
-     * %{.*}a? - % plus curly braces with any amount of content inside, followed by an optional character
-     * ${.*} - $ followed by a curly braces to reference an item from the predicate context
+     * %<?a - % followed by an optional < and a single character. %% is an escape for a literal % %{.*}a? - % plus curly
+     * braces with any amount of content inside, followed by an optional character ${.*} - $ followed by a curly braces
+     * to reference an item from the predicate context
      *
      * @param valueString
+     *
      * @return
      */
     public ExchangeAttribute parse(final String valueString) {
         final List<ExchangeAttribute> attributes = new ArrayList<>();
         int pos = 0;
-        int state = 0; //0 = literal, 1 = %, 2 = %{, 3 = $, 4 = ${, 5 = %<
+        int state = 0; // 0 = literal, 1 = %, 2 = %{, 3 = $, 4 = ${, 5 = %<
         for (int i = 0; i < valueString.length(); ++i) {
             char c = valueString.charAt(i);
             switch (state) {
@@ -83,7 +84,7 @@ public class ExchangeAttributeParser {
                     } else if (c == '<') {
                         state = 5;
                     } else if (c == '%') {
-                        //literal percent
+                        // literal percent
                         attributes.add(wrap(new ConstantExchangeAttribute("%")));
                         pos = i + 1;
                         state = 0;
@@ -106,7 +107,7 @@ public class ExchangeAttributeParser {
                     if (c == '{') {
                         state = 4;
                     } else if (c == '$') {
-                        //literal dollars
+                        // literal dollars
                         attributes.add(wrap(new ConstantExchangeAttribute("$")));
                         pos = i + 1;
                         state = 0;

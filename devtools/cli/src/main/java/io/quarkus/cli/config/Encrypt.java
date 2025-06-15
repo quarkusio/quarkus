@@ -27,7 +27,8 @@ public class Encrypt extends BaseConfigCommand implements Callable<Integer> {
     @Option(names = { "-k", "--key" }, description = "The Encryption Key")
     String encryptionKey;
 
-    @Option(names = { "-f", "--format" }, description = "The Encryption Key Format (base64 / plain)", defaultValue = "base64")
+    @Option(names = { "-f",
+            "--format" }, description = "The Encryption Key Format (base64 / plain)", defaultValue = "base64")
     KeyFormat encryptionKeyFormat;
 
     @Option(hidden = true, names = { "-a", "--algorithm" }, description = "Algorithm", defaultValue = "AES")
@@ -72,11 +73,11 @@ public class Encrypt extends BaseConfigCommand implements Callable<Integer> {
 
         this.encryptedSecret = Base64.getUrlEncoder().withoutPadding().encodeToString((message.array()));
         if (!quiet) {
-            String success = SUCCESS_ICON + " The secret @|bold " + secret + "|@ was encrypted to @|bold " + encryptedSecret
-                    + "|@";
+            String success = SUCCESS_ICON + " The secret @|bold " + secret + "|@ was encrypted to @|bold "
+                    + encryptedSecret + "|@";
             if (generatedKey) {
-                success = success + " with the generated encryption key (" + encryptionKeyFormat + "): @|bold " + encryptionKey
-                        + "|@";
+                success = success + " with the generated encryption key (" + encryptionKeyFormat + "): @|bold "
+                        + encryptionKey + "|@";
             }
             output.info(success);
         }

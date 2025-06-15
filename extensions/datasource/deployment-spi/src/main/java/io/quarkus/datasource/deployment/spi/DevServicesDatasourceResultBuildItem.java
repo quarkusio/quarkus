@@ -21,8 +21,7 @@ public final class DevServicesDatasourceResultBuildItem extends SimpleBuildItem 
     }
 
     public Map<String, DbResult> getNamedDatasources() {
-        return dataSources.entrySet().stream()
-                .filter(e -> !DataSourceUtil.isDefault(e.getKey()))
+        return dataSources.entrySet().stream().filter(e -> !DataSourceUtil.isDefault(e.getKey()))
                 .collect(Collectors.toUnmodifiableMap(e -> e.getKey(), e -> e.getValue()));
     }
 
@@ -30,7 +29,8 @@ public final class DevServicesDatasourceResultBuildItem extends SimpleBuildItem 
         return dataSources;
     }
 
-    public static DbResult resolve(Optional<DevServicesDatasourceResultBuildItem> devDbResultBuildItem, String dataSourceName) {
+    public static DbResult resolve(Optional<DevServicesDatasourceResultBuildItem> devDbResultBuildItem,
+            String dataSourceName) {
         if (devDbResultBuildItem.isPresent()) {
             return devDbResultBuildItem.get().dataSources.get(dataSourceName);
         }

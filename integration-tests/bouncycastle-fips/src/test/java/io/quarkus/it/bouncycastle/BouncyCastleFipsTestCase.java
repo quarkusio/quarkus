@@ -12,31 +12,17 @@ public class BouncyCastleFipsTestCase {
 
     @Test
     public void testListProviders() {
-        RestAssured.given()
-                .when()
-                .get("/jca/listProviders")
-                .then()
-                .statusCode(200)
-                .body(equalTo("BCFIPS"));
+        RestAssured.given().when().get("/jca/listProviders").then().statusCode(200).body(equalTo("BCFIPS"));
     }
 
     @Test
     public void testSHA256withRSAandMGF1() {
-        RestAssured.given()
-                .when()
-                .get("/jca/SHA256withRSAandMGF1")
-                .then()
-                .statusCode(200)
-                .body(equalTo("success"));
+        RestAssured.given().when().get("/jca/SHA256withRSAandMGF1").then().statusCode(200).body(equalTo("success"));
     }
 
     @Test
     public void testFipsMode() {
-        RestAssured.given()
-                .when()
-                .get("/jca/fipsmode")
-                .then()
-                .statusCode(200)
+        RestAssured.given().when().get("/jca/fipsmode").then().statusCode(200)
                 .body(equalTo("HMAC SHA-512 initialization does not work when FIPS enabled."));
     }
 }

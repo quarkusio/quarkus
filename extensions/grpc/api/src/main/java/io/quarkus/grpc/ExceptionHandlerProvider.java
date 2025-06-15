@@ -10,10 +10,8 @@ import io.grpc.StatusException;
 import io.grpc.StatusRuntimeException;
 
 /**
- * Provider for ExceptionHandler.
- *
- * To use a custom ExceptionHandler, extend {@link ExceptionHandler} and implement
- * an {@link ExceptionHandlerProvider}, and expose it as a CDI bean.
+ * Provider for ExceptionHandler. To use a custom ExceptionHandler, extend {@link ExceptionHandler} and implement an
+ * {@link ExceptionHandlerProvider}, and expose it as a CDI bean.
  */
 public interface ExceptionHandlerProvider {
     <ReqT, RespT> ExceptionHandler<ReqT, RespT> createHandler(Listener<ReqT> listener,
@@ -26,8 +24,11 @@ public interface ExceptionHandlerProvider {
     /**
      * Throw Status exception.
      *
-     * @param t the throwable to transform
-     * @param runtime true if we should throw StatusRuntimeException, false for StatusException
+     * @param t
+     *        the throwable to transform
+     * @param runtime
+     *        true if we should throw StatusRuntimeException, false for StatusException
+     *
      * @return Status(Runtime)Exception
      */
     static Exception toStatusException(Throwable t, boolean runtime) {
@@ -65,7 +66,9 @@ public interface ExceptionHandlerProvider {
     /**
      * Get Status from exception.
      *
-     * @param t the throwable to read or create status from
+     * @param t
+     *        the throwable to read or create status from
+     *
      * @return gRPC Status instance
      */
     static Status toStatus(Throwable t) {
@@ -88,7 +91,9 @@ public interface ExceptionHandlerProvider {
     /**
      * Get optional Metadata from exception.
      *
-     * @param t the throwable to read or create metadata from
+     * @param t
+     *        the throwable to read or create metadata from
+     *
      * @return optional gRPC Metadata instance
      */
     static Optional<Metadata> toTrailers(Throwable t) {

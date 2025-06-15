@@ -10,8 +10,9 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class Target_org_wildfly_security_password_interfaces_RawMaskedPassword {
 
     @Alias
-    Target_org_wildfly_security_password_interfaces_RawMaskedPassword(final String algorithm, final char[] initialKeyMaterial,
-            final int iterationCount, final byte[] salt, final byte[] maskedPasswordBytes, final byte[] initializationVector) {
+    Target_org_wildfly_security_password_interfaces_RawMaskedPassword(final String algorithm,
+            final char[] initialKeyMaterial, final int iterationCount, final byte[] salt,
+            final byte[] maskedPasswordBytes, final byte[] initializationVector) {
     }
 
 }

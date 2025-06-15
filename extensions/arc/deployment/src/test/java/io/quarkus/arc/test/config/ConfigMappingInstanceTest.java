@@ -19,9 +19,8 @@ import io.smallrye.config.WithName;
 
 public class ConfigMappingInstanceTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("config.my.prop=1234\n"), "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("config.my.prop=1234\n"), "application.properties"));
 
     @ConfigMapping(prefix = "config")
     public interface MyConfigMapping {

@@ -39,13 +39,11 @@ public class BaseFunction {
             return nettyDispatch(request);
         } catch (Exception e) {
             e.printStackTrace();
-            return request
-                    .createResponseBuilder(HttpStatus.valueOf(500)).build();
+            return request.createResponseBuilder(HttpStatus.valueOf(500)).build();
         }
     }
 
-    protected HttpResponseMessage nettyDispatch(HttpRequestMessage<Optional<String>> request)
-            throws Exception {
+    protected HttpResponseMessage nettyDispatch(HttpRequestMessage<Optional<String>> request) throws Exception {
         String path = request.getUri().getRawPath();
         String query = request.getUri().getRawQuery();
         if (query != null)
@@ -68,7 +66,8 @@ public class BaseFunction {
         }
 
         ResponseHandler handler = new ResponseHandler(request);
-        VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
+        VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler,
+                VertxHttpRecorder.VIRTUAL_HTTP);
 
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);
@@ -99,7 +98,7 @@ public class BaseFunction {
         @Override
         public void handleMessage(Object msg) {
             try {
-                //log.info("Got message: " + msg.getClass().getName());
+                // log.info("Got message: " + msg.getClass().getName());
 
                 if (msg instanceof HttpResponse) {
                     HttpResponse res = (HttpResponse) msg;
@@ -109,7 +108,7 @@ public class BaseFunction {
                                 && entry.getValue().contains("chunked")) {
                             continue; // ignore transfer encoding, chunked screws up message and response
                         }
-                        //log.info("header(" + entry.getKey() + ")=" + entry.getValue());
+                        // log.info("header(" + entry.getKey() + ")=" + entry.getValue());
                         responseBuilder.header(entry.getKey(), entry.getValue());
                     }
                 }

@@ -13,8 +13,7 @@ public final class VertxWebRouterBuildItem extends SimpleBuildItem {
     private final RuntimeValue<Router> managementRouter;
 
     VertxWebRouterBuildItem(RuntimeValue<Router> httpRouter, RuntimeValue<Router> mainRouter,
-            RuntimeValue<Router> frameworkRouter,
-            RuntimeValue<Router> managementRouter,
+            RuntimeValue<Router> frameworkRouter, RuntimeValue<Router> managementRouter,
             RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter) {
         this.httpRouter = httpRouter;
         this.mainRouter = mainRouter;

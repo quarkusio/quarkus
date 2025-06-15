@@ -23,10 +23,9 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
     @Test
     void testCategoryOrder() {
         final ExtensionCatalog catalog = newFakeExtensionCatalog();
-        assertThat(getProcessedCategoriesInOrder(catalog))
-                .map(ProcessedCategory::getCategory)
-                .map(Category::getId)
-                .startsWith("web", "core", "reactive", "serialization", "compatibility", "alt-languages", "uncategorized");
+        assertThat(getProcessedCategoriesInOrder(catalog)).map(ProcessedCategory::getCategory).map(Category::getId)
+                .startsWith("web", "core", "reactive", "serialization", "compatibility", "alt-languages",
+                        "uncategorized");
     }
 
     @Test
@@ -40,10 +39,8 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
     void testExtensionsOrder() {
         // this test is using an older version of the catalog so resteasy-reactive is still a thing
         final ExtensionCatalog catalog = newFakeExtensionCatalog();
-        assertThat(getProcessedCategoriesInOrder(catalog).get(0).getSortedExtensions())
-                .map(Extension::getArtifact)
-                .map(ArtifactCoords::getArtifactId)
-                .startsWith("quarkus-resteasy", "quarkus-resteasy-jackson",
+        assertThat(getProcessedCategoriesInOrder(catalog).get(0).getSortedExtensions()).map(Extension::getArtifact)
+                .map(ArtifactCoords::getArtifactId).startsWith("quarkus-resteasy", "quarkus-resteasy-jackson",
                         "quarkus-resteasy-jsonb", "quarkus-resteasy-reactive");
     }
 
@@ -53,8 +50,7 @@ public class CatalogProcessorTest extends PlatformAwareTestBase {
         final Optional<ProcessedCategory> uncategorized = getProcessedCategoriesInOrder(catalog).stream()
                 .filter(c -> Objects.equals(c.getCategory().getId(), "uncategorized")).findFirst();
         assertThat(uncategorized).isPresent();
-        assertThat(uncategorized.get().getSortedExtensions())
-                .map(Extension::getArtifact)
+        assertThat(uncategorized.get().getSortedExtensions()).map(Extension::getArtifact)
                 .map(ArtifactCoords::getArtifactId)
                 .containsExactlyInAnyOrder("quarkus-unknown-category-extension", "quarkus-uncategorized-extension");
     }

@@ -16,8 +16,6 @@ public class MyUndeployedVerticle extends AbstractVerticle {
 
     @Override
     public Uni<Void> asyncStart() {
-        return vertx.eventBus().consumer("bravo")
-                .handler(m -> m.reply("hello from bravo"))
-                .completionHandler();
+        return vertx.eventBus().consumer("bravo").handler(m -> m.reply("hello from bravo")).completionHandler();
     }
 }

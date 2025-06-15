@@ -13,7 +13,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class ResponseTimeAttribute implements ExchangeAttribute {
 
-    private static final String FIRST_RESPONSE_TIME_NANOS = ResponseTimeAttribute.class.getName() + ".first-response-time";
+    private static final String FIRST_RESPONSE_TIME_NANOS = ResponseTimeAttribute.class.getName()
+            + ".first-response-time";
 
     public static final String RESPONSE_TIME_MILLIS_SHORT = "%D";
     public static final String RESPONSE_TIME_SECONDS_SHORT = "%T";
@@ -40,7 +41,7 @@ public class ResponseTimeAttribute implements ExchangeAttribute {
         } else {
             nanos = System.nanoTime() - requestStartTime;
             if (exchange.response().ended()) {
-                //save the response time so it is consistent
+                // save the response time so it is consistent
                 exchange.put(FIRST_RESPONSE_TIME_NANOS, nanos);
             }
         }

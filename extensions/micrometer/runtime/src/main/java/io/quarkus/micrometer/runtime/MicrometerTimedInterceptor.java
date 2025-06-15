@@ -61,13 +61,12 @@ public class MicrometerTimedInterceptor {
             }
         } else if (TypesUtil.isUni(returnType)) {
             try {
-                return ((Uni<Object>) context.proceed()).onTermination().invoke(
-                        new Functions.TriConsumer<>() {
-                            @Override
-                            public void accept(Object o, Throwable throwable, Boolean cancelled) {
-                                stop(samples, MicrometerRecorder.getExceptionTag(throwable));
-                            }
-                        });
+                return ((Uni<Object>) context.proceed()).onTermination().invoke(new Functions.TriConsumer<>() {
+                    @Override
+                    public void accept(Object o, Throwable throwable, Boolean cancelled) {
+                        stop(samples, MicrometerRecorder.getExceptionTag(throwable));
+                    }
+                });
             } catch (Exception ex) {
                 stop(samples, MicrometerRecorder.getExceptionTag(ex));
                 throw ex;
@@ -112,17 +111,15 @@ public class MicrometerTimedInterceptor {
         final String metricName = timed.value().isEmpty() ? DEFAULT_METRIC_NAME : timed.value();
         try {
             Timer.Builder builder = Timer.builder(metricName)
-                    .description(timed.description().isEmpty() ? null : timed.description())
-                    .tags(timerTags)
-                    .tag("exception", exceptionClass)
-                    .publishPercentileHistogram(timed.histogram())
+                    .description(timed.description().isEmpty() ? null : timed.description()).tags(timerTags)
+                    .tag("exception", exceptionClass).publishPercentileHistogram(timed.histogram())
                     .publishPercentiles(timed.percentiles().length == 0 ? null : timed.percentiles());
 
             sample.stop(builder.register(meterRegistry));
         } catch (Exception e) {
             // ignoring on purpose: possible meter registration error should not interrupt main code flow.
-            log.warnf(e, "Unable to record observed timer value for %s with exceptionClass %s",
-                    metricName, exceptionClass);
+            log.warnf(e, "Unable to record observed timer value for %s with exceptionClass %s", metricName,
+                    exceptionClass);
         }
     }
 
@@ -131,11 +128,8 @@ public class MicrometerTimedInterceptor {
             // This will throw if the annotation is incorrect.
             // Errors are checked for at build time, but ...
             return LongTaskTimer.builder(metricName)
-                    .description(timed.description().isEmpty() ? null : timed.description())
-                    .tags(commonTags)
-                    .tags(timed.extraTags())
-                    .publishPercentileHistogram(timed.histogram())
-                    .register(meterRegistry)
+                    .description(timed.description().isEmpty() ? null : timed.description()).tags(commonTags)
+                    .tags(timed.extraTags()).publishPercentileHistogram(timed.histogram()).register(meterRegistry)
                     .start();
         } catch (Exception e) {
             // ignoring on purpose: possible meter registration error should not interrupt main code flow.

@@ -10,17 +10,13 @@ import io.smallrye.config.WithParentName;
 public interface StorkLoadBalancerConfiguration {
 
     /**
-     * Configures load balancer type, e.g. "round-robin".
-     * A LoadBalancerProvider for the type has to be available
-     *
+     * Configures load balancer type, e.g. "round-robin". A LoadBalancerProvider for the type has to be available
      */
     @WithDefault(value = "round-robin")
     String type();
 
     /**
-     * Load Balancer parameters.
-     * Check the documentation of the selected load balancer type for available parameters
-     *
+     * Load Balancer parameters. Check the documentation of the selected load balancer type for available parameters
      */
     @WithParentName
     Map<String, String> parameters();

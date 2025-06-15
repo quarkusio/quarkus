@@ -43,11 +43,9 @@ import io.quarkus.runtime.StartupEvent;
 import io.smallrye.common.annotation.Identifier;
 
 /**
- * Manages the lifecycle of a Kafka Streams pipeline. If there's a producer
- * method returning a KS {@link Topology}, then this topology will be configured
- * and started. Optionally, before starting the pipeline, this manager will wait
- * for a given set of topics to be created, as KS itself will fail without all
- * input topics being created upfront.
+ * Manages the lifecycle of a Kafka Streams pipeline. If there's a producer method returning a KS {@link Topology}, then
+ * this topology will be configured and started. Optionally, before starting the pipeline, this manager will wait for a
+ * given set of topics to be created, as KS itself will fail without all input topics being created upfront.
  */
 @Singleton
 public class KafkaStreamsProducer {
@@ -62,8 +60,8 @@ public class KafkaStreamsProducer {
 
     @Inject
     public KafkaStreamsProducer(KafkaStreamsSupport kafkaStreamsSupport, KafkaStreamsRuntimeConfig runtimeConfig,
-            ExecutorService executorService,
-            Instance<Topology> topology, Instance<KafkaClientSupplier> kafkaClientSupplier,
+            ExecutorService executorService, Instance<Topology> topology,
+            Instance<KafkaClientSupplier> kafkaClientSupplier,
             @Identifier("default-kafka-broker") Instance<Map<String, Object>> defaultConfiguration,
             Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener,
             Instance<StreamsUncaughtExceptionHandler> uncaughtExceptionHandlerListener) {
@@ -83,8 +81,8 @@ public class KafkaStreamsProducer {
         String bootstrapServersConfig = asString(runtimeConfig.bootstrapServers());
         if (DEFAULT_KAFKA_BROKER.equalsIgnoreCase(bootstrapServersConfig)) {
             // Try to see if kafka.bootstrap.servers is set, if so, use that value, if not, keep localhost:9092
-            bootstrapServersConfig = ConfigProvider.getConfig().getOptionalValue("kafka.bootstrap.servers", String.class)
-                    .orElse(bootstrapServersConfig);
+            bootstrapServersConfig = ConfigProvider.getConfig()
+                    .getOptionalValue("kafka.bootstrap.servers", String.class).orElse(bootstrapServersConfig);
         }
         Map<String, Object> cfg = Collections.emptyMap();
         if (!defaultConfiguration.isUnsatisfied()) {
@@ -96,8 +94,8 @@ public class KafkaStreamsProducer {
 
         this.executorService = executorService;
         this.streamsConfig = new StreamsConfig(kafkaStreamsProperties);
-        this.kafkaStreams = initializeKafkaStreams(streamsConfig, topology.get(),
-                kafkaClientSupplier, stateListener, globalStateRestoreListener, uncaughtExceptionHandlerListener);
+        this.kafkaStreams = initializeKafkaStreams(streamsConfig, topology.get(), kafkaClientSupplier, stateListener,
+                globalStateRestoreListener, uncaughtExceptionHandlerListener);
         this.topologyManager = new KafkaStreamsTopologyManager(kafkaAdminClient, topology.get(), runtimeConfig);
     }
 
@@ -154,8 +152,8 @@ public class KafkaStreamsProducer {
     }
 
     private static KafkaStreams initializeKafkaStreams(StreamsConfig streamsConfig, Topology topology,
-            Instance<KafkaClientSupplier> kafkaClientSupplier,
-            Instance<StateListener> stateListener, Instance<StateRestoreListener> globalStateRestoreListener,
+            Instance<KafkaClientSupplier> kafkaClientSupplier, Instance<StateListener> stateListener,
+            Instance<StateRestoreListener> globalStateRestoreListener,
             Instance<StreamsUncaughtExceptionHandler> uncaughtExceptionHandlerListener) {
         KafkaStreams kafkaStreams;
         if (kafkaClientSupplier.isUnsatisfied()) {
@@ -180,9 +178,8 @@ public class KafkaStreamsProducer {
     /**
      * Returns all properties to be passed to Kafka Streams.
      */
-    private static Properties getStreamsProperties(Properties properties,
-            Map<String, Object> cfg, String bootstrapServersConfig,
-            KafkaStreamsRuntimeConfig runtimeConfig) {
+    private static Properties getStreamsProperties(Properties properties, Map<String, Object> cfg,
+            String bootstrapServersConfig, KafkaStreamsRuntimeConfig runtimeConfig) {
         Properties streamsProperties = new Properties();
 
         // build-time options
@@ -219,24 +216,27 @@ public class KafkaStreamsProducer {
 
             setProperty(sc.jaasConfig(), streamsProperties, SaslConfigs.SASL_JAAS_CONFIG);
 
-            setProperty(sc.clientCallbackHandlerClass(), streamsProperties, SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS);
+            setProperty(sc.clientCallbackHandlerClass(), streamsProperties,
+                    SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS);
 
-            setProperty(sc.loginCallbackHandlerClass(), streamsProperties, SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS);
+            setProperty(sc.loginCallbackHandlerClass(), streamsProperties,
+                    SaslConfigs.SASL_LOGIN_CALLBACK_HANDLER_CLASS);
             setProperty(sc.loginClass(), streamsProperties, SaslConfigs.SASL_LOGIN_CLASS);
 
             setProperty(sc.kerberosServiceName(), streamsProperties, SaslConfigs.SASL_KERBEROS_SERVICE_NAME);
             setProperty(sc.kerberosKinitCmd(), streamsProperties, SaslConfigs.SASL_KERBEROS_KINIT_CMD);
             setProperty(sc.kerberosTicketRenewWindowFactor(), streamsProperties,
                     SaslConfigs.SASL_KERBEROS_TICKET_RENEW_WINDOW_FACTOR);
-            setProperty(sc.kerberosTicketRenewJitter(), streamsProperties, SaslConfigs.SASL_KERBEROS_TICKET_RENEW_JITTER);
+            setProperty(sc.kerberosTicketRenewJitter(), streamsProperties,
+                    SaslConfigs.SASL_KERBEROS_TICKET_RENEW_JITTER);
             setProperty(sc.kerberosMinTimeBeforeRelogin(), streamsProperties,
                     SaslConfigs.SASL_KERBEROS_MIN_TIME_BEFORE_RELOGIN);
 
             setProperty(sc.loginRefreshWindowFactor(), streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_WINDOW_FACTOR);
             setProperty(sc.loginRefreshWindowJitter(), streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_WINDOW_JITTER);
 
-            setProperty(sc.loginRefreshMinPeriod(), streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS,
-                    DurationToSecondsFunction.INSTANCE);
+            setProperty(sc.loginRefreshMinPeriod(), streamsProperties,
+                    SaslConfigs.SASL_LOGIN_REFRESH_MIN_PERIOD_SECONDS, DurationToSecondsFunction.INSTANCE);
             setProperty(sc.loginRefreshBuffer(), streamsProperties, SaslConfigs.SASL_LOGIN_REFRESH_BUFFER_SECONDS,
                     DurationToSecondsFunction.INSTANCE);
         }
@@ -293,16 +293,15 @@ public class KafkaStreamsProducer {
         setProperty(property, properties, key, Objects::toString);
     }
 
-    private static <T> void setProperty(Optional<T> property, Properties properties, String key, Function<T, String> fn) {
+    private static <T> void setProperty(Optional<T> property, Properties properties, String key,
+            Function<T, String> fn) {
         if (property.isPresent()) {
             properties.put(key, fn.apply(property.get()));
         }
     }
 
     private static String asString(List<InetSocketAddress> addresses) {
-        return addresses.stream()
-                .map(KafkaStreamsProducer::toHostPort)
-                .collect(Collectors.joining(","));
+        return addresses.stream().map(KafkaStreamsProducer::toHostPort).collect(Collectors.joining(","));
     }
 
     private static String toHostPort(InetSocketAddress inetSocketAddress) {

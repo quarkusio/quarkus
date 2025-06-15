@@ -18,19 +18,18 @@ import io.smallrye.mutiny.Uni;
 
 public class BlockingClientCallOnEventLoopTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloService.class, CallBlockingService.class, CallBlocking.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addPackage(CallBlockingGrpc.class.getPackage()));
+                    .addPackage(GreeterGrpc.class.getPackage()).addPackage(CallBlockingGrpc.class.getPackage()));
 
     @GrpcClient
     CallBlocking callBlocking;
 
     @Test
     void shouldThrowExceptionOnBlockingClientCall() {
-        Uni<CallHello.SuccessOrFailureDescription> result = callBlocking.doBlockingCall(CallHello.Empty.getDefaultInstance());
+        Uni<CallHello.SuccessOrFailureDescription> result = callBlocking
+                .doBlockingCall(CallHello.Empty.getDefaultInstance());
         CallHello.SuccessOrFailureDescription response = result.await().atMost(Duration.ofSeconds(10));
 
         assertThat(response.getSuccess()).isFalse();

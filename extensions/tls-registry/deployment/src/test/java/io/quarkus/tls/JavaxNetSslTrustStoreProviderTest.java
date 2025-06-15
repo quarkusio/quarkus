@@ -43,8 +43,7 @@ public class JavaxNetSslTrustStoreProviderTest {
         }
         final String password = System.getProperty("javax.net.ssl.trustStorePassword", "changeit");
 
-        return new QuarkusUnitTest()
-                .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
+        return new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
                 .overrideConfigKey("quarkus.tls.javaNetSslLike.trust-store." + tsType + ".path", tsPath.toString())
                 .overrideConfigKey("quarkus.tls.javaNetSslLike.trust-store." + tsType + ".password", password);
     }
@@ -61,8 +60,9 @@ public class JavaxNetSslTrustStoreProviderTest {
         }
         final Path javaHomePath = Path.of(javaHome);
         if (!Files.isDirectory(javaHomePath)) {
-            throw new IllegalStateException("Could not locate the default Java truststore because the 'java.home' path '"
-                    + javaHome + "' is not a directory");
+            throw new IllegalStateException(
+                    "Could not locate the default Java truststore because the 'java.home' path '" + javaHome
+                            + "' is not a directory");
         }
         final Path jssecacerts = javaHomePath.resolve("lib/security/jssecacerts");
         if (Files.isRegularFile(jssecacerts)) {
@@ -73,8 +73,8 @@ public class JavaxNetSslTrustStoreProviderTest {
             return cacerts;
         }
         throw new IllegalStateException(
-                "Could not locate the default Java truststore. Tried javax.net.ssl.trustStore system property, " + jssecacerts
-                        + " and " + cacerts);
+                "Could not locate the default Java truststore. Tried javax.net.ssl.trustStore system property, "
+                        + jssecacerts + " and " + cacerts);
     }
 
     @Inject
@@ -92,17 +92,15 @@ public class JavaxNetSslTrustStoreProviderTest {
         assertThat(actualTs).isNotNull();
 
         /*
-         * Get the default trust managers, one of which should be SunJSSE based,
-         * which in turn should use the same default trust store lookup algo
-         * like we do in io.quarkus.tls.runtime.JavaNetSslTlsBucketConfig.defaultTrustStorePath()
+         * Get the default trust managers, one of which should be SunJSSE based, which in turn should use the same
+         * default trust store lookup algo like we do in
+         * io.quarkus.tls.runtime.JavaNetSslTlsBucketConfig.defaultTrustStorePath()
          */
         final TrustManagerFactory trustManagerFactory = TrustManagerFactory
                 .getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init((KeyStore) null);
         final List<X509TrustManager> defaultTrustManagers = Stream.of(trustManagerFactory.getTrustManagers())
-                .filter(m -> m instanceof X509TrustManager)
-                .map(m -> (X509TrustManager) m)
-                .collect(Collectors.toList());
+                .filter(m -> m instanceof X509TrustManager).map(m -> (X509TrustManager) m).collect(Collectors.toList());
         assertThat(defaultTrustManagers).hasSizeGreaterThan(0);
 
         final List<String> actualAliases = Collections.list(actualTs.aliases());
@@ -110,9 +108,9 @@ public class JavaxNetSslTrustStoreProviderTest {
 
         for (String alias : actualAliases) {
             /*
-             * Get the certs from the trust store loaded by us from $JAVA_HOME/lib/security/cacerts or similar
-             * and validate those against the default trust managers.
-             * In that way we make sure indirectly that we have loaded some valid trust material.
+             * Get the certs from the trust store loaded by us from $JAVA_HOME/lib/security/cacerts or similar and
+             * validate those against the default trust managers. In that way we make sure indirectly that we have
+             * loaded some valid trust material.
              */
             final X509Certificate cert = (X509Certificate) actualTs.getCertificate(alias);
             CertificateException lastException = null;
@@ -136,8 +134,8 @@ public class JavaxNetSslTrustStoreProviderTest {
     @Test
     void certs() throws Exception {
         /*
-         * The javaNetSslLike named TLS bucket mimics what JavaNetSslTrustStoreProvider does programmatically.
-         * By asserting that the set of certs they contain are equal, we make sure that JavaNetSslTrustStoreProvider
+         * The javaNetSslLike named TLS bucket mimics what JavaNetSslTrustStoreProvider does programmatically. By
+         * asserting that the set of certs they contain are equal, we make sure that JavaNetSslTrustStoreProvider
          * behaves correctly.
          */
         final TrustManager[] javaNetSslTrustManagers = trustManagers("javax.net.ssl");
@@ -147,7 +145,8 @@ public class JavaxNetSslTrustStoreProviderTest {
             X509TrustManager javaNetSslTm = (X509TrustManager) javaNetSslTrustManagers[i];
             X509TrustManager javaNetSslLikeTm = (X509TrustManager) javaNetSslLikeTrustManagers[i];
             assertThat(javaNetSslTm.getAcceptedIssuers().length).isGreaterThan(0);
-            assertThat(javaNetSslTm.getAcceptedIssuers()).containsExactlyInAnyOrder(javaNetSslLikeTm.getAcceptedIssuers());
+            assertThat(javaNetSslTm.getAcceptedIssuers())
+                    .containsExactlyInAnyOrder(javaNetSslLikeTm.getAcceptedIssuers());
         }
     }
 

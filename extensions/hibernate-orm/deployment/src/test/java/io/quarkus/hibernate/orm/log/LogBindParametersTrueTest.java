@@ -19,20 +19,15 @@ public class LogBindParametersTrueTest {
     private static final Formatter LOG_FORMATTER = new PatternFormatter("%s");
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.log.bind-parameters", "true")
             // Expect a trace
             .setLogRecordPredicate(record -> record.getMessage().contains("binding parameter"))
-            .assertLogRecords(records -> assertThat(records)
-                    .hasSize(2)
-                    .anySatisfy(record -> {
-                        assertThat(record.getLevel().getName()).isEqualTo("TRACE");
-                        assertThat(LOG_FORMATTER.formatMessage(record))
-                                .contains("SomeName");
-                    }));
+            .assertLogRecords(records -> assertThat(records).hasSize(2).anySatisfy(record -> {
+                assertThat(record.getLevel().getName()).isEqualTo("TRACE");
+                assertThat(LOG_FORMATTER.formatMessage(record)).contains("SomeName");
+            }));
 
     @Inject
     EntityManager em;

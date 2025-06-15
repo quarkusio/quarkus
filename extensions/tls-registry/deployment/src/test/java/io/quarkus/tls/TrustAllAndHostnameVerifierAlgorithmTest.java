@@ -26,8 +26,7 @@ public class TrustAllAndHostnameVerifierAlgorithmTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;

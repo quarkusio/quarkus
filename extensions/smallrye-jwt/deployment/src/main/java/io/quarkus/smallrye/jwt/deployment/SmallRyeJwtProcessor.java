@@ -93,7 +93,8 @@ class SmallRyeJwtProcessor {
     /**
      * Register the CDI beans that are needed by the MP-JWT extension
      *
-     * @param additionalBeans - producer for additional bean items
+     * @param additionalBeans
+     *        - producer for additional bean items
      */
     @BuildStep
     void registerAdditionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
@@ -117,9 +118,9 @@ class SmallRyeJwtProcessor {
         removable.addBeanClass(Claim.class);
         additionalBeans.produce(removable.build());
 
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(SignatureAlgorithm.class, KeyEncryptionAlgorithm.class)
-                .reason(getClass().getName())
-                .methods().fields().build());
+        reflectiveClasses
+                .produce(ReflectiveClassBuildItem.builder(SignatureAlgorithm.class, KeyEncryptionAlgorithm.class)
+                        .reason(getClass().getName()).methods().fields().build());
     }
 
     /**
@@ -183,7 +184,8 @@ class SmallRyeJwtProcessor {
         Set<Type> additionalTypes = new HashSet<>();
 
         // First analyze all relevant injection points
-        for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+        for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext()
+                .get(BuildExtension.Key.INJECTION_POINTS)) {
             if (injectionPoint.hasDefaultedQualifier()) {
                 continue;
             }
@@ -206,7 +208,8 @@ class SmallRyeJwtProcessor {
                     }
                 }
 
-                if (injectionPoint.getType().name().equals(DotNames.PROVIDER) && actualType.name().equals(DotNames.OPTIONAL)) {
+                if (injectionPoint.getType().name().equals(DotNames.PROVIDER)
+                        && actualType.name().equals(DotNames.OPTIONAL)) {
                     additionalTypes.add(actualType);
                 }
             }
@@ -228,8 +231,8 @@ class SmallRyeJwtProcessor {
 
     @BuildStep
     List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
-        return List.of(
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class), BEARER));
+        return List.of(new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class),
+                BEARER));
     }
 
     public static class IsEnabled implements BooleanSupplier {

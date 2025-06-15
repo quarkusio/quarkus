@@ -54,8 +54,7 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
 
     private String checkUrlProperty(Optional<String> value, OidcTenantConfig providerConfig, Config config) {
         if (urlProperty && value.isPresent() && !value.get().startsWith("http:")) {
-            Optional<String> authServerUrl = config.getOptionalValue(AUTH_SERVER_URL_CONFIG_KEY,
-                    String.class);
+            Optional<String> authServerUrl = config.getOptionalValue(AUTH_SERVER_URL_CONFIG_KEY, String.class);
             if (authServerUrl.isEmpty() && providerConfig != null) {
                 authServerUrl = providerConfig.authServerUrl();
             }
@@ -89,8 +88,7 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
     }
 
     public String get(Config config) {
-        Optional<Provider> provider = config.getOptionalValue(OIDC_PROVIDER_CONFIG_KEY,
-                Provider.class);
+        Optional<Provider> provider = config.getOptionalValue(OIDC_PROVIDER_CONFIG_KEY, Provider.class);
         OidcTenantConfig providerConfig = provider.isPresent() ? KnownOidcProviders.provider(provider.get()) : null;
         if (defaultValue != null || RELATIVE_PATH_CONFIG_PROPS.contains(oidcConfigProperty)) {
             Optional<String> value = config.getOptionalValue(oidcConfigProperty, String.class);
@@ -124,22 +122,21 @@ public class OidcConfigPropertySupplier implements Supplier<String> {
         } else if (AUTH_EXTRA_PARAMS_KEY.equals(oidcConfigProperty)) {
             StringBuilder sb = new StringBuilder();
             if (config instanceof SmallRyeConfig) {
-                Optional<Map<String, String>> extraParams = ((SmallRyeConfig) config).getOptionalValues(oidcConfigProperty,
-                        String.class,
-                        String.class);
+                Optional<Map<String, String>> extraParams = ((SmallRyeConfig) config)
+                        .getOptionalValues(oidcConfigProperty, String.class, String.class);
                 if (extraParams.isPresent()) {
                     for (Map.Entry<String, String> entry : extraParams.get().entrySet()) {
                         if (entry.getKey().equals(OidcConstants.TOKEN_SCOPE)) {
                             continue;
                         }
-                        sb.append("&").append(entry.getKey()).append("=").append(OidcCommonUtils.urlEncode(entry.getValue()));
+                        sb.append("&").append(entry.getKey()).append("=")
+                                .append(OidcCommonUtils.urlEncode(entry.getValue()));
                     }
                 }
             }
             return sb.toString();
         } else {
-            return checkUrlProperty(config.getOptionalValue(oidcConfigProperty, String.class),
-                    providerConfig, config);
+            return checkUrlProperty(config.getOptionalValue(oidcConfigProperty, String.class), providerConfig, config);
         }
     }
 }

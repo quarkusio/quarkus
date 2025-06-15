@@ -17,9 +17,8 @@ public final class JpaModelPersistenceUnitContributionBuildItem extends MultiBui
     public final Set<String> explicitlyListedClassNames;
     public final Set<String> explicitlyListedMappingFiles;
 
-    public JpaModelPersistenceUnitContributionBuildItem(String persistenceUnitName,
-            URL persistenceUnitRootURL, Collection<String> explicitlyListedClassNames,
-            Collection<String> explicitlyListedMappingFiles) {
+    public JpaModelPersistenceUnitContributionBuildItem(String persistenceUnitName, URL persistenceUnitRootURL,
+            Collection<String> explicitlyListedClassNames, Collection<String> explicitlyListedMappingFiles) {
         this.persistenceUnitName = persistenceUnitName;
         this.persistenceUnitRootURL = persistenceUnitRootURL;
         this.explicitlyListedClassNames = new TreeSet<>(explicitlyListedClassNames);

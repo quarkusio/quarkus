@@ -55,12 +55,9 @@ public class InfoProcessor {
 
     @BuildStep(onlyIf = GitInInfoEndpointEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void gitInfo(InfoBuildTimeConfig config,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
-            BuildProducer<InfoBuildTimeValuesBuildItem> valuesProducer,
-            BuildProducer<SyntheticBeanBuildItem> beanProducer,
-            InfoRecorder recorder) {
+    void gitInfo(InfoBuildTimeConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            OutputTargetBuildItem outputTargetBuildItem, BuildProducer<InfoBuildTimeValuesBuildItem> valuesProducer,
+            BuildProducer<SyntheticBeanBuildItem> beanProducer, InfoRecorder recorder) {
         File projectRoot = highestKnownProjectDirectory(curateOutcomeBuildItem, outputTargetBuildItem);
         if (projectRoot == null) {
             log.debug("Unable to determine project directory");
@@ -85,13 +82,15 @@ public class InfoProcessor {
             Map<String, Object> commit = new LinkedHashMap<>();
             String latestCommitId = latestCommit.getName();
             commit.put("id", latestCommitId);
-            String latestCommitTime = formatDate(Instant.ofEpochSecond(latestCommit.getCommitTime()), ZoneId.systemDefault());
+            String latestCommitTime = formatDate(Instant.ofEpochSecond(latestCommit.getCommitTime()),
+                    ZoneId.systemDefault());
             commit.put("time", latestCommitTime);
 
             if (addFullInfo) {
 
                 PersonIdent authorIdent = latestCommit.getAuthorIdent();
-                commit.put("author", Map.of("time", formatDate(authorIdent.getWhenAsInstant(), authorIdent.getZoneId())));
+                commit.put("author",
+                        Map.of("time", formatDate(authorIdent.getWhenAsInstant(), authorIdent.getZoneId())));
 
                 PersonIdent committerIdent = latestCommit.getCommitterIdent();
                 commit.put("committer",
@@ -112,8 +111,8 @@ public class InfoProcessor {
 
                 commit.put("id", id);
 
-                data.put("remote",
-                        GitUtil.sanitizeRemoteUrl(git.getRepository().getConfig().getString("remote", "origin", "url")));
+                data.put("remote", GitUtil
+                        .sanitizeRemoteUrl(git.getRepository().getConfig().getString("remote", "origin", "url")));
                 data.put("tags", getTags(git, latestCommit));
             }
 
@@ -125,9 +124,7 @@ public class InfoProcessor {
             valuesProducer.produce(new InfoBuildTimeValuesBuildItem("git", data));
             beanProducer.produce(SyntheticBeanBuildItem.configure(GitInfo.class)
                     .supplier(recorder.gitInfoSupplier(branch, latestCommitId, latestCommitTime))
-                    .scope(ApplicationScoped.class)
-                    .setRuntimeInit()
-                    .done());
+                    .scope(ApplicationScoped.class).setRuntimeInit().done());
         } catch (Exception e) {
             log.debug("Unable to determine git information", e);
         }
@@ -137,8 +134,7 @@ public class InfoProcessor {
         return ISO_OFFSET_DATE_TIME.format(OffsetDateTime.ofInstant(instant, zoneId));
     }
 
-    private Map<String, Object> obtainBuildInfo(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            Repository repository) {
+    private Map<String, Object> obtainBuildInfo(CurateOutcomeBuildItem curateOutcomeBuildItem, Repository repository) {
         Map<String, Object> build = new LinkedHashMap<>();
 
         String userName = repository.getConfig().getString("user", null, "name");
@@ -170,23 +166,20 @@ public class InfoProcessor {
         }
     }
 
-    private Collection<String> getTags(final Git git, final ObjectId objectId, final RevWalk finalWalk) throws GitAPIException {
-        return git.tagList().call()
-                .stream()
-                .filter(tagRef -> {
-                    try {
-                        final RevCommit tagCommit = finalWalk.parseCommit(tagRef.getObjectId());
-                        final RevCommit objectCommit = finalWalk.parseCommit(objectId);
-                        if (finalWalk.isMergedInto(objectCommit, tagCommit)) {
-                            return true;
-                        }
-                    } catch (Exception ignored) {
-                        log.debug(String.format("Failed while getTags [%s] -- ", tagRef));
-                    }
-                    return false;
-                })
-                .map(tagRef -> trimFullTagName(tagRef.getName()))
-                .collect(Collectors.toList());
+    private Collection<String> getTags(final Git git, final ObjectId objectId, final RevWalk finalWalk)
+            throws GitAPIException {
+        return git.tagList().call().stream().filter(tagRef -> {
+            try {
+                final RevCommit tagCommit = finalWalk.parseCommit(tagRef.getObjectId());
+                final RevCommit objectCommit = finalWalk.parseCommit(objectId);
+                if (finalWalk.isMergedInto(objectCommit, tagCommit)) {
+                    return true;
+                }
+            } catch (Exception ignored) {
+                log.debug(String.format("Failed while getTags [%s] -- ", tagRef));
+            }
+            return false;
+        }).map(tagRef -> trimFullTagName(tagRef.getName())).collect(Collectors.toList());
     }
 
     private String trimFullTagName(String tagName) {
@@ -201,17 +194,16 @@ public class InfoProcessor {
             // in this case we know the precise project root
             return workspaceModule.getModuleDir();
         }
-        // in this case we will simply use the build directory and let jgit go up the file system to determine the git directory - if any
+        // in this case we will simply use the build directory and let jgit go up the file system to determine the git
+        // directory - if any
         return outputTargetBuildItem.getOutputDirectory().toFile();
     }
 
     @BuildStep(onlyIf = BuildInInfoEndpointEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void buildInfo(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            InfoBuildTimeConfig config,
+    void buildInfo(CurateOutcomeBuildItem curateOutcomeBuildItem, InfoBuildTimeConfig config,
             BuildProducer<InfoBuildTimeValuesBuildItem> valuesProducer,
-            BuildProducer<SyntheticBeanBuildItem> beanProducer,
-            ApplicationInfoBuildItem infoApplication,
+            BuildProducer<SyntheticBeanBuildItem> beanProducer, ApplicationInfoBuildItem infoApplication,
             InfoRecorder recorder) {
         ApplicationModel applicationModel = curateOutcomeBuildItem.getApplicationModel();
         ResolvedDependency appArtifact = applicationModel.getAppArtifact();
@@ -232,9 +224,7 @@ public class InfoProcessor {
         valuesProducer.produce(new InfoBuildTimeValuesBuildItem("build", data));
         beanProducer.produce(SyntheticBeanBuildItem.configure(BuildInfo.class)
                 .supplier(recorder.buildInfoSupplier(group, artifact, version, time, quarkusVersion))
-                .scope(ApplicationScoped.class)
-                .setRuntimeInit()
-                .done());
+                .scope(ApplicationScoped.class).setRuntimeInit().done());
     }
 
     private Map<String, Object> finalBuildData(Map<String, Object> buildData, InfoBuildTimeConfig.Build buildConfig) {
@@ -248,58 +238,46 @@ public class InfoProcessor {
 
     @BuildStep(onlyIf = OsInInfoEndpointEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void osInfo(InfoRecorder recorder,
-            BuildProducer<InfoBuildTimeContributorBuildItem> valuesProducer,
+    void osInfo(InfoRecorder recorder, BuildProducer<InfoBuildTimeContributorBuildItem> valuesProducer,
             BuildProducer<SyntheticBeanBuildItem> beanProducer) {
         valuesProducer.produce(new InfoBuildTimeContributorBuildItem(recorder.osInfoContributor()));
-        beanProducer.produce(SyntheticBeanBuildItem.configure(OsInfo.class)
-                .supplier(recorder.osInfoSupplier())
-                .scope(ApplicationScoped.class)
-                .setRuntimeInit()
-                .done());
+        beanProducer.produce(SyntheticBeanBuildItem.configure(OsInfo.class).supplier(recorder.osInfoSupplier())
+                .scope(ApplicationScoped.class).setRuntimeInit().done());
     }
 
     @BuildStep(onlyIf = JavaInInfoEndpointEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void javaInfo(InfoRecorder recorder,
-            BuildProducer<InfoBuildTimeContributorBuildItem> valuesProducer,
+    void javaInfo(InfoRecorder recorder, BuildProducer<InfoBuildTimeContributorBuildItem> valuesProducer,
             BuildProducer<SyntheticBeanBuildItem> beanProducer) {
         valuesProducer.produce(new InfoBuildTimeContributorBuildItem(recorder.javaInfoContributor()));
-        beanProducer.produce(SyntheticBeanBuildItem.configure(JavaInfo.class)
-                .supplier(recorder.javaInfoSupplier())
-                .scope(ApplicationScoped.class)
-                .setRuntimeInit()
-                .done());
+        beanProducer.produce(SyntheticBeanBuildItem.configure(JavaInfo.class).supplier(recorder.javaInfoSupplier())
+                .scope(ApplicationScoped.class).setRuntimeInit().done());
     }
 
     @BuildStep(onlyIf = InfoEndpointEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    RouteBuildItem defineRoute(InfoBuildTimeConfig buildTimeConfig,
-            List<InfoBuildTimeValuesBuildItem> buildTimeValues,
+    RouteBuildItem defineRoute(InfoBuildTimeConfig buildTimeConfig, List<InfoBuildTimeValuesBuildItem> buildTimeValues,
             List<InfoBuildTimeContributorBuildItem> contributors,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer,
-            InfoRecorder recorder) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer, InfoRecorder recorder) {
 
         LinkedHashMap<String, Object> buildTimeInfo = new LinkedHashMap<>();
         for (var bi : buildTimeValues) {
             var key = bi.getName();
             var value = bi.getValue();
             if (buildTimeInfo.containsKey(key)) {
-                log.warn("Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+                log.warn("Info key " + key
+                        + " contains duplicate values. This can lead to unpredictable values being used");
             }
             buildTimeInfo.put(key, value);
         }
         List<InfoContributor> infoContributors = contributors.stream()
-                .map(InfoBuildTimeContributorBuildItem::getInfoContributor)
-                .collect(Collectors.toList());
+                .map(InfoBuildTimeContributorBuildItem::getInfoContributor).collect(Collectors.toList());
 
         unremovableBeanBuildItemBuildProducer.produce(UnremovableBeanBuildItem.beanTypes(InfoContributor.class));
 
-        return RouteBuildItem.newManagementRoute(buildTimeConfig.path())
-                .withRoutePathConfigKey("quarkus.info.path")
-                .withRequestHandler(recorder.handler(buildTimeInfo, infoContributors))
-                .displayOnNotFoundPage("Info")
+        return RouteBuildItem.newManagementRoute(buildTimeConfig.path()).withRoutePathConfigKey("quarkus.info.path")
+                .withRequestHandler(recorder.handler(buildTimeInfo, infoContributors)).displayOnNotFoundPage("Info")
                 .build();
     }
 }

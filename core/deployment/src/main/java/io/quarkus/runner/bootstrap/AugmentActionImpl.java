@@ -63,9 +63,8 @@ public class AugmentActionImpl implements AugmentAction {
     private static final Logger log = Logger.getLogger(AugmentActionImpl.class);
 
     private static final Class[] NON_NORMAL_MODE_OUTPUTS = { GeneratedClassBuildItem.class,
-            GeneratedResourceBuildItem.class, ApplicationClassNameBuildItem.class,
-            MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
-            TransformedClassesBuildItem.class };
+            GeneratedResourceBuildItem.class, ApplicationClassNameBuildItem.class, MainClassBuildItem.class,
+            GeneratedFileSystemResourceHandledBuildItem.class, TransformedClassesBuildItem.class };
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;
@@ -75,9 +74,8 @@ public class AugmentActionImpl implements AugmentAction {
     private final List<ClassLoaderEventListener> classLoadListeners;
 
     /**
-     * A map that is shared between all re-runs of the same augment instance. This is
-     * only really relevant in dev mode, however it is present in all modes for consistency.
-     *
+     * A map that is shared between all re-runs of the same augment instance. This is only really relevant in dev mode,
+     * however it is present in all modes for consistency.
      */
     private final Map<Class<?>, Object> reloadContext = new ConcurrentHashMap<>();
 
@@ -91,7 +89,8 @@ public class AugmentActionImpl implements AugmentAction {
      * @Deprecated use one of the other constructors
      */
     @Deprecated
-    public AugmentActionImpl(CuratedApplication curatedApplication, List<Consumer<BuildChainBuilder>> chainCustomizers) {
+    public AugmentActionImpl(CuratedApplication curatedApplication,
+            List<Consumer<BuildChainBuilder>> chainCustomizers) {
         this(curatedApplication, chainCustomizers, Collections.emptyList());
     }
 
@@ -117,14 +116,14 @@ public class AugmentActionImpl implements AugmentAction {
                 devModeType = null;
                 break;
             case REMOTE_DEV_CLIENT:
-                //this seems a bit counterintuitive, but the remote dev client just keeps a production
-                //app up to date and ships it to the remote side, this allows the remote side to be fully
-                //up-to-date even if the process is restarted
+                // this seems a bit counterintuitive, but the remote dev client just keeps a production
+                // app up to date and ships it to the remote side, this allows the remote side to be fully
+                // up-to-date even if the process is restarted
                 launchMode = LaunchMode.NORMAL;
                 devModeType = DevModeType.REMOTE_LOCAL_SIDE;
                 break;
             case CONTINUOUS_TEST:
-                //the process that actually launches the tests is a dev mode process
+                // the process that actually launches the tests is a dev mode process
                 launchMode = LaunchMode.DEVELOPMENT;
                 devModeType = DevModeType.TEST_ONLY;
                 break;
@@ -158,8 +157,7 @@ public class AugmentActionImpl implements AugmentAction {
             writeDebugSourceFile(result);
             try {
                 BiConsumer<Object, BuildResult> consumer = (BiConsumer<Object, BuildResult>) Class
-                        .forName(resultHandler, false, classLoader)
-                        .getConstructor().newInstance();
+                        .forName(resultHandler, false, classLoader).getConstructor().newInstance();
                 consumer.accept(context, result);
             } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | ClassNotFoundException
                     | InvocationTargetException e) {
@@ -174,8 +172,8 @@ public class AugmentActionImpl implements AugmentAction {
             throw new IllegalStateException("Can only create a production application when using NORMAL launch mode");
         }
         try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
-            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class,
-                    DeploymentResultBuildItem.class, SbomBuildItem.class);
+            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader,
+                    ArtifactResultBuildItem.class, DeploymentResultBuildItem.class, SbomBuildItem.class);
 
             writeDebugSourceFile(result);
 
@@ -185,17 +183,20 @@ public class AugmentActionImpl implements AugmentAction {
             BuildSystemTargetBuildItem buildSystemTargetBuildItem = result.consume(BuildSystemTargetBuildItem.class);
             Map<Path, List<SbomResult>> sboms = getSboms(result.consumeMulti(SbomBuildItem.class));
 
-            // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are produced
+            // this depends on the fact that the order in which we can obtain MultiBuildItems is the same as they are
+            // produced
             // we want to write result of the final artifact created
             if (artifactResultBuildItems.isEmpty()) {
                 throw new IllegalStateException("No artifact results were produced");
             }
             writeArtifactResultMetadataFile(buildSystemTargetBuildItem, artifactResultBuildItems);
 
-            return new AugmentResult(artifactResultBuildItems.stream()
-                    .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
-                    .collect(Collectors.toList()),
-                    jarBuildItem != null ? jarBuildItem.toJarResult(sboms.getOrDefault(jarBuildItem.getPath(), List.of()))
+            return new AugmentResult(
+                    artifactResultBuildItems.stream()
+                            .map(a -> new ArtifactResult(a.getPath(), a.getType(), a.getMetadata()))
+                            .collect(Collectors.toList()),
+                    jarBuildItem != null
+                            ? jarBuildItem.toJarResult(sboms.getOrDefault(jarBuildItem.getPath(), List.of()))
                             : null,
                     nativeImageBuildItem != null ? nativeImageBuildItem.getPath() : null,
                     nativeImageBuildItem != null ? nativeImageBuildItem.getGraalVMInfo().toMap() : Map.of());
@@ -242,16 +243,19 @@ public class AugmentActionImpl implements AugmentAction {
     private void writeArtifactResultMetadataFile(BuildSystemTargetBuildItem outputTargetBuildItem,
             List<ArtifactResultBuildItem> artifactResultBuildItems) {
         ArtifactResultBuildItem lastArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 1);
-        Path quarkusArtifactMetadataPath = outputTargetBuildItem.getOutputDirectory().resolve("quarkus-artifact.properties");
+        Path quarkusArtifactMetadataPath = outputTargetBuildItem.getOutputDirectory()
+                .resolve("quarkus-artifact.properties");
         Properties properties = new Properties();
         properties.put("type", lastArtifact.getType());
         if (lastArtifact.getPath() != null) {
             properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, lastArtifact));
         } else {
             if (lastArtifact.getType().endsWith("-container")) {
-                // in this case we write "path" as to contain the path to the artifact from which the container was built
+                // in this case we write "path" as to contain the path to the artifact from which the container was
+                // built
                 try {
-                    ArtifactResultBuildItem baseArtifact = artifactResultBuildItems.get(artifactResultBuildItems.size() - 2);
+                    ArtifactResultBuildItem baseArtifact = artifactResultBuildItems
+                            .get(artifactResultBuildItems.size() - 2);
                     if (baseArtifact.getPath() != null) {
                         properties.put("path", artifactPathForResultMetadata(outputTargetBuildItem, baseArtifact));
                     }
@@ -300,8 +304,8 @@ public class AugmentActionImpl implements AugmentAction {
 
         try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
             @SuppressWarnings("unchecked")
-            BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classChangeInformation, classLoader,
-                    NON_NORMAL_MODE_OUTPUTS);
+            BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classChangeInformation,
+                    classLoader, NON_NORMAL_MODE_OUTPUTS);
 
             return new StartupActionImpl(curatedApplication, result);
         }
@@ -316,10 +320,8 @@ public class AugmentActionImpl implements AugmentAction {
             Thread.currentThread().setContextClassLoader(classLoader);
             LaunchMode.set(launchMode);
 
-            QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder()
-                    .setRoot(quarkusBootstrap.getApplicationRoot())
-                    .setClassLoader(classLoader)
-                    .setTargetDir(quarkusBootstrap.getTargetDirectory())
+            QuarkusAugmentor.Builder builder = QuarkusAugmentor.builder().setRoot(quarkusBootstrap.getApplicationRoot())
+                    .setClassLoader(classLoader).setTargetDir(quarkusBootstrap.getTargetDirectory())
                     .setDeploymentClassLoader(deploymentClassLoader)
                     .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
                     .setRuntimeProperties(quarkusBootstrap.getRuntimeProperties())
@@ -349,9 +351,9 @@ public class AugmentActionImpl implements AugmentAction {
                         new LiveReloadBuildItem(true, changedResources, reloadContext, classChangeInformation));
             }
             for (AdditionalDependency i : quarkusBootstrap.getAdditionalApplicationArchives()) {
-                //this gets added to the class path either way
-                //but we only need to add it to the additional app archives
-                //if it is forced as an app archive
+                // this gets added to the class path either way
+                // but we only need to add it to the additional app archives
+                // if it is forced as an app archive
                 if (i.isForceApplicationArchive()) {
                     builder.addAdditionalApplicationArchive(i.getResolvedPaths());
                 }
@@ -373,7 +375,7 @@ public class AugmentActionImpl implements AugmentAction {
             }
         } finally {
             Thread.currentThread().setContextClassLoader(old);
-            //QuarkusConfigFactory.setConfig(null);
+            // QuarkusConfigFactory.setConfig(null);
         }
     }
 

@@ -30,7 +30,8 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
     @Override
     protected void doHandle(final RoutingContext ctx) {
 
-        if (ctx.request().headers().contains(HttpHeaders.UPGRADE, HttpHeaders.WEBSOCKET, true) && !ctx.request().isEnded()) {
+        if (ctx.request().headers().contains(HttpHeaders.UPGRADE, HttpHeaders.WEBSOCKET, true)
+                && !ctx.request().isEnded()) {
             Map<String, Object> metaData = getMetaData(ctx);
             ctx.request().toWebSocket(event -> {
                 if (event.succeeded()) {
@@ -48,8 +49,8 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                                     new QuarkusVertxWebSocketSession(serverWebSocket), metaData);
                             break;
                         case "graphql-ws":
-                            handler = new GraphQLWSSubprotocolHandler(
-                                    new QuarkusVertxWebSocketSession(serverWebSocket), metaData);
+                            handler = new GraphQLWSSubprotocolHandler(new QuarkusVertxWebSocketSession(serverWebSocket),
+                                    metaData);
                             break;
                         default:
                             log.warn("Unknown graphql-over-websocket protocol: " + subprotocol);
@@ -58,9 +59,10 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
                     }
 
                     QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
-                    long cancellation = -1L; // Do not use 0, as you won't be able to distinguish between not set, and the first task Id
+                    long cancellation = -1L; // Do not use 0, as you won't be able to distinguish between not set, and
+                                             // the first task Id
                     if (user != null) {
-                        //close the connection when the identity expires
+                        // close the connection when the identity expires
                         Long expire = user.getSecurityIdentity().getAttribute("quarkus.identity.expire-time");
                         if (expire != null) {
                             cancellation = ctx.vertx().setTimer((expire * 1000) - System.currentTimeMillis(),

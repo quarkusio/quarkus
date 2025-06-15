@@ -26,9 +26,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class AsyncRestClientFallbackTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AsyncRestClientFallbackTest.class, Client.class, MyFallback.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(AsyncRestClientFallbackTest.class, Client.class, MyFallback.class));
 
     @TestHTTPResource
     URL url;

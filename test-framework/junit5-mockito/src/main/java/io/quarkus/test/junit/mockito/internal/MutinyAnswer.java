@@ -43,8 +43,7 @@ public class MutinyAnswer extends ReturnsEmptyValues {
 
     @Override
     public Object answer(InvocationOnMock inv) {
-        if (isToStringMethod(inv.getMethod())
-                || isCompareToMethod(inv.getMethod())) {
+        if (isToStringMethod(inv.getMethod()) || isCompareToMethod(inv.getMethod())) {
             return super.answer(inv);
         }
 
@@ -52,8 +51,9 @@ public class MutinyAnswer extends ReturnsEmptyValues {
         // save the user some time figuring out this issue when it happens
         if ((returnType.getName().equals(Multi.class.getName()) && returnType != Multi.class)
                 || (returnType.getName().equals(Uni.class.getName()) && returnType != Uni.class)) {
-            throw new IllegalStateException("Class loader issue: we have two Multi classes with different class loaders. "
-                    + "Make sure to initialize this class with the QuarkusClassLoader.");
+            throw new IllegalStateException(
+                    "Class loader issue: we have two Multi classes with different class loaders. "
+                            + "Make sure to initialize this class with the QuarkusClassLoader.");
         }
         if (returnType == Multi.class) {
             return Multi.createFrom().item(returnValueForMutiny(inv.getMethod().getGenericReturnType()));

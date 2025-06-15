@@ -1,8 +1,8 @@
 package io.quarkus.oidc.client.registration.runtime;
 
 /**
- * Exception which indicates that an injected {@link OidcClientRegistration} is disabled
- * with the `quarkus.oidc-client-registration.registration-enabled=false` property.
+ * Exception which indicates that an injected {@link OidcClientRegistration} is disabled with the
+ * `quarkus.oidc-client-registration.registration-enabled=false` property.
  */
 @SuppressWarnings("serial")
 public class DisabledOidcClientRegistrationException extends RuntimeException {

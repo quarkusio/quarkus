@@ -16,9 +16,7 @@ public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultSt
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EntityWithTimezones.class)
-                    .addClasses(SchemaUtil.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EntityWithTimezones.class).addClasses(SchemaUtil.class))
             .withConfigurationResource("application.properties");
 
     @Test
@@ -35,8 +33,7 @@ public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultSt
     @RunOnVertxContext
     public void persistAndLoad(UniAsserter asserter) {
         // Native storage is not supported with PostgreSQL, so we'll effectively use NORMALIZED_UTC.
-        assertPersistedThenLoadedValues(asserter,
-                PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneOffset.UTC),
+        assertPersistedThenLoadedValues(asserter, PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneOffset.UTC),
                 PERSISTED_OFFSET_DATE_TIME.withOffsetSameInstant(ZoneOffset.UTC),
                 PERSISTED_OFFSET_TIME.withOffsetSameInstant(ZoneOffset.UTC));
     }

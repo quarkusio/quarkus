@@ -47,9 +47,8 @@ public class FormAuthRedirectTestCase {
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
-            return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, FormAuthResource.class,
-                            TrustedIdentityProvider.class)
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestIdentityProvider.class,
+                    TestIdentityController.class, FormAuthResource.class, TrustedIdentityProvider.class)
                     .addAsResource(new StringAsset("""
                             quarkus.http.auth.form.enabled=true
                             quarkus.http.auth.form.landing-page=/hello
@@ -60,26 +59,15 @@ public class FormAuthRedirectTestCase {
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("a d m i n", "a d m i n", "a d m i n")
-                .add("user", "user");
+        TestIdentityController.resetRoles().add("a d m i n", "a d m i n", "a d m i n").add("user", "user");
     }
 
     @Test
     public void testFormAuthFailure() {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
-        RestAssured
-                .given()
-                .filter(new CookieFilter())
-                .redirects().follow(false)
-                .when()
-                .formParam("j_username", "a d m i n")
-                .formParam("j_password", "wrongpassword")
-                .post("/j_security_check")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/error"))
+        RestAssured.given().filter(new CookieFilter()).redirects().follow(false).when()
+                .formParam("j_username", "a d m i n").formParam("j_password", "wrongpassword").post("/j_security_check")
+                .then().assertThat().statusCode(302).header("location", containsString("/error"))
                 .header("quarkus-credential", nullValue());
     }
 
@@ -87,72 +75,28 @@ public class FormAuthRedirectTestCase {
     public void testFormAuthLoginLogout() throws InterruptedException {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         CookieFilter cookies = new CookieFilter();
-        var response = RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/hello")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/login.html"))
-                .extract();
+        var response = RestAssured.given().filter(cookies).redirects().follow(false).when().get("/hello").then()
+                .assertThat().statusCode(302).header("location", containsString("/login.html")).extract();
         assertNull(response.cookie("quarkus-credential"));
 
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .formParam("j_username", "user")
-                .formParam("j_password", "user")
-                .post("/j_security_check")
-                .then()
-                .assertThat()
-                .statusCode(302)
+        RestAssured.given().filter(cookies).redirects().follow(false).when().formParam("j_username", "user")
+                .formParam("j_password", "user").post("/j_security_check").then().assertThat().statusCode(302)
                 .header("location", containsString("/hello"))
                 .cookie("quarkus-credential", detailedCookie().value(notNullValue()).sameSite("Strict").path("/"));
 
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/hello")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("hello user"));
+        RestAssured.given().filter(cookies).redirects().follow(false).when().get("/hello").then().assertThat()
+                .statusCode(200).body(equalTo("hello user"));
 
         Thread.sleep(Duration.ofSeconds(2).toMillis());
 
-        response = RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/logout")
-                .then()
-                .assertThat()
-                .statusCode(303)
-                .header("location", containsString("/"))
-                .extract();
+        response = RestAssured.given().filter(cookies).redirects().follow(false).when().get("/logout").then()
+                .assertThat().statusCode(303).header("location", containsString("/")).extract();
         String credentialsCookieValue = response.cookie("quarkus-credential");
         Assertions.assertTrue(credentialsCookieValue == null || credentialsCookieValue.isEmpty(),
                 "Expected credentials cookie was removed, but actual value was " + credentialsCookieValue);
 
-        response = RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/hello")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/login.html"))
-                .extract();
+        response = RestAssured.given().filter(cookies).redirects().follow(false).when().get("/hello").then()
+                .assertThat().statusCode(302).header("location", containsString("/login.html")).extract();
         credentialsCookieValue = response.cookie("quarkus-credential");
         Assertions.assertTrue(credentialsCookieValue == null || credentialsCookieValue.isEmpty());
     }
@@ -180,8 +124,7 @@ public class FormAuthRedirectTestCase {
                 throw new UnauthorizedException("Not authenticated");
             }
             FormAuthenticationMechanism.logout(identity.getIdentity());
-            return Response.seeOther(URI.create("/"))
-                    .build();
+            return Response.seeOther(URI.create("/")).build();
         }
     }
 

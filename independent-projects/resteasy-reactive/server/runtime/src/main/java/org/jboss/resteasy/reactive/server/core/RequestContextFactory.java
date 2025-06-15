@@ -5,8 +5,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 public interface RequestContextFactory {
 
-    ResteasyReactiveRequestContext createContext(Deployment deployment,
-            Object context,
+    ResteasyReactiveRequestContext createContext(Deployment deployment, Object context,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain);
 
     /**

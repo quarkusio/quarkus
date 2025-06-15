@@ -17,8 +17,8 @@ public class HtmlAnsiOutputStream extends AnsiOutputStream {
     private static final byte[] BYTES_GT = "&gt;".getBytes();
 
     public HtmlAnsiOutputStream(OutputStream os) {
-        super(os, new ZeroWidthSupplier(), AnsiMode.Force, new HtmlAnsiProcessor(os), AnsiType.Redirected, AnsiColors.Colors256,
-                StandardCharsets.UTF_8, null, null, true);
+        super(os, new ZeroWidthSupplier(), AnsiMode.Force, new HtmlAnsiProcessor(os), AnsiType.Redirected,
+                AnsiColors.Colors256, StandardCharsets.UTF_8, null, null, true);
     }
 
     public void write(int data) throws IOException {

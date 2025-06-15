@@ -8,9 +8,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to indicate the type of the <em>repeatable annotation
- * type</em> annotated with a {@code QuarkusTestResource} annotations.
- *
+ * Used to indicate the type of the <em>repeatable annotation type</em> annotated with a {@code QuarkusTestResource}
+ * annotations.
  */
 @Target(ElementType.ANNOTATION_TYPE)
 @Retention(RetentionPolicy.RUNTIME)

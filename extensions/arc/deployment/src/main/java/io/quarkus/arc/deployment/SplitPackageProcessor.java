@@ -24,16 +24,15 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
- * Split package (same package coming from multiple app archives) is considered a bad practice and
- * this processor tries to detect it and log a warning listing out the offending packages.
+ * Split package (same package coming from multiple app archives) is considered a bad practice and this processor tries
+ * to detect it and log a warning listing out the offending packages.
  * <p>
  * Note that this processor is a best-effort because it only operates on {@code ApplicationArchivesBuildItem} which
  * means that if a 3rd party library isn't indexed, we aren't able to detect it even though it can still be a part of
  * resulting application. See also {@code io.quarkus.arc.processor.BeanArchives.IndexWrapper}.
  * <p>
  * This processor can be configured by users and extensions to skip validation for certain packages hence avoiding the
- * warning in logs.
- * See also {@link ArcConfig#ignoredSplitPackages} and {@link IgnoreSplitPackageBuildItem}
+ * warning in logs. See also {@link ArcConfig#ignoredSplitPackages} and {@link IgnoreSplitPackageBuildItem}
  */
 public class SplitPackageProcessor {
 
@@ -50,8 +49,7 @@ public class SplitPackageProcessor {
     };
 
     @BuildStep
-    void splitPackageDetection(ApplicationArchivesBuildItem archivesBuildItem,
-            ArcConfig config,
+    void splitPackageDetection(ApplicationArchivesBuildItem archivesBuildItem, ArcConfig config,
             List<IgnoreSplitPackageBuildItem> excludedPackages,
             // Dummy producer to make sure the build step executes
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> dummy) {
@@ -122,7 +120,8 @@ public class SplitPackageProcessor {
                             }
                         }
                     } else {
-                        // Generates an app archive information in form of groupId:artifactId[:classifier][:type]:version
+                        // Generates an app archive information in form of
+                        // groupId:artifactId[:classifier][:type]:version
                         splitPackages.add(dep.toCompactCoords());
                     }
                 }
@@ -131,8 +130,10 @@ public class SplitPackageProcessor {
         }
         // perform logging if needed
         if (splitPackagesWarning.length() > 0) {
-            LOGGER.warnf("Detected a split package usage which is considered a bad practice and should be avoided. " +
-                    "Following packages were detected in multiple archives: %s", splitPackagesWarning.toString());
+            LOGGER.warnf(
+                    "Detected a split package usage which is considered a bad practice and should be avoided. "
+                            + "Following packages were detected in multiple archives: %s",
+                    splitPackagesWarning.toString());
         }
     }
 

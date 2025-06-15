@@ -39,8 +39,7 @@ public class ExcludedArtifactsTest extends BootstrapFromOriginalJarTestBase {
         extA.getRuntime().addDependency(extADep);
         extA.getDeployment().addDependency(extADeploymentDep);
 
-        extA.getDescriptor().set("excluded-artifacts",
-                extADep.getKey().toString() + ",org.banned*");
+        extA.getDescriptor().set("excluded-artifacts", extADep.getKey().toString() + ",org.banned*");
 
         final TsArtifact depB = TsArtifact.jar("dep-b");
         addToExpectedLib(depB);
@@ -51,11 +50,8 @@ public class ExcludedArtifactsTest extends BootstrapFromOriginalJarTestBase {
         final TsArtifact depF = TsArtifact.jar("org.banned", "dep-f", "1");
         depB.addDependency(depF);
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extA)
-                .addDependency(new TsDependency(depB));
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extA).addDependency(new TsDependency(depB));
     }
 
     @Override
@@ -63,8 +59,9 @@ public class ExcludedArtifactsTest extends BootstrapFromOriginalJarTestBase {
         Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-deployment", "1"),
                 DependencyFlags.DEPLOYMENT_CP));
-        expected.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"),
-                DependencyFlags.DEPLOYMENT_CP));
+        expected.add(
+                new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"),
+                        DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, getDeploymentOnlyDeps(model));
 
         expected = new HashSet<>();

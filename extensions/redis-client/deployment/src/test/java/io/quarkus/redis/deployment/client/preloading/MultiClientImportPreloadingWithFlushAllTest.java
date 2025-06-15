@@ -24,15 +24,13 @@ public class MultiClientImportPreloadingWithFlushAllTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.redis.hosts=${quarkus.redis.tr}\n" +
-                                    "quarkus.redis.load-script=import/my-import.redis\n" +
-                                    "quarkus.redis.my-redis.hosts=${quarkus.redis.tr}\n" +
-                                    "quarkus.redis.my-redis.load-script=sample.redis\n" +
-                                    // Erase the data source
-                                    // Bad idea (as it will dropped what we loaded so far), but just to test the behavior
-                                    "quarkus.redis.my-redis.flush-before-load=true"),
-                            "application.properties")
+                    .addAsResource(new StringAsset("quarkus.redis.hosts=${quarkus.redis.tr}\n"
+                            + "quarkus.redis.load-script=import/my-import.redis\n"
+                            + "quarkus.redis.my-redis.hosts=${quarkus.redis.tr}\n"
+                            + "quarkus.redis.my-redis.load-script=sample.redis\n" +
+                            // Erase the data source
+                            // Bad idea (as it will dropped what we loaded so far), but just to test the behavior
+                            "quarkus.redis.my-redis.flush-before-load=true"), "application.properties")
                     .addAsResource(new File("src/test/resources/imports/import.redis"), "import/my-import.redis")
                     .addAsResource(new File("src/test/resources/imports/sample.redis"), "sample.redis")
 
@@ -48,7 +46,6 @@ public class MultiClientImportPreloadingWithFlushAllTest {
     @Test
     void verifyImport() {
         // Others have been removed by the `flushall` command
-        assertThat(my.key().keys("*"))
-                .containsOnly("key", "space:key", "counter");
+        assertThat(my.key().keys("*")).containsOnly("key", "space:key", "counter");
     }
 }

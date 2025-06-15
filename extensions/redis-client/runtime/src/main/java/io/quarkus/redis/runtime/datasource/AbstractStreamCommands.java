@@ -38,10 +38,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrEmpty(ids, "ids");
         doesNotContainNull(ids, "ids");
 
-        RedisCommand cmd = RedisCommand.of(Command.XACK)
-                .put(marshaller.encode(key))
-                .put(group)
-                .putAll(ids);
+        RedisCommand cmd = RedisCommand.of(Command.XACK).put(marshaller.encode(key)).put(group).putAll(ids);
         return execute(cmd);
     }
 
@@ -53,9 +50,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(args, "args");
         nonNull(payload, "payload");
-        RedisCommand cmd = RedisCommand.of(Command.XADD)
-                .put(marshaller.encode(key))
-                .putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.XADD).put(marshaller.encode(key)).putArgs(args);
         for (Map.Entry<F, V> entry : payload.entrySet()) {
             cmd.put(marshaller.encode(entry.getKey()));
             cmd.putNullable(marshaller.encode(entry.getValue()));
@@ -70,10 +65,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         ParameterValidation.validate(minIdleTime, "minIdleTime");
         notNullOrBlank(start, "start");
         positive(count, "count");
-        RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM)
-                .put(marshaller.encode(key))
-                .put(group).put(consumer).put(minIdleTime.toMillis()).put(start)
-                .put("COUNT").put(count);
+        RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM).put(marshaller.encode(key)).put(group).put(consumer)
+                .put(minIdleTime.toMillis()).put(start).put("COUNT").put(count);
 
         return execute(cmd);
     }
@@ -84,9 +77,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrBlank(consumer, "consumer");
         ParameterValidation.validate(minIdleTime, "minIdleTime");
         notNullOrBlank(start, "start");
-        RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM)
-                .put(marshaller.encode(key))
-                .put(group).put(consumer).put(minIdleTime.toMillis()).put(start);
+        RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM).put(marshaller.encode(key)).put(group).put(consumer)
+                .put(minIdleTime.toMillis()).put(start);
 
         return execute(cmd);
     }
@@ -99,9 +91,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         ParameterValidation.validate(minIdleTime, "minIdleTime");
         notNullOrBlank(start, "start");
         positive(count, "count");
-        RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM)
-                .put(marshaller.encode(key))
-                .put(group).put(consumer).put(minIdleTime.toMillis()).put(start);
+        RedisCommand cmd = RedisCommand.of(Command.XAUTOCLAIM).put(marshaller.encode(key)).put(group).put(consumer)
+                .put(minIdleTime.toMillis()).put(start);
         if (count > 0) {
             cmd.put("COUNT").put(count);
         }
@@ -119,12 +110,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrEmpty(id, "id");
         doesNotContainNull(id, "id");
 
-        RedisCommand cmd = RedisCommand.of(Command.XCLAIM)
-                .put(marshaller.encode(key))
-                .put(group)
-                .put(consumer)
-                .put(Long.toString(minIdleTime.toMillis()))
-                .putAll(id);
+        RedisCommand cmd = RedisCommand.of(Command.XCLAIM).put(marshaller.encode(key)).put(group).put(consumer)
+                .put(Long.toString(minIdleTime.toMillis())).putAll(id);
         return execute(cmd);
     }
 
@@ -137,13 +124,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrEmpty(id, "id");
         doesNotContainNull(id, "id");
 
-        RedisCommand cmd = RedisCommand.of(Command.XCLAIM)
-                .put(marshaller.encode(key))
-                .put(group)
-                .put(consumer)
-                .put(Long.toString(minIdleTime.toMillis()))
-                .putAll(id)
-                .putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.XCLAIM).put(marshaller.encode(key)).put(group).put(consumer)
+                .put(Long.toString(minIdleTime.toMillis())).putAll(id).putArgs(args);
         return execute(cmd);
     }
 
@@ -152,9 +134,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrEmpty(id, "id");
         doesNotContainNull(id, "id");
 
-        RedisCommand cmd = RedisCommand.of(Command.XDEL)
-                .put(marshaller.encode(key))
-                .putAll(id);
+        RedisCommand cmd = RedisCommand.of(Command.XDEL).put(marshaller.encode(key)).putAll(id);
         return execute(cmd);
     }
 
@@ -163,10 +143,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrBlank(groupname, "groupname");
         notNullOrBlank(from, "from");
 
-        RedisCommand cmd = RedisCommand.of(Command.XGROUP)
-                .put("CREATE")
-                .put(marshaller.encode(key))
-                .put(groupname)
+        RedisCommand cmd = RedisCommand.of(Command.XGROUP).put("CREATE").put(marshaller.encode(key)).put(groupname)
                 .put(from);
         return execute(cmd);
     }
@@ -177,12 +154,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrBlank(from, "from");
         nonNull(args, "args");
 
-        RedisCommand cmd = RedisCommand.of(Command.XGROUP)
-                .put("CREATE")
-                .put(marshaller.encode(key))
-                .put(groupname)
-                .put(from)
-                .putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.XGROUP).put("CREATE").put(marshaller.encode(key)).put(groupname)
+                .put(from).putArgs(args);
         return execute(cmd);
     }
 
@@ -190,11 +163,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(groupname, "groupname");
         notNullOrBlank(consumername, "consumername");
-        RedisCommand cmd = RedisCommand.of(Command.XGROUP)
-                .put("CREATECONSUMER")
-                .put(marshaller.encode(key))
-                .put(groupname)
-                .put(consumername);
+        RedisCommand cmd = RedisCommand.of(Command.XGROUP).put("CREATECONSUMER").put(marshaller.encode(key))
+                .put(groupname).put(consumername);
         return execute(cmd);
     }
 
@@ -202,10 +172,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(groupname, "groupname");
         notNullOrBlank(consumername, "consumername");
-        RedisCommand cmd = RedisCommand.of(Command.XGROUP)
-                .put("DELCONSUMER")
-                .put(marshaller.encode(key))
-                .put(groupname)
+        RedisCommand cmd = RedisCommand.of(Command.XGROUP).put("DELCONSUMER").put(marshaller.encode(key)).put(groupname)
                 .put(consumername);
         return execute(cmd);
     }
@@ -214,10 +181,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(groupname, "groupname");
 
-        RedisCommand cmd = RedisCommand.of(Command.XGROUP)
-                .put("DESTROY")
-                .put(marshaller.encode(key))
-                .put(groupname);
+        RedisCommand cmd = RedisCommand.of(Command.XGROUP).put("DESTROY").put(marshaller.encode(key)).put(groupname);
         return execute(cmd);
     }
 
@@ -226,10 +190,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrBlank(groupname, "groupname");
         notNullOrBlank(from, "from");
 
-        RedisCommand cmd = RedisCommand.of(Command.XGROUP)
-                .put("SETID")
-                .put(marshaller.encode(key))
-                .put(groupname)
+        RedisCommand cmd = RedisCommand.of(Command.XGROUP).put("SETID").put(marshaller.encode(key)).put(groupname)
                 .put(from);
         return execute(cmd);
     }
@@ -240,19 +201,14 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrBlank(from, "from");
         nonNull(args, "args");
 
-        RedisCommand cmd = RedisCommand.of(Command.XGROUP)
-                .put("SETID")
-                .put(marshaller.encode(key))
-                .put(groupname)
-                .put(from)
-                .putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.XGROUP).put("SETID").put(marshaller.encode(key)).put(groupname)
+                .put(from).putArgs(args);
         return execute(cmd);
     }
 
     Uni<Response> _xlen(K key) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of(Command.XLEN)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.XLEN).put(marshaller.encode(key));
         return execute(cmd);
     }
 
@@ -260,36 +216,28 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(range, "range");
         positive(count, "count");
-        RedisCommand cmd = RedisCommand.of(Command.XRANGE)
-                .put(marshaller.encode(key))
-                .putArgs(range)
-                .put("COUNT").put(count);
+        RedisCommand cmd = RedisCommand.of(Command.XRANGE).put(marshaller.encode(key)).putArgs(range).put("COUNT")
+                .put(count);
         return execute(cmd);
     }
 
     Uni<Response> _xrange(K key, StreamRange range) {
         nonNull(key, "key");
         nonNull(range, "range");
-        RedisCommand cmd = RedisCommand.of(Command.XRANGE)
-                .put(marshaller.encode(key))
-                .putArgs(range);
+        RedisCommand cmd = RedisCommand.of(Command.XRANGE).put(marshaller.encode(key)).putArgs(range);
         return execute(cmd);
     }
 
     Uni<Response> _xread(K key, String id) {
         nonNull(key, "key");
         notNullOrBlank(id, "id");
-        RedisCommand cmd = RedisCommand.of(Command.XREAD)
-                .put("STREAMS")
-                .put(marshaller.encode(key))
-                .put(id);
+        RedisCommand cmd = RedisCommand.of(Command.XREAD).put("STREAMS").put(marshaller.encode(key)).put(id);
         return execute(cmd);
     }
 
     Uni<Response> _xread(Map<K, String> lastIdsPerStream) {
         nonNull(lastIdsPerStream, "lastIdsPerStream");
-        RedisCommand cmd = RedisCommand.of(Command.XREAD)
-                .put("STREAMS");
+        RedisCommand cmd = RedisCommand.of(Command.XREAD).put("STREAMS");
 
         writeStreamsAndIds(lastIdsPerStream, cmd);
 
@@ -300,19 +248,14 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(id, "id");
         nonNull(args, "args");
-        RedisCommand cmd = RedisCommand.of(Command.XREAD)
-                .putArgs(args)
-                .put("STREAMS")
-                .put(marshaller.encode(key))
+        RedisCommand cmd = RedisCommand.of(Command.XREAD).putArgs(args).put("STREAMS").put(marshaller.encode(key))
                 .put(id);
         return execute(cmd);
     }
 
     Uni<Response> _xread(Map<K, String> lastIdsPerStream, XReadArgs args) {
         nonNull(args, "args");
-        RedisCommand cmd = RedisCommand.of(Command.XREAD)
-                .putArgs(args)
-                .put("STREAMS");
+        RedisCommand cmd = RedisCommand.of(Command.XREAD).putArgs(args).put("STREAMS");
 
         writeStreamsAndIds(lastIdsPerStream, cmd);
 
@@ -334,13 +277,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(id, "id");
 
-        RedisCommand cmd = RedisCommand.of(Command.XREADGROUP)
-                .put("GROUP")
-                .put(group)
-                .put(consumer)
-                .put("STREAMS")
-                .put(marshaller.encode(key))
-                .put(id);
+        RedisCommand cmd = RedisCommand.of(Command.XREADGROUP).put("GROUP").put(group).put(consumer).put("STREAMS")
+                .put(marshaller.encode(key)).put(id);
         return execute(cmd);
     }
 
@@ -349,11 +287,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrBlank(consumer, "consumer");
         nonNull(lastIdsPerStream, "lastIdsPerStream");
 
-        RedisCommand cmd = RedisCommand.of(Command.XREADGROUP)
-                .put("GROUP")
-                .put(group)
-                .put(consumer)
-                .put("STREAMS");
+        RedisCommand cmd = RedisCommand.of(Command.XREADGROUP).put("GROUP").put(group).put(consumer).put("STREAMS");
 
         writeStreamsAndIds(lastIdsPerStream, cmd);
 
@@ -368,14 +302,8 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrBlank(id, "id");
         nonNull(args, "args");
 
-        RedisCommand cmd = RedisCommand.of(Command.XREADGROUP)
-                .put("GROUP")
-                .put(group)
-                .put(consumer)
-                .putArgs(args)
-                .put("STREAMS")
-                .put(marshaller.encode(key))
-                .put(id);
+        RedisCommand cmd = RedisCommand.of(Command.XREADGROUP).put("GROUP").put(group).put(consumer).putArgs(args)
+                .put("STREAMS").put(marshaller.encode(key)).put(id);
         return execute(cmd);
     }
 
@@ -385,11 +313,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(lastIdsPerStream, "lastIdsPerStream");
         nonNull(args, "args");
 
-        RedisCommand cmd = RedisCommand.of(Command.XREADGROUP)
-                .put("GROUP")
-                .put(group)
-                .put(consumer)
-                .putArgs(args)
+        RedisCommand cmd = RedisCommand.of(Command.XREADGROUP).put("GROUP").put(group).put(consumer).putArgs(args)
                 .put("STREAMS");
 
         writeStreamsAndIds(lastIdsPerStream, cmd);
@@ -402,10 +326,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(range, "range");
         positive(count, "count");
 
-        RedisCommand cmd = RedisCommand.of(Command.XREVRANGE)
-                .put(marshaller.encode(key))
-                .putArgs(range)
-                .put("COUNT")
+        RedisCommand cmd = RedisCommand.of(Command.XREVRANGE).put(marshaller.encode(key)).putArgs(range).put("COUNT")
                 .put(count);
         return execute(cmd);
     }
@@ -413,9 +334,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
     Uni<Response> _xrevrange(K key, StreamRange range) {
         nonNull(key, "key");
         nonNull(range, "range");
-        RedisCommand cmd = RedisCommand.of(Command.XREVRANGE)
-                .put(marshaller.encode(key))
-                .putArgs(range);
+        RedisCommand cmd = RedisCommand.of(Command.XREVRANGE).put(marshaller.encode(key)).putArgs(range);
         return execute(cmd);
     }
 
@@ -423,9 +342,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(args, "args");
 
-        RedisCommand cmd = RedisCommand.of(Command.XTRIM)
-                .put(marshaller.encode(key))
-                .putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.XTRIM).put(marshaller.encode(key)).putArgs(args);
 
         return execute(cmd);
     }
@@ -434,9 +351,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(key, "group");
 
-        RedisCommand cmd = RedisCommand.of(Command.XPENDING)
-                .put(marshaller.encode(key))
-                .put(group);
+        RedisCommand cmd = RedisCommand.of(Command.XPENDING).put(marshaller.encode(key)).put(group);
         return execute(cmd);
     }
 
@@ -446,9 +361,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(range, "range");
         positive(count, "count");
 
-        RedisCommand cmd = RedisCommand.of(Command.XPENDING)
-                .put(marshaller.encode(key))
-                .put(group);
+        RedisCommand cmd = RedisCommand.of(Command.XPENDING).put(marshaller.encode(key)).put(group);
 
         // IDLE must be before the range and count
         if (args != null && args.idle() != null) {
@@ -456,8 +369,7 @@ public class AbstractStreamCommands<K, F, V> extends AbstractRedisCommands {
             cmd.put(args.idle().toMillis());
         }
 
-        cmd.putArgs(range)
-                .put(count);
+        cmd.putArgs(range).put(count);
 
         if (args != null) {
             cmd.putArgs(args);

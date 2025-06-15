@@ -23,7 +23,8 @@ public interface MultipleHeadersBindingClient {
     @GET
     @Path("/describe-request")
     @ClientHeaderParam(name = "header-from-properties", value = "${header.value}")
-    RequestData call(@HeaderParam("jaxrs-style-header") String headerValue, @NotBody String usedForComputingContentType);
+    RequestData call(@HeaderParam("jaxrs-style-header") String headerValue,
+            @NotBody String usedForComputingContentType);
 
     @GET
     @Path("/describe-request")
@@ -36,8 +37,8 @@ public interface MultipleHeadersBindingClient {
     @Path("/describe-request")
     @ClientHeaderParam(name = "header-from-properties", value = "${header.value}")
     @ClientHeaderParam(name = "Content-Type", value = "application/json;param2={usedForComputingContentType}")
-    RequestData call2(@HeaderParam("jaxrs-style-header") String headerValue, @NotBody String usedForComputingContentType,
-            String unusedBody);
+    RequestData call2(@HeaderParam("jaxrs-style-header") String headerValue,
+            @NotBody String usedForComputingContentType, String unusedBody);
 
     default String calculateContentType(ComputedParamContext context) {
         return "application/json;param2=" + context.methodParameters().get(1).value();

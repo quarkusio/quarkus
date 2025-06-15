@@ -10,7 +10,8 @@ import io.quarkus.arc.processor.DecoratorInfo;
 
 public class DevDecoratorInfo implements Comparable<DevDecoratorInfo> {
 
-    public static DevDecoratorInfo from(DecoratorInfo decorator, CompletedApplicationClassPredicateBuildItem predicate) {
+    public static DevDecoratorInfo from(DecoratorInfo decorator,
+            CompletedApplicationClassPredicateBuildItem predicate) {
         boolean isApplicationBean = predicate.test(decorator.getBeanClass());
         Set<Name> delegateQualifiers = new HashSet<>();
         for (AnnotationInstance binding : decorator.getDelegateQualifiers()) {
@@ -27,8 +28,8 @@ public class DevDecoratorInfo implements Comparable<DevDecoratorInfo> {
     private final int priority;
     private final boolean isApplicationBean;
 
-    private DevDecoratorInfo(String id, Name decoratorClass, Name delegateType, Set<Name> delegateQualifiers, int priority,
-            boolean isApplicationBean) {
+    private DevDecoratorInfo(String id, Name decoratorClass, Name delegateType, Set<Name> delegateQualifiers,
+            int priority, boolean isApplicationBean) {
         super();
         this.id = id;
         this.decoratorClass = decoratorClass;

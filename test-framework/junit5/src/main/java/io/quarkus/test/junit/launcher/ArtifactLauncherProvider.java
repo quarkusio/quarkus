@@ -9,7 +9,6 @@ public interface ArtifactLauncherProvider {
 
     /**
      * Determines whether this provider support the artifact type
-     *
      */
     boolean supportsArtifactType(String type, String testProfile);
 

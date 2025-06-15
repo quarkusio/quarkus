@@ -26,7 +26,8 @@ public class ClientBuilderTest {
 
         Client secondClient = builder.build();
 
-        try (firstClient; secondClient) {
+        try (firstClient;
+                secondClient) {
             // Should not be the same instance
             assertNotSame(firstClient.getConfiguration(), secondClient.getConfiguration());
 

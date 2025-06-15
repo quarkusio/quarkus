@@ -13,8 +13,11 @@ public interface ResteasyReactiveClientRequestFilter extends ClientRequestFilter
     /**
      * Filter method called before a request has been dispatched to a client transport layer.
      *
-     * @param requestContext the request context.
-     * @throws IOException if an I/O exception occurs.
+     * @param requestContext
+     *        the request context.
+     *
+     * @throws IOException
+     *         if an I/O exception occurs.
      */
     @Override
     default void filter(ClientRequestContext requestContext) throws IOException {
@@ -24,7 +27,8 @@ public interface ResteasyReactiveClientRequestFilter extends ClientRequestFilter
     /**
      * Filter method called before a request has been dispatched to a client transport layer.
      *
-     * @param requestContext the REST Client reactive request context.
+     * @param requestContext
+     *        the REST Client reactive request context.
      */
     void filter(ResteasyReactiveClientRequestContext requestContext);
 }

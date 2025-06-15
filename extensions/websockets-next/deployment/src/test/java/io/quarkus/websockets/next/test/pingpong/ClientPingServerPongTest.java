@@ -28,10 +28,9 @@ import io.vertx.core.http.WebSocketClient;
 public class ClientPingServerPongTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -45,16 +44,14 @@ public class ClientPingServerPongTest {
         try {
             Buffer ping = Buffer.buffer("ping");
             LinkedBlockingDeque<Buffer> message = new LinkedBlockingDeque<>();
-            client
-                    .connect(endUri.getPort(), endUri.getHost(), endUri.getPath())
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            r.result().pongHandler(pong -> message.add(pong));
-                            r.result().writePing(ping);
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
-                    });
+            client.connect(endUri.getPort(), endUri.getHost(), endUri.getPath()).onComplete(r -> {
+                if (r.succeeded()) {
+                    r.result().pongHandler(pong -> message.add(pong));
+                    r.result().writePing(ping);
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             assertTrue(Endpoint.OPENED.await(5, TimeUnit.SECONDS));
             // The pong message should be sent by the server automatically and should be identical to the ping message
             assertEquals(ping, message.poll(10, TimeUnit.SECONDS));

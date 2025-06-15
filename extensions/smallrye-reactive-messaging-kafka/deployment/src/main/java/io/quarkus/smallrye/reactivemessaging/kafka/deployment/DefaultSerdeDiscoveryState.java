@@ -51,9 +51,10 @@ class DefaultSerdeDiscoveryState {
     boolean isKafkaConnector(List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors, boolean incoming,
             String channelName) {
         // First look in the channelsManagedByConnectors list
-        Optional<ConnectorManagedChannelBuildItem> match = channelsManagedByConnectors.stream().filter(cn -> cn
-                .getDirection() == (incoming ? ChannelDirection.INCOMING : ChannelDirection.OUTGOING)
-                && cn.getName().equalsIgnoreCase(channelName)).findFirst();
+        Optional<ConnectorManagedChannelBuildItem> match = channelsManagedByConnectors.stream()
+                .filter(cn -> cn.getDirection() == (incoming ? ChannelDirection.INCOMING : ChannelDirection.OUTGOING)
+                        && cn.getName().equalsIgnoreCase(channelName))
+                .findFirst();
         if (match.isPresent()) {
             return true;
         }
@@ -61,9 +62,7 @@ class DefaultSerdeDiscoveryState {
         String channelType = incoming ? "incoming" : "outgoing";
         return isKafkaConnector.computeIfAbsent(channelType + "|" + channelName, ignored -> {
             String connectorKey = getChannelPropertyKey(channelName, "connector", incoming);
-            String connector = getConfig()
-                    .getOptionalValue(connectorKey, String.class)
-                    .orElse("ignored");
+            String connector = getConfig().getOptionalValue(connectorKey, String.class).orElse("ignored");
             return KafkaConnector.CONNECTOR_NAME.equals(connector);
         });
     }
@@ -86,9 +85,8 @@ class DefaultSerdeDiscoveryState {
         }
         if (key.startsWith("mp.messaging.outgoing.") && key.endsWith(".value.serializer")) {
             if (connectorHasValueSerializer == null) {
-                connectorHasValueSerializer = getConfig()
-                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".value.serializer",
-                                String.class)
+                connectorHasValueSerializer = getConfig().getOptionalValue(
+                        "mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".value.serializer", String.class)
                         .isPresent();
             }
             return connectorHasValueSerializer;
@@ -96,18 +94,16 @@ class DefaultSerdeDiscoveryState {
 
         if (key.startsWith("mp.messaging.incoming.") && key.endsWith(".key.deserializer")) {
             if (connectorHasKeyDeserializer == null) {
-                connectorHasKeyDeserializer = getConfig()
-                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".key.deserializer",
-                                String.class)
+                connectorHasKeyDeserializer = getConfig().getOptionalValue(
+                        "mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".key.deserializer", String.class)
                         .isPresent();
             }
             return connectorHasKeyDeserializer;
         }
         if (key.startsWith("mp.messaging.incoming.") && key.endsWith(".value.deserializer")) {
             if (connectorHasValueDeserializer == null) {
-                connectorHasValueDeserializer = getConfig()
-                        .getOptionalValue("mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".value.deserializer",
-                                String.class)
+                connectorHasValueDeserializer = getConfig().getOptionalValue(
+                        "mp.messaging.connector." + KafkaConnector.CONNECTOR_NAME + ".value.deserializer", String.class)
                         .isPresent();
             }
             return connectorHasValueDeserializer;
@@ -173,8 +169,7 @@ class DefaultSerdeDiscoveryState {
     boolean hasJsonb() {
         if (hasJsonb == null) {
             try {
-                Class.forName("jakarta.json.bind.Jsonb", false,
-                        Thread.currentThread().getContextClassLoader());
+                Class.forName("jakarta.json.bind.Jsonb", false, Thread.currentThread().getContextClassLoader());
                 hasJsonb = true;
             } catch (ClassNotFoundException e) {
                 hasJsonb = false;
@@ -185,42 +180,31 @@ class DefaultSerdeDiscoveryState {
     }
 
     ClassInfo getSubclassOfWithTypeArgument(DotName superclass, DotName expectedTypeArgument) {
-        return index.getAllKnownSubclasses(superclass)
-                .stream()
+        return index.getAllKnownSubclasses(superclass).stream()
                 .filter(ci -> !ci.isAbstract() && JandexUtil.resolveTypeParameters(ci.name(), superclass, index)
                         .stream().anyMatch(t -> t.name().equals(expectedTypeArgument)))
-                .min(Comparator.comparing(ClassInfo::name))
-                .orElse(null);
+                .min(Comparator.comparing(ClassInfo::name)).orElse(null);
     }
 
     ClassInfo getImplementorOfWithTypeArgument(DotName implementedInterface, DotName expectedTypeArgument) {
-        return index.getAllKnownImplementors(implementedInterface)
-                .stream()
-                .filter(ci -> !ci.isAbstract() && JandexUtil.resolveTypeParameters(ci.name(), implementedInterface, index)
+        return index.getAllKnownImplementors(implementedInterface).stream().filter(
+                ci -> !ci.isAbstract() && JandexUtil.resolveTypeParameters(ci.name(), implementedInterface, index)
                         .stream().anyMatch(t -> t.name().equals(expectedTypeArgument)))
-                .min(Comparator.comparing(ClassInfo::name))
-                .orElse(null);
+                .min(Comparator.comparing(ClassInfo::name)).orElse(null);
     }
 
     List<AnnotationInstance> findAnnotationsOnMethods(DotName annotation) {
-        return index.getAnnotations(annotation)
-                .stream()
-                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD)
-                .collect(Collectors.toList());
+        return index.getAnnotations(annotation).stream()
+                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD).collect(Collectors.toList());
     }
 
     List<AnnotationInstance> findRepeatableAnnotationsOnMethods(DotName annotation) {
-        return index.getAnnotationsWithRepeatable(annotation, index)
-                .stream()
-                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD)
-                .collect(Collectors.toList());
+        return index.getAnnotationsWithRepeatable(annotation, index).stream()
+                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD).collect(Collectors.toList());
     }
 
     List<AnnotationInstance> findAnnotationsOnInjectionPoints(DotName annotation) {
-        return index.getAnnotations(annotation)
-                .stream()
-                .filter(it -> it.target().kind() == AnnotationTarget.Kind.FIELD
-                        || it.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER)
-                .collect(Collectors.toList());
+        return index.getAnnotations(annotation).stream().filter(it -> it.target().kind() == AnnotationTarget.Kind.FIELD
+                || it.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER).collect(Collectors.toList());
     }
 }

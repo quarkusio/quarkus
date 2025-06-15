@@ -11,12 +11,12 @@ import io.quarkus.panache.common.Page;
 
 /**
  * Interface representing an entity query, which abstracts the use of paging, getting the number of results, and
- * operating on {@link List} or {@link Stream}.
+ * operating on {@link List} or {@link Stream}. Instances of this interface cannot mutate the query itself or its
+ * parameters: only paging information can be modified, and instances of this interface can be reused to obtain multiple
+ * pages of results.
  *
- * Instances of this interface cannot mutate the query itself or its parameters: only paging information can be
- * modified, and instances of this interface can be reused to obtain multiple pages of results.
- *
- * @param <Entity> The entity type being queried
+ * @param <Entity>
+ *        The entity type being queried
  */
 public interface PanacheQuery<Entity> {
 
@@ -33,8 +33,11 @@ public interface PanacheQuery<Entity> {
     /**
      * Sets the current page.
      *
-     * @param page the new page
+     * @param page
+     *        the new page
+     *
      * @return this query, modified
+     *
      * @see #page(int, int)
      * @see #page()
      */
@@ -43,9 +46,13 @@ public interface PanacheQuery<Entity> {
     /**
      * Sets the current page.
      *
-     * @param pageIndex the page index (0-based)
-     * @param pageSize the page size
+     * @param pageIndex
+     *        the page index (0-based)
+     * @param pageSize
+     *        the page size
+     *
      * @return this query, modified
+     *
      * @see #page(Page)
      * @see #page()
      */
@@ -55,7 +62,10 @@ public interface PanacheQuery<Entity> {
      * Sets the current page to the next page
      *
      * @return this query, modified
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #previousPage()
      */
     public <T extends Entity> PanacheQuery<T> nextPage();
@@ -64,7 +74,10 @@ public interface PanacheQuery<Entity> {
      * Sets the current page to the previous page (or the first page if there is no previous page)
      *
      * @return this query, modified
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #nextPage()
      */
     public <T extends Entity> PanacheQuery<T> previousPage();
@@ -73,7 +86,10 @@ public interface PanacheQuery<Entity> {
      * Sets the current page to the first page
      *
      * @return this query, modified
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #lastPage()
      */
     public <T extends Entity> PanacheQuery<T> firstPage();
@@ -82,18 +98,23 @@ public interface PanacheQuery<Entity> {
      * Sets the current page to the last page. This will cause reading of the entity count.
      *
      * @return this query, modified
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #firstPage()
      * @see #count()
      */
     public <T extends Entity> PanacheQuery<T> lastPage();
 
     /**
-     * Returns true if there is another page to read after the current one.
-     * This will cause reading of the entity count.
+     * Returns true if there is another page to read after the current one. This will cause reading of the entity count.
      *
      * @return true if there is another page to read
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #hasPreviousPage()
      * @see #count()
      */
@@ -103,17 +124,22 @@ public interface PanacheQuery<Entity> {
      * Returns true if there is a page to read before the current one.
      *
      * @return true if there is a previous page to read
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #hasNextPage()
      */
     public boolean hasPreviousPage();
 
     /**
-     * Returns the total number of pages to be read using the current page size.
-     * This will cause reading of the entity count.
+     * Returns the total number of pages to be read using the current page size. This will cause reading of the entity
+     * count.
      *
      * @return the total number of pages to be read using the current page size.
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
      */
     public int pageCount();
 
@@ -121,18 +147,24 @@ public interface PanacheQuery<Entity> {
      * Returns the current page.
      *
      * @return the current page
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #page(Page)
      * @see #page(int,int)
      */
     public Page page();
 
     /**
-     * Switch the query to use a fixed range (start index - last index) instead of a page.
-     * As the range is fixed, subsequent pagination of the query is not possible.
+     * Switch the query to use a fixed range (start index - last index) instead of a page. As the range is fixed,
+     * subsequent pagination of the query is not possible.
      *
-     * @param startIndex the index of the first element, starting at 0
-     * @param lastIndex the index of the last element
+     * @param startIndex
+     *        the index of the first element, starting at 0
+     * @param lastIndex
+     *        the index of the last element
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> range(int startIndex, int lastIndex);
@@ -140,7 +172,9 @@ public interface PanacheQuery<Entity> {
     /**
      * Define the collation used for this query.
      *
-     * @param collation the collation to be used for this query.
+     * @param collation
+     *        the collation to be used for this query.
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> withCollation(Collation collation);
@@ -148,7 +182,9 @@ public interface PanacheQuery<Entity> {
     /**
      * Define the read preference used for this query.
      *
-     * @param readPreference the read preference to be used for this query.
+     * @param readPreference
+     *        the read preference to be used for this query.
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> withReadPreference(ReadPreference readPreference);
@@ -156,7 +192,9 @@ public interface PanacheQuery<Entity> {
     /**
      * Define the batch size for this query.
      *
-     * @param batchSize the batch size to be used for this query.
+     * @param batchSize
+     *        the batch size to be used for this query.
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> withBatchSize(int batchSize);
@@ -164,9 +202,8 @@ public interface PanacheQuery<Entity> {
     // Results
 
     /**
-     * Reads and caches the total number of entities this query operates on. This causes a database
-     * query with <code>SELECT COUNT(*)</code> and a query equivalent to the current query, minus
-     * ordering.
+     * Reads and caches the total number of entities this query operates on. This causes a database query with
+     * <code>SELECT COUNT(*)</code> and a query equivalent to the current query, minus ordering.
      *
      * @return the total number of entities this query operates on, cached.
      */
@@ -176,6 +213,7 @@ public interface PanacheQuery<Entity> {
      * Returns the current page of results as a {@link List}.
      *
      * @return the current page of results as a {@link List}.
+     *
      * @see #stream()
      * @see #page(Page)
      * @see #page()
@@ -186,6 +224,7 @@ public interface PanacheQuery<Entity> {
      * Returns the current page of results as a {@link Stream}.
      *
      * @return the current page of results as a {@link Stream}.
+     *
      * @see #list()
      * @see #page(Page)
      * @see #page()
@@ -193,19 +232,19 @@ public interface PanacheQuery<Entity> {
     public <T extends Entity> Stream<T> stream();
 
     /**
-     * Returns the first result of the current page index. This ignores the current page size to fetch
-     * a single result.
+     * Returns the first result of the current page index. This ignores the current page size to fetch a single result.
      *
      * @return the first result of the current page index, or null if there are no results.
+     *
      * @see #singleResult()
      */
     public <T extends Entity> T firstResult();
 
     /**
-     * Returns the first result of the current page index. This ignores the current page size to fetch
-     * a single result.
+     * Returns the first result of the current page index. This ignores the current page size to fetch a single result.
      *
      * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     *
      * @see #singleResultOptional()
      */
     public <T extends Entity> Optional<T> firstResultOptional();
@@ -214,7 +253,10 @@ public interface PanacheQuery<Entity> {
      * Executes this query for the current page and return a single result.
      *
      * @return the single result
-     * @throws io.quarkus.panache.common.exception.PanacheQueryException if there is not exactly one result.
+     *
+     * @throws io.quarkus.panache.common.exception.PanacheQueryException
+     *         if there is not exactly one result.
+     *
      * @see #firstResult()
      */
     public <T extends Entity> T singleResult();
@@ -223,7 +265,10 @@ public interface PanacheQuery<Entity> {
      * Executes this query for the current page and return a single result.
      *
      * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
-     * @throws io.quarkus.panache.common.exception.PanacheQueryException if there is more than one result.
+     *
+     * @throws io.quarkus.panache.common.exception.PanacheQueryException
+     *         if there is more than one result.
+     *
      * @see #firstResultOptional()
      */
     public <T extends Entity> Optional<T> singleResultOptional();

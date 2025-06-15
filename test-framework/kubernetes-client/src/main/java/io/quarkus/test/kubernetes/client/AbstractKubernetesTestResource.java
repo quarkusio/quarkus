@@ -28,8 +28,8 @@ public abstract class AbstractKubernetesTestResource<T, C extends KubernetesClie
         systemProps.put(Config.KUBERNETES_MASTER_SYSTEM_PROPERTY, getClient().getConfiguration().getMasterUrl());
 
         configureServer();
-        //these actually need to be system properties
-        //as they are read directly as system props, and not from Quarkus config
+        // these actually need to be system properties
+        // as they are read directly as system props, and not from Quarkus config
         for (Map.Entry<String, String> entry : systemProps.entrySet()) {
             System.setProperty(entry.getKey(), entry.getValue());
         }
@@ -40,8 +40,7 @@ public abstract class AbstractKubernetesTestResource<T, C extends KubernetesClie
     protected abstract C getClient();
 
     /**
-     * Can be used by subclasses in order to
-     * setup the mock server before the Quarkus application starts
+     * Can be used by subclasses in order to setup the mock server before the Quarkus application starts
      */
     protected void configureServer() {
     }

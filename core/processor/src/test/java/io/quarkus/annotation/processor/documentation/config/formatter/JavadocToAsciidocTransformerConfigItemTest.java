@@ -116,12 +116,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void parseJavaDocWithLiTagsInsideUlTag() {
-        String javaDoc = "List:" +
-                "<ul>\n" +
-                "<li>1</li>\n" +
-                "<li>2</li>\n" +
-                "</ul>" +
-                "";
+        String javaDoc = "List:" + "<ul>\n" + "<li>1</li>\n" + "<li>2</li>\n" + "</ul>" + "";
         String expectedOutput = "List:\n\n - 1\n - 2";
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
@@ -131,12 +126,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void parseJavaDocWithLiTagsInsideOlTag() {
-        String javaDoc = "List:" +
-                "<ol>\n" +
-                "<li>1</li>\n" +
-                "<li>2</li>\n" +
-                "</ol>" +
-                "";
+        String javaDoc = "List:" + "<ol>\n" + "<li>1</li>\n" + "<li>2</li>\n" + "</ol>" + "";
         String expectedOutput = "List:\n\n . 1\n . 2";
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         String description = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
@@ -216,23 +206,16 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void parseJavaDocWithBlockquoteBlock() {
-        ParsedJavadoc parsed = JavadocUtil
-                .parseConfigItemJavadoc("See Section 4.5.5 of the JSR 380 specification, specifically\n"
-                        + "\n"
-                        + "<blockquote>\n"
+        ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(
+                "See Section 4.5.5 of the JSR 380 specification, specifically\n" + "\n" + "<blockquote>\n"
                         + "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may\n"
                         + "be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation.\n"
                         + "This would pose a strengthening of preconditions to be fulfilled by the caller.\n"
                         + "</blockquote>\nThat was interesting, wasn't it?");
 
-        assertEquals("See Section 4.5.5 of the JSR 380 specification, specifically\n"
-                + "\n"
-                + "[quote]\n"
-                + "____\n"
+        assertEquals("See Section 4.5.5 of the JSR 380 specification, specifically\n" + "\n" + "[quote]\n" + "____\n"
                 + "In sub types (be it sub classes/interfaces or interface implementations), no parameter constraints may be declared on overridden or implemented methods, nor may parameters be marked for cascaded validation. This would pose a strengthening of preconditions to be fulfilled by the caller.\n"
-                + "____\n"
-                + "\n"
-                + "That was interesting, wasn't it?",
+                + "____\n" + "\n" + "That was interesting, wasn't it?",
                 JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format()));
 
         parsed = JavadocUtil.parseConfigItemJavadoc(
@@ -268,19 +251,9 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void asciidoc() {
-        String asciidoc = "== My Asciidoc\n" +
-                "\n" +
-                "Let's have a https://quarkus.io[link to our website].\n" +
-                "\n" +
-                "[TIP]\n" +
-                "====\n" +
-                "A nice tip\n" +
-                "====\n" +
-                "\n" +
-                "[source,java]\n" +
-                "----\n" +
-                "And some code\n" +
-                "----";
+        String asciidoc = "== My Asciidoc\n" + "\n" + "Let's have a https://quarkus.io[link to our website].\n" + "\n"
+                + "[TIP]\n" + "====\n" + "A nice tip\n" + "====\n" + "\n" + "[source,java]\n" + "----\n"
+                + "And some code\n" + "----";
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet");
 
@@ -289,12 +262,7 @@ public class JavadocToAsciidocTransformerConfigItemTest {
 
     @Test
     public void asciidocLists() {
-        String asciidoc = "* A list\n" +
-                "\n" +
-                "* 1\n" +
-                "  * 1.1\n" +
-                "  * 1.2\n" +
-                "* 2";
+        String asciidoc = "* A list\n" + "\n" + "* 1\n" + "  * 1.1\n" + "  * 1.2\n" + "* 2";
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(asciidoc + "\n" + "@asciidoclet");
 
@@ -310,8 +278,8 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());
         final String actual = Factory.create().convert(asciiDoc, Collections.emptyMap());
-        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
-                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob "
+                + ch + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
         assertEquals(expected, actual);
     }
 
@@ -328,8 +296,8 @@ public class JavadocToAsciidocTransformerConfigItemTest {
         if (ch.equals("]")) {
             ch = "&#93;";
         }
-        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
-                + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob "
+                + ch + " " + ch + ch + "</code>, <code>JavaDoc tag " + ch + " " + ch + ch + "</code></p>\n</div>";
         assertEquals(expected, actual);
     }
 
@@ -349,8 +317,8 @@ public class JavadocToAsciidocTransformerConfigItemTest {
     public void escapeBrackets(String ch) {
         final String javaDoc = "Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch + " " + ch + ch
                 + "</code>";
-        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob " + ch
-                + " " + ch + ch + "</code></p>\n</div>";
+        final String expected = "<div class=\"paragraph\">\n<p>Inline " + ch + " " + ch + ch + ", <code>HTML tag glob "
+                + ch + " " + ch + ch + "</code></p>\n</div>";
 
         ParsedJavadoc parsed = JavadocUtil.parseConfigItemJavadoc(javaDoc);
         final String asciiDoc = JavadocToAsciidocTransformer.toAsciidoc(parsed.description(), parsed.format());

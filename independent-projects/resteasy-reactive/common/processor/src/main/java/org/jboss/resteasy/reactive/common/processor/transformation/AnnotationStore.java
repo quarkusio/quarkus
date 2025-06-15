@@ -15,6 +15,7 @@ import org.jboss.jandex.IndexView;
  * Applies {@link AnnotationsTransformer}s and caches the results of transformations.
  *
  * @author Martin Kouba
+ *
  * @see AnnotationsTransformer
  */
 public final class AnnotationStore {
@@ -22,9 +23,7 @@ public final class AnnotationStore {
     private final AnnotationOverlay delegate;
 
     public AnnotationStore(IndexView index, Collection<AnnotationTransformation> transformations) {
-        this.delegate = AnnotationOverlay.builder(index, transformations)
-                .compatibleMode()
-                .build();
+        this.delegate = AnnotationOverlay.builder(index, transformations).compatibleMode().build();
     }
 
     public AnnotationOverlay overlay() {
@@ -35,6 +34,7 @@ public final class AnnotationStore {
      * All {@link AnnotationsTransformer}s are applied and the result is cached.
      *
      * @param target
+     *
      * @return the annotation instances for the given target
      */
     public Collection<AnnotationInstance> getAnnotations(AnnotationTarget target) {
@@ -42,10 +42,11 @@ public final class AnnotationStore {
     }
 
     /**
-     *
      * @param target
      * @param name
+     *
      * @return the annotation instance if present, {@code null} otherwise
+     *
      * @see #getAnnotations(AnnotationTarget)
      */
     public AnnotationInstance getAnnotation(AnnotationTarget target, DotName name) {
@@ -53,10 +54,11 @@ public final class AnnotationStore {
     }
 
     /**
-     *
      * @param target
      * @param name
+     *
      * @return {@code true} if the specified target contains the specified annotation, {@code false} otherwise
+     *
      * @see #getAnnotations(AnnotationTarget)
      */
     public boolean hasAnnotation(AnnotationTarget target, DotName name) {
@@ -64,10 +66,11 @@ public final class AnnotationStore {
     }
 
     /**
-     *
      * @param target
      * @param names
+     *
      * @return {@code true} if the specified target contains any of the specified annotations, {@code false} otherwise
+     *
      * @see #getAnnotations(AnnotationTarget)
      */
     public boolean hasAnyAnnotation(AnnotationTarget target, Iterable<DotName> names) {

@@ -50,8 +50,8 @@ public class OpenApiHandler implements Handler<RoutingContext> {
                 String formatParam = formatParams.isEmpty() ? null : formatParams.get(0);
 
                 // Check Accept, then query parameter "format" for JSON; else use YAML.
-                if ((accept != null && accept.contains(Format.JSON.getMimeType())) ||
-                        ("JSON".equalsIgnoreCase(formatParam))) {
+                if ((accept != null && accept.contains(Format.JSON.getMimeType()))
+                        || ("JSON".equalsIgnoreCase(formatParam))) {
                     format = Format.JSON;
                 }
             }

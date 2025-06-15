@@ -16,12 +16,9 @@ import io.micrometer.core.instrument.binder.kafka.KafkaClientMetrics;
 import io.quarkus.runtime.ShutdownEvent;
 
 /**
- * Observer to create and register KafkaClientMetrics.
- *
- * This observer uses only classes from "kafka-clients" and none from "kafka-streams".
- *
- * Must be separated from KafkaStreamsEventObserver, because they use different dependencies and if only kafka-client is used,
- * the classes from kafka-streams aren't loaded.
+ * Observer to create and register KafkaClientMetrics. This observer uses only classes from "kafka-clients" and none
+ * from "kafka-streams". Must be separated from KafkaStreamsEventObserver, because they use different dependencies and
+ * if only kafka-client is used, the classes from kafka-streams aren't loaded.
  */
 @ApplicationScoped
 public class KafkaEventObserver {
@@ -31,12 +28,12 @@ public class KafkaEventObserver {
     Map<Object, KafkaClientMetrics> clientMetrics = new HashMap<>();
 
     /**
-     * Manage bind/close of KafkaClientMetrics for the specified Consumer.
-     * If the consumer has not been seen before, it will be bound to the
-     * Micrometer registry and instrumented using a Kafka MeterBinder.
-     * If the consumer has been seen before, the MeterBinder will be closed.
+     * Manage bind/close of KafkaClientMetrics for the specified Consumer. If the consumer has not been seen before, it
+     * will be bound to the Micrometer registry and instrumented using a Kafka MeterBinder. If the consumer has been
+     * seen before, the MeterBinder will be closed.
      *
-     * @param consumer Observed Kafka Consumer
+     * @param consumer
+     *        Observed Kafka Consumer
      */
     public synchronized void consumerCreated(@Observes Consumer<?, ?> consumer) {
         KafkaClientMetrics metrics = clientMetrics.remove(consumer);
@@ -55,12 +52,12 @@ public class KafkaEventObserver {
     }
 
     /**
-     * Manage bind/close of KafkaClientMetrics for the specified Producer.
-     * If the producer has not been seen before, it will be bound to the
-     * Micrometer registry and instrumented using a Kafka MeterBinder.
-     * If the producer has been seen before, the MeterBinder will be closed.
+     * Manage bind/close of KafkaClientMetrics for the specified Producer. If the producer has not been seen before, it
+     * will be bound to the Micrometer registry and instrumented using a Kafka MeterBinder. If the producer has been
+     * seen before, the MeterBinder will be closed.
      *
-     * @param producer Observed Kafka Producer
+     * @param producer
+     *        Observed Kafka Producer
      */
     public synchronized void producerCreated(@Observes Producer<?, ?> producer) {
         KafkaClientMetrics metrics = clientMetrics.remove(producer);

@@ -15,12 +15,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultiplePersistenceUnitsClassLevelAnnotationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(IllegalStateException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClass(EntityWithClassLevelPersistenceUnit.class)
-                    .addAsResource("application-multiple-persistence-units.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(IllegalStateException.class)
+            .withApplicationRoot((jar) -> jar.addClass(EntityWithClassLevelPersistenceUnit.class)
+                    .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @Test
     public void testInvalidConfiguration() {

@@ -21,19 +21,16 @@ import io.restassured.RestAssured;
 public class GlobalThrowableExceptionMapperTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, ThrowableExceptionMapper.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, ThrowableExceptionMapper.class);
+        }
+    });
 
     @Test
     public void test() {
-        RestAssured.get("/test/throwable")
-                .then().statusCode(415);
+        RestAssured.get("/test/throwable").then().statusCode(415);
     }
 
     @Path("test")

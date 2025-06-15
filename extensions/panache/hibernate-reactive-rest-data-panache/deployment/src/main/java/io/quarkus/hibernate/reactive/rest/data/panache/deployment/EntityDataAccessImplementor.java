@@ -30,8 +30,7 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle findById(BytecodeCreator creator, ResultHandle id) {
-        return creator.invokeStaticMethod(ofMethod(entityClassName, "findById", Uni.class, Object.class),
-                id);
+        return creator.invokeStaticMethod(ofMethod(entityClassName, "findById", Uni.class, Object.class), id);
     }
 
     /**
@@ -50,8 +49,8 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
-        ResultHandle query = creator.invokeStaticMethod(
-                ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class), sort);
+        ResultHandle query = creator
+                .invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class), sort);
         creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
                 page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), query);
@@ -61,12 +60,12 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
      * Implements <code>Entity.findAll(query, params).page(page).list()</code>
      */
     @Override
-    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query,
+            ResultHandle queryParams) {
         ResultHandle panacheQuery = creator.invokeStaticMethod(
-                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Map.class),
-                query, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Map.class), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), panacheQuery);
     }
 
@@ -77,10 +76,10 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort, ResultHandle query,
             ResultHandle queryParams) {
         ResultHandle panacheQuery = creator.invokeStaticMethod(
-                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Sort.class, Map.class),
-                query, sort, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Sort.class, Map.class), query, sort,
+                queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), panacheQuery);
     }
 
@@ -99,9 +98,8 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
         ResultHandle uniSession = creator.invokeStaticMethod(ofMethod(entityClassName, "getSession", Uni.class));
         return UniImplementor.flatMap(creator, uniSession, "Failed to retrieve session",
-                (body, session) -> body.returnValue(
-                        body.invokeInterfaceMethod(ofMethod(Mutiny.Session.class, "merge", Uni.class, Object.class),
-                                session, entity)));
+                (body, session) -> body.returnValue(body.invokeInterfaceMethod(
+                        ofMethod(Mutiny.Session.class, "merge", Uni.class, Object.class), session, entity)));
     }
 
     /**
@@ -116,11 +114,12 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
      * Implements <code>Entity.find(query, params).page(page).pageCount()</code>
      */
     @Override
-    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
-        ResultHandle panacheQuery = creator.invokeStaticMethod(ofMethod(entityClassName, "find", PanacheQuery.class,
-                String.class, Map.class), query, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query,
+            ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Map.class), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", Uni.class), panacheQuery);
     }
 

@@ -23,23 +23,17 @@ import io.quarkus.websockets.next.WebSocketConnector;
 public class ClientEndpointTrafficLoggerTest extends TrafficLoggerTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, Client.class);
-                TrafficLoggerTest.addApplicationProperties(root, false);
-            })
-            .setLogRecordPredicate(
-                    TrafficLoggerTest::isTrafficLogRecord)
-            .assertLogRecords(logRecordsConsumer(true));
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, Client.class);
+        TrafficLoggerTest.addApplicationProperties(root, false);
+    }).setLogRecordPredicate(TrafficLoggerTest::isTrafficLogRecord).assertLogRecords(logRecordsConsumer(true));
 
     @Inject
     WebSocketConnector<Client> connector;
 
     @Test
     public void testTrafficLogger() throws InterruptedException {
-        WebSocketClientConnection conn = connector
-                .baseUri(endUri)
-                .connectAndAwait();
+        WebSocketClientConnection conn = connector.baseUri(endUri).connectAndAwait();
         assertTrue(Client.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
         assertEquals("ok", Client.MESSAGES.get(0));
         conn.closeAndAwait();

@@ -30,8 +30,9 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
     private final SecretConfigSourceUtil secretConfigSourceUtil;
 
     /**
-     * @param client A Kubernetes Client that is specific to this extension - it must not be shared with any other
-     *        parts of the application
+     * @param client
+     *        A Kubernetes Client that is specific to this extension - it must not be shared with any other parts of
+     *        the application
      */
     public KubernetesConfigSourceFactory(KubernetesClient client) {
         this.client = client;
@@ -41,17 +42,17 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
 
     @Override
     public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context) {
-        SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withSources(new ConfigSourceContextConfigSource(context))
-                .withMapping(KubernetesConfigBuildTimeConfig.class)
-                .withMapping(KubernetesConfigSourceConfig.class)
+        SmallRyeConfig config = new SmallRyeConfigBuilder().withSources(new ConfigSourceContextConfigSource(context))
+                .withMapping(KubernetesConfigBuildTimeConfig.class).withMapping(KubernetesConfigSourceConfig.class)
                 .build();
 
         KubernetesConfigBuildTimeConfig kubernetesConfigBuildTimeConfig = config
                 .getConfigMapping(KubernetesConfigBuildTimeConfig.class);
-        KubernetesConfigSourceConfig kubernetesConfigSourceConfig = config.getConfigMapping(KubernetesConfigSourceConfig.class);
+        KubernetesConfigSourceConfig kubernetesConfigSourceConfig = config
+                .getConfigMapping(KubernetesConfigSourceConfig.class);
 
-        // TODO - radcortez - Move the check that uses the build time config to the processor and skip the builder registration
+        // TODO - radcortez - Move the check that uses the build time config to the processor and skip the builder
+        // registration
         if ((!kubernetesConfigSourceConfig.enabled() && !kubernetesConfigBuildTimeConfig.secretsEnabled())
                 || isExplicitlyDisabled(context)) {
             log.debug(
@@ -94,7 +95,8 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
         return false;
     }
 
-    private List<ConfigSource> getConfigMapConfigSources(List<String> configMapNames, KubernetesConfigSourceConfig config) {
+    private List<ConfigSource> getConfigMapConfigSources(List<String> configMapNames,
+            KubernetesConfigSourceConfig config) {
         List<ConfigSource> result = new ArrayList<>(configMapNames.size());
 
         try {
@@ -115,7 +117,8 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
                 if (configMap == null) {
                     logMissingOrFail(configMapName, namespace, "ConfigMap", config.failOnMissingConfig());
                 } else {
-                    result.addAll(configMapConfigSourceUtil.toConfigSources(configMap.getMetadata(), configMap.getData(), i));
+                    result.addAll(
+                            configMapConfigSourceUtil.toConfigSources(configMap.getMetadata(), configMap.getData(), i));
                     if (log.isDebugEnabled()) {
                         log.debug("Done reading ConfigMap " + configMap.getMetadata().getName());
                     }
@@ -123,8 +126,10 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
             }
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("Unable to obtain configuration for ConfigMap objects from Kubernetes API Server at: "
-                    + client.getConfiguration().getMasterUrl(), e);
+            throw new RuntimeException(
+                    "Unable to obtain configuration for ConfigMap objects from Kubernetes API Server at: "
+                            + client.getConfiguration().getMasterUrl(),
+                    e);
         }
     }
 
@@ -157,8 +162,10 @@ class KubernetesConfigSourceFactory implements ConfigSourceFactory {
             }
             return result;
         } catch (Exception e) {
-            throw new RuntimeException("Unable to obtain configuration for Secret objects from Kubernetes API Server at: "
-                    + client.getConfiguration().getMasterUrl(), e);
+            throw new RuntimeException(
+                    "Unable to obtain configuration for Secret objects from Kubernetes API Server at: "
+                            + client.getConfiguration().getMasterUrl(),
+                    e);
         }
     }
 

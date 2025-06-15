@@ -81,13 +81,12 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
                     final ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
                     final ConfigPhase phase = annotation.phase();
                     if (phase.isAvailableAtBuild()) {
-                        setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o,
-                                readResult.requireObjectForClass(fieldClass)));
+                        setup = setup.andThen(
+                                o -> ReflectUtil.setFieldVal(field, o, readResult.requireObjectForClass(fieldClass)));
                     } else if (phase.isReadAtMain()) {
                         throw reportError(field, phase + " configuration cannot be consumed here");
                     } else {
-                        throw reportError(field,
-                                "Unsupported conditional class configuration build phase " + phase);
+                        throw reportError(field, "Unsupported conditional class configuration build phase " + phase);
                     }
                 } else {
                     throw reportError(field, "Unsupported conditional class field type " + fieldClass);

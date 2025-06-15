@@ -14,10 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RestClientReactiveBlockingTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(TestClient.class.getPackage())
-                    .addAsResource(new StringAsset(setUrlForClass(TestClient.class)),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addPackage(TestClient.class.getPackage())
+                    .addAsResource(new StringAsset(setUrlForClass(TestClient.class)), "application.properties"));
 
     @Timeout(5) // it should end immediately, not after rest client timeout
     @Test

@@ -15,8 +15,11 @@ public class ConfigUtils {
     /**
      * Interpolates the given expression. The expression is expected to be in the form of ${config.property.name}.
      *
-     * @param expression the expression to interpolate
-     * @param required whether the expression is required to be present in the configuration
+     * @param expression
+     *        the expression to interpolate
+     * @param required
+     *        whether the expression is required to be present in the configuration
+     *
      * @return null if the resulting expression is empty, otherwise the interpolated expression
      */
     @SuppressWarnings("unused")
@@ -49,14 +52,16 @@ public class ConfigUtils {
     }
 
     /**
-     * Obtains the value of the {@param propertyName} name, meaning that the name must NOT start with '${' or end with '}'
+     * Obtains the value of the {@param propertyName} name, meaning that the name must NOT start with '${' or end with
+     * '}'
      */
     public static String doGetConfigValue(String configPropertyName, boolean required, String propertyName) {
         try {
             Optional<String> optionalValue = ConfigProvider.getConfig().getOptionalValue(propertyName, String.class);
             if (optionalValue.isEmpty()) {
-                String message = String.format("Failed to find value for config property %s in application configuration. "
-                        + "Please provide the value for the property, e.g. by adding %s=<desired-value> to your application.properties",
+                String message = String.format(
+                        "Failed to find value for config property %s in application configuration. "
+                                + "Please provide the value for the property, e.g. by adding %s=<desired-value> to your application.properties",
                         configPropertyName, propertyName);
                 if (required) {
                     throw new IllegalArgumentException(message);

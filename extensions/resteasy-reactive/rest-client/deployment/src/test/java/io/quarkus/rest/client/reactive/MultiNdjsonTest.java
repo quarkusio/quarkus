@@ -49,14 +49,12 @@ public class MultiNdjsonTest {
         var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<String>();
         var completionLatch = new CountDownLatch(1);
-        client.readString().onCompletion().invoke(completionLatch::countDown)
-                .subscribe().with(collected::add);
+        client.readString().onCompletion().invoke(completionLatch::countDown).subscribe().with(collected::add);
 
         if (!completionLatch.await(5, TimeUnit.SECONDS)) {
             fail("Streaming did not complete in time");
         }
-        assertThat(collected).hasSize(4)
-                .contains("\"one\"", "\"two\"", "\"three\"", "\"four\"");
+        assertThat(collected).hasSize(4).contains("\"one\"", "\"two\"", "\"three\"", "\"four\"");
     }
 
     @Test
@@ -64,14 +62,12 @@ public class MultiNdjsonTest {
         var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
-        client.readPojo().onCompletion().invoke(completionLatch::countDown)
-                .subscribe().with(collected::add);
+        client.readPojo().onCompletion().invoke(completionLatch::countDown).subscribe().with(collected::add);
 
         if (!completionLatch.await(5, TimeUnit.SECONDS)) {
             fail("Streaming did not complete in time");
         }
-        var expected = Arrays.asList(Message.of("one", "1"),
-                Message.of("two", "2"), Message.of("three", "3"),
+        var expected = Arrays.asList(Message.of("one", "1"), Message.of("two", "2"), Message.of("three", "3"),
                 Message.of("four", "4"));
         assertThat(collected).hasSize(4).containsAll(expected);
     }
@@ -82,14 +78,13 @@ public class MultiNdjsonTest {
         var client = createClient(reactiveRoutesBaseUri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
-        client.readPojo().onCompletion().invoke(completionLatch::countDown)
-                .subscribe().with(collected::add);
+        client.readPojo().onCompletion().invoke(completionLatch::countDown).subscribe().with(collected::add);
 
         if (!completionLatch.await(5, TimeUnit.SECONDS)) {
             fail("Streaming did not complete in time");
         }
-        var expected = Arrays.asList(Message.of("superman", "1"),
-                Message.of("batman", "2"), Message.of("spiderman", "3"));
+        var expected = Arrays.asList(Message.of("superman", "1"), Message.of("batman", "2"),
+                Message.of("spiderman", "3"));
         assertThat(collected).hasSize(3).containsAll(expected);
     }
 
@@ -98,15 +93,13 @@ public class MultiNdjsonTest {
         var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
-        client.readPojoSingle().onCompletion().invoke(completionLatch::countDown)
-                .subscribe().with(collected::add);
+        client.readPojoSingle().onCompletion().invoke(completionLatch::countDown).subscribe().with(collected::add);
 
         if (!completionLatch.await(5, TimeUnit.SECONDS)) {
             fail("Streaming did not complete in time");
         }
-        var expected = Arrays.asList(
-                Message.of("zero", "0"), Message.of("one", "1"),
-                Message.of("two", "2"), Message.of("three", "3"));
+        var expected = Arrays.asList(Message.of("zero", "0"), Message.of("one", "1"), Message.of("two", "2"),
+                Message.of("three", "3"));
         assertThat(collected).hasSize(4).containsAll(expected);
     }
 
@@ -115,8 +108,7 @@ public class MultiNdjsonTest {
         var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<Message>();
         var completionLatch = new CountDownLatch(1);
-        client.readLargePojo().onCompletion().invoke(completionLatch::countDown)
-                .subscribe().with(collected::add);
+        client.readLargePojo().onCompletion().invoke(completionLatch::countDown).subscribe().with(collected::add);
 
         if (!completionLatch.await(5, TimeUnit.SECONDS)) {
             fail("Streaming did not complete in time");
@@ -163,9 +155,7 @@ public class MultiNdjsonTest {
 
         @Route(path = "/rr/stream/pojo", produces = ReactiveRoutes.ND_JSON)
         Multi<Message> people(RoutingContext context) {
-            return Multi.createFrom().items(
-                    Message.of("superman", "1"),
-                    Message.of("batman", "2"),
+            return Multi.createFrom().items(Message.of("superman", "1"), Message.of("batman", "2"),
                     Message.of("spiderman", "3"));
         }
     }
@@ -180,14 +170,13 @@ public class MultiNdjsonTest {
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
         public Multi<String> readString() {
-            return Multi.createFrom().emitter(
-                    em -> {
-                        em.emit("one");
-                        em.emit("two");
-                        em.emit("three");
-                        em.emit("four");
-                        em.complete();
-                    });
+            return Multi.createFrom().emitter(em -> {
+                em.emit("one");
+                em.emit("two");
+                em.emit("three");
+                em.emit("four");
+                em.complete();
+            });
         }
 
         @GET
@@ -195,16 +184,15 @@ public class MultiNdjsonTest {
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
         public Multi<Message> readPojo() {
-            return Multi.createFrom().emitter(
-                    em -> {
-                        em.emit(Message.of("one", "1"));
-                        em.emit(Message.of("two", "2"));
-                        em.emit(Message.of("three", "3"));
-                        vertx.setTimer(100, id -> {
-                            em.emit(Message.of("four", "4"));
-                            em.complete();
-                        });
-                    });
+            return Multi.createFrom().emitter(em -> {
+                em.emit(Message.of("one", "1"));
+                em.emit(Message.of("two", "2"));
+                em.emit(Message.of("three", "3"));
+                vertx.setTimer(100, id -> {
+                    em.emit(Message.of("four", "4"));
+                    em.complete();
+                });
+            });
         }
 
         @GET
@@ -215,9 +203,7 @@ public class MultiNdjsonTest {
             ObjectMapper mapper = new ObjectMapper();
             StringBuilder result = new StringBuilder();
             ObjectWriter objectWriter = mapper.writerFor(Message.class);
-            for (var msg : List.of(Message.of("zero", "0"),
-                    Message.of("one", "1"),
-                    Message.of("two", "2"),
+            for (var msg : List.of(Message.of("zero", "0"), Message.of("one", "1"), Message.of("two", "2"),
                     Message.of("three", "3"))) {
                 result.append(objectWriter.writeValueAsString(msg));
                 result.append("\n");
@@ -230,20 +216,19 @@ public class MultiNdjsonTest {
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
         public Multi<Message> readLargePojo() {
-            return Multi.createFrom().emitter(
-                    em -> {
-                        byte[] bytes = new byte[4 * 1024];
-                        Random random = new Random();
-                        random.nextBytes(bytes);
-                        String value = Base64.encodeBase64String(bytes);
-                        em.emit(Message.of("one", value));
-                        em.emit(Message.of("two", value));
-                        em.emit(Message.of("three", value));
-                        vertx.setTimer(100, id -> {
-                            em.emit(Message.of("four", value));
-                            em.complete();
-                        });
-                    });
+            return Multi.createFrom().emitter(em -> {
+                byte[] bytes = new byte[4 * 1024];
+                Random random = new Random();
+                random.nextBytes(bytes);
+                String value = Base64.encodeBase64String(bytes);
+                em.emit(Message.of("one", value));
+                em.emit(Message.of("two", value));
+                em.emit(Message.of("three", value));
+                vertx.setTimer(100, id -> {
+                    em.emit(Message.of("four", value));
+                    em.complete();
+                });
+            });
         }
     }
 
@@ -275,10 +260,7 @@ public class MultiNdjsonTest {
 
         @Override
         public String toString() {
-            return "Message{" +
-                    "name='" + name + '\'' +
-                    ", value='" + value + '\'' +
-                    '}';
+            return "Message{" + "name='" + name + '\'' + ", value='" + value + '\'' + '}';
         }
     }
 }

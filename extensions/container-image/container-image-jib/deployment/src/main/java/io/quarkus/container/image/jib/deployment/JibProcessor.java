@@ -93,8 +93,10 @@ public class JibProcessor {
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
 
-    // The source for this can be found at https://github.com/jboss-container-images/openjdk/blob/ubi9/modules/run/artifacts/opt/jboss/container/java/run/run-java.sh
-    // A list of env vars that affect this script can be found at https://rh-openjdk.github.io/redhat-openjdk-containers/ubi9/ubi9-openjdk-17.html
+    // The source for this can be found at
+    // https://github.com/jboss-container-images/openjdk/blob/ubi9/modules/run/artifacts/opt/jboss/container/java/run/run-java.sh
+    // A list of env vars that affect this script can be found at
+    // https://rh-openjdk.github.io/redhat-openjdk-containers/ubi9/ubi9-openjdk-17.html
     private static final String RUN_JAVA_PATH = "/opt/jboss/container/java/run/run-java.sh";
 
     private static final String DEFAULT_BASE_IMAGE_USER = "185";
@@ -104,8 +106,7 @@ public class JibProcessor {
     private static final FilePermissions REMOTE_DEV_FILE_PERMISSIONS = FilePermissions.fromOctalString("666");
 
     private static final FilePermissionsProvider REMOTE_DEV_FOLDER_PERMISSIONS_PROVIDER = (sourcePath,
-            destinationPath) -> Files.isDirectory(sourcePath)
-                    ? REMOTE_DEV_FOLDER_PERMISSIONS
+            destinationPath) -> Files.isDirectory(sourcePath) ? REMOTE_DEV_FOLDER_PERMISSIONS
                     : REMOTE_DEV_FILE_PERMISSIONS;
 
     private static final OwnershipProvider REMOTE_DEV_OWNERSHIP_PROVIDER = (sourcePath,
@@ -121,19 +122,19 @@ public class JibProcessor {
     // in order to make the AppCDS usable by the runtime JVM
     @BuildStep(onlyIf = JibBuild.class)
     public void jvmStartupOptimizerArchive(ContainerImageConfig containerImageConfig,
-            CompiledJavaVersionBuildItem compiledJavaVersion,
-            ContainerImageJibConfig jibConfig,
+            CompiledJavaVersionBuildItem compiledJavaVersion, ContainerImageJibConfig jibConfig,
             BuildProducer<JvmStartupOptimizerArchiveContainerImageBuildItem> producer) {
 
         if (!containerImageConfig.isBuildExplicitlyEnabled() && !containerImageConfig.isPushExplicitlyEnabled()) {
             return;
         }
 
-        producer.produce(
-                new JvmStartupOptimizerArchiveContainerImageBuildItem(determineBaseJvmImage(jibConfig, compiledJavaVersion)));
+        producer.produce(new JvmStartupOptimizerArchiveContainerImageBuildItem(
+                determineBaseJvmImage(jibConfig, compiledJavaVersion)));
     }
 
-    private String determineBaseJvmImage(ContainerImageJibConfig jibConfig, CompiledJavaVersionBuildItem compiledJavaVersion) {
+    private String determineBaseJvmImage(ContainerImageJibConfig jibConfig,
+            CompiledJavaVersionBuildItem compiledJavaVersion) {
         if (jibConfig.baseJvmImage().isPresent()) {
             return jibConfig.baseJvmImage().get();
         }
@@ -144,12 +145,8 @@ public class JibProcessor {
     @SuppressWarnings("deprecation") // legacy JAR
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class }, onlyIfNot = NativeBuild.class)
     public void buildFromJar(ContainerImageConfig containerImageConfig, ContainerImageJibConfig jibConfig,
-            PackageConfig packageConfig,
-            ContainerImageInfoBuildItem containerImage,
-            JarBuildItem sourceJar,
-            MainClassBuildItem mainClass,
-            OutputTargetBuildItem outputTarget,
-            CurateOutcomeBuildItem curateOutcome,
+            PackageConfig packageConfig, ContainerImageInfoBuildItem containerImage, JarBuildItem sourceJar,
+            MainClassBuildItem mainClass, OutputTargetBuildItem outputTarget, CurateOutcomeBuildItem curateOutcome,
             CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
@@ -169,13 +166,10 @@ public class JibProcessor {
         jibContainerBuilder = switch (jarType) {
             case LEGACY_JAR, UBER_JAR ->
                 createContainerBuilderFromLegacyJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
-                        jibConfig, containerImageConfig,
-                        sourceJar, outputTarget, mainClass, containerImageLabels);
-            case FAST_JAR, MUTABLE_JAR ->
-                createContainerBuilderFromFastJar(determineBaseJvmImage(jibConfig, compiledJavaVersion),
-                        jibConfig, containerImageConfig, sourceJar, curateOutcome,
-                        containerImageLabels,
-                        jvmStartupOptimizerArchiveResult, jarType == MUTABLE_JAR);
+                        jibConfig, containerImageConfig, sourceJar, outputTarget, mainClass, containerImageLabels);
+            case FAST_JAR, MUTABLE_JAR -> createContainerBuilderFromFastJar(
+                    determineBaseJvmImage(jibConfig, compiledJavaVersion), jibConfig, containerImageConfig, sourceJar,
+                    curateOutcome, containerImageLabels, jvmStartupOptimizerArchiveResult, jarType == MUTABLE_JAR);
         };
         setUser(jibConfig, jibContainerBuilder);
         setPlatforms(jibConfig, jibContainerBuilder);
@@ -185,21 +179,31 @@ public class JibProcessor {
                 pushRequest.isPresent());
         writeOutputFiles(container, jibConfig, outputTarget);
 
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container",
-                Map.of("container-image", container.getTargetImage().toString(), "pull-required",
-                        Boolean.toString(pushContainerImage))));
+        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Map.of("container-image",
+                container.getTargetImage().toString(), "pull-required", Boolean.toString(pushContainerImage))));
         containerImageBuilder.produce(new ContainerImageBuilderBuildItem(JIB));
     }
 
     @BuildStep(onlyIf = { IsNormal.class, JibBuild.class, NativeBuild.class })
     public void buildFromNative(ContainerImageConfig containerImageConfig, ContainerImageJibConfig jibConfig,
-            ContainerImageInfoBuildItem containerImage,
-            NativeImageBuildItem nativeImage,
-            OutputTargetBuildItem outputTarget,
-            Optional<ContainerImageBuildRequestBuildItem> buildRequest,
+            ContainerImageInfoBuildItem containerImage, NativeImageBuildItem nativeImage,
+            OutputTargetBuildItem outputTarget, Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
-            List<ContainerImageLabelBuildItem> containerImageLabels,
-            Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
+            List<ContainerImageLabelBuildItem> containerImageLabels, Optional<UpxCompressedBuildItem> upxCompressed, // used
+            // to
+            // ensure
+            // that
+            // we
+            // work
+            // with
+            // the
+            // compressed
+            // native
+            // binary
+            // if
+            // compression
+            // was
+            // enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
             BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder) {
 
@@ -225,18 +229,17 @@ public class JibProcessor {
                 pushContainerImage);
         writeOutputFiles(container, jibConfig, outputTarget);
 
-        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container",
-                Map.of("container-image", container.getTargetImage().toString(), "pull-required",
-                        "" + pushContainerImage)));
+        artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Map.of("container-image",
+                container.getTargetImage().toString(), "pull-required", "" + pushContainerImage)));
         containerImageBuilder.produce(new ContainerImageBuilderBuildItem(JIB));
     }
 
-    private JibContainer containerize(ContainerImageConfig containerImageConfig,
-            ContainerImageJibConfig jibConfig, ContainerImageInfoBuildItem containerImage,
-            JibContainerBuilder jibContainerBuilder,
+    private JibContainer containerize(ContainerImageConfig containerImageConfig, ContainerImageJibConfig jibConfig,
+            ContainerImageInfoBuildItem containerImage, JibContainerBuilder jibContainerBuilder,
             boolean pushRequested) {
 
-        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, containerImage, pushRequested);
+        Containerizer containerizer = createContainerizer(containerImageConfig, jibConfig, containerImage,
+                pushRequested);
         for (String additionalTag : containerImage.getAdditionalTags()) {
             containerizer.withAdditionalTag(additionalTag);
         }
@@ -249,8 +252,7 @@ public class JibProcessor {
                 .of(OPENTELEMETRY_CONTEXT_CONTEXT_STORAGE_PROVIDER_SYS_PROP, "default")) {
             JibContainer container = containerizeUnderLock(jibContainerBuilder, containerizer);
             log.infof("%s container image %s (%s)\n",
-                    containerImageConfig.isPushExplicitlyEnabled() ? "Pushed" : "Created",
-                    container.getTargetImage(),
+                    containerImageConfig.isPushExplicitlyEnabled() ? "Pushed" : "Created", container.getTargetImage(),
                     container.getDigest());
             return container;
         } catch (Exception e) {
@@ -259,8 +261,7 @@ public class JibProcessor {
     }
 
     private Containerizer createContainerizer(ContainerImageConfig containerImageConfig,
-            ContainerImageJibConfig jibConfig, ContainerImageInfoBuildItem containerImageInfo,
-            boolean pushRequested) {
+            ContainerImageJibConfig jibConfig, ContainerImageInfoBuildItem containerImageInfo, boolean pushRequested) {
         Containerizer containerizer;
         ImageReference imageReference = ImageReference.of(containerImageInfo.getRegistry().orElse(null),
                 containerImageInfo.getRepository(), containerImageInfo.getTag());
@@ -283,7 +284,8 @@ public class JibProcessor {
                 dockerDaemonImage.setDockerExecutable(Paths.get(dockerConfigExecutableName.get()));
             } else {
                 // detect the container runtime instead of falling back to 'docker' as the default
-                ContainerRuntimeUtil.ContainerRuntime detectedContainerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
+                ContainerRuntimeUtil.ContainerRuntime detectedContainerRuntime = ContainerRuntimeUtil
+                        .detectContainerRuntime();
                 log.infof("Using %s to run the native image builder", detectedContainerRuntime.getExecutableName());
                 dockerDaemonImage.setDockerExecutable(Paths.get(detectedContainerRuntime.getExecutableName()));
             }
@@ -300,23 +302,24 @@ public class JibProcessor {
         containerizer.setAllowInsecureRegistries(containerImageConfig.insecure());
         containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage());
         containerizer.setOfflineMode(jibConfig.offlineMode());
-        jibConfig.baseImageLayersCache().ifPresent(cacheDir -> containerizer.setBaseImageLayersCache(Paths.get(cacheDir)));
-        jibConfig.applicationLayersCache().ifPresent(cacheDir -> containerizer.setApplicationLayersCache(Paths.get(cacheDir)));
+        jibConfig.baseImageLayersCache()
+                .ifPresent(cacheDir -> containerizer.setBaseImageLayersCache(Paths.get(cacheDir)));
+        jibConfig.applicationLayersCache()
+                .ifPresent(cacheDir -> containerizer.setApplicationLayersCache(Paths.get(cacheDir)));
 
         return containerizer;
     }
 
     /**
-     * Wraps the containerize invocation in a synchronized block to avoid OverlappingFileLockException when running parallel jib
-     * builds (e.g. mvn -T2 ...).
-     * Each build thread uses its own augmentation CL (which is why the OverlappingFileLockException prevention in jib doesn't
-     * work here), so the lock object
-     * has to be loaded via the parent classloader so that all build threads lock the same object.
-     * QuarkusAugmentor was chosen semi-randomly (note: quarkus-core-deployment is visible to that parent CL, this jib extension
-     * is not!).
+     * Wraps the containerize invocation in a synchronized block to avoid OverlappingFileLockException when running
+     * parallel jib builds (e.g. mvn -T2 ...). Each build thread uses its own augmentation CL (which is why the
+     * OverlappingFileLockException prevention in jib doesn't work here), so the lock object has to be loaded via the
+     * parent classloader so that all build threads lock the same object. QuarkusAugmentor was chosen semi-randomly
+     * (note: quarkus-core-deployment is visible to that parent CL, this jib extension is not!).
      */
     private JibContainer containerizeUnderLock(JibContainerBuilder jibContainerBuilder, Containerizer containerizer)
-            throws InterruptedException, RegistryException, IOException, CacheDirectoryCreationException, ExecutionException {
+            throws InterruptedException, RegistryException, IOException, CacheDirectoryCreationException,
+            ExecutionException {
         Class<?> lockObj = getClass();
         ClassLoader parentCL = getClass().getClassLoader().getParent();
         try {
@@ -355,7 +358,8 @@ public class JibProcessor {
                 jibConfig.baseRegistryPassword()));
     }
 
-    private RegistryImage toRegistryImage(ImageReference imageReference, Optional<String> username, Optional<String> password) {
+    private RegistryImage toRegistryImage(ImageReference imageReference, Optional<String> username,
+            Optional<String> password) {
         CredentialRetrieverFactory credentialRetrieverFactory = CredentialRetrieverFactory.forImage(imageReference,
                 log::info);
         RegistryImage registryImage = RegistryImage.named(imageReference);
@@ -380,7 +384,8 @@ public class JibProcessor {
                 Path dockerConfigPath = Path.of(dockerConfigEnv);
                 if (Files.isDirectory(dockerConfigPath)) {
                     // this matches jib's behaviour,
-                    // see https://github.com/GoogleContainerTools/jib/blob/master/jib-maven-plugin/README.md#authentication-methods
+                    // see
+                    // https://github.com/GoogleContainerTools/jib/blob/master/jib-maven-plugin/README.md#authentication-methods
                     dockerConfigPath = dockerConfigPath.resolve("config.json");
                 }
                 registryImage.addCredentialRetriever(credentialRetrieverFactory.dockerConfig(dockerConfigPath));
@@ -401,9 +406,8 @@ public class JibProcessor {
     }
 
     /**
-     * We don't use Jib's JavaContainerBuilder here because we need to support the custom fast-jar format
-     * We create the following layers (least likely to change to most likely to change):
-     *
+     * We don't use Jib's JavaContainerBuilder here because we need to support the custom fast-jar format We create the
+     * following layers (least likely to change to most likely to change):
      * <ul>
      * <li>lib</li>
      * <li>boot-lib</li>
@@ -412,10 +416,10 @@ public class JibProcessor {
      * <li>app</li>
      * </ul>
      */
-    private JibContainerBuilder createContainerBuilderFromFastJar(String baseJvmImage, ContainerImageJibConfig jibConfig,
-            ContainerImageConfig containerImageConfig,
-            JarBuildItem sourceJarBuildItem,
-            CurateOutcomeBuildItem curateOutcome, List<ContainerImageLabelBuildItem> containerImageLabels,
+    private JibContainerBuilder createContainerBuilderFromFastJar(String baseJvmImage,
+            ContainerImageJibConfig jibConfig, ContainerImageConfig containerImageConfig,
+            JarBuildItem sourceJarBuildItem, CurateOutcomeBuildItem curateOutcome,
+            List<ContainerImageLabelBuildItem> containerImageLabels,
             Optional<JvmStartupOptimizerArchiveResultBuildItem> maybeJvmStartupOptimizerArchiveResult,
             boolean isMutableJar) {
         Path componentsPath = sourceJarBuildItem.getPath().getParent();
@@ -428,14 +432,14 @@ public class JibProcessor {
         if (jibConfig.jvmEntrypoint().isPresent()) {
             entrypoint = Collections.unmodifiableList(jibConfig.jvmEntrypoint().get());
         } else if (containsRunJava(baseJvmImage) && maybeJvmStartupOptimizerArchiveResult.isEmpty()) {
-            // we want to use run-java.sh by default. However, if AppCDS are being used, run-java.sh cannot be used because it would lead to using different JVM args
+            // we want to use run-java.sh by default. However, if AppCDS are being used, run-java.sh cannot be used
+            // because it would lead to using different JVM args
             // which would mean AppCDS would not be taken into account at all
             entrypoint = List.of(RUN_JAVA_PATH);
             envVars.put("JAVA_APP_JAR", workDirInContainer + "/" + JarResultBuildStep.QUARKUS_RUN_JAR);
             envVars.put("JAVA_APP_DIR", workDirInContainer.toString());
-            envVars.put("JAVA_OPTS_APPEND",
-                    String.join(" ",
-                            determineEffectiveJvmArguments(jibConfig, maybeJvmStartupOptimizerArchiveResult, isMutableJar)));
+            envVars.put("JAVA_OPTS_APPEND", String.join(" ",
+                    determineEffectiveJvmArguments(jibConfig, maybeJvmStartupOptimizerArchiveResult, isMutableJar)));
         } else {
             List<String> effectiveJvmArguments = determineEffectiveJvmArguments(jibConfig,
                     maybeJvmStartupOptimizerArchiveResult, isMutableJar);
@@ -517,20 +521,22 @@ public class JibProcessor {
                         workDirInContainer, "fast-jar-lib", isMutableJar, enforceModificationTime, modificationTime);
             } else {
                 // we need to manually create each layer
-                // the idea here is that the fast changing libraries are created in a later layer, thus when they do change,
+                // the idea here is that the fast changing libraries are created in a later layer, thus when they do
+                // change,
                 // docker doesn't have to create an entire layer with all dependencies - only change the fast ones
 
-                FileEntriesLayer.Builder bootLibsLayerBuilder = FileEntriesLayer.builder().setName("fast-jar-boot-libs");
+                FileEntriesLayer.Builder bootLibsLayerBuilder = FileEntriesLayer.builder()
+                        .setName("fast-jar-boot-libs");
                 Path bootLibPath = componentsPath.resolve(JarResultBuildStep.LIB).resolve(JarResultBuildStep.BOOT_LIB);
                 try (Stream<Path> bootLibPaths = Files.list(bootLibPath)) {
                     bootLibPaths.forEach(lib -> {
                         try {
                             AbsoluteUnixPath libPathInContainer = workDirInContainer.resolve(JarResultBuildStep.LIB)
-                                    .resolve(JarResultBuildStep.BOOT_LIB)
-                                    .resolve(lib.getFileName());
+                                    .resolve(JarResultBuildStep.BOOT_LIB).resolve(lib.getFileName());
                             Instant bootLibModificationTime;
                             if (maybeJvmStartupOptimizerArchiveResult.isPresent()) {
-                                // the boot lib jars need to preserve the modification time because otherwise AppCDS won't work
+                                // the boot lib jars need to preserve the modification time because otherwise AppCDS
+                                // won't work
                                 bootLibModificationTime = Files.getLastModifiedTime(lib).toInstant();
                             } else {
                                 bootLibModificationTime = modificationTime;
@@ -547,76 +553,65 @@ public class JibProcessor {
                     Path deploymentPath = componentsPath.resolve(JarResultBuildStep.LIB)
                             .resolve(JarResultBuildStep.DEPLOYMENT_LIB);
                     addLayer(jibContainerBuilder, Collections.singletonList(deploymentPath),
-                            workDirInContainer.resolve(JarResultBuildStep.LIB),
-                            "fast-jar-deployment-libs", true, enforceModificationTime, modificationTime);
+                            workDirInContainer.resolve(JarResultBuildStep.LIB), "fast-jar-deployment-libs", true,
+                            enforceModificationTime, modificationTime);
                 }
 
                 AbsoluteUnixPath libsMainPath = workDirInContainer.resolve(JarResultBuildStep.LIB)
                         .resolve(JarResultBuildStep.MAIN);
                 addLayer(jibContainerBuilder, nonFastChangingLibPaths, libsMainPath, "fast-jar-normal-libs",
                         isMutableJar, enforceModificationTime, modificationTime);
-                addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath, "fast-jar-changing-libs",
-                        isMutableJar, enforceModificationTime, modificationTime);
+                addLayer(jibContainerBuilder, new ArrayList<>(fastChangingLibPaths), libsMainPath,
+                        "fast-jar-changing-libs", isMutableJar, enforceModificationTime, modificationTime);
             }
 
             if (maybeJvmStartupOptimizerArchiveResult.isPresent()) {
-                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().setName("app-cds").addEntry(
-                        componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
-                        workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
-                        Files.getLastModifiedTime(componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)).toInstant())
-                        .build());
                 jibContainerBuilder
-                        .addLayer(Collections.singletonList(maybeJvmStartupOptimizerArchiveResult.get().getArchive()),
-                                workDirInContainer);
+                        .addFileEntriesLayer(FileEntriesLayer.builder().setName("app-cds")
+                                .addEntry(componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
+                                        workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
+                                        Files.getLastModifiedTime(
+                                                componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR)).toInstant())
+                                .build());
+                jibContainerBuilder.addLayer(
+                        Collections.singletonList(maybeJvmStartupOptimizerArchiveResult.get().getArchive()),
+                        workDirInContainer);
             } else {
-                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder()
-                        .setName("fast-jar-run")
-                        .addEntry(
-                                componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
+                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().setName("fast-jar-run")
+                        .addEntry(componentsPath.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
                                 workDirInContainer.resolve(JarResultBuildStep.QUARKUS_RUN_JAR),
-                                isMutableJar ? REMOTE_DEV_FILE_PERMISSIONS : DEFAULT_FILE_PERMISSIONS,
-                                modificationTime,
+                                isMutableJar ? REMOTE_DEV_FILE_PERMISSIONS : DEFAULT_FILE_PERMISSIONS, modificationTime,
                                 isMutableJar ? DEFAULT_BASE_IMAGE_USER : "")
                         .build());
             }
 
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.APP)),
-                    workDirInContainer, "fast-jar-quarkus-app", isMutableJar, enforceModificationTime, modificationTime);
+                    workDirInContainer, "fast-jar-quarkus-app", isMutableJar, enforceModificationTime,
+                    modificationTime);
             addLayer(jibContainerBuilder, Collections.singletonList(componentsPath.resolve(JarResultBuildStep.QUARKUS)),
                     workDirInContainer, "fast-jar-quarkus", isMutableJar, enforceModificationTime, modificationTime);
             if (ContainerImageJibConfig.DEFAULT_WORKING_DIR.equals(jibConfig.workingDirectory())) {
                 // this layer ensures that the working directory is writeable
                 // see https://github.com/GoogleContainerTools/jib/issues/1270
                 // TODO: is this needed for all working directories?
-                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder().addEntry(
-                        new FileEntry(
-                                Files.createTempDirectory("jib"),
+                jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder()
+                        .addEntry(new FileEntry(Files.createTempDirectory("jib"),
                                 AbsoluteUnixPath.get(jibConfig.workingDirectory()),
-                                FilePermissions.DEFAULT_FOLDER_PERMISSIONS,
-                                modificationTime, DEFAULT_BASE_IMAGE_USER))
+                                FilePermissions.DEFAULT_FOLDER_PERMISSIONS, modificationTime, DEFAULT_BASE_IMAGE_USER))
                         .build());
             }
             if (isMutableJar) {
                 // this layer is needed for remote-dev
                 jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder()
-                        .addEntry(
-                                new FileEntry(
-                                        Files.createTempDirectory("jib"),
-                                        workDirInContainer.resolve("dev"),
-                                        REMOTE_DEV_FOLDER_PERMISSIONS,
-                                        modificationTime, DEFAULT_BASE_IMAGE_USER))
-                        .addEntry(
-                                new FileEntry(
-                                        componentsPath.resolve(JarResultBuildStep.QUARKUS_APP_DEPS),
-                                        workDirInContainer.resolve(JarResultBuildStep.QUARKUS_APP_DEPS),
-                                        REMOTE_DEV_FOLDER_PERMISSIONS,
-                                        modificationTime, DEFAULT_BASE_IMAGE_USER))
+                        .addEntry(new FileEntry(Files.createTempDirectory("jib"), workDirInContainer.resolve("dev"),
+                                REMOTE_DEV_FOLDER_PERMISSIONS, modificationTime, DEFAULT_BASE_IMAGE_USER))
+                        .addEntry(new FileEntry(componentsPath.resolve(JarResultBuildStep.QUARKUS_APP_DEPS),
+                                workDirInContainer.resolve(JarResultBuildStep.QUARKUS_APP_DEPS),
+                                REMOTE_DEV_FOLDER_PERMISSIONS, modificationTime, DEFAULT_BASE_IMAGE_USER))
                         .build());
             }
 
-            jibContainerBuilder
-                    .setWorkingDirectory(workDirInContainer)
-                    .setEntrypoint(entrypoint)
+            jibContainerBuilder.setWorkingDirectory(workDirInContainer).setEntrypoint(entrypoint)
                     .setEnvironment(envVars)
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
@@ -641,21 +636,19 @@ public class JibProcessor {
 
     // TODO: this needs to be a lot more sophisticated
     private boolean containsRunJava(String baseJvmImage) {
-        return baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_17_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_21_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_17_IMAGE_NAME) ||
-                baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_21_IMAGE_NAME);
+        return baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_17_IMAGE_NAME)
+                || baseJvmImage.startsWith(ContainerImages.UBI8_JAVA_21_IMAGE_NAME)
+                || baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_17_IMAGE_NAME)
+                || baseJvmImage.startsWith(ContainerImages.UBI9_JAVA_21_IMAGE_NAME);
     }
 
     public JibContainerBuilder addLayer(JibContainerBuilder jibContainerBuilder, List<Path> files,
-            AbsoluteUnixPath pathInContainer, String name, boolean isMutableJar,
-            boolean enforceModificationTime, Instant forcedModificationTime)
-            throws IOException {
+            AbsoluteUnixPath pathInContainer, String name, boolean isMutableJar, boolean enforceModificationTime,
+            Instant forcedModificationTime) throws IOException {
         FileEntriesLayer.Builder layerConfigurationBuilder = FileEntriesLayer.builder().setName(name);
 
         for (Path file : files) {
-            layerConfigurationBuilder.addEntryRecursive(
-                    file, pathInContainer.resolve(file.getFileName()),
+            layerConfigurationBuilder.addEntryRecursive(file, pathInContainer.resolve(file.getFileName()),
                     isMutableJar ? REMOTE_DEV_FOLDER_PERMISSIONS_PROVIDER : DEFAULT_FILE_PERMISSIONS_PROVIDER,
                     (sourcePath, destinationPath) -> {
                         if (enforceModificationTime) {
@@ -667,8 +660,7 @@ public class JibProcessor {
                         } catch (IOException e) {
                             throw new RuntimeException("Unable to get last modified time for " + sourcePath, e);
                         }
-                    },
-                    isMutableJar ? REMOTE_DEV_OWNERSHIP_PROVIDER : DEFAULT_OWNERSHIP_PROVIDER);
+                    }, isMutableJar ? REMOTE_DEV_OWNERSHIP_PROVIDER : DEFAULT_OWNERSHIP_PROVIDER);
         }
 
         return jibContainerBuilder.addFileEntriesLayer(layerConfigurationBuilder.build());
@@ -677,9 +669,7 @@ public class JibProcessor {
     private void mayInheritEntrypoint(JibContainerBuilder jibContainerBuilder, List<String> entrypoint,
             List<String> arguments) {
         if (entrypoint.size() == 1 && "INHERIT".equals(entrypoint.get(0))) {
-            jibContainerBuilder
-                    .setEntrypoint((List<String>) null)
-                    .setProgramArguments(arguments);
+            jibContainerBuilder.setEntrypoint((List<String>) null).setProgramArguments(arguments);
         }
     }
 
@@ -698,8 +688,8 @@ public class JibProcessor {
                 }
             }
             if (!containsAppCDSOptions) {
-                effectiveJvmArguments
-                        .add(appCDSResult.getType().getJvmFlag() + "=" + appCDSResult.getArchive().getFileName().toString());
+                effectiveJvmArguments.add(
+                        appCDSResult.getType().getJvmFlag() + "=" + appCDSResult.getArchive().getFileName().toString());
             }
         }
         if (isMutableJar) {
@@ -717,45 +707,38 @@ public class JibProcessor {
         jibConfig.platforms().map(PlatformHelper::parse).ifPresent(jibContainerBuilder::setPlatforms);
     }
 
-    private JibContainerBuilder createContainerBuilderFromLegacyJar(String baseJvmImage, ContainerImageJibConfig jibConfig,
-            ContainerImageConfig containerImageConfig,
-            JarBuildItem sourceJarBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
-            MainClassBuildItem mainClassBuildItem,
-            List<ContainerImageLabelBuildItem> containerImageLabels) {
+    private JibContainerBuilder createContainerBuilderFromLegacyJar(String baseJvmImage,
+            ContainerImageJibConfig jibConfig, ContainerImageConfig containerImageConfig,
+            JarBuildItem sourceJarBuildItem, OutputTargetBuildItem outputTargetBuildItem,
+            MainClassBuildItem mainClassBuildItem, List<ContainerImageLabelBuildItem> containerImageLabels) {
         try {
             // not ideal since this has been previously zipped - we would like to just reuse it
             Path classesDir = outputTargetBuildItem.getOutputDirectory().resolve("jib");
             ZipUtils.unzip(sourceJarBuildItem.getPath(), classesDir);
 
             JavaContainerBuilder javaContainerBuilder;
-            if (baseJvmImage.startsWith(Jib.TAR_IMAGE_PREFIX) || baseJvmImage.startsWith(Jib.DOCKER_DAEMON_IMAGE_PREFIX)) {
+            if (baseJvmImage.startsWith(Jib.TAR_IMAGE_PREFIX)
+                    || baseJvmImage.startsWith(Jib.DOCKER_DAEMON_IMAGE_PREFIX)) {
                 javaContainerBuilder = JavaContainerBuilder.from(baseJvmImage);
             } else {
-                javaContainerBuilder = JavaContainerBuilder
-                        .from(toRegistryImage(ImageReference.parse(baseJvmImage), jibConfig.baseRegistryUsername(),
-                                jibConfig.baseRegistryPassword()));
+                javaContainerBuilder = JavaContainerBuilder.from(toRegistryImage(ImageReference.parse(baseJvmImage),
+                        jibConfig.baseRegistryUsername(), jibConfig.baseRegistryPassword()));
             }
 
-            javaContainerBuilder = javaContainerBuilder
-                    .addResources(classesDir, IS_CLASS_PREDICATE.negate())
+            javaContainerBuilder = javaContainerBuilder.addResources(classesDir, IS_CLASS_PREDICATE.negate())
                     .addClasses(classesDir, IS_CLASS_PREDICATE);
 
             // when there is no custom entry point, we just set everything up for a regular java run
             if (!jibConfig.jvmEntrypoint().isPresent()) {
-                javaContainerBuilder
-                        .addJvmFlags(determineEffectiveJvmArguments(jibConfig, Optional.empty(), false))
+                javaContainerBuilder.addJvmFlags(determineEffectiveJvmArguments(jibConfig, Optional.empty(), false))
                         .setMainClass(mainClassBuildItem.getClassName());
             }
 
             if (sourceJarBuildItem.getLibraryDir() != null) {
                 try (Stream<Path> dependenciesPaths = Files.list(sourceJarBuildItem.getLibraryDir())) {
-                    javaContainerBuilder
-                            .addDependencies(
-                                    dependenciesPaths
-                                            .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".jar"))
-                                            .sorted(Comparator.comparing(Path::getFileName))
-                                            .collect(Collectors.toList()));
+                    javaContainerBuilder.addDependencies(dependenciesPaths
+                            .filter(p -> Files.isRegularFile(p) && p.getFileName().toString().endsWith(".jar"))
+                            .sorted(Comparator.comparing(Path::getFileName)).collect(Collectors.toList()));
                 }
             }
 
@@ -781,8 +764,8 @@ public class JibProcessor {
     }
 
     private JibContainerBuilder createContainerBuilderFromNative(ContainerImageJibConfig jibConfig,
-            ContainerImageConfig containerImageConfig,
-            NativeImageBuildItem nativeImageBuildItem, List<ContainerImageLabelBuildItem> containerImageLabels) {
+            ContainerImageConfig containerImageConfig, NativeImageBuildItem nativeImageBuildItem,
+            List<ContainerImageLabelBuildItem> containerImageLabels) {
 
         List<String> entrypoint;
         if (jibConfig.nativeEntrypoint().isPresent()) {
@@ -797,11 +780,11 @@ public class JibProcessor {
             AbsoluteUnixPath workDirInContainer = AbsoluteUnixPath.get("/work");
             JibContainerBuilder jibContainerBuilder = toJibContainerBuilder(jibConfig.baseNativeImage(), jibConfig)
                     .addFileEntriesLayer(FileEntriesLayer.builder()
-                            .addEntry(nativeImageBuildItem.getPath(), workDirInContainer.resolve(BINARY_NAME_IN_CONTAINER),
+                            .addEntry(nativeImageBuildItem.getPath(),
+                                    workDirInContainer.resolve(BINARY_NAME_IN_CONTAINER),
                                     FilePermissions.fromOctalString("775"))
                             .build())
-                    .setWorkingDirectory(workDirInContainer)
-                    .setEntrypoint(entrypoint)
+                    .setWorkingDirectory(workDirInContainer).setEntrypoint(entrypoint)
                     .setEnvironment(createEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
@@ -821,8 +804,8 @@ public class JibProcessor {
         }
     }
 
-    private void includeSharedObjects(JibContainerBuilder jibContainerBuilder, NativeImageBuildItem nativeImageBuildItem,
-            AbsoluteUnixPath workDirInContainer) {
+    private void includeSharedObjects(JibContainerBuilder jibContainerBuilder,
+            NativeImageBuildItem nativeImageBuildItem, AbsoluteUnixPath workDirInContainer) {
         Path buildDir = nativeImageBuildItem.getPath().getParent();
         try (Stream<Path> paths = Files.list(buildDir)) {
             List<Path> sharedObjectFiles = paths.filter(Files::isRegularFile).filter(p -> !Files.isDirectory(p))
@@ -848,17 +831,17 @@ public class JibProcessor {
         }
         Map<String, String> converted = new HashMap<>();
         for (Map.Entry<String, String> entry : original.entrySet()) {
-            converted.put(entry.getKey().toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_'), entry.getValue());
+            converted.put(entry.getKey().toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_'),
+                    entry.getValue());
         }
         return converted;
     }
 
     /**
-     * Allow users to have custom files in {@code src/main/jib} that will be copied into the built container's file system
-     * in same manner as the Jib Maven and Gradle plugins do.
-     * For example, {@code src/main/jib/foo/bar} would add {@code /foo/bar} into the container filesystem.
-     *
-     * See: https://github.com/GoogleContainerTools/jib/blob/v0.15.0-core/docs/faq.md#can-i-add-a-custom-directory-to-the-image
+     * Allow users to have custom files in {@code src/main/jib} that will be copied into the built container's file
+     * system in same manner as the Jib Maven and Gradle plugins do. For example, {@code src/main/jib/foo/bar} would add
+     * {@code /foo/bar} into the container filesystem. See:
+     * https://github.com/GoogleContainerTools/jib/blob/v0.15.0-core/docs/faq.md#can-i-add-a-custom-directory-to-the-image
      */
     private void handleExtraFiles(OutputTargetBuildItem outputTarget, JibContainerBuilder jibContainerBuilder) {
         Path outputDirectory = outputTarget.getOutputDirectory();
@@ -873,22 +856,19 @@ public class JibProcessor {
 
         FileEntriesLayer extraFilesLayer;
         try {
-            extraFilesLayer = ContainerBuilderHelper.extraDirectoryLayerConfiguration(
-                    jibFilesRoot,
-                    AbsoluteUnixPath.get("/"),
-                    Collections.emptyMap(),
-                    (localPath, ignored2) -> {
+            extraFilesLayer = ContainerBuilderHelper.extraDirectoryLayerConfiguration(jibFilesRoot,
+                    AbsoluteUnixPath.get("/"), Collections.emptyMap(), (localPath, ignored2) -> {
                         try {
                             return Files.getLastModifiedTime(localPath).toInstant();
                         } catch (IOException e) {
                             throw new UncheckedIOException(e);
                         }
                     });
-            jibContainerBuilder.addFileEntriesLayer(
-                    extraFilesLayer);
+            jibContainerBuilder.addFileEntriesLayer(extraFilesLayer);
         } catch (IOException e) {
             throw new UncheckedIOException(
-                    "Unable to add extra files in '" + jibFilesRoot.toAbsolutePath().toString() + "' to the container", e);
+                    "Unable to add extra files in '" + jibFilesRoot.toAbsolutePath().toString() + "' to the container",
+                    e);
         }
     }
 
@@ -900,13 +880,15 @@ public class JibProcessor {
 
         final Map<String, String> allLabels = new HashMap<>(containerImageConfig.labels());
         for (ContainerImageLabelBuildItem containerImageLabel : containerImageLabels) {
-            // we want the user supplied labels to take precedence so the user can override labels generated from other extensions if desired
+            // we want the user supplied labels to take precedence so the user can override labels generated from other
+            // extensions if desired
             allLabels.putIfAbsent(containerImageLabel.getName(), containerImageLabel.getValue());
         }
         return allLabels;
     }
 
-    // TODO: this predicate is rather simplistic since it results in creating the directory structure in both the resources and classes so it should probably be improved to remove empty directories
+    // TODO: this predicate is rather simplistic since it results in creating the directory structure in both the
+    // resources and classes so it should probably be improved to remove empty directories
     private static class IsClassPredicate implements Predicate<Path> {
 
         @Override

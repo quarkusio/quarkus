@@ -45,9 +45,7 @@ public abstract class QuarkusListCategories extends QuarkusPlatformTask {
     public void listCategories() {
         try {
             final QuarkusProject quarkusProject = getQuarkusProject(false);
-            ListCategories listExtensions = new ListCategories(quarkusProject)
-                    .fromCli(isFromCli())
-                    .format(getFormat());
+            ListCategories listExtensions = new ListCategories(quarkusProject).fromCli(isFromCli()).format(getFormat());
             listExtensions.execute();
 
             if (!fromCli) {
@@ -59,8 +57,7 @@ public abstract class QuarkusListCategories extends QuarkusPlatformTask {
                 }
 
                 log.info("");
-                log.info(ListCategories.LIST_EXTENSIONS_HINT,
-                        "`./gradlew listExtensions --category=\"categoryId\"`");
+                log.info(ListCategories.LIST_EXTENSIONS_HINT, "`./gradlew listExtensions --category=\"categoryId\"`");
             }
         } catch (Exception e) {
             throw new GradleException("Unable to list extension categories", e);

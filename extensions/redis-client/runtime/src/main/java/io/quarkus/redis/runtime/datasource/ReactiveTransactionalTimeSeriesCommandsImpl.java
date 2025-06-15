@@ -72,7 +72,8 @@ public class ReactiveTransactionalTimeSeriesCommandsImpl<K> extends AbstractTran
     }
 
     @Override
-    public Uni<Void> tsCreateRule(K key, K destKey, Aggregation aggregation, Duration bucketDuration, long alignTimestamp) {
+    public Uni<Void> tsCreateRule(K key, K destKey, Aggregation aggregation, Duration bucketDuration,
+            long alignTimestamp) {
         this.tx.enqueue(x -> null);
         return this.reactive._tsCreateRule(key, destKey, aggregation, bucketDuration, alignTimestamp)
                 .invoke(this::queuedOrDiscard).replaceWithVoid();

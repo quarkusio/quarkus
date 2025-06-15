@@ -29,8 +29,8 @@ public final class WebJarResultsBuildItem extends SimpleBuildItem {
         private final ResolvedDependency dependency;
 
         /**
-         * Path to where the webjar content was unpacked to. For dev and test mode, the files while be unpacked to a temp
-         * directory on disk. In Prod Mode, the files will be available as generated resources inside this path.
+         * Path to where the webjar content was unpacked to. For dev and test mode, the files while be unpacked to a
+         * temp directory on disk. In Prod Mode, the files will be available as generated resources inside this path.
          */
         private final String finalDestination;
 

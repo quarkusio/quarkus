@@ -21,8 +21,7 @@ public class SessionWithinRequestScopeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
                     .addAsResource(EmptyAsset.INSTANCE, "import.sql"));
 
     @Inject
@@ -35,9 +34,9 @@ public class SessionWithinRequestScopeTest {
 
     @Test
     public void read() {
-        assertEquals(0L, session
-                .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
-                .getResultCount());
+        assertEquals(0L,
+                session.createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
+                        .getResultCount());
     }
 
     @Test

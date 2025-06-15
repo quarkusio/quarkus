@@ -20,17 +20,12 @@ import io.restassured.response.Response;
 public class DevUIImportmapTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withEmptyApplication();
+    static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
     @Test
     public void testImportMap() {
-        Response response = RestAssured.given()
-                .when()
-                .get("q/dev-ui/configuration-form-editor").then()
-                .statusCode(200)
-                .extract()
-                .response();
+        Response response = RestAssured.given().when().get("q/dev-ui/configuration-form-editor").then().statusCode(200)
+                .extract().response();
 
         String htmlContent = response.asString();
         Pattern pattern = Pattern.compile("<script type=\"importmap\">(.*?)</script>", Pattern.DOTALL);
@@ -44,8 +39,8 @@ public class DevUIImportmapTest {
             Map<String, String> importMap = importsMap.get("imports");
             assertThat("Normal mapping (@qomponent/qui-badge) not present in the importmap",
                     importMap.containsKey("@qomponent/qui-badge"), is(true));
-            assertThat("Relocated mapping (qui-badge) not present in the importmap",
-                    importMap.containsKey("qui-badge"), is(true));
+            assertThat("Relocated mapping (qui-badge) not present in the importmap", importMap.containsKey("qui-badge"),
+                    is(true));
         } catch (JsonProcessingException ex) {
             throw new RuntimeException(ex);
         }

@@ -16,9 +16,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 /**
  * Handler that reads data and sets up the input stream
  * <p>
- * By default this will attempt to buffer and use a fully in memory stream,
- * to allow the request to stay on the IO thread. If the request is too large
- * it will be delegated to an executor and a blocking stream used instead.
+ * By default this will attempt to buffer and use a fully in memory stream, to allow the request to stay on the IO
+ * thread. If the request is too large it will be delegated to an executor and a blocking stream used instead.
  * <p>
  * TODO: the stream implementation here could be a lot more efficient.
  */
@@ -45,8 +44,8 @@ public class InputHandler implements ServerRestHandler {
             // let's not set it twice
             return;
         }
-        if (context.serverRequest().getRequestMethod().equals(HttpMethod.GET) ||
-                context.serverRequest().getRequestMethod().equals(HttpMethod.HEAD)) {
+        if (context.serverRequest().getRequestMethod().equals(HttpMethod.GET)
+                || context.serverRequest().getRequestMethod().equals(HttpMethod.HEAD)) {
             return;
         }
         InputListener h = new InputListener(context);
@@ -72,8 +71,8 @@ public class InputHandler implements ServerRestHandler {
 
         @Override
         public void done() {
-            //super inefficient
-            //TODO: write a stream that just uses the existing vert.x buffers
+            // super inefficient
+            // TODO: write a stream that just uses the existing vert.x buffers
             byte[] ar = new byte[dataCount];
             int count = 0;
             for (ByteBuffer i : data) {
@@ -96,8 +95,8 @@ public class InputHandler implements ServerRestHandler {
                 if (workerExecutor == null) {
                     workerExecutor = workerExecutorSupplier.get();
                 }
-                //super inefficient
-                //TODO: write a stream that just uses the existing vert.x buffers
+                // super inefficient
+                // TODO: write a stream that just uses the existing vert.x buffers
                 int count = 0;
                 byte[] ar = new byte[dataCount];
                 for (ByteBuffer i : data) {
@@ -105,7 +104,7 @@ public class InputHandler implements ServerRestHandler {
                     i.get(ar, count, remaining);
                     count += remaining;
                 }
-                //todo timeout
+                // todo timeout
                 context.setInputStream(context.serverRequest().createInputStream(ByteBuffer.wrap(ar)));
                 context.resume(workerExecutor);
             }

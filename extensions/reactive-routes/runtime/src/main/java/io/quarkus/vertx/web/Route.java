@@ -14,8 +14,8 @@ import io.vertx.ext.web.RoutingContext;
 /**
  * This annotation can be used to configure a reactive route in a declarative way.
  * <p>
- * The target business method must be non-private and non-static.
- * The annotated method can accept arguments of the following types:
+ * The target business method must be non-private and non-static. The annotated method can accept arguments of the
+ * following types:
  * <ul>
  * <li>{@code io.vertx.ext.web.RoutingContext}</li>
  * <li>{@code io.vertx.mutiny.ext.web.RoutingContext}</li>
@@ -66,16 +66,15 @@ import io.vertx.ext.web.RoutingContext;
  *  </code>
  * </pre>
  *
- * If the annotated method returns {@code void} then it has to accept at least one argument that makes it possible to end the
- * response, for example {@link RoutingContext}.
- * If the annotated method does not return {@code void} then the arguments are optional.
+ * If the annotated method returns {@code void} then it has to accept at least one argument that makes it possible to
+ * end the response, for example {@link RoutingContext}. If the annotated method does not return {@code void} then the
+ * arguments are optional.
  * <p>
  * If both {@link #path()} and {@link #regex()} are set the regular expression is used for matching.
  * <p>
- * If neither {@link #path()} nor {@link #regex()} is specified and the handler type is not {@link HandlerType#FAILURE} then the
- * route will match a path derived from the name of the method. This is done by de-camel-casing the name and then joining the
- * segments
- * with hyphens.
+ * If neither {@link #path()} nor {@link #regex()} is specified and the handler type is not {@link HandlerType#FAILURE}
+ * then the route will match a path derived from the name of the method. This is done by de-camel-casing the name and
+ * then joining the segments with hyphens.
  */
 @Repeatable(Routes.class)
 @Retention(RetentionPolicy.RUNTIME)
@@ -83,9 +82,8 @@ import io.vertx.ext.web.RoutingContext;
 public @interface Route {
 
     /**
-     * Represents an HTTP method.
-     * This enumeration only provides the common HTTP method.
-     * For custom methods, you need to register the {@code route} manually on the managed {@code Router}.
+     * Represents an HTTP method. This enumeration only provides the common HTTP method. For custom methods, you need to
+     * register the {@code route} manually on the managed {@code Router}.
      */
     enum HttpMethod {
         GET,
@@ -97,28 +95,27 @@ public @interface Route {
     }
 
     /**
-     *
      * @see Router#route(String)
+     *
      * @return the path
      */
     String path() default "";
 
     /**
-     *
      * @see Router#routeWithRegex(String)
+     *
      * @return the path regex
      */
     String regex() default "";
 
     /**
-     *
      * @see io.vertx.ext.web.Route#methods()
+     *
      * @return the HTTP methods
      */
     HttpMethod[] methods() default {};
 
     /**
-     *
      * @return the type of the handler
      */
     HandlerType type() default HandlerType.NORMAL;
@@ -133,27 +130,23 @@ public @interface Route {
     /**
      * Used for content-based routing and stream serialization.
      * <p>
-     * If no {@code Content-Type} header is set then try to use the most acceptable content-type.
-     *
-     * If the request does not contain an 'Accept' header and no content type is explicitly set in the
-     * handler then the content type will be set to the first content type in the array.
-     *
-     * When a route returns a {@link io.smallrye.mutiny.Multi}, this attribute is used to define how that stream is
-     * serialized. In this case, accepted values are:
+     * If no {@code Content-Type} header is set then try to use the most acceptable content-type. If the request does
+     * not contain an 'Accept' header and no content type is explicitly set in the handler then the content type will be
+     * set to the first content type in the array. When a route returns a {@link io.smallrye.mutiny.Multi}, this
+     * attribute is used to define how that stream is serialized. In this case, accepted values are:
      * <ul>
-     * <li>{@link ReactiveRoutes#APPLICATION_JSON} - Encode the response into a JSON Array, where each item is sent one by
-     * one,</li>
+     * <li>{@link ReactiveRoutes#APPLICATION_JSON} - Encode the response into a JSON Array, where each item is sent one
+     * by one,</li>
      * <li>{@link ReactiveRoutes#EVENT_STREAM} - Encode the response as a stream of server-sent-events,</li>
      * <li>{@link ReactiveRoutes#ND_JSON} or {@link ReactiveRoutes#JSON_STREAM} - Encode the response as JSON stream,
      * when each item is sent one by one with a `\n` as delimiter between them</li>
      * </ul>
-     *
-     * When this attribute is not set, and the route returns a {@link io.smallrye.mutiny.Multi}, no special serialization is
-     * applied.
-     * The items are sent one-by-one without delimiters.
+     * When this attribute is not set, and the route returns a {@link io.smallrye.mutiny.Multi}, no special
+     * serialization is applied. The items are sent one-by-one without delimiters.
      *
      * @see io.vertx.ext.web.Route#produces(String)
      * @see RoutingContext#getAcceptableContentType()
+     *
      * @return the produced content types
      */
     String[] produces() default {};
@@ -162,6 +155,7 @@ public @interface Route {
      * Used for content-based routing.
      *
      * @see io.vertx.ext.web.Route#consumes(String)
+     *
      * @return the consumed content types
      */
     String[] consumes() default {};
@@ -194,7 +188,6 @@ public @interface Route {
          *  }
          *  </code>
          * </pre>
-         *
          * <p>
          * If a failure handler declares neither a path nor a regex then the route matches all requests.
          *

@@ -43,8 +43,8 @@ public class GradleRunner implements BuildSystemRunner {
     final BuildTool buildTool;
     final PropertiesOptions propertiesOptions;
 
-    public GradleRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, RegistryClientMixin registryClient,
-            Path projectRoot, BuildTool buildTool) {
+    public GradleRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions,
+            RegistryClientMixin registryClient, Path projectRoot, BuildTool buildTool) {
         this.output = output;
         this.projectRoot = projectRoot;
         this.buildTool = buildTool;
@@ -60,8 +60,7 @@ public class GradleRunner implements BuildSystemRunner {
 
     @Override
     public File getExecutable() {
-        return ExecuteUtil.findExecutable("gradle",
-                "Unable to find the gradle executable, is it in your path?",
+        return ExecuteUtil.findExecutable("gradle", "Unable to find the gradle executable, is it in your path?",
                 output);
     }
 
@@ -92,8 +91,8 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
-            String category) {
+    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable,
+            String searchPattern, String category) {
         ArrayDeque<String> args = new ArrayDeque<>();
         setGradleProperties(args, runMode.isBatchMode());
 
@@ -148,8 +147,7 @@ public class GradleRunner implements BuildSystemRunner {
     public Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite)
             throws Exception {
         final ExtensionCatalog extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(
-                ToolsConstants.QUARKUS_CORE_GROUP_ID, null,
-                Version.clientVersion(),
+                ToolsConstants.QUARKUS_CORE_GROUP_ID, null, Version.clientVersion(),
                 QuarkusProjectHelper.artifactResolver(), MessageWriter.info());
         final Properties props = ToolsUtils.readQuarkusProperties(extensionCatalog);
         ArrayDeque<String> args = new ArrayDeque<>();
@@ -225,7 +223,8 @@ public class GradleRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params,
+            String filter) {
         if (filter != null) {
             params.add("--tests " + filter);
         }
@@ -266,7 +265,8 @@ public class GradleRunner implements BuildSystemRunner {
             return Arrays.asList(() -> buildCommandArgs, () -> {
                 try {
                     BuildCommandArgs cmd = new BuildCommandArgs();
-                    cmd.arguments = Files.readAllLines(outputFile).stream().filter(s -> !s.isBlank()).toArray(String[]::new);
+                    cmd.arguments = Files.readAllLines(outputFile).stream().filter(s -> !s.isBlank())
+                            .toArray(String[]::new);
                     cmd.targetDirectory = buildCommandArgs.targetDirectory;
                     return cmd;
                 } catch (IOException e) {

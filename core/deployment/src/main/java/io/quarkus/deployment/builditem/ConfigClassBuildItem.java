@@ -21,13 +21,8 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
 
     private final DotName name;
 
-    public ConfigClassBuildItem(
-            final Class<?> configClass,
-            final Set<Class<?>> configComponentInterfaces,
-            final Set<Type> types,
-            final Set<String> generatedClasses,
-            final String prefix,
-            final Kind kind) {
+    public ConfigClassBuildItem(final Class<?> configClass, final Set<Class<?>> configComponentInterfaces,
+            final Set<Type> types, final Set<String> generatedClasses, final String prefix, final Kind kind) {
 
         this.configClass = configClass;
         this.configComponentInterfaces = configComponentInterfaces;
@@ -88,9 +83,7 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
             return false;
         }
         final ConfigClassBuildItem that = (ConfigClassBuildItem) o;
-        return configClass.equals(that.configClass) &&
-                prefix.equals(that.prefix) &&
-                kind == that.kind;
+        return configClass.equals(that.configClass) && prefix.equals(that.prefix) && kind == that.kind;
     }
 
     @Override

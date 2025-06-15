@@ -16,12 +16,14 @@ import io.vertx.core.buffer.Buffer;
 class TrafficLogger {
 
     static TrafficLogger forClient(WebSocketsClientRuntimeConfig config) {
-        return config.trafficLogging().enabled() ? new TrafficLogger(Type.CLIENT, config.trafficLogging().textPayloadLimit())
+        return config.trafficLogging().enabled()
+                ? new TrafficLogger(Type.CLIENT, config.trafficLogging().textPayloadLimit())
                 : null;
     }
 
     static TrafficLogger forServer(WebSocketsServerRuntimeConfig config) {
-        return config.trafficLogging().enabled() ? new TrafficLogger(Type.SERVER, config.trafficLogging().textPayloadLimit())
+        return config.trafficLogging().enabled()
+                ? new TrafficLogger(Type.SERVER, config.trafficLogging().textPayloadLimit())
                 : null;
     }
 
@@ -38,55 +40,43 @@ class TrafficLogger {
 
     void connectionOpened(WebSocketConnectionBase connection) {
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s connection opened: %s, Connection[%s], Handshake headers[%s]",
-                    typeToString(),
-                    connection.handshakeRequest().path(),
-                    connectionToString(connection),
+            LOG.debugf("%s connection opened: %s, Connection[%s], Handshake headers[%s]", typeToString(),
+                    connection.handshakeRequest().path(), connectionToString(connection),
                     headersToString(connection.handshakeRequest()));
         }
     }
 
     void textMessageReceived(WebSocketConnectionBase connection, String payload) {
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s received text message, Connection[%s], Payload: \n%s",
-                    typeToString(),
-                    connectionToString(connection),
-                    payloadToString(payload));
+            LOG.debugf("%s received text message, Connection[%s], Payload: \n%s", typeToString(),
+                    connectionToString(connection), payloadToString(payload));
         }
     }
 
     void textMessageSent(WebSocketConnectionBase connection, String payload) {
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s sent text message, Connection[%s], Payload: \n%s",
-                    typeToString(),
-                    connectionToString(connection),
-                    payloadToString(payload));
+            LOG.debugf("%s sent text message, Connection[%s], Payload: \n%s", typeToString(),
+                    connectionToString(connection), payloadToString(payload));
         }
     }
 
     void binaryMessageReceived(WebSocketConnectionBase connection, Buffer payload) {
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s received binary message, Connection[%s], Payload[%s bytes]",
-                    typeToString(),
-                    connectionToString(connection),
-                    payload.length());
+            LOG.debugf("%s received binary message, Connection[%s], Payload[%s bytes]", typeToString(),
+                    connectionToString(connection), payload.length());
         }
     }
 
     void binaryMessageSent(WebSocketConnectionBase connection, Buffer payload) {
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s sent binary message, Connection[%s], Payload[%s bytes]",
-                    typeToString(),
-                    connectionToString(connection),
-                    payload.length());
+            LOG.debugf("%s sent binary message, Connection[%s], Payload[%s bytes]", typeToString(),
+                    connectionToString(connection), payload.length());
         }
     }
 
     void connectionClosed(WebSocketConnectionBase connection) {
         if (LOG.isDebugEnabled()) {
-            LOG.debugf("%s connection closed, Connection[%s], %s",
-                    typeToString(),
-                    connectionToString(connection),
+            LOG.debugf("%s connection closed, Connection[%s], %s", typeToString(), connectionToString(connection),
                     connection.closeReason());
         }
     }

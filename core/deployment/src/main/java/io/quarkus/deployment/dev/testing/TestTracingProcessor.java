@@ -58,7 +58,8 @@ public class TestTracingProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class)
     LogCleanupFilterBuildItem handle() {
-        return new LogCleanupFilterBuildItem("org.junit.platform.launcher.core.EngineDiscoveryOrchestrator", "0 containers");
+        return new LogCleanupFilterBuildItem("org.junit.platform.launcher.core.EngineDiscoveryOrchestrator",
+                "0 containers");
     }
 
     static volatile boolean testingSetup;
@@ -93,8 +94,7 @@ public class TestTracingProcessor {
         testSupport.setConfig(config);
         testSupport.setTags(config.includeTags().orElse(Collections.emptyList()),
                 config.excludeTags().orElse(Collections.emptyList()));
-        testSupport.setPatterns(config.includePattern().orElse(null),
-                config.excludePattern().orElse(null));
+        testSupport.setPatterns(config.includePattern().orElse(null), config.excludePattern().orElse(null));
         String specificSelection = System.getProperty("quarkus-internal.test.specific-selection");
         if (specificSelection != null) {
             testSupport.setSpecificSelection(specificSelection);
@@ -116,8 +116,7 @@ public class TestTracingProcessor {
 
     @BuildStep(onlyIf = IsTest.class)
     public void instrumentTestClasses(CombinedIndexBuildItem combinedIndexBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
-            BuildProducer<BytecodeTransformerBuildItem> transformerProducer) {
+            LaunchModeBuildItem launchModeBuildItem, BuildProducer<BytecodeTransformerBuildItem> transformerProducer) {
         if (!launchModeBuildItem.isAuxiliaryApplication()) {
             return;
         }
@@ -125,18 +124,13 @@ public class TestTracingProcessor {
         for (ClassInfo clazz : combinedIndexBuildItem.getIndex().getKnownClasses()) {
             String theClassName = clazz.name().toString();
             if (isAppClass(theClassName)) {
-                transformerProducer.produce(new BytecodeTransformerBuildItem.Builder()
-                        .setClassToTransform(theClassName)
-                        .setVisitorFunction(
-                                new BiFunction<String, ClassVisitor, ClassVisitor>() {
-                                    @Override
-                                    public ClassVisitor apply(String s, ClassVisitor classVisitor) {
-                                        return new TracingClassVisitor(classVisitor, theClassName);
-                                    }
-                                })
-                        .setCacheable(true)
-                        .setContinueOnFailure(true)
-                        .build());
+                transformerProducer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(theClassName)
+                        .setVisitorFunction(new BiFunction<String, ClassVisitor, ClassVisitor>() {
+                            @Override
+                            public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                                return new TracingClassVisitor(classVisitor, theClassName);
+                            }
+                        }).setCacheable(true).setContinueOnFailure(true).build());
             }
         }
 
@@ -171,8 +165,8 @@ public class TestTracingProcessor {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor,
-                String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("<init>") || name.equals("<clinit>")) {
                 return mv;
@@ -182,8 +176,7 @@ public class TestTracingProcessor {
                 public void visitCode() {
                     super.visitCode();
                     visitLdcInsn(theClassName);
-                    visitMethodInsn(Opcodes.INVOKESTATIC,
-                            TracingHandler.class.getName().replace(".", "/"), "trace",
+                    visitMethodInsn(Opcodes.INVOKESTATIC, TracingHandler.class.getName().replace(".", "/"), "trace",
                             "(Ljava/lang/String;)V", false);
                 }
             };
@@ -200,7 +193,8 @@ public class TestTracingProcessor {
     public static class TestCommand implements Command {
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult execute(CommandInvocation commandInvocation)
+                throws CommandException, InterruptedException {
             return CommandResult.SUCCESS;
         }
     }
@@ -210,7 +204,8 @@ public class TestTracingProcessor {
     public static class TagsCommand implements Command {
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult execute(CommandInvocation commandInvocation)
+                throws CommandException, InterruptedException {
             return CommandResult.SUCCESS;
         }
     }
@@ -268,12 +263,12 @@ public class TestTracingProcessor {
     }
 
     @GroupCommandDefinition(name = "pattern", description = "Include/Exclude pattern Commands", groupCommands = {
-            IncludePatternCommand.class,
-            ExcludePatternCommand.class }, generateHelp = true)
+            IncludePatternCommand.class, ExcludePatternCommand.class }, generateHelp = true)
     public static class PatternCommand implements Command {
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult execute(CommandInvocation commandInvocation)
+                throws CommandException, InterruptedException {
             return CommandResult.SUCCESS;
         }
     }

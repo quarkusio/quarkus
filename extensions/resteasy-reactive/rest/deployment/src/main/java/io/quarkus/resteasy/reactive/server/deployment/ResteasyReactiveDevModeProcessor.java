@@ -86,7 +86,8 @@ public class ResteasyReactiveDevModeProcessor {
         }
 
         @Override
-        public CommandResult doExecute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult doExecute(CommandInvocation commandInvocation)
+                throws CommandException, InterruptedException {
             IdeProcessor.openBrowser(rp, np, url.startsWith("/") ? url : "/" + url, host, port);
             return CommandResult.SUCCESS;
         }
@@ -113,18 +114,18 @@ public class ResteasyReactiveDevModeProcessor {
             }
             Set<String> toAdd = new HashSet<>();
             for (String route : getRoutes) {
-                //parse them into template components
+                // parse them into template components
                 URITemplate template = new URITemplate(route, false);
                 URITemplate.TemplateComponent[] components = template.components;
                 int urlPos = 0;
                 boolean done = false;
                 for (int i = 0; i < components.length; i++) {
-                    //iterate over the components and see if they can match the current URL
+                    // iterate over the components and see if they can match the current URL
                     URITemplate.TemplateComponent component = components[i];
                     if (component.type == URITemplate.Type.LITERAL) {
                         int componentPos = 0;
                         while (componentPos < component.literalText.length() && urlPos < url.length()) {
-                            //check for literal matches
+                            // check for literal matches
                             if (url.charAt(urlPos++) != component.literalText.charAt(componentPos++)) {
                                 done = true;
                                 break;
@@ -135,9 +136,9 @@ public class ResteasyReactiveDevModeProcessor {
                             sb.append(url);
                             sb.append(component.literalText.substring(componentPos));
                             if (i != components.length - 1) {
-                                //if we are not the end add the next segment as well
+                                // if we are not the end add the next segment as well
                                 sb.append(components[i + 1].stringRepresentation());
-                                //don't append a space, we are not the end
+                                // don't append a space, we are not the end
                                 appendSpace = false;
                             }
 
@@ -145,12 +146,12 @@ public class ResteasyReactiveDevModeProcessor {
                             done = true;
                         }
                     } else {
-                        //this is not 100% for CUSTOM_REGEX, as it may not terminate on /
-                        //close enough for this though
+                        // this is not 100% for CUSTOM_REGEX, as it may not terminate on /
+                        // close enough for this though
                         boolean found = false;
                         int startingUrlPos = urlPos;
                         while (urlPos < url.length()) {
-                            //loop till we find a /
+                            // loop till we find a /
                             if (url.charAt(urlPos) == '/') {
                                 found = true;
                                 break;

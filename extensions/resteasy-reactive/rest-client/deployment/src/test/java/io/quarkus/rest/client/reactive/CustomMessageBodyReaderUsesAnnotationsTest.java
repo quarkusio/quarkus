@@ -37,9 +37,7 @@ public class CustomMessageBodyReaderUsesAnnotationsTest {
 
     @BeforeEach
     public void before() {
-        client = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                .register(PersonMessageBodyReader.class)
+        client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).register(PersonMessageBodyReader.class)
                 .build(Client.class);
     }
 

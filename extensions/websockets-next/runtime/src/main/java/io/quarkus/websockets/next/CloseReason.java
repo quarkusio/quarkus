@@ -4,8 +4,8 @@ import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 
 /**
  * Indicates a reason for closing a connection. See also RFC-6455
- * <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.1">section 5.5.1</a>. The pre-defined status codes are
- * listed in <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-7.4.1">section 7.4.1</a>.
+ * <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-5.5.1">section 5.5.1</a>. The pre-defined status codes
+ * are listed in <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-7.4.1">section 7.4.1</a>.
  *
  * @see WebSocketCloseStatus
  * @see WebSocketConnection#close(CloseReason)
@@ -15,23 +15,24 @@ public class CloseReason {
 
     public static final CloseReason NORMAL = new CloseReason(WebSocketCloseStatus.NORMAL_CLOSURE.code());
 
-    public static final CloseReason INTERNAL_SERVER_ERROR = new CloseReason(WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code());
+    public static final CloseReason INTERNAL_SERVER_ERROR = new CloseReason(
+            WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code());
 
     private final int code;
 
     private final String message;
 
     /**
-     *
-     * @param code The status code must comply with RFC-6455
+     * @param code
+     *        The status code must comply with RFC-6455
      */
     public CloseReason(int code) {
         this(code, null);
     }
 
     /**
-     *
-     * @param code The status code must comply with RFC-6455
+     * @param code
+     *        The status code must comply with RFC-6455
      * @param message
      */
     public CloseReason(int code, String message) {

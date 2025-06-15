@@ -113,43 +113,26 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 public class KafkaProcessor {
 
     static final Class<?>[] BUILT_INS = {
-            //serializers
-            ShortSerializer.class,
-            DoubleSerializer.class,
-            LongSerializer.class,
-            BytesSerializer.class,
-            ByteArraySerializer.class,
-            IntegerSerializer.class,
-            ByteBufferSerializer.class,
-            StringSerializer.class,
+            // serializers
+            ShortSerializer.class, DoubleSerializer.class, LongSerializer.class, BytesSerializer.class,
+            ByteArraySerializer.class, IntegerSerializer.class, ByteBufferSerializer.class, StringSerializer.class,
             FloatSerializer.class,
             // Provided in extension
-            JsonObjectSerializer.class,
-            JsonArraySerializer.class,
-            BufferSerializer.class,
+            JsonObjectSerializer.class, JsonArraySerializer.class, BufferSerializer.class,
 
-            //deserializers
-            ShortDeserializer.class,
-            DoubleDeserializer.class,
-            LongDeserializer.class,
-            BytesDeserializer.class,
-            ByteArrayDeserializer.class,
-            IntegerDeserializer.class,
-            ByteBufferDeserializer.class,
-            StringDeserializer.class,
-            FloatDeserializer.class,
+            // deserializers
+            ShortDeserializer.class, DoubleDeserializer.class, LongDeserializer.class, BytesDeserializer.class,
+            ByteArrayDeserializer.class, IntegerDeserializer.class, ByteBufferDeserializer.class,
+            StringDeserializer.class, FloatDeserializer.class,
             // Provided in extension
-            JsonObjectDeserializer.class,
-            JsonArrayDeserializer.class,
-            BufferDeserializer.class
-    };
+            JsonObjectDeserializer.class, JsonArrayDeserializer.class, BufferDeserializer.class };
 
     static final DotName OBJECT_MAPPER = DotName.createSimple("com.fasterxml.jackson.databind.ObjectMapper");
-    private static final Set<String> SASL_PROVIDERS = Arrays.stream(new String[] {
-            "com.sun.security.sasl.Provider",
-            "org.apache.kafka.common.security.scram.internals.ScramSaslClientProvider",
-            "org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClientProvider"
-    }).collect(Collectors.toSet());
+    private static final Set<String> SASL_PROVIDERS = Arrays
+            .stream(new String[] { "com.sun.security.sasl.Provider",
+                    "org.apache.kafka.common.security.scram.internals.ScramSaslClientProvider",
+                    "org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClientProvider" })
+            .collect(Collectors.toSet());
 
     private static final DotName LOGIN_MODULE = DotName.createSimple(LoginModule.class.getName());
     private static final DotName AUTHENTICATE_CALLBACK_HANDLER = DotName
@@ -183,10 +166,10 @@ public class KafkaProcessor {
                     .add("These configurations '[" + ignoredConfigProperty + "]' were supplied but are not used yet.");
         }
 
-        logCleanupFilters.produce(new LogCleanupFilterBuildItem("org.apache.kafka.clients.consumer.ConsumerConfig",
-                ignoredMessages));
-        logCleanupFilters.produce(new LogCleanupFilterBuildItem("org.apache.kafka.clients.producer.ProducerConfig",
-                ignoredMessages));
+        logCleanupFilters.produce(
+                new LogCleanupFilterBuildItem("org.apache.kafka.clients.consumer.ConsumerConfig", ignoredMessages));
+        logCleanupFilters.produce(
+                new LogCleanupFilterBuildItem("org.apache.kafka.clients.producer.ProducerConfig", ignoredMessages));
     }
 
     @BuildStep
@@ -200,18 +183,14 @@ public class KafkaProcessor {
     void contributeClassesToIndex(BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClasses,
             BuildProducer<IndexDependencyBuildItem> indexDependency, Capabilities capabilities) {
         indexDependency.produce(new IndexDependencyBuildItem("org.apache.kafka", "kafka-clients"));
-        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
-                JsonObjectSerializer.class.getName(),
-                JsonObjectDeserializer.class.getName(),
-                JsonArraySerializer.class.getName(),
-                JsonArrayDeserializer.class.getName(),
-                BufferSerializer.class.getName(),
-                BufferDeserializer.class.getName(),
-                ObjectMapperSerializer.class.getName(),
+        additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(JsonObjectSerializer.class.getName(),
+                JsonObjectDeserializer.class.getName(), JsonArraySerializer.class.getName(),
+                JsonArrayDeserializer.class.getName(), BufferSerializer.class.getName(),
+                BufferDeserializer.class.getName(), ObjectMapperSerializer.class.getName(),
                 ObjectMapperDeserializer.class.getName()));
         if (capabilities.isPresent(Capability.JSONB)) {
-            additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(
-                    JsonbSerializer.class.getName(), JsonbDeserializer.class.getName()));
+            additionalIndexedClasses.produce(new AdditionalIndexedClassesBuildItem(JsonbSerializer.class.getName(),
+                    JsonbDeserializer.class.getName()));
         }
     }
 
@@ -228,13 +207,11 @@ public class KafkaProcessor {
     }
 
     @BuildStep
-    public void build(
-            KafkaBuildTimeConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem,
-            BuildProducer<ConfigDescriptionBuildItem> configDescBuildItems,
-            CombinedIndexBuildItem indexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    public void build(KafkaBuildTimeConfig config, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<ConfigDescriptionBuildItem> configDescBuildItems, CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
-            BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
-            Capabilities capabilities,
+            BuildProducer<NativeImageProxyDefinitionBuildItem> proxies, Capabilities capabilities,
             BuildProducer<UnremovableBeanBuildItem> beans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         final Set<DotName> toRegister = new HashSet<>();
@@ -251,28 +228,23 @@ public class KafkaProcessor {
         collectImplementors(toRegister, indexBuildItem, ProducerInterceptor.class);
         collectImplementors(toRegister, indexBuildItem, MetricsReporter.class);
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(OAuthBearerSaslClient.class,
-                OAuthBearerSaslClient.OAuthBearerSaslClientFactory.class,
-                OAuthBearerToken.class,
-                OAuthBearerRefreshingLogin.class)
-                .reason(getClass().getName() + " OAuthBearerSaslClient classes")
-                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(OAuthBearerSaslClient.class, OAuthBearerSaslClient.OAuthBearerSaslClientFactory.class,
+                        OAuthBearerToken.class, OAuthBearerRefreshingLogin.class)
+                .reason(getClass().getName() + " OAuthBearerSaslClient classes").build());
 
         for (Class<?> i : BUILT_INS) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(i.getName())
-                    .reason(getClass().getName() + " (de)serialization built-ins")
-                    .build());
+                    .reason(getClass().getName() + " (de)serialization built-ins").build());
             collectSubclasses(toRegister, indexBuildItem, i);
         }
 
         // Kafka requires Jackson as it uses Jackson to handle authentication and some JSON utilities.
         // See https://github.com/quarkusio/quarkus/issues/16769
         // So, enable the Jackson support unconditionally.
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(ObjectMapperSerializer.class,
-                        ObjectMapperDeserializer.class)
-                        .reason(getClass().getName() + " Jackson support")
-                        .build());
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder(ObjectMapperSerializer.class, ObjectMapperDeserializer.class)
+                        .reason(getClass().getName() + " Jackson support").build());
         collectSubclasses(toRegister, indexBuildItem, ObjectMapperSerializer.class);
         collectSubclasses(toRegister, indexBuildItem, ObjectMapperDeserializer.class);
 
@@ -280,32 +252,25 @@ public class KafkaProcessor {
         beans.produce(UnremovableBeanBuildItem.beanTypes(OBJECT_MAPPER));
 
         if (capabilities.isPresent(Capability.JSONB)) {
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(JsonbSerializer.class, JsonbDeserializer.class)
-                            .reason(getClass().getName() + " " + Capability.JSONB + " support")
-                            .build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(JsonbSerializer.class, JsonbDeserializer.class)
+                    .reason(getClass().getName() + " " + Capability.JSONB + " support").build());
             collectSubclasses(toRegister, indexBuildItem, JsonbSerializer.class);
             collectSubclasses(toRegister, indexBuildItem, JsonbDeserializer.class);
         }
 
         for (DotName s : toRegister) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(s.toString())
-                    .reason(getClass().getName() + " Jackson and " + Capability.JSONB + " support")
-                    .build());
+                    .reason(getClass().getName() + " Jackson and " + Capability.JSONB + " support").build());
         }
 
         // built in partitioner and partition assignors
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                RangeAssignor.class,
-                RoundRobinAssignor.class,
-                StickyAssignor.class)
-                .reason(getClass().getName() + " built-in partitioner and partition assignors")
-                .build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(RangeAssignor.class, RoundRobinAssignor.class, StickyAssignor.class)
+                        .reason(getClass().getName() + " built-in partitioner and partition assignors").build());
 
         handleAvro(reflectiveClass, proxies, serviceProviders, sslNativeSupport, capabilities);
 
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(QuarkusKafkaSslEngineFactory.class).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(QuarkusKafkaSslEngineFactory.class).build());
         configDescBuildItems.produce(new ConfigDescriptionBuildItem("kafka.tls-configuration-name", null,
                 "The tls-configuration to use for the Kafka client", null, null, ConfigPhase.RUN_TIME));
     }
@@ -313,10 +278,9 @@ public class KafkaProcessor {
     @BuildStep(onlyIf = { HasSnappy.class, NativeOrNativeSourcesBuild.class })
     public void handleSnappyInNative(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageFeatureBuildItem> feature) {
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.xerial.snappy.SnappyInputStream",
-                "org.xerial.snappy.SnappyOutputStream")
-                .reason(getClass().getName() + " snappy support")
-                .methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("org.xerial.snappy.SnappyInputStream", "org.xerial.snappy.SnappyOutputStream")
+                .reason(getClass().getName() + " snappy support").methods().fields().build());
 
         feature.produce(new NativeImageFeatureBuildItem(SnappyFeature.class));
     }
@@ -343,8 +307,7 @@ public class KafkaProcessor {
     private void handleAvro(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxies,
             BuildProducer<ServiceProviderBuildItem> serviceProviders,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            Capabilities capabilities) {
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport, Capabilities capabilities) {
         // Avro - for both Confluent and Apicurio
 
         // --- Confluent ---
@@ -356,22 +319,21 @@ public class KafkaProcessor {
 
         // --- Apicurio Registry 1.x ---
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.apicurio.registry.utils.serde.AvroKafkaDeserializer")) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                    "io.apicurio.registry.utils.serde.AvroKafkaDeserializer",
-                    "io.apicurio.registry.utils.serde.AvroKafkaSerializer",
-                    "io.apicurio.registry.utils.serde.avro.DefaultAvroDatumProvider",
-                    "io.apicurio.registry.utils.serde.avro.ReflectAvroDatumProvider",
-                    "io.apicurio.registry.utils.serde.strategy.AutoRegisterIdStrategy",
-                    "io.apicurio.registry.utils.serde.strategy.CachedSchemaIdStrategy",
-                    "io.apicurio.registry.utils.serde.strategy.FindBySchemaIdStrategy",
-                    "io.apicurio.registry.utils.serde.strategy.FindLatestIdStrategy",
-                    "io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy",
-                    "io.apicurio.registry.utils.serde.strategy.RecordIdStrategy",
-                    "io.apicurio.registry.utils.serde.strategy.SimpleTopicIdStrategy",
-                    "io.apicurio.registry.utils.serde.strategy.TopicIdStrategy",
-                    "io.apicurio.registry.utils.serde.strategy.TopicRecordIdStrategy")
-                    .reason(getClass().getName() + " apicurio registry 1.x support")
-                    .methods().build());
+            reflectiveClass.produce(ReflectiveClassBuildItem
+                    .builder("io.apicurio.registry.utils.serde.AvroKafkaDeserializer",
+                            "io.apicurio.registry.utils.serde.AvroKafkaSerializer",
+                            "io.apicurio.registry.utils.serde.avro.DefaultAvroDatumProvider",
+                            "io.apicurio.registry.utils.serde.avro.ReflectAvroDatumProvider",
+                            "io.apicurio.registry.utils.serde.strategy.AutoRegisterIdStrategy",
+                            "io.apicurio.registry.utils.serde.strategy.CachedSchemaIdStrategy",
+                            "io.apicurio.registry.utils.serde.strategy.FindBySchemaIdStrategy",
+                            "io.apicurio.registry.utils.serde.strategy.FindLatestIdStrategy",
+                            "io.apicurio.registry.utils.serde.strategy.GetOrCreateIdStrategy",
+                            "io.apicurio.registry.utils.serde.strategy.RecordIdStrategy",
+                            "io.apicurio.registry.utils.serde.strategy.SimpleTopicIdStrategy",
+                            "io.apicurio.registry.utils.serde.strategy.TopicIdStrategy",
+                            "io.apicurio.registry.utils.serde.strategy.TopicRecordIdStrategy")
+                    .reason(getClass().getName() + " apicurio registry 1.x support").methods().build());
 
             // Apicurio uses dynamic proxies, register them
             proxies.produce(new NativeImageProxyDefinitionBuildItem("io.apicurio.registry.client.RegistryService",
@@ -395,27 +357,20 @@ public class KafkaProcessor {
 
     @BuildStep
     public AdditionalBeanBuildItem runtimeConfig() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(KafkaRuntimeConfigProducer.class)
-                .setUnremovable()
+        return AdditionalBeanBuildItem.builder().addBeanClass(KafkaRuntimeConfigProducer.class).setUnremovable()
                 .build();
     }
 
     @BuildStep
-    public void withSasl(CombinedIndexBuildItem index,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    public void withSasl(CombinedIndexBuildItem index, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBundleBuildItem> resources,
             BuildProducer<ReflectiveClassConditionBuildItem> reflectiveClassCondition,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
 
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(
-                        AbstractLogin.DefaultLoginCallbackHandler.class,
-                        SaslClientCallbackHandler.class,
-                        DefaultLogin.class,
-                        ScramSaslClient.ScramSaslClientFactory.class)
-                        .reason(getClass().getName() + " sasl support")
-                        .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(AbstractLogin.DefaultLoginCallbackHandler.class, SaslClientCallbackHandler.class,
+                        DefaultLogin.class, ScramSaslClient.ScramSaslClientFactory.class)
+                .reason(getClass().getName() + " sasl support").build());
 
         // Enable SSL support if kafka.security.protocol is set to something other than PLAINTEXT, which is the default
         String securityProtocol = ConfigProvider.getConfig().getConfigValue("kafka.security.protocol").getValue();
@@ -424,20 +379,20 @@ public class KafkaProcessor {
         }
 
         for (ClassInfo loginModule : index.getIndex().getAllKnownImplementors(LOGIN_MODULE)) {
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(loginModule.name().toString())
-                            .reason(getClass().getName() + " sasl support " + LOGIN_MODULE + " known implementors")
-                            .build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(loginModule.name().toString())
+                    .reason(getClass().getName() + " sasl support " + LOGIN_MODULE + " known implementors").build());
         }
         // Kafka oauth login internally iterates over all ServiceLoader available LoginModule's
         registerJDKLoginModules(reflectiveClass);
         // Accessed through org.apache.kafka.common.security.plain.PlainLoginModule.initialize
         resources.produce(new NativeImageResourceBundleBuildItem("sun.security.util.resources.security"));
-        for (ClassInfo authenticateCallbackHandler : index.getIndex().getAllKnownImplementors(AUTHENTICATE_CALLBACK_HANDLER)) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(authenticateCallbackHandler.name().toString())
-                    .reason(getClass().getName() + " sasl support " + AUTHENTICATE_CALLBACK_HANDLER
-                            + " known implementors")
-                    .build());
+        for (ClassInfo authenticateCallbackHandler : index.getIndex()
+                .getAllKnownImplementors(AUTHENTICATE_CALLBACK_HANDLER)) {
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem
+                            .builder(authenticateCallbackHandler.name().toString()).reason(getClass().getName()
+                                    + " sasl support " + AUTHENTICATE_CALLBACK_HANDLER + " known implementors")
+                            .build());
         }
         // Add a condition for the optional authenticate callback handler
         reflectiveClassCondition.produce(new ReflectiveClassConditionBuildItem(
@@ -450,23 +405,19 @@ public class KafkaProcessor {
 
     private void registerJDKLoginModules(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         // jdk.security.auth module provided LoginModule's
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                "com.sun.security.auth.module.Krb5LoginModule",
-                "com.sun.security.auth.module.UnixLoginModule",
-                "com.sun.security.auth.module.JndiLoginModule",
-                "com.sun.security.auth.module.KeyStoreLoginModule",
-                "com.sun.security.auth.module.LdapLoginModule",
-                "com.sun.security.auth.module.NTLoginModule",
-                "com.sun.jmx.remote.security.FileLoginModule")
-                .reason(getClass().getName() + " jdk.security.auth module provided LoginModule's")
-                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.sun.security.auth.module.Krb5LoginModule",
+                "com.sun.security.auth.module.UnixLoginModule", "com.sun.security.auth.module.JndiLoginModule",
+                "com.sun.security.auth.module.KeyStoreLoginModule", "com.sun.security.auth.module.LdapLoginModule",
+                "com.sun.security.auth.module.NTLoginModule", "com.sun.jmx.remote.security.FileLoginModule")
+                .reason(getClass().getName() + " jdk.security.auth module provided LoginModule's").build());
     }
 
     private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, Class<?> cls) {
         collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementors(DotName.createSimple(cls.getName())));
     }
 
-    private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem, DotName className) {
+    private static void collectImplementors(Set<DotName> set, CombinedIndexBuildItem indexBuildItem,
+            DotName className) {
         collectClassNames(set, indexBuildItem.getIndex().getAllKnownImplementors(className));
     }
 
@@ -485,16 +436,13 @@ public class KafkaProcessor {
 
     @BuildStep
     HealthBuildItem addHealthCheck(KafkaBuildTimeConfig buildTimeConfig) {
-        return new HealthBuildItem("io.quarkus.kafka.client.health.KafkaHealthCheck",
-                buildTimeConfig.healthEnabled());
+        return new HealthBuildItem("io.quarkus.kafka.client.health.KafkaHealthCheck", buildTimeConfig.healthEnabled());
     }
 
     @BuildStep
     UnremovableBeanBuildItem ensureJsonParserAvailable() {
-        return UnremovableBeanBuildItem.beanClassNames(
-                "io.quarkus.jackson.ObjectMapperProducer",
-                "com.fasterxml.jackson.databind.ObjectMapper",
-                "io.quarkus.jsonb.JsonbProducer",
+        return UnremovableBeanBuildItem.beanClassNames("io.quarkus.jackson.ObjectMapperProducer",
+                "com.fasterxml.jackson.databind.ObjectMapper", "io.quarkus.jsonb.JsonbProducer",
                 "jakarta.json.bind.Jsonb");
     }
 
@@ -506,38 +454,32 @@ public class KafkaProcessor {
                 .addRuntimeInitializedClass(
                         "org.apache.kafka.common.security.oauthbearer.internals.expiring.ExpiringCredentialRefreshingLogin")
                 // VerificationKeyResolver is value on static map in OAuthBearerValidatorCallbackHandler
-                .addRuntimeInitializedClass("org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler")
+                .addRuntimeInitializedClass(
+                        "org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler")
                 .addRuntimeReinitializedClass("org.apache.kafka.shaded.com.google.protobuf.UnsafeUtil");
         return builder.build();
     }
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            KafkaBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    KafkaBindingConverter.class.getName()));
         }
     }
 
     @BuildStep
     public AdditionalBeanBuildItem kafkaAdmin() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(KafkaAdminClient.class)
-                .setUnremovable()
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(KafkaAdminClient.class).setUnremovable().build();
     }
 
     // Kafka UI related stuff
 
     @BuildStep(onlyIf = IsDevelopment.class)
     public AdditionalBeanBuildItem kafkaClientBeans() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(KafkaTopicClient.class)
-                .addBeanClass(KafkaUiUtils.class)
-                .setUnremovable()
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(KafkaTopicClient.class).addBeanClass(KafkaUiUtils.class)
+                .setUnremovable().build();
     }
 
     public static final class HasSnappy implements BooleanSupplier {

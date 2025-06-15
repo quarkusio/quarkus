@@ -5,8 +5,8 @@ import java.util.Optional;
 
 /**
  * <p>
- * Use this interface to retrieve all existing {@link Cache} names and interact with any cache programmatically e.g. store,
- * retrieve or delete cache values. It shares the same caches collection the Quarkus caching annotations use. The
+ * Use this interface to retrieve all existing {@link Cache} names and interact with any cache programmatically e.g.
+ * store, retrieve or delete cache values. It shares the same caches collection the Quarkus caching annotations use. The
  * {@code @io.quarkus.cache.CacheName} annotation can also be used to inject and access a specific cache from its name.
  * </p>
  * <p>
@@ -43,7 +43,9 @@ public interface CacheManager {
     /**
      * Gets the cache identified by the given name.
      *
-     * @param name cache name
+     * @param name
+     *        cache name
+     *
      * @return an {@link Optional} containing the identified cache if it exists, or an empty {@link Optional} otherwise
      */
     Optional<Cache> getCache(String name);

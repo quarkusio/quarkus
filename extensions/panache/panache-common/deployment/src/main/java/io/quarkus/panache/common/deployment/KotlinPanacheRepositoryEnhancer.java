@@ -23,7 +23,7 @@ public class KotlinPanacheRepositoryEnhancer extends PanacheRepositoryEnhancer {
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         return new KotlinPanacheClassOperationGenerationVisitor(outputClassVisitor,
-                indexView.getClassByName(DotName.createSimple(className)), indexView, bundle,
-                bundle.repositoryBase(), methodCustomizers);
+                indexView.getClassByName(DotName.createSimple(className)), indexView, bundle, bundle.repositoryBase(),
+                methodCustomizers);
     }
 }

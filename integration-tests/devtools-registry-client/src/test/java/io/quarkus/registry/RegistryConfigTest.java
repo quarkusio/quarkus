@@ -12,11 +12,7 @@ public class RegistryConfigTest {
 
     @Test
     void should_return_config() {
-        given()
-                .when().get("/config")
-                .then()
-                .statusCode(200)
-                .body("maven.repository.id", is("registry.quarkus.io"));
+        given().when().get("/config").then().statusCode(200).body("maven.repository.id", is("registry.quarkus.io"));
 
     }
 

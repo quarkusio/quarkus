@@ -41,11 +41,8 @@ public final class ConsoleCommand {
 
     public static ConsoleCommand duplicateCommandWithNewPromptString(ConsoleCommand commandToDuplicate,
             String newPromptString) {
-        return new ConsoleCommand(commandToDuplicate.getKey(),
-                commandToDuplicate.getDescription(),
-                newPromptString,
-                commandToDuplicate.getPromptPriority(),
-                commandToDuplicate.getHelpState(),
+        return new ConsoleCommand(commandToDuplicate.getKey(), commandToDuplicate.getDescription(), newPromptString,
+                commandToDuplicate.getPromptPriority(), commandToDuplicate.getHelpState(),
                 commandToDuplicate.getReadLineHandler());
     }
 

@@ -24,9 +24,7 @@ public class RestClientsJsonRPCService {
 
         var result = new JsonArray();
         for (RestClientsContainer.RestClientInfo rci : allClients) {
-            result.add(new JsonObject()
-                    .put("clientInterface", rci.interfaceClass)
-                    .put("isBean", rci.isBean)
+            result.add(new JsonObject().put("clientInterface", rci.interfaceClass).put("isBean", rci.isBean)
                     .put("configKey", rci.configKey));
         }
         return result;

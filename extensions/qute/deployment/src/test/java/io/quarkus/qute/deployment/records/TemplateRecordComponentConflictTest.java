@@ -15,18 +15,15 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateRecordComponentConflictTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hello.class)
-                    .addAsResource(new StringAsset("Hello {name}!"), "templates/TemplateRecordComponentConflictTest/Hello.txt"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Hello.class)
+            .addAsResource(new StringAsset("Hello {name}!"), "templates/TemplateRecordComponentConflictTest/Hello.txt"))
             .assertException(t -> {
                 Throwable root = Throwables.getRootCause(t);
                 if (root == null) {
                     root = t;
                 }
-                assertThat(root)
-                        .isInstanceOf(TemplateException.class)
-                        .hasMessageStartingWith("Template record component [render] conflicts with an interface method of");
+                assertThat(root).isInstanceOf(TemplateException.class).hasMessageStartingWith(
+                        "Template record component [render] conflicts with an interface method of");
             });
 
     @Test

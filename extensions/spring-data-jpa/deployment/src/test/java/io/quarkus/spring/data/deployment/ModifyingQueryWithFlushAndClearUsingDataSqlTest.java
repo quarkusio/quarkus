@@ -19,9 +19,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ModifyingQueryWithFlushAndClearUsingDataSqlTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("import_users.sql", "data.sql")
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addAsResource("import_users.sql", "data.sql")
                     .addClasses(User.class, LoginEvent.class, UserRepository.class))
             .withConfigurationResource("application.properties");
 

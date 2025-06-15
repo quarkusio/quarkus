@@ -39,26 +39,11 @@ import org.objectweb.asm.Opcodes;
  */
 public class AsmUtil {
 
-    public static final List<org.objectweb.asm.Type> PRIMITIVES = asList(
-            VOID_TYPE,
-            BOOLEAN_TYPE,
-            CHAR_TYPE,
-            BYTE_TYPE,
-            SHORT_TYPE,
-            INT_TYPE,
-            FLOAT_TYPE,
-            LONG_TYPE,
-            DOUBLE_TYPE);
-    public static final List<org.objectweb.asm.Type> WRAPPERS = asList(
-            getType(Void.class),
-            getType(Boolean.class),
-            getType(Character.class),
-            getType(Byte.class),
-            getType(Short.class),
-            getType(Integer.class),
-            getType(Float.class),
-            getType(Long.class),
-            getType(Double.class));
+    public static final List<org.objectweb.asm.Type> PRIMITIVES = asList(VOID_TYPE, BOOLEAN_TYPE, CHAR_TYPE, BYTE_TYPE,
+            SHORT_TYPE, INT_TYPE, FLOAT_TYPE, LONG_TYPE, DOUBLE_TYPE);
+    public static final List<org.objectweb.asm.Type> WRAPPERS = asList(getType(Void.class), getType(Boolean.class),
+            getType(Character.class), getType(Byte.class), getType(Short.class), getType(Integer.class),
+            getType(Float.class), getType(Long.class), getType(Double.class));
     public static final Map<org.objectweb.asm.Type, org.objectweb.asm.Type> WRAPPER_TO_PRIMITIVE = new HashMap<>();
     public static final Map<Character, String> PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL;
 
@@ -66,10 +51,8 @@ public class AsmUtil {
         for (int i = 0; i < AsmUtil.PRIMITIVES.size(); i++) {
             AsmUtil.WRAPPER_TO_PRIMITIVE.put(AsmUtil.WRAPPERS.get(i), AsmUtil.PRIMITIVES.get(i));
         }
-        PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL = Map.of(
-                'Z', "boolean", 'B', "byte", 'C', "char",
-                'D', "double", 'F', "float", 'I', "int",
-                'J', "long", 'S', "short");
+        PRIMITIVE_DESCRIPTOR_TO_PRIMITIVE_CLASS_LITERAL = Map.of('Z', "boolean", 'B', "byte", 'C', "char", 'D',
+                "double", 'F', "float", 'I', "int", 'J', "long", 'S', "short");
     }
 
     public static org.objectweb.asm.Type autobox(org.objectweb.asm.Type primitive) {
@@ -110,8 +93,7 @@ public class AsmUtil {
         // It is a compile-time error if a generic class is a direct or indirect subclass of Throwable.
 
         for (Type type : method.exceptions()) {
-            if (type.kind() == Kind.TYPE_VARIABLE
-                    || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE) {
+            if (type.kind() == Kind.TYPE_VARIABLE || type.kind() == Kind.UNRESOLVED_TYPE_VARIABLE) {
                 return true;
             }
         }
@@ -215,7 +197,8 @@ public class AsmUtil {
         return sb.toString();
     }
 
-    private static void toSignature(StringBuilder sb, Type type, Function<String, String> typeArgMapper, boolean erased) {
+    private static void toSignature(StringBuilder sb, Type type, Function<String, String> typeArgMapper,
+            boolean erased) {
         switch (type.kind()) {
             case ARRAY:
                 ArrayType arrayType = type.asArrayType();
@@ -335,11 +318,13 @@ public class AsmUtil {
     }
 
     /**
-     * Returns a return bytecode instruction suitable for the given return type descriptor. This will return
-     * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
-     * and <tt>ARETURN</tt> otherwise;
+     * Returns a return bytecode instruction suitable for the given return type descriptor. This will return specialised
+     * return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void, and <tt>ARETURN</tt>
+     * otherwise;
      *
-     * @param typeDescriptor the return type descriptor.
+     * @param typeDescriptor
+     *        the return type descriptor.
+     *
      * @return the correct bytecode return instruction for that return type descriptor.
      */
     public static int getReturnInstruction(String typeDescriptor) {
@@ -364,11 +349,13 @@ public class AsmUtil {
     }
 
     /**
-     * Returns a return bytecode instruction suitable for the given return Jandex Type. This will return
-     * specialised return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void,
-     * and <tt>ARETURN</tt> otherwise;
+     * Returns a return bytecode instruction suitable for the given return Jandex Type. This will return specialised
+     * return instructions <tt>IRETURN, LRETURN, FRETURN, DRETURN, RETURN</tt> for primitives/void, and <tt>ARETURN</tt>
+     * otherwise;
      *
-     * @param jandexType the return Jandex Type.
+     * @param jandexType
+     *        the return Jandex Type.
+     *
      * @return the correct bytecode return instruction for that return type descriptor.
      */
     public static int getReturnInstruction(Type jandexType) {
@@ -396,12 +383,14 @@ public class AsmUtil {
     }
 
     /**
-     * Invokes the proper LDC Class Constant instructions for the given Jandex Type. This will properly create LDC instructions
-     * for array types, class/parameterized classes, and primitive types by loading their equivalent <tt>TYPE</tt>
-     * constants in their box types, as well as type variables (using the first bound or Object) and Void.
+     * Invokes the proper LDC Class Constant instructions for the given Jandex Type. This will properly create LDC
+     * instructions for array types, class/parameterized classes, and primitive types by loading their equivalent
+     * <tt>TYPE</tt> constants in their box types, as well as type variables (using the first bound or Object) and Void.
      *
-     * @param mv The MethodVisitor on which to visit the LDC instructions
-     * @param jandexType the Jandex Type whose Class Constant to load.
+     * @param mv
+     *        The MethodVisitor on which to visit the LDC instructions
+     * @param jandexType
+     *        the Jandex Type whose Class Constant to load.
      */
     public static void visitLdc(MethodVisitor mv, Type jandexType) {
         switch (jandexType.kind()) {
@@ -467,36 +456,43 @@ public class AsmUtil {
     /**
      * Calls the right boxing method for the given Jandex Type if it is a primitive.
      *
-     * @param mv The MethodVisitor on which to visit the boxing instructions
-     * @param jandexType The Jandex Type to box if it is a primitive.
+     * @param mv
+     *        The MethodVisitor on which to visit the boxing instructions
+     * @param jandexType
+     *        The Jandex Type to box if it is a primitive.
      */
     public static void boxIfRequired(MethodVisitor mv, Type jandexType) {
         if (jandexType.kind() == Kind.PRIMITIVE) {
             switch (jandexType.asPrimitiveType().primitive()) {
                 case BOOLEAN:
-                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;", false);
+                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Boolean", "valueOf", "(Z)Ljava/lang/Boolean;",
+                            false);
                     break;
                 case BYTE:
                     mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Byte", "valueOf", "(B)Ljava/lang/Byte;", false);
                     break;
                 case CHAR:
-                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Character", "valueOf", "(C)Ljava/lang/Character;",
-                            false);
+                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Character", "valueOf",
+                            "(C)Ljava/lang/Character;", false);
                     break;
                 case DOUBLE:
-                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;", false);
+                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Double", "valueOf", "(D)Ljava/lang/Double;",
+                            false);
                     break;
                 case FLOAT:
-                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;", false);
+                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Float", "valueOf", "(F)Ljava/lang/Float;",
+                            false);
                     break;
                 case INT:
-                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;", false);
+                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Integer", "valueOf", "(I)Ljava/lang/Integer;",
+                            false);
                     break;
                 case LONG:
                     mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Long", "valueOf", "(J)Ljava/lang/Long;", false);
                     break;
                 case SHORT:
-                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;", false);
+                    mv.visitMethodInsn(Opcodes.INVOKESTATIC, "java/lang/Short", "valueOf", "(S)Ljava/lang/Short;",
+                            false);
                     break;
                 default:
                     throw new IllegalArgumentException("Unknown primitive type: " + jandexType);
@@ -505,10 +501,12 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the bytecode instruction to load the given Jandex Type. This returns the specialised
-     * bytecodes <tt>ILOAD, DLOAD, FLOAD and LLOAD</tt> for primitives, or <tt>ALOAD</tt> otherwise.
+     * Returns the bytecode instruction to load the given Jandex Type. This returns the specialised bytecodes
+     * <tt>ILOAD, DLOAD, FLOAD and LLOAD</tt> for primitives, or <tt>ALOAD</tt> otherwise.
      *
-     * @param jandexType The Jandex Type whose load instruction to return.
+     * @param jandexType
+     *        The Jandex Type whose load instruction to return.
+     *
      * @return The bytecode instruction to load the given Jandex Type.
      */
     public static int getLoadOpcode(Type jandexType) {
@@ -536,8 +534,10 @@ public class AsmUtil {
     /**
      * Calls the right unboxing method for the given Jandex Type if it is a primitive.
      *
-     * @param mv The MethodVisitor on which to visit the unboxing instructions
-     * @param jandexType The Jandex Type to unbox if it is a primitive.
+     * @param mv
+     *        The MethodVisitor on which to visit the unboxing instructions
+     * @param jandexType
+     *        The Jandex Type to unbox if it is a primitive.
      */
     public static void unboxIfRequired(MethodVisitor mv, Type jandexType) {
         if (jandexType.kind() == Kind.PRIMITIVE) {
@@ -575,8 +575,10 @@ public class AsmUtil {
     /**
      * Calls the right unboxing method for the given Jandex Type if it is a primitive.
      *
-     * @param mv The MethodVisitor on which to visit the unboxing instructions
-     * @param type The Jandex Type to unbox if it is a primitive.
+     * @param mv
+     *        The MethodVisitor on which to visit the unboxing instructions
+     * @param type
+     *        The Jandex Type to unbox if it is a primitive.
      */
     public static void unboxIfRequired(MethodVisitor mv, org.objectweb.asm.Type type) {
         if (type.getSort() <= org.objectweb.asm.Type.DOUBLE) {
@@ -617,11 +619,14 @@ public class AsmUtil {
     /**
      * Returns the Jandex Types of the parameters of the given method descriptor.
      *
-     * @param methodDescriptor a method descriptor
+     * @param methodDescriptor
+     *        a method descriptor
+     *
      * @return the list of Jandex Type objects representing the parameters of the given method descriptor.
      */
     public static Type[] getParameterTypes(String methodDescriptor) {
-        String argsSignature = methodDescriptor.substring(methodDescriptor.indexOf('(') + 1, methodDescriptor.lastIndexOf(')'));
+        String argsSignature = methodDescriptor.substring(methodDescriptor.indexOf('(') + 1,
+                methodDescriptor.lastIndexOf(')'));
         List<Type> args = new ArrayList<>();
         char[] chars = argsSignature.toCharArray();
         int dimensions = 0;
@@ -654,7 +659,8 @@ public class AsmUtil {
                     String binaryName = argsSignature.substring(i + 1, end);
                     // arrays take the entire signature
                     if (dimensions > 0) {
-                        args.add(Type.create(DotName.createSimple(argsSignature.substring(start, end + 1).replace('/', '.')),
+                        args.add(Type.create(
+                                DotName.createSimple(argsSignature.substring(start, end + 1).replace('/', '.')),
                                 Kind.ARRAY));
                         dimensions = 0;
                     } else {
@@ -675,10 +681,12 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the number of underlying bytecode parameters taken by the given Jandex parameter Type.
-     * This will be 2 for doubles and longs, 1 otherwise.
+     * Returns the number of underlying bytecode parameters taken by the given Jandex parameter Type. This will be 2 for
+     * doubles and longs, 1 otherwise.
      *
-     * @param paramType the Jandex parameter Type
+     * @param paramType
+     *        the Jandex parameter Type
+     *
      * @return the number of underlying bytecode parameters required.
      */
     public static int getParameterSize(Type paramType) {
@@ -693,24 +701,26 @@ public class AsmUtil {
     }
 
     /**
-     * Prints the value pushed on the stack (must be an Object) by the given <tt>valuePusher</tt>
-     * to STDERR.
+     * Prints the value pushed on the stack (must be an Object) by the given <tt>valuePusher</tt> to STDERR.
      *
-     * @param mv The MethodVisitor to forward printing to.
-     * @param valuePusher The function to invoke to push an Object to print on the stack.
+     * @param mv
+     *        The MethodVisitor to forward printing to.
+     * @param valuePusher
+     *        The function to invoke to push an Object to print on the stack.
      */
     public static void printValueOnStderr(MethodVisitor mv, Runnable valuePusher) {
         mv.visitFieldInsn(Opcodes.GETSTATIC, "java/lang/System", "err", "Ljava/io/PrintStream;");
         valuePusher.run();
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println",
-                "(Ljava/lang/Object;)V", false);
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/io/PrintStream", "println", "(Ljava/lang/Object;)V", false);
     }
 
     /**
      * Copy the parameter names to the given MethodVisitor, unless we don't have parameter name info
      *
-     * @param mv the visitor to copy to
-     * @param method the method to copy from
+     * @param mv
+     *        the visitor to copy to
+     * @param method
+     *        the method to copy from
      */
     public static void copyParameterNames(MethodVisitor mv, MethodInfo method) {
         int parameterSize = method.parametersCount();

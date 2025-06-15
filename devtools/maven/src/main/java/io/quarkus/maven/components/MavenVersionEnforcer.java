@@ -53,13 +53,17 @@ public class MavenVersionEnforcer {
     /**
      * Compares the specified Maven version to see if it is allowed by the defined version range.
      *
-     * @param log the log
-     * @param requiredMavenVersionRange range of allowed versions for Maven.
-     * @param actualMavenVersion the version to be checked.
-     * @throws MojoExecutionException the given version fails the enforcement rule
+     * @param log
+     *        the log
+     * @param requiredMavenVersionRange
+     *        range of allowed versions for Maven.
+     * @param actualMavenVersion
+     *        the version to be checked.
+     *
+     * @throws MojoExecutionException
+     *         the given version fails the enforcement rule
      */
-    private void enforce(Log log,
-            String requiredMavenVersionRange, ArtifactVersion actualMavenVersion)
+    private void enforce(Log log, String requiredMavenVersionRange, ArtifactVersion actualMavenVersion)
             throws MojoExecutionException {
         if (StringUtils.isBlank(requiredMavenVersionRange)) {
             throw new MojoExecutionException("Maven version can't be empty.");
@@ -72,13 +76,13 @@ public class MavenVersionEnforcer {
                             + " is not supported, it must be in " + vr + ".");
                 }
             } catch (InvalidVersionSpecificationException e) {
-                throw new MojoExecutionException("The requested Maven version "
-                        + requiredMavenVersionRange + " is invalid.", e);
+                throw new MojoExecutionException(
+                        "The requested Maven version " + requiredMavenVersionRange + " is invalid.", e);
             }
         }
         if (log.isDebugEnabled()) {
-            log.debug(
-                    getDetectedVersionStr(actualMavenVersion.toString()) + " is allowed in " + requiredMavenVersionRange + ".");
+            log.debug(getDetectedVersionStr(actualMavenVersion.toString()) + " is allowed in "
+                    + requiredMavenVersionRange + ".");
         }
     }
 
@@ -86,8 +90,11 @@ public class MavenVersionEnforcer {
      * Copied from Artifact.VersionRange. This is tweaked to handle singular ranges properly. Currently, the default
      * <code>containsVersion</code> method assumes a singular version means allow everything.
      *
-     * @param allowedRange range of allowed versions.
-     * @param theVersion the version to be checked.
+     * @param allowedRange
+     *        range of allowed versions.
+     * @param theVersion
+     *        the version to be checked.
+     *
      * @return {@code true} if the version is contained by the range.
      */
     private static boolean containsVersion(VersionRange allowedRange, ArtifactVersion theVersion) {

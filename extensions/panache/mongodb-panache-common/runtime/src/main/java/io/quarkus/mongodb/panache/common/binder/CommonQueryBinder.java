@@ -17,7 +17,8 @@ import org.bson.types.ObjectId;
 final class CommonQueryBinder {
 
     private static final String ISO_DATE_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    // the default DateTimeFormatter.ISO_LOCAL_DATE_TIME format with too many nano fraction (up to 9) for MongoDB (only 3)
+    // the default DateTimeFormatter.ISO_LOCAL_DATE_TIME format with too many nano fraction (up to 9) for MongoDB (only
+    // 3)
     private static final DateTimeFormatter ISO_DATE_FORMATTER = DateTimeFormatter.ofPattern(ISO_DATE_PATTERN);
 
     private CommonQueryBinder() {
@@ -72,9 +73,7 @@ final class CommonQueryBinder {
     private static String arrayAsString(Object value) {
         Object[] valueArray = convertToArray(value);
 
-        return Arrays.stream(valueArray)
-                .map(CommonQueryBinder::escape)
-                .collect(Collectors.joining(", "));
+        return Arrays.stream(valueArray).map(CommonQueryBinder::escape).collect(Collectors.joining(", "));
     }
 
     private static Object[] convertToArray(Object value) {

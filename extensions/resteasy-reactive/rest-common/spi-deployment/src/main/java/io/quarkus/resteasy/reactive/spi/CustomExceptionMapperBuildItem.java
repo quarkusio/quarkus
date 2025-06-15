@@ -3,7 +3,8 @@ package io.quarkus.resteasy.reactive.spi;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Build item used to register classes that are annotated with {@code @org.jboss.resteasy.reactive.server.ServerExceptionMapper}
+ * Build item used to register classes that are annotated with
+ * {@code @org.jboss.resteasy.reactive.server.ServerExceptionMapper}
  */
 public final class CustomExceptionMapperBuildItem extends MultiBuildItem {
 

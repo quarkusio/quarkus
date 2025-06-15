@@ -22,10 +22,8 @@ public class LiquibaseExtensionMigrateAtStartJsonChangeLogTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/json/changeLog.json")
-                    .addAsResource("db/json/create-tables.json")
-                    .addAsResource("db/json/test/test.json")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/json/changeLog.json")
+                    .addAsResource("db/json/create-tables.json").addAsResource("db/json/test/test.json")
                     .addAsResource("migrate-at-start-json-config.properties", "application.properties"));
 
     @Test

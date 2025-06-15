@@ -36,10 +36,8 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
     }
 
     /**
-     * Generate JAX-RS GET method.
-     *
-     * The RESTEasy Classic version exposes {@link RestDataResource#get(Object)}.
-     * and the generated code looks more or less like this:
+     * Generate JAX-RS GET method. The RESTEasy Classic version exposes {@link RestDataResource#get(Object)}. and the
+     * generated code looks more or less like this:
      *
      * <pre>
      * {@code
@@ -62,8 +60,9 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
      * }
      * </pre>
      *
-     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#delete(Object)}
-     * and the generated code looks more or less like this:
+     * The RESTEasy Reactive version exposes
+     * {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#delete(Object)} and the generated code looks more or
+     * less like this:
      *
      * <pre>
      * {@code
@@ -121,8 +120,8 @@ public final class GetMethodImplementor extends StandardMethodImplementor {
                     ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Uni.class, Object.class),
                     resource, id);
 
-            methodCreator.returnValue(UniImplementor.map(methodCreator, uniEntity, EXCEPTION_MESSAGE,
-                    (body, entity) -> {
+            methodCreator
+                    .returnValue(UniImplementor.map(methodCreator, uniEntity, EXCEPTION_MESSAGE, (body, entity) -> {
                         BranchResult entityWasNotFound = body.ifNull(entity);
                         entityWasNotFound.trueBranch()
                                 .returnValue(responseImplementor.notFound(entityWasNotFound.trueBranch()));

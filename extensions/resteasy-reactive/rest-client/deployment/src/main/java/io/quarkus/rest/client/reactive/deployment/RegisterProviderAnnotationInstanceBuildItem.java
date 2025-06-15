@@ -6,10 +6,10 @@ import org.jboss.jandex.AnnotationInstance;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A Build Item that is used to capture the information of usages equivalent to {@code @RegisterProvider(SomeProvider.class)}.
- * The use of the build item facilitates support for use cases that need to have the same effect as
- * {@code @RegisterProvider(SomeProvider.class)},
- * but that don't actually use the {@link RegisterProvider} annotation.
+ * A Build Item that is used to capture the information of usages equivalent to
+ * {@code @RegisterProvider(SomeProvider.class)}. The use of the build item facilitates support for use cases that need
+ * to have the same effect as {@code @RegisterProvider(SomeProvider.class)}, but that don't actually use the
+ * {@link RegisterProvider} annotation.
  */
 public final class RegisterProviderAnnotationInstanceBuildItem extends MultiBuildItem {
 

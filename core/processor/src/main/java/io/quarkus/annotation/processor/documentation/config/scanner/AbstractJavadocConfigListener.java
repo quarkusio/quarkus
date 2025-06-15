@@ -46,10 +46,8 @@ public class AbstractJavadocConfigListener implements ConfigAnnotationListener {
             return Optional.empty();
         }
 
-        configCollector.addJavadocElement(
-                configRoot.getQualifiedName().toString(),
-                new JavadocElement(parsedJavadocSection.title(), parsedJavadocSection.format(), null,
-                        parsedJavadocSection.deprecated()));
+        configCollector.addJavadocElement(configRoot.getQualifiedName().toString(), new JavadocElement(
+                parsedJavadocSection.title(), parsedJavadocSection.format(), null, parsedJavadocSection.deprecated()));
 
         return Optional.empty();
     }
@@ -78,8 +76,8 @@ public class AbstractJavadocConfigListener implements ConfigAnnotationListener {
             }
 
             configCollector.addJavadocElement(
-                    enumTypeElement.getQualifiedName().toString() + Markers.DOT + enumElement.getSimpleName()
-                            .toString(),
+                    enumTypeElement.getQualifiedName().toString() + Markers.DOT
+                            + enumElement.getSimpleName().toString(),
                     new JavadocElement(parsedJavadoc.description(), parsedJavadoc.format(), parsedJavadoc.since(),
                             parsedJavadoc.deprecated()));
         }

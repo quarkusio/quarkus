@@ -36,8 +36,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         entityToPersistenceUnit = Collections.unmodifiableMap(map);
     }
 
-    protected abstract PanacheQueryType createPanacheQuery(Session session, String query, String originalQuery, String orderBy,
-            Object paramsArrayOrMap);
+    protected abstract PanacheQueryType createPanacheQuery(Session session, String query, String originalQuery,
+            String orderBy, Object paramsArrayOrMap);
 
     public abstract List<?> list(PanacheQueryType query);
 
@@ -83,10 +83,9 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         if (sessionHandle.isAvailable()) {
             return sessionHandle.get();
         }
-        throw new IllegalStateException(
-                "No entities were attached to persistence unit '" + persistentUnitName
-                        + "'. Did you forget to annotate your Panache Entity classes with '@Entity' or improperly configure the 'quarkus.hibernate-orm.\" "
-                        + persistentUnitName + "\".packages' property?");
+        throw new IllegalStateException("No entities were attached to persistence unit '" + persistentUnitName
+                + "'. Did you forget to annotate your Panache Entity classes with '@Entity' or improperly configure the 'quarkus.hibernate-orm.\" "
+                + persistentUnitName + "\".packages' property?");
     }
 
     public Session getSession() {
@@ -205,8 +204,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
             String namedQuery = panacheQuery.substring(1);
             if (sort != null) {
                 throw new IllegalArgumentException(
-                        "Sort cannot be used with named query, add an \"order by\" clause to the named query \"" + namedQuery
-                                + "\" instead");
+                        "Sort cannot be used with named query, add an \"order by\" clause to the named query \""
+                                + namedQuery + "\" instead");
             }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
             return createPanacheQuery(session, panacheQuery, panacheQuery, null, params);
@@ -226,8 +225,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
             String namedQuery = panacheQuery.substring(1);
             if (sort != null) {
                 throw new IllegalArgumentException(
-                        "Sort cannot be used with named query, add an \"order by\" clause to the named query \"" + namedQuery
-                                + "\" instead");
+                        "Sort cannot be used with named query, add an \"order by\" clause to the named query \""
+                                + namedQuery + "\" instead");
             }
             NamedQueryUtil.checkNamedQuery(entityClass, namedQuery);
             return createPanacheQuery(session, panacheQuery, panacheQuery, null, params);
@@ -335,7 +334,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             String query = PanacheJpaUtil.createQueryForCount(entityClass, panacheQuery, paramCount(params));
-            return bindParameters(getSession(entityClass).createSelectionQuery(query, Object.class), params).getResultCount();
+            return bindParameters(getSession(entityClass).createSelectionQuery(query, Object.class), params)
+                    .getResultCount();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
         }
@@ -349,7 +349,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             String query = PanacheJpaUtil.createQueryForCount(entityClass, panacheQuery, paramCount(params));
-            return bindParameters(getSession(entityClass).createSelectionQuery(query, Object.class), params).getResultCount();
+            return bindParameters(getSession(entityClass).createSelectionQuery(query, Object.class), params)
+                    .getResultCount();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
         }
@@ -401,8 +402,10 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     }
 
     public boolean deleteById(Class<?> entityClass, Object id) {
-        // Impl note : we load the entity then delete it because it's the only implementation generic enough for any model,
-        // and correct in all cases (composite key, graph of entities, ...). HQL cannot be directly used for these reasons.
+        // Impl note : we load the entity then delete it because it's the only implementation generic enough for any
+        // model,
+        // and correct in all cases (composite key, graph of entities, ...). HQL cannot be directly used for these
+        // reasons.
         Object entity = findById(entityClass, id);
         if (entity == null) {
             return false;
@@ -417,10 +420,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         }
 
         try {
-            return bindParameters(
-                    getSession(entityClass).createMutationQuery(
-                            PanacheJpaUtil.createDeleteQuery(entityClass, panacheQuery, paramCount(params))),
-                    params)
+            return bindParameters(getSession(entityClass).createMutationQuery(
+                    PanacheJpaUtil.createDeleteQuery(entityClass, panacheQuery, paramCount(params))), params)
                     .executeUpdate();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
@@ -433,11 +434,8 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         }
 
         try {
-            return bindParameters(
-                    getSession(entityClass)
-                            .createMutationQuery(
-                                    PanacheJpaUtil.createDeleteQuery(entityClass, panacheQuery, paramCount(params))),
-                    params)
+            return bindParameters(getSession(entityClass).createMutationQuery(
+                    PanacheJpaUtil.createDeleteQuery(entityClass, panacheQuery, paramCount(params))), params)
                     .executeUpdate();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
@@ -476,8 +474,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, panacheQuery, paramCount(params));
-            return bindParameters(getSession(entityClass).createMutationQuery(updateQuery), params)
-                    .executeUpdate();
+            return bindParameters(getSession(entityClass).createMutationQuery(updateQuery), params).executeUpdate();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
         }
@@ -490,8 +487,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
 
         try {
             String updateQuery = PanacheJpaUtil.createUpdateQuery(entityClass, panacheQuery, paramCount(params));
-            return bindParameters(getSession(entityClass).createMutationQuery(updateQuery), params)
-                    .executeUpdate();
+            return bindParameters(getSession(entityClass).createMutationQuery(updateQuery), params).executeUpdate();
         } catch (RuntimeException x) {
             throw NamedQueryUtil.checkForNamedQueryMistake(x, panacheQuery);
         }

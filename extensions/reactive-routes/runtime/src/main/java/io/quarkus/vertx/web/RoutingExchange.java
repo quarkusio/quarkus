@@ -24,9 +24,10 @@ public interface RoutingExchange {
     }
 
     /**
-     *
      * @param paramName
+     *
      * @return the request parameter
+     *
      * @see HttpServerRequest#getParam(String)
      */
     default Optional<String> getParam(String paramName) {
@@ -34,9 +35,10 @@ public interface RoutingExchange {
     }
 
     /**
-     *
      * @param headerName
+     *
      * @return the first header value with the specified name
+     *
      * @see HttpServerRequest#getHeader(CharSequence)
      */
     default Optional<String> getHeader(CharSequence headerName) {
@@ -51,8 +53,8 @@ public interface RoutingExchange {
     }
 
     /**
-     * Set the response status code to 200 and return the response.
-     * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
+     * Set the response status code to 200 and return the response. You must call <code>HttpServerResponse.end()</code>
+     * afterwards to end the response.
      *
      * @return the HTTP response object
      */
@@ -70,8 +72,8 @@ public interface RoutingExchange {
     }
 
     /**
-     * Set the response status code to 500 and return the response.
-     * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
+     * Set the response status code to 500 and return the response. You must call <code>HttpServerResponse.end()</code>
+     * afterwards to end the response.
      *
      * @return the HTTP response object
      */
@@ -80,8 +82,8 @@ public interface RoutingExchange {
     }
 
     /**
-     * Set the response status code to 404 and return the response.
-     * You must call <code>HttpServerResponse.end()</code> afterwards to end the response.
+     * Set the response status code to 404 and return the response. You must call <code>HttpServerResponse.end()</code>
+     * afterwards to end the response.
      *
      * @return the HTTP response object
      */

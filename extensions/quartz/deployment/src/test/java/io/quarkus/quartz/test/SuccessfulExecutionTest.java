@@ -18,8 +18,7 @@ public class SuccessfulExecutionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SuccessfulExecutionTest.Jobs.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SuccessfulExecutionTest.Jobs.class));
 
     static final CountDownLatch SUCCESS_LATCH = new CountDownLatch(2);
     static SuccessfulExecution successfulExecution;

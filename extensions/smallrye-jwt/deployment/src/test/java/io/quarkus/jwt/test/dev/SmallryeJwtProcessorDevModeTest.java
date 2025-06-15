@@ -27,41 +27,26 @@ public class SmallryeJwtProcessorDevModeTest {
 
     @RegisterExtension
     static QuarkusDevModeTest devMode = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar.addClasses(
-                    GreetingResource.class, TokenResource.class).addAsResource(
-                            new StringAsset(""),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingResource.class, TokenResource.class)
+                    .addAsResource(new StringAsset(""), "application.properties"));
 
     @Test
     public void shouldNotBeNecessaryToAddSignKeysOnApplicationProperties() {
-        String token = RestAssured.given()
-                .header(new Header("Accept", "text/plain"))
-                .get("/token")
-                .andReturn()
-                .body()
+        String token = RestAssured.given().header(new Header("Accept", "text/plain")).get("/token").andReturn().body()
                 .asString();
 
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + token))
-                .get("/only-user")
-                .then().assertThat().statusCode(200);
+        RestAssured.given().header(new Header("Authorization", "Bearer " + token)).get("/only-user").then().assertThat()
+                .statusCode(200);
     }
 
     @Test
     public void shouldUseTheSameTokenEvenWhenTheUserChangesTheConfiguration() {
-        String token = RestAssured.given()
-                .header(new Header("Accept", "text/plain"))
-                .get("/token")
-                .andReturn()
-                .body()
+        String token = RestAssured.given().header(new Header("Accept", "text/plain")).get("/token").andReturn().body()
                 .asString();
 
         // there is no need to get another token
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + token))
-                .get("/only-user")
-                .then().assertThat().statusCode(200)
-                .body(Matchers.containsString("Hello from Quarkus REST"));
+        RestAssured.given().header(new Header("Authorization", "Bearer " + token)).get("/only-user").then().assertThat()
+                .statusCode(200).body(Matchers.containsString("Hello from Quarkus REST"));
 
         devMode.modifyResourceFile("application.properties", s -> """
                 smallrye.jwt.sign.key.location=invalidLocation.pem
@@ -69,47 +54,31 @@ public class SmallryeJwtProcessorDevModeTest {
                 """);
 
         // should throw error because the private/public are invalid
-        String newToken = RestAssured.given()
-                .header(new Header("Accept", "text/plain"))
-                .get("/token")
-                .andReturn()
-                .body()
-                .asString();
+        String newToken = RestAssured.given().header(new Header("Accept", "text/plain")).get("/token").andReturn()
+                .body().asString();
 
         // should return 500 because the location is invalid
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + newToken))
-                .get("/only-user")
-                .then().assertThat().statusCode(500);
+        RestAssured.given().header(new Header("Authorization", "Bearer " + newToken)).get("/only-user").then()
+                .assertThat().statusCode(500);
 
         devMode.modifyResourceFile("application.properties", s -> "");
 
         // there is no need to get another token
         // should work with old token
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + token))
-                .get("/only-user")
-                .then().assertThat().statusCode(200)
-                .body(Matchers.containsString("Hello from Quarkus REST"));
+        RestAssured.given().header(new Header("Authorization", "Bearer " + token)).get("/only-user").then().assertThat()
+                .statusCode(200).body(Matchers.containsString("Hello from Quarkus REST"));
     }
 
     @Test
     public void shouldUseTheSameKeyPairOnLiveReload() {
-        String token = RestAssured.given()
-                .header(new Header("Accept", "text/plain"))
-                .get("/token")
-                .andReturn()
-                .body()
+        String token = RestAssured.given().header(new Header("Accept", "text/plain")).get("/token").andReturn().body()
                 .asString();
 
         devMode.modifySourceFile("GreetingResource.java", s -> s.replace("Hello from Quarkus", "Hello from JWT"));
 
         // there is no need to get another token
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + token))
-                .get("/only-user")
-                .then().assertThat().statusCode(200)
-                .body(Matchers.containsString("Hello from JWT"));
+        RestAssured.given().header(new Header("Authorization", "Bearer " + token)).get("/only-user").then().assertThat()
+                .statusCode(200).body(Matchers.containsString("Hello from JWT"));
     }
 
     @Test
@@ -117,19 +86,12 @@ public class SmallryeJwtProcessorDevModeTest {
 
         devMode.modifyResourceFile("application.properties", s -> "");
 
-        String token = RestAssured.given()
-                .header(new Header("Accept", "text/plain"))
-                .get("/token")
-                .andReturn()
-                .body()
+        String token = RestAssured.given().header(new Header("Accept", "text/plain")).get("/token").andReturn().body()
                 .asString();
 
         // there is no need to get another token
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + token))
-                .get("/only-user")
-                .then().assertThat().statusCode(200)
-                .body(Matchers.containsString("Hello from Quarkus REST"));
+        RestAssured.given().header(new Header("Authorization", "Bearer " + token)).get("/only-user").then().assertThat()
+                .statusCode(200).body(Matchers.containsString("Hello from Quarkus REST"));
 
         try {
             String privateKey = KeyUtils.readKeyContent("/privateKey.pem");
@@ -143,28 +105,19 @@ public class SmallryeJwtProcessorDevModeTest {
         }
 
         // should throw error because the private/public are invalid
-        String newToken = RestAssured.given()
-                .header(new Header("Accept", "text/plain"))
-                .get("/token")
-                .andReturn()
-                .body()
-                .asString();
+        String newToken = RestAssured.given().header(new Header("Accept", "text/plain")).get("/token").andReturn()
+                .body().asString();
 
         // should return 200 because the keys are valid
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + newToken))
-                .get("/only-user")
-                .then().assertThat().statusCode(200);
+        RestAssured.given().header(new Header("Authorization", "Bearer " + newToken)).get("/only-user").then()
+                .assertThat().statusCode(200);
 
         devMode.modifyResourceFile("application.properties", s -> "");
 
         // there is no need to get another token
         // should work with old token
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + token))
-                .get("/only-user")
-                .then().assertThat().statusCode(200)
-                .body(Matchers.containsString("Hello from Quarkus REST"));
+        RestAssured.given().header(new Header("Authorization", "Bearer " + token)).get("/only-user").then().assertThat()
+                .statusCode(200).body(Matchers.containsString("Hello from Quarkus REST"));
     }
 
     @Path("/token")
@@ -174,10 +127,7 @@ public class SmallryeJwtProcessorDevModeTest {
         @Produces(MediaType.TEXT_PLAIN)
         @PermitAll
         public String hello() {
-            return Jwt.upn("jdoe@quarkus.io")
-                    .groups("User")
-                    .claim(Claims.birthdate.name(), "2001-07-13")
-                    .sign();
+            return Jwt.upn("jdoe@quarkus.io").groups("User").claim(Claims.birthdate.name(), "2001-07-13").sign();
         }
     }
 }

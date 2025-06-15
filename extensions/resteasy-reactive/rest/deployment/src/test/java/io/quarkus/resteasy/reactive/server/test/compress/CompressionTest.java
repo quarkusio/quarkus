@@ -23,8 +23,7 @@ public class CompressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(MyEndpoint.class)
+            .withApplicationRoot(root -> root.addClasses(MyEndpoint.class)
                     .addAsManifestResource(new StringAsset(MyEndpoint.MESSAGE), "resources/file.txt")
                     .addAsManifestResource(new StringAsset(MyEndpoint.MESSAGE), "resources/my.doc"))
             .overrideConfigKey("quarkus.http.enable-compression", "true");
@@ -51,8 +50,7 @@ public class CompressionTest {
     }
 
     private void assertUncompressed(String path) {
-        ExtractableResponse<Response> response = get(path)
-                .then().statusCode(200).extract();
+        ExtractableResponse<Response> response = get(path).then().statusCode(200).extract();
         assertTrue(response.header("Content-Encoding") == null, response.headers().toString());
         assertEquals(MyEndpoint.MESSAGE, response.asString());
     }
@@ -99,7 +97,8 @@ public class CompressionTest {
         @GET
         @Path("content-type-with-param-implicitly-compressed")
         public RestResponse<Object> contentTypeWithParamImplicitlyCompressed() {
-            return RestResponse.ResponseBuilder.ok().entity(MESSAGE).header("Content-type", "text/plain;charset=UTF-8").build();
+            return RestResponse.ResponseBuilder.ok().entity(MESSAGE).header("Content-type", "text/plain;charset=UTF-8")
+                    .build();
         }
 
         @GET

@@ -23,8 +23,7 @@ import io.smallrye.mutiny.Uni;
 public class UniRestClientFallbackTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestEndpoint.class, Client.class, MyFallback.class)
+            .withApplicationRoot((jar) -> jar.addClasses(TestEndpoint.class, Client.class, MyFallback.class)
                     .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties"));
 
     @Inject

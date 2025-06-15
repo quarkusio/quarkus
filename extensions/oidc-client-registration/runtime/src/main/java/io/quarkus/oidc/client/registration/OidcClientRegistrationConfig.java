@@ -75,7 +75,9 @@ public interface OidcClientRegistrationConfig extends OidcCommonConfig {
     /**
      * Creates {@link OidcClientRegistrationConfig} builder populated with {@code config} values.
      *
-     * @param config client registration config; must not be null
+     * @param config
+     *        client registration config; must not be null
+     *
      * @return OidcClientRegistrationConfigBuilder
      */
     static OidcClientRegistrationConfigBuilder builder(OidcClientRegistrationConfig config) {
@@ -85,7 +87,9 @@ public interface OidcClientRegistrationConfig extends OidcCommonConfig {
     /**
      * Creates {@link OidcClientRegistrationConfig} builder populated with documented default values.
      *
-     * @param authServerUrl {@link OidcCommonConfig#authServerUrl()}
+     * @param authServerUrl
+     *        {@link OidcCommonConfig#authServerUrl()}
+     *
      * @return OidcClientRegistrationConfigBuilder builder
      */
     static OidcClientRegistrationConfigBuilder authServerUrl(String authServerUrl) {
@@ -95,7 +99,9 @@ public interface OidcClientRegistrationConfig extends OidcCommonConfig {
     /**
      * Creates {@link OidcClientRegistrationConfig} builder populated with documented default values.
      *
-     * @param registrationPath {@link OidcCommonConfig#registrationPath()}
+     * @param registrationPath
+     *        {@link OidcCommonConfig#registrationPath()}
+     *
      * @return OidcClientRegistrationConfigBuilder builder
      */
     static OidcClientRegistrationConfigBuilder registrationPath(String registrationPath) {

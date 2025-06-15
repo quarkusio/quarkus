@@ -23,10 +23,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ResourceBeanTypeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, ClientMock.class, MyBean.class, Alpha.class, Beta.class,
-                            Charlie.class, Delta.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Client.class,
+            ClientMock.class, MyBean.class, Alpha.class, Beta.class, Charlie.class, Delta.class));
 
     @Inject
     MyBean myBean;
@@ -41,7 +39,7 @@ public class ResourceBeanTypeTest {
         Set<Bean<?>> beans = beanManager.getBeans(Client.class, RestClient.LITERAL);
         Bean<?> resolvedBean = beanManager.resolve(beans);
         assertThat(resolvedBean.getScope()).isEqualTo(ApplicationScoped.class);
-        assertThat(resolvedBean.getTypes()).contains(Client.class, ClientMock.class, Alpha.class, Beta.class, Charlie.class,
-                Delta.class);
+        assertThat(resolvedBean.getTypes()).contains(Client.class, ClientMock.class, Alpha.class, Beta.class,
+                Charlie.class, Delta.class);
     }
 }

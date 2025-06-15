@@ -36,17 +36,14 @@ public class IdeProcessor {
     void createOpenInIDEService(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             BuildProducer<RouteBuildItem> routeProducer,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
-            IdeRecorder recorder) {
+            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem, IdeRecorder recorder) {
 
         if (effectiveIdeBuildItem.isPresent()) {
             Ide ide = effectiveIdeBuildItem.get().getIde();
             if (ide != null) {
                 // For normal links (like from the error page)
                 routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                        .route("open-in-ide/:fileName/:lang/:lineNumber")
-                        .handler(recorder.openInIde())
-                        .build());
+                        .route("open-in-ide/:fileName/:lang/:lineNumber").handler(recorder.openInIde()).build());
 
                 // For Dev UI (like from the server log)
                 BuildTimeActionBuildItem ideActions = new BuildTimeActionBuildItem(NAMESPACE);
@@ -113,8 +110,7 @@ public class IdeProcessor {
                     List<String> command = new ArrayList<>();
                     command.add(effectiveCommand);
                     command.addAll(args);
-                    new ProcessBuilder(command).inheritIO().start().waitFor(10,
-                            TimeUnit.SECONDS);
+                    new ProcessBuilder(command).inheritIO().start().waitFor(10, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     log.error("Could not launch IDE", e);
                 }
@@ -123,14 +119,13 @@ public class IdeProcessor {
         return true;
     }
 
-    public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path, String host,
-            String port) {
+    public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String path,
+            String host, String port) {
         IdeProcessor.openBrowser(rp, np, "http", path, host, port);
     }
 
-    public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String protocol, String path,
-            String host,
-            String port) {
+    public static void openBrowser(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, String protocol,
+            String path, String host, String port) {
         if (path.startsWith("/q")) {
             path = np.resolvePath(path.substring(3));
         } else {

@@ -30,8 +30,8 @@ public class MultiValueTest {
     public void test() {
 
         /*
-         * io.smallrye.mutiny.Multi values returned by methods annotated with @CacheResult should never be cached.
-         * Let's check that the cached method from this test is executed on each call.
+         * io.smallrye.mutiny.Multi values returned by methods annotated with @CacheResult should never be cached. Let's
+         * check that the cached method from this test is executed on each call.
          */
         Multi<String> multi1 = cachedService.cachedMethod();
         assertEquals(1, cachedService.getInvocations());
@@ -39,8 +39,8 @@ public class MultiValueTest {
         assertEquals(2, cachedService.getInvocations());
 
         /*
-         * io.smallrye.mutiny.Uni emitted items are cached by a callback when the Unis are resolved.
-         * We need to make sure this isn't the case for Multi values.
+         * io.smallrye.mutiny.Uni emitted items are cached by a callback when the Unis are resolved. We need to make
+         * sure this isn't the case for Multi values.
          */
         multi1.collect().asList().await().indefinitely();
         cachedService.cachedMethod();

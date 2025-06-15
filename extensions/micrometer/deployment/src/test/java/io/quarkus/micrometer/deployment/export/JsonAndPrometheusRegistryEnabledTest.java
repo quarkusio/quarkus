@@ -17,8 +17,7 @@ import io.restassured.RestAssured;
 
 public class JsonAndPrometheusRegistryEnabledTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .overrideConfigKey("quarkus.http.non-application-root-path", "relative")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
@@ -26,8 +25,7 @@ public class JsonAndPrometheusRegistryEnabledTest {
             .overrideConfigKey("quarkus.micrometer.export.json.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withEmptyApplication();
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withEmptyApplication();
 
     @Inject
     MeterRegistry registry;
@@ -42,17 +40,10 @@ public class JsonAndPrometheusRegistryEnabledTest {
     @Test
     public void metricsEndpoint() {
         // RestAssured prepends /app for us
-        RestAssured.given()
-                .accept("application/json")
-                .get("/relative/metrics")
-                .then()
-                .statusCode(200)
+        RestAssured.given().accept("application/json").get("/relative/metrics").then().statusCode(200)
                 .body(containsString("    \"jvm.info;runtime="));
 
-        RestAssured.given()
-                .get("/relative/metrics")
-                .then()
-                .statusCode(200)
+        RestAssured.given().get("/relative/metrics").then().statusCode(200)
                 .body(containsString("jvm_info_total{runtime=\""));
     }
 }

@@ -10,8 +10,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Forwards all method calls to the executor service returned from the {@link #delegate()} method. Only non-default methods
- * declared on the {@link ExecutorService} interface are forwarded.
+ * Forwards all method calls to the executor service returned from the {@link #delegate()} method. Only non-default
+ * methods declared on the {@link ExecutorService} interface are forwarded.
  */
 public abstract class ForwardingExecutorService implements ExecutorService {
 

@@ -12,13 +12,10 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class FileNotFoundSqlLoadScriptTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.sql-load-script", "file-that-does-not-exist.sql")
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll("Unable to find file referenced in '"
                             + "quarkus.hibernate-orm.sql-load-script=file-that-does-not-exist.sql'. Remove property or add file to your path."));
 

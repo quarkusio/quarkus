@@ -20,8 +20,7 @@ import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "grpc-alias", password = "password", formats = { Format.JKS, Format.PEM,
-                Format.PKCS12 }, client = true, aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost"))
-})
+                Format.PKCS12 }, client = true, aliases = @Alias(name = "alias", password = "alias-password", subjectAlternativeNames = "DNS:localhost")) })
 class MtlsWithJKSTrustStoreWithHttpServerWithAliasTest {
 
     private static final String configuration = """
@@ -49,11 +48,9 @@ class MtlsWithJKSTrustStoreWithHttpServerWithAliasTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HelloWorldTlsEndpoint.class.getPackage())
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .add(new StringAsset(configuration), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addPackage(HelloWorldTlsEndpoint.class.getPackage())
+            .addPackage(GreeterGrpc.class.getPackage()).add(new StringAsset(configuration), "application.properties"));
 
     @GrpcClient("hello")
     GreeterGrpc.GreeterBlockingStub blockingHelloService;

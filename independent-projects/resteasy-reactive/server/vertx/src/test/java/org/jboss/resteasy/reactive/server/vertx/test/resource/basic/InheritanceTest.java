@@ -22,8 +22,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * @tpSubChapter Resource
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Tests annotation inheritence from interface.
+ *
  * @tpSince RESTEasy 3.0.20
  */
 @DisplayName("Inheritance Test")
@@ -32,16 +35,15 @@ public class InheritanceTest {
     private static Client client;
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(InheritenceParentResource.class);
-                    war.addClasses(PortProviderUtil.class, InheritenceParentResourceImpl.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClass(InheritenceParentResource.class);
+            war.addClasses(PortProviderUtil.class, InheritenceParentResourceImpl.class);
+            return war;
+        }
+    });
 
     private String generateURL(String path) {
         return PortProviderUtil.generateURL(path, InheritanceTest.class.getSimpleName());

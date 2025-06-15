@@ -19,68 +19,66 @@ import io.quarkus.runtime.logging.JBossVersion;
 import io.quarkus.runtime.shutdown.ShutdownRecorder;
 
 /**
- * The entry point for applications that use a main method. Quarkus will shut down when the main method returns.
- *
- * If this application has already been generated then it will be run directly, otherwise it will be launched
- * in dev mode and augmentation will be done automatically.
- *
- * If an application does not want to immediately shut down then {@link #waitForExit()} should be called, which
- * will block until shutdown is initiated, either from an external signal or by a call to one of the exit methods.
- *
- * If no main class is specified then one is generated automatically that will simply wait to exit after Quarkus is booted.
- *
+ * The entry point for applications that use a main method. Quarkus will shut down when the main method returns. If this
+ * application has already been generated then it will be run directly, otherwise it will be launched in dev mode and
+ * augmentation will be done automatically. If an application does not want to immediately shut down then
+ * {@link #waitForExit()} should be called, which will block until shutdown is initiated, either from an external signal
+ * or by a call to one of the exit methods. If no main class is specified then one is generated automatically that will
+ * simply wait to exit after Quarkus is booted.
  */
 public class Quarkus {
 
-    //WARNING: this is too early to inject a logger
-    //private static final Logger log = Logger.getLogger(Quarkus.class);
+    // WARNING: this is too early to inject a logger
+    // private static final Logger log = Logger.getLogger(Quarkus.class);
 
     private static Closeable LAUNCHED_FROM_IDE;
 
     /**
-     * Runs a quarkus application, that will run until the provided {@link QuarkusApplication} has completed.
+     * Runs a quarkus application, that will run until the provided {@link QuarkusApplication} has completed. Note that
+     * if this is run from the IDE the application will run in a different class loader to the calling class. It is
+     * recommended that the calling class do no logic, and instead this logic should go into the QuarkusApplication.
      *
-     * Note that if this is run from the IDE the application will run in a different class loader to the
-     * calling class. It is recommended that the calling class do no logic, and instead this logic should
-     * go into the QuarkusApplication.
-     *
-     * @param quarkusApplication The application to run, or null
-     * @param args The command line parameters
+     * @param quarkusApplication
+     *        The application to run, or null
+     * @param args
+     *        The command line parameters
      */
     public static void run(Class<? extends QuarkusApplication> quarkusApplication, String... args) {
         run(quarkusApplication, null, args);
     }
 
     /**
-     * Runs a quarkus application, that will run until the provided {@link QuarkusApplication} has completed.
+     * Runs a quarkus application, that will run until the provided {@link QuarkusApplication} has completed. Note that
+     * if this is run from the IDE the application will run in a different class loader to the calling class. It is
+     * recommended that the calling class do no logic, and instead this logic should go into the QuarkusApplication.
      *
-     * Note that if this is run from the IDE the application will run in a different class loader to the
-     * calling class. It is recommended that the calling class do no logic, and instead this logic should
-     * go into the QuarkusApplication.
-     *
-     * @param quarkusApplication The application to run, or null
-     * @param exitHandler The handler that is called with the exit code and any exception (if any) thrown when the application
+     * @param quarkusApplication
+     *        The application to run, or null
+     * @param exitHandler
+     *        The handler that is called with the exit code and any exception (if any) thrown when the application
      *        has finished
-     * @param args The command line parameters
+     * @param args
+     *        The command line parameters
      */
     @SuppressWarnings("unchecked")
-    public static void run(Class<? extends QuarkusApplication> quarkusApplication, BiConsumer<Integer, Throwable> exitHandler,
-            String... args) {
+    public static void run(Class<? extends QuarkusApplication> quarkusApplication,
+            BiConsumer<Integer, Throwable> exitHandler, String... args) {
         try {
             JBossVersion.disableVersionLogging();
             System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
             System.setProperty("java.util.concurrent.ForkJoinPool.common.threadFactory",
                     "io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
-            //production and common dev mode path
-            //we already have an application, run it directly
-            Class<? extends Application> appClass = (Class<? extends Application>) Class.forName(Application.APP_CLASS_NAME,
-                    false, Thread.currentThread().getContextClassLoader());
-            MethodHandle constructor = MethodHandles.lookup().findConstructor(appClass, MethodType.methodType(void.class));
+            // production and common dev mode path
+            // we already have an application, run it directly
+            Class<? extends Application> appClass = (Class<? extends Application>) Class
+                    .forName(Application.APP_CLASS_NAME, false, Thread.currentThread().getContextClassLoader());
+            MethodHandle constructor = MethodHandles.lookup().findConstructor(appClass,
+                    MethodType.methodType(void.class));
             Application application = (Application) constructor.invoke();
             ApplicationLifecycleManager.run(application, quarkusApplication, exitHandler, args);
             return;
         } catch (ClassNotFoundException e) {
-            //ignore, this happens when running in dev mode
+            // ignore, this happens when running in dev mode
         } catch (RuntimeException | Error e) {
             handleReflectiveInvocationIssue(exitHandler, e);
             return;
@@ -89,9 +87,9 @@ public class Quarkus {
             return;
         }
 
-        //dev mode path, i.e. launching from the IDE
-        //this is not the quarkus:dev path as it will augment before
-        //calling this method
+        // dev mode path, i.e. launching from the IDE
+        // this is not the quarkus:dev path as it will augment before
+        // calling this method
         launchFromIDE(quarkusApplication, args);
 
     }
@@ -110,8 +108,8 @@ public class Quarkus {
     }
 
     private static void launchFromIDE(Class<? extends QuarkusApplication> quarkusApplication, String... args) {
-        //some trickery, get the class that has invoked us, and use this to figure out the
-        //classes root
+        // some trickery, get the class that has invoked us, and use this to figure out the
+        // classes root
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         int pos = 2;
         while (stackTrace[pos].getClassName().equals(Quarkus.class.getName())) {
@@ -133,31 +131,27 @@ public class Quarkus {
     }
 
     /**
-     * Starts a quarkus application, that will run until it either receives a signal (e.g. user presses ctrl+c)
-     * or one of the exit methods is called.
+     * Starts a quarkus application, that will run until it either receives a signal (e.g. user presses ctrl+c) or one
+     * of the exit methods is called. This method does not return, as System.exit() is called after the application is
+     * finished.
      *
-     * This method does not return, as System.exit() is called after the application is finished.
-     *
-     * @param args The command line parameters
+     * @param args
+     *        The command line parameters
      */
     public static void run(String... args) {
         run(null, args);
     }
 
     /**
-     * Exits the application in an async manner. Calling this method
-     * will initiate the Quarkus shutdown process, and then immediately return.
+     * Exits the application in an async manner. Calling this method will initiate the Quarkus shutdown process, and
+     * then immediately return. This method will unblock the {@link #waitForExit()} method. Note that if the main thread
+     * is executing a Quarkus application this will only take effect if {@link #waitForExit()} has been called,
+     * otherwise the application will continue to execute (i.e. this does not initiate the shutdown process, it just
+     * signals the main thread that the application is done so that shutdown can run when the main thread returns). The
+     * error code supplied here will override the value returned from the main application.
      *
-     * This method will unblock the {@link #waitForExit()} method.
-     *
-     * Note that if the main thread is executing a Quarkus application this will only take
-     * effect if {@link #waitForExit()} has been called, otherwise the application will continue
-     * to execute (i.e. this does not initiate the shutdown process, it just signals the main
-     * thread that the application is done so that shutdown can run when the main thread returns).
-     *
-     * The error code supplied here will override the value returned from the main application.
-     *
-     * @param code The exit code. This may be overridden if an exception occurs on shutdown
+     * @param code
+     *        The exit code. This may be overridden if an exception occurs on shutdown
      */
     public static void asyncExit(int code) {
         terminateForIDE();
@@ -165,16 +159,11 @@ public class Quarkus {
     }
 
     /**
-     * Exits the application in an async manner. Calling this method
-     * will initiate the Quarkus shutdown process, and then immediately return.
-     *
-     * This method will unblock the {@link #waitForExit()} method.
-     *
-     * Note that if the main thread is executing a Quarkus application this will only take
-     * effect if {@link #waitForExit()} has been called, otherwise the application will continue
-     * to execute (i.e. this does not initiate the shutdown process, it just signals the main
-     * thread that the application is done so that shutdown can run when the main thread returns).
-     *
+     * Exits the application in an async manner. Calling this method will initiate the Quarkus shutdown process, and
+     * then immediately return. This method will unblock the {@link #waitForExit()} method. Note that if the main thread
+     * is executing a Quarkus application this will only take effect if {@link #waitForExit()} has been called,
+     * otherwise the application will continue to execute (i.e. this does not initiate the shutdown process, it just
+     * signals the main thread that the application is done so that shutdown can run when the main thread returns).
      */
     public static void asyncExit() {
         terminateForIDE();
@@ -182,13 +171,9 @@ public class Quarkus {
     }
 
     /**
-     * Method that will block until the Quarkus shutdown process is initiated.
-     *
-     * Note that this unblocks as soon as the shutdown process starts, not after it
-     * has finished.
-     *
-     * {@link QuarkusApplication} implementations that wish to run some logic on startup, and
-     * then run should call this method.
+     * Method that will block until the Quarkus shutdown process is initiated. Note that this unblocks as soon as the
+     * shutdown process starts, not after it has finished. {@link QuarkusApplication} implementations that wish to run
+     * some logic on startup, and then run should call this method.
      */
     public static void waitForExit() {
         ApplicationLifecycleManager.waitForExit();
@@ -196,9 +181,8 @@ public class Quarkus {
     }
 
     /**
-     * Starts the shutdown process, then waits for the application to shut down.
-     *
-     * Must not be called by the main thread, or a deadlock will result.
+     * Starts the shutdown process, then waits for the application to shut down. Must not be called by the main thread,
+     * or a deadlock will result.
      */
     public static void blockingExit() {
         if (isMainThread(Thread.currentThread())) {
@@ -214,8 +198,8 @@ public class Quarkus {
     }
 
     public static boolean isMainThread(Thread thread) {
-        return thread.getThreadGroup().getName().equals("main") &&
-                thread.getName().toLowerCase(Locale.ROOT).contains("main");
+        return thread.getThreadGroup().getName().equals("main")
+                && thread.getName().toLowerCase(Locale.ROOT).contains("main");
     }
 
     private static Application manualApp;
@@ -229,11 +213,8 @@ public class Quarkus {
     private static final Object manualLock = new Object();
 
     /**
-     * Manual initialization of Quarkus runtime in cases where
-     * Quarkus does not have control over main() i.e. Lambda or Azure Functions.
-     *
-     * This method will trigger static initialization
-     *
+     * Manual initialization of Quarkus runtime in cases where Quarkus does not have control over main() i.e. Lambda or
+     * Azure Functions. This method will trigger static initialization
      */
     public static void manualInitialize() {
         int tmpState = manualState;
@@ -266,13 +247,9 @@ public class Quarkus {
     }
 
     /**
-     * Manual startup of Quarkus runtime in cases where
-     * Quarkus does not have control over main() i.e. Lambda or Azure Functions.
-     *
-     * This method will call Application.start() and register shutdown hook
-     * It will fail if Quarkus.manualInitialize() has not been called.
-     *
-     *
+     * Manual startup of Quarkus runtime in cases where Quarkus does not have control over main() i.e. Lambda or Azure
+     * Functions. This method will call Application.start() and register shutdown hook It will fail if
+     * Quarkus.manualInitialize() has not been called.
      */
     public static void manualStart() {
         int tmpState = manualState;

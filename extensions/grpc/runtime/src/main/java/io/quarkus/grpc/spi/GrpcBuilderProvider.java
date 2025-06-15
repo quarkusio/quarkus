@@ -20,9 +20,8 @@ import io.quarkus.runtime.ShutdownContext;
 import io.vertx.core.Vertx;
 
 /**
- * Allow for additional types of gRPC server and channels to be used / built.
- *
- * This is an experimental SPI, subject to change.
+ * Allow for additional types of gRPC server and channels to be used / built. This is an experimental SPI, subject to
+ * change.
  */
 public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
 
@@ -31,7 +30,9 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Find gRPC server builder provider.
      *
-     * @param configuration the gRPC server configuration
+     * @param configuration
+     *        the gRPC server configuration
+     *
      * @return provider instance or null if none is provided
      */
     @SuppressWarnings("rawtypes")
@@ -53,7 +54,9 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Find gRPC client builder provider.
      *
-     * @param configuration the gRPC client configuration
+     * @param configuration
+     *        the gRPC client configuration
+     *
      * @return provider instance or null if none is provided
      */
     @SuppressWarnings("rawtypes")
@@ -75,7 +78,9 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Does this builder provider provide a new gRPC server instance.
      *
-     * @param configuration the gRPC server configuration
+     * @param configuration
+     *        the gRPC server configuration
+     *
      * @return true if yes, false if no
      */
     boolean providesServer(GrpcServerConfiguration configuration);
@@ -83,9 +88,13 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Create initial server builder.
      *
-     * @param vertx the Vertx instance
-     * @param configuration the gRPC server configuration
-     * @param launchMode current launch mode
+     * @param vertx
+     *        the Vertx instance
+     * @param configuration
+     *        the gRPC server configuration
+     * @param launchMode
+     *        current launch mode
+     *
      * @return new ServerBuilder instance
      */
     ServerBuilder<S> createServerBuilder(Vertx vertx, GrpcServerConfiguration configuration, LaunchMode launchMode);
@@ -93,30 +102,39 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Start gRPC server.
      *
-     * @param server the server instance to start
-     * @throws Exception for any exception while starting the server
+     * @param server
+     *        the server instance to start
+     *
+     * @throws Exception
+     *         for any exception while starting the server
      */
     void startServer(Server server) throws Exception;
 
     /**
      * Post startup.
      *
-     * @param server the started server
-     * @param shutdown the shutdown hook
+     * @param server
+     *        the started server
+     * @param shutdown
+     *        the shutdown hook
      */
     void postStartup(Server server, ShutdownContext shutdown);
 
     /**
      * Handle dev mode reload.
      *
-     * @param servicesWithInterceptors the services
-     * @param methods the methods
-     * @param globalInterceptors the global interceptors
-     * @param shutdown the shutdown hook
+     * @param servicesWithInterceptors
+     *        the services
+     * @param methods
+     *        the methods
+     * @param globalInterceptors
+     *        the global interceptors
+     * @param shutdown
+     *        the shutdown hook
      */
     void devModeReload(List<ServerServiceDefinition> servicesWithInterceptors,
-            Map<String, ServerMethodDefinition<?, ?>> methods,
-            List<ServerInterceptor> globalInterceptors, ShutdownContext shutdown);
+            Map<String, ServerMethodDefinition<?, ?>> methods, List<ServerInterceptor> globalInterceptors,
+            ShutdownContext shutdown);
 
     /**
      * Does a server instance already exist.
@@ -128,9 +146,13 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Provide server info.
      *
-     * @param host server host
-     * @param port server port
-     * @param configuration full server configuration
+     * @param host
+     *        server host
+     * @param port
+     *        server port
+     * @param configuration
+     *        full server configuration
+     *
      * @return simple server info
      */
     String serverInfo(String host, int port, GrpcServerConfiguration configuration);
@@ -138,7 +160,9 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Does this builder provider provide a new gRPC channel instance.
      *
-     * @param configuration the gRPC client configuration
+     * @param configuration
+     *        the gRPC client configuration
+     *
      * @return true if yes, false if no
      */
     boolean providesChannel(GrpcClientConfiguration configuration);
@@ -151,10 +175,11 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     String resolver();
 
     /**
-     * Adjust host, if needed.
-     * By default, no adjustment is made.
+     * Adjust host, if needed. By default, no adjustment is made.
      *
-     * @param host the host
+     * @param host
+     *        the host
+     *
      * @return adjusted host, if needed
      */
     default String adjustHost(String host) {
@@ -164,8 +189,11 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Create initial channel builder.
      *
-     * @param configuration the gRPC client configuration
-     * @param target the channel target
+     * @param configuration
+     *        the gRPC client configuration
+     * @param target
+     *        the channel target
+     *
      * @return new ChannelBuilder
      */
     ManagedChannelBuilder<?> createChannelBuilder(GrpcClientConfiguration configuration, String target);
@@ -173,7 +201,9 @@ public interface GrpcBuilderProvider<S extends ServerBuilder<S>> {
     /**
      * Provide channel info.
      *
-     * @param configuration client configuration
+     * @param configuration
+     *        client configuration
+     *
      * @return simple channel info
      */
     String channelInfo(GrpcClientConfiguration configuration);

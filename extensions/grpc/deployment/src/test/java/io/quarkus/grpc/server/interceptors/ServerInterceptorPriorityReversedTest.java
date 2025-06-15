@@ -28,11 +28,9 @@ public class ServerInterceptorPriorityReversedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MutinyHelloService.class, MySecondInterceptor.class, MyFirstInterceptor.class,
-                            GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
-                            MutinyGreeterGrpc.class,
-                            HelloRequestOrBuilder.class, HelloReplyOrBuilder.class));
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(MutinyHelloService.class, MySecondInterceptor.class,
+                    MyFirstInterceptor.class, GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class,
+                    HelloReply.class, MutinyGreeterGrpc.class, HelloRequestOrBuilder.class, HelloReplyOrBuilder.class));
 
     protected ManagedChannel channel;
 
@@ -43,9 +41,7 @@ public class ServerInterceptorPriorityReversedTest {
 
     @BeforeEach
     public void init() {
-        channel = ManagedChannelBuilder.forAddress("localhost", 9001)
-                .usePlaintext()
-                .build();
+        channel = ManagedChannelBuilder.forAddress("localhost", 9001).usePlaintext().build();
     }
 
     @AfterEach

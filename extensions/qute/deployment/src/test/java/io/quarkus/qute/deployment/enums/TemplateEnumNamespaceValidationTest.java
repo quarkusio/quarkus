@@ -16,8 +16,7 @@ public class TemplateEnumNamespaceValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TransactionType.class, Transactions.class))
+            .withApplicationRoot((jar) -> jar.addClasses(TransactionType.class, Transactions.class))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

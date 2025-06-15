@@ -25,9 +25,8 @@ public final class ReactivePersistenceProviderSetup {
             Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
         PersistenceProviderResolver persistenceProviderResolver = PersistenceProviderResolverHolder
                 .getPersistenceProviderResolver();
-        if (persistenceProviderResolver == null ||
-                (persistenceProviderResolver != null
-                        && !(persistenceProviderResolver instanceof MultiplePersistenceProviderResolver))) {
+        if (persistenceProviderResolver == null || (persistenceProviderResolver != null
+                && !(persistenceProviderResolver instanceof MultiplePersistenceProviderResolver))) {
             persistenceProviderResolver = new MultiplePersistenceProviderResolver();
             PersistenceProviderResolverHolder.setPersistenceProviderResolver(persistenceProviderResolver);
         }

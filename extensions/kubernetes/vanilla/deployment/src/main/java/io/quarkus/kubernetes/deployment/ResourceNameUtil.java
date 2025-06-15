@@ -8,9 +8,8 @@ public final class ResourceNameUtil {
     }
 
     /**
-     * Provides the name of a generated Kubernetes resource.
-     * Uses the value from the configuration object if it exists, otherwise falls back to
-     * the application name
+     * Provides the name of a generated Kubernetes resource. Uses the value from the configuration object if it exists,
+     * otherwise falls back to the application name
      */
     public static String getResourceName(PlatformConfiguration platformConfiguration,
             ApplicationInfoBuildItem applicationInfo) {

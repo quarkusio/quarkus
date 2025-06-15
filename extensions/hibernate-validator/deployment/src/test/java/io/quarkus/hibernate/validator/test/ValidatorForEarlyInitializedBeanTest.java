@@ -16,14 +16,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Tests that validation can be used for early initialized beans that observe {@code @Initialized(ApplicationScoped.class)}
+ * Tests that validation can be used for early initialized beans that observe
+ * {@code @Initialized(ApplicationScoped.class)}
  */
 public class ValidatorForEarlyInitializedBeanTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(EagerInitBean.class, ValidatorForEarlyInitializedBeanTest.class));
+            .create(JavaArchive.class).addClasses(EagerInitBean.class, ValidatorForEarlyInitializedBeanTest.class));
     @Inject
     EagerInitBean someBean;
 

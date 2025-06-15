@@ -37,8 +37,7 @@ class FlywayCreator {
     }
 
     public FlywayCreator(FlywayDataSourceRuntimeConfig flywayRuntimeConfig,
-            FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig,
-            List<FlywayConfigurationCustomizer> customizers) {
+            FlywayDataSourceBuildTimeConfig flywayBuildTimeConfig, List<FlywayConfigurationCustomizer> customizers) {
         this.flywayRuntimeConfig = flywayRuntimeConfig;
         this.flywayBuildTimeConfig = flywayBuildTimeConfig;
         this.customizers = customizers;
@@ -78,8 +77,8 @@ class FlywayCreator {
         if (flywayRuntimeConfig.connectRetries().isPresent()) {
             configure.connectRetries(flywayRuntimeConfig.connectRetries().getAsInt());
         }
-        configure.connectRetriesInterval(
-                (int) flywayRuntimeConfig.connectRetriesInterval().orElse(DEFAULT_CONNECT_RETRIES_INTERVAL).toSeconds());
+        configure.connectRetriesInterval((int) flywayRuntimeConfig.connectRetriesInterval()
+                .orElse(DEFAULT_CONNECT_RETRIES_INTERVAL).toSeconds());
         if (flywayRuntimeConfig.defaultSchema().isPresent()) {
             configure.defaultSchema(flywayRuntimeConfig.defaultSchema().get());
         }
@@ -136,8 +135,8 @@ class FlywayCreator {
             configure.callbacks(callbacks.toArray(new Callback[0]));
         }
         /*
-         * Ensure that no classpath scanning takes place by setting the ClassProvider and the ResourceProvider
-         * (see Flyway#createResourceAndClassProviders)
+         * Ensure that no classpath scanning takes place by setting the ClassProvider and the ResourceProvider (see
+         * Flyway#createResourceAndClassProviders)
          */
 
         // this configuration is important for the scanner
@@ -146,9 +145,10 @@ class FlywayCreator {
         configure.failOnMissingLocations(false);
 
         // the static fields of this class have already been set at static-init
-        QuarkusPathLocationScanner quarkusPathLocationScanner = new QuarkusPathLocationScanner(
-                configure, Arrays.asList(configure.getLocations()));
-        configure.javaMigrationClassProvider(new QuarkusFlywayClassProvider<>(quarkusPathLocationScanner.scanForClasses()));
+        QuarkusPathLocationScanner quarkusPathLocationScanner = new QuarkusPathLocationScanner(configure,
+                Arrays.asList(configure.getLocations()));
+        configure.javaMigrationClassProvider(
+                new QuarkusFlywayClassProvider<>(quarkusPathLocationScanner.scanForClasses()));
         configure.resourceProvider(new QuarkusFlywayResourceProvider(quarkusPathLocationScanner.scanForResources()));
 
         for (FlywayConfigurationCustomizer customizer : customizers) {

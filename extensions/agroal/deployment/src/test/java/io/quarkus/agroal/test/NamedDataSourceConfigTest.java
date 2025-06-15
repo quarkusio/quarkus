@@ -28,13 +28,11 @@ public class NamedDataSourceConfigTest {
 
     @Test
     public void testNamedDataSourceInjection() throws SQLException {
-        dataSourceAssert("testing", ds, "jdbc:h2:tcp://localhost/mem:testing",
-                "username-named", 3, 13);
+        dataSourceAssert("testing", ds, "jdbc:h2:tcp://localhost/mem:testing", "username-named", 3, 13);
     }
 
-    private static void dataSourceAssert(String dataSourceName, AgroalDataSource dataSource, String jdbcUrl, String username,
-            int minSize, int maxSize)
-            throws SQLException {
+    private static void dataSourceAssert(String dataSourceName, AgroalDataSource dataSource, String jdbcUrl,
+            String username, int minSize, int maxSize) throws SQLException {
         AgroalConnectionPoolConfiguration configuration = null;
 
         try {

@@ -18,9 +18,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class ReadTimeoutTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.http.read-timeout=0.5S"), "application.properties")
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.http.read-timeout=0.5S"), "application.properties")
                     .addClasses(PostEndpoint.class));
 
     @TestHTTPResource
@@ -30,18 +29,17 @@ public class ReadTimeoutTestCase {
     public void testReadTimesOut() throws Exception {
         PostEndpoint.invoked = false;
 
-        //make sure incomplete writes do not block threads
-        //and that incomplete data is not delivered to the endpoint
+        // make sure incomplete writes do not block threads
+        // and that incomplete data is not delivered to the endpoint
         Socket socket = new Socket(url.getHost(), url.getPort());
-        socket.getOutputStream().write(
-                "POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345".getBytes(StandardCharsets.UTF_8));
+        socket.getOutputStream().write("POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345"
+                .getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
         Thread.sleep(1200);
-        socket.getOutputStream().write(
-                "6789".getBytes(StandardCharsets.UTF_8));
+        socket.getOutputStream().write("6789".getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
         Thread.sleep(600);
-        //make sure the read timed out and the endpoint was not invoked
+        // make sure the read timed out and the endpoint was not invoked
         Assertions.assertFalse(PostEndpoint.invoked);
         socket.close();
     }
@@ -50,21 +48,20 @@ public class ReadTimeoutTestCase {
     public void testReadSuccess() throws Exception {
         PostEndpoint.invoked = false;
 
-        //make sure incomplete writes do not block threads
-        //and that incomplete data is not delivered to the endpoint
+        // make sure incomplete writes do not block threads
+        // and that incomplete data is not delivered to the endpoint
         Socket socket = new Socket(url.getHost(), url.getPort());
-        socket.getOutputStream().write(
-                "POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345".getBytes(StandardCharsets.UTF_8));
+        socket.getOutputStream().write("POST /post HTTP/1.1\r\nHost: localhost\r\nContent-length:9\r\n\r\n12345"
+                .getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
         Thread.sleep(1);
-        socket.getOutputStream().write(
-                "6789".getBytes(StandardCharsets.UTF_8));
+        socket.getOutputStream().write("6789".getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
         Awaitility.await().atMost(20, TimeUnit.SECONDS).pollInterval(50, TimeUnit.MILLISECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        //make sure the read timed out and the endpoint was invoked
+                        // make sure the read timed out and the endpoint was invoked
                         Assertions.assertTrue(PostEndpoint.invoked);
                     }
                 });

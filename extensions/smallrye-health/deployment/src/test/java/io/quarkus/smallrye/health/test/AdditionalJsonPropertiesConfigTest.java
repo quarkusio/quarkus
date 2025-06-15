@@ -14,10 +14,8 @@ import io.restassured.parsing.Parser;
 class AdditionalJsonPropertiesConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BasicHealthCheck.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(BasicHealthCheck.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"))
             .overrideConfigKey("quarkus.smallrye-health.additional.property.testProp1", "testValue1")
             .overrideConfigKey("quarkus.smallrye-health.additional.property.testProp2", "testValue2");
 
@@ -25,13 +23,9 @@ class AdditionalJsonPropertiesConfigTest {
     void testAdditionalJsonPropertyInclusions() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            RestAssured.when().get("/q/health").then()
-                    .body("status", is("UP"),
-                            "checks.size()", is(1),
-                            "checks.status", contains("UP"),
-                            "checks.name", contains("basic"),
-                            "testProp1", is("testValue1"),
-                            "testProp2", is("testValue2"));
+            RestAssured.when().get("/q/health").then().body("status", is("UP"), "checks.size()", is(1), "checks.status",
+                    contains("UP"), "checks.name", contains("basic"), "testProp1", is("testValue1"), "testProp2",
+                    is("testValue2"));
         } finally {
             RestAssured.reset();
         }

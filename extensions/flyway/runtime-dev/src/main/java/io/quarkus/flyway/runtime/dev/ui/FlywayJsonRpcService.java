@@ -62,16 +62,10 @@ public class FlywayJsonRpcService {
         if (flyway != null) {
             CleanResult cleanResult = flyway.clean();
             if (cleanResult.warnings != null && cleanResult.warnings.size() > 0) {
-                return new FlywayActionResponse("warning",
-                        "Cleaning failed",
-                        cleanResult.warnings.size(),
-                        null,
+                return new FlywayActionResponse("warning", "Cleaning failed", cleanResult.warnings.size(), null,
                         cleanResult.database, cleanResult.warnings);
             } else {
-                return new FlywayActionResponse("success",
-                        "Cleaned",
-                        cleanResult.schemasCleaned.size(),
-                        null,
+                return new FlywayActionResponse("success", "Cleaned", cleanResult.schemasCleaned.size(), null,
                         cleanResult.database);
             }
 
@@ -84,18 +78,11 @@ public class FlywayJsonRpcService {
         if (flyway != null) {
             MigrateResult migrateResult = flyway.migrate();
             if (migrateResult.success) {
-                return new FlywayActionResponse("success",
-                        "Migration executed",
-                        migrateResult.migrationsExecuted,
-                        migrateResult.schemaName,
-                        migrateResult.database);
+                return new FlywayActionResponse("success", "Migration executed", migrateResult.migrationsExecuted,
+                        migrateResult.schemaName, migrateResult.database);
             } else {
-                return new FlywayActionResponse("warning",
-                        "Migration failed",
-                        migrateResult.warnings.size(),
-                        migrateResult.schemaName,
-                        migrateResult.database,
-                        migrateResult.warnings);
+                return new FlywayActionResponse("warning", "Migration failed", migrateResult.warnings.size(),
+                        migrateResult.schemaName, migrateResult.database, migrateResult.warnings);
             }
         }
         return errorNoDatasource(ds);
@@ -130,8 +117,7 @@ public class FlywayJsonRpcService {
 
                     Path migrationDir = path.resolve(locations.get(0));
                     Files.createDirectories(migrationDir);
-                    Path file = migrationDir.resolve(
-                            "V1.0.0__" + artifactId + ".sql");
+                    Path file = migrationDir.resolve("V1.0.0__" + artifactId + ".sql");
 
                     Files.writeString(file, script);
 
@@ -141,7 +127,8 @@ public class FlywayJsonRpcService {
                     Map<String, String> newConfig = new HashMap<>();
                     boolean isBaselineOnMigrateConfigured = ConfigUtils
                             .isPropertyPresent("quarkus.flyway.baseline-on-migrate");
-                    boolean isMigrateAtStartConfigured = ConfigUtils.isPropertyPresent("quarkus.flyway.migrate-at-start");
+                    boolean isMigrateAtStartConfigured = ConfigUtils
+                            .isPropertyPresent("quarkus.flyway.migrate-at-start");
                     boolean isCleanAtStartConfigured = ConfigUtils.isPropertyPresent("quarkus.flyway.clean-at-start");
                     if (!isBaselineOnMigrateConfigured) {
                         newConfig.put("quarkus.flyway.baseline-on-migrate", "true");
@@ -155,7 +142,7 @@ public class FlywayJsonRpcService {
                         }
                     }
                     CurrentConfig.EDITOR.accept(newConfig);
-                    //force a scan, to make sure everything is up-to-date
+                    // force a scan, to make sure everything is up-to-date
                     DevConsoleManager.getHotReplacementContext().doScan(true);
                     return new FlywayActionResponse("success",
                             "Initial migration created, Flyway will now manage this datasource");

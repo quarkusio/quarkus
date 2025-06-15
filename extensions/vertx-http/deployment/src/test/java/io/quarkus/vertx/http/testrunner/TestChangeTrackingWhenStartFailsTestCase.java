@@ -17,21 +17,18 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class TestChangeTrackingWhenStartFailsTestCase {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, StartupFailer.class).add(
-                            new StringAsset(ContinuousTestingTestUtils.appProperties()),
-                            "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, DuplicateSimpleET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, StartupFailer.class)
+                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties()), "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, DuplicateSimpleET.class);
+        }
+    });
 
     @Test
     public void testChangeTrackingOnStartupFailure() throws InterruptedException {
@@ -41,7 +38,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
         Assertions.assertEquals(2L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
-        //fail the startup
+        // fail the startup
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -53,7 +50,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(3L, ts.getTestsSkipped());
 
-        //fail again
+        // fail again
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -65,7 +62,7 @@ public class TestChangeTrackingWhenStartFailsTestCase {
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(3L, ts.getTestsSkipped());
 
-        //now lets pass
+        // now lets pass
         test.modifySourceFile(StartupFailer.class, new Function<String, String>() {
             @Override
             public String apply(String s) {

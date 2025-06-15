@@ -40,18 +40,16 @@ public abstract class ClassDenyAllParentResourceWithPath_SecurityOnParent
     @Path(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_PARENT
             + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
     public ClassDenyAllSubResourceWithoutPath classPathOnParentResource_SubDeclaredOnParent_SubImplOnParent_ClassDenyAllMethodPermitAll() {
-        return new ClassDenyAllSubResourceWithoutPath(
-                CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_PARENT
-                        + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH);
+        return new ClassDenyAllSubResourceWithoutPath(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT
+                + SUB_IMPL_ON_PARENT + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH);
     }
 
     @RolesAllowed("admin")
     @Path(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_PARENT
             + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
     public ClassDenyAllSubResourceWithoutPath classPathOnParentResource_SubDeclaredOnParent_SubImplOnParent_ClassDenyAllMethodRolesAllowed() {
-        return new ClassDenyAllSubResourceWithoutPath(
-                CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_PARENT
-                        + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH);
+        return new ClassDenyAllSubResourceWithoutPath(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT
+                + SUB_IMPL_ON_PARENT + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH);
     }
 
     @POST
@@ -62,17 +60,22 @@ public abstract class ClassDenyAllParentResourceWithPath_SecurityOnParent
 
     @RolesAllowed("admin")
     @POST
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
-    public String classPathOnParentResource_ImplOnParent_ImplMethodWithPath_ClassDenyAllMethodRolesAllowed(JsonObject array) {
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
+    public String classPathOnParentResource_ImplOnParent_ImplMethodWithPath_ClassDenyAllMethodRolesAllowed(
+            JsonObject array) {
         return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH
                 + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
     }
 
     @PermitAll
     @POST
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
-    public String classPathOnParentResource_ImplOnParent_ImplMethodWithPath_ClassDenyAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
+    public String classPathOnParentResource_ImplOnParent_ImplMethodWithPath_ClassDenyAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH
+                + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @Override
@@ -82,7 +85,8 @@ public abstract class ClassDenyAllParentResourceWithPath_SecurityOnParent
 
     @PermitAll
     @Override
-    public String classPathOnParentResource_ImplOnParent_InterfaceMethodWithPath_ClassDenyAllMethodPermitAll(JsonObject array) {
+    public String classPathOnParentResource_ImplOnParent_InterfaceMethodWithPath_ClassDenyAllMethodPermitAll(
+            JsonObject array) {
         return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH
                 + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
     }

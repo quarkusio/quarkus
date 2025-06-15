@@ -16,11 +16,9 @@ import io.quarkus.websockets.next.WebSocketConnector;
 public class InvalidConnectorInjectionPointTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Service.class);
-            })
-            .setExpectedException(WebSocketClientException.class, true);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Service.class);
+    }).setExpectedException(WebSocketClientException.class, true);
 
     @Test
     void testInvalidInjectionPoint() {

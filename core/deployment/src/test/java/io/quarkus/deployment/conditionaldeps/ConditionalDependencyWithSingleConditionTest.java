@@ -32,11 +32,8 @@ public class ConditionalDependencyWithSingleConditionTest extends BootstrapFromO
         addToExpectedLib(extB.getRuntime());
         addToExpectedLib(extC.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extC)
-                .addDependency(extA);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extC).addDependency(extA);
     }
 
     @Override
@@ -44,16 +41,13 @@ public class ConditionalDependencyWithSingleConditionTest extends BootstrapFromO
         var expected = Set.of(
                 new ArtifactDependency(
                         ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION),
-                        JavaScopes.COMPILE,
-                        DependencyFlags.DEPLOYMENT_CP),
+                        JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP),
                 new ArtifactDependency(
                         ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-a-deployment", TsArtifact.DEFAULT_VERSION),
-                        JavaScopes.COMPILE,
-                        DependencyFlags.DEPLOYMENT_CP),
+                        JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP),
                 new ArtifactDependency(
                         ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION),
-                        JavaScopes.COMPILE,
-                        DependencyFlags.DEPLOYMENT_CP));
+                        JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, getDeploymentOnlyDeps(appModel));
     }
 }

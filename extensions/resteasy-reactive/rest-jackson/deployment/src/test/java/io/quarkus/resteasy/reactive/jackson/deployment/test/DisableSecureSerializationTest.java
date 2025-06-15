@@ -24,9 +24,8 @@ import io.restassured.response.ValidatableResponse;
 public class DisableSecureSerializationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .addClasses(TestIdentityProvider.class, TestIdentityController.class));
 
     @Test
     public void testDisablingOfSecureSerialization() {
@@ -38,12 +37,7 @@ public class DisableSecureSerializationTest {
 
     private static ValidatableResponse request(String subPath, String user) {
         TestIdentityController.resetRoles().add(user, user, user);
-        return RestAssured
-                .with()
-                .auth().preemptive().basic(user, user)
-                .get("/test/" + subPath)
-                .then()
-                .statusCode(200)
+        return RestAssured.with().auth().preemptive().basic(user, user).get("/test/" + subPath).then().statusCode(200)
                 .body("publicField", Matchers.is("public"));
     }
 

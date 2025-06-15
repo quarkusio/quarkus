@@ -12,10 +12,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnsupportedFixedDelayParamTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(IllegalArgumentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UnsupportedFixedDelayParamTest.InvalidBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(IllegalArgumentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(UnsupportedFixedDelayParamTest.InvalidBean.class));
 
     @Test
     public void test() {

@@ -29,9 +29,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NonconcurrentProgrammaticTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Jobs.class))
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class))
             .overrideConfigKey("quarkus.scheduler.start-mode", "halted");
 
     @Inject
@@ -39,16 +37,9 @@ public class NonconcurrentProgrammaticTest {
 
     @Test
     public void testExecution() throws SchedulerException, InterruptedException {
-        JobDetail job = JobBuilder.newJob(Jobs.class)
-                .withIdentity("foo", Scheduler.class.getName())
-                .build();
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .withIdentity("foo", Scheduler.class.getName())
-                .startNow()
-                .withSchedule(SimpleScheduleBuilder.simpleSchedule()
-                        .withIntervalInSeconds(1)
-                        .repeatForever())
-                .build();
+        JobDetail job = JobBuilder.newJob(Jobs.class).withIdentity("foo", Scheduler.class.getName()).build();
+        Trigger trigger = TriggerBuilder.newTrigger().withIdentity("foo", Scheduler.class.getName()).startNow()
+                .withSchedule(SimpleScheduleBuilder.simpleSchedule().withIntervalInSeconds(1).repeatForever()).build();
         scheduler.getScheduler().scheduleJob(job, trigger);
 
         scheduler.resume();

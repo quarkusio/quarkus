@@ -29,10 +29,8 @@ public class CheckpointStateStoreConfigTest {
     }
 
     private void createConfig(Map<String, String> configMap) {
-        config = new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("test", configMap) {
-                })
-                .build();
+        config = new SmallRyeConfigBuilder().withSources(new MapBackedConfigSource("test", configMap) {
+        }).build();
     }
 
     @Test
@@ -49,8 +47,7 @@ public class CheckpointStateStoreConfigTest {
 
     @Test
     void testHasStateStoreConfigWithInvalidChannelConfig() {
-        createConfig(Map.of(
-                "mp.messaging.outgoing.my-channel.checkpoint.state-store", HIBERNATE_REACTIVE_STATE_STORE,
+        createConfig(Map.of("mp.messaging.outgoing.my-channel.checkpoint.state-store", HIBERNATE_REACTIVE_STATE_STORE,
                 "mp.messaging.incoming.my-channel.state-store", HIBERNATE_ORM_STATE_STORE));
         assertFalse(hasStateStoreConfig(HIBERNATE_REACTIVE_STATE_STORE, config));
         assertFalse(hasStateStoreConfig(HIBERNATE_ORM_STATE_STORE, config));

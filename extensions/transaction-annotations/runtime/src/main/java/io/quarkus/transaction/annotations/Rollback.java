@@ -8,8 +8,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * If you annotate your exception with this annotation, the transactional interceptor will
- * use the exception's instructions to force a rollback or not.
+ * If you annotate your exception with this annotation, the transactional interceptor will use the exception's
+ * instructions to force a rollback or not.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

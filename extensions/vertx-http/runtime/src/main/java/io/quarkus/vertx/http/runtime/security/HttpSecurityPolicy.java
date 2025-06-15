@@ -11,10 +11,10 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * An HTTP Security policy, that controls which requests are allowed to proceed.
- * CDI beans implementing this interface are invoked on every request unless they define {@link #name()}.
- * The policy with {@link #name()} can then be referenced in the application.properties path matching rules,
- * or from the {@link AuthorizationPolicy#name()} annotation attribute.
+ * An HTTP Security policy, that controls which requests are allowed to proceed. CDI beans implementing this interface
+ * are invoked on every request unless they define {@link #name()}. The policy with {@link #name()} can then be
+ * referenced in the application.properties path matching rules, or from the {@link AuthorizationPolicy#name()}
+ * annotation attribute.
  */
 public interface HttpSecurityPolicy {
 
@@ -22,12 +22,12 @@ public interface HttpSecurityPolicy {
             AuthorizationRequestContext requestContext);
 
     /**
-     * If HTTP Security policy name is not null, then this policy is only called in two cases:
-     * - winning path-matching policy references this name in the application.properties
-     * - invoked Jakarta REST endpoint references this name in the {@link AuthorizationPolicy#name()} annotation attribute
+     * If HTTP Security policy name is not null, then this policy is only called in two cases: - winning path-matching
+     * policy references this name in the application.properties - invoked Jakarta REST endpoint references this name in
+     * the {@link AuthorizationPolicy#name()} annotation attribute
      * <p>
-     * When the name is null, this policy is considered global and is applied on every single request.
-     * More details and examples can be found in Quarkus documentation.
+     * When the name is null, this policy is considered global and is applied on every single request. More details and
+     * examples can be found in Quarkus documentation.
      *
      * @return policy name
      */
@@ -50,8 +50,8 @@ public interface HttpSecurityPolicy {
         private final boolean permitted;
 
         /**
-         * The new security identity, this allows the policy to add additional context
-         * information to the identity. If this is null no change is made
+         * The new security identity, this allows the policy to add additional context information to the identity. If
+         * this is null no change is made
          */
         private final SecurityIdentity augmentedIdentity;
 
@@ -107,20 +107,20 @@ public interface HttpSecurityPolicy {
         }
 
         @Override
-        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context, Uni<SecurityIdentity> identityUni,
+        public Uni<HttpSecurityPolicy.CheckResult> runBlocking(RoutingContext context,
+                Uni<SecurityIdentity> identityUni,
                 BiFunction<RoutingContext, SecurityIdentity, HttpSecurityPolicy.CheckResult> function) {
-            return identityUni
-                    .flatMap(new Function<SecurityIdentity, Uni<? extends CheckResult>>() {
+            return identityUni.flatMap(new Function<SecurityIdentity, Uni<? extends CheckResult>>() {
+                @Override
+                public Uni<? extends HttpSecurityPolicy.CheckResult> apply(SecurityIdentity identity) {
+                    return blockingExecutor.executeBlocking(new Supplier<CheckResult>() {
                         @Override
-                        public Uni<? extends HttpSecurityPolicy.CheckResult> apply(SecurityIdentity identity) {
-                            return blockingExecutor.executeBlocking(new Supplier<CheckResult>() {
-                                @Override
-                                public HttpSecurityPolicy.CheckResult get() {
-                                    return function.apply(context, identity);
-                                }
-                            });
+                        public HttpSecurityPolicy.CheckResult get() {
+                            return function.apply(context, identity);
                         }
                     });
+                }
+            });
         }
     }
 }

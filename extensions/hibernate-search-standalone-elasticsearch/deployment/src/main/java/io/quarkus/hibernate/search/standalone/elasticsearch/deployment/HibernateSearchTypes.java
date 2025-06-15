@@ -14,7 +14,8 @@ class HibernateSearchTypes {
     static final DotName ROOT_MAPPING = DotName
             .createSimple("org.hibernate.search.mapper.pojo.mapping.definition.annotation.processing.RootMapping");
     static final List<DotName> BUILT_IN_ROOT_MAPPING_ANNOTATIONS = List.of(
-            DotName.createSimple("org.hibernate.search.mapper.pojo.mapping.definition.annotation.ProjectionConstructor"),
+            DotName.createSimple(
+                    "org.hibernate.search.mapper.pojo.mapping.definition.annotation.ProjectionConstructor"),
             DotName.createSimple("org.hibernate.search.mapper.pojo.mapping.definition.annotation.SearchEntity"));
 
 }

@@ -23,8 +23,7 @@ public class KeycloakPolicyEnforcerBuildStep {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     RequireBodyHandlerBuildItem requireBody(OidcBuildTimeConfig oidcBuildTimeConfig,
-            KeycloakPolicyEnforcerRecorder recorder,
-            KeycloakPolicyEnforcerConfig runtimeConfig) {
+            KeycloakPolicyEnforcerRecorder recorder, KeycloakPolicyEnforcerConfig runtimeConfig) {
         if (oidcBuildTimeConfig.enabled()) {
             return new RequireBodyHandlerBuildItem(recorder.createBodyHandlerRequiredEvaluator(runtimeConfig));
         }
@@ -36,8 +35,7 @@ public class KeycloakPolicyEnforcerBuildStep {
         if (oidcBuildTimeConfig.enabled()) {
             return AdditionalBeanBuildItem.builder().setUnremovable()
                     .addBeanClass(KeycloakPolicyEnforcerAuthorizer.class)
-                    .addBeanClass(DefaultPolicyEnforcerResolver.class)
-                    .build();
+                    .addBeanClass(DefaultPolicyEnforcerResolver.class).build();
         }
         return null;
     }

@@ -20,15 +20,11 @@ import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CustomIdentityProviderTestCase {
 
-    private static Class<?>[] testClasses = {
-            ProtectedResource.class,
-            CustomIdentityProvider.class
-    };
+    private static Class<?>[] testClasses = { ProtectedResource.class, CustomIdentityProvider.class };
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses)
                     .addAsResource("application-introspection-disabled.properties", "application.properties"));
 
     @Test

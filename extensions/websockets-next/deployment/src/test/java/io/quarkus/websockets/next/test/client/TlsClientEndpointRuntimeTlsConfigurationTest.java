@@ -31,8 +31,7 @@ public class TlsClientEndpointRuntimeTlsConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ServerEndpoint.class, ClientEndpoint.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ServerEndpoint.class, ClientEndpoint.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "keystore.jks")
                     .addAsResource(new File("target/certs/ssl-test-truststore.jks"), "truststore.jks"))
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "keystore.jks")
@@ -55,11 +54,8 @@ public class TlsClientEndpointRuntimeTlsConfigurationTest {
                 return new JksOptions().setPath("truststore.jks").setPassword("secret");
             }
         });
-        WebSocketClientConnection connection = connector
-                .tlsConfigurationName("ws-client")
-                .baseUri(uri)
-                .pathParam("name", "Lu=")
-                .connectAndAwait();
+        WebSocketClientConnection connection = connector.tlsConfigurationName("ws-client").baseUri(uri)
+                .pathParam("name", "Lu=").connectAndAwait();
         assertTrue(connection.isOpen());
         assertTrue(connection.isSecure());
         connection.closeAndAwait();

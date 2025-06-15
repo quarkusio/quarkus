@@ -17,14 +17,12 @@ public class JandexAnnotationInfoAdapter implements AnnotationInfoAdapter<Annota
 
     @Override
     public AnnotationInfo convert(AnnotationInstance input) {
-        return new RawAnnotationInfo(
-                input.valueWithDefault(indexView, "name").asString(),
+        return new RawAnnotationInfo(input.valueWithDefault(indexView, "name").asString(),
                 input.valueWithDefault(indexView, "absolute").asBoolean(),
                 input.valueWithDefault(indexView, "tags").asStringArray(),
                 input.valueWithDefault(indexView, "unit").asString(),
                 input.valueWithDefault(indexView, "description").asString(),
-                input.valueWithDefault(indexView, "displayName").asString(),
-                input.name().toString());
+                input.valueWithDefault(indexView, "displayName").asString(), input.name().toString());
     }
 
 }

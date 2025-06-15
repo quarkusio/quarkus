@@ -492,7 +492,8 @@ public class PubSubCommandsTest extends DatasourceTestBase {
     @Test
     void unsubscribeOnePattern() {
         List<Person> people = new CopyOnWriteArrayList<>();
-        PubSubCommands.RedisSubscriber subscriber = pubsub.subscribeToPatterns(List.of("foo*", "bar*"), p -> people.add(p));
+        PubSubCommands.RedisSubscriber subscriber = pubsub.subscribeToPatterns(List.of("foo*", "bar*"),
+                p -> people.add(p));
         pubsub.publish("foo1", new Person("luke", "skywalker"));
         pubsub.publish("bar2", new Person("luke", "skywalker"));
         Awaitility.await().until(() -> people.size() == 2);

@@ -13,8 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OpenTelemetryDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.otel.enabled", "false")
             .assertException(t -> Assertions.assertEquals(DeploymentException.class, t.getClass()));
 
@@ -23,7 +22,7 @@ public class OpenTelemetryDisabledTest {
 
     @Test
     void testNoOpenTelemetry() {
-        //Should not be reached: dump what was injected if it somehow passed
+        // Should not be reached: dump what was injected if it somehow passed
         Assertions.assertNull(openTelemetry,
                 "A OpenTelemetry instance should not be found/injected when OpenTelemetry is disabled");
     }

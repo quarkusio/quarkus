@@ -52,7 +52,8 @@ public class BlockingStreamCommandsImpl<K, F, V> extends AbstractRedisCommandGro
     }
 
     @Override
-    public ClaimedMessages<K, F, V> xautoclaim(K key, String group, String consumer, Duration minIdleTime, String start) {
+    public ClaimedMessages<K, F, V> xautoclaim(K key, String group, String consumer, Duration minIdleTime,
+            String start) {
         return reactive.xautoclaim(key, group, consumer, minIdleTime, start).await().atMost(timeout);
     }
 
@@ -63,13 +64,14 @@ public class BlockingStreamCommandsImpl<K, F, V> extends AbstractRedisCommandGro
     }
 
     @Override
-    public List<StreamMessage<K, F, V>> xclaim(K key, String group, String consumer, Duration minIdleTime, String... id) {
+    public List<StreamMessage<K, F, V>> xclaim(K key, String group, String consumer, Duration minIdleTime,
+            String... id) {
         return reactive.xclaim(key, group, consumer, minIdleTime, id).await().atMost(timeout);
     }
 
     @Override
-    public List<StreamMessage<K, F, V>> xclaim(K key, String group, String consumer, Duration minIdleTime, XClaimArgs args,
-            String... id) {
+    public List<StreamMessage<K, F, V>> xclaim(K key, String group, String consumer, Duration minIdleTime,
+            XClaimArgs args, String... id) {
         return reactive.xclaim(key, group, consumer, minIdleTime, args, id).await().atMost(timeout);
     }
 
@@ -159,7 +161,8 @@ public class BlockingStreamCommandsImpl<K, F, V> extends AbstractRedisCommandGro
     }
 
     @Override
-    public List<StreamMessage<K, F, V>> xreadgroup(String group, String consumer, K key, String id, XReadGroupArgs args) {
+    public List<StreamMessage<K, F, V>> xreadgroup(String group, String consumer, K key, String id,
+            XReadGroupArgs args) {
         return reactive.xreadgroup(group, consumer, key, id, args).await().atMost(timeout);
     }
 

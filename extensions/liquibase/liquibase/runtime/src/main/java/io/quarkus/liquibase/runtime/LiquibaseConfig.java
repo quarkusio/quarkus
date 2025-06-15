@@ -86,14 +86,14 @@ public class LiquibaseConfig {
     public Optional<String> liquibaseTablespaceName = Optional.empty();
 
     /**
-     * The username that Liquibase uses to connect to the database.
-     * If no username is configured, falls back to the datasource username and password.
+     * The username that Liquibase uses to connect to the database. If no username is configured, falls back to the
+     * datasource username and password.
      */
     public Optional<String> username = Optional.empty();
 
     /**
-     * The password that Liquibase uses to connect to the database.
-     * If no password is configured, falls back to the datasource username and password.
+     * The password that Liquibase uses to connect to the database. If no password is configured, falls back to the
+     * datasource username and password.
      */
     public Optional<String> password = Optional.empty();
 

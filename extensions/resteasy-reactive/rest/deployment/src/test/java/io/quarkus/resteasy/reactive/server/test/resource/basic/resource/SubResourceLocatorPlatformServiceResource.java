@@ -8,8 +8,6 @@ import jakarta.ws.rs.PathParam;
 public interface SubResourceLocatorPlatformServiceResource {
 
     @Path("/users/{user}")
-    SubResourceLocatorUserResource getUserService(
-            @HeaderParam("entity") String entity,
-            @HeaderParam("ticket") String ticket,
-            @PathParam("user") String userId);
+    SubResourceLocatorUserResource getUserService(@HeaderParam("entity") String entity,
+            @HeaderParam("ticket") String ticket, @PathParam("user") String userId);
 }

@@ -53,11 +53,9 @@ class ClassComparisonUtilTest {
 
         @Test
         public void multipleAnnotationsAtSamePosition() {
-            List<AnnotationInstance> instances1 = List.of(
-                    methodParameterAnnotation(AnnotationForTest1.class),
+            List<AnnotationInstance> instances1 = List.of(methodParameterAnnotation(AnnotationForTest1.class),
                     methodParameterAnnotation(AnnotationForTest2.class));
-            List<AnnotationInstance> instances2 = List.of(
-                    methodParameterAnnotation(AnnotationForTest2.class),
+            List<AnnotationInstance> instances2 = List.of(methodParameterAnnotation(AnnotationForTest2.class),
                     methodParameterAnnotation(AnnotationForTest1.class));
 
             Assertions.assertTrue(ClassComparisonUtil.compareMethodAnnotations(instances1, instances2));
@@ -65,24 +63,21 @@ class ClassComparisonUtilTest {
 
         @Test
         public void multipleAnnotations() {
-            List<AnnotationInstance> instances1 = List.of(
-                    methodParameterAnnotation(AnnotationForTest1.class, 1),
+            List<AnnotationInstance> instances1 = List.of(methodParameterAnnotation(AnnotationForTest1.class, 1),
                     methodParameterAnnotation(AnnotationForTest2.class, 2));
 
-            List<AnnotationInstance> instances2 = List.of(
-                    methodParameterAnnotation(AnnotationForTest1.class, 2),
+            List<AnnotationInstance> instances2 = List.of(methodParameterAnnotation(AnnotationForTest1.class, 2),
                     methodParameterAnnotation(AnnotationForTest2.class, 1));
 
             Assertions.assertFalse(ClassComparisonUtil.compareMethodAnnotations(instances1, instances2));
         }
 
-        private static AnnotationInstance methodParameterAnnotation(
-                Class<? extends Annotation> annotation) {
+        private static AnnotationInstance methodParameterAnnotation(Class<? extends Annotation> annotation) {
             return methodParameterAnnotation(annotation, 1);
         }
 
-        private static AnnotationInstance methodParameterAnnotation(
-                Class<? extends Annotation> annotation, int position) {
+        private static AnnotationInstance methodParameterAnnotation(Class<? extends Annotation> annotation,
+                int position) {
             MethodParameterInfo target = MethodParameterInfo.create(null, (short) position);
             return AnnotationInstance.builder(annotation).buildWithTarget(target);
         }

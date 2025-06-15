@@ -22,8 +22,7 @@ public class MetricDataFilter {
     private Stream<MetricData> metricData;
 
     public MetricDataFilter(final InMemoryMetricExporter metricExporter, final String name) {
-        metricData = metricExporter.getFinishedMetricItems()
-                .stream()
+        metricData = metricExporter.getFinishedMetricItems().stream()
                 .filter(metricData -> metricData.getName().equals(name));
     }
 
@@ -189,8 +188,8 @@ public class MetricDataFilter {
                                         String v = pointData.getAttributes().get(AttributeKey.stringKey(key));
                                         boolean result = v != null && v.equals(value);
                                         if (!result) {
-                                            System.out.println(
-                                                    "\nNot Matching. Expected: " + key + " = " + value + " -> Found: " + v);
+                                            System.out.println("\nNot Matching. Expected: " + key + " = " + value
+                                                    + " -> Found: " + v);
                                         }
                                         return result;
                                     }
@@ -214,23 +213,20 @@ public class MetricDataFilter {
     }
 
     public int lastReadingPointsSize() {
-        return metricData.reduce((first, second) -> second)
-                .map(data -> data.getData().getPoints().size())
+        return metricData.reduce((first, second) -> second).map(data -> data.getData().getPoints().size())
                 .orElseThrow(() -> new IllegalArgumentException("Stream has no elements"));
     }
 
     /**
-     * Returns the first point data of the last reading.
-     * Assumes only one data point can be present.
+     * Returns the first point data of the last reading. Assumes only one data point can be present.
      *
      * @param pointDataClass
      * @param <T>
+     *
      * @return
      */
     public <T extends PointData> T lastReadingDataPoint(Class<T> pointDataClass) {
-        List<T> list = lastReading().getData().getPoints().stream()
-                .map(pointData -> (T) pointData)
-                .toList();
+        List<T> list = lastReading().getData().getPoints().stream().map(pointData -> (T) pointData).toList();
 
         if (list.size() == 0) {
             throw new IllegalArgumentException("Stream has no elements");

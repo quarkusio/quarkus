@@ -153,7 +153,8 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
                         .resolveExtensionCatalog(List.of(targetPrimaryBom));
             } else if (targetStreamId != null) {
                 var platformStream = PlatformStreamCoords.fromString(targetStreamId);
-                targetCatalog = getExtensionCatalogResolver(quarkusProject.log()).resolveExtensionCatalog(platformStream);
+                targetCatalog = getExtensionCatalogResolver(quarkusProject.log())
+                        .resolveExtensionCatalog(platformStream);
                 targetPlatformVersion = getPrimaryBom(targetCatalog).getVersion();
             } else {
                 targetCatalog = getExtensionCatalogResolver(quarkusProject.log()).resolveExtensionCatalog();
@@ -161,7 +162,8 @@ public abstract class QuarkusUpdate extends QuarkusPlatformTask {
             }
         } catch (RegistryResolutionException e) {
             throw new RuntimeException(
-                    "Failed to resolve the recommended Quarkus extension catalog from the configured extension registries", e);
+                    "Failed to resolve the recommended Quarkus extension catalog from the configured extension registries",
+                    e);
         }
 
         final UpdateProject invoker = new UpdateProject(quarkusProject);

@@ -11,8 +11,7 @@ public class MutinyGoodbyeService implements Farewell {
 
     @Override
     public Uni<GoodbyeReply> sayGoodbye(GoodbyeRequest request) {
-        return Uni.createFrom().item(request.getName())
-                .map(s -> "Goodbye " + s)
+        return Uni.createFrom().item(request.getName()).map(s -> "Goodbye " + s)
                 .map(s -> GoodbyeReply.newBuilder().setMessage(s).build());
     }
 }

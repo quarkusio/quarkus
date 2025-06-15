@@ -5,9 +5,8 @@ import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * Resets the {@code initialized} field, so that the native libs are loaded again at
- * image runtime, after they have been loaded once at build time via calls from static
- * initializers.
+ * Resets the {@code initialized} field, so that the native libs are loaded again at image runtime, after they have been
+ * loaded once at build time via calls from static initializers.
  */
 @TargetClass(className = "org.rocksdb.NativeLibraryLoader")
 final class Target_org_rocksdb_NativeLibraryLoader {

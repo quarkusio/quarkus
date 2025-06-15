@@ -3,16 +3,10 @@ package io.quarkus.vertx.http.runtime.security;
 import java.util.Objects;
 
 /**
- * A representation of HTTP credential transport. In particular this includes things such as:
- *
- * Cookies
- * Authorization header
- * POST
- *
- * Note that using multiple HTTP authentication mechanisms to use the same credential
- * transport type can lead to unexpected authentication failures as they will not be able to figure out which mechanisms should
- * process which
- * request.
+ * A representation of HTTP credential transport. In particular this includes things such as: Cookies Authorization
+ * header POST Note that using multiple HTTP authentication mechanisms to use the same credential transport type can
+ * lead to unexpected authentication failures as they will not be able to figure out which mechanisms should process
+ * which request.
  */
 public class HttpCredentialTransport {
 
@@ -56,8 +50,8 @@ public class HttpCredentialTransport {
          */
         AUTHORIZATION_CODE,
         /**
-         * Reserved for HTTP credential transport used during the security testing
-         * with the 'io.quarkus.test.security.TestSecurity' annotation.
+         * Reserved for HTTP credential transport used during the security testing with the
+         * 'io.quarkus.test.security.TestSecurity' annotation.
          */
         TEST_SECURITY
     }
@@ -86,11 +80,8 @@ public class HttpCredentialTransport {
 
     @Override
     public String toString() {
-        return "HttpCredentialTransport{" +
-                "transportType=" + transportType +
-                ", typeTarget='" + typeTarget + '\'' +
-                ", authenticationScheme='" + authenticationScheme + '\'' +
-                '}';
+        return "HttpCredentialTransport{" + "transportType=" + transportType + ", typeTarget='" + typeTarget + '\''
+                + ", authenticationScheme='" + authenticationScheme + '\'' + '}';
     }
 
     public Type getTransportType() {

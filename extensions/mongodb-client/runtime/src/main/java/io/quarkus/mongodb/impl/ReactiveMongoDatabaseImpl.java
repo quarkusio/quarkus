@@ -198,8 +198,7 @@ public class ReactiveMongoDatabaseImpl implements ReactiveMongoDatabase {
     @Override
     public Uni<Void> createView(ClientSession clientSession, String viewName, String viewOn,
             List<? extends Bson> pipeline, CreateViewOptions createViewOptions) {
-        return Wrappers
-                .toUni(database.createView(clientSession, viewName, viewOn, pipeline, createViewOptions));
+        return Wrappers.toUni(database.createView(clientSession, viewName, viewOn, pipeline, createViewOptions));
     }
 
     @Override

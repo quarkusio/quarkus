@@ -23,8 +23,7 @@ public class VerticleWithInstanceDeploymentTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanDeployingAVerticleFromInstance.class, MyVerticle.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanDeployingAVerticleFromInstance.class, MyVerticle.class));
 
     @Test
     public void testDeploymentOfVerticleInstance() {
@@ -41,10 +40,8 @@ public class VerticleWithInstanceDeploymentTest {
 
         public void init(@Observes StartupEvent ev) throws InterruptedException {
             CountDownLatch latch = new CountDownLatch(2);
-            vertx.deployVerticle(new MyVerticle(),
-                    ar -> latch.countDown());
-            vertx.deployVerticle(new MyVerticle(),
-                    ar -> latch.countDown());
+            vertx.deployVerticle(new MyVerticle(), ar -> latch.countDown());
+            vertx.deployVerticle(new MyVerticle(), ar -> latch.countDown());
             latch.await();
         }
     }
@@ -53,8 +50,7 @@ public class VerticleWithInstanceDeploymentTest {
 
         @Override
         public void start(Promise<Void> done) {
-            vertx.createHttpServer()
-                    .requestHandler(req -> req.response().end("OK-" + Thread.currentThread().getName()))
+            vertx.createHttpServer().requestHandler(req -> req.response().end("OK-" + Thread.currentThread().getName()))
                     .listen(8080, ar -> done.handle(ar.mapEmpty()));
         }
 

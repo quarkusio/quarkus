@@ -28,10 +28,8 @@ public class AllowParameterConstraintsOnParallelMethodsTest {
 
     @Test
     public void allowParameterConstraintsInHierarchyWithMultipleRootMethods() {
-        validator.forExecutables().validateParameters(
-                new RealizationOfTwoInterface(),
-                RealizationOfTwoInterface.class.getDeclaredMethods()[0],
-                new Object[] { "foo" });
+        validator.forExecutables().validateParameters(new RealizationOfTwoInterface(),
+                RealizationOfTwoInterface.class.getDeclaredMethods()[0], new Object[] { "foo" });
     }
 
     private interface InterfaceWithNoConstraints {

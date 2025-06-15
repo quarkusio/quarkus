@@ -87,7 +87,8 @@ public class SimpleBeanParam {
         Assertions.assertNull(missing);
         Assertions.assertEquals("there", missingWithDefaultValue);
         Assertions.assertNull(missingParameterWithFromString);
-        Assertions.assertEquals("ParameterWithFromString[val=there]", missingParameterWithFromStringAndDefaultValue.toString());
+        Assertions.assertEquals("ParameterWithFromString[val=there]",
+                missingParameterWithFromStringAndDefaultValue.toString());
         Assertions.assertEquals(666, primitiveParam);
         Assertions.assertEquals(0, missingPrimitiveParam);
         Assertions.assertEquals(42, missingPrimitiveParamWithDefaultValue);

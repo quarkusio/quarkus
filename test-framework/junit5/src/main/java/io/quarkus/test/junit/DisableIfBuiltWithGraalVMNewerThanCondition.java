@@ -29,7 +29,8 @@ public class DisableIfBuiltWithGraalVMNewerThanCondition implements ExecutionCon
             return ConditionEvaluationResult.enabled("@DisableIfBuiltWithGraalVMNewerThan was not found");
         }
         if (!isIntegrationTest(context.getRequiredTestClass())) {
-            return ConditionEvaluationResult.enabled("@DisableIfBuiltWithGraalVMNewerThan was added to an unsupported test");
+            return ConditionEvaluationResult
+                    .enabled("@DisableIfBuiltWithGraalVMNewerThan was added to an unsupported test");
         }
 
         GraalVMVersion annotationValue = optional.get().value();
@@ -39,11 +40,12 @@ public class DisableIfBuiltWithGraalVMNewerThanCondition implements ExecutionCon
                     .of(quarkusArtifactProperties.getProperty("metadata.graalvm.version.full").lines());
             int comparison = annotationValue.getVersion().compareTo(version);
             if (comparison < 0) {
-                return ConditionEvaluationResult.disabled("Native binary was built with GraalVM{version=" + version.toString()
-                        + "} but the test is disabled for GraalVM versions newer than " + annotationValue);
+                return ConditionEvaluationResult
+                        .disabled("Native binary was built with GraalVM{version=" + version.toString()
+                                + "} but the test is disabled for GraalVM versions newer than " + annotationValue);
             }
-            return ConditionEvaluationResult
-                    .enabled("Native binary was built with a GraalVM version compatible with the required version by the test");
+            return ConditionEvaluationResult.enabled(
+                    "Native binary was built with a GraalVM version compatible with the required version by the test");
         } catch (NumberFormatException e) {
             return ConditionEvaluationResult
                     .disabled("Unable to determine the GraalVM version with which the native binary was built");

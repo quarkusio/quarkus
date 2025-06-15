@@ -28,7 +28,7 @@ public class LogCleanupFilter implements Filter {
     @Override
     public boolean isLoggable(LogRecord record) {
 
-        //we also use this filter to add a warning about errors generated after shutdown
+        // we also use this filter to add a warning about errors generated after shutdown
         if (record.getLevel().intValue() >= org.jboss.logmanager.Level.ERROR.intValue() && shutdownNotifier.shutdown) {
             if (!record.getMessage().endsWith(SHUTDOWN_MESSAGE)) {
                 if (record instanceof ExtLogRecord) {

@@ -12,12 +12,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RegisterClientHeadersTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class, EchoClient.class, MyHeadersFactory.class)
-                    .addAsResource(
-                            new StringAsset("io.quarkus.restclient.registerclientheaders.EchoClient/mp-rest/url=${test.url}"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(EchoResource.class, EchoClient.class, MyHeadersFactory.class).addAsResource(
+                    new StringAsset("io.quarkus.restclient.registerclientheaders.EchoClient/mp-rest/url=${test.url}"),
+                    "application.properties"));
 
     @RestClient
     EchoClient client;

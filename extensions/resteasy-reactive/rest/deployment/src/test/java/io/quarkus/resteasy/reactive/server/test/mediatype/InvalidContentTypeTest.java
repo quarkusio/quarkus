@@ -21,21 +21,17 @@ import io.restassured.http.ContentType;
 public class InvalidContentTypeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        given().config(config().encoderConfig(encoderConfig().encodeContentTypeAs("invalid", ContentType.TEXT))).body("dummy")
-                .contentType("invalid").post("/hello")
-                .then()
-                .statusCode(415);
+        given().config(config().encoderConfig(encoderConfig().encodeContentTypeAs("invalid", ContentType.TEXT)))
+                .body("dummy").contentType("invalid").post("/hello").then().statusCode(415);
     }
 
     @Path("hello")

@@ -23,9 +23,7 @@ public final class WorkspaceBuildItem extends SimpleBuildItem {
     }
 
     public List<Path> getPaths() {
-        return workspaceItems.stream()
-                .map(WorkspaceBuildItem.WorkspaceItem::path)
-                .collect(Collectors.toList());
+        return workspaceItems.stream().map(WorkspaceBuildItem.WorkspaceItem::path).collect(Collectors.toList());
     }
 
     public Path getRootPath() {

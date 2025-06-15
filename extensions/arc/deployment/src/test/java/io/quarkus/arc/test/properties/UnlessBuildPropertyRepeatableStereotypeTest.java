@@ -26,18 +26,17 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnlessBuildPropertyRepeatableStereotypeTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MatchingProperty.class, InheritableMatchingProperty.class, TransitiveMatchingProperty.class,
-                            InheritableTransitiveMatchingProperty.class, MyService.class, MatchingPropertyMyService.class,
-                            InheritableMatchingPropertyMyService.class, TransitiveMatchingPropertyMyService.class,
-                            InheritableTransitiveMatchingPropertyMyService.class, MyServiceSimple.class,
-                            MyServiceMatchingPropertyDirect.class, MyServiceMatchingPropertyTransitive.class,
-                            MyServiceMatchingPropertyOnSuperclassNotInheritable.class,
-                            MyServiceMatchingPropertyOnSuperclassInheritable.class,
-                            MyServiceMatchingPropertyTransitiveOnSuperclassNotInheritable.class,
-                            MyServiceMatchingPropertyTransitiveOnSuperclassInheritable.class, Producers.class))
-            .overrideConfigKey("foo.bar", "baz")
-            .overrideConfigKey("some.prop", "val");
+            .withApplicationRoot((jar) -> jar.addClasses(MatchingProperty.class, InheritableMatchingProperty.class,
+                    TransitiveMatchingProperty.class, InheritableTransitiveMatchingProperty.class, MyService.class,
+                    MatchingPropertyMyService.class, InheritableMatchingPropertyMyService.class,
+                    TransitiveMatchingPropertyMyService.class, InheritableTransitiveMatchingPropertyMyService.class,
+                    MyServiceSimple.class, MyServiceMatchingPropertyDirect.class,
+                    MyServiceMatchingPropertyTransitive.class,
+                    MyServiceMatchingPropertyOnSuperclassNotInheritable.class,
+                    MyServiceMatchingPropertyOnSuperclassInheritable.class,
+                    MyServiceMatchingPropertyTransitiveOnSuperclassNotInheritable.class,
+                    MyServiceMatchingPropertyTransitiveOnSuperclassInheritable.class, Producers.class))
+            .overrideConfigKey("foo.bar", "baz").overrideConfigKey("some.prop", "val");
 
     @Inject
     @Any
@@ -46,11 +45,9 @@ public class UnlessBuildPropertyRepeatableStereotypeTest {
     @Test
     public void test() {
         Set<String> hello = services.stream().map(MyService::hello).collect(Collectors.toSet());
-        Set<Object> expected = Set.of(
-                MyServiceSimple.class.getSimpleName(),
+        Set<Object> expected = Set.of(MyServiceSimple.class.getSimpleName(),
                 MyServiceMatchingPropertyOnSuperclassNotInheritable.class.getSimpleName(),
-                MyServiceMatchingPropertyTransitiveOnSuperclassNotInheritable.class.getSimpleName(),
-                Producers.SIMPLE);
+                MyServiceMatchingPropertyTransitiveOnSuperclassNotInheritable.class.getSimpleName(), Producers.SIMPLE);
         assertEquals(expected, hello);
     }
 
@@ -149,7 +146,8 @@ public class UnlessBuildPropertyRepeatableStereotypeTest {
     }
 
     @ApplicationScoped
-    static class MyServiceMatchingPropertyTransitiveOnSuperclassNotInheritable extends TransitiveMatchingPropertyMyService {
+    static class MyServiceMatchingPropertyTransitiveOnSuperclassNotInheritable
+            extends TransitiveMatchingPropertyMyService {
         @Override
         public String hello() {
             return MyServiceMatchingPropertyTransitiveOnSuperclassNotInheritable.class.getSimpleName();

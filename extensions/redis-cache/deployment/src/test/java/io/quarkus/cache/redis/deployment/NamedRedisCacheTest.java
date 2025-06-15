@@ -31,8 +31,8 @@ public class NamedRedisCacheTest {
 
     @Test
     public void testAllCacheAnnotations() {
-        RedisDataSource redisDataSource = Arc.container().select(RedisDataSource.class,
-                RedisClientName.Literal.of("test")).get();
+        RedisDataSource redisDataSource = Arc.container()
+                .select(RedisDataSource.class, RedisClientName.Literal.of("test")).get();
         List<String> allKeysAtStart = TestUtil.allRedisKeys(redisDataSource);
 
         // STEP 1

@@ -77,18 +77,21 @@ public abstract class ClientMultipartForm {
         return this;
     }
 
-    public ClientMultipartForm multiAsBinaryFileUpload(String name, String filename, Multi<Byte> content, String mediaType) {
+    public ClientMultipartForm multiAsBinaryFileUpload(String name, String filename, Multi<Byte> content,
+            String mediaType) {
         parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, false));
         return this;
     }
 
-    public ClientMultipartForm multiAsTextFileUpload(String name, String filename, Multi<Byte> content, String mediaType) {
+    public ClientMultipartForm multiAsTextFileUpload(String name, String filename, Multi<Byte> content,
+            String mediaType) {
         parts.add(new QuarkusMultipartFormDataPart(name, filename, content, mediaType, true));
         return this;
     }
 
     public ClientMultipartForm fileUpload(FileUpload fileUpload) {
-        binaryFileUpload(fileUpload.name(), fileUpload.fileName(), fileUpload.filePath().toString(), fileUpload.contentType());
+        binaryFileUpload(fileUpload.name(), fileUpload.fileName(), fileUpload.filePath().toString(),
+                fileUpload.contentType());
         return this;
     }
 

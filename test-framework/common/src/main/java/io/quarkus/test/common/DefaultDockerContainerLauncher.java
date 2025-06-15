@@ -51,7 +51,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private Map<String, String> labels;
     private final Map<String, String> systemProps = new HashMap<>();
     private boolean isSsl;
-    private final String containerName = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
+    private final String containerName = "quarkus-integration-test-"
+            + RandomStringUtils.insecure().next(5, true, false);
     private String containerRuntimeBinaryName;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Optional<String> entryPoint;
@@ -78,7 +79,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     @Override
     public LaunchResult runToCompletion(String[] argz) {
         try {
-            final ContainerRuntimeUtil.ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
+            final ContainerRuntimeUtil.ContainerRuntime containerRuntime = ContainerRuntimeUtil
+                    .detectContainerRuntime();
             containerRuntimeBinaryName = containerRuntime.getExecutableName();
 
             if (pullRequired) {
@@ -87,7 +89,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
                     int pullResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
                             .command(containerRuntimeBinaryName, "pull", containerImage).start().waitFor();
                     if (pullResult > 0) {
-                        throw new RuntimeException("Pulling container image '" + containerImage + "' completed unsuccessfully");
+                        throw new RuntimeException(
+                                "Pulling container image '" + containerImage + "' completed unsuccessfully");
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException("Unable to pull container image '" + containerImage + "'", e);
@@ -141,7 +144,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             if (DefaultJarLauncher.HTTP_PRESENT) {
                 args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
                 args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
-                // This won't be correct when using the random port, but it's really only used by us for the rest client tests
+                // This won't be correct when using the random port, but it's really only used by us for the rest client
+                // tests
                 // in the main module, since those tests hit the application itself
                 args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
             }
@@ -197,7 +201,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
                 int pullResult = new ProcessBuilder().redirectError(DISCARD).redirectOutput(DISCARD)
                         .command(containerRuntimeBinaryName, "pull", containerImage).start().waitFor();
                 if (pullResult > 0) {
-                    throw new RuntimeException("Pulling container image '" + containerImage + "' completed unsuccessfully");
+                    throw new RuntimeException(
+                            "Pulling container image '" + containerImage + "' completed unsuccessfully");
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException("Unable to pull container image '" + containerImage + "'", e);
@@ -241,7 +246,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
             args.add(entry.getKey() + ":" + entry.getValue());
         }
         for (Map.Entry<String, String> entry : volumeMounts.entrySet()) {
-            NativeImageBuildLocalContainerRunner.addVolumeParameter(entry.getKey(), entry.getValue(), args, containerRuntime);
+            NativeImageBuildLocalContainerRunner.addVolumeParameter(entry.getKey(), entry.getValue(), args,
+                    containerRuntime);
         }
         // if the dev services resulted in creating a dedicated network, then use it
         if (devServicesLaunchResult.networkId() != null) {
@@ -252,7 +258,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         if (DefaultJarLauncher.HTTP_PRESENT) {
             args.addAll(toEnvVar("quarkus.http.port", "" + httpPort));
             args.addAll(toEnvVar("quarkus.http.ssl-port", "" + httpsPort));
-            // This won't be correct when using the random port, but it's really only used by us for the rest client tests
+            // This won't be correct when using the random port, but it's really only used by us for the rest client
+            // tests
             // in the main module, since those tests hit the application itself
             args.addAll(toEnvVar("test.url", TestHTTPResourceManager.getUri()));
         }
@@ -289,14 +296,12 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
 
         // We rely on the container writing log to stdout. If it just writes to a logfile inside itself, we would have
         // to mount /work/ directory to get quarkus.log.
-        final Process containerProcess = new ProcessBuilder(args)
-                .redirectErrorStream(true)
-                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile.toFile()))
-                .start();
+        final Process containerProcess = new ProcessBuilder(args).redirectErrorStream(true)
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile.toFile())).start();
 
         if (startedFunction != null) {
-            final IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction, containerProcess,
-                    waitTimeSeconds, logFile);
+            final IntegrationTestStartedNotifier.Result result = waitForStartedFunction(startedFunction,
+                    containerProcess, waitTimeSeconds, logFile);
             isSsl = result.isSsl();
         } else {
             log.info("Wait for server to start by capturing listening data...");
@@ -341,8 +346,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         log.info("Close the container");
         try {
             final Process dockerStopProcess = new ProcessBuilder(containerRuntimeBinaryName, "stop", containerName)
-                    .redirectError(DISCARD)
-                    .redirectOutput(DISCARD).start();
+                    .redirectError(DISCARD).redirectOutput(DISCARD).start();
             log.debug("Wait for container to stop");
             dockerStopProcess.waitFor(10, TimeUnit.SECONDS);
         } catch (IOException | InterruptedException e) {

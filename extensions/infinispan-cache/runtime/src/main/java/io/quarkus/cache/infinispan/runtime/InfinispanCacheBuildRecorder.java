@@ -43,21 +43,21 @@ public class InfinispanCacheBuildRecorder {
                     @Override
                     public CacheManager get() {
                         Set<InfinispanCacheInfo> cacheInfos = InfinispanCacheInfoBuilder.build(context.cacheNames(),
-                                buildConfig,
-                                infinispanCacheConfigRV.getValue());
+                                buildConfig, infinispanCacheConfigRV.getValue());
                         if (cacheInfos.isEmpty()) {
                             return new CacheManagerImpl(Collections.emptyMap());
                         } else {
-                            // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor for the caches map.
+                            // The number of caches is known at build time so we can use fixed initialCapacity and
+                            // loadFactor for the caches map.
                             Map<String, Cache> caches = new HashMap<>(cacheInfos.size() + 1, 1.0F);
                             for (InfinispanCacheInfo cacheInfo : cacheInfos) {
                                 if (LOGGER.isDebugEnabled()) {
-                                    LOGGER.debugf(
-                                            "Building Infinispan cache [%s] with [lifespan=%s], [maxIdle=%s]",
+                                    LOGGER.debugf("Building Infinispan cache [%s] with [lifespan=%s], [maxIdle=%s]",
                                             cacheInfo.name, cacheInfo.lifespan, cacheInfo.maxIdle);
                                 }
 
-                                InfinispanCacheImpl cache = new InfinispanCacheImpl(cacheInfo, buildConfig.clientName());
+                                InfinispanCacheImpl cache = new InfinispanCacheImpl(cacheInfo,
+                                        buildConfig.clientName());
                                 caches.put(cacheInfo.name, cache);
                             }
                             return new CacheManagerImpl(caches);

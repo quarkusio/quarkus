@@ -21,33 +21,25 @@ public class ReactiveTransactionalBloomCommandsImpl<K, V> extends AbstractTransa
     @Override
     public Uni<Void> bfadd(K key, V value) {
         this.tx.enqueue(Response::toBoolean);
-        return this.reactive._bfadd(key, value)
-                .invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._bfadd(key, value).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> bfexists(K key, V value) {
         this.tx.enqueue(Response::toBoolean);
-        return this.reactive._bfexists(key, value)
-                .invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._bfexists(key, value).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> bfmadd(K key, V... values) {
         this.tx.enqueue(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
-        return this.reactive._bfmadd(key, values)
-                .invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._bfmadd(key, values).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> bfmexists(K key, V... values) {
         this.tx.enqueue(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
-        return this.reactive._bfmexists(key, values)
-                .invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._bfmexists(key, values).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
@@ -58,16 +50,12 @@ public class ReactiveTransactionalBloomCommandsImpl<K, V> extends AbstractTransa
     @Override
     public Uni<Void> bfreserve(K key, double errorRate, long capacity, BfReserveArgs args) {
         this.tx.enqueue(r -> null);
-        return this.reactive._bfreserve(key, errorRate, capacity, args)
-                .invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._bfreserve(key, errorRate, capacity, args).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> bfinsert(K key, BfInsertArgs args, V... values) {
         this.tx.enqueue(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
-        return this.reactive._bfinsert(key, args, values)
-                .invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._bfinsert(key, args, values).invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 }

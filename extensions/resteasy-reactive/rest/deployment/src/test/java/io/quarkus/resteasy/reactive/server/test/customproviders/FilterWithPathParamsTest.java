@@ -25,55 +25,38 @@ import io.smallrye.mutiny.Uni;
 public class FilterWithPathParamsTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class, Filters.class, NotFoundExeptionMapper.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, Filters.class,
+                    NotFoundExeptionMapper.class);
+        }
+    });
 
     @Test
     public void testNonExistingPath() {
-        when().get("/dummy")
-                .then()
-                .statusCode(404)
-                .header("path-params", is("0"));
+        when().get("/dummy").then().statusCode(404).header("path-params", is("0"));
     }
 
     @Test
     public void testNoPathParamsPathNoAbort() {
-        when().get("/hello")
-                .then()
-                .statusCode(200)
-                .header("path-params", is("0"));
+        when().get("/hello").then().statusCode(200).header("path-params", is("0"));
     }
 
     @Test
     public void testNoPathParamsPathWithAbort() {
-        given().header("abort", "true")
-                .when().get("/hello")
-                .then()
-                .statusCode(401)
-                .header("path-params", is("0"));
+        given().header("abort", "true").when().get("/hello").then().statusCode(401).header("path-params", is("0"));
     }
 
     @Test
     public void testPathParamsPathNoAbort() {
-        when().get("/hello/resteasy")
-                .then()
-                .statusCode(200)
-                .header("path-params", is("1"));
+        when().get("/hello/resteasy").then().statusCode(200).header("path-params", is("1"));
     }
 
     @Test
     public void testPathParamsPathWithAbort() {
-        given().header("abort", "true")
-                .when().get("/hello/resteasy")
-                .then()
-                .statusCode(401)
-                .header("path-params", is("1"));
+        given().header("abort", "true").when().get("/hello/resteasy").then().statusCode(401).header("path-params",
+                is("1"));
     }
 
     @Path("hello")

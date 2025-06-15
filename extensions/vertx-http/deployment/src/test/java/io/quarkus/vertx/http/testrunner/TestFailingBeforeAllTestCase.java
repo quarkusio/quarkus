@@ -16,21 +16,18 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class TestFailingBeforeAllTestCase {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class)
-                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties()),
-                                    "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class)
+                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties()), "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class);
+        }
+    });
 
     @Test
     public void testBrokenBeforeAllHandling() throws InterruptedException {
@@ -44,8 +41,8 @@ public class TestFailingBeforeAllTestCase {
         Assertions.assertEquals(1L, ts.getTotalTestsPassed());
         Assertions.assertEquals(0L, ts.getTotalTestsSkipped());
 
-        test.modifyTestSourceFile(SimpleET.class, s -> s.replaceFirst("\\{", "{ \n" +
-                "    @org.junit.jupiter.api.BeforeAll public static void error() { throw new RuntimeException();  }"));
+        test.modifyTestSourceFile(SimpleET.class, s -> s.replaceFirst("\\{", "{ \n"
+                + "    @org.junit.jupiter.api.BeforeAll public static void error() { throw new RuntimeException();  }"));
 
         ts = utils.waitForNextCompletion();
 

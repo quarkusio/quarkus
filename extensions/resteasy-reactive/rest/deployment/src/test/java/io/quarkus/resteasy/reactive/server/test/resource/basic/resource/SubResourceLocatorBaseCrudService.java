@@ -17,8 +17,7 @@ public interface SubResourceLocatorBaseCrudService<T> {
     @GET
     @Path("/content/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    T getContent(
-            @PathParam("id") String id);
+    T getContent(@PathParam("id") String id);
 
     @POST
     @Path("/add")
@@ -40,6 +39,5 @@ public interface SubResourceLocatorBaseCrudService<T> {
     @DELETE
     @Path("/delete/{id}")
     @Produces(MediaType.TEXT_PLAIN)
-    Boolean delete(
-            @PathParam("id") String id);
+    Boolean delete(@PathParam("id") String id);
 }

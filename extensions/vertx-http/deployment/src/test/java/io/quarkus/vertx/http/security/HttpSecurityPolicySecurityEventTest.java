@@ -69,8 +69,8 @@ public class HttpSecurityPolicySecurityEventTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-            .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class, EventObserver.class,
-                    CustomNamedHttpSecurityPolicy.class, GlobalCustomHttpSecurityPolicy.class)
+            .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class,
+                    EventObserver.class, CustomNamedHttpSecurityPolicy.class, GlobalCustomHttpSecurityPolicy.class)
             .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @Inject
@@ -88,15 +88,14 @@ public class HttpSecurityPolicySecurityEventTest {
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("test", "test", "test")
-                .add("test2", "test2", "test2")
-                .add("admin", "admin", "admin");
+        TestIdentityController.resetRoles().add("test", "test", "test").add("test2", "test2", "test2").add("admin",
+                "admin", "admin");
     }
 
     @Test
     public void testAuthenticationEvents() {
-        RestAssured.given().auth().preemptive().basic("unknown", "unknown").get("/authenticated").then().statusCode(401);
+        RestAssured.given().auth().preemptive().basic("unknown", "unknown").get("/authenticated").then()
+                .statusCode(401);
         assertEquals(0, observer.authZFailureStorage.size());
         Awaitility.await().atMost(Duration.ofSeconds(2))
                 .untilAsserted(() -> assertEquals(1, observer.asyncAuthNFailureEventStorage.size()));
@@ -116,13 +115,15 @@ public class HttpSecurityPolicySecurityEventTest {
         AuthenticationSuccessEvent successEvent = observer.authNSuccessStorage.get(0);
         assertNotNull(successEvent.getSecurityIdentity());
         assertEquals("test", successEvent.getSecurityIdentity().getPrincipal().getName());
-        RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties().get(RoutingContext.class.getName());
+        RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties()
+                .get(RoutingContext.class.getName());
         assertNotNull(routingContext);
         assertTrue(routingContext.request().path().endsWith("/authenticated"));
         assertEquals(1, observer.authZSuccessStorage.size());
         AuthorizationSuccessEvent authorizationSuccessEvent = observer.authZSuccessStorage.get(0);
         assertEquals(successEvent.getSecurityIdentity(), authorizationSuccessEvent.getSecurityIdentity());
-        assertEquals(routingContext, authorizationSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        assertEquals(routingContext,
+                authorizationSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
         RestAssured.given().get("/authenticated").then().statusCode(401);
         assertEquals(1, observer.authZFailureStorage.size());
         AuthorizationFailureEvent event = observer.authZFailureStorage.get(0);
@@ -162,13 +163,15 @@ public class HttpSecurityPolicySecurityEventTest {
         SecurityIdentity identity = successEvent.getSecurityIdentity();
         assertNotNull(identity);
         assertEquals("admin", identity.getPrincipal().getName());
-        RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties().get(RoutingContext.class.getName());
+        RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties()
+                .get(RoutingContext.class.getName());
         assertNotNull(routingContext);
         assertTrue(routingContext.request().path().endsWith("/roles"));
         assertEquals(1, observer.authZSuccessStorage.size());
         AuthorizationSuccessEvent authorizationSuccessEvent = observer.authZSuccessStorage.get(0);
         assertEquals(identity, authorizationSuccessEvent.getSecurityIdentity());
-        assertEquals(routingContext, authorizationSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
+        assertEquals(routingContext,
+                authorizationSuccessEvent.getEventProperties().get(RoutingContext.class.getName()));
         RestAssured.given().auth().preemptive().basic("test", "test").get("/roles").then().statusCode(403);
         assertEquals(1, observer.authZFailureStorage.size());
         AuthorizationFailureEvent event = observer.authZFailureStorage.get(0);
@@ -239,8 +242,9 @@ public class HttpSecurityPolicySecurityEventTest {
         assertInstanceOf(ForbiddenException.class, second.getAuthorizationFailure());
         assertEquals(PathMatchingHttpSecurityPolicy.class.getName(), first.getAuthorizationContext());
         assertAllEvents(3);
-        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> assertEquals(1,
-                observer.asyncAllEventsStorage.stream().filter(se -> se instanceof AuthenticationSuccessEvent).count()));
+        Awaitility.await().atMost(Duration.ofSeconds(2))
+                .untilAsserted(() -> assertEquals(1, observer.asyncAllEventsStorage.stream()
+                        .filter(se -> se instanceof AuthenticationSuccessEvent).count()));
         AuthenticationSuccessEvent event = (AuthenticationSuccessEvent) observer.asyncAllEventsStorage.stream()
                 .filter(se -> se instanceof AuthenticationSuccessEvent).findFirst().get();
         assertNotNull(event.getSecurityIdentity());
@@ -280,7 +284,8 @@ public class HttpSecurityPolicySecurityEventTest {
         AuthorizationSuccessEvent successEvent = observer.authZSuccessStorage.get(0);
         assertNotNull(successEvent.getSecurityIdentity());
         assertTrue(successEvent.getSecurityIdentity().isAnonymous());
-        RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties().get(RoutingContext.class.getName());
+        RoutingContext routingContext = (RoutingContext) successEvent.getEventProperties()
+                .get(RoutingContext.class.getName());
         assertNotNull(routingContext);
         assertTrue(routingContext.request().path().endsWith("/custom-global"));
         RestAssured.given().header("custom-global", "ignored").get("/custom-global").then().statusCode(401);

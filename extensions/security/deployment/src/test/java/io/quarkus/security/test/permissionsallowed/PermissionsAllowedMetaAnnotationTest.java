@@ -28,10 +28,9 @@ public class PermissionsAllowedMetaAnnotationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class,
-                            SingleNoArgsPermissionsAllowedMetaAnnotation.class, StringPermissionsAllowedMetaAnnotation.class,
-                            StringDeniedPermissionsAllowedMetaAnnotation.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class,
+                    SingleNoArgsPermissionsAllowedMetaAnnotation.class, StringPermissionsAllowedMetaAnnotation.class,
+                    StringDeniedPermissionsAllowedMetaAnnotation.class));
 
     @Inject
     PermissionsAllowedMethodLevelWithoutActions withoutActionsMethodLevelBean;
@@ -116,7 +115,8 @@ public class PermissionsAllowedMetaAnnotationTest {
         assertFailureFor(supplier::get, ForbiddenException.class, writer);
     }
 
-    private static void testWriterPermission(Supplier<String> supplier, Function<String, Permission> permissionCreator) {
+    private static void testWriterPermission(Supplier<String> supplier,
+            Function<String, Permission> permissionCreator) {
         AuthData writer = new AuthData(Collections.singleton("admin"), false, "admin",
                 Set.of(permissionCreator.apply("write")));
 
@@ -129,8 +129,8 @@ public class PermissionsAllowedMetaAnnotationTest {
     }
 
     /**
-     * This permission does not accept actions, it is important in order to test class instantiation that differs
-     * for actions/without actions.
+     * This permission does not accept actions, it is important in order to test class instantiation that differs for
+     * actions/without actions.
      */
     public static class CustomPermissionNameOnly extends Permission {
 

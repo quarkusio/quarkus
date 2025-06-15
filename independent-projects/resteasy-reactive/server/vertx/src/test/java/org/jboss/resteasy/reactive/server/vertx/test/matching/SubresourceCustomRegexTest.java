@@ -19,32 +19,18 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class SubresourceCustomRegexTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(RootResource.class)
-                            .addClass(SubResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(RootResource.class).addClass(SubResource.class);
+        }
+    });
 
     @Test
     public void testRequestForwardedToSubresource() {
-        given()
-                .when().get("/TomOther/greet")
-                .then()
-                .statusCode(200)
-                .body(is("Hello Tom"));
-        given()
-                .when().get("/TimOther/greet")
-                .then()
-                .statusCode(200)
-                .body(is("Hello Tim"));
-        given()
-                .when().get("/Tom/greet")
-                .then()
-                .statusCode(404);
+        given().when().get("/TomOther/greet").then().statusCode(200).body(is("Hello Tom"));
+        given().when().get("/TimOther/greet").then().statusCode(200).body(is("Hello Tim"));
+        given().when().get("/Tom/greet").then().statusCode(404);
     }
 
     @Path("/")

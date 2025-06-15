@@ -29,20 +29,17 @@ public class FileInputWithoutDeleteTest extends AbstractMultipartTest {
     private static final java.nio.file.Path uploadDir = Paths.get("file-uploads");
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class)
-                            .addAsResource(new StringAsset(
-                                    // keep the files around so we can assert the outcome
-                                    "quarkus.http.body.delete-uploaded-files-on-end=false\nquarkus.http.body.uploads-directory="
-                                            + uploadDir.toString() + "\n"),
-                                    "application.properties");
-                }
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class).addAsResource(new StringAsset(
+                    // keep the files around so we can assert the outcome
+                    "quarkus.http.body.delete-uploaded-files-on-end=false\nquarkus.http.body.uploads-directory="
+                            + uploadDir.toString() + "\n"),
+                    "application.properties");
+        }
 
-            });
+    });
 
     private final File HTML_FILE = new File("./src/test/resources/test.html");
     private final File HTML_FILE2 = new File("./src/test/resources/test2.html");
@@ -59,26 +56,14 @@ public class FileInputWithoutDeleteTest extends AbstractMultipartTest {
 
     @Test
     public void test() throws IOException {
-        RestAssured.given()
-                .contentType("application/octet-stream")
-                .body(HTML_FILE)
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
-                .body(equalTo(fileSizeAsStr(HTML_FILE)));
+        RestAssured.given().contentType("application/octet-stream").body(HTML_FILE).when().post("/test").then()
+                .statusCode(200).body(equalTo(fileSizeAsStr(HTML_FILE)));
 
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(1, uploadDir.toFile().listFiles().length);
 
-        RestAssured.given()
-                .contentType("application/octet-stream")
-                .body(HTML_FILE2)
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
-                .body(equalTo(fileSizeAsStr(HTML_FILE2)));
+        RestAssured.given().contentType("application/octet-stream").body(HTML_FILE2).when().post("/test").then()
+                .statusCode(200).body(equalTo(fileSizeAsStr(HTML_FILE2)));
 
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(2, uploadDir.toFile().listFiles().length);

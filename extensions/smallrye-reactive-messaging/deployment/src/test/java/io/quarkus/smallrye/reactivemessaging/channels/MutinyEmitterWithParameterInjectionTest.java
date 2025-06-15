@@ -23,8 +23,7 @@ public class MutinyEmitterWithParameterInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MutinyEmitterExampleWithParameterInjection.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MutinyEmitterExampleWithParameterInjection.class));
 
     @Inject
     MutinyEmitterExampleWithParameterInjection example;
@@ -47,8 +46,7 @@ public class MutinyEmitterWithParameterInjectionTest {
 
         @SuppressWarnings("unused")
         @Inject
-        public void inject(
-                Vertx vertx, // Not used on purpose
+        public void inject(Vertx vertx, // Not used on purpose
                 @Channel("sink") MutinyEmitter<String> e) {
             emitter = e;
         }

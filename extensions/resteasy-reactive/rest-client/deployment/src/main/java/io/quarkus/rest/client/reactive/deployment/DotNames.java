@@ -44,7 +44,8 @@ public class DotNames {
 
     public static final DotName CLIENT_BASIC_AUTH = DotName.createSimple(ClientBasicAuth.class.getName());
 
-    public static final DotName RESPONSE_EXCEPTION_MAPPER = DotName.createSimple(ResponseExceptionMapper.class.getName());
+    public static final DotName RESPONSE_EXCEPTION_MAPPER = DotName
+            .createSimple(ResponseExceptionMapper.class.getName());
 
     static final DotName METHOD = DotName.createSimple(Method.class.getName());
     static final DotName URI = DotName.createSimple(URI.class.getName());

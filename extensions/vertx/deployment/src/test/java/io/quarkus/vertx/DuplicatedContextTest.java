@@ -35,23 +35,21 @@ import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
 
 /**
- * Verify that methods annotated with {@link ConsumeEvent} are called on duplicated contexts and that they handled
- * them properly.
+ * Verify that methods annotated with {@link ConsumeEvent} are called on duplicated contexts and that they handled them
+ * properly.
  */
 public class DuplicatedContextTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyConsumers.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyConsumers.class));
     private Vertx vertx;
 
     @BeforeEach
     public void init() {
         vertx = Vertx.vertx();
-        vertx.createHttpServer()
-                .requestHandler(req -> req.response().end("hey!"))
-                .listen(8082).toCompletionStage().toCompletableFuture().join();
+        vertx.createHttpServer().requestHandler(req -> req.response().end("hey!")).listen(8082).toCompletionStage()
+                .toCompletableFuture().join();
     }
 
     @AfterEach
@@ -101,18 +99,13 @@ public class DuplicatedContextTest {
         List<Uni<Void>> unis = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             String uuid = UUID.randomUUID().toString();
-            unis.add(
-                    bus.<String> request("context", uuid)
-                            .map(Message::body)
-                            .invoke(resp -> {
-                                Assertions.assertEquals(resp, "OK-" + uuid);
-                            })
-                            .replaceWithVoid());
+            unis.add(bus.<String> request("context", uuid).map(Message::body).invoke(resp -> {
+                Assertions.assertEquals(resp, "OK-" + uuid);
+            }).replaceWithVoid());
         }
 
-        Uni.join().all(unis).andFailFast()
-                .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(30));
+        Uni.join().all(unis).andFailFast().runSubscriptionOn(Infrastructure.getDefaultExecutor()).await()
+                .atMost(Duration.ofSeconds(30));
     }
 
     @Test
@@ -123,18 +116,13 @@ public class DuplicatedContextTest {
         List<Uni<Void>> unis = new ArrayList<>();
         for (int i = 0; i < 500; i++) {
             String uuid = UUID.randomUUID().toString();
-            unis.add(
-                    bus.<String> request("context-blocking", uuid)
-                            .map(Message::body)
-                            .invoke(resp -> {
-                                Assertions.assertEquals(resp, "OK-" + uuid);
-                            })
-                            .replaceWithVoid());
+            unis.add(bus.<String> request("context-blocking", uuid).map(Message::body).invoke(resp -> {
+                Assertions.assertEquals(resp, "OK-" + uuid);
+            }).replaceWithVoid());
         }
 
-        Uni.join().all(unis).andFailFast()
-                .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(60));
+        Uni.join().all(unis).andFailFast().runSubscriptionOn(Infrastructure.getDefaultExecutor()).await()
+                .atMost(Duration.ofSeconds(60));
 
     }
 
@@ -163,16 +151,15 @@ public class DuplicatedContextTest {
 
             context.putLocal("key", id);
 
-            return Uni.createFrom().completionStage(
-                    () -> vertx.createHttpClient().request(HttpMethod.GET, 8082, "localhost", "/hey")
+            return Uni.createFrom()
+                    .completionStage(() -> vertx.createHttpClient().request(HttpMethod.GET, 8082, "localhost", "/hey")
                             .compose(request -> request.end().compose(x -> request.response()))
-                            .compose(HttpClientResponse::body)
-                            .map(Buffer::toString)
-                            .map(msg -> {
+                            .compose(HttpClientResponse::body).map(Buffer::toString).map(msg -> {
                                 Assertions.assertEquals("hey!", msg);
                                 Assertions.assertEquals(id, ContextLocals.get("key", null));
                                 Assertions.assertSame(Vertx.currentContext(), context);
-                                VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
+                                VertxContextSafetyToggle.validateContextIfExists("Not marked as safe",
+                                        "Not marked as safe");
                                 return "OK-" + ContextLocals.get("key", null);
                             }).toCompletionStage());
         }

@@ -19,14 +19,13 @@ public abstract class HalWrapper {
     /**
      * This method is used by Rest Data Panache to programmatically add links to the Hal wrapper.
      *
-     * @param links The links to add into the Hal wrapper.
+     * @param links
+     *        The links to add into the Hal wrapper.
      */
     @SuppressWarnings("unused")
     public void addLinks(Link... links) {
         for (Link link : links) {
-            this.links.put(link.getRel(), new HalLink(link.getUri().toString(),
-                    link.getTitle(),
-                    link.getType()));
+            this.links.put(link.getRel(), new HalLink(link.getUri().toString(), link.getTitle(), link.getType()));
         }
     }
 }

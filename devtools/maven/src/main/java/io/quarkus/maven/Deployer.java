@@ -47,7 +47,9 @@ public enum Deployer {
     /**
      * Get the {@link ArtifactDependency} matching the builder.
      *
-     * @param project the target project
+     * @param project
+     *        the target project
+     *
      * @return the dependency wrapped in {@link Optional}.
      */
     public Optional<ArtifactDependency> getExtensionArtifact(MavenProject project) {
@@ -55,26 +57,29 @@ public enum Deployer {
         return project.getDependencyManagement().getDependencies().stream()
                 .filter(d -> QUARKUS_GROUP_ID.equals(d.getGroupId()) && artifactId.equals(d.getArtifactId()))
                 .map(d -> new ArtifactDependency(d.getGroupId(), d.getArtifactId(), null,
-                        io.quarkus.maven.dependency.ArtifactCoords.TYPE_JAR,
-                        d.getVersion()))
+                        io.quarkus.maven.dependency.ArtifactCoords.TYPE_JAR, d.getVersion()))
                 .findFirst();
     }
 
     /**
      * Get the deployer by name or the first one found in the project.
      *
-     * @param project the project to search for deployer extensions
+     * @param project
+     *        the project to search for deployer extensions
+     *
      * @return the {@link Optional} builder matching the name, project.
      */
     public static Optional<Deployer> getDeployer(MavenProject project) {
-        return DeploymentUtil.getEnabledDeployer()
-                .or(() -> getProjectDeployer(project).stream().findFirst()).map(Deployer::valueOf);
+        return DeploymentUtil.getEnabledDeployer().or(() -> getProjectDeployer(project).stream().findFirst())
+                .map(Deployer::valueOf);
     }
 
     /**
      * Get the deployer extensions found in the project.
      *
-     * @param project The project to search for extensions
+     * @param project
+     *        The project to search for extensions
+     *
      * @return A set with the discovered extensions.
      */
     public static Set<String> getProjectDeployer(MavenProject project) {
@@ -84,15 +89,16 @@ public enum Deployer {
     /**
      * Get the deployer extensions found in the project.
      *
-     * @param dependencies the dependencies for extensions
+     * @param dependencies
+     *        the dependencies for extensions
+     *
      * @return A set with the discovered extensions.
      */
     public static Set<String> getProjectDeployers(List<Dependency> dependencies) {
         if (dependencies == null) {
             return Set.of();
         }
-        return dependencies.stream()
-                .filter(d -> QUARKUS_GROUP_ID.equals(d.getGroupId()))
+        return dependencies.stream().filter(d -> QUARKUS_GROUP_ID.equals(d.getGroupId()))
                 .map(d -> strip(d.getArtifactId()))
                 .filter(n -> Arrays.stream(Deployer.values()).anyMatch(e -> e.name().equals(n)))
                 .collect(Collectors.toSet());

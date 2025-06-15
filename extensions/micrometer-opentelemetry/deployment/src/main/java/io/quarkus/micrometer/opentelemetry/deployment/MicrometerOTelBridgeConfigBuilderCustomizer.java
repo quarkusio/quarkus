@@ -10,9 +10,8 @@ public class MicrometerOTelBridgeConfigBuilderCustomizer implements SmallRyeConf
     @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
         // use a priority of 50 to make sure that this is overridable by any of the standard methods
-        builder.withSources(
-                new PropertiesConfigSource(Map.of(
-                        "quarkus.otel.metrics.enabled", "true",
-                        "quarkus.otel.logs.enabled", "true"), "quarkus-micrometer-opentelemetry", 1));
+        builder.withSources(new PropertiesConfigSource(
+                Map.of("quarkus.otel.metrics.enabled", "true", "quarkus.otel.logs.enabled", "true"),
+                "quarkus-micrometer-opentelemetry", 1));
     }
 }

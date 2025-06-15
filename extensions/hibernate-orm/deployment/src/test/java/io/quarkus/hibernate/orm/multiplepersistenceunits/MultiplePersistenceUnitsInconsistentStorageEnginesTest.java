@@ -14,12 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultiplePersistenceUnitsInconsistentStorageEnginesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClass(User.class)
-                    .addClass(DefaultEntity.class)
-                    .addClass(User.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addClass(User.class).addClass(DefaultEntity.class).addClass(User.class)
                     .addClass(Plane.class)
                     .addAsResource("application-multiple-persistence-units-inconsistent-storage-engines.properties",
                             "application.properties"));

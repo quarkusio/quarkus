@@ -49,8 +49,7 @@ public class SocketJsonFormatterDefaultConfigTest {
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 
-        Handler handler = Arrays.stream(delayedHandler.getHandlers())
-                .filter(h -> (h instanceof SocketHandler))
+        Handler handler = Arrays.stream(delayedHandler.getHandlers()).filter(h -> (h instanceof SocketHandler))
                 .findFirst().orElse(null);
         assertThat(handler).isNotNull();
         assertThat(handler.getLevel()).isEqualTo(Level.WARNING);

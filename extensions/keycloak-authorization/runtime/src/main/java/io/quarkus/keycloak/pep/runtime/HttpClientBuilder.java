@@ -75,10 +75,9 @@ import org.keycloak.common.util.KeystoreUtil;
 import org.keycloak.representations.adapters.config.AdapterHttpClientConfig;
 
 /**
- * Creates a {@link HttpClient} based on an {@link org.keycloak.representations.adapters.config.AdapterConfig}.
- *
- * This is the same code from the Keycloak {@code org.keycloak.adapters.HttpClientBuilder} class but without
- * using Keycloak Adapter API/SPI.
+ * Creates a {@link HttpClient} based on an {@link org.keycloak.representations.adapters.config.AdapterConfig}. This is
+ * the same code from the Keycloak {@code org.keycloak.adapters.HttpClientBuilder} class but without using Keycloak
+ * Adapter API/SPI.
  */
 public class HttpClientBuilder {
 
@@ -99,15 +98,14 @@ public class HttpClientBuilder {
 
     /**
      * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+     *
      * @version $Revision: 1 $
      */
     private static class PassthroughTrustManager implements X509TrustManager {
-        public void checkClientTrusted(X509Certificate[] chain,
-                String authType) throws CertificateException {
+        public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         }
 
-        public void checkServerTrusted(X509Certificate[] chain,
-                String authType) throws CertificateException {
+        public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
         }
 
         public X509Certificate[] getAcceptedIssuers() {
@@ -140,6 +138,7 @@ public class HttpClientBuilder {
      *
      * @param timeout
      * @param unit
+     *
      * @return
      */
     public HttpClientBuilder socketTimeout(long timeout, TimeUnit unit) {
@@ -153,6 +152,7 @@ public class HttpClientBuilder {
      *
      * @param timeout
      * @param unit
+     *
      * @return
      */
     public HttpClientBuilder establishConnectionTimeout(long timeout, TimeUnit unit) {
@@ -178,9 +178,8 @@ public class HttpClientBuilder {
     }
 
     /**
-     * Disable trust management and hostname verification. <i>NOTE</i> this is a security
-     * hole, so only set this option if you cannot or do not want to verify the identity of the
-     * host you are communicating with.
+     * Disable trust management and hostname verification. <i>NOTE</i> this is a security hole, so only set this option
+     * if you cannot or do not want to verify the identity of the host you are communicating with.
      */
     public HttpClientBuilder disableTrustManager() {
         this.disableTrustManager = true;
@@ -196,6 +195,7 @@ public class HttpClientBuilder {
      * SSL policy used to verify hostnames
      *
      * @param policy
+     *
      * @return
      */
     public HttpClientBuilder hostnameVerification(HostnameVerificationPolicy policy) {
@@ -286,20 +286,17 @@ public class HttpClientBuilder {
             SSLContext theContext = sslContext;
             if (disableTrustManager) {
                 theContext = SSLContext.getInstance("SSL");
-                theContext.init(null, new TrustManager[] { new PassthroughTrustManager() },
-                        new SecureRandom());
+                theContext.init(null, new TrustManager[] { new PassthroughTrustManager() }, new SecureRandom());
                 verifier = new AllowAllHostnameVerifier();
                 sslsf = new SSLConnectionSocketFactory(theContext, verifier);
             } else if (theContext != null) {
                 sslsf = new SSLConnectionSocketFactory(theContext, verifier);
             } else if (clientKeyStore != null || truststore != null) {
-                sslsf = new SSLConnectionSocketFactory(SSLContexts.custom()
-                        .setProtocol(SSLConnectionSocketFactory.TLS)
+                sslsf = new SSLConnectionSocketFactory(SSLContexts.custom().setProtocol(SSLConnectionSocketFactory.TLS)
                         .setSecureRandom(null)
                         .loadKeyMaterial(clientKeyStore,
                                 clientPrivateKeyPassword != null ? clientPrivateKeyPassword.toCharArray() : null)
-                        .loadTrustMaterial(truststore, null)
-                        .build(), verifier);
+                        .loadTrustMaterial(truststore, null).build(), verifier);
             } else {
                 final SSLContext tlsContext = SSLContext.getInstance(SSLSocketFactory.TLS);
                 tlsContext.init(null, null, null);
@@ -314,8 +311,8 @@ public class HttpClientBuilder {
             HttpClientConnectionManager cm;
 
             if (connectionPoolSize > 0) {
-                PoolingHttpClientConnectionManager tcm = new PoolingHttpClientConnectionManager(sf.build(), null, null, null,
-                        connectionTTL, connectionTTLUnit);
+                PoolingHttpClientConnectionManager tcm = new PoolingHttpClientConnectionManager(sf.build(), null, null,
+                        null, connectionTTL, connectionTTLUnit);
                 tcm.setMaxTotal(connectionPoolSize);
                 if (maxPooledPerRoute == 0)
                     maxPooledPerRoute = connectionPoolSize;
@@ -339,7 +336,8 @@ public class HttpClientBuilder {
 
             }
             if (establishConnectionTimeout > -1) {
-                requestConfig.setConnectTimeout((int) establishConnectionTimeoutUnits.toMillis(establishConnectionTimeout));
+                requestConfig
+                        .setConnectTimeout((int) establishConnectionTimeoutUnits.toMillis(establishConnectionTimeout));
             }
 
             Registry<CookieSpecProvider> cookieSpecs = CookieSpecRegistries.createDefaultBuilder()
@@ -349,12 +347,10 @@ public class HttpClientBuilder {
                 requestConfig.setTargetPreferredAuthSchemes(Arrays.asList(AuthSchemes.SPNEGO));
             }
 
-            org.apache.http.impl.client.HttpClientBuilder clientBuilder = org.apache.http.impl.client.HttpClientBuilder.create()
-                    .setDefaultSocketConfig(socketConfig.build())
-                    .setDefaultConnectionConfig(connConfig.build())
-                    .setDefaultRequestConfig(requestConfig.build())
-                    .setDefaultCookieSpecRegistry(cookieSpecs)
-                    .setConnectionManager(cm);
+            org.apache.http.impl.client.HttpClientBuilder clientBuilder = org.apache.http.impl.client.HttpClientBuilder
+                    .create().setDefaultSocketConfig(socketConfig.build())
+                    .setDefaultConnectionConfig(connConfig.build()).setDefaultRequestConfig(requestConfig.build())
+                    .setDefaultCookieSpecRegistry(cookieSpecs).setConnectionManager(cm);
 
             if (spNegoSchemeFactory != null) {
                 RegistryBuilder<AuthSchemeProvider> authSchemes = RegistryBuilder.create();
@@ -388,7 +384,7 @@ public class HttpClientBuilder {
                 clientBuilder.setDefaultCookieStore(new CookieStore() {
                     @Override
                     public void addCookie(Cookie cookie) {
-                        //To change body of implemented methods use File | Settings | File Templates.
+                        // To change body of implemented methods use File | Settings | File Templates.
                     }
 
                     @Override
@@ -398,12 +394,12 @@ public class HttpClientBuilder {
 
                     @Override
                     public boolean clearExpired(Date date) {
-                        return false; //To change body of implemented methods use File | Settings | File Templates.
+                        return false; // To change body of implemented methods use File | Settings | File Templates.
                     }
 
                     @Override
                     public void clear() {
-                        //To change body of implemented methods use File | Settings | File Templates.
+                        // To change body of implemented methods use File | Settings | File Templates.
                     }
                 });
 
@@ -470,15 +466,16 @@ public class HttpClientBuilder {
     /**
      * Configures a the proxy to use for auth-server requests if provided.
      * <p>
-     * If the given {@link AdapterHttpClientConfig} contains the attribute {@code proxy-url} we use the
-     * given URL as a proxy server, otherwise the proxy configuration is ignored.
+     * If the given {@link AdapterHttpClientConfig} contains the attribute {@code proxy-url} we use the given URL as a
+     * proxy server, otherwise the proxy configuration is ignored.
      * </p>
      *
      * @param adapterConfig
      */
     private void configureProxyForAuthServerIfProvided(AdapterHttpClientConfig adapterConfig) {
 
-        if (adapterConfig == null || adapterConfig.getProxyUrl() == null || adapterConfig.getProxyUrl().trim().isEmpty()) {
+        if (adapterConfig == null || adapterConfig.getProxyUrl() == null
+                || adapterConfig.getProxyUrl().trim().isEmpty()) {
             return;
         }
 

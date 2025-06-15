@@ -36,13 +36,15 @@ public class GenericEntityIntegerServerMessageBodyWriter implements ServerMessag
     }
 
     @Override
-    public void writeTo(List<Integer> integers, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(List<Integer> integers, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         throw new IllegalStateException("Should never have been called");
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         if (!List.class.isAssignableFrom(type)) {
             return false;
         }

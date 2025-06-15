@@ -34,9 +34,7 @@ public class OpentelemetryExemplarSamplerProvider {
 
             private <T> T get(Function<SpanContext, T> valueExtractor) {
                 return Optional.ofNullable(Span.fromContextOrNull(QuarkusContextStorage.INSTANCE.current()))
-                        .map(Span::getSpanContext)
-                        .map(valueExtractor)
-                        .orElse(null);
+                        .map(Span::getSpanContext).map(valueExtractor).orElse(null);
             }
         }));
     }

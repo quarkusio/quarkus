@@ -12,7 +12,8 @@ public final class ExceptionMapperBuildItem extends MultiBuildItem implements Ch
     private final boolean registerAsBean;
     private final ClassInfo declaringClass;
 
-    public ExceptionMapperBuildItem(String className, String handledExceptionName, Integer priority, boolean registerAsBean) {
+    public ExceptionMapperBuildItem(String className, String handledExceptionName, Integer priority,
+            boolean registerAsBean) {
         this.className = className;
         this.priority = priority;
         this.handledExceptionName = handledExceptionName;
@@ -57,8 +58,8 @@ public final class ExceptionMapperBuildItem extends MultiBuildItem implements Ch
         private boolean registerAsBean = true;
 
         /**
-         * Used to track the class that resulted in the registration of the exception mapper.
-         * This is only set for exception mappers created from {@code @ServerExceptionMapper}
+         * Used to track the class that resulted in the registration of the exception mapper. This is only set for
+         * exception mappers created from {@code @ServerExceptionMapper}
          */
         private ClassInfo declaringClass;
 

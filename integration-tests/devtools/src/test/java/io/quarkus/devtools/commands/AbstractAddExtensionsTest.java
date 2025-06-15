@@ -31,8 +31,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
     @Test
     void addSomeValidExtensions() throws Exception {
         createProject();
-        addExtensions(asList("jdbc-postgre", "agroal", " hibernate-validator",
-                "commons-io:commons-io:2.6"));
+        addExtensions(asList("jdbc-postgre", "agroal", " hibernate-validator", "commons-io:commons-io:2.6"));
         final T project = readProject();
         hasDependency(project, "quarkus-agroal");
         hasDependency(project, "quarkus-hibernate-validator");
@@ -104,8 +103,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
         final QuarkusCommandOutcome result = addExtensions(asList("agroal", "agroal"));
         final T project = readProject();
         hasDependency(project, "quarkus-agroal");
-        Assertions.assertEquals(1,
-                countDependencyOccurrences(project, IO_QUARKUS, "quarkus-agroal", null));
+        Assertions.assertEquals(1, countDependencyOccurrences(project, IO_QUARKUS, "quarkus-agroal", null));
         Assertions.assertTrue(result.valueIs(AddExtensions.OUTCOME_UPDATED, true));
         Assertions.assertTrue(result.isSuccess());
     }
@@ -117,23 +115,21 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
         final QuarkusCommandOutcome result1 = addExtensions(Collections.singletonList("agroal"));
         final T project1 = readProject();
         hasDependency(project1, "quarkus-agroal");
-        Assertions.assertEquals(1,
-                countDependencyOccurrences(project1, IO_QUARKUS, "quarkus-agroal", null));
+        Assertions.assertEquals(1, countDependencyOccurrences(project1, IO_QUARKUS, "quarkus-agroal", null));
         Assertions.assertTrue(result1.valueIs(AddExtensions.OUTCOME_UPDATED, true));
         Assertions.assertTrue(result1.isSuccess());
 
         final QuarkusCommandOutcome result2 = addExtensions(Collections.singletonList("agroal"));
         final T project2 = readProject();
         hasDependency(project2, "quarkus-agroal");
-        Assertions.assertEquals(1,
-                countDependencyOccurrences(project2, IO_QUARKUS, "quarkus-agroal", null));
+        Assertions.assertEquals(1, countDependencyOccurrences(project2, IO_QUARKUS, "quarkus-agroal", null));
         Assertions.assertFalse(result2.valueIs(AddExtensions.OUTCOME_UPDATED, true));
         Assertions.assertTrue(result2.isSuccess());
     }
 
     /**
-     * This test reproduce the issue we had using the first selection algorithm.
-     * The `arc` query was matching ArC but also hibernate-search-elasticsearch.
+     * This test reproduce the issue we had using the first selection algorithm. The `arc` query was matching ArC but
+     * also hibernate-search-elasticsearch.
      */
     @Test
     void testPartialMatchConflict() throws Exception {
@@ -184,8 +180,7 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
 
         final T project = readProject();
         hasDependency(project, "org.acme", "acme", "1");
-        Assertions.assertEquals(1,
-                countDependencyOccurrences(project, "org.acme", "acme", "1"));
+        Assertions.assertEquals(1, countDependencyOccurrences(project, "org.acme", "acme", "1"));
     }
 
     @Test
@@ -221,21 +216,20 @@ abstract class AbstractAddExtensionsTest<T> extends PlatformAwareTestBase {
 
     private void hasDependency(T project, String groupId, String artifactId, String version) {
         assertThat(countDependencyOccurrences(project, groupId, artifactId, version))
-                .describedAs("Dependency %s:%s:%s must be in project", groupId, artifactId, version)
-                .isNotZero();
+                .describedAs("Dependency %s:%s:%s must be in project", groupId, artifactId, version).isNotZero();
     }
 
     private void doesNotHaveDependency(T project, String artifactId) {
         assertThat(countDependencyOccurrences(project, IO_QUARKUS, artifactId, null))
-                .describedAs("Dependency %s:%s must not be in project", IO_QUARKUS, artifactId)
-                .isZero();
+                .describedAs("Dependency %s:%s must not be in project", IO_QUARKUS, artifactId).isZero();
     }
 
     protected abstract T createProject() throws IOException, QuarkusCommandException;
 
     protected abstract T readProject() throws IOException;
 
-    protected abstract QuarkusCommandOutcome addExtensions(List<String> extensions) throws IOException, QuarkusCommandException;
+    protected abstract QuarkusCommandOutcome addExtensions(List<String> extensions)
+            throws IOException, QuarkusCommandException;
 
     protected abstract long countDependencyOccurrences(T project, String groupId, String artifactId, String version);
 }

@@ -11,11 +11,10 @@ import io.restassured.RestAssured;
 public class MultiplePersistenceUnitConfigForRepositoryTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Issue11842Entity.class, Issue11842Repository.class, Issue11842Resource.class, FirstEntity.class)
-                    .addAsResource("application-multiple-persistence-units-for-repository.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Issue11842Entity.class, Issue11842Repository.class, Issue11842Resource.class, FirstEntity.class)
+            .addAsResource("application-multiple-persistence-units-for-repository.properties",
+                    "application.properties"));
 
     @Test
     public void panacheOperations() {

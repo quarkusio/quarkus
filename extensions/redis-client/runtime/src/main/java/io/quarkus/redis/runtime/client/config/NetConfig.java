@@ -123,8 +123,8 @@ public interface NetConfig {
     Optional<Duration> writeIdleTimeout();
 
     /**
-     * Set the local interface to bind for network connections.
-     * When the local address is null, it will pick any local address, the default local address is null.
+     * Set the local interface to bind for network connections. When the local address is null, it will pick any local
+     * address, the default local address is null.
      */
     Optional<String> localAddress();
 }

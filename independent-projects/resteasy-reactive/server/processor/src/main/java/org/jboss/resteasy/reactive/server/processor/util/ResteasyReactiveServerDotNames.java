@@ -13,10 +13,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 
 public class ResteasyReactiveServerDotNames {
     public static final DotName CONTEXT = DotName.createSimple(Context.class.getName());
-    public static final DotName SERVER_REQUEST_FILTER = DotName
-            .createSimple(ServerRequestFilter.class.getName());
-    public static final DotName SERVER_RESPONSE_FILTER = DotName
-            .createSimple(ServerResponseFilter.class.getName());
+    public static final DotName SERVER_REQUEST_FILTER = DotName.createSimple(ServerRequestFilter.class.getName());
+    public static final DotName SERVER_RESPONSE_FILTER = DotName.createSimple(ServerResponseFilter.class.getName());
     public static final DotName SERVER_MESSAGE_BODY_WRITER = DotName
             .createSimple(ServerMessageBodyWriter.class.getName());
     public static final DotName SERVER_MESSAGE_BODY_WRITER_ALL_WRITER = DotName
@@ -26,6 +24,5 @@ public class ResteasyReactiveServerDotNames {
     public static final DotName QUARKUS_REST_CONTAINER_REQUEST_CONTEXT = DotName
             .createSimple(ResteasyReactiveContainerRequestContext.class.getName());
     public static final DotName SIMPLIFIED_RESOURCE_INFO = DotName.createSimple(SimpleResourceInfo.class.getName());
-    public static final DotName WITH_FORM_READ = DotName
-            .createSimple(WithFormRead.class.getName());
+    public static final DotName WITH_FORM_READ = DotName.createSimple(WithFormRead.class.getName());
 }

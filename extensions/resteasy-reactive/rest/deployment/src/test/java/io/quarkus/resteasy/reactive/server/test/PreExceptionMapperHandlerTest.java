@@ -29,37 +29,29 @@ import io.smallrye.mutiny.Uni;
 public class PreExceptionMapperHandlerTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, Mappers.class,
+                    DummyPreExceptionMapperHandler.class);
+        }
+    }).addBuildChainCustomizer(new Consumer<>() {
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep(new BuildStep() {
                 @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, Mappers.class, DummyPreExceptionMapperHandler.class);
+                public void execute(BuildContext context) {
+                    context.produce(new PreExceptionMapperHandlerBuildItem(new DummyPreExceptionMapperHandler()));
                 }
-            }).addBuildChainCustomizer(new Consumer<>() {
-                @Override
-                public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            context.produce(
-                                    new PreExceptionMapperHandlerBuildItem(new DummyPreExceptionMapperHandler()));
-                        }
-                    }).produces(PreExceptionMapperHandlerBuildItem.class).build();
-                }
-            });
+            }).produces(PreExceptionMapperHandlerBuildItem.class).build();
+        }
+    });
 
     @Test
     public void test() {
-        get("/test")
-                .then()
-                .statusCode(999)
-                .header("foo", "bar");
+        get("/test").then().statusCode(999).header("foo", "bar");
 
-        get("/test/uni")
-                .then()
-                .statusCode(999)
-                .header("foo", "bar");
+        get("/test/uni").then().statusCode(999).header("foo", "bar");
     }
 
     @Path("test")

@@ -14,12 +14,9 @@ import io.restassured.RestAssured;
  */
 public class SnsFunctionTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("item-function.properties", "application.properties")
-                    .addAsResource("events/sns", "events")
-                    .addClasses(TestFunctions.class, Item.class,
-                            EventDataProvider.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource("item-function.properties", "application.properties").addAsResource("events/sns", "events")
+            .addClasses(TestFunctions.class, Item.class, EventDataProvider.class));
 
     @Test
     public void should_return_no_failures_if_processing_is_ok() {
@@ -27,9 +24,7 @@ public class SnsFunctionTest {
         var body = getData("ok.json");
 
         // when
-        var response = RestAssured.given().contentType("application/json")
-                .body(body)
-                .post("/");
+        var response = RestAssured.given().contentType("application/json").body(body).post("/");
 
         // then
         response.then().statusCode(204);
@@ -41,9 +36,7 @@ public class SnsFunctionTest {
         var body = getData("fail.json");
 
         // when
-        var response = RestAssured.given().contentType("application/json")
-                .body(body)
-                .post("/");
+        var response = RestAssured.given().contentType("application/json").body(body).post("/");
 
         // then
         // SNS triggers have no error handling.

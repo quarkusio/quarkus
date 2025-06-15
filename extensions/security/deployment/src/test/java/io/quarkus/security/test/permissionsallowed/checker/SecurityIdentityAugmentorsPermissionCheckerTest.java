@@ -85,10 +85,7 @@ public class SecurityIdentityAugmentorsPermissionCheckerTest {
         public Uni<SecurityIdentity> augment(SecurityIdentity securityIdentity,
                 AuthenticationRequestContext authenticationRequestContext) {
             return Uni.createFrom().item(
-                    QuarkusSecurityIdentity
-                            .builder(securityIdentity)
-                            .addRole("lowest-priority-augmentor")
-                            .build());
+                    QuarkusSecurityIdentity.builder(securityIdentity).addRole("lowest-priority-augmentor").build());
         }
     }
 
@@ -99,10 +96,7 @@ public class SecurityIdentityAugmentorsPermissionCheckerTest {
         public Uni<SecurityIdentity> augment(SecurityIdentity securityIdentity,
                 AuthenticationRequestContext authenticationRequestContext) {
             return Uni.createFrom().item(
-                    QuarkusSecurityIdentity
-                            .builder(securityIdentity)
-                            .addRole("default-priority-augmentor")
-                            .build());
+                    QuarkusSecurityIdentity.builder(securityIdentity).addRole("default-priority-augmentor").build());
         }
     }
 
@@ -118,10 +112,7 @@ public class SecurityIdentityAugmentorsPermissionCheckerTest {
         public Uni<SecurityIdentity> augment(SecurityIdentity securityIdentity,
                 AuthenticationRequestContext authenticationRequestContext) {
             return Uni.createFrom().item(
-                    QuarkusSecurityIdentity
-                            .builder(securityIdentity)
-                            .addRole("highest-priority-augmentor")
-                            .build());
+                    QuarkusSecurityIdentity.builder(securityIdentity).addRole("highest-priority-augmentor").build());
         }
     }
 }

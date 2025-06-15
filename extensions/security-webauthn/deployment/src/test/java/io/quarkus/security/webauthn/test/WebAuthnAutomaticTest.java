@@ -30,15 +30,9 @@ public abstract class WebAuthnAutomaticTest {
     public void test() throws Exception {
 
         RestAssured.get("/open").then().statusCode(200).body(Matchers.is("Hello"));
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/secure").then().statusCode(302);
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/admin").then().statusCode(302);
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/cheese").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/secure").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/admin").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/cheese").then().statusCode(302);
 
         Assertions.assertTrue(userProvider.findByUsername("stef").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
@@ -96,22 +90,10 @@ public abstract class WebAuthnAutomaticTest {
     }
 
     private void checkLoggedIn(CookieFilter cookieFilter) {
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .get("/secure")
-                .then()
-                .statusCode(200)
+        RestAssured.given().filter(cookieFilter).get("/secure").then().statusCode(200)
                 .body(Matchers.is("stef: [admin]"));
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .redirects().follow(false)
-                .get("/admin").then().statusCode(200).body(Matchers.is("OK"));
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .redirects().follow(false)
-                .get("/cheese").then().statusCode(403);
+        RestAssured.given().filter(cookieFilter).redirects().follow(false).get("/admin").then().statusCode(200)
+                .body(Matchers.is("OK"));
+        RestAssured.given().filter(cookieFilter).redirects().follow(false).get("/cheese").then().statusCode(403);
     }
 }

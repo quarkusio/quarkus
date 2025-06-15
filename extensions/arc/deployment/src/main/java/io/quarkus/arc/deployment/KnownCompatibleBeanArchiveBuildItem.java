@@ -5,11 +5,10 @@ import java.util.Objects;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Marks a bean archive with given coordinates (groupId, artifactId and optionally classifier)
- * as known compatible with Quarkus. This is only useful for bean archives whose {@code beans.xml}
- * defines a bean discovery mode of {@code all}; bean archives with discovery mode of {@code none}
- * or {@code annotated} are always compatible. If a bean archive is known to be compatible with
- * Quarkus, no warning about {@code all} discovery is logged during application build.
+ * Marks a bean archive with given coordinates (groupId, artifactId and optionally classifier) as known compatible with
+ * Quarkus. This is only useful for bean archives whose {@code beans.xml} defines a bean discovery mode of {@code all};
+ * bean archives with discovery mode of {@code none} or {@code annotated} are always compatible. If a bean archive is
+ * known to be compatible with Quarkus, no warning about {@code all} discovery is logged during application build.
  */
 public final class KnownCompatibleBeanArchiveBuildItem extends MultiBuildItem {
     final String groupId;

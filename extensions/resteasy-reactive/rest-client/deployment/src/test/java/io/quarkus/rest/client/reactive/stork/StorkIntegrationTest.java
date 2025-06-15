@@ -21,8 +21,7 @@ import io.smallrye.stork.api.NoSuchServiceDefinitionException;
 public class StorkIntegrationTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClient.class, HelloResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(HelloClient.class, HelloResource.class))
             .withConfigurationResource("stork-application.properties");
 
     @RestClient
@@ -31,20 +30,17 @@ public class StorkIntegrationTest {
     @Test
     void shouldDetermineUrlViaStork() {
         String greeting = RestClientBuilder.newBuilder().baseUri(URI.create("stork://hello-service/hello"))
-                .build(HelloClient.class)
-                .echo("black and white bird");
+                .build(HelloClient.class).echo("black and white bird");
         assertThat(greeting).isEqualTo("hello, black and white bird");
 
         greeting = RestClientBuilder.newBuilder().baseUri(URI.create("stork://hello-service/hello"))
-                .build(HelloClient.class)
-                .helloWithPathParam("black and white bird");
+                .build(HelloClient.class).helloWithPathParam("black and white bird");
         assertThat(greeting).isEqualTo("Hello, black and white bird");
     }
 
     @Test
     void shouldDetermineUrlViaStorkWhenUsingTarget() throws URISyntaxException {
-        String greeting = ClientBuilder.newClient().target("stork://hello-service/hello").request()
-                .get(String.class);
+        String greeting = ClientBuilder.newClient().target("stork://hello-service/hello").request().get(String.class);
         assertThat(greeting).isEqualTo("Hello, World!");
 
         greeting = ClientBuilder.newClient().target(new URI("stork://hello-service/hello")).request().get(String.class);
@@ -71,8 +67,7 @@ public class StorkIntegrationTest {
     @Test
     @Timeout(20)
     void shouldFailOnUnknownService() {
-        HelloClient client = RestClientBuilder.newBuilder()
-                .baseUri(URI.create("stork://nonexistent-service"))
+        HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create("stork://nonexistent-service"))
                 .build(HelloClient.class);
         assertThatThrownBy(() -> client.echo("foo")).isInstanceOf(NoSuchServiceDefinitionException.class);
     }

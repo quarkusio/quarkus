@@ -72,7 +72,8 @@ public class OidcProviderTest {
         RsaJsonWebKey rsaJsonWebKey = RsaJwkGenerator.generateJwk(2048);
         EllipticCurveJsonWebKey ecJsonWebKey = EcJwkGenerator.generateJwk(EllipticCurves.P256);
 
-        JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "," + ecJsonWebKey.toJson() + "]}");
+        JsonWebKeySet jwkSet = new JsonWebKeySet(
+                "{\"keys\": [" + rsaJsonWebKey.toJson() + "," + ecJsonWebKey.toJson() + "]}");
 
         final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey.getPrivateKey());
 
@@ -143,8 +144,7 @@ public class OidcProviderTest {
     private static String replaceAlgorithm(String token, String algorithm) {
         io.vertx.core.json.JsonObject headers = OidcUtils.decodeJwtHeaders(token);
         headers.put("alg", algorithm);
-        String newHeaders = new String(
-                Base64.getUrlEncoder().withoutPadding().encode(headers.toString().getBytes()),
+        String newHeaders = new String(Base64.getUrlEncoder().withoutPadding().encode(headers.toString().getBytes()),
                 StandardCharsets.UTF_8);
         int dotIndex = token.indexOf('.');
         return newHeaders + token.substring(dotIndex);
@@ -186,7 +186,8 @@ public class OidcProviderTest {
         OidcTenantConfig oidcConfig = new OidcTenantConfig();
         oidcConfig.authentication.nonceRequired = true;
 
-        final String tokenWithNonce = Jwt.claim("nonce", "123456").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
+        final String tokenWithNonce = Jwt.claim("nonce", "123456").jws().keyId("k1")
+                .sign(rsaJsonWebKey.getPrivateKey());
 
         try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(tokenWithNonce, false, false, "123456");
@@ -206,9 +207,7 @@ public class OidcProviderTest {
 
     @Test
     public void testAge() throws Exception {
-        String tokenPayload = "{\n" +
-                "  \"exp\":  " + Instant.now().plusSeconds(1000).getEpochSecond() + "\n" +
-                "}";
+        String tokenPayload = "{\n" + "  \"exp\":  " + Instant.now().plusSeconds(1000).getEpochSecond() + "\n" + "}";
 
         JsonWebSignature jws = new JsonWebSignature();
         jws.setPayload(tokenPayload);
@@ -291,7 +290,8 @@ public class OidcProviderTest {
             }
         };
         // check the first validator is still run
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, List.of(validator1, validator2))) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null,
+                List.of(validator1, validator2))) {
             try {
                 provider.verifyJwtToken(token, false, false, null);
                 fail("InvalidJwtException expected");
@@ -301,7 +301,8 @@ public class OidcProviderTest {
         }
         // check the second validator is applied
         token = Jwt.claim("claim2", "claimValue2").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
-        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null, List.of(validator1, validator2))) {
+        try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet, null,
+                List.of(validator1, validator2))) {
             try {
                 provider.verifyJwtToken(token, false, false, null);
                 fail("InvalidJwtException expected");

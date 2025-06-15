@@ -12,12 +12,10 @@ import io.restassured.RestAssured;
 public class NoResourceTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withEmptyApplication();
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withEmptyApplication();
 
     @Test
     public void test() {
-        RestAssured.get("/").then()
-                .statusCode(404);
+        RestAssured.get("/").then().statusCode(404);
     }
 }

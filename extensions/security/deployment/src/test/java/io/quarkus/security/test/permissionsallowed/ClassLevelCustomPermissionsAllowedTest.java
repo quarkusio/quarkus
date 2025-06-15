@@ -39,8 +39,7 @@ public class ClassLevelCustomPermissionsAllowedTest {
     // therefore what we really do want to test is annotation detection and smoke test
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     SingleAnnotationWriteBean writeBean;
@@ -72,12 +71,14 @@ public class ClassLevelCustomPermissionsAllowedTest {
     @Test
     public void testSinglePermissionWithAction() {
         // identity has one permission and action, annotation has same permission and action
-        final var admin = new AuthData(Collections.singleton("admin"), false, "admin", permission(WRITE_PERMISSION, "bean"));
+        final var admin = new AuthData(Collections.singleton("admin"), false, "admin",
+                permission(WRITE_PERMISSION, "bean"));
         assertSuccess(() -> writeWithActionBean.write(), WRITE_PERMISSION, admin);
         assertSuccess(writeWithActionBean.writeNonBlocking(), WRITE_PERMISSION, admin);
 
         // identity has one permission and action, annotation has same permission and different action
-        final var admin2 = new AuthData(Collections.singleton("admin"), false, "admin", permission(WRITE_PERMISSION, "bean2"));
+        final var admin2 = new AuthData(Collections.singleton("admin"), false, "admin",
+                permission(WRITE_PERMISSION, "bean2"));
         assertFailureFor(() -> writeWithActionBean.write(), ForbiddenException.class, admin2);
         assertFailureFor(writeWithActionBean.writeNonBlocking(), ForbiddenException.class, admin2);
     }
@@ -99,17 +100,22 @@ public class ClassLevelCustomPermissionsAllowedTest {
 
     @Test
     public void testMultiplePermissionsWithActions() {
-        final var admin = new AuthData(Collections.singleton("admin"), false, "admin", permission(WRITE_PERMISSION, "bean"));
-        final var user = new AuthData(Collections.singleton("user"), false, "user", permission(READ_PERMISSION, "bean"));
+        final var admin = new AuthData(Collections.singleton("admin"), false, "admin",
+                permission(WRITE_PERMISSION, "bean"));
+        final var user = new AuthData(Collections.singleton("user"), false, "user",
+                permission(READ_PERMISSION, "bean"));
 
-        // identity has one permission and action, annotation has 2 permissions and action, one of permission/action is matching
+        // identity has one permission and action, annotation has 2 permissions and action, one of permission/action is
+        // matching
         assertSuccess(() -> writeReadWithActionBean.write(), WRITE_PERMISSION_BEAN, admin);
         assertSuccess(writeReadWithActionBean.writeNonBlocking(), WRITE_PERMISSION_BEAN, admin);
         assertSuccess(() -> writeReadWithActionBean.read(), READ_PERMISSION_BEAN, user);
         assertSuccess(writeReadWithActionBean.readNonBlocking(), READ_PERMISSION_BEAN, user);
 
-        // identity has one permission and action, annotation has 2 permissions and action, one permission is matching, but action differs
-        final var admin2 = new AuthData(Collections.singleton("admin"), false, "admin", permission(WRITE_PERMISSION, "bean2"));
+        // identity has one permission and action, annotation has 2 permissions and action, one permission is matching,
+        // but action differs
+        final var admin2 = new AuthData(Collections.singleton("admin"), false, "admin",
+                permission(WRITE_PERMISSION, "bean2"));
         assertFailureFor(() -> writeReadWithActionBean.write(), ForbiddenException.class, admin2);
         assertFailureFor(writeReadWithActionBean.writeNonBlocking(), ForbiddenException.class, admin2);
     }

@@ -19,7 +19,8 @@ public final class RegisteredRestClientBuildItem extends MultiBuildItem {
     private final Optional<String> configKey;
     private final Optional<String> defaultBaseUri;
 
-    public RegisteredRestClientBuildItem(ClassInfo classInfo, Optional<String> configKey, Optional<String> defaultBaseUri) {
+    public RegisteredRestClientBuildItem(ClassInfo classInfo, Optional<String> configKey,
+            Optional<String> defaultBaseUri) {
         this.classInfo = Objects.requireNonNull(classInfo);
         this.configKey = Objects.requireNonNull(configKey);
         this.defaultBaseUri = Objects.requireNonNull(defaultBaseUri);
@@ -38,11 +39,7 @@ public final class RegisteredRestClientBuildItem extends MultiBuildItem {
     }
 
     public static List<RegisteredRestClient> toRegisteredRestClients(List<RegisteredRestClientBuildItem> restClients) {
-        return restClients.stream()
-                .map(rc -> new RegisteredRestClient(
-                        rc.getClassInfo().name().toString(),
-                        rc.getClassInfo().simpleName(),
-                        rc.getConfigKey().orElse(null)))
-                .toList();
+        return restClients.stream().map(rc -> new RegisteredRestClient(rc.getClassInfo().name().toString(),
+                rc.getClassInfo().simpleName(), rc.getConfigKey().orElse(null))).toList();
     }
 }

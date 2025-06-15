@@ -15,10 +15,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoConfigIndexedEntityNamedBackendTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntityInNamedBackend.class))
-            .assertException(throwable -> assertThat(throwable)
-                    .isInstanceOf(ConfigurationException.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntityInNamedBackend.class))
+            .assertException(throwable -> assertThat(throwable).isInstanceOf(ConfigurationException.class)
                     .hasMessageContaining("The Elasticsearch version needs to be defined via properties:"
                             + " quarkus.hibernate-search-standalone.elasticsearch.\"mybackend\".version"));
 

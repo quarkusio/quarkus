@@ -15,10 +15,8 @@ public class SimpleScheduledMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleJobs.class)
-                    .addAsResource(new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleJobs.class).addAsResource(
+                    new StringAsset("simpleJobs.cron=0/1 * * * * ?\nsimpleJobs.every=1s"), "application.properties"));
 
     @Test
     public void testSimpleScheduledJobs() throws InterruptedException {

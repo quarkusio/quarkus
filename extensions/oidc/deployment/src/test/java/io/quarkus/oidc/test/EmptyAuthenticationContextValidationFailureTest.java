@@ -15,15 +15,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EmptyAuthenticationContextValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    // starting the dev service would be a waste
-                    .addClass(StepUpAuthResource.class)
-                    .addAsResource(new StringAsset("""
-                            quarkus.devservices.enabled=false
-                            quarkus.http.auth.proactive=false
-                            """), "application.properties"))
-            .assertException(t -> {
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(jar -> jar
+            // starting the dev service would be a waste
+            .addClass(StepUpAuthResource.class).addAsResource(new StringAsset("""
+                    quarkus.devservices.enabled=false
+                    quarkus.http.auth.proactive=false
+                    """), "application.properties")).assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 Assertions.assertNotNull(rootCause);
                 String message = rootCause.getMessage();

@@ -9,8 +9,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
 /**
- * A build item that allows extensions to declare which keys should not be propagated before a task is executed in
- * the {@link ContextHandler#runWith(Runnable, Object)} method.
+ * A build item that allows extensions to declare which keys should not be propagated before a task is executed in the
+ * {@link ContextHandler#runWith(Runnable, Object)} method.
  */
 public final class IgnoredContextLocalDataKeysBuildItem extends MultiBuildItem {
 

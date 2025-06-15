@@ -5,8 +5,8 @@ import java.util.Objects;
 import jakarta.ws.rs.core.Configuration;
 
 /**
- * Each REST Client can potentially have different providers, so we need to make sure that
- * caching for one client does not affect caching of another
+ * Each REST Client can potentially have different providers, so we need to make sure that caching for one client does
+ * not affect caching of another
  */
 public final class ResolverMapKey {
 

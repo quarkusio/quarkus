@@ -46,14 +46,12 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
 
     @Override
     public Uni<List<K>> ft_list() {
-        return super._ft_list()
-                .map(r -> marshaller.decodeAsList(r, keyType));
+        return super._ft_list().map(r -> marshaller.decodeAsList(r, keyType));
     }
 
     @Override
     public Uni<AggregationResponse> ftAggregate(String indexName, String query, AggregateArgs args) {
-        return super._ftAggregate(indexName, query, args)
-                .map(r -> decodeAggregateResponse(r, args.hasCursor()));
+        return super._ftAggregate(indexName, query, args).map(r -> decodeAggregateResponse(r, args.hasCursor()));
     }
 
     AggregationResponse decodeAggregateResponse(Response response, boolean cursor) {
@@ -110,98 +108,82 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
 
     @Override
     public Uni<AggregationResponse> ftAggregate(String indexName, String query) {
-        return super._ftAggregate(indexName, query)
-                .map(r -> decodeAggregateResponse(r, false));
+        return super._ftAggregate(indexName, query).map(r -> decodeAggregateResponse(r, false));
     }
 
     @Override
     public Uni<Void> ftAliasAdd(String alias, String index) {
-        return super._ftAliasAdd(alias, index)
-                .replaceWithVoid();
+        return super._ftAliasAdd(alias, index).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftAliasDel(String alias) {
-        return super._ftAliasDel(alias)
-                .replaceWithVoid();
+        return super._ftAliasDel(alias).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftAliasUpdate(String alias, String index) {
-        return super._ftAliasUpdate(alias, index)
-                .replaceWithVoid();
+        return super._ftAliasUpdate(alias, index).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftAlter(String index, IndexedField field, boolean skipInitialScan) {
-        return super._ftAlter(index, field, skipInitialScan)
-                .replaceWithVoid();
+        return super._ftAlter(index, field, skipInitialScan).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftCreate(String index, CreateArgs args) {
-        return super._ftCreate(index, args)
-                .replaceWithVoid();
+        return super._ftCreate(index, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftCursorDel(String index, long cursor) {
-        return super._ftCursorDel(index, cursor)
-                .replaceWithVoid();
+        return super._ftCursorDel(index, cursor).replaceWithVoid();
     }
 
     @Override
     public Uni<AggregationResponse> ftCursorRead(String index, long cursor) {
-        return super._ftCursorRead(index, cursor)
-                .map(r -> decodeAggregateResponse(r, true));
+        return super._ftCursorRead(index, cursor).map(r -> decodeAggregateResponse(r, true));
     }
 
     @Override
     public Uni<AggregationResponse> ftCursorRead(String index, long cursor, int count) {
-        return super._ftCursorRead(index, cursor, count)
-                .map(r -> decodeAggregateResponse(r, true));
+        return super._ftCursorRead(index, cursor, count).map(r -> decodeAggregateResponse(r, true));
     }
 
     @Override
     public Uni<Void> ftDropIndex(String index) {
-        return super._ftDropIndex(index)
-                .replaceWithVoid();
+        return super._ftDropIndex(index).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftDropIndex(String index, boolean dd) {
-        return super._ftDropIndex(index, dd)
-                .replaceWithVoid();
+        return super._ftDropIndex(index, dd).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftDictAdd(String dict, String... words) {
-        return super._ftDictAdd(dict, words)
-                .replaceWithVoid();
+        return super._ftDictAdd(dict, words).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftDictDel(String dict, String... words) {
-        return super._ftDictDel(dict, words)
-                .replaceWithVoid();
+        return super._ftDictDel(dict, words).replaceWithVoid();
     }
 
     @Override
     public Uni<List<String>> ftDictDump(String dict) {
-        return super._ftDictDump(dict)
-                .map(r -> marshaller.decodeAsList(r, String.class));
+        return super._ftDictDump(dict).map(r -> marshaller.decodeAsList(r, String.class));
     }
 
     @Override
     public Uni<SearchQueryResponse> ftSearch(String index, String query, QueryArgs args) {
-        return super._ftSearch(index, query, args)
-                .map(r -> decodeSearchQueryResult(r, args));
+        return super._ftSearch(index, query, args).map(r -> decodeSearchQueryResult(r, args));
     }
 
     @Override
     public Uni<SearchQueryResponse> ftSearch(String index, String query) {
-        return super._ftSearch(index, query)
-                .map(r -> decodeSearchQueryResult(r, null));
+        return super._ftSearch(index, query).map(r -> decodeSearchQueryResult(r, null));
     }
 
     SearchQueryResponse decodeSearchQueryResult(Response response, QueryArgs args) {
@@ -231,8 +213,8 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
                         properties.put(k, new Document.Property(k, doc.get(k)));
                     }
                 }
-                docs.add(
-                        new Document(result.get("id").toString(), score == null ? 1.0 : score.toDouble(), payload, properties));
+                docs.add(new Document(result.get("id").toString(), score == null ? 1.0 : score.toDouble(), payload,
+                        properties));
             }
 
             return new SearchQueryResponse(total, docs);
@@ -294,8 +276,7 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
 
     @Override
     public Uni<SpellCheckResponse> ftSpellCheck(String index, String query) {
-        return super._ftSpellCheck(index, query)
-                .map(this::decodeSpellcheckResponse);
+        return super._ftSpellCheck(index, query).map(this::decodeSpellcheckResponse);
     }
 
     SpellCheckResponse decodeSpellcheckResponse(Response response) {
@@ -358,14 +339,12 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
 
     @Override
     public Uni<SpellCheckResponse> ftSpellCheck(String index, String query, SpellCheckArgs args) {
-        return super._ftSpellCheck(index, query, args)
-                .map(this::decodeSpellcheckResponse);
+        return super._ftSpellCheck(index, query, args).map(this::decodeSpellcheckResponse);
     }
 
     @Override
     public Uni<SynDumpResponse> ftSynDump(String index) {
-        return super._ftSynDump(index)
-                .map(this::decodeSynDumpResponse);
+        return super._ftSynDump(index).map(this::decodeSynDumpResponse);
     }
 
     SynDumpResponse decodeSynDumpResponse(Response r) {
@@ -402,19 +381,16 @@ public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>
 
     @Override
     public Uni<Void> ftSynUpdate(String index, String groupId, String... words) {
-        return super._ftSynUpdate(index, groupId, words)
-                .replaceWithVoid();
+        return super._ftSynUpdate(index, groupId, words).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> ftSynUpdate(String index, String groupId, boolean skipInitialScan, String... words) {
-        return super._ftSynUpdate(index, groupId, skipInitialScan, words)
-                .replaceWithVoid();
+        return super._ftSynUpdate(index, groupId, skipInitialScan, words).replaceWithVoid();
     }
 
     @Override
     public Uni<Set<String>> ftTagVals(String index, String field) {
-        return super._ftTagVals(index, field)
-                .map(r -> marshaller.decodeAsSet(r, String.class));
+        return super._ftTagVals(index, field).map(r -> marshaller.decodeAsSet(r, String.class));
     }
 }

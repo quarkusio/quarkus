@@ -26,10 +26,10 @@ import io.quarkus.runtime.LaunchMode;
 public class GenerateCodeTestsMojo extends GenerateCodeMojo {
 
     /**
-     * A switch that enables or disables serialization of an {@link ApplicationModel} to a file for tests.
-     * Deserializing an application model when bootstrapping Quarkus tests has a performance advantage in that
-     * the tests will not have to initialize a Maven resolver and re-resolve the application model, which may save,
-     * depending on a project, ~80-95% of time on {@link ApplicationModel} resolution.
+     * A switch that enables or disables serialization of an {@link ApplicationModel} to a file for tests. Deserializing
+     * an application model when bootstrapping Quarkus tests has a performance advantage in that the tests will not have
+     * to initialize a Maven resolver and re-resolve the application model, which may save, depending on a project,
+     * ~80-95% of time on {@link ApplicationModel} resolution.
      * <p>
      * Serialization of the test model is enabled by default.
      */
@@ -69,11 +69,9 @@ public class GenerateCodeTestsMojo extends GenerateCodeMojo {
 
         // Generate json using the packages
         generateNativeAgentFilter(commonExcludePackageNames,
-                Path.of(mavenProject().getModel().getBuild().getDirectory(),
-                        "quarkus-caller-filter.json"));
+                Path.of(mavenProject().getModel().getBuild().getDirectory(), "quarkus-caller-filter.json"));
         generateNativeAgentFilter(commonExcludePackageNames,
-                Path.of(mavenProject().getModel().getBuild().getDirectory(),
-                        "quarkus-access-filter.json"));
+                Path.of(mavenProject().getModel().getBuild().getDirectory(), "quarkus-access-filter.json"));
     }
 
     private Collection<String> getAccessExcludePackageNames(Collection<String> commonExcludePackageNames) {
@@ -89,8 +87,7 @@ public class GenerateCodeTestsMojo extends GenerateCodeMojo {
         final Json.JsonObjectBuilder result = Json.object();
 
         final Json.JsonArrayBuilder rules = Json.array();
-        packageNames.stream()
-                .map(packageName -> Json.object().put("excludeClasses", packageName + ".**"))
+        packageNames.stream().map(packageName -> Json.object().put("excludeClasses", packageName + ".**"))
                 .forEach(rules::add);
         result.put("rules", rules);
 

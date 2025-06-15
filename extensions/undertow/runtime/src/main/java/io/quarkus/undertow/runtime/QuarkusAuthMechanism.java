@@ -22,9 +22,8 @@ public class QuarkusAuthMechanism implements AuthenticationMechanism {
         try {
             SecurityIdentity identity = QuarkusHttpUser.getSecurityIdentityBlocking(context, null);
             if (identity != null && !identity.isAnonymous()) {
-                //associate the identity
-                securityContext.authenticationComplete(new QuarkusUndertowAccount(identity), "Quarkus",
-                        false);
+                // associate the identity
+                securityContext.authenticationComplete(new QuarkusUndertowAccount(identity), "Quarkus", false);
                 return AuthenticationMechanismOutcome.AUTHENTICATED;
             }
             return AuthenticationMechanismOutcome.NOT_ATTEMPTED;

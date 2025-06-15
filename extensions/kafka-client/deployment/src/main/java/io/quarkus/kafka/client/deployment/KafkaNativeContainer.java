@@ -33,7 +33,8 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
             withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, serviceName);
             withLabel(Labels.QUARKUS_DEV_SERVICE, serviceName);
         }
-        String cmd = String.format("while [ ! -f %s ]; do sleep 0.1; done; sleep 0.1; %s", STARTER_SCRIPT, STARTER_SCRIPT);
+        String cmd = String.format("while [ ! -f %s ]; do sleep 0.1; done; sleep 0.1; %s", STARTER_SCRIPT,
+                STARTER_SCRIPT);
         withCommand("sh", "-c", cmd);
         waitingFor(Wait.forLogMessage(".*Kafka broker started.*", 1));
         this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "kafka");

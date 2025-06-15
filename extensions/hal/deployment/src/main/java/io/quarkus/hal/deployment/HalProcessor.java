@@ -27,17 +27,15 @@ public class HalProcessor {
     JacksonModuleBuildItem registerJacksonSerializers() {
         return new JacksonModuleBuildItem.Builder("hal-wrappers")
                 .addSerializer(HalEntityWrapperJacksonSerializer.class.getName(), HalEntityWrapper.class.getName())
-                .addSerializer(HalCollectionWrapperJacksonSerializer.class.getName(), HalCollectionWrapper.class.getName())
-                .addSerializer(HalLinkJacksonSerializer.class.getName(), HalLink.class.getName())
-                .build();
+                .addSerializer(HalCollectionWrapperJacksonSerializer.class.getName(),
+                        HalCollectionWrapper.class.getName())
+                .addSerializer(HalLinkJacksonSerializer.class.getName(), HalLink.class.getName()).build();
     }
 
     @BuildStep
     JsonbSerializerBuildItem registerJsonbSerializers() {
-        return new JsonbSerializerBuildItem(Arrays.asList(
-                HalEntityWrapperJsonbSerializer.class.getName(),
-                HalCollectionWrapperJsonbSerializer.class.getName(),
-                HalLinkJsonbSerializer.class.getName()));
+        return new JsonbSerializerBuildItem(Arrays.asList(HalEntityWrapperJsonbSerializer.class.getName(),
+                HalCollectionWrapperJsonbSerializer.class.getName(), HalLinkJsonbSerializer.class.getName()));
     }
 
 }

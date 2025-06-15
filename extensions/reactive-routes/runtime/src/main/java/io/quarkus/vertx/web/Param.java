@@ -11,8 +11,8 @@ import io.vertx.core.http.HttpServerRequest;
  * Identifies a route method parameter that should be injected with a value returned from
  * {@link HttpServerRequest#getParam(String)}.
  * <p>
- * The parameter type must be {@link String}, {@code java.util.Optional<String>} or {@code java.util.List<String>}, otherwise
- * the build fails.
+ * The parameter type must be {@link String}, {@code java.util.Optional<String>} or {@code java.util.List<String>},
+ * otherwise the build fails.
  *
  * @see HttpServerRequest#getParam(String)
  */

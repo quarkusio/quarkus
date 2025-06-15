@@ -12,9 +12,7 @@ import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 
 public interface ClientMessageBodyReader<T> extends MessageBodyReader<T> {
 
-    T readFrom(Class<T> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders,
-            InputStream entityStream,
-            RestClientRequestContext context) throws java.io.IOException, jakarta.ws.rs.WebApplicationException;
+    T readFrom(Class<T> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream, RestClientRequestContext context)
+            throws java.io.IOException, jakarta.ws.rs.WebApplicationException;
 }

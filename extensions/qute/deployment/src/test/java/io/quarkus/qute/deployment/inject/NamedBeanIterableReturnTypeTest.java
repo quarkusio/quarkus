@@ -19,17 +19,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NamedBeanIterableReturnTypeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClass(Validation.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "{@java.lang.String field}"
-                                            + "{#if cdi:validation.hasViolations(field)}"
-                                            + "{#each cdi:validation.getViolations(field)}{it}{/each}"
-                                            + "{#each cdi:violations}:{it.toUpperCase}{/each}"
-                                            + "{/if}"),
-                            "templates/validate.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClass(Validation.class)
+            .addAsResource(new StringAsset("{@java.lang.String field}" + "{#if cdi:validation.hasViolations(field)}"
+                    + "{#each cdi:validation.getViolations(field)}{it}{/each}"
+                    + "{#each cdi:violations}:{it.toUpperCase}{/each}" + "{/if}"), "templates/validate.html"));
 
     @Inject
     Template validate;

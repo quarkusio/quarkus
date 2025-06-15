@@ -21,7 +21,8 @@ public class BlockingTransactionalListCommandsImpl<K, V> extends AbstractTransac
 
     @Override
     public void blmove(K source, K destination, Position positionInSource, Position positionInDest, Duration timeout) {
-        this.reactive.blmove(source, destination, positionInSource, positionInDest, timeout).await().atMost(this.timeout);
+        this.reactive.blmove(source, destination, positionInSource, positionInDest, timeout).await()
+                .atMost(this.timeout);
     }
 
     @Override

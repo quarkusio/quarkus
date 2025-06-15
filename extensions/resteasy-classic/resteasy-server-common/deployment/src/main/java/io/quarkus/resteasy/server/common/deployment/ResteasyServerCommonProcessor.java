@@ -101,23 +101,16 @@ public class ResteasyServerCommonProcessor {
     private static final String JAX_RS_APPLICATION_PARAMETER_NAME = "jakarta.ws.rs.Application";
     private static final String MESSAGES_RESOURCE_BUNDLE = "messages";
 
-    private static final DotName JSONB_ANNOTATION = DotName.createSimple("jakarta.json.bind.annotation.JsonbAnnotation");
+    private static final DotName JSONB_ANNOTATION = DotName
+            .createSimple("jakarta.json.bind.annotation.JsonbAnnotation");
 
-    private static final List<DotName> METHOD_ANNOTATIONS = List.of(
-            ResteasyDotNames.GET,
-            ResteasyDotNames.HEAD,
-            ResteasyDotNames.DELETE,
-            ResteasyDotNames.OPTIONS,
-            ResteasyDotNames.PATCH,
-            ResteasyDotNames.POST,
+    private static final List<DotName> METHOD_ANNOTATIONS = List.of(ResteasyDotNames.GET, ResteasyDotNames.HEAD,
+            ResteasyDotNames.DELETE, ResteasyDotNames.OPTIONS, ResteasyDotNames.PATCH, ResteasyDotNames.POST,
             ResteasyDotNames.PUT);
 
-    private static final List<DotName> RESTEASY_PARAM_ANNOTATIONS = List.of(
-            ResteasyDotNames.RESTEASY_QUERY_PARAM,
-            ResteasyDotNames.RESTEASY_FORM_PARAM,
-            ResteasyDotNames.RESTEASY_COOKIE_PARAM,
-            ResteasyDotNames.RESTEASY_PATH_PARAM,
-            ResteasyDotNames.RESTEASY_HEADER_PARAM,
+    private static final List<DotName> RESTEASY_PARAM_ANNOTATIONS = List.of(ResteasyDotNames.RESTEASY_QUERY_PARAM,
+            ResteasyDotNames.RESTEASY_FORM_PARAM, ResteasyDotNames.RESTEASY_COOKIE_PARAM,
+            ResteasyDotNames.RESTEASY_PATH_PARAM, ResteasyDotNames.RESTEASY_HEADER_PARAM,
             ResteasyDotNames.RESTEASY_MATRIX_PARAM);
 
     /**
@@ -130,33 +123,29 @@ public class ResteasyServerCommonProcessor {
     @ConfigMapping(prefix = "quarkus.resteasy")
     interface ResteasyConfig {
         /**
-         * If this is true then JAX-RS will use only a single instance of a resource
-         * class to service all requests.
+         * If this is true then JAX-RS will use only a single instance of a resource class to service all requests.
          * <p>
-         * If this is false then it will create a new instance of the resource per
-         * request.
+         * If this is false then it will create a new instance of the resource per request.
          * <p>
-         * If the resource class has an explicit CDI scope annotation then the value of
-         * this annotation will always be used to control the lifecycle of the resource
-         * class.
+         * If the resource class has an explicit CDI scope annotation then the value of this annotation will always be
+         * used to control the lifecycle of the resource class.
          * <p>
-         * IMPLEMENTATION NOTE: {@code jakarta.ws.rs.Path} turns into a CDI stereotype
-         * with singleton scope. As a result, if a user annotates a JAX-RS resource with
-         * a stereotype which has a different default scope the deployment fails with
-         * IllegalStateException.
+         * IMPLEMENTATION NOTE: {@code jakarta.ws.rs.Path} turns into a CDI stereotype with singleton scope. As a
+         * result, if a user annotates a JAX-RS resource with a stereotype which has a different default scope the
+         * deployment fails with IllegalStateException.
          */
         @WithDefault("true")
         boolean singletonResources();
 
         /**
-         * Set this to override the default path for JAX-RS resources if there are no
-         * annotated application classes. This path is specified with a leading {@literal /}, but is resolved relative
-         * to {@literal quarkus.http.root-path}.
+         * Set this to override the default path for JAX-RS resources if there are no annotated application classes.
+         * This path is specified with a leading {@literal /}, but is resolved relative to
+         * {@literal quarkus.http.root-path}.
          * <ul>
-         * <li>If {@literal quarkus.http.root-path=/} and {@code quarkus.resteasy.path=/bar}, the JAX-RS resource path will be
-         * {@literal /bar}</li>
-         * <li>If {@literal quarkus.http.root-path=/foo} and {@code quarkus.resteasy.path=/bar}, the JAX-RS resource path will
-         * be {@literal /foo/bar}</li>
+         * <li>If {@literal quarkus.http.root-path=/} and {@code quarkus.resteasy.path=/bar}, the JAX-RS resource path
+         * will be {@literal /bar}</li>
+         * <li>If {@literal quarkus.http.root-path=/foo} and {@code quarkus.resteasy.path=/bar}, the JAX-RS resource
+         * path will be {@literal /foo/bar}</li>
          * </ul>
          */
         @WithDefault("/")
@@ -164,8 +153,7 @@ public class ResteasyServerCommonProcessor {
         String path();
 
         /**
-         * Whether detailed JAX-RS metrics should be enabled if the smallrye-metrics
-         * extension is present.
+         * Whether detailed JAX-RS metrics should be enabled if the smallrye-metrics extension is present.
          * <p>
          * See <a href=
          * "https://github.com/eclipse/microprofile-metrics/blob/2.3.x/spec/src/main/asciidoc/required-metrics.adoc#optional-rest">MicroProfile
@@ -178,15 +166,15 @@ public class ResteasyServerCommonProcessor {
         Optional<Boolean> metricsEnabled();
 
         /**
-         * Ignore all explicit JAX-RS {@link Application} classes.
-         * As multiple JAX-RS applications are not supported, this can be used to effectively merge all JAX-RS applications.
+         * Ignore all explicit JAX-RS {@link Application} classes. As multiple JAX-RS applications are not supported,
+         * this can be used to effectively merge all JAX-RS applications.
          */
         @WithDefault("false")
         boolean ignoreApplicationClasses();
 
         /**
-         * Whether annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken
-         * into account when used on JAX-RS classes.
+         * Whether annotations such `@IfBuildTimeProfile`, `@IfBuildTimeProperty` and friends will be taken into account
+         * when used on JAX-RS classes.
          */
         @WithDefault("true")
         boolean buildTimeConditionAware();
@@ -202,8 +190,7 @@ public class ResteasyServerCommonProcessor {
     }
 
     @BuildStep
-    public void build(
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    public void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
@@ -219,8 +206,7 @@ public class ResteasyServerCommonProcessor {
             List<AllowedJaxRsAnnotationPrefixBuildItem> friendlyJaxRsAnnotationPrefixes,
             List<ResteasyDeploymentCustomizerBuildItem> deploymentCustomizers,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem, BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Optional<ResteasyServletMappingBuildItem> resteasyServletMappingBuildItem,
             CustomScopeAnnotationsBuildItem scopes) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -239,10 +225,9 @@ public class ResteasyServerCommonProcessor {
             allowedClasses = Collections.emptySet();
             appClass = null;
         } else {
-            Collection<ClassInfo> jakartaRestApplicationClasses = index.getAllKnownSubclasses(ResteasyDotNames.APPLICATION)
-                    .stream()
-                    .filter(ci -> !ci.isAbstract()).collect(
-                            Collectors.toSet());
+            Collection<ClassInfo> jakartaRestApplicationClasses = index
+                    .getAllKnownSubclasses(ResteasyDotNames.APPLICATION).stream().filter(ci -> !ci.isAbstract())
+                    .collect(Collectors.toSet());
             if (jakartaRestApplicationClasses.size() > 1) {
                 throw new RuntimeException("More than one Application class: " + jakartaRestApplicationClasses);
             }
@@ -265,16 +250,16 @@ public class ResteasyServerCommonProcessor {
 
         Set<AnnotationInstance> additionalPaths = new HashSet<>();
         for (AdditionalJaxRsResourceDefiningAnnotationBuildItem annotation : additionalJaxRsResourceDefiningAnnotations) {
-            additionalPaths.addAll(beanArchiveIndexBuildItem.getIndex().getAnnotations(annotation.getAnnotationClass()));
+            additionalPaths
+                    .addAll(beanArchiveIndexBuildItem.getIndex().getAnnotations(annotation.getAnnotationClass()));
         }
 
-        Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex().getAnnotations(ResteasyDotNames.PATH);
+        Collection<AnnotationInstance> paths = beanArchiveIndexBuildItem.getIndex()
+                .getAnnotations(ResteasyDotNames.PATH);
         final Collection<AnnotationInstance> allPaths;
         if (filterClasses) {
-            allPaths = paths.stream().filter(
-                    annotationInstance -> keepAnnotation(beanArchiveIndexBuildItem.getIndex(), allowedClasses, excludedClasses,
-                            annotationInstance))
-                    .collect(Collectors.toList());
+            allPaths = paths.stream().filter(annotationInstance -> keepAnnotation(beanArchiveIndexBuildItem.getIndex(),
+                    allowedClasses, excludedClasses, annotationInstance)).collect(Collectors.toList());
         } else {
             allPaths = new ArrayList<>(paths);
         }
@@ -315,7 +300,8 @@ public class ResteasyServerCommonProcessor {
                 if (!Modifier.isInterface(clazz.flags())) {
                     if (!withoutDefaultCtor.containsKey(clazz.name())) {
                         String className = clazz.name().toString();
-                        if (!additionalPaths.contains(annotation)) { // scanned resources only contains real JAX-RS resources
+                        if (!additionalPaths.contains(annotation)) { // scanned resources only contains real JAX-RS
+                                                                     // resources
                             if (Modifier.isAbstract(clazz.flags())) {
                                 pathAbstract.add(clazz.name());
                             } else {
@@ -382,9 +368,8 @@ public class ResteasyServerCommonProcessor {
                         .produce(ReflectiveClassBuildItem.builder(locator.toString()).methods().fields().build());
             }
             // Sub-resource locators are unremovable beans
-            unremovableBeans.produce(
-                    new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(
-                            subresources.stream().map(Object::toString).collect(Collectors.toSet()))));
+            unremovableBeans.produce(new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(
+                    subresources.stream().map(Object::toString).collect(Collectors.toSet()))));
         }
 
         // generate default constructors for suitable concrete @Path classes that don't have them
@@ -400,8 +385,7 @@ public class ResteasyServerCommonProcessor {
                 beanArchiveIndexBuildItem, additionalJaxRsResourceMethodAnnotations);
 
         for (ClassInfo implementation : index.getAllKnownImplementors(ResteasyDotNames.DYNAMIC_FEATURE)) {
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(implementation.name().toString()).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(implementation.name().toString()).build());
         }
 
         Map<String, String> resteasyInitParameters = new HashMap<>();
@@ -438,17 +422,11 @@ public class ResteasyServerCommonProcessor {
 
         resteasyServerConfig.produce(new ResteasyServerConfigBuildItem(rootPath, path, resteasyInitParameters));
 
-        Set<DotName> restConstructorAnnotations = Set.of(
-                CONTEXT,
-                PATH_PARAM,
-                QUERY_PARAM,
-                HEADER_PARAM,
-                FORM_PARAM,
-                MATRIX_PARAM,
-                COOKIE_PARAM);
+        Set<DotName> restConstructorAnnotations = Set.of(CONTEXT, PATH_PARAM, QUERY_PARAM, HEADER_PARAM, FORM_PARAM,
+                MATRIX_PARAM, COOKIE_PARAM);
 
-        Set<DotName> autoInjectAnnotationNames = autoInjectAnnotations.stream().flatMap(a -> a.getAnnotationNames().stream())
-                .collect(Collectors.toSet());
+        Set<DotName> autoInjectAnnotationNames = autoInjectAnnotations.stream()
+                .flatMap(a -> a.getAnnotationNames().stream()).collect(Collectors.toSet());
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
 
             @Override
@@ -467,7 +445,8 @@ public class ResteasyServerCommonProcessor {
                         transformation.add(createTypedAnnotationInstance(clazz));
                     }
 
-                    // If we find a constructor with REST annotations it should be created by RESTEasy and not CDI, so we Veto
+                    // If we find a constructor with REST annotations it should be created by RESTEasy and not CDI, so
+                    // we Veto
                     // https://issues.redhat.com/browse/RESTEASY-1538
                     // https://issues.redhat.com/browse/RESTEASY-2183
                     // https://github.com/jakartaee/rest/issues/633
@@ -523,7 +502,8 @@ public class ResteasyServerCommonProcessor {
                         // Add @Typed(MySubresource.class)
                         transformation.add(createTypedAnnotationInstance(clazz));
                     }
-                    // Force constructors with arguments to also include @Inject, because sub-resources can be managed by the user
+                    // Force constructors with arguments to also include @Inject, because sub-resources can be managed
+                    // by the user
                     if (!clazz.hasNoArgsConstructor()) {
                         boolean hasInject = false;
                         for (final MethodInfo constructor : clazz.constructors()) {
@@ -547,9 +527,12 @@ public class ResteasyServerCommonProcessor {
     List<AllowedJaxRsAnnotationPrefixBuildItem> registerCompatibleAnnotationPrefixes() {
         List<AllowedJaxRsAnnotationPrefixBuildItem> prefixes = new ArrayList<>();
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem(packageName(ResteasyDotNames.PATH)));
-        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("kotlin")); // make sure the annotation that the Kotlin compiler adds don't interfere with creating a default constructor
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("kotlin")); // make sure the annotation that the Kotlin
+                                                                           // compiler adds don't interfere with
+                                                                           // creating a default constructor
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("lombok")); // same for lombok
-        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("io.quarkus.security")); // same for the security annotations
+        prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("io.quarkus.security")); // same for the security
+                                                                                        // annotations
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("jakarta.annotation.security"));
         prefixes.add(new AllowedJaxRsAnnotationPrefixBuildItem("java.lang"));
@@ -560,9 +543,9 @@ public class ResteasyServerCommonProcessor {
     @BuildStep
     void processPathInterfaceImplementors(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            CustomScopeAnnotationsBuildItem scopes) {
-        // NOTE: we cannot process @Path interface implementors within the ResteasyServerCommonProcessor.build() method because of build cycles
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, CustomScopeAnnotationsBuildItem scopes) {
+        // NOTE: we cannot process @Path interface implementors within the ResteasyServerCommonProcessor.build() method
+        // because of build cycles
         IndexView index = combinedIndexBuildItem.getIndex();
         Set<DotName> pathInterfaces = new HashSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(ResteasyDotNames.PATH)) {
@@ -588,13 +571,13 @@ public class ResteasyServerCommonProcessor {
     @BuildStep
     void processPathAbstractClassSubclasses(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            CustomScopeAnnotationsBuildItem scopes) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, CustomScopeAnnotationsBuildItem scopes) {
         // bean defining annotation doesn't work when resource class with @Path is abstract
         // therefore its inheritors are not beans, which means that CDI interceptors are not applied
         // which can be problem for example when subresource locators are defined on there
         // e.g. @Path("sub") SubResource subResource() { new SubResource(); }
-        // because the RESTEasy doesn't call post match filters on them, and we need to rely on security CDI interceptors
+        // because the RESTEasy doesn't call post match filters on them, and we need to rely on security CDI
+        // interceptors
         IndexView index = combinedIndexBuildItem.getIndex();
         Set<DotName> abstractClassWithPath = new HashSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(ResteasyDotNames.PATH)) {
@@ -628,9 +611,8 @@ public class ResteasyServerCommonProcessor {
             for (Map.Entry<DotName, ClassInfo> classWithPath : additionalClassWithPath.entrySet()) {
                 if (scopes.isScopeDeclaredOn(classWithPath.getValue())) {
                     // It has a scope defined - just mark it as unremovable
-                    unremovableBeans
-                            .produce(new UnremovableBeanBuildItem(
-                                    new BeanClassNameExclusion(classWithPath.getKey().toString())));
+                    unremovableBeans.produce(new UnremovableBeanBuildItem(
+                            new BeanClassNameExclusion(classWithPath.getKey().toString())));
                 } else {
                     // No built-in scope found - add as additional bean
                     builder.addBeanClass(classWithPath.getKey().toString());
@@ -642,12 +624,10 @@ public class ResteasyServerCommonProcessor {
 
     @BuildStep
     void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.PATH,
-                        resteasyConfig.singletonResources() ? BuiltinScope.SINGLETON.getName() : null));
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.APPLICATION_PATH,
-                        BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotations.produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.PATH,
+                resteasyConfig.singletonResources() ? BuiltinScope.SINGLETON.getName() : null));
+        beanDefiningAnnotations.produce(new BeanDefiningAnnotationBuildItem(ResteasyDotNames.APPLICATION_PATH,
+                BuiltinScope.SINGLETON.getName()));
     }
 
     private boolean hasAutoInjectAnnotation(Set<DotName> autoInjectAnnotationNames, ClassInfo clazz) {
@@ -708,8 +688,8 @@ public class ResteasyServerCommonProcessor {
                 DotName subresource = iterator.next();
                 for (DotName type : subresourceLocatorTypes) {
                     // Sub-resource may be a subclass of a locator return type
-                    if (!subresource.equals(type)
-                            && index.getAllKnownSubclasses(type).stream().noneMatch(c -> c.name().equals(subresource))) {
+                    if (!subresource.equals(type) && index.getAllKnownSubclasses(type).stream()
+                            .noneMatch(c -> c.name().equals(subresource))) {
                         iterator.remove();
                         break;
                     }
@@ -720,8 +700,7 @@ public class ResteasyServerCommonProcessor {
         return subresources;
     }
 
-    private static void registerProviders(ResteasyDeployment deployment,
-            Map<String, String> resteasyInitParameters,
+    private static void registerProviders(ResteasyDeployment deployment, Map<String, String> resteasyInitParameters,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem, IndexView index) {
@@ -755,11 +734,9 @@ public class ResteasyServerCommonProcessor {
         }
 
         // special case: our config providers
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(ServletConfigSource.class,
-                ServletContextConfigSource.class,
-                FilterConfigSource.class)
-                .reason(ResteasyServerCommonProcessor.class.getSimpleName())
-                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(ServletConfigSource.class, ServletContextConfigSource.class, FilterConfigSource.class)
+                .reason(ResteasyServerCommonProcessor.class.getSimpleName()).build());
     }
 
     private static void generateDefaultConstructors(BuildProducer<BytecodeTransformerBuildItem> transformers,
@@ -767,9 +744,9 @@ public class ResteasyServerCommonProcessor {
             List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations,
             List<AllowedJaxRsAnnotationPrefixBuildItem> friendlyJaxRsAnnotationPrefixes) {
 
-        final Set<String> allowedAnnotationPrefixes = new HashSet<>(1 + additionalJaxRsResourceDefiningAnnotations.size());
-        friendlyJaxRsAnnotationPrefixes.stream()
-                .map(prefix -> prefix.getAnnotationPrefix())
+        final Set<String> allowedAnnotationPrefixes = new HashSet<>(
+                1 + additionalJaxRsResourceDefiningAnnotations.size());
+        friendlyJaxRsAnnotationPrefixes.stream().map(prefix -> prefix.getAnnotationPrefix())
                 .forEachOrdered(allowedAnnotationPrefixes::add);
 
         for (AdditionalJaxRsResourceDefiningAnnotationBuildItem additionalJaxRsResourceDefiningAnnotation : additionalJaxRsResourceDefiningAnnotations) {
@@ -791,35 +768,37 @@ public class ResteasyServerCommonProcessor {
                 DotName name = instance.name();
                 final String packageName = packageName(name);
                 if (packageName == null || !isPackageAllowed(allowedAnnotationPrefixes, packageName)) {
-                    log.debug("Annotation " + name + " results in Quarkus not being able to generate a default constructor for "
+                    log.debug("Annotation " + name
+                            + " results in Quarkus not being able to generate a default constructor for "
                             + classInfo.name());
                     hasNonJaxRSAnnotations = true;
                     break;
                 }
             }
 
-            // again keep it very very simple, if there are any non JAX-RS annotations, we don't generate the constructor
+            // again keep it very very simple, if there are any non JAX-RS annotations, we don't generate the
+            // constructor
             if (hasNonJaxRSAnnotations) {
                 continue;
             }
 
             final String name = classInfo.name().toString();
-            transformers
-                    .produce(new BytecodeTransformerBuildItem(name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+            transformers.produce(
+                    new BytecodeTransformerBuildItem(name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
                         @Override
                         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
                             ClassVisitor cv = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
 
                                 @Override
-                                public void visit(int version, int access, String name, String signature, String superName,
-                                        String[] interfaces) {
+                                public void visit(int version, int access, String name, String signature,
+                                        String superName, String[] interfaces) {
                                     super.visit(version, access, name, signature, superName, interfaces);
-                                    MethodVisitor ctor = visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, "<init>",
-                                            "()V", null,
-                                            null);
+                                    MethodVisitor ctor = visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC,
+                                            "<init>", "()V", null, null);
                                     ctor.visitCode();
                                     ctor.visitVarInsn(Opcodes.ALOAD, 0);
-                                    ctor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+                                    ctor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V",
+                                            false);
                                     ctor.visitInsn(Opcodes.RETURN);
                                     ctor.visitMaxs(1, 1);
                                     ctor.visitEnd();
@@ -867,8 +846,7 @@ public class ResteasyServerCommonProcessor {
                             "Detected RESTEasy annotation {0} on method parameter {1}.{2} with no name. Either specify its name,"
                                     + " or tell your compiler to enable debug info (-g) or parameter names (-parameters). This message is only"
                                     + " logged for the first such parameter.",
-                            instance.name(),
-                            param.method().declaringClass(), param.method().name());
+                            instance.name(), param.method().declaringClass(), param.method().name());
                     break OUTER;
                 }
             }
@@ -898,15 +876,16 @@ public class ResteasyServerCommonProcessor {
                         proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(type.toString()));
                     }
                 } else {
-                    //might be a framework class, which should be loadable
+                    // might be a framework class, which should be loadable
                     try {
                         Class<?> typeClass = Class.forName(annotatedType.name().toString(), false,
                                 Thread.currentThread().getContextClassLoader());
                         if (typeClass.isInterface()) {
-                            proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(annotatedType.name().toString()));
+                            proxyDefinition
+                                    .produce(new NativeImageProxyDefinitionBuildItem(annotatedType.name().toString()));
                         }
                     } catch (Exception e) {
-                        //ignore
+                        // ignore
                     }
                 }
             }
@@ -915,8 +894,7 @@ public class ResteasyServerCommonProcessor {
 
     private static void registerReflectionForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem, BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations) {
         IndexView index = combinedIndexBuildItem.getIndex();
         IndexView beanArchiveIndex = beanArchiveIndexBuildItem.getIndex();
@@ -924,9 +902,8 @@ public class ResteasyServerCommonProcessor {
         // This is probably redundant with the automatic resolution we do just below but better be safe
         for (AnnotationInstance annotation : index.getAnnotations(JSONB_ANNOTATION)) {
             if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(annotation.target().asClass().name().toString()).methods()
-                                .fields().build());
+                reflectiveClass.produce(ReflectiveClassBuildItem
+                        .builder(annotation.target().asClass().name().toString()).methods().fields().build());
             }
         }
 
@@ -965,29 +942,23 @@ public class ResteasyServerCommonProcessor {
             }
             processedAnnotations.add(instance);
             MethodInfo method = instance.target().asMethod();
-            String source = ResteasyServerCommonProcessor.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
-                    + "]";
+            String source = ResteasyServerCommonProcessor.class.getSimpleName() + " > " + method.declaringClass() + "["
+                    + method + "]";
 
-            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                    .builder(method.returnType())
-                    .index(index)
+            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(method.returnType()).index(index)
                     .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                     .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                    .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                    .source(source)
+                    .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE).source(source)
                     .build());
 
             for (short i = 0; i < method.parametersCount(); i++) {
                 Type parameterType = method.parameterType(i);
                 if (!hasAnnotation(method, i, CONTEXT)) {
-                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                            .builder(parameterType)
-                            .index(index)
+                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(parameterType).index(index)
                             .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                             .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                             .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                            .source(source)
-                            .build());
+                            .source(source).build());
                 }
             }
         }
@@ -1006,28 +977,33 @@ public class ResteasyServerCommonProcessor {
     }
 
     /**
-     * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
+     * @param buildTimeConditions
+     *        the build time conditions from which the excluded classes are extracted.
+     *
      * @return the set of classes that have been annotated with unsuccessful build time conditions.
      */
     private static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
-        return buildTimeConditions.stream()
-                .filter(item -> !item.isEnabled())
-                .map(BuildTimeConditionBuildItem::getTarget)
-                .filter(target -> target.kind() == Kind.CLASS)
-                .map(target -> target.asClass().toString())
-                .collect(Collectors.toSet());
+        return buildTimeConditions.stream().filter(item -> !item.isEnabled())
+                .map(BuildTimeConditionBuildItem::getTarget).filter(target -> target.kind() == Kind.CLASS)
+                .map(target -> target.asClass().toString()).collect(Collectors.toSet());
     }
 
     /**
-     * @param index the Jandex index view from which the class information is extracted.
-     * @param allowedClasses the classes to keep provided by the methods {@link Application#getClasses()} and
+     * @param index
+     *        the Jandex index view from which the class information is extracted.
+     * @param allowedClasses
+     *        the classes to keep provided by the methods {@link Application#getClasses()} and
      *        {@link Application#getSingletons()}.
-     * @param excludedClasses the classes that have been annotated with unsuccessful build time conditions and that
-     *        need to be excluded from the list of paths.
-     * @param annotationInstance the annotation instance to test.
+     * @param excludedClasses
+     *        the classes that have been annotated with unsuccessful build time conditions and that need to be
+     *        excluded from the list of paths.
+     * @param annotationInstance
+     *        the annotation instance to test.
+     *
      * @return {@code true} if the enclosing class of the annotation is a concrete class and is part of the allowed
      *         classes, or is an interface and at least one concrete implementation is included, or is an abstract class
-     *         and at least one concrete subclass is included, or is not part of the excluded classes, {@code false} otherwise.
+     *         and at least one concrete subclass is included, or is not part of the excluded classes, {@code false}
+     *         otherwise.
      */
     private static boolean keepAnnotation(IndexView index, Set<String> allowedClasses, Set<String> excludedClasses,
             AnnotationInstance annotationInstance) {
@@ -1040,24 +1016,25 @@ public class ResteasyServerCommonProcessor {
         } else if (Modifier.isAbstract(classInfo.flags())) {
             // Only keep the annotation if a concrete implementation or a subclass has been included
             return (Modifier.isInterface(classInfo.flags()) ? index.getAllKnownImplementors(classInfo.name())
-                    : index.getAllKnownSubclasses(classInfo.name()))
-                    .stream()
-                    .filter(clazz -> !Modifier.isAbstract(clazz.flags()))
-                    .map(Objects::toString)
+                    : index.getAllKnownSubclasses(classInfo.name())).stream()
+                    .filter(clazz -> !Modifier.isAbstract(clazz.flags())).map(Objects::toString)
                     .anyMatch(allowedClasses::contains);
         }
         return allowedClasses.contains(className);
     }
 
     /**
-     * @param allowedClasses the classes returned by the methods {@link Application#getClasses()} and
+     * @param allowedClasses
+     *        the classes returned by the methods {@link Application#getClasses()} and
      *        {@link Application#getSingletons()} to keep.
-     * @param excludedClasses the classes that have been annotated with unsuccessful build time conditions and that
-     *        need to be excluded from the list of providers.
-     * @param jaxrsProvidersToRegisterBuildItem the initial {@code jaxrsProvidersToRegisterBuildItem} before being
-     *        filtered
-     * @return an instance of {@link JaxrsProvidersToRegisterBuildItem} that has been filtered to take into account
-     *         the classes returned by the methods {@link Application#getClasses()} and {@link Application#getSingletons()}
+     * @param excludedClasses
+     *        the classes that have been annotated with unsuccessful build time conditions and that need to be
+     *        excluded from the list of providers.
+     * @param jaxrsProvidersToRegisterBuildItem
+     *        the initial {@code jaxrsProvidersToRegisterBuildItem} before being filtered
+     *
+     * @return an instance of {@link JaxrsProvidersToRegisterBuildItem} that has been filtered to take into account the
+     *         classes returned by the methods {@link Application#getClasses()} and {@link Application#getSingletons()}
      *         if at least one of those methods return a non-empty {@code Set}, the provided instance of
      *         {@link JaxrsProvidersToRegisterBuildItem} otherwise.
      */
@@ -1080,8 +1057,8 @@ public class ResteasyServerCommonProcessor {
         }
         providers.addAll(annotatedProviders);
         contributedProviders.addAll(annotatedProviders);
-        return new JaxrsProvidersToRegisterBuildItem(
-                providers, contributedProviders, annotatedProviders, jaxrsProvidersToRegisterBuildItem.useBuiltIn());
+        return new JaxrsProvidersToRegisterBuildItem(providers, contributedProviders, annotatedProviders,
+                jaxrsProvidersToRegisterBuildItem.useBuiltIn());
     }
 
     /**

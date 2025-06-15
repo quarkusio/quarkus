@@ -31,10 +31,11 @@ class ConcurrencyLimiter {
     }
 
     /**
-     * This method must be always used before {@link #run(Runnable)} and the returned callback must be always invoked when an
-     * async computation completes.
+     * This method must be always used before {@link #run(Runnable)} and the returned callback must be always invoked
+     * when an async computation completes.
      *
      * @param promise
+     *
      * @return a new callback to complete the given promise
      */
     PromiseComplete newComplete(Promise<Void> promise) {

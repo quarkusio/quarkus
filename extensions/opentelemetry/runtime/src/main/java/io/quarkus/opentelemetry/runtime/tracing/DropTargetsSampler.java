@@ -20,15 +20,12 @@ public class DropTargetsSampler implements Sampler {
     private final Set<String> dropTargetsExact;
     private final Set<String> dropTargetsWildcard;
 
-    public DropTargetsSampler(final Sampler sampler,
-            final Set<String> dropTargets) {
+    public DropTargetsSampler(final Sampler sampler, final Set<String> dropTargets) {
         this.sampler = sampler;
         this.dropTargetsExact = dropTargets.stream().filter(s -> !s.endsWith("*"))
                 .collect(Collectors.toCollection(HashSet::new));
-        this.dropTargetsWildcard = dropTargets.stream()
-                .filter(s -> s.endsWith("*"))
-                .map(s -> s.substring(0, s.length() - 1))
-                .collect(Collectors.toCollection(HashSet::new));
+        this.dropTargetsWildcard = dropTargets.stream().filter(s -> s.endsWith("*"))
+                .map(s -> s.substring(0, s.length() - 1)).collect(Collectors.toCollection(HashSet::new));
     }
 
     @Override
@@ -49,8 +46,7 @@ public class DropTargetsSampler implements Sampler {
     }
 
     /**
-     * Determines whether a path should be dropped
-     * TODO: this can certainly be optimized if we find that it's a hot-path
+     * Determines whether a path should be dropped TODO: this can certainly be optimized if we find that it's a hot-path
      */
     private boolean shouldDrop(String target) {
         if ((target == null) || target.isEmpty()) {

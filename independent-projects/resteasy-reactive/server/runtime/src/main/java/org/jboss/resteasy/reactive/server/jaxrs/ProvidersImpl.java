@@ -38,7 +38,8 @@ public class ProvidersImpl implements Providers {
     @Override
     public <T> MessageBodyWriter<T> getMessageBodyWriter(Class<T> type, Type genericType, Annotation[] annotations,
             MediaType mediaType) {
-        List<MessageBodyWriter<?>> writers = deployment.getSerialisers().findWriters(null, type, mediaType, RuntimeType.SERVER);
+        List<MessageBodyWriter<?>> writers = deployment.getSerialisers().findWriters(null, type, mediaType,
+                RuntimeType.SERVER);
         for (MessageBodyWriter<?> writer : writers) {
             if (writer.isWriteable(type, genericType, annotations, mediaType)) {
                 return (MessageBodyWriter<T>) writer;

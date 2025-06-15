@@ -20,8 +20,7 @@ public class FlywayExtensionMigrateAtStartTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1.0.0__Quarkus.sql")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("migrate-at-start-config.properties", "application.properties"));
 
     @Test
@@ -30,9 +29,7 @@ public class FlywayExtensionMigrateAtStartTest {
         MigrationInfo migrationInfo = flyway.info().current();
         assertNotNull(migrationInfo, "No Flyway migration was executed");
 
-        String currentVersion = migrationInfo
-                .getVersion()
-                .toString();
+        String currentVersion = migrationInfo.getVersion().toString();
 
         assertEquals("1.0.0", currentVersion);
     }

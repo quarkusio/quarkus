@@ -17,20 +17,14 @@ import io.restassured.RestAssured;
 
 public class LazyAuthRolesAllowedJaxRsTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RolesAllowedResource.class, RolesAllowedBlockingResource.class, UserResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
-                            UnsecuredSubResource.class)
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(RolesAllowedResource.class, RolesAllowedBlockingResource.class, UserResource.class,
+                    TestIdentityProvider.class, TestIdentityController.class, UnsecuredSubResource.class)
+            .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"), "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -42,8 +36,8 @@ public class LazyAuthRolesAllowedJaxRsTestCase {
             RestAssured.given().auth().basic("user", "user").get(path).then().statusCode(200);
             RestAssured.given().auth().basic("admin", "admin").get(path + "/admin").then().statusCode(200);
             RestAssured.given().auth().basic("user", "user").get(path + "/admin").then().statusCode(403);
-            RestAssured.given().auth().basic("admin", "admin").get(path + "/admin/security-identity").then().statusCode(200)
-                    .body(Matchers.is("admin"));
+            RestAssured.given().auth().basic("admin", "admin").get(path + "/admin/security-identity").then()
+                    .statusCode(200).body(Matchers.is("admin"));
         });
     }
 

@@ -17,7 +17,8 @@ public class JfrTest {
 
     @Test
     public void writeYourOwnUnitTest() {
-        // Write your unit tests here - see the testing extension guide https://quarkus.io/guides/writing-extensions#testing-extensions for more information
+        // Write your unit tests here - see the testing extension guide
+        // https://quarkus.io/guides/writing-extensions#testing-extensions for more information
         Assertions.assertTrue(true, "Add some assertions to " + getClass().getName());
     }
 }

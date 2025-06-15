@@ -36,12 +36,7 @@ public class InfinispanCacheClientTestCase {
     }
 
     private void assertInvocations(String expectedInvocations) {
-        given()
-                .when()
-                .get("/rest-client/invocations")
-                .then()
-                .statusCode(200)
-                .body(equalTo(expectedInvocations));
+        given().when().get("/rest-client/invocations").then().statusCode(200).body(equalTo(expectedInvocations));
     }
 
     private void getSunriseTimeInvocations() {
@@ -53,35 +48,20 @@ public class InfinispanCacheClientTestCase {
     }
 
     private void doGetSunriseTimeInvocations(String path, Boolean blockingAllowed) {
-        Headers headers = given()
-                .queryParam("date", TODAY)
-                .when()
-                .get(path, CITY)
-                .then()
-                .statusCode(200)
-                .extract().headers();
+        Headers headers = given().queryParam("date", TODAY).when().get(path, CITY).then().statusCode(200).extract()
+                .headers();
         assertEquals(headers.get("before").getValue(), headers.get("after").getValue());
         assertEquals(blockingAllowed.toString(), headers.get("blockingAllowed").getValue());
     }
 
     private void invalidate() {
-        Headers headers = given()
-                .queryParam("date", TODAY)
-                .queryParam("notPartOfTheCacheKey", "notPartOfTheCacheKey")
-                .when()
-                .delete("/rest-client/invalidate/{city}", CITY)
-                .then()
-                .statusCode(204)
-                .extract().headers();
+        Headers headers = given().queryParam("date", TODAY).queryParam("notPartOfTheCacheKey", "notPartOfTheCacheKey")
+                .when().delete("/rest-client/invalidate/{city}", CITY).then().statusCode(204).extract().headers();
         assertNotNull(headers.get("incoming").getValue());
         assertEquals("false", headers.get("blockingAllowed").getValue());
     }
 
     private void invalidateAll() {
-        given()
-                .when()
-                .delete("/rest-client/invalidate")
-                .then()
-                .statusCode(204);
+        given().when().delete("/rest-client/invalidate").then().statusCode(204);
     }
 }

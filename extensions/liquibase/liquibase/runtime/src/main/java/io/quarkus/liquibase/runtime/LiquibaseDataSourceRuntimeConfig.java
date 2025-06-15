@@ -26,22 +26,20 @@ public interface LiquibaseDataSourceRuntimeConfig {
 
     /**
      * {@code true} to execute Liquibase automatically when the application starts, {@code false} otherwise.
-     *
      */
     @WithDefault("false")
     boolean migrateAtStart();
 
     /**
-     * {@code true} to validate the applied changes against the available ones, {@code false} otherwise. It is only used if
-     * {@code migration-at-start} is {@code true}
-     *
+     * {@code true} to validate the applied changes against the available ones, {@code false} otherwise. It is only used
+     * if {@code migration-at-start} is {@code true}
      */
     @WithDefault("true")
     boolean validateOnMigrate();
 
     /**
-     * {@code true} to execute Liquibase clean command automatically when the application starts, {@code false} otherwise.
-     *
+     * {@code true} to execute Liquibase clean command automatically when the application starts, {@code false}
+     * otherwise.
      */
     @WithDefault("false")
     boolean cleanAtStart();
@@ -80,20 +78,20 @@ public interface LiquibaseDataSourceRuntimeConfig {
     Optional<String> defaultCatalogName();
 
     /**
-     * The name of Liquibase's default schema. Overwrites the default schema name
-     * (returned by the RDBMS) with a different database schema.
+     * The name of Liquibase's default schema. Overwrites the default schema name (returned by the RDBMS) with a
+     * different database schema.
      */
     Optional<String> defaultSchemaName();
 
     /**
-     * The username that Liquibase uses to connect to the database.
-     * If no specific username is configured, falls back to the datasource username and password.
+     * The username that Liquibase uses to connect to the database. If no specific username is configured, falls back to
+     * the datasource username and password.
      */
     Optional<String> username();
 
     /**
-     * The password that Liquibase uses to connect to the database.
-     * If no specific password is configured, falls back to the datasource username and password.
+     * The password that Liquibase uses to connect to the database. If no specific password is configured, falls back to
+     * the datasource username and password.
      */
     Optional<String> password();
 

@@ -51,11 +51,8 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
     public Uni<Void> publish(String channel, V message) {
         nonNull(channel, "channel");
         nonNull(message, "message");
-        RedisCommand cmd = RedisCommand.of(Command.PUBLISH)
-                .put(channel)
-                .put(marshaller.encode(message));
-        return execute(cmd)
-                .replaceWithVoid();
+        RedisCommand cmd = RedisCommand.of(Command.PUBLISH).put(channel).put(marshaller.encode(message));
+        return execute(cmd).replaceWithVoid();
     }
 
     @Override
@@ -106,8 +103,8 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
     }
 
     @Override
-    public Uni<ReactiveRedisSubscriber> subscribeToPattern(String pattern, BiConsumer<String, V> onMessage, Runnable onEnd,
-            Consumer<Throwable> onException) {
+    public Uni<ReactiveRedisSubscriber> subscribeToPattern(String pattern, BiConsumer<String, V> onMessage,
+            Runnable onEnd, Consumer<Throwable> onException) {
         return subscribeToPatterns(List.of(pattern), onMessage, onEnd, onException);
     }
 
@@ -125,36 +122,31 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
     }
 
     @Override
-    public Uni<ReactiveRedisSubscriber> subscribeToPatterns(List<String> patterns, Consumer<V> onMessage, Runnable onEnd,
-            Consumer<Throwable> onException) {
+    public Uni<ReactiveRedisSubscriber> subscribeToPatterns(List<String> patterns, Consumer<V> onMessage,
+            Runnable onEnd, Consumer<Throwable> onException) {
         nonNull(onMessage, "onMessage");
         validatePatterns(patterns);
 
-        return client.connect()
-                .chain(conn -> {
-                    RedisAPI api = RedisAPI.api(conn);
-                    ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
-                            (channel, value) -> onMessage.accept(value), onEnd, onException);
-                    return subscriber.subscribe()
-                            .replaceWith(subscriber);
-                });
+        return client.connect().chain(conn -> {
+            RedisAPI api = RedisAPI.api(conn);
+            ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
+                    (channel, value) -> onMessage.accept(value), onEnd, onException);
+            return subscriber.subscribe().replaceWith(subscriber);
+        });
     }
 
     @Override
     public Uni<ReactiveRedisSubscriber> subscribeToPatterns(List<String> patterns, BiConsumer<String, V> onMessage,
-            Runnable onEnd,
-            Consumer<Throwable> onException) {
+            Runnable onEnd, Consumer<Throwable> onException) {
         validatePatterns(patterns);
         nonNull(onMessage, "onMessage");
 
-        return client.connect()
-                .chain(conn -> {
-                    RedisAPI api = RedisAPI.api(conn);
-                    ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
-                            onMessage, onEnd, onException);
-                    return subscriber.subscribe()
-                            .replaceWith(subscriber);
-                });
+        return client.connect().chain(conn -> {
+            RedisAPI api = RedisAPI.api(conn);
+            ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
+                    onMessage, onEnd, onException);
+            return subscriber.subscribe().replaceWith(subscriber);
+        });
     }
 
     private void validateChannels(List<String> channels) {
@@ -176,19 +168,17 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         nonNull(onMessage, "onMessage");
         validateChannels(channels);
 
-        return client.connect()
-                .chain(conn -> {
-                    RedisAPI api = RedisAPI.api(conn);
-                    ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
-                            channels, (channel, value) -> onMessage.accept(value), onEnd, onException);
-                    return subscriber.subscribe()
-                            .replaceWith(subscriber);
-                });
+        return client.connect().chain(conn -> {
+            RedisAPI api = RedisAPI.api(conn);
+            ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
+                    channels, (channel, value) -> onMessage.accept(value), onEnd, onException);
+            return subscriber.subscribe().replaceWith(subscriber);
+        });
     }
 
     @Override
-    public Uni<ReactiveRedisSubscriber> subscribe(List<String> channels, BiConsumer<String, V> onMessage, Runnable onEnd,
-            Consumer<Throwable> onException) {
+    public Uni<ReactiveRedisSubscriber> subscribe(List<String> channels, BiConsumer<String, V> onMessage,
+            Runnable onEnd, Consumer<Throwable> onException) {
         notNullOrEmpty(channels, "channels");
         nonNull(onMessage, "onMessage");
 
@@ -201,14 +191,12 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             }
         }
 
-        return client.connect()
-                .chain(conn -> {
-                    RedisAPI api = RedisAPI.api(conn);
-                    ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
-                            channels, onMessage, onEnd, onException);
-                    return subscriber.subscribe()
-                            .replaceWith(subscriber);
-                });
+        return client.connect().chain(conn -> {
+            RedisAPI api = RedisAPI.api(conn);
+            ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
+                    channels, onMessage, onEnd, onException);
+            return subscriber.subscribe().replaceWith(subscriber);
+        });
     }
 
     @Override
@@ -217,8 +205,8 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         doesNotContainNull(patterns, "patterns");
 
         return Multi.createFrom().emitter(emitter -> {
-            subscribeToPatterns(List.of(patterns), emitter::emit, emitter::complete, emitter::fail)
-                    .subscribe().with(x -> {
+            subscribeToPatterns(List.of(patterns), emitter::emit, emitter::complete, emitter::fail).subscribe()
+                    .with(x -> {
                         emitter.onTermination(() -> x.unsubscribe(patterns).subscribe().asCompletionStage());
                     }, emitter::fail);
         });
@@ -230,9 +218,8 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         doesNotContainNull(patterns, "patterns");
         return Multi.createFrom().emitter(emitter -> {
             subscribeToPatterns(List.of(patterns),
-                    (channel, value) -> emitter.emit(new DefaultRedisPubSubMessage<>(value, channel)), emitter::complete,
-                    emitter::fail)
-                    .subscribe().with(x -> {
+                    (channel, value) -> emitter.emit(new DefaultRedisPubSubMessage<>(value, channel)),
+                    emitter::complete, emitter::fail).subscribe().with(x -> {
                         emitter.onTermination(() -> x.unsubscribe(patterns).subscribe().asCompletionStage());
                     }, emitter::fail);
         });
@@ -244,12 +231,11 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         doesNotContainNull(channels, "channels");
 
         return Multi.createFrom().emitter(emitter -> {
-            subscribe(List.of(channels), emitter::emit, emitter::complete, emitter::fail)
-                    .subscribe().with(x -> {
-                        emitter.onTermination(() -> {
-                            x.unsubscribe(channels).subscribe().asCompletionStage();
-                        });
-                    }, emitter::fail);
+            subscribe(List.of(channels), emitter::emit, emitter::complete, emitter::fail).subscribe().with(x -> {
+                emitter.onTermination(() -> {
+                    x.unsubscribe(channels).subscribe().asCompletionStage();
+                });
+            }, emitter::fail);
         });
     }
 
@@ -260,10 +246,8 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
         List<String> list = List.of(channels);
         return Multi.createFrom().emitter(emitter -> {
-            subscribe(list,
-                    (channel, value) -> emitter.emit(new DefaultRedisPubSubMessage<>(value, channel)),
-                    emitter::complete, emitter::fail)
-                    .subscribe().with(x -> {
+            subscribe(list, (channel, value) -> emitter.emit(new DefaultRedisPubSubMessage<>(value, channel)),
+                    emitter::complete, emitter::fail).subscribe().with(x -> {
                         emitter.onTermination(() -> {
                             x.unsubscribe(channels).subscribe().asCompletionStage();
                         });
@@ -304,8 +288,7 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
             Uni<Void> subscribed = subscribeToRedis();
 
-            return subscribed.chain(() -> handled)
-                    .replaceWith(id);
+            return subscribed.chain(() -> handled).replaceWith(id);
         }
 
         private void runOnDuplicatedContext(Runnable runnable) {
@@ -340,13 +323,13 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
 
     }
 
-    private class ReactiveAbstractRedisSubscriberImpl extends AbstractRedisSubscriber implements ReactiveRedisSubscriber {
+    private class ReactiveAbstractRedisSubscriberImpl extends AbstractRedisSubscriber
+            implements ReactiveRedisSubscriber {
 
         private final List<String> channels;
 
         public ReactiveAbstractRedisSubscriberImpl(RedisConnection connection, RedisAPI api, List<String> channels,
-                BiConsumer<String, V> onMessage, Runnable onEnd,
-                Consumer<Throwable> onException) {
+                BiConsumer<String, V> onMessage, Runnable onEnd, Consumer<Throwable> onException) {
             super(connection, api, onMessage, onEnd, onException);
             this.channels = new ArrayList<>(channels);
         }
@@ -361,30 +344,28 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             notNullOrEmpty(channels, "channels");
             doesNotContainNull(channels, "channels");
             List<String> list = List.of(channels);
-            return api.unsubscribe(list)
-                    .chain(() -> {
-                        this.channels.removeAll(list);
-                        return closeAndUnregister(this.channels);
-                    });
+            return api.unsubscribe(list).chain(() -> {
+                this.channels.removeAll(list);
+                return closeAndUnregister(this.channels);
+            });
         }
 
         @Override
         public Uni<Void> unsubscribe() {
-            return api.unsubscribe(channels)
-                    .chain(() -> {
-                        this.channels.clear();
-                        return closeAndUnregister(channels);
-                    });
+            return api.unsubscribe(channels).chain(() -> {
+                this.channels.clear();
+                return closeAndUnregister(channels);
+            });
         }
     }
 
-    private class ReactiveRedisPatternSubscriberImpl extends AbstractRedisSubscriber implements ReactiveRedisSubscriber {
+    private class ReactiveRedisPatternSubscriberImpl extends AbstractRedisSubscriber
+            implements ReactiveRedisSubscriber {
 
         private final List<String> patterns;
 
         public ReactiveRedisPatternSubscriberImpl(RedisConnection connection, RedisAPI api, List<String> patterns,
-                BiConsumer<String, V> onMessage, Runnable onEnd,
-                Consumer<Throwable> onException) {
+                BiConsumer<String, V> onMessage, Runnable onEnd, Consumer<Throwable> onException) {
             super(connection, api, onMessage, onEnd, onException);
             this.patterns = new ArrayList<>(patterns);
         }
@@ -399,20 +380,18 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             notNullOrEmpty(patterns, "patterns");
             doesNotContainNull(patterns, "patterns");
             List<String> list = List.of(patterns);
-            return api.punsubscribe(list)
-                    .chain(() -> {
-                        this.patterns.removeAll(list);
-                        return closeAndUnregister(this.patterns);
-                    });
+            return api.punsubscribe(list).chain(() -> {
+                this.patterns.removeAll(list);
+                return closeAndUnregister(this.patterns);
+            });
         }
 
         @Override
         public Uni<Void> unsubscribe() {
-            return api.punsubscribe(patterns)
-                    .chain(() -> {
-                        this.patterns.clear();
-                        return closeAndUnregister(patterns);
-                    });
+            return api.punsubscribe(patterns).chain(() -> {
+                this.patterns.clear();
+                return closeAndUnregister(patterns);
+            });
         }
     }
 

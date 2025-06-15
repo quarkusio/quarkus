@@ -23,7 +23,8 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
     private boolean enabled;
 
     @Inject
-    public BootstrapSessionListener(QuarkusBootstrapProvider bootstrapProvider, BuildAnalyticsProvider buildAnalyticsProvider) {
+    public BootstrapSessionListener(QuarkusBootstrapProvider bootstrapProvider,
+            BuildAnalyticsProvider buildAnalyticsProvider) {
         this.bootstrapProvider = bootstrapProvider;
         this.buildAnalyticsProvider = buildAnalyticsProvider;
     }
@@ -39,8 +40,7 @@ public class BootstrapSessionListener extends AbstractMavenLifecycleParticipant 
     }
 
     @Override
-    public void afterProjectsRead(MavenSession session)
-            throws MavenExecutionException {
+    public void afterProjectsRead(MavenSession session) throws MavenExecutionException {
         // if this method is called then Maven plugin extensions are enabled
         enabled = true;
     }

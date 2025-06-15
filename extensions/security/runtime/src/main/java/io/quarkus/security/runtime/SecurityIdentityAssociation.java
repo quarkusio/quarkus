@@ -16,8 +16,8 @@ public class SecurityIdentityAssociation extends AbstractSecurityIdentityAssocia
     @Produces
     @RequestScoped
     public Principal principal() {
-        //TODO: as this is request scoped we loose the type of the Principal
-        //if this is important you can just inject the identity
+        // TODO: as this is request scoped we loose the type of the Principal
+        // if this is important you can just inject the identity
         return new Principal() {
             @Override
             public String getName() {

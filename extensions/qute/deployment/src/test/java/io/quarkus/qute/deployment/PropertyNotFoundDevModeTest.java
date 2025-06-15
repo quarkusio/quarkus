@@ -18,10 +18,8 @@ import io.restassured.RestAssured;
 public class PropertyNotFoundDevModeTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest testConfig = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Routes.class)
-                    .addAsResource(new StringAsset("{foo.surname}"), "templates/foo.html")
+    static final QuarkusDevModeTest testConfig = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClass(Routes.class).addAsResource(new StringAsset("{foo.surname}"), "templates/foo.html")
                     .addAsResource(new StringAsset("{bar.name}"), "templates/bar.html"));
 
     @Test

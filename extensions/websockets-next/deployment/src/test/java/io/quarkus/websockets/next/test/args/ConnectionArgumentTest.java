@@ -23,10 +23,9 @@ import io.vertx.core.json.JsonObject;
 public class ConnectionArgumentTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Echo.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Echo.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -55,11 +54,8 @@ public class ConnectionArgumentTest {
         @OnTextMessage
         Uni<Void> process(WebSocketConnection connection, String message) throws InterruptedException {
             assertEquals(c.id(), connection.id());
-            return connection.sendText(
-                    new JsonObject()
-                            .put("id", connection.id())
-                            .put("message", message)
-                            .put("header", connection.handshakeRequest().header("X-Test")));
+            return connection.sendText(new JsonObject().put("id", connection.id()).put("message", message).put("header",
+                    connection.handshakeRequest().header("X-Test")));
         }
 
     }

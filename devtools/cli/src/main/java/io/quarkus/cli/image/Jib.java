@@ -45,7 +45,8 @@ public class Jib extends BaseImageSubCommand {
     @CommandLine.Option(order = 9, names = { "--entrypoint" }, description = "The entrypoint of the container image.")
     public List<String> entrypoint = new ArrayList<>();
 
-    @CommandLine.Option(order = 10, names = { "--env" }, description = "Environment variables to add to the container image.")
+    @CommandLine.Option(order = 10, names = {
+            "--env" }, description = "Environment variables to add to the container image.")
     public Map<String, String> environmentVariables = new HashMap<>();
 
     @CommandLine.Option(order = 11, names = { "--label" }, description = "Custom labels to add to the generated image.")
@@ -79,20 +80,20 @@ public class Jib extends BaseImageSubCommand {
         Map<String, String> properties = context.getPropertiesOptions().properties;
 
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, JIB);
-        baseImage.ifPresent(
-                d -> properties.put(
-                        JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? BASE_NATIVE_IMAGE : BASE_JVM_IMAGE),
-                        d));
+        baseImage.ifPresent(d -> properties.put(
+                JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? BASE_NATIVE_IMAGE : BASE_JVM_IMAGE), d));
 
         if (!arguments.isEmpty()) {
             String joinedArgs = arguments.stream().collect(Collectors.joining(","));
-            properties.put(JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_ARGUMENTS : JVM_ARGUMENTS),
+            properties.put(
+                    JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_ARGUMENTS : JVM_ARGUMENTS),
                     joinedArgs);
         }
 
         if (!entrypoint.isEmpty()) {
             String joinedEntrypoint = entrypoint.stream().collect(Collectors.joining(","));
-            properties.put(JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_ENTRYPOINT : JVM_ENTRYPOINT),
+            properties.put(
+                    JIB_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_ENTRYPOINT : JVM_ENTRYPOINT),
                     joinedEntrypoint);
         }
 

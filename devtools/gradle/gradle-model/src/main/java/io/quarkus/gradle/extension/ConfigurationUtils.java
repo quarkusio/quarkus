@@ -26,7 +26,8 @@ public class ConfigurationUtils {
             return getterMethod.invoke(extensionConfiguration);
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new GradleException(
-                    "Failed to call method " + getterName + " on class " + extensionConfiguration.getClass().getName(), e);
+                    "Failed to call method " + getterName + " on class " + extensionConfiguration.getClass().getName(),
+                    e);
         }
     }
 

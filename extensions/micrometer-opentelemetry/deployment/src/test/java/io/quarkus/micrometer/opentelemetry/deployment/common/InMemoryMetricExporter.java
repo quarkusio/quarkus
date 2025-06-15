@@ -50,9 +50,8 @@ public class InMemoryMetricExporter implements MetricExporter {
      * ignore points with /export in the route
      */
     private static boolean notExporterPointData(PointData pointData) {
-        return pointData.getAttributes().asMap().entrySet().stream()
-                .noneMatch(entry -> entry.getKey().getKey().equals("uri") &&
-                        entry.getValue().toString().contains("/export"));
+        return pointData.getAttributes().asMap().entrySet().stream().noneMatch(
+                entry -> entry.getKey().getKey().equals("uri") && entry.getValue().toString().contains("/export"));
     }
 
     private static boolean isPathFound(String path, Attributes attributes) {
@@ -115,17 +114,14 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     public List<MetricData> getFinishedMetricItems(final String name, final String target) {
-        return Collections.unmodifiableList(new ArrayList<>(
-                finishedMetricItems.stream()
-                        .filter(metricData -> metricData.getName().equals(name))
-                        .filter(metricData -> metricData.getData().getPoints().stream()
-                                .anyMatch(point -> isPathFound(target, point.getAttributes())))
-                        .collect(Collectors.toList())));
+        return Collections.unmodifiableList(new ArrayList<>(finishedMetricItems.stream()
+                .filter(metricData -> metricData.getName().equals(name)).filter(metricData -> metricData.getData()
+                        .getPoints().stream().anyMatch(point -> isPathFound(target, point.getAttributes())))
+                .collect(Collectors.toList())));
     }
 
     /**
      * Clears the internal {@code List} of finished {@code Metric}s.
-     *
      * <p>
      * Does not reset the state of this exporter if already shutdown.
      */
@@ -140,7 +136,6 @@ public class InMemoryMetricExporter implements MetricExporter {
 
     /**
      * Exports the collection of {@code Metric}s into the inmemory queue.
-     *
      * <p>
      * If this is called after {@code shutdown}, this will return {@code ResultCode.FAILURE}.
      */
@@ -154,8 +149,7 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     /**
-     * The InMemory exporter does not batch metrics, so this method will immediately return with
-     * success.
+     * The InMemory exporter does not batch metrics, so this method will immediately return with success.
      *
      * @return always Success
      */
@@ -166,7 +160,6 @@ public class InMemoryMetricExporter implements MetricExporter {
 
     /**
      * Clears the internal {@code List} of finished {@code Metric}s.
-     *
      * <p>
      * Any subsequent call to export() function on this MetricExporter, will return {@code
      * CompletableResultCode.ofFailure()}

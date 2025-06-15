@@ -30,8 +30,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that access to public fields by the application is correctly replaced with getter/setter calls
- * and works correctly for all association types.
+ * Checks that access to public fields by the application is correctly replaced with getter/setter calls and works
+ * correctly for all association types.
  */
 public class PublicFieldAccessAssociationsTest {
 
@@ -39,9 +39,8 @@ public class PublicFieldAccessAssociationsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(ContainingEntity.class)
-                    .addClass(FieldAccessEnhancedDelegate.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClass(ContainingEntity.class).addClass(FieldAccessEnhancedDelegate.class))
             .withConfigurationResource("application-fetch-max-depth-zero.properties");
 
     @Inject
@@ -51,9 +50,8 @@ public class PublicFieldAccessAssociationsTest {
     UserTransaction transaction;
 
     @Test
-    public void testFieldAccess()
-            throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    public void testFieldAccess() throws SystemException, NotSupportedException, HeuristicRollbackException,
+            HeuristicMixedException, RollbackException {
         // Ideally we'd write a @ParameterizedTest and pass the delegates as parameters,
         // but we cannot do that due to JUnit using a different classloader than the test.
         for (FieldAccessEnhancedDelegate delegate : FieldAccessEnhancedDelegate.values()) {
@@ -61,9 +59,8 @@ public class PublicFieldAccessAssociationsTest {
         }
     }
 
-    private void doTestFieldAccess(FieldAccessEnhancedDelegate delegate)
-            throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    private void doTestFieldAccess(FieldAccessEnhancedDelegate delegate) throws SystemException, NotSupportedException,
+            HeuristicRollbackException, HeuristicMixedException, RollbackException {
         ContainingEntity entity = new ContainingEntity();
         ContainedEntity containedEntity = new ContainedEntity();
         containedEntity.value = CONTAINED_VALUE;

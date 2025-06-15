@@ -18,9 +18,6 @@ public class ApplyDockerImageOutputToBuildConfigDecorator extends NamedResourceD
 
     public void andThenVisit(BuildOutputFluent<?> output, ObjectMeta objectMeta) {
         output.withPushSecret(new LocalObjectReference(pushSecret));
-        output.withNewTo()
-                .withKind("DockerImage")
-                .withName(image)
-                .endTo();
+        output.withNewTo().withKind("DockerImage").withName(image).endTo();
     }
 }

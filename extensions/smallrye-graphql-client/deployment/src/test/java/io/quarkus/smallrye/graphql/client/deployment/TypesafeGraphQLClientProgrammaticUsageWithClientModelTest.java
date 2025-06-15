@@ -26,10 +26,9 @@ import io.smallrye.graphql.client.vertx.typesafe.VertxTypesafeGraphQLClientBuild
 public class TypesafeGraphQLClientProgrammaticUsageWithClientModelTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @TestHTTPResource
     URL url;
@@ -39,8 +38,7 @@ public class TypesafeGraphQLClientProgrammaticUsageWithClientModelTest {
         Index index = Index.of(GraphQLClientApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class,
                 Input.class);
         TestingGraphQLClientApi client = ((VertxTypesafeGraphQLClientBuilder) TypesafeGraphQLClientBuilder.newBuilder())
-                .clientModels(ClientModelBuilder.build(index))
-                .endpoint(url.toString() + "/graphql")
+                .clientModels(ClientModelBuilder.build(index)).endpoint(url.toString() + "/graphql")
                 .build(TestingGraphQLClientApi.class);
         List<Person> people = client.people();
         assertEquals("John", people.get(0).getFirstName());

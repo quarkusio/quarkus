@@ -24,20 +24,17 @@ public class LocalDateCustomParamConverterProviderTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, CustomLocalDateParamConverterProvider.class,
-                            CustomLocalDateParamConverter.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class,
+                    CustomLocalDateParamConverterProvider.class, CustomLocalDateParamConverter.class));
 
     @Test
     public void localDateAsQueryParam() {
-        RestAssured.get("/hello?date=1981-W38-6")
-                .then().body(Matchers.equalTo("hello#1981-09-19"));
+        RestAssured.get("/hello?date=1981-W38-6").then().body(Matchers.equalTo("hello#1981-09-19"));
     }
 
     @Test
     public void localDateAsPathParam() {
-        RestAssured.get("/hello/1995-W38-4")
-                .then().body(Matchers.equalTo("hello@1995-09-21"));
+        RestAssured.get("/hello/1995-W38-4").then().body(Matchers.equalTo("hello@1995-09-21"));
     }
 
     @Path("hello")

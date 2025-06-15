@@ -27,8 +27,7 @@ public class MethodLevelCustomPermissionsAllowedTest extends AbstractMethodLevel
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     PermissionsAllowedNameOnlyBean nameOnlyBean;
@@ -77,8 +76,8 @@ public class MethodLevelCustomPermissionsAllowedTest extends AbstractMethodLevel
     }
 
     /**
-     * This permission does not accept actions, it is important in order to test class instantiation that differs
-     * for actions/without actions.
+     * This permission does not accept actions, it is important in order to test class instantiation that differs for
+     * actions/without actions.
      */
     public static class CustomPermissionNameOnly extends Permission {
 

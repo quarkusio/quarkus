@@ -18,21 +18,19 @@ import io.quarkus.vertx.http.testrunner.HelloResource;
 public class IncludeTagsTestCase {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class)
-                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.include-tags=a")),
-                                    "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(TaggedET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class).add(
+                    new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.include-tags=a")),
+                    "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(TaggedET.class);
+        }
+    });
 
     @Test
     public void checkTestsAreRun() throws InterruptedException {

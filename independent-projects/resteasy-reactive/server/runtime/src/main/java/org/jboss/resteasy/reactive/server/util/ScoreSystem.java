@@ -41,8 +41,8 @@ public class ScoreSystem {
         public final List<RequestFilterEntry> requestFilterEntries;
 
         public EndpointScore(String className, String httpMethod, String fullPath, List<MediaType> produces,
-                List<MediaType> consumes,
-                Map<Category, List<Diagnostic>> diagnostics, int score, List<RequestFilterEntry> requestFilterEntries) {
+                List<MediaType> consumes, Map<Category, List<Diagnostic>> diagnostics, int score,
+                List<RequestFilterEntry> requestFilterEntries) {
             this.className = className;
             this.httpMethod = httpMethod;
             this.fullPath = fullPath;
@@ -99,7 +99,8 @@ public class ScoreSystem {
         }
 
         public static Diagnostic WriterBuildTimeDirect(MessageBodyWriter<?> buildTimeWriter) {
-            return new Diagnostic("Single direct writer set at build time: " + buildTimeWriter.getClass().getName(), 100);
+            return new Diagnostic("Single direct writer set at build time: " + buildTimeWriter.getClass().getName(),
+                    100);
         }
 
         public static Diagnostic WriterBuildTimeMultiple(List<MessageBodyWriter<?>> buildTimeWriters) {
@@ -168,9 +169,8 @@ public class ScoreSystem {
             score = (int) Math.floor(((float) score / (float) total) * 100f);
             overallScore += score;
             overallTotal += 100;
-            endpoints.add(new EndpointScore(runtimeResource.getResourceClass().getName(), httpMethod, fullPath, produces,
-                    consumes, runtimeResource.getScore(), score,
-                    requestFilters));
+            endpoints.add(new EndpointScore(runtimeResource.getResourceClass().getName(), httpMethod, fullPath,
+                    produces, consumes, runtimeResource.getScore(), score, requestFilters));
         }
 
         @Override
@@ -186,9 +186,9 @@ public class ScoreSystem {
 
         @Override
         public void visitStart() {
-            //clear the endpoints
+            // clear the endpoints
             endpoints.clear();
-            //reset overallScore and overallTotal
+            // reset overallScore and overallTotal
             overallScore = 0;
             overallTotal = 0;
         }

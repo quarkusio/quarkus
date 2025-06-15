@@ -39,23 +39,17 @@ public class ResourceNotFoundHandler implements Handler<RoutingContext> {
     }
 
     private void handleJson(RoutingContext routingContext) {
-        routingContext.response()
-                .setStatusCode(404)
-                .putHeader("content-type", "application/json; charset=utf-8")
+        routingContext.response().setStatusCode(404).putHeader("content-type", "application/json; charset=utf-8")
                 .end(Json.encodePrettily(resourceNotFoundData.getJsonContent()));
     }
 
     private void handleText(RoutingContext routingContext) {
-        routingContext.response()
-                .setStatusCode(404)
-                .putHeader("content-type", "text/plain; charset=utf-8")
+        routingContext.response().setStatusCode(404).putHeader("content-type", "text/plain; charset=utf-8")
                 .end(resourceNotFoundData.getTextContent());
     }
 
     private void handleHTML(RoutingContext routingContext) {
-        routingContext.response()
-                .setStatusCode(404)
-                .putHeader("content-type", "text/html; charset=utf-8")
+        routingContext.response().setStatusCode(404).putHeader("content-type", "text/html; charset=utf-8")
                 .end(resourceNotFoundData.getHTMLContent());
     }
 }

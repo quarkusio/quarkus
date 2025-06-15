@@ -48,16 +48,16 @@ public class CsrfRequestResponseReactiveFilter {
     /**
      * If the request method is safe ({@code GET}, {@code HEAD} or {@code OPTIONS}):
      * <ul>
-     * <li>Sets a {@link RoutingContext} key by the name {@value #CSRF_TOKEN_KEY} that contains a randomly generated Base64
-     * encoded string, unless such a cookie was already sent in the incoming request.</li>
+     * <li>Sets a {@link RoutingContext} key by the name {@value #CSRF_TOKEN_KEY} that contains a randomly generated
+     * Base64 encoded string, unless such a cookie was already sent in the incoming request.</li>
      * </ul>
      * If the request method is unsafe, requires the following:
      * <ul>
      * <li>The request contains a valid CSRF token cookie set in response to a previous request (see above).</li>
      * <li>A request entity is present.</li>
      * <li>The request {@code Content-Type} is {@value MediaType#APPLICATION_FORM_URLENCODED}.</li>
-     * <li>The request entity contains a form parameter with the name
-     * {@value #CSRF_TOKEN_KEY} and value that is equal to the one supplied in the cookie.</li>
+     * <li>The request entity contains a form parameter with the name {@value #CSRF_TOKEN_KEY} and value that is equal
+     * to the one supplied in the cookie.</li>
      * </ul>
      */
     @ServerRequestFilter
@@ -93,7 +93,8 @@ public class CsrfRequestResponseReactiveFilter {
                     String csrfTokenHeaderParam = requestContext.getHeaderString(config.tokenHeaderName());
                     if (csrfTokenHeaderParam != null) {
                         LOG.debugf("CSRF token found in the token header");
-                        // Verify the header, make sure the header value, possibly signed, is returned as the next cookie value
+                        // Verify the header, make sure the header value, possibly signed, is returned as the next
+                        // cookie value
                         verifyCsrfToken(requestContext, routing, config, cookieToken, csrfTokenHeaderParam);
                     } else if (!config.tokenSignatureKey().isEmpty()) {
                         // If the signature is required, then we can not use the current cookie value
@@ -129,8 +130,7 @@ public class CsrfRequestResponseReactiveFilter {
                     requestContext.abortWith(badClientRequest());
                     return;
                 } else {
-                    LOG.debugf("Request has the media type: %s, skipping the token verification",
-                            mediaType);
+                    LOG.debugf("Request has the media type: %s, skipping the token verification", mediaType);
                     return;
                 }
             }
@@ -194,8 +194,8 @@ public class CsrfRequestResponseReactiveFilter {
     /**
      * Compares if {@link MediaType} matches the expected type.
      * <p>
-     * Note: isCompatible is taking wildcards, which is why we individually compare types and subtypes,
-     * so if someone sends a <code>Content-Type: *</code> it will be marked as compatible which is a problem
+     * Note: isCompatible is taking wildcards, which is why we individually compare types and subtypes, so if someone
+     * sends a <code>Content-Type: *</code> it will be marked as compatible which is a problem
      */
     private static boolean isMatchingMediaType(MediaType contentType, MediaType expectedType) {
         if (contentType == null) {
@@ -210,18 +210,20 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     /**
-     * If the requirements below are true, sets a cookie by the name {@value #CSRF_TOKEN_KEY} that contains a CSRF token.
+     * If the requirements below are true, sets a cookie by the name {@value #CSRF_TOKEN_KEY} that contains a CSRF
+     * token.
      * <ul>
      * <li>The request method is {@code GET}.</li>
      * <li>The request does not contain a valid CSRF token cookie.</li>
      * </ul>
      *
-     * @throws IllegalStateException if the {@link RoutingContext} does not have a value for the key {@value #CSRF_TOKEN_KEY}
-     *         and a cookie needs to be set.
+     * @throws IllegalStateException
+     *         if the {@link RoutingContext} does not have a value for the key {@value #CSRF_TOKEN_KEY} and a cookie
+     *         needs to be set.
      */
     @ServerResponseFilter
-    public void filter(ContainerRequestContext requestContext,
-            ContainerResponseContext responseContext, RoutingContext routing) {
+    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext,
+            RoutingContext routing) {
         if (routing.get(NEW_COOKIE_REQUIRED) != null) {
 
             final RestCsrfConfig config = configInstance.get();
@@ -269,8 +271,7 @@ public class CsrfRequestResponseReactiveFilter {
     }
 
     private static boolean isCsrfTokenRequired(RoutingContext routing, RestCsrfConfig config) {
-        return config.createTokenPath()
-                .map(value -> value.contains(routing.normalizedPath())).orElse(true);
+        return config.createTokenPath().map(value -> value.contains(routing.normalizedPath())).orElse(true);
     }
 
     private static void createCookie(String cookieTokenValue, RoutingContext routing, RestCsrfConfig config) {

@@ -19,10 +19,8 @@ import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.vertx.core.deployment.VertxOptionsConsumerBuildItem;
 
 /**
- * Add support for Vert.x instrumentation.
- * HTTP instrumentation is dependent on Vert.x, but has been pulled out into its own processor
- *
- * Avoid referencing classes that in turn import optional dependencies.
+ * Add support for Vert.x instrumentation. HTTP instrumentation is dependent on Vert.x, but has been pulled out into its
+ * own processor Avoid referencing classes that in turn import optional dependencies.
  */
 @BuildSteps(onlyIf = VertxBinderProcessor.VertxBinderEnabled.class)
 public class VertxBinderProcessor {

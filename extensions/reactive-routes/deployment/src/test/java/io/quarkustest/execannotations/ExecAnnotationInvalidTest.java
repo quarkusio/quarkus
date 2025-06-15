@@ -13,8 +13,7 @@ import io.smallrye.common.annotation.Blocking;
 public class ExecAnnotationInvalidTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(MyService.class))
-            .assertException(e -> {
+            .withApplicationRoot(jar -> jar.addClasses(MyService.class)).assertException(e -> {
                 assertInstanceOf(IllegalStateException.class, e);
                 assertTrue(e.getMessage().contains("Wrong usage"));
                 assertTrue(e.getMessage().contains("MyService.hello()"));

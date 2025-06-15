@@ -29,10 +29,8 @@ public class DevResources {
             log.debug("Activating dev resources");
 
             resources = ServiceLoader
-                    .load(DevResourceLifecycleManager.class, Thread.currentThread().getContextClassLoader())
-                    .stream()
-                    .map(ServiceLoader.Provider::get)
-                    .sorted(Comparator.comparing(DevResourceLifecycleManager::order))
+                    .load(DevResourceLifecycleManager.class, Thread.currentThread().getContextClassLoader()).stream()
+                    .map(ServiceLoader.Provider::get).sorted(Comparator.comparing(DevResourceLifecycleManager::order))
                     .collect(Collectors.toList());
 
             log.debugf("Found dev resources: %s", resources);

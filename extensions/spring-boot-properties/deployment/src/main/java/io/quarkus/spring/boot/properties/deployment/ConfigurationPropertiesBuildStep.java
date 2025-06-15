@@ -33,8 +33,7 @@ public class ConfigurationPropertiesBuildStep {
 
     @BuildStep
     void setup(CombinedIndexBuildItem combinedIndex,
-            List<ConfigurationPropertiesMetadataBuildItem> configPropertiesMetadataList,
-            Capabilities capabilities,
+            List<ConfigurationPropertiesMetadataBuildItem> configPropertiesMetadataList, Capabilities capabilities,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
@@ -49,8 +48,7 @@ public class ConfigurationPropertiesBuildStep {
         ClassOutput nonBeansClassOutput = new GeneratedClassGizmoAdaptor(generatedClasses, true);
 
         /*
-         * We generate CDI producer bean containing one method for each of the @ConfigProperties
-         * instances we encounter
+         * We generate CDI producer bean containing one method for each of the @ConfigProperties instances we encounter
          */
 
         ClassCreator producerClassCreator = ClassCreator.builder().classOutput(beansClassOutput)
@@ -60,27 +58,27 @@ public class ConfigurationPropertiesBuildStep {
 
         Set<DotName> configClassesThatNeedValidation = new HashSet<>(configPropertiesMetadataList.size());
         IndexView index = combinedIndex.getIndex();
-        YamlListObjectHandler yamlListObjectHandler = new YamlListObjectHandler(nonBeansClassOutput, index, reflectiveClasses);
+        YamlListObjectHandler yamlListObjectHandler = new YamlListObjectHandler(nonBeansClassOutput, index,
+                reflectiveClasses);
         ClassConfigurationPropertiesUtil classConfigPropertiesUtil = new ClassConfigurationPropertiesUtil(index,
                 yamlListObjectHandler, producerClassCreator, capabilities, reflectiveClasses, reflectiveMethods,
                 configProperties);
-        InterfaceConfigurationPropertiesUtil interfaceConfigPropertiesUtil = new InterfaceConfigurationPropertiesUtil(index,
-                yamlListObjectHandler, nonBeansClassOutput, producerClassCreator, capabilities, defaultConfigValues,
-                configProperties, reflectiveClasses);
+        InterfaceConfigurationPropertiesUtil interfaceConfigPropertiesUtil = new InterfaceConfigurationPropertiesUtil(
+                index, yamlListObjectHandler, nonBeansClassOutput, producerClassCreator, capabilities,
+                defaultConfigValues, configProperties, reflectiveClasses);
         for (ConfigurationPropertiesMetadataBuildItem configPropertiesMetadata : configPropertiesMetadataList) {
             ClassInfo classInfo = configPropertiesMetadata.getClassInfo();
 
             if (Modifier.isInterface(classInfo.flags())) {
                 /*
                  * In this case we need to generate an implementation of the interface that for each interface method
-                 * simply pulls data from MP Config and returns it.
-                 * The generated producer bean simply needs to return an instance of the generated class
+                 * simply pulls data from MP Config and returns it. The generated producer bean simply needs to return
+                 * an instance of the generated class
                  */
 
                 Map<DotName, GeneratedClass> interfaceToGeneratedClass = new HashMap<>();
-                interfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(
-                        classInfo, configPropertiesMetadata.getPrefix(),
-                        configPropertiesMetadata.getNamingStrategy(),
+                interfaceConfigPropertiesUtil.generateImplementationForInterfaceConfigProperties(classInfo,
+                        configPropertiesMetadata.getPrefix(), configPropertiesMetadata.getNamingStrategy(),
                         interfaceToGeneratedClass);
                 for (Map.Entry<DotName, GeneratedClass> entry : interfaceToGeneratedClass.entrySet()) {
                     interfaceConfigPropertiesUtil.addProducerMethodForInterfaceConfigProperties(entry.getKey(),
@@ -88,12 +86,12 @@ public class ConfigurationPropertiesBuildStep {
                 }
             } else {
                 /*
-                 * In this case the producer method contains all the logic to instantiate the config class
-                 * and call setters for value obtained from MP Config
+                 * In this case the producer method contains all the logic to instantiate the config class and call
+                 * setters for value obtained from MP Config
                  */
                 boolean needsValidation = classConfigPropertiesUtil.addProducerMethodForClassConfigProperties(
-                        Thread.currentThread().getContextClassLoader(), classInfo,
-                        configPropertiesMetadata.getPrefix(), configPropertiesMetadata.getNamingStrategy(),
+                        Thread.currentThread().getContextClassLoader(), classInfo, configPropertiesMetadata.getPrefix(),
+                        configPropertiesMetadata.getNamingStrategy(),
                         configPropertiesMetadata.isFailOnMismatchingMember(),
                         configPropertiesMetadata.getInstanceFactory());
                 if (needsValidation) {

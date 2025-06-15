@@ -36,12 +36,11 @@ public class HttpUpgradeRolesAllowedAnnotationTest extends SecurityTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("""
-                            quarkus.security.events.enabled=false
-                            """), "application.properties")
-                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            AdminEndpoint.class, SecurityEventObserver.class));
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("""
+                    quarkus.security.events.enabled=false
+                    """), "application.properties").addClasses(Endpoint.class, WSClient.class,
+                    TestIdentityProvider.class, TestIdentityController.class, AdminEndpoint.class,
+                    SecurityEventObserver.class));
 
     @TestHTTPResource("admin-end")
     URI adminEndpointUri;

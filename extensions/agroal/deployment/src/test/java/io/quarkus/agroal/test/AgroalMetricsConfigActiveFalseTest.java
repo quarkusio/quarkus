@@ -33,18 +33,20 @@ public class AgroalMetricsConfigActiveFalseTest {
         Gauge<?> maxUsed = registry.getGauges()
                 .get(new MetricID("agroal.max.used.count", new Tag("datasource", "default")));
 
-        Assertions.assertNull(acquireCount, "Agroal metrics should not be registered for deactivated datasources eagerly");
+        Assertions.assertNull(acquireCount,
+                "Agroal metrics should not be registered for deactivated datasources eagerly");
         Assertions.assertNull(maxUsed, "Agroal metrics should not be registered for deactivated datasources eagerly");
     }
 
     @Test
     public void testMetricsOfDs1() {
-        Counter acquireCount = registry.getCounters().get(new MetricID("agroal.acquire.count",
-                new Tag("datasource", "ds1")));
-        Gauge<?> maxUsed = registry.getGauges().get(new MetricID("agroal.max.used.count",
-                new Tag("datasource", "ds1")));
+        Counter acquireCount = registry.getCounters()
+                .get(new MetricID("agroal.acquire.count", new Tag("datasource", "ds1")));
+        Gauge<?> maxUsed = registry.getGauges()
+                .get(new MetricID("agroal.max.used.count", new Tag("datasource", "ds1")));
 
-        Assertions.assertNull(acquireCount, "Agroal metrics should not be registered for deactivated datasources eagerly");
+        Assertions.assertNull(acquireCount,
+                "Agroal metrics should not be registered for deactivated datasources eagerly");
         Assertions.assertNull(maxUsed, "Agroal metrics should not be registered for deactivated datasources eagerly");
     }
 

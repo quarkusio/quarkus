@@ -58,32 +58,25 @@ public class WiringProcessor {
     @BuildStep
     void discoverConnectors(BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem index,
             BuildProducer<ConnectorBuildItem> builder) {
-        beans.getBeans().stream()
-                .filter(bi -> bi.getQualifier(ReactiveMessagingDotNames.CONNECTOR).isPresent())
+        beans.getBeans().stream().filter(bi -> bi.getQualifier(ReactiveMessagingDotNames.CONNECTOR).isPresent())
                 .forEach(bi -> {
                     if (isInboundConnector(bi.getImplClazz())) {
-                        builder.produce(
-                                ConnectorBuildItem.createIncomingConnector(getConnectorName(bi),
-                                        getConnectorAttributes(bi, index,
-                                                ConnectorAttribute.Direction.INCOMING,
-                                                ConnectorAttribute.Direction.INCOMING_AND_OUTGOING)));
+                        builder.produce(ConnectorBuildItem.createIncomingConnector(getConnectorName(bi),
+                                getConnectorAttributes(bi, index, ConnectorAttribute.Direction.INCOMING,
+                                        ConnectorAttribute.Direction.INCOMING_AND_OUTGOING)));
                     }
                     if (isOutboundConnector(bi.getImplClazz())) {
-                        builder.produce(
-                                ConnectorBuildItem.createOutgoingConnector(getConnectorName(bi),
-                                        getConnectorAttributes(bi, index,
-                                                ConnectorAttribute.Direction.OUTGOING,
-                                                ConnectorAttribute.Direction.INCOMING_AND_OUTGOING)));
+                        builder.produce(ConnectorBuildItem.createOutgoingConnector(getConnectorName(bi),
+                                getConnectorAttributes(bi, index, ConnectorAttribute.Direction.OUTGOING,
+                                        ConnectorAttribute.Direction.INCOMING_AND_OUTGOING)));
                     }
                 });
     }
 
     @BuildStep
     void extractComponents(BeanDiscoveryFinishedBuildItem beanDiscoveryFinished,
-            TransformedAnnotationsBuildItem transformedAnnotations,
-            BuildProducer<ChannelBuildItem> appChannels,
-            BuildProducer<MediatorBuildItem> mediatorMethods,
-            BuildProducer<InjectedEmitterBuildItem> emitters,
+            TransformedAnnotationsBuildItem transformedAnnotations, BuildProducer<ChannelBuildItem> appChannels,
+            BuildProducer<MediatorBuildItem> mediatorMethods, BuildProducer<InjectedEmitterBuildItem> emitters,
             BuildProducer<InjectedChannelBuildItem> channels,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer) {
@@ -92,7 +85,7 @@ public class WiringProcessor {
         // We need to collect all business methods annotated with @Incoming/@Outgoing first
         for (BeanInfo bean : beanDiscoveryFinished.beanStream().classBeans()) {
             // TODO: add support for inherited business methods
-            //noinspection OptionalGetWithoutIsPresent
+            // noinspection OptionalGetWithoutIsPresent
             AnnotationInstance emitterFactory = transformedAnnotations.getAnnotation(bean.getTarget().get(),
                     ReactiveMessagingDotNames.EMITTER_FACTORY_FOR);
             if (emitterFactory != null) {
@@ -109,17 +102,16 @@ public class WiringProcessor {
                         ReactiveMessagingDotNames.OUTGOING);
                 AnnotationInstance outgoings = transformedAnnotations.getAnnotation(method,
                         ReactiveMessagingDotNames.OUTGOINGS);
-                AnnotationInstance blocking = transformedAnnotations.getAnnotation(method,
-                        BLOCKING);
+                AnnotationInstance blocking = transformedAnnotations.getAnnotation(method, BLOCKING);
                 if (incoming != null || incomings != null || outgoing != null || outgoings != null) {
-                    handleMethodAnnotatedWithIncoming(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
-                            method, incoming);
-                    handleMethodAnnotationWithIncomings(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
-                            method, incomings);
-                    handleMethodAnnotationWithOutgoing(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
-                            method, outgoing);
-                    handleMethodAnnotationWithOutgoings(appChannels, validationErrors, configDescriptionBuildItemBuildProducer,
-                            method, outgoings);
+                    handleMethodAnnotatedWithIncoming(appChannels, validationErrors,
+                            configDescriptionBuildItemBuildProducer, method, incoming);
+                    handleMethodAnnotationWithIncomings(appChannels, validationErrors,
+                            configDescriptionBuildItemBuildProducer, method, incomings);
+                    handleMethodAnnotationWithOutgoing(appChannels, validationErrors,
+                            configDescriptionBuildItemBuildProducer, method, outgoing);
+                    handleMethodAnnotationWithOutgoings(appChannels, validationErrors,
+                            configDescriptionBuildItemBuildProducer, method, outgoings);
 
                     if (WiringHelper.isSynthetic(method)) {
                         continue;
@@ -129,8 +121,8 @@ public class WiringProcessor {
                     LOGGER.debugf("Found mediator business method %s declared on %s", method, bean);
                 } else if (blocking != null) {
                     validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                            new DeploymentException(
-                                    "@Blocking used on " + method + " which has no @Incoming or @Outgoing annotation")));
+                            new DeploymentException("@Blocking used on " + method
+                                    + " which has no @Incoming or @Outgoing annotation")));
                 }
             }
         }
@@ -140,8 +132,8 @@ public class WiringProcessor {
                     ReactiveMessagingDotNames.BROADCAST);
             Optional<AnnotationInstance> channel = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
                     ReactiveMessagingDotNames.CHANNEL);
-            Optional<AnnotationInstance> legacyChannel = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
-                    ReactiveMessagingDotNames.LEGACY_CHANNEL);
+            Optional<AnnotationInstance> legacyChannel = WiringHelper.getAnnotation(transformedAnnotations,
+                    injectionPoint, ReactiveMessagingDotNames.LEGACY_CHANNEL);
 
             String injectionType = injectionPoint.getRequiredType().name().toString();
             AnnotationInstance emitterType = emitterFactories.get(injectionType);
@@ -174,8 +166,7 @@ public class WiringProcessor {
     }
 
     private void handleChannelInjection(BuildProducer<ChannelBuildItem> appChannels,
-            BuildProducer<InjectedChannelBuildItem> channels,
-            AnnotationInstance channel) {
+            BuildProducer<InjectedChannelBuildItem> channels, AnnotationInstance channel) {
         String name = channel.value().asString();
         if (name != null && !name.trim().isEmpty()) {
             produceIncomingChannel(appChannels, name);
@@ -184,19 +175,13 @@ public class WiringProcessor {
     }
 
     private void handleEmitter(TransformedAnnotationsBuildItem transformedAnnotations,
-            BuildProducer<ChannelBuildItem> appChannels,
-            BuildProducer<InjectedEmitterBuildItem> emitters,
+            BuildProducer<ChannelBuildItem> appChannels, BuildProducer<InjectedEmitterBuildItem> emitters,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
-            InjectionPointInfo injectionPoint,
-            AnnotationInstance emitterType,
-            Optional<AnnotationInstance> broadcast,
-            Optional<AnnotationInstance> annotation,
-            DotName onOverflowAnnotation) {
+            InjectionPointInfo injectionPoint, AnnotationInstance emitterType, Optional<AnnotationInstance> broadcast,
+            Optional<AnnotationInstance> annotation, DotName onOverflowAnnotation) {
         if (annotation.isEmpty()) {
-            validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                    new DeploymentException(
-                            "Invalid emitter injection - @Channel is required for " + injectionPoint
-                                    .getTargetInfo())));
+            validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(new DeploymentException(
+                    "Invalid emitter injection - @Channel is required for " + injectionPoint.getTargetInfo())));
         } else {
             String channelName = annotation.get().value().asString();
             Optional<AnnotationInstance> overflow = WiringHelper.getAnnotation(transformedAnnotations, injectionPoint,
@@ -207,8 +192,8 @@ public class WiringProcessor {
 
     private void handleMethodAnnotationWithOutgoing(BuildProducer<ChannelBuildItem> appChannels,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
-            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
-            MethodInfo method, AnnotationInstance outgoing) {
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer, MethodInfo method,
+            AnnotationInstance outgoing) {
         if (outgoing != null && outgoing.value().asString().isEmpty()) {
             validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
                     new DeploymentException("Empty @Outgoing annotation on method " + method)));
@@ -218,8 +203,8 @@ public class WiringProcessor {
                     "mp.messaging.outgoing." + outgoing.value().asString() + ".tls-configuration-name", null,
                     "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                    "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", null,
-                    "The connector to use", null, null, ConfigPhase.BUILD_TIME));
+                    "mp.messaging.outgoing." + outgoing.value().asString() + ".connector", null, "The connector to use",
+                    null, null, ConfigPhase.BUILD_TIME));
 
             produceOutgoingChannel(appChannels, outgoing.value().asString());
         }
@@ -227,8 +212,8 @@ public class WiringProcessor {
 
     private void handleMethodAnnotationWithOutgoings(BuildProducer<ChannelBuildItem> appChannels,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
-            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
-            MethodInfo method, AnnotationInstance outgoings) {
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer, MethodInfo method,
+            AnnotationInstance outgoings) {
         if (outgoings != null) {
             for (AnnotationInstance instance : outgoings.value().asNestedArray()) {
                 if (instance.value().asString().isEmpty()) {
@@ -248,8 +233,8 @@ public class WiringProcessor {
 
     private void handleMethodAnnotationWithIncomings(BuildProducer<ChannelBuildItem> appChannels,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
-            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
-            MethodInfo method, AnnotationInstance incomings) {
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer, MethodInfo method,
+            AnnotationInstance incomings) {
         if (incomings != null) {
             for (AnnotationInstance instance : incomings.value().asNestedArray()) {
                 if (instance.value().asString().isEmpty()) {
@@ -269,8 +254,8 @@ public class WiringProcessor {
 
     private void handleMethodAnnotatedWithIncoming(BuildProducer<ChannelBuildItem> appChannels,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
-            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer,
-            MethodInfo method, AnnotationInstance incoming) {
+            BuildProducer<ConfigDescriptionBuildItem> configDescriptionBuildItemBuildProducer, MethodInfo method,
+            AnnotationInstance incoming) {
         if (incoming != null && incoming.value().asString().isEmpty()) {
             validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
                     new DeploymentException("Empty @Incoming annotation on method " + method)));
@@ -280,15 +265,14 @@ public class WiringProcessor {
                     "mp.messaging.incoming." + incoming.value().asString() + ".tls-configuration-name", null,
                     "The tls-configuration to use", null, null, ConfigPhase.RUN_TIME));
             configDescriptionBuildItemBuildProducer.produce(new ConfigDescriptionBuildItem(
-                    "mp.messaging.incoming." + incoming.value().asString() + ".connector", null,
-                    "The connector to use", null, null, ConfigPhase.BUILD_TIME));
+                    "mp.messaging.incoming." + incoming.value().asString() + ".connector", null, "The connector to use",
+                    null, null, ConfigPhase.BUILD_TIME));
             produceIncomingChannel(appChannels, incoming.value().asString());
         }
     }
 
     @BuildStep
-    public void detectOrphanChannels(List<ChannelBuildItem> channels,
-            BuildProducer<OrphanChannelBuildItem> builder) {
+    public void detectOrphanChannels(List<ChannelBuildItem> channels, BuildProducer<OrphanChannelBuildItem> builder) {
         Map<String, ChannelBuildItem> inc = new HashMap<>();
         Map<String, ChannelBuildItem> out = new HashMap<>();
         for (ChannelBuildItem channel : channels) {
@@ -332,12 +316,11 @@ public class WiringProcessor {
                     + channel.getName() + ".";
             if (connector != null) {
                 for (ConnectorAttribute attribute : connector.getAttributes()) {
-                    ConfigDescriptionBuildItem cfg = new ConfigDescriptionBuildItem(
-                            prefix + attribute.name(),
+                    ConfigDescriptionBuildItem cfg = new ConfigDescriptionBuildItem(prefix + attribute.name(),
                             attribute.defaultValue().equalsIgnoreCase(ConnectorAttribute.NO_VALUE) ? null
                                     : attribute.defaultValue(),
-                            renderer.render(markdownParser.parse(attribute.description())),
-                            attribute.type(), Collections.emptyList(), ConfigPhase.RUN_TIME);
+                            renderer.render(markdownParser.parse(attribute.description())), attribute.type(),
+                            Collections.emptyList(), ConfigPhase.RUN_TIME);
                     config.produce(cfg);
                 }
             }
@@ -349,8 +332,7 @@ public class WiringProcessor {
             ReactiveMessagingBuildTimeConfig buildTimeConfig,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             BuildProducer<ConnectorManagedChannelBuildItem> connectorManagedChannels,
-            List<OrphanChannelBuildItem> orphans, List<ConnectorBuildItem> connectors,
-            List<ChannelBuildItem> channels,
+            List<OrphanChannelBuildItem> orphans, List<ConnectorBuildItem> connectors, List<ChannelBuildItem> channels,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
         // For each orphan, if we have a single matching connector - add the .connector attribute to the config
         Set<String> incomingConnectors = new HashSet<>();
@@ -410,14 +392,10 @@ public class WiringProcessor {
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private void createEmitter(BuildProducer<ChannelBuildItem> appChannels,
-            BuildProducer<InjectedEmitterBuildItem> emitters,
-            InjectionPointInfo injectionPoint,
-            String channelName,
-            AnnotationInstance emitter,
-            Optional<AnnotationInstance> overflow,
-            Optional<AnnotationInstance> broadcast) {
-        LOGGER.debugf("Emitter injection point '%s' detected, channel name: '%s'",
-                injectionPoint.getTargetInfo(), channelName);
+            BuildProducer<InjectedEmitterBuildItem> emitters, InjectionPointInfo injectionPoint, String channelName,
+            AnnotationInstance emitter, Optional<AnnotationInstance> overflow, Optional<AnnotationInstance> broadcast) {
+        LOGGER.debugf("Emitter injection point '%s' detected, channel name: '%s'", injectionPoint.getTargetInfo(),
+                channelName);
 
         String emitterTypeName = emitter.value().asClass().name().toString();
 
@@ -439,9 +417,8 @@ public class WiringProcessor {
         }
 
         produceOutgoingChannel(appChannels, channelName);
-        emitters.produce(
-                InjectedEmitterBuildItem
-                        .of(channelName, emitterTypeName, strategy, bufferSize, hasBroadcast, awaitSubscribers));
+        emitters.produce(InjectedEmitterBuildItem.of(channelName, emitterTypeName, strategy, bufferSize, hasBroadcast,
+                awaitSubscribers));
     }
 
 }

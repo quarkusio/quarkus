@@ -39,10 +39,7 @@ public class AcmeClient extends AcmeClientSpi {
 
     private final WebClient managementClient;
 
-    public AcmeClient(String managementUrl,
-            String managementUser,
-            String managementPassword,
-            String managementKey) {
+    public AcmeClient(String managementUrl, String managementUser, String managementPassword, String managementKey) {
         this.vertx = Vertx.vertx();
         LOGGER.log(INFO, "\uD83D\uDD35 Creating AcmeClient with {0}", managementUrl);
 
@@ -83,7 +80,8 @@ public class AcmeClient extends AcmeClientSpi {
                     return false;
                 }
                 default -> {
-                    LOGGER.log(WARNING, "⚠\uFE0F Unexpected status code from the management challenge endpoint: " + status);
+                    LOGGER.log(WARNING,
+                            "⚠\uFE0F Unexpected status code from the management challenge endpoint: " + status);
                     return false;
                 }
             }
@@ -124,11 +122,12 @@ public class AcmeClient extends AcmeClientSpi {
 
         // respond to the http challenge
         if (managementClient != null) {
-            //TODO: Use JsonObject once POST is supported
-            //JsonObject challenge = new JsonObject().put("challenge-resource", token).put("challenge-content",
-            //        selectedChallengeString);
+            // TODO: Use JsonObject once POST is supported
+            // JsonObject challenge = new JsonObject().put("challenge-resource", token).put("challenge-content",
+            // selectedChallengeString);
             HttpRequest<Buffer> request = managementClient.getAbs(challengeUrl);
-            request.addQueryParam("challenge-resource", token).addQueryParam("challenge-content", selectedChallengeString);
+            request.addQueryParam("challenge-resource", token).addQueryParam("challenge-content",
+                    selectedChallengeString);
             addKeyAndUser(request);
             LOGGER.log(DEBUG, "Sending token {0} and challenge content to the management challenge endpoint", token,
                     selectedChallengeString);
@@ -141,7 +140,8 @@ public class AcmeClient extends AcmeClientSpi {
                                 + response.statusCode());
                 throw new RuntimeException("Failed to respond to certificate authority challenge");
             } else {
-                LOGGER.log(INFO, "\uD83D\uDD35 Challenge ready for token {0}, waiting for Let's Encrypt to validate...", token);
+                LOGGER.log(INFO, "\uD83D\uDD35 Challenge ready for token {0}, waiting for Let's Encrypt to validate...",
+                        token);
             }
         }
         return selectedChallenge;

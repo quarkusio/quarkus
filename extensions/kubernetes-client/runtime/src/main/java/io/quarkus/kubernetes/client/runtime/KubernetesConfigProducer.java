@@ -18,8 +18,7 @@ public class KubernetesConfigProducer {
     @DefaultBean
     @Singleton
     @Produces
-    public Config config(KubernetesClientBuildConfig buildConfig,
-            @All List<KubernetesConfigCustomizer> customizers) {
+    public Config config(KubernetesClientBuildConfig buildConfig, @All List<KubernetesConfigCustomizer> customizers) {
         var result = KubernetesClientUtils.createConfig(buildConfig);
         for (KubernetesConfigCustomizer customizer : customizers) {
             customizer.customize(result);

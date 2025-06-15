@@ -8,8 +8,8 @@ import java.util.List;
 import io.quarkus.gizmo.ClassOutput;
 
 /**
- * Basic configuration needed to generate a proxy of a class.
- * This was inspired from jboss-invocations's org.jboss.invocation.proxy.ProxyConfiguration
+ * Basic configuration needed to generate a proxy of a class. This was inspired from jboss-invocations's
+ * org.jboss.invocation.proxy.ProxyConfiguration
  */
 public class ProxyConfiguration<T> {
 

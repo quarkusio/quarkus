@@ -51,9 +51,6 @@ public class ScoredValue<V> {
 
     @Override
     public String toString() {
-        return "ScoredValue{" +
-                "value=" + value +
-                ", score=" + score +
-                '}';
+        return "ScoredValue{" + "value=" + value + ", score=" + score + '}';
     }
 }

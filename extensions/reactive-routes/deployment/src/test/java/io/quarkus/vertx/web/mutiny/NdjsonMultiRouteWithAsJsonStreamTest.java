@@ -26,32 +26,28 @@ public class NdjsonMultiRouteWithAsJsonStreamTest {
 
     @Test
     public void testNdjsonMultiRoute() {
-        when().get("/hello").then().statusCode(200)
-                .body(is("\"Hello world!\"\n"))
+        when().get("/hello").then().statusCode(200).body(is("\"Hello world!\"\n"))
                 .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
 
-        when().get("/hellos").then().statusCode(200)
-                .body(containsString(
-                // @formatter:off
+        when().get("/hellos").then().statusCode(200).body(containsString(
+        // @formatter:off
                         "\"hello\"\n"
                             + "\"world\"\n"
                             + "\"!\"\n"))
                         // @formatter:on
                 .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
 
-        when().get("/no-hello").then().statusCode(200).body(hasLength(0))
-                .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
+        when().get("/no-hello").then().statusCode(200).body(hasLength(0)).header(HttpHeaders.CONTENT_TYPE.toString(),
+                CONTENT_TYPE_NDJSON);
 
         // We get the item followed by the exception
-        when().get("/hello-and-fail").then().statusCode(200)
-                .body(containsString("\"Hello\""))
+        when().get("/hello-and-fail").then().statusCode(200).body(containsString("\"Hello\""))
                 .body(not(containsString("boom")));
 
         when().get("/void").then().statusCode(204).body(hasLength(0));
 
-        when().get("/people").then().statusCode(200)
-                .body(is(
-                // @formatter:off
+        when().get("/people").then().statusCode(200).body(is(
+        // @formatter:off
                                 "{\"name\":\"superman\",\"id\":1}\n" +
                                 "{\"name\":\"batman\",\"id\":2}\n" +
                                 "{\"name\":\"spiderman\",\"id\":3}\n"
@@ -59,18 +55,16 @@ public class NdjsonMultiRouteWithAsJsonStreamTest {
                 // @formatter:on
                 .header(HttpHeaders.CONTENT_TYPE.toString(), CONTENT_TYPE_NDJSON);
 
-        when().get("/people-content-type").then().statusCode(200)
-                .body(is(
-                // @formatter:off
+        when().get("/people-content-type").then().statusCode(200).body(is(
+        // @formatter:off
                                 "{\"name\":\"superman\",\"id\":1}\n" +
                                 "{\"name\":\"batman\",\"id\":2}\n" +
                                 "{\"name\":\"spiderman\",\"id\":3}\n"))
                 // @formatter:on
                 .header(HttpHeaders.CONTENT_TYPE.toString(), is(CONTENT_TYPE_NDJSON + ";charset=utf-8"));
 
-        when().get("/people-content-type-stream-json").then().statusCode(200)
-                .body(is(
-                // @formatter:off
+        when().get("/people-content-type-stream-json").then().statusCode(200).body(is(
+        // @formatter:off
                         "{\"name\":\"superman\",\"id\":1}\n" +
                                 "{\"name\":\"batman\",\"id\":2}\n" +
                                 "{\"name\":\"spiderman\",\"id\":3}\n"))
@@ -102,39 +96,31 @@ public class NdjsonMultiRouteWithAsJsonStreamTest {
         @Route(path = "hello-and-fail")
         Multi<String> helloAndFail(RoutingContext context) {
             return ReactiveRoutes.asJsonStream(Multi.createBy().concatenating().streams(
-                    Multi.createFrom().item("Hello"),
-                    Multi.createFrom().failure(() -> new IOException("boom"))));
+                    Multi.createFrom().item("Hello"), Multi.createFrom().failure(() -> new IOException("boom"))));
         }
 
         @Route(path = "void")
         Multi<Void> multiVoid(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().range(0, 200)
-                    .onItem().ignore());
+            return ReactiveRoutes.asJsonStream(Multi.createFrom().range(0, 200).onItem().ignore());
         }
 
         @Route(path = "/people")
         Multi<Person> people(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
-                    new Person("spiderman", 3)));
+            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(new Person("superman", 1),
+                    new Person("batman", 2), new Person("spiderman", 3)));
         }
 
         @Route(path = "/people-content-type")
         Multi<Person> peopleWithContentType(RoutingContext context) {
             context.response().putHeader(HttpHeaders.CONTENT_TYPE, CONTENT_TYPE_NDJSON + ";charset=utf-8");
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
-                    new Person("spiderman", 3)));
+            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(new Person("superman", 1),
+                    new Person("batman", 2), new Person("spiderman", 3)));
         }
 
         @Route(path = "/people-content-type-stream-json", produces = { CONTENT_TYPE_STREAM_JSON })
         Multi<Person> peopleWithContentTypeStreamJson(RoutingContext context) {
-            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
-                    new Person("spiderman", 3)));
+            return ReactiveRoutes.asJsonStream(Multi.createFrom().items(new Person("superman", 1),
+                    new Person("batman", 2), new Person("spiderman", 3)));
         }
 
         @Route(path = "/failure")

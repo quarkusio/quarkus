@@ -168,9 +168,8 @@ public class OidcDevServicesProcessor {
                                 + " Set 'quarkus.oidc.devservices.enabled=true' if you prefer to start Dev Services for OIDC.");
                 return true;
             } else {
-                LOG.debug(
-                        "Starting Dev Services for OIDC as a container runtime is not available."
-                                + "Set 'quarkus.oidc.devservices.enabled=false' if you prefer not to start Dev Services for OIDC.");
+                LOG.debug("Starting Dev Services for OIDC as a container runtime is not available."
+                        + "Set 'quarkus.oidc.devservices.enabled=false' if you prefer not to start Dev Services for OIDC.");
             }
         }
         return false;
@@ -231,8 +230,7 @@ public class OidcDevServicesProcessor {
 
     private static List<String> getUserRoles(String user) {
         List<String> roles = userToDefaultRoles.get(user);
-        return roles == null ? ("alice".equals(user) ? List.of("admin", "user") : List.of("user"))
-                : roles;
+        return roles == null ? ("alice".equals(user) ? List.of("admin", "user") : List.of("user")) : roles;
     }
 
     private static boolean isOidcEnabled() {
@@ -248,8 +246,7 @@ public class OidcDevServicesProcessor {
     }
 
     private static String getOidcClientId() {
-        return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class)
-                .orElse("quarkus-app");
+        return ConfigProvider.getConfig().getOptionalValue(CLIENT_ID_CONFIG_KEY, String.class).orElse("quarkus-app");
     }
 
     private static String getOidcClientSecret() {
@@ -325,13 +322,9 @@ public class OidcDevServicesProcessor {
     }
 
     /*
-     * First request:
-     * GET
-     * https://localhost:X/authorize?response_type=code&client_id=SECRET&scope=openid+openid+
-     * email+profile&redirect_uri=http://localhost:8080/Login/oidcLoginSuccess&state=STATE
-     *
-     * returns a 302 to
-     * GET http://localhost:8080/Login/oidcLoginSuccess?code=CODE&state=STATE
+     * First request: GET https://localhost:X/authorize?response_type=code&client_id=SECRET&scope=openid+openid+
+     * email+profile&redirect_uri=http://localhost:8080/Login/oidcLoginSuccess&state=STATE returns a 302 to GET
+     * http://localhost:8080/Login/oidcLoginSuccess?code=CODE&state=STATE
      */
     private static void authorize(RoutingContext rc) {
         String response_type = rc.request().params().get("response_type");
@@ -347,141 +340,136 @@ public class OidcDevServicesProcessor {
         }
         StringBuilder predefinedUsers = new StringBuilder();
         for (String predefinedUser : getUsers()) {
-            predefinedUsers.append("   <button name='predefined-" + predefinedUser + "' class='link' type='submit' value='")
-                    .append(predefinedUser)
-                    .append("' title='Log in as ")
-                    .append(predefinedUser)
-                    .append(" with roles: ")
-                    .append(String.join(",", getUserRoles(predefinedUser)))
-                    .append("'>")
-                    .append(predefinedUser)
+            predefinedUsers
+                    .append("   <button name='predefined-" + predefinedUser + "' class='link' type='submit' value='")
+                    .append(predefinedUser).append("' title='Log in as ").append(predefinedUser).append(" with roles: ")
+                    .append(String.join(",", getUserRoles(predefinedUser))).append("'>").append(predefinedUser)
                     .append("</button>\n");
         }
-        rc.response()
-                .endAndForget(
+        rc.response().endAndForget(
+                """
+                        <html>
+                         <head>
+                          <title>Login</title>
+                          <style>
+                                body {
+                                display: flex;
+                                flex-direction: column;
+                                background-color: hsla(210, 10%, 23%, 1.0);
+                                color: hsla(214, 96%, 96%, 0.9);
+                                height: 100vh;
+                                align-items: center;
+                                justify-content: center;
+                                margin: 0px;
+                                font-family: -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+                              }
+                              .card {
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: space-between;
+                                border: 1px solid hsla(214, 60%, 80%, 0.14);
+                                border-radius: 4px;
+                                width: 400px;
+                                filter: brightness(90%);
+                              }
+                              .card-header {
+                                font-size: 1.125rem;
+                                line-height: 1;
+                                height: 25px;
+                                display: flex;
+                                flex-direction: row;
+                                justify-content: space-between;
+                                align-items: center;
+                                padding: 10px 10px;
+                                background-color: hsla(214, 65%, 85%, 0.06);
+                                border-bottom: 1px solid hsla(214, 60%, 80%, 0.14);
+                              }
+                              .card-body {
+                                line-height: 1;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: space-between;
+                                padding: 10px 10px;
+                                gap: 10px;
+                              }
+                              .card:hover {
+                                box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
+                              }
+                              .predefined-form {
+                                display: flex;
+                                flex-direction: column;
+                                align-items: flex-start;
+                                gap: 10px;
+                              }
+                              .link {
+                                background: none!important;
+                                border: none;
+                                color: hsla(214, 96%, 96%, 0.9);
+                                padding: 0!important;
+                                text-decoration: none;
+                                cursor: pointer;
+                                font-size: large;
+                              }
+                              .link:hover {
+                                filter: brightness(90%);
+                              }
+                              .custom-link{
+                                display: flex;
+                                font-size: large;
+                                padding-top: 4px;
+                                cursor: pointer;
+                              }
+                              .custom-form {
+                                display: flex;
+                                flex-direction: column;
+                                gap: 5px;
+                                padding-top: 5px;
+                              }
+                              .custom-button {
+                                background: hsla(145, 65%, 42%, 0.5);
+                                border: unset;
+                                color: hsla(214, 96%, 96%, 0.9);
+                                font-size: large;
+                                cursor: pointer;
+                              }
+                              .custom-button:hover {
+                                filter: brightness(90%);
+                              }
+                          </style>
+                         </head>
+                         <body>
+                          <div class='card'>
+                           <div class='card-header'>
+                            <div>Login</div>
+                           </div>
+                           <div class='card-body'>
+                            <form class='predefined-form' action='/login' method='post'>
                         """
-                                <html>
-                                 <head>
-                                  <title>Login</title>
-                                  <style>
-                                        body {
-                                        display: flex;
-                                        flex-direction: column;
-                                        background-color: hsla(210, 10%, 23%, 1.0);
-                                        color: hsla(214, 96%, 96%, 0.9);
-                                        height: 100vh;
-                                        align-items: center;
-                                        justify-content: center;
-                                        margin: 0px;
-                                        font-family: -apple-system, BlinkMacSystemFont, 'Roboto', 'Segoe UI', Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-                                      }
-                                      .card {
-                                        display: flex;
-                                        flex-direction: column;
-                                        justify-content: space-between;
-                                        border: 1px solid hsla(214, 60%, 80%, 0.14);
-                                        border-radius: 4px;
-                                        width: 400px;
-                                        filter: brightness(90%);
-                                      }
-                                      .card-header {
-                                        font-size: 1.125rem;
-                                        line-height: 1;
-                                        height: 25px;
-                                        display: flex;
-                                        flex-direction: row;
-                                        justify-content: space-between;
-                                        align-items: center;
-                                        padding: 10px 10px;
-                                        background-color: hsla(214, 65%, 85%, 0.06);
-                                        border-bottom: 1px solid hsla(214, 60%, 80%, 0.14);
-                                      }
-                                      .card-body {
-                                        line-height: 1;
-                                        display: flex;
-                                        flex-direction: column;
-                                        justify-content: space-between;
-                                        padding: 10px 10px;
-                                        gap: 10px;
-                                      }
-                                      .card:hover {
-                                        box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2);
-                                      }
-                                      .predefined-form {
-                                        display: flex;
-                                        flex-direction: column;
-                                        align-items: flex-start;
-                                        gap: 10px;
-                                      }
-                                      .link {
-                                        background: none!important;
-                                        border: none;
-                                        color: hsla(214, 96%, 96%, 0.9);
-                                        padding: 0!important;
-                                        text-decoration: none;
-                                        cursor: pointer;
-                                        font-size: large;
-                                      }
-                                      .link:hover {
-                                        filter: brightness(90%);
-                                      }
-                                      .custom-link{
-                                        display: flex;
-                                        font-size: large;
-                                        padding-top: 4px;
-                                        cursor: pointer;
-                                      }
-                                      .custom-form {
-                                        display: flex;
-                                        flex-direction: column;
-                                        gap: 5px;
-                                        padding-top: 5px;
-                                      }
-                                      .custom-button {
-                                        background: hsla(145, 65%, 42%, 0.5);
-                                        border: unset;
-                                        color: hsla(214, 96%, 96%, 0.9);
-                                        font-size: large;
-                                        cursor: pointer;
-                                      }
-                                      .custom-button:hover {
-                                        filter: brightness(90%);
-                                      }
-                                  </style>
-                                 </head>
-                                 <body>
-                                  <div class='card'>
-                                   <div class='card-header'>
-                                    <div>Login</div>
+                        + """
+                                    <input type='hidden' name='redirect_uri' value='%1$s'>
+                                    <input type='hidden' name='response_type' value='%3$s'>
+                                    <input type='hidden' name='client_id' value='%4$s'>
+                                    <input type='hidden' name='scope' value='%5$s'>
+                                        %2$s
+                                    </form>
+                                    <details>
+                                     <summary class='custom-link'>Custom user</summary>
+                                     <form class='custom-form' action='/login' method='post'>
+                                      <input type='hidden' name='redirect_uri' value='%1$s'>
+                                      <input type='hidden' name='response_type' value='%3$s'>
+                                      <input type='hidden' name='client_id' value='%4$s'>
+                                      <input type='hidden' name='scope' value='%5$s'>
+                                      <input type='text' name='name' placeholder='Name'><br/>
+                                      <input type='text' name='roles' placeholder='Roles (comma-separated)'><br/>
+                                      <button class='custom-button' type='submit' name='login'>Login</button>
+                                     </form>
+                                    </details>
                                    </div>
-                                   <div class='card-body'>
-                                    <form class='predefined-form' action='/login' method='post'>
-                                """
-                                + """
-                                            <input type='hidden' name='redirect_uri' value='%1$s'>
-                                            <input type='hidden' name='response_type' value='%3$s'>
-                                            <input type='hidden' name='client_id' value='%4$s'>
-                                            <input type='hidden' name='scope' value='%5$s'>
-                                                %2$s
-                                            </form>
-                                            <details>
-                                             <summary class='custom-link'>Custom user</summary>
-                                             <form class='custom-form' action='/login' method='post'>
-                                              <input type='hidden' name='redirect_uri' value='%1$s'>
-                                              <input type='hidden' name='response_type' value='%3$s'>
-                                              <input type='hidden' name='client_id' value='%4$s'>
-                                              <input type='hidden' name='scope' value='%5$s'>
-                                              <input type='text' name='name' placeholder='Name'><br/>
-                                              <input type='text' name='roles' placeholder='Roles (comma-separated)'><br/>
-                                              <button class='custom-button' type='submit' name='login'>Login</button>
-                                             </form>
-                                            </details>
-                                           </div>
-                                          </div>
-                                         </body>
-                                        </html>
-                                        """.formatted(redirect.toASCIIString(), predefinedUsers, response_type, clientId,
-                                        scope));
+                                  </div>
+                                 </body>
+                                </html>
+                                """.formatted(redirect.toASCIIString(), predefinedUsers, response_type, clientId,
+                                scope));
     }
 
     private static void login(RoutingContext rc) {
@@ -529,10 +517,7 @@ public class OidcDevServicesProcessor {
             queryParams.append("&access_token=").append(accessToken);
         }
 
-        rc.response()
-                .putHeader("Location", redirect_uri + queryParams)
-                .setStatusCode(302)
-                .endAndForget();
+        rc.response().putHeader("Location", redirect_uri + queryParams).setStatusCode(302).endAndForget();
     }
 
     private static void token(RoutingContext rc) {
@@ -542,11 +527,8 @@ public class OidcDevServicesProcessor {
             case "refresh_token" -> refreshTokenEndpoint(rc);
             case "client_credentials" -> clientCredentialsTokenEndpoint(rc);
             case "password" -> passwordTokenEndpoint(rc);
-            default -> rc.response()
-                    .setStatusCode(400)
-                    .putHeader("Content-Type", "application/json")
-                    .putHeader("Cache-Control", "no-store")
-                    .endAndForget("Unsupported grant type: " + grantType);
+            default -> rc.response().setStatusCode(400).putHeader("Content-Type", "application/json")
+                    .putHeader("Cache-Control", "no-store").endAndForget("Unsupported grant type: " + grantType);
         }
     }
 
@@ -575,9 +557,7 @@ public class OidcDevServicesProcessor {
                   "refresh_token":"%s"
                 }
                 """.formatted(accessToken, refreshToken);
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
+        rc.response().putHeader("Content-Type", "application/json").putHeader("Cache-Control", "no-store")
                 .endAndForget(data);
     }
 
@@ -597,9 +577,7 @@ public class OidcDevServicesProcessor {
                       "expires_in": 3600
                 }
                 """.formatted(accessToken);
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
+        rc.response().putHeader("Content-Type", "application/json").putHeader("Cache-Control", "no-store")
                 .endAndForget(data);
     }
 
@@ -634,45 +612,17 @@ public class OidcDevServicesProcessor {
                    "expires_in": 3600
                 }
                 """.formatted(accessToken, refreshToken);
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
+        rc.response().putHeader("Content-Type", "application/json").putHeader("Cache-Control", "no-store")
                 .endAndForget(data);
     }
 
     /*
-     * OIDC calls POST /token?
-     * grant_type=authorization_code
-     * &code=CODE
-     * &redirect_uri=URI
-     *
-     * returns:
-     *
-     * {
-     * "token_type":"Bearer",
-     * "scope":"openid email profile",
-     * "expires_in":3600,
-     * "ext_expires_in":3600,
-     * "access_token":TOKEN,
-     * "id_token":JWT
-     * }
-     *
-     * ID token:
-     * {
-     * "ver": "2.0",
-     * "iss": "http://localhost",
-     * "sub": "USERID",
-     * "aud": "CLIENTID",
-     * "exp": 1641906214,
-     * "iat": 1641819514,
-     * "nbf": 1641819514,
-     * "name": "Foo Bar",
-     * "preferred_username": "user@example.com",
-     * "oid": "OPAQUE",
-     * "email": "user@example.com",
-     * "tid": "TENANTID",
-     * "aio": "AZURE_OPAQUE"
-     * }
+     * OIDC calls POST /token? grant_type=authorization_code &code=CODE &redirect_uri=URI returns: {
+     * "token_type":"Bearer", "scope":"openid email profile", "expires_in":3600, "ext_expires_in":3600,
+     * "access_token":TOKEN, "id_token":JWT } ID token: { "ver": "2.0", "iss": "http://localhost", "sub": "USERID",
+     * "aud": "CLIENTID", "exp": 1641906214, "iat": 1641819514, "nbf": 1641819514, "name": "Foo Bar",
+     * "preferred_username": "user@example.com", "oid": "OPAQUE", "email": "user@example.com", "tid": "TENANTID", "aio":
+     * "AZURE_OPAQUE" }
      */
     private static void authorizationCodeFlowTokenEndpoint(RoutingContext rc) {
         // TODO: check redirect_uri is same as in the initial Authorization Request
@@ -703,18 +653,13 @@ public class OidcDevServicesProcessor {
                  "refresh_token": "%s"
                  }
                 """.formatted(accessToken, idToken, userAndRoles.encode());
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
+        rc.response().putHeader("Content-Type", "application/json").putHeader("Cache-Control", "no-store")
                 .endAndForget(data);
     }
 
     private static void invalidTokenResponse(RoutingContext rc) {
-        rc.response()
-                .setStatusCode(400)
-                .putHeader("Content-Type", "application/json")
-                .putHeader("Cache-Control", "no-store")
-                .endAndForget("""
+        rc.response().setStatusCode(400).putHeader("Content-Type", "application/json")
+                .putHeader("Cache-Control", "no-store").endAndForget("""
                         {
                            "error": "invalid_request"
                         }
@@ -722,37 +667,17 @@ public class OidcDevServicesProcessor {
     }
 
     private static String createIdToken(String user, Set<String> roles, String clientId) {
-        return Jwt.claims()
-                .expiresIn(Duration.ofDays(1))
-                .issuedAt(Instant.now())
-                .issuer(baseURI)
-                .audience(clientId)
-                .subject(user)
-                .upn(user)
-                .claim("name", buildNameClaimValue(user))
+        return Jwt.claims().expiresIn(Duration.ofDays(1)).issuedAt(Instant.now()).issuer(baseURI).audience(clientId)
+                .subject(user).upn(user).claim("name", buildNameClaimValue(user))
                 .claim(Claims.preferred_username, buildEmailClaimValue(user))
-                .claim(Claims.email, buildEmailClaimValue(user))
-                .groups(roles)
-                .jws()
-                .keyId(kid)
-                .sign(kp.getPrivate());
+                .claim(Claims.email, buildEmailClaimValue(user)).groups(roles).jws().keyId(kid).sign(kp.getPrivate());
     }
 
     private static String createAccessToken(String user, Set<String> roles, Set<String> scope) {
-        return Jwt.claims()
-                .expiresIn(Duration.ofDays(1))
-                .issuedAt(Instant.now())
-                .issuer(baseURI)
-                .subject(user)
-                .scope(scope)
-                .upn(user)
-                .claim("name", buildNameClaimValue(user))
+        return Jwt.claims().expiresIn(Duration.ofDays(1)).issuedAt(Instant.now()).issuer(baseURI).subject(user)
+                .scope(scope).upn(user).claim("name", buildNameClaimValue(user))
                 .claim(Claims.preferred_username, buildEmailClaimValue(user))
-                .claim(Claims.email, buildEmailClaimValue(user))
-                .groups(roles)
-                .jws()
-                .keyId(kid)
-                .sign(kp.getPrivate());
+                .claim(Claims.email, buildEmailClaimValue(user)).groups(roles).jws().keyId(kid).sign(kp.getPrivate());
     }
 
     private static String buildNameClaimValue(String user) {
@@ -770,16 +695,7 @@ public class OidcDevServicesProcessor {
     }
 
     /*
-     * {"kty":"RSA",
-     * "use":"sig",
-     * "kid":"KEYID",
-     * "x5t":"KEYID",
-     * "n":
-     * "<MODULUS>",
-     * "e":"<EXPONENT>",
-     * "x5c":[
-     * "KEYID"
-     * ],
+     * {"kty":"RSA", "use":"sig", "kid":"KEYID", "x5t":"KEYID", "n": "<MODULUS>", "e":"<EXPONENT>", "x5c":[ "KEYID" ],
      * "issuer":"http://localhost:port"},
      */
     private static void getKeys(RoutingContext rc) {
@@ -801,23 +717,16 @@ public class OidcDevServicesProcessor {
                   ]
                 }
                 """.formatted(modulus, kid, baseURI, exponent);
-        rc.response()
-                .putHeader("Content-Type", "application/json")
-                .endAndForget(data);
+        rc.response().putHeader("Content-Type", "application/json").endAndForget(data);
     }
 
     /*
-     * /logout
-     * ?post_logout_redirect_uri=URI
-     * &id_token_hint=SECRET
+     * /logout ?post_logout_redirect_uri=URI &id_token_hint=SECRET
      */
     private static void logout(RoutingContext rc) {
         // we have no cookie state
         String redirect_uri = rc.request().params().get("post_logout_redirect_uri");
-        rc.response()
-                .putHeader("Location", redirect_uri)
-                .setStatusCode(302)
-                .endAndForget();
+        rc.response().putHeader("Location", redirect_uri).setStatusCode(302).endAndForget();
     }
 
     private static void userInfo(RoutingContext rc) {
@@ -836,10 +745,9 @@ public class OidcDevServicesProcessor {
                             "email": "%4$s"
                         }
                         """.formatted(claims.getString(Claims.preferred_username.name()),
-                        claims.getString(Claims.sub.name()), claims.getString("name"), claims.getString(Claims.email.name()));
-                rc.response()
-                        .putHeader("Content-Type", "application/json")
-                        .endAndForget(data);
+                        claims.getString(Claims.sub.name()), claims.getString("name"),
+                        claims.getString(Claims.email.name()));
+                rc.response().putHeader("Content-Type", "application/json").endAndForget(data);
                 return;
             }
         }

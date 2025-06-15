@@ -5,7 +5,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The query string
- *
  */
 public class QueryStringAttribute implements ExchangeAttribute {
 

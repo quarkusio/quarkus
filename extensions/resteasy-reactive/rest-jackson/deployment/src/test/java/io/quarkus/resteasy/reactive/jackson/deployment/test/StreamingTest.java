@@ -20,15 +20,11 @@ public class StreamingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(StreamingResource.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(StreamingResource.class));
 
     @Test
     public void testSseMultiJsonString() {
-        when().get("/test/multi")
-                .then()
-                .statusCode(200)
-                .body(CoreMatchers.is("[\"Hello\",\"Hola\"]"));
+        when().get("/test/multi").then().statusCode(200).body(CoreMatchers.is("[\"Hello\",\"Hola\"]"));
     }
 
     @Path("/test")

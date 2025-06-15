@@ -27,8 +27,7 @@ import io.smallrye.certs.junit5.Certificates;
 
 @DisabledOnOs(value = OS.WINDOWS, disabledReason = "Tests don't pass on windows CI")
 @Certificates(baseDir = MongoTlsRegistryTest.BASEDIR, certificates = {
-        @Certificate(name = "mongo-cert", formats = Format.PEM, client = true)
-})
+        @Certificate(name = "mongo-cert", formats = Format.PEM, client = true) })
 public class MongoTlsRegistryTest extends MongoTestBase {
     static final String BASEDIR = "target/certs";
     @RegisterExtension
@@ -67,8 +66,7 @@ public class MongoTlsRegistryTest extends MongoTestBase {
                 .initializedWith(MongodArguments.builder()
                         .putArgs("--tlsCertificateKeyFile", serverCertKeyPath.toAbsolutePath().toString())
                         .putArgs("--tlsMode", "requireTLS")
-                        .putArgs("--tlsCAFile", serverCaPath.toAbsolutePath().toString())
-                        .build()));
+                        .putArgs("--tlsCAFile", serverCaPath.toAbsolutePath().toString()).build()));
 
     }
 

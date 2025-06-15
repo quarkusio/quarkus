@@ -22,8 +22,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class ConfigProfileTestCase {
     private SmallRyeConfigBuilder configBuilder(String... keyValues) {
-        return emptyConfigBuilder()
-                .addDefaultSources()
+        return emptyConfigBuilder().addDefaultSources()
                 .withSources(new PropertiesConfigSource(maps(keyValues), "test input", 500));
     }
 
@@ -46,10 +45,7 @@ public class ConfigProfileTestCase {
 
     @Test
     void defaultProfile() {
-        final SmallRyeConfig config = buildConfig(
-                "foo.one", "v1",
-                "foo.two", "v2",
-                "%foo.foo.three", "f1",
+        final SmallRyeConfig config = buildConfig("foo.one", "v1", "foo.two", "v2", "%foo.foo.three", "f1",
                 "%prod.foo.four", "v4");
         assertEquals("v1", config.getValue("foo.one", String.class));
         assertEquals("v2", config.getValue("foo.two", String.class));
@@ -61,10 +57,7 @@ public class ConfigProfileTestCase {
     void overriddenProfile() {
         System.setProperty("quarkus.profile", "foo");
         try {
-            final SmallRyeConfig config = buildConfig(
-                    "foo.one", "v1",
-                    "foo.two", "v2",
-                    "%foo.foo.three", "f1",
+            final SmallRyeConfig config = buildConfig("foo.one", "v1", "foo.two", "v2", "%foo.foo.three", "f1",
                     "%prod.foo.four", "v4");
             assertEquals("v1", config.getValue("foo.one", String.class));
             assertEquals("v2", config.getValue("foo.two", String.class));
@@ -81,8 +74,7 @@ public class ConfigProfileTestCase {
         try {
             final SmallRyeConfig config = configBuilder()
                     .withSources(new PropertiesConfigSource(maps("foo", "default"), "source", 1000))
-                    .withSources(new PropertiesConfigSource(maps("%foo.foo", "profile"), "source", 100))
-                    .build();
+                    .withSources(new PropertiesConfigSource(maps("%foo.foo", "profile"), "source", 100)).build();
 
             assertEquals("default", config.getRawValue("foo"));
         } finally {
@@ -94,7 +86,8 @@ public class ConfigProfileTestCase {
     void profileNoErrorOnExpansion() {
         System.setProperty("quarkus.profile", "foo");
         try {
-            final SmallRyeConfig config = configBuilder("foo", "${noExpansionAvailable}", "%foo.foo", "profile").build();
+            final SmallRyeConfig config = configBuilder("foo", "${noExpansionAvailable}", "%foo.foo", "profile")
+                    .build();
 
             assertEquals("profile", config.getRawValue("foo"));
         } finally {
@@ -160,8 +153,7 @@ public class ConfigProfileTestCase {
         System.setProperty("quarkus.profile", "prof");
         System.setProperty("%prof.my.prop.profile", "2");
         try {
-            final SmallRyeConfig config = buildConfig("my.prop", "1",
-                    "%prof.my.prop", "${%prof.my.prop.profile}",
+            final SmallRyeConfig config = buildConfig("my.prop", "1", "%prof.my.prop", "${%prof.my.prop.profile}",
                     "%prof.my.prop.profile", "2");
 
             assertEquals("2", config.getRawValue("my.prop"));
@@ -175,8 +167,7 @@ public class ConfigProfileTestCase {
     public void customConfigProfile() {
         System.setProperty("quarkus.profile", "prof");
         try {
-            final SmallRyeConfig config = configBuilder()
-                    .addDefaultSources()
+            final SmallRyeConfig config = configBuilder().addDefaultSources()
                     .withSources(new PropertiesConfigSource(maps("my.prop", "1", "%prof.my.prop", "2"), "test", 100))
                     .build();
 
@@ -188,12 +179,9 @@ public class ConfigProfileTestCase {
 
     @Test
     public void noConfigProfile() {
-        final SmallRyeConfig config = configBuilder()
-                .addDefaultSources()
+        final SmallRyeConfig config = configBuilder().addDefaultSources()
                 .withSources(new PropertiesConfigSource(maps("my.prop", "1", "%prof.my.prop", "2"), "test", 100))
-                .withInterceptors(
-                        new ProfileConfigSourceInterceptor("prof"),
-                        new ExpressionConfigSourceInterceptor())
+                .withInterceptors(new ProfileConfigSourceInterceptor("prof"), new ExpressionConfigSourceInterceptor())
                 .build();
 
         assertEquals("2", config.getRawValue("my.prop"));
@@ -203,11 +191,10 @@ public class ConfigProfileTestCase {
     public void priorityProfile() {
         System.setProperty("quarkus.profile", "prof");
         try {
-            final SmallRyeConfig config = configBuilder()
-                    .addDefaultSources()
+            final SmallRyeConfig config = configBuilder().addDefaultSources()
                     .withSources(new PropertiesConfigSource(maps("%prof.my.prop", "higher-profile"), "higher", 200))
-                    .withSources(new PropertiesConfigSource(maps("my.prop", "lower", "%prof.my.prop", "lower-profile"), "lower",
-                            100))
+                    .withSources(new PropertiesConfigSource(maps("my.prop", "lower", "%prof.my.prop", "lower-profile"),
+                            "lower", 100))
                     .build();
 
             assertEquals("higher-profile", config.getRawValue("my.prop"));
@@ -220,11 +207,10 @@ public class ConfigProfileTestCase {
     public void priorityOverrideProfile() {
         System.setProperty("quarkus.profile", "prof");
         try {
-            final SmallRyeConfig config = new SmallRyeConfigBuilder()
-                    .addDefaultSources()
+            final SmallRyeConfig config = new SmallRyeConfigBuilder().addDefaultSources()
                     .withSources(new PropertiesConfigSource(maps("my.prop", "higher"), "higher", 200))
-                    .withSources(new PropertiesConfigSource(maps("my.prop", "lower", "%prof.my.prop", "lower-profile"), "lower",
-                            100))
+                    .withSources(new PropertiesConfigSource(maps("my.prop", "lower", "%prof.my.prop", "lower-profile"),
+                            "lower", 100))
                     .build();
 
             assertEquals("higher", config.getRawValue("my.prop"));
@@ -237,12 +223,11 @@ public class ConfigProfileTestCase {
     public void priorityProfileOverOriginal() {
         System.setProperty("quarkus.profile", "prof");
         try {
-            final SmallRyeConfig config = configBuilder()
-                    .addDefaultSources()
-                    .withSources(new PropertiesConfigSource(maps("my.prop", "higher", "%prof.my.prop", "higher-profile"),
-                            "higher", 200))
-                    .withSources(new PropertiesConfigSource(maps("my.prop", "lower", "%prof.my.prop", "lower-profile"), "lower",
-                            100))
+            final SmallRyeConfig config = configBuilder().addDefaultSources()
+                    .withSources(new PropertiesConfigSource(
+                            maps("my.prop", "higher", "%prof.my.prop", "higher-profile"), "higher", 200))
+                    .withSources(new PropertiesConfigSource(maps("my.prop", "lower", "%prof.my.prop", "lower-profile"),
+                            "lower", 100))
                     .build();
 
             assertEquals("higher-profile", config.getRawValue("my.prop"));
@@ -262,7 +247,8 @@ public class ConfigProfileTestCase {
 
             final List<String> properties = StreamSupport.stream(config.getPropertyNames().spliterator(), false)
                     .collect(toList());
-            assertFalse(properties.contains("%prof.my.prop")); // We are removing profile properties in SmallRyeConfig and keep only the main name.
+            assertFalse(properties.contains("%prof.my.prop")); // We are removing profile properties in SmallRyeConfig
+                                                               // and keep only the main name.
             assertTrue(properties.contains("my.prop"));
             assertTrue(properties.contains("prof.only"));
         } finally {

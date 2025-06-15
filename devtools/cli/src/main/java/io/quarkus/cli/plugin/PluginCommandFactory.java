@@ -21,7 +21,7 @@ public class PluginCommandFactory {
 
     private final OutputOptionMixin output;
 
-    //Testing
+    // Testing
     protected PluginCommandFactory() {
         this(null);
     }
@@ -33,7 +33,8 @@ public class PluginCommandFactory {
     private Optional<PluginCommand> createPluginCommand(Plugin plugin) {
         switch (plugin.getType()) {
             case maven:
-                return plugin.getLocation().flatMap(PluginUtil::checkGACTV).map(g -> new JBangCommand(toGAVC(g), output));
+                return plugin.getLocation().flatMap(PluginUtil::checkGACTV)
+                        .map(g -> new JBangCommand(toGAVC(g), output));
             case java:
             case jar:
             case jbang:
@@ -42,7 +43,8 @@ public class PluginCommandFactory {
                 return plugin.getLocation().map(l -> new ShellCommand(plugin.getName(), Paths.get(l), output));
             case extension:
                 if (PluginUtil.checkGACTV(plugin.getLocation()).isPresent()) {
-                    return plugin.getLocation().flatMap(PluginUtil::checkGACTV).map(g -> new JBangCommand(toGAVC(g), output));
+                    return plugin.getLocation().flatMap(PluginUtil::checkGACTV)
+                            .map(g -> new JBangCommand(toGAVC(g), output));
                 } else if (plugin.getLocation().filter(l -> l.endsWith(".jar")).isPresent()) {
                     return plugin.getLocation().map(l -> new JBangCommand(l, output));
                 }
@@ -66,8 +68,8 @@ public class PluginCommandFactory {
             }
             spec.parser().unmatchedArgumentsAllowed(true);
             spec.parser().unmatchedOptionsArePositionalParams(true);
-            spec.add(PositionalParamSpec.builder().type(String[].class).arity("0..*").description("Positional arguments")
-                    .setter(new ISetter() {
+            spec.add(PositionalParamSpec.builder().type(String[].class).arity("0..*")
+                    .description("Positional arguments").setter(new ISetter() {
                         @Override
                         public <T> T set(T value) throws Exception {
                             if (value == null) {
@@ -87,43 +89,44 @@ public class PluginCommandFactory {
     /**
      * Populate the plugin commands listed in the {@link PluginCatalog} to the {@link CommandLine}.
      *
-     * @param cmd the CommandLine.
-     * @param plugins the available plugins.
-     * @param factory the factory use to create the commands.
+     * @param cmd
+     *        the CommandLine.
+     * @param plugins
+     *        the available plugins.
+     * @param factory
+     *        the factory use to create the commands.
      */
     public void populateCommands(CommandLine cmd, Map<String, Plugin> plugins) {
-        plugins.entrySet().stream()
-                .map(Map.Entry::getValue).forEach(plugin -> {
-                    CommandLine current = cmd;
-                    // The plugin is stripped from its prefix when added to the catalog.
-                    // Let's added back to ensure it matches the CLI root command.
-                    String name = cmd.getCommandName() + "-" + plugin.getName();
-                    while (current != null && current.getCommandName() != null
-                            && name.startsWith(current.getCommandName() + "-")) {
-                        String remaining = name.substring(current.getCommandName().length() + 1);
-                        name = remaining;
-                        List<String> subcommandKeys = current.getSubcommands().keySet().stream()
-                                .filter(k -> remaining.startsWith(k))
-                                .collect(Collectors.toList());
-                        Optional<String> matchedKey = subcommandKeys.stream().sorted(Comparator.comparingInt(String::length))
-                                .findFirst();
-                        if (!matchedKey.isPresent()) {
-                            break;
-                        }
-                        current = current.getSubcommands().get(matchedKey.get());
-                    }
-                    //JBang aliases from remote catalogs are suffixed with '@<catalog name>'
-                    //We keep the catalog in the name, so that we can call the command, but
-                    //let's not use it in the subcommand name
-                    name = name.contains("@") ? name.split("@")[0] : name;
-                    final String commandName = name;
-                    final CommandLine commandParent = current;
-                    createCommand(plugin).ifPresent(command -> {
-                        if (!commandParent.getSubcommands().containsKey(commandName)) {
-                            commandParent.addSubcommand(commandName, command);
-                        }
-                    });
-                });
+        plugins.entrySet().stream().map(Map.Entry::getValue).forEach(plugin -> {
+            CommandLine current = cmd;
+            // The plugin is stripped from its prefix when added to the catalog.
+            // Let's added back to ensure it matches the CLI root command.
+            String name = cmd.getCommandName() + "-" + plugin.getName();
+            while (current != null && current.getCommandName() != null
+                    && name.startsWith(current.getCommandName() + "-")) {
+                String remaining = name.substring(current.getCommandName().length() + 1);
+                name = remaining;
+                List<String> subcommandKeys = current.getSubcommands().keySet().stream()
+                        .filter(k -> remaining.startsWith(k)).collect(Collectors.toList());
+                Optional<String> matchedKey = subcommandKeys.stream().sorted(Comparator.comparingInt(String::length))
+                        .findFirst();
+                if (!matchedKey.isPresent()) {
+                    break;
+                }
+                current = current.getSubcommands().get(matchedKey.get());
+            }
+            // JBang aliases from remote catalogs are suffixed with '@<catalog name>'
+            // We keep the catalog in the name, so that we can call the command, but
+            // let's not use it in the subcommand name
+            name = name.contains("@") ? name.split("@")[0] : name;
+            final String commandName = name;
+            final CommandLine commandParent = current;
+            createCommand(plugin).ifPresent(command -> {
+                if (!commandParent.getSubcommands().containsKey(commandName)) {
+                    commandParent.addSubcommand(commandName, command);
+                }
+            });
+        });
     }
 
     private static String toGAVC(GACTV gactv) {

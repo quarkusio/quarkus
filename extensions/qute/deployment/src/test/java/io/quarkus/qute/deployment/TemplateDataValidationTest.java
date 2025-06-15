@@ -15,12 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateDataValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyClass.class)
-                    .addAsResource(new StringAsset(
-                            "{foo_My:BAZ}"),
-                            "templates/foo.txt"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(MyClass.class).addAsResource(new StringAsset("{foo_My:BAZ}"), "templates/foo.txt"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

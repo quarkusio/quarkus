@@ -6,7 +6,6 @@ public final class TypeUtil {
 
     /*
      * Retrieve a default value of a primitive type.
-     *
      */
     public static String getPrimitiveDefaultValue(String primitiveType) {
         return Types.PRIMITIVE_DEFAULT_VALUES.get(primitiveType);

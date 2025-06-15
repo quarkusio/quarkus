@@ -27,12 +27,9 @@ public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
     static final String HTTP_ROOT_PATH_KEY = "quarkus.http.root-path";
     static final String MANAGEMENT_ROOT_PATH_KEY = "quarkus.http.management-path";
 
-    static final Map<String, String> entries = Map.of(
-            TEST_URL_KEY, TEST_URL_VALUE,
-            TEST_URL_SSL_KEY, TEST_URL_SSL_VALUE,
-            TEST_MANAGEMENT_URL_KEY, TEST_MANAGEMENT_URL_VALUE,
-            TEST_MANAGEMENT_URL_SSL_KEY, TEST_MANAGEMENT_URL_SSL_VALUE,
-            "%dev." + TEST_URL_KEY,
+    static final Map<String, String> entries = Map.of(TEST_URL_KEY, TEST_URL_VALUE, TEST_URL_SSL_KEY,
+            TEST_URL_SSL_VALUE, TEST_MANAGEMENT_URL_KEY, TEST_MANAGEMENT_URL_VALUE, TEST_MANAGEMENT_URL_SSL_KEY,
+            TEST_MANAGEMENT_URL_SSL_VALUE, "%dev." + TEST_URL_KEY,
             "http://${quarkus.http.host:localhost}:${quarkus.http.test-port:8080}${quarkus.http.root-path:${quarkus.servlet.context-path:}}");
 
     public Iterable<ConfigSource> getConfigSources(final ClassLoader forClassLoader) {

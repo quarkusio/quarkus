@@ -25,8 +25,8 @@ import io.vertx.core.Vertx;
 import io.vertx.core.net.PemKeyCertOptions;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
-})
+        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM,
+                Format.PKCS12 }) })
 public class DefaultKeyStoreProviderTest {
 
     private static final String configuration = """
@@ -35,8 +35,7 @@ public class DefaultKeyStoreProviderTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;
@@ -63,8 +62,7 @@ public class DefaultKeyStoreProviderTest {
 
         @Override
         public KeyStoreAndKeyCertOptions getKeyStore(Vertx vertx) {
-            var options = new PemKeyCertOptions()
-                    .addCertPath("target/certs/test-formats.crt")
+            var options = new PemKeyCertOptions().addCertPath("target/certs/test-formats.crt")
                     .addKeyPath("target/certs/test-formats.key");
             try {
                 return new KeyStoreAndKeyCertOptions(options.loadKeyStore(vertx), options);

@@ -9,10 +9,8 @@ import io.vertx.core.Vertx;
 public class VirtualThreadsAssertions {
 
     /**
-     * Asserts that the current method:
-     * - runs on a duplicated context
-     * - runs on a virtual thread
-     * - has the request scope activated
+     * Asserts that the current method: - runs on a duplicated context - runs on a virtual thread - has the request
+     * scope activated
      */
     public static void assertEverything() {
         assertThatTheRequestScopeIsActive();
@@ -53,7 +51,8 @@ public class VirtualThreadsAssertions {
             }
         } catch (Exception e) {
             throw new AssertionError(
-                    "Thread " + Thread.currentThread() + " is not a virtual thread - cannot invoke Thread.isVirtual()", e);
+                    "Thread " + Thread.currentThread() + " is not a virtual thread - cannot invoke Thread.isVirtual()",
+                    e);
         }
     }
 

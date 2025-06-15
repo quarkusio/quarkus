@@ -18,18 +18,17 @@ import io.grpc.MethodDescriptor;
 import io.smallrye.stork.api.ServiceInstance;
 
 /**
- * Similar to {@link StorkMeasuringGrpcInterceptor}, but with different entry points,
- * since we use delayed {@link StorkGrpcChannel}.
+ * Similar to {@link StorkMeasuringGrpcInterceptor}, but with different entry points, since we use delayed
+ * {@link StorkGrpcChannel}.
  */
 @ApplicationScoped
 public class VertxStorkMeasuringGrpcInterceptor implements ClientInterceptor, Prioritized {
 
     @Override
-    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions,
-            Channel next) {
+    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
+            CallOptions callOptions, Channel next) {
         boolean recordTime = method.getType() == MethodDescriptor.MethodType.UNARY;
-        Context context = Context.current().withValues(
-                STORK_SERVICE_INSTANCE, new AtomicReference<>(),
+        Context context = Context.current().withValues(STORK_SERVICE_INSTANCE, new AtomicReference<>(),
                 STORK_MEASURE_TIME, recordTime);
         Context oldContext = context.attach();
         try {

@@ -8,7 +8,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 final class ConfigurationInfoSubstitution {
 
     // initialize build time properties from data in the jar's META-INF/MANIFEST.MF
-    //TODO: actually implement this somehow so these values are baked in at build time
+    // TODO: actually implement this somehow so these values are baked in at build time
 
     @Substitute
     public static String getSourceId() {

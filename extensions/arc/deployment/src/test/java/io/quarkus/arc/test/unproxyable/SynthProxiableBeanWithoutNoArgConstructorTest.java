@@ -25,9 +25,7 @@ public class SynthProxiableBeanWithoutNoArgConstructorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SynthBean.class))
-            .addBuildChainCustomizer(buildCustomizer());
+            .withApplicationRoot((jar) -> jar.addClasses(SynthBean.class)).addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
         return new Consumer<BuildChainBuilder>() {
@@ -38,17 +36,13 @@ public class SynthProxiableBeanWithoutNoArgConstructorTest {
 
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(SyntheticBeanBuildItem.configure(SynthBean.class)
-                                .scope(ApplicationScoped.class)
-                                .types(SynthBean.class)
-                                .unremovable()
-                                .creator(mc -> {
+                        context.produce(SyntheticBeanBuildItem.configure(SynthBean.class).scope(ApplicationScoped.class)
+                                .types(SynthBean.class).unremovable().creator(mc -> {
                                     ResultHandle ret = mc.newInstance(
                                             MethodDescriptor.ofConstructor(SynthBean.class, String.class),
                                             mc.load("foo"));
                                     mc.returnValue(ret);
-                                })
-                                .done());
+                                }).done());
                     }
                 }).produces(SyntheticBeanBuildItem.class).build();
             }

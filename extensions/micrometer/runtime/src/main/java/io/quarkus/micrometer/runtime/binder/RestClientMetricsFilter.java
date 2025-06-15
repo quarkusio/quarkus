@@ -42,8 +42,7 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
     public RestClientMetricsFilter(final HttpBinderConfiguration httpMetricsConfig) {
         this.httpMetricsConfig = httpMetricsConfig;
 
-        timer = Timer.builder(httpMetricsConfig.getHttpClientRequestsName())
-                .withRegistry(registry);
+        timer = Timer.builder(httpMetricsConfig.getHttpClientRequestsName()).withRegistry(registry);
 
     }
 
@@ -68,8 +67,7 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
         if (requestMetric != null) {
             String templatePath = (String) requestContext.getProperty("UrlPathTemplate");
 
-            String requestPath = requestMetric.getNormalizedUriPath(
-                    httpMetricsConfig.getClientMatchPatterns(),
+            String requestPath = requestMetric.getNormalizedUriPath(httpMetricsConfig.getClientMatchPatterns(),
                     httpMetricsConfig.getClientIgnorePatterns(),
                     templatePath == null ? requestContext.getUri().getPath() : templatePath);
 
@@ -77,14 +75,11 @@ public class RestClientMetricsFilter implements ClientRequestFilter, ClientRespo
                 Timer.Sample sample = requestMetric.getSample();
                 int statusCode = responseContext.getStatus();
 
-                sample.stop(timer
-                        .withTags(Tags.of(
-                                HttpCommonTags.method(requestContext.getMethod()),
-                                HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode,
-                                        httpMetricsConfig.isClientSuppress4xxErrors()),
-                                HttpCommonTags.outcome(statusCode),
-                                HttpCommonTags.status(statusCode),
-                                clientName(requestContext))));
+                sample.stop(timer.withTags(Tags.of(HttpCommonTags.method(requestContext.getMethod()),
+                        HttpCommonTags.uri(requestPath, requestContext.getUri().getPath(), statusCode,
+                                httpMetricsConfig.isClientSuppress4xxErrors()),
+                        HttpCommonTags.outcome(statusCode), HttpCommonTags.status(statusCode),
+                        clientName(requestContext))));
             }
         }
     }

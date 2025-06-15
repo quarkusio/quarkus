@@ -18,16 +18,16 @@ public class ComposeProjectTest {
     private ComposeProject composeProject;
     private static final String COMPOSE_EXECUTABLE = "docker";
     private final File composeFile = new File(getClass().getResource("/valid-compose.yml").getFile());
-    private final File composeFileWithProfiles = new File(getClass().getResource("/valid-compose-with-profiles.yml").getFile());
-    private final File composeFileWithIgnore = new File(getClass().getResource("/valid-compose-with-ignore.yml").getFile());
+    private final File composeFileWithProfiles = new File(
+            getClass().getResource("/valid-compose-with-profiles.yml").getFile());
+    private final File composeFileWithIgnore = new File(
+            getClass().getResource("/valid-compose-with-ignore.yml").getFile());
 
     @Test
     void testBasicProject() {
         ComposeFiles files = new ComposeFiles(List.of(composeFile));
-        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
-                .withProject("test")
-                .withStartupTimeout(Duration.ofMinutes(2))
-                .build();
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).withProject("test")
+                .withStartupTimeout(Duration.ofMinutes(2)).build();
 
         // Verify service names
         Map<String, WaitAllStrategy> waitStrategies = composeProject.getWaitStrategies();
@@ -44,8 +44,7 @@ public class ComposeProjectTest {
     @Test
     void testProjectWithWaitStrategies() {
         ComposeFiles files = new ComposeFiles(List.of(composeFileWithProfiles));
-        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
-                .withStartupTimeout(Duration.ofMinutes(2))
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).withStartupTimeout(Duration.ofMinutes(2))
                 .build();
 
         // Verify project name
@@ -57,8 +56,7 @@ public class ComposeProjectTest {
     @Test
     void testProjectWithProfiles() {
         ComposeFiles files = new ComposeFiles(List.of(composeFileWithProfiles));
-        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
-                .build();
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).build();
 
         // Verify only kafka service is running (as it's in the kafka profile)
         Map<String, WaitAllStrategy> waitStrategies = composeProject.getWaitStrategies();
@@ -70,8 +68,7 @@ public class ComposeProjectTest {
     void testProjectWithScaling() {
         ComposeFiles files = new ComposeFiles(List.of(composeFile));
         composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
-                .withScalingPreferences(Map.of("redis", 2))
-                .build();
+                .withScalingPreferences(Map.of("redis", 2)).build();
 
         // Verify redis service is scaled to 2 instances
         Map<String, WaitAllStrategy> waitStrategies = composeProject.getWaitStrategies();
@@ -82,8 +79,7 @@ public class ComposeProjectTest {
     @Test
     void testIgnoredServices() {
         ComposeFiles files = new ComposeFiles(List.of(composeFileWithIgnore));
-        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
-                .build();
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).build();
 
         // Verify only kafka service is selected (as it's in the kafka profile)
         Map<String, WaitAllStrategy> waitStrategies = composeProject.getWaitStrategies();
@@ -98,9 +94,7 @@ public class ComposeProjectTest {
     @Test
     void testProfileServices() {
         ComposeFiles files = new ComposeFiles(List.of(composeFileWithProfiles));
-        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE)
-                .withProfiles(List.of("redis"))
-                .build();
+        composeProject = new ComposeProject.Builder(files, COMPOSE_EXECUTABLE).withProfiles(List.of("redis")).build();
 
         // Verify no service is selected
         Map<String, WaitAllStrategy> waitStrategies = composeProject.getWaitStrategies();

@@ -19,17 +19,14 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
 
     @Disabled
     void addExtensionTwiceInTwoBatches() throws IOException {
-        //FIXME This is currently not working
+        // FIXME This is currently not working
     }
 
     @Override
     protected List<String> createProject() throws IOException, QuarkusCommandException {
         SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
-        new CreateProject(getQuarkusProject())
-                .groupId("org.acme")
-                .artifactId("add-gradle-extension-test")
-                .version("0.0.1-SNAPSHOT")
-                .execute();
+        new CreateProject(getQuarkusProject()).groupId("org.acme").artifactId("add-gradle-extension-test")
+                .version("0.0.1-SNAPSHOT").execute();
         return readProject();
     }
 
@@ -39,25 +36,21 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
     }
 
     @Override
-    protected QuarkusCommandOutcome addExtensions(final List<String> extensions) throws IOException, QuarkusCommandException {
-        return new AddExtensions(getQuarkusProject())
-                .extensions(new HashSet<>(extensions))
-                .execute();
+    protected QuarkusCommandOutcome addExtensions(final List<String> extensions)
+            throws IOException, QuarkusCommandException {
+        return new AddExtensions(getQuarkusProject()).extensions(new HashSet<>(extensions)).execute();
     }
 
     @Override
     protected QuarkusCommandOutcome removeExtensions(final List<String> extensions)
             throws IOException, QuarkusCommandException {
-        return new RemoveExtensions(getQuarkusProject())
-                .extensions(new HashSet<>(extensions))
-                .execute();
+        return new RemoveExtensions(getQuarkusProject()).extensions(new HashSet<>(extensions)).execute();
     }
 
     @Override
-    protected long countDependencyOccurrences(final List<String> buildFile, final String groupId, final String artifactId,
-            final String version) {
-        return buildFile.stream()
-                .filter(d -> d.equals(getBuildFileDependencyString(groupId, artifactId, version)))
+    protected long countDependencyOccurrences(final List<String> buildFile, final String groupId,
+            final String artifactId, final String version) {
+        return buildFile.stream().filter(d -> d.equals(getBuildFileDependencyString(groupId, artifactId, version)))
                 .count();
     }
 
@@ -70,7 +63,8 @@ class RemoveGradleExtensionsTest extends AbstractRemoveExtensionsTest<List<Strin
         }
     }
 
-    private static String getBuildFileDependencyString(final String groupId, final String artifactId, final String version) {
+    private static String getBuildFileDependencyString(final String groupId, final String artifactId,
+            final String version) {
         final String versionPart = version != null ? ":" + version : "";
         return "    implementation '" + groupId + ":" + artifactId + versionPart + "'";
     }

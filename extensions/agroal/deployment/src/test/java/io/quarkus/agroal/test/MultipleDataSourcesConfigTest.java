@@ -15,7 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class MultipleDataSourcesConfigTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @Inject
     AgroalDataSource defaultDataSource;
 
@@ -26,12 +26,11 @@ public class MultipleDataSourcesConfigTest {
     @Inject
     @DataSource("inventory")
     AgroalDataSource dataSource2;
-    //end::injection[]
+    // end::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MultipleDataSourcesTestUtil.class))
+            .withApplicationRoot((jar) -> jar.addClass(MultipleDataSourcesTestUtil.class))
             .withConfigurationResource("application-multiple-datasources.properties");
 
     @Test

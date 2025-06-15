@@ -60,25 +60,19 @@ public class DataSourceInjectionTest {
         ReactiveRedisDataSource myRedisReactive;
 
         public void set(String data) {
-            reactive.value(String.class, String.class)
-                    .set("foo", data)
-                    .await().indefinitely();
+            reactive.value(String.class, String.class).set("foo", data).await().indefinitely();
         }
 
         public String get() {
-            return blocking.value(String.class, String.class)
-                    .get("foo");
+            return blocking.value(String.class, String.class).get("foo");
         }
 
         public void setMyRedis(String data) {
-            myRedisReactive.value(String.class, String.class)
-                    .set("foo", data)
-                    .await().indefinitely();
+            myRedisReactive.value(String.class, String.class).set("foo", data).await().indefinitely();
         }
 
         public String getMyRedis() {
-            return myRedisBlocking.value(String.class, String.class)
-                    .get("foo");
+            return myRedisBlocking.value(String.class, String.class).get("foo");
         }
 
     }

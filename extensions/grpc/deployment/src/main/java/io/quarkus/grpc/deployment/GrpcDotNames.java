@@ -55,13 +55,16 @@ public class GrpcDotNames {
     public static final DotName REGISTER_INTERCEPTOR = DotName.createSimple(RegisterInterceptor.class.getName());
     public static final DotName REGISTER_INTERCEPTORS = DotName.createSimple(RegisterInterceptors.class.getName());
     public static final DotName SERVER_INTERCEPTOR = DotName.createSimple(ServerInterceptor.class.getName());
-    public static final DotName REGISTER_CLIENT_INTERCEPTOR = DotName.createSimple(RegisterClientInterceptor.class.getName());
+    public static final DotName REGISTER_CLIENT_INTERCEPTOR = DotName
+            .createSimple(RegisterClientInterceptor.class.getName());
     public static final DotName REGISTER_CLIENT_INTERCEPTOR_LIST = DotName
             .createSimple(RegisterClientInterceptor.List.class.getName());
     public static final DotName CLIENT_INTERCEPTOR = DotName.createSimple(ClientInterceptor.class.getName());
 
-    public static final DotName CHANNEL_BUILDER_CUSTOMIZER = DotName.createSimple(ChannelBuilderCustomizer.class.getName());
-    public static final DotName SERVER_BUILDER_CUSTOMIZER = DotName.createSimple(ServerBuilderCustomizer.class.getName());
+    public static final DotName CHANNEL_BUILDER_CUSTOMIZER = DotName
+            .createSimple(ChannelBuilderCustomizer.class.getName());
+    public static final DotName SERVER_BUILDER_CUSTOMIZER = DotName
+            .createSimple(ServerBuilderCustomizer.class.getName());
 
     static final MethodDescriptor CREATE_CHANNEL_METHOD = MethodDescriptor.ofMethod(Channels.class, "createChannel",
             Channel.class, String.class, Set.class);
@@ -70,8 +73,8 @@ public class GrpcDotNames {
 
     static final MethodDescriptor CONFIGURE_STUB = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
             "configureStub", AbstractStub.class, String.class, AbstractStub.class);
-    static final MethodDescriptor ADD_BLOCKING_CLIENT_INTERCEPTOR = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
-            "addBlockingClientInterceptor", AbstractStub.class, AbstractStub.class);
+    static final MethodDescriptor ADD_BLOCKING_CLIENT_INTERCEPTOR = MethodDescriptor.ofMethod(
+            GrpcClientConfigProvider.class, "addBlockingClientInterceptor", AbstractStub.class, AbstractStub.class);
     static final MethodDescriptor GET_STUB_CONFIGURATOR = MethodDescriptor.ofMethod(GrpcClientConfigProvider.class,
             "getStubConfigurator", BiFunction.class);
 

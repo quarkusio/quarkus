@@ -33,22 +33,16 @@ import io.restassured.http.ContentType;
 public class NoAcceptMultipleProducesTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(DummyResource.class, DummyJsonWriter.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(DummyResource.class, DummyJsonWriter.class);
+        }
+    });
 
     @Test
     public void test() {
-        when().get("/dummy")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
-                .body(is("{\"foo\": \"bar\"}"));
+        when().get("/dummy").then().statusCode(200).contentType(ContentType.JSON).body(is("{\"foo\": \"bar\"}"));
     }
 
     @Path("dummy")
@@ -57,7 +51,8 @@ public class NoAcceptMultipleProducesTest {
         @Produces({ "text/plain; qs=0", "application/json; qs=1" })
         @GET
         public Map<String, String> dummy() {
-            return Collections.emptyMap(); // the return values doesn't matter as the json writer will write whatever it likes
+            return Collections.emptyMap(); // the return values doesn't matter as the json writer will write whatever it
+                                           // likes
         }
 
     }

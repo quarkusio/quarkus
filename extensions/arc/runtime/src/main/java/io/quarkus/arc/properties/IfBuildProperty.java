@@ -7,14 +7,14 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * When applied to a bean class or producer method (or field), the bean will only be enabled
- * if the Quarkus build time property matches the provided value.
+ * When applied to a bean class or producer method (or field), the bean will only be enabled if the Quarkus build time
+ * property matches the provided value.
  * <p>
- * By default, the bean is not enabled when the build time property is not defined at all, but this behavior is configurable
- * via the {@code enableIfMissing} property.
+ * By default, the bean is not enabled when the build time property is not defined at all, but this behavior is
+ * configurable via the {@code enableIfMissing} property.
  * <p>
- * This annotation is repeatable. A bean will only be enabled if all the conditions defined by the {@link IfBuildProperty}
- * annotations are satisfied.
+ * This annotation is repeatable. A bean will only be enabled if all the conditions defined by the
+ * {@link IfBuildProperty} annotations are satisfied.
  */
 @Repeatable(IfBuildProperty.List.class)
 @Retention(RetentionPolicy.RUNTIME)
@@ -32,7 +32,8 @@ public @interface IfBuildProperty {
     String stringValue();
 
     /**
-     * Determines if the bean is to be enabled when the property name specified by {@code name} has not been specified at all
+     * Determines if the bean is to be enabled when the property name specified by {@code name} has not been specified
+     * at all
      */
     boolean enableIfMissing() default false;
 

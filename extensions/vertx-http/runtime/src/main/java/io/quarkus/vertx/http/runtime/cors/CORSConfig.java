@@ -11,16 +11,16 @@ public interface CORSConfig {
     /**
      * The origins allowed for CORS.
      * <p>
-     * A comma-separated list of valid URLs, such as `http://www.quarkus.io,http://localhost:3000`.
-     * URLs enclosed in forward slashes are interpreted as regular expressions.
+     * A comma-separated list of valid URLs, such as `http://www.quarkus.io,http://localhost:3000`. URLs enclosed in
+     * forward slashes are interpreted as regular expressions.
      */
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> origins();
 
     /**
      * The HTTP methods allowed for CORS requests.
      * <p>
-     * A comma-separated list of valid HTTP methods, such as `GET,PUT,POST`.
-     * If not set, the filter allows any HTTP method by default.
+     * A comma-separated list of valid HTTP methods, such as `GET,PUT,POST`. If not set, the filter allows any HTTP
+     * method by default.
      * <p>
      * Default: Any HTTP request method is allowed.
      */
@@ -29,8 +29,8 @@ public interface CORSConfig {
     /**
      * The HTTP headers allowed for CORS requests.
      * <p>
-     * A comma-separated list of valid headers, such as `X-Custom,Content-Disposition`.
-     * If not set, the filter allows any header by default.
+     * A comma-separated list of valid headers, such as `X-Custom,Content-Disposition`. If not set, the filter allows
+     * any header by default.
      * <p>
      * Default: Any HTTP request header is allowed.
      */
@@ -58,8 +58,7 @@ public interface CORSConfig {
      * Tells browsers if front-end JavaScript can be allowed to access credentials when the request's credentials mode,
      * `Request.credentials`, is set to `include`.
      * <p>
-     * Default: `true` if the `quarkus.http.cors.origins` property is set
-     * and matches the precise `Origin` header value.
+     * Default: `true` if the `quarkus.http.cors.origins` property is set and matches the precise `Origin` header value.
      */
     Optional<Boolean> accessControlAllowCredentials();
 }

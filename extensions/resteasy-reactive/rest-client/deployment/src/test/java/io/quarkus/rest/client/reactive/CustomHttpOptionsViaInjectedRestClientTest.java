@@ -34,11 +34,10 @@ public class CustomHttpOptionsViaInjectedRestClientTest {
     Client client;
 
     @RegisterExtension
-    static final QuarkusUnitTest app = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(Client.class, CustomHttpClientOptionsWithLimit.class)
-                    .addAsResource(new StringAsset(
-                            "custom-http-options/mp-rest/url=http://localhost:${quarkus.http.test-port:8081}"),
-                            "application.properties"));
+    static final QuarkusUnitTest app = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Client.class, CustomHttpClientOptionsWithLimit.class).addAsResource(
+                    new StringAsset("custom-http-options/mp-rest/url=http://localhost:${quarkus.http.test-port:8081}"),
+                    "application.properties"));
 
     @Test
     void shouldUseCustomHttpOptions() {
@@ -65,8 +64,7 @@ public class CustomHttpOptionsViaInjectedRestClientTest {
         @GET
         public RestResponse<String> get() {
             return RestResponse.ResponseBuilder.ok(EXPECTED_VALUE)
-                    .header("long-header", "VERY LONNGGGGGGGGGGGGGGGGGGGGGGGGGGGG!")
-                    .build();
+                    .header("long-header", "VERY LONNGGGGGGGGGGGGGGGGGGGGGGGGGGGG!").build();
         }
     }
 

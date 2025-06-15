@@ -18,8 +18,8 @@ public final class HibernateSearchBeanUtil {
     private HibernateSearchBeanUtil() {
     }
 
-    public static <T> Optional<BeanReference<T>> singleExtensionBeanReferenceFor(Optional<String> override, Class<T> beanType,
-            String persistenceUnitName, String backendName, String indexName) {
+    public static <T> Optional<BeanReference<T>> singleExtensionBeanReferenceFor(Optional<String> override,
+            Class<T> beanType, String persistenceUnitName, String backendName, String indexName) {
         return override.map(string -> BeanReference.parse(beanType, string))
                 .or(() -> singleExtensionBeanReferenceFor(beanType, persistenceUnitName, backendName, indexName));
     }
@@ -28,8 +28,8 @@ public final class HibernateSearchBeanUtil {
             String persistenceUnitName, String backendName, String indexName) {
         InjectableInstance<T> instance = extensionInstanceFor(beanType, persistenceUnitName, backendName, indexName);
         if (instance.isAmbiguous()) {
-            List<String> ambiguousClassNames = instance.handlesStream().map(h -> h.getBean().getBeanClass().getCanonicalName())
-                    .toList();
+            List<String> ambiguousClassNames = instance.handlesStream()
+                    .map(h -> h.getBean().getBeanClass().getCanonicalName()).toList();
             if (indexName != null) {
                 throw new IllegalStateException(String.format(Locale.ROOT,
                         "Multiple instances of %1$s were found for Hibernate Search index %2$s in persistence unit %3$s."
@@ -47,15 +47,15 @@ public final class HibernateSearchBeanUtil {
                         beanType.getSimpleName(), persistenceUnitName, ambiguousClassNames));
             }
         }
-        return instance.isResolvable() ? Optional.of(new ArcBeanReference<>(instance.getHandle().getBean())) : Optional.empty();
+        return instance.isResolvable() ? Optional.of(new ArcBeanReference<>(instance.getHandle().getBean()))
+                : Optional.empty();
     }
 
     public static <T> Optional<List<BeanReference<T>>> multiExtensionBeanReferencesFor(Optional<List<String>> override,
-            Class<T> beanType,
-            String persistenceUnitName, String backendName, String indexName) {
-        return override.map(strings -> strings.stream()
-                .map(string -> BeanReference.parse(beanType, string))
-                .collect(Collectors.toList()))
+            Class<T> beanType, String persistenceUnitName, String backendName, String indexName) {
+        return override
+                .map(strings -> strings.stream().map(string -> BeanReference.parse(beanType, string))
+                        .collect(Collectors.toList()))
                 .or(() -> multiExtensionBeanReferencesFor(beanType, persistenceUnitName, backendName, indexName));
     }
 
@@ -74,9 +74,8 @@ public final class HibernateSearchBeanUtil {
 
     private static <T> InjectableInstance<T> extensionInstanceFor(Class<T> beanType, String persistenceUnitName,
             String backendName, String indexName) {
-        return Arc.container().select(beanType,
-                new SearchExtension.Literal(persistenceUnitName, backendName == null ? "" : backendName,
-                        indexName == null ? "" : indexName));
+        return Arc.container().select(beanType, new SearchExtension.Literal(persistenceUnitName,
+                backendName == null ? "" : backendName, indexName == null ? "" : indexName));
     }
 
 }

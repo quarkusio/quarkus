@@ -14,8 +14,8 @@ public class KubernetesSerializationRecorder {
         final Set<Class<?>> resourceClasses = new HashSet<>();
         for (var resourceClassName : resourceClassNames) {
             try {
-                resourceClasses.add(
-                        Class.forName(resourceClassName, false, KubernetesSerializationRecorder.class.getClassLoader()));
+                resourceClasses.add(Class.forName(resourceClassName, false,
+                        KubernetesSerializationRecorder.class.getClassLoader()));
             } catch (ClassNotFoundException e) {
             }
         }

@@ -16,8 +16,8 @@ import io.smallrye.config.WithParentName;
 public interface RedisCachesBuildTimeConfig {
 
     /**
-     * The name of the named Redis client to be used for communicating with Redis.
-     * If not set, use the default Redis client.
+     * The name of the named Redis client to be used for communicating with Redis. If not set, use the default Redis
+     * client.
      */
     Optional<String> clientName();
 

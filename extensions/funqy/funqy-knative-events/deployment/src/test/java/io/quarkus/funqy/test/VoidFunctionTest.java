@@ -13,56 +13,35 @@ import io.restassured.RestAssured;
 
 public class VoidFunctionTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("void-function.properties", "application.properties")
-                    .addClasses(VoidFunction.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource("void-function.properties", "application.properties").addClasses(VoidFunction.class));
 
     @Test
     public void testBinary() {
-        RestAssured.given().contentType("application/json")
-                .body("false")
-                .header("ce-id", "1234")
-                .header("ce-specversion", "1.0")
-                .post("/")
-                .then().statusCode(204);
+        RestAssured.given().contentType("application/json").body("false").header("ce-id", "1234")
+                .header("ce-specversion", "1.0").post("/").then().statusCode(204);
     }
 
     @Test
     public void testBinaryException() {
-        RestAssured.given().contentType("application/json")
-                .body("true")
-                .header("ce-id", "1234")
-                .header("ce-specversion", "1.0")
-                .post("/")
-                .then()
-                .statusCode(500)
+        RestAssured.given().contentType("application/json").body("true").header("ce-id", "1234")
+                .header("ce-specversion", "1.0").post("/").then().statusCode(500)
                 .body(allOf(containsString(TEST_EXCEPTION_MSG), containsString(ApplicationException.class.getName())));
     }
 
-    static final String eventFmt = "{ \"id\" : \"1234\", " +
-            "  \"specversion\": \"1.0\", " +
-            "  \"source\": \"/foo\", " +
-            "  \"type\": \"sometype\", " +
-            "  \"datacontenttype\": \"application/json\", " +
-            "  \"data\": %s " +
-            "}";
+    static final String eventFmt = "{ \"id\" : \"1234\", " + "  \"specversion\": \"1.0\", " + "  \"source\": \"/foo\", "
+            + "  \"type\": \"sometype\", " + "  \"datacontenttype\": \"application/json\", " + "  \"data\": %s " + "}";
 
     @Test
     public void testStructured() {
-        RestAssured.given().contentType("application/cloudevents+json")
-                .body(String.format(eventFmt, "false"))
-                .post("/")
+        RestAssured.given().contentType("application/cloudevents+json").body(String.format(eventFmt, "false")).post("/")
                 .then().statusCode(204);
     }
 
     @Test
     public void testStructuredException() {
-        RestAssured.given().contentType("application/cloudevents+json")
-                .body(String.format(eventFmt, "true"))
-                .post("/")
-                .then()
-                .statusCode(500)
+        RestAssured.given().contentType("application/cloudevents+json").body(String.format(eventFmt, "true")).post("/")
+                .then().statusCode(500)
                 .body(allOf(containsString(TEST_EXCEPTION_MSG), containsString(ApplicationException.class.getName())));
     }
 

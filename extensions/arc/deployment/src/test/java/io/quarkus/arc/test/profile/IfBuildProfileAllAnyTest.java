@@ -20,10 +20,8 @@ import io.smallrye.config.SmallRyeConfig;
 
 public class IfBuildProfileAllAnyTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    (jar) -> jar.addAsResource(new StringAsset("quarkus.test.profile=test,build,any"),
-                            "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.test.profile=test,build,any"), "application.properties"));
 
     @Inject
     SmallRyeConfig config;

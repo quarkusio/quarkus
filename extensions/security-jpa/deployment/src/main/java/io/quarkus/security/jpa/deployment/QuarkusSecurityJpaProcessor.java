@@ -84,8 +84,8 @@ class QuarkusSecurityJpaProcessor {
                     jpaSecurityDefinition.customPasswordProvider(), beanProducer, panacheEntityPredicate,
                     requireActiveCDIRequestContext);
 
-            generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition,
-                    beanProducer, panacheEntityPredicate, requireActiveCDIRequestContext);
+            generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition, beanProducer,
+                    panacheEntityPredicate, requireActiveCDIRequestContext);
         }
     }
 
@@ -133,14 +133,11 @@ class QuarkusSecurityJpaProcessor {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaIdentityProviderImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(name)
-                .superClass(JpaIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
-                .build()) {
+        try (ClassCreator classCreator = ClassCreator.builder().className(name).superClass(JpaIdentityProvider.class)
+                .classOutput(gizmoAdaptor).build()) {
             classCreator.addAnnotation(Singleton.class);
-            FieldDescriptor passwordProviderField = classCreator.getFieldCreator("passwordProvider", PasswordProvider.class)
-                    .setModifiers(Modifier.PRIVATE)
+            FieldDescriptor passwordProviderField = classCreator
+                    .getFieldCreator("passwordProvider", PasswordProvider.class).setModifiers(Modifier.PRIVATE)
                     .getFieldDescriptor();
 
             if (requireActiveCDIRequestContext) {
@@ -151,21 +148,22 @@ class QuarkusSecurityJpaProcessor {
                     EntityManager.class, UsernamePasswordAuthenticationRequest.class)) {
                 methodCreator.setModifiers(Modifier.PUBLIC);
 
-                ResultHandle username = methodCreator.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(UsernamePasswordAuthenticationRequest.class, "getUsername", String.class),
+                ResultHandle username = methodCreator.invokeVirtualMethod(MethodDescriptor
+                        .ofMethod(UsernamePasswordAuthenticationRequest.class, "getUsername", String.class),
                         methodCreator.getMethodParam(1));
 
                 // two strategies, depending on whether the username is natural id
                 AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username.annotation(DOTNAME_NATURAL_ID);
-                ResultHandle user = lookupUserById(jpaSecurityDefinition, name, methodCreator, username, naturalIdAnnotation);
+                ResultHandle user = lookupUserById(jpaSecurityDefinition, name, methodCreator, username,
+                        naturalIdAnnotation);
 
                 String declaringClassName = jpaSecurityDefinition.annotatedClass.name().toString();
                 String declaringClassTypeDescriptor = "L" + declaringClassName.replace('.', '/') + ";";
                 AssignableResultHandle userVar = methodCreator.createVariable(declaringClassTypeDescriptor);
                 methodCreator.assign(userVar, methodCreator.checkCast(user, declaringClassName));
 
-                buildIdentity(index, jpaSecurityDefinition, passwordTypeValue, passwordProviderValue, panacheEntityPredicate,
-                        passwordProviderField, methodCreator, userVar, methodCreator);
+                buildIdentity(index, jpaSecurityDefinition, passwordTypeValue, passwordProviderValue,
+                        panacheEntityPredicate, passwordProviderField, methodCreator, userVar, methodCreator);
             }
         }
     }
@@ -176,11 +174,8 @@ class QuarkusSecurityJpaProcessor {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaTrustedIdentityProviderImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(name)
-                .superClass(JpaTrustedIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
-                .build()) {
+        try (ClassCreator classCreator = ClassCreator.builder().className(name)
+                .superClass(JpaTrustedIdentityProvider.class).classOutput(gizmoAdaptor).build()) {
             classCreator.addAnnotation(Singleton.class);
             try (MethodCreator methodCreator = classCreator.getMethodCreator("authenticate", SecurityIdentity.class,
                     EntityManager.class, TrustedAuthenticationRequest.class)) {
@@ -196,7 +191,8 @@ class QuarkusSecurityJpaProcessor {
 
                 // two strategies, depending on whether the username is natural id
                 AnnotationInstance naturalIdAnnotation = jpaSecurityDefinition.username.annotation(DOTNAME_NATURAL_ID);
-                ResultHandle user = lookupUserById(jpaSecurityDefinition, name, methodCreator, username, naturalIdAnnotation);
+                ResultHandle user = lookupUserById(jpaSecurityDefinition, name, methodCreator, username,
+                        naturalIdAnnotation);
 
                 String declaringClassName = jpaSecurityDefinition.annotatedClass.name().toString();
                 String declaringClassTypeDescriptor = "L" + declaringClassName.replace('.', '/') + ";";
@@ -209,25 +205,24 @@ class QuarkusSecurityJpaProcessor {
         }
     }
 
-    private ResultHandle lookupUserById(JpaSecurityDefinition jpaSecurityDefinition, String name, MethodCreator methodCreator,
-            ResultHandle username, AnnotationInstance naturalIdAnnotation) {
+    private ResultHandle lookupUserById(JpaSecurityDefinition jpaSecurityDefinition, String name,
+            MethodCreator methodCreator, ResultHandle username, AnnotationInstance naturalIdAnnotation) {
         ResultHandle user;
         if (naturalIdAnnotation != null) {
             // Session session = em.unwrap(Session.class);
             ResultHandle session = methodCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(EntityManager.class, "unwrap", Object.class, Class.class),
-                    methodCreator.getMethodParam(0),
-                    methodCreator.loadClassFromTCCL(Session.class));
-            // SimpleNaturalIdLoadAccess<PlainUserEntity> naturalIdLoadAccess = session.bySimpleNaturalId(PlainUserEntity.class);
+                    methodCreator.getMethodParam(0), methodCreator.loadClassFromTCCL(Session.class));
+            // SimpleNaturalIdLoadAccess<PlainUserEntity> naturalIdLoadAccess =
+            // session.bySimpleNaturalId(PlainUserEntity.class);
             ResultHandle naturalIdLoadAccess = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Session.class, "bySimpleNaturalId",
-                            SimpleNaturalIdLoadAccess.class, Class.class),
+                    MethodDescriptor.ofMethod(Session.class, "bySimpleNaturalId", SimpleNaturalIdLoadAccess.class,
+                            Class.class),
                     methodCreator.checkCast(session, Session.class),
                     methodCreator.loadClassFromTCCL(jpaSecurityDefinition.annotatedClass.name().toString()));
             // PlainUserEntity user = naturalIdLoadAccess.load(request.getUsername());
             user = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(SimpleNaturalIdLoadAccess.class, "load",
-                            Object.class, Object.class),
+                    MethodDescriptor.ofMethod(SimpleNaturalIdLoadAccess.class, "load", Object.class, Object.class),
                     naturalIdLoadAccess, username);
         } else {
             // Query query = entityManager.createQuery("FROM Entity WHERE field = :name")
@@ -268,7 +263,8 @@ class QuarkusSecurityJpaProcessor {
         }
         // 'io.quarkus.hibernate.orm.runtime.tenant.TenantResolver' is only resolved when CDI request context is active
         // we need to active request context even when TenantResolver is @ApplicationScoped for tenant to be set
-        // see io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver.resolveCurrentTenantIdentifier
+        // see
+        // io.quarkus.hibernate.orm.runtime.tenant.HibernateCurrentTenantIdentifierResolver.resolveCurrentTenantIdentifier
         // for more information
         return descriptor.get().getConfig().getMultiTenancyStrategy() != MultiTenancyStrategy.NONE;
     }

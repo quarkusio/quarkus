@@ -27,8 +27,8 @@ public class UniRxInvokerImplTest {
         AtomicInteger counter = new AtomicInteger();
         CompletionStageRxInvoker csInvoker = mock(CompletionStageRxInvoker.class);
         UniRxInvokerImpl invoker = new UniRxInvokerImpl(csInvoker);
-        when(csInvoker.get(Integer.class)).thenReturn(
-                CompletableFuture.completedFuture(counter.incrementAndGet()), // First call
+        when(csInvoker.get(Integer.class)).thenReturn(CompletableFuture.completedFuture(counter.incrementAndGet()), // First
+                // call
                 CompletableFuture.completedFuture(counter.incrementAndGet()) // Second call
         );
 
@@ -47,11 +47,9 @@ public class UniRxInvokerImplTest {
                 .completedFuture(Response.ok(counter.incrementAndGet()).build());
         CompletionStage<Response> resp2 = CompletableFuture
                 .completedFuture(Response.ok(counter.incrementAndGet()).build());
-        when(csInvoker.get()).thenReturn(
-                resp1, resp2);
+        when(csInvoker.get()).thenReturn(resp1, resp2);
 
-        Uni<Integer> uni = invoker.get()
-                .onItem().transform(r -> r.readEntity(Integer.class));
+        Uni<Integer> uni = invoker.get().onItem().transform(r -> r.readEntity(Integer.class));
         Assertions.assertEquals(1, uni.await().indefinitely());
         Assertions.assertEquals(2, uni.await().indefinitely());
     }
@@ -68,9 +66,8 @@ public class UniRxInvokerImplTest {
                 .completedFuture(Response.ok(counter.incrementAndGet()).build());
         when(csInvoker.get()).thenReturn(failed, ok);
 
-        Uni<Integer> uni = invoker.get()
-                .onItem().transform(r -> r.readEntity(Integer.class))
-                .onFailure().retry().atMost(1);
+        Uni<Integer> uni = invoker.get().onItem().transform(r -> r.readEntity(Integer.class)).onFailure().retry()
+                .atMost(1);
         Assertions.assertEquals(1, uni.await().indefinitely());
     }
 
@@ -85,11 +82,9 @@ public class UniRxInvokerImplTest {
         CompletionStage<Response> resp2 = CompletableFuture
                 .completedFuture(Response.ok(counter.incrementAndGet()).build());
         Entity<String> entity = Entity.entity("hello", MediaType.TEXT_PLAIN_TYPE);
-        when(csInvoker.put(entity)).thenReturn(
-                resp1, resp2);
+        when(csInvoker.put(entity)).thenReturn(resp1, resp2);
 
-        Uni<Integer> uni = invoker.put(entity)
-                .onItem().transform(r -> r.readEntity(Integer.class));
+        Uni<Integer> uni = invoker.put(entity).onItem().transform(r -> r.readEntity(Integer.class));
         Assertions.assertEquals(1, uni.await().indefinitely());
         Assertions.assertEquals(2, uni.await().indefinitely());
     }
@@ -115,8 +110,8 @@ public class UniRxInvokerImplTest {
         AtomicInteger counter = new AtomicInteger();
         CompletionStageRxInvoker csInvoker = mock(CompletionStageRxInvoker.class);
         UniRxInvokerImpl invoker = new UniRxInvokerImpl(csInvoker);
-        when(csInvoker.delete(Integer.class)).thenReturn(
-                CompletableFuture.completedFuture(counter.incrementAndGet()), // First call
+        when(csInvoker.delete(Integer.class)).thenReturn(CompletableFuture.completedFuture(counter.incrementAndGet()), // First
+                // call
                 CompletableFuture.completedFuture(counter.incrementAndGet()) // Second call
         );
 
@@ -135,11 +130,9 @@ public class UniRxInvokerImplTest {
                 .completedFuture(Response.ok(counter.incrementAndGet()).build());
         CompletionStage<Response> resp2 = CompletableFuture
                 .completedFuture(Response.ok(counter.incrementAndGet()).build());
-        when(csInvoker.head()).thenReturn(
-                resp1, resp2);
+        when(csInvoker.head()).thenReturn(resp1, resp2);
 
-        Uni<Integer> uni = invoker.head()
-                .onItem().transform(r -> r.readEntity(Integer.class));
+        Uni<Integer> uni = invoker.head().onItem().transform(r -> r.readEntity(Integer.class));
         Assertions.assertEquals(1, uni.await().indefinitely());
         Assertions.assertEquals(2, uni.await().indefinitely());
     }

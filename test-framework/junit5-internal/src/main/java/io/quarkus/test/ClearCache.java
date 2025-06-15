@@ -22,8 +22,9 @@ public class ClearCache {
     }
 
     /**
-     * This will only be effective if the tests are launched with --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED,
-     * which is the case in the Quarkus codebase where memory usage is actually an issue.
+     * This will only be effective if the tests are launched with --add-opens
+     * java.naming/com.sun.naming.internal=ALL-UNNAMED, which is the case in the Quarkus codebase where memory usage is
+     * actually an issue.
      * <p>
      * While not mandatory, this actually helps so enabling it only in the Quarkus codebase has actual value.
      */

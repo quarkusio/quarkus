@@ -24,15 +24,15 @@ public class ConstPoolScanner {
     static final int CONSTANT_MODULE_TAG = 19;
     static final int CONSTANT_PACKAGE_TAG = 20;
 
-    //TODO: at the moment this only looks for the class name, it does not make sure it is used
-    //by a class tag. In practice this is likely fine, especially as this is just used for optimisations.
+    // TODO: at the moment this only looks for the class name, it does not make sure it is used
+    // by a class tag. In practice this is likely fine, especially as this is just used for optimisations.
     public static boolean constPoolEntryPresent(byte[] classBody, Set<String> namesToLookFor) {
         ByteBuffer data = ByteBuffer.wrap(classBody);
         if (data.getInt() != 0xCAFEBABE) {
-            return false; //not a class file
+            return false; // not a class file
         }
-        data.getShort();//major
-        data.getShort();//minor
+        data.getShort();// major
+        data.getShort();// minor
         int constantPoolCount = data.getShort();
         int currentCpInfoIndex = 1;
         while (currentCpInfoIndex < constantPoolCount) {

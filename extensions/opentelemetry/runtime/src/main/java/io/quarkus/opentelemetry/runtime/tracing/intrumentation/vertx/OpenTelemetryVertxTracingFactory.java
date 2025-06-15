@@ -42,35 +42,23 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
         }
 
         @Override
-        public Object receiveRequest(
-                final Context context,
-                final SpanKind kind,
-                final TracingPolicy policy,
-                final Object request,
-                final String operation,
-                final Iterable headers,
-                final TagExtractor tagExtractor) {
+        public Object receiveRequest(final Context context, final SpanKind kind, final TracingPolicy policy,
+                final Object request, final String operation, final Iterable headers, final TagExtractor tagExtractor) {
             if (delegate == null) {
-                log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
-                        "SpanKind: {0}; Request: {1}; Operation:{2}.",
-                        kind,
-                        request == null ? "null" : request.toString(),
-                        operation);
+                log.warnv(
+                        "VertxTracer delegate not set. Will not submit this trace. "
+                                + "SpanKind: {0}; Request: {1}; Operation:{2}.",
+                        kind, request == null ? "null" : request.toString(), operation);
                 return null;
             }
             return delegate.receiveRequest(context, kind, policy, request, operation, headers, tagExtractor);
         }
 
         @Override
-        public void sendResponse(
-                final Context context,
-                final Object response,
-                final Object payload,
-                final Throwable failure,
-                final TagExtractor tagExtractor) {
+        public void sendResponse(final Context context, final Object response, final Object payload,
+                final Throwable failure, final TagExtractor tagExtractor) {
             if (delegate == null) {
-                log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
-                        "Response: {0}; Failure: {1}.",
+                log.warnv("VertxTracer delegate not set. Will not submit this trace. " + "Response: {0}; Failure: {1}.",
                         response == null ? "null" : response.toString(),
                         failure == null ? "null" : failure.getMessage());
                 return;
@@ -79,35 +67,24 @@ public class OpenTelemetryVertxTracingFactory implements VertxTracerFactory {
         }
 
         @Override
-        public Object sendRequest(
-                final Context context,
-                final SpanKind kind,
-                final TracingPolicy policy,
-                final Object request,
-                final String operation,
-                final BiConsumer headers,
+        public Object sendRequest(final Context context, final SpanKind kind, final TracingPolicy policy,
+                final Object request, final String operation, final BiConsumer headers,
                 final TagExtractor tagExtractor) {
             if (delegate == null) {
-                log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
-                        "SpanKind: {0}; Request: {1}; Operation:{2}.",
-                        kind,
-                        request == null ? "null" : request.toString(),
-                        operation);
+                log.warnv(
+                        "VertxTracer delegate not set. Will not submit this trace. "
+                                + "SpanKind: {0}; Request: {1}; Operation:{2}.",
+                        kind, request == null ? "null" : request.toString(), operation);
                 return null;
             }
             return delegate.sendRequest(context, kind, policy, request, operation, headers, tagExtractor);
         }
 
         @Override
-        public void receiveResponse(
-                final Context context,
-                final Object response,
-                final Object payload,
-                final Throwable failure,
-                final TagExtractor tagExtractor) {
+        public void receiveResponse(final Context context, final Object response, final Object payload,
+                final Throwable failure, final TagExtractor tagExtractor) {
             if (delegate == null) {
-                log.warnv("VertxTracer delegate not set. Will not submit this trace. " +
-                        "Response: {0}; Failure: {1}.",
+                log.warnv("VertxTracer delegate not set. Will not submit this trace. " + "Response: {0}; Failure: {1}.",
                         response == null ? "null" : response.toString(),
                         failure == null ? "null" : failure.getMessage());
                 return;

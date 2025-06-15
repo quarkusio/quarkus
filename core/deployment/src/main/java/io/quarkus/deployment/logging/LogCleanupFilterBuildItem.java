@@ -8,8 +8,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.logging.LogCleanupFilterElement;
 
 /**
- * Declare that a log filter should be applied to the specified <tt>loggerName</tt>,
- * provided the message starts with <tt>messageStart</tt>.
+ * Declare that a log filter should be applied to the specified <tt>loggerName</tt>, provided the message starts with
+ * <tt>messageStart</tt>.
  *
  * @author Stéphane Épardaud
  */

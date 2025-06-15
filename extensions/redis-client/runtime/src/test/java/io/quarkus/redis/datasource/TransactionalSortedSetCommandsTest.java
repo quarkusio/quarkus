@@ -59,11 +59,8 @@ public class TransactionalSortedSetCommandsTest extends DatasourceTestBase {
     public void setReactive() {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalSortedSetCommands<String, String> set = tx.sortedSet(String.class);
-            return set.zadd(key, Map.of("a", 1.0, "b", 2.0, "c", 3.0, "d", 4.0))
-                    .chain(() -> set.zadd(key, 3.0, "e"))
-                    .chain(() -> set.zpopmin(key))
-                    .chain(() -> set.zcard(key))
-                    .chain(() -> set.zpopmax(key, 3));
+            return set.zadd(key, Map.of("a", 1.0, "b", 2.0, "c", 3.0, "d", 4.0)).chain(() -> set.zadd(key, 3.0, "e"))
+                    .chain(() -> set.zpopmin(key)).chain(() -> set.zcard(key)).chain(() -> set.zpopmax(key, 3));
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();

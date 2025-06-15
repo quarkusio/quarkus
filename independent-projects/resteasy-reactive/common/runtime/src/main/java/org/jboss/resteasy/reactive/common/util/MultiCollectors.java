@@ -19,37 +19,35 @@ public class MultiCollectors {
 
     public static Uni<byte[]> concatenateByteArrays(Multi<byte[]> multi) {
         // we could avoid the list and grow an array as we collect, but I doubt that's more efficient TBH
-        return multi.collect().asList()
-                .map(list -> {
-                    int size = 0;
-                    for (byte[] array : list) {
-                        size += array.length;
-                    }
-                    byte[] ret = new byte[size];
-                    int i = 0;
-                    for (byte[] array : list) {
-                        System.arraycopy(array, 0, ret, i, array.length);
-                        i += array.length;
-                    }
-                    return ret;
-                });
+        return multi.collect().asList().map(list -> {
+            int size = 0;
+            for (byte[] array : list) {
+                size += array.length;
+            }
+            byte[] ret = new byte[size];
+            int i = 0;
+            for (byte[] array : list) {
+                System.arraycopy(array, 0, ret, i, array.length);
+                i += array.length;
+            }
+            return ret;
+        });
     }
 
     public static Uni<char[]> concatenateCharArrays(Multi<char[]> multi) {
         // we could avoid the list and grow an array as we collect, but I doubt that's more efficient TBH
-        return multi.collect().asList()
-                .map(list -> {
-                    int size = 0;
-                    for (char[] array : list) {
-                        size += array.length;
-                    }
-                    char[] ret = new char[size];
-                    int i = 0;
-                    for (char[] array : list) {
-                        System.arraycopy(array, 0, ret, i, array.length);
-                        i += array.length;
-                    }
-                    return ret;
-                });
+        return multi.collect().asList().map(list -> {
+            int size = 0;
+            for (char[] array : list) {
+                size += array.length;
+            }
+            char[] ret = new char[size];
+            int i = 0;
+            for (char[] array : list) {
+                System.arraycopy(array, 0, ret, i, array.length);
+                i += array.length;
+            }
+            return ret;
+        });
     }
 }

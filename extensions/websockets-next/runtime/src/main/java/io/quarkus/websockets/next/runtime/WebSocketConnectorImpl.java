@@ -47,9 +47,10 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
 
     private final WebSocketTelemetryProvider telemetryProvider;
 
-    WebSocketConnectorImpl(InjectionPoint injectionPoint, Codecs codecs, Vertx vertx, ClientConnectionManager connectionManager,
-            ClientEndpointsContext endpointsContext, WebSocketsClientRuntimeConfig config,
-            TlsConfigurationRegistry tlsConfigurationRegistry, Instance<WebSocketTelemetryProvider> telemetryProvider) {
+    WebSocketConnectorImpl(InjectionPoint injectionPoint, Codecs codecs, Vertx vertx,
+            ClientConnectionManager connectionManager, ClientEndpointsContext endpointsContext,
+            WebSocketsClientRuntimeConfig config, TlsConfigurationRegistry tlsConfigurationRegistry,
+            Instance<WebSocketTelemetryProvider> telemetryProvider) {
         super(vertx, codecs, connectionManager, config, tlsConfigurationRegistry);
         this.clientEndpoint = Objects.requireNonNull(endpointsContext.endpoint(getEndpointClass(injectionPoint)));
         this.telemetryProvider = telemetryProvider.isResolvable() ? telemetryProvider.get() : null;
@@ -139,25 +140,18 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
         return websocketOpen.map(wsOpen -> {
             WebSocket ws = wsOpen.websocket();
             TrafficLogger trafficLogger = TrafficLogger.forClient(config);
-            SendingInterceptor sendingInterceptor = telemetrySupport == null ? null : telemetrySupport.getSendingInterceptor();
-            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId,
-                    ws,
-                    codecs,
-                    pathParams,
-                    serverEndpointUri,
-                    headers,
-                    trafficLogger,
-                    userData,
-                    sendingInterceptor,
+            SendingInterceptor sendingInterceptor = telemetrySupport == null ? null
+                    : telemetrySupport.getSendingInterceptor();
+            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId, ws,
+                    codecs, pathParams, serverEndpointUri, headers, trafficLogger, userData, sendingInterceptor,
                     wsOpen.cleanup());
             if (trafficLogger != null) {
                 trafficLogger.connectionOpened(connection);
             }
             connectionManager.add(clientEndpoint.generatedEndpointClass, connection);
 
-            Endpoints.initialize(vertx, Arc.container(), codecs, connection, ws,
-                    clientEndpoint.generatedEndpointClass, config.autoPingInterval(), SecuritySupport.NOOP,
-                    config.unhandledFailureStrategy(), trafficLogger,
+            Endpoints.initialize(vertx, Arc.container(), codecs, connection, ws, clientEndpoint.generatedEndpointClass,
+                    config.autoPingInterval(), SecuritySupport.NOOP, config.unhandledFailureStrategy(), trafficLogger,
                     () -> {
                         connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
                         client.get().close();

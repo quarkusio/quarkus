@@ -30,10 +30,9 @@ import io.vertx.core.Vertx;
 public class ConnectionEventsTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, ObservingBean.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, ObservingBean.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

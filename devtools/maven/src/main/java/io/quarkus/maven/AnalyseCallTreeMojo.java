@@ -12,8 +12,7 @@ import io.quarkus.deployment.pkg.steps.ReportAnalyzer;
 
 /**
  * Analyze call tree of a method or a class based on an existing report produced by Substrate when using
- * -H:+PrintAnalysisCallTree,
- * and does a more meaningful analysis of what is causing a type to be retained.
+ * -H:+PrintAnalysisCallTree, and does a more meaningful analysis of what is causing a type to be retained.
  */
 @Mojo(name = "analyze-call-tree")
 public class AnalyseCallTreeMojo extends AbstractMojo {

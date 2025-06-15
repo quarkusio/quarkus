@@ -75,14 +75,12 @@ public class MessageConsumerContextTest {
         Uni<String> uni2 = eventBus.<String> request("req", "bar").map(Message::body);
         Uni<String> uni3 = eventBus.<String> request("req", "baz").map(Message::body);
 
-        Uni.combine().all().unis(uni1, uni2, uni3).asTuple()
-                .map(tuple -> {
-                    assertEquals("FOO", tuple.getItem1());
-                    assertEquals("BAR", tuple.getItem2());
-                    assertEquals("BAZ", tuple.getItem3());
-                    return "done";
-                })
-                .await().atMost(Duration.ofSeconds(3));
+        Uni.combine().all().unis(uni1, uni2, uni3).asTuple().map(tuple -> {
+            assertEquals("FOO", tuple.getItem1());
+            assertEquals("BAR", tuple.getItem2());
+            assertEquals("BAZ", tuple.getItem3());
+            return "done";
+        }).await().atMost(Duration.ofSeconds(3));
 
         assertTrue(MessageConsumers.MESSAGES.size() >= 2);
     }

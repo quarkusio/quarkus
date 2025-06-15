@@ -21,8 +21,7 @@ public class Greeting {
         if (o == null || getClass() != o.getClass())
             return false;
         Greeting greeting = (Greeting) o;
-        return Objects.equals(name, greeting.name) &&
-                Objects.equals(message, greeting.message);
+        return Objects.equals(name, greeting.name) && Objects.equals(message, greeting.message);
     }
 
     @Override
@@ -32,10 +31,7 @@ public class Greeting {
 
     @Override
     public String toString() {
-        return "Greeting{" +
-                "name='" + name + '\'' +
-                ", message='" + message + '\'' +
-                '}';
+        return "Greeting{" + "name='" + name + '\'' + ", message='" + message + '\'' + '}';
     }
 
     public String getName() {

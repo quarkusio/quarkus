@@ -42,8 +42,8 @@ public final class ExtensionUtil {
     }
 
     /**
-     * This is not exactly pretty but it's actually not easy to get the artifact id of the current artifact.
-     * One option would be to pass it through the annotation processor but it's not exactly ideal.
+     * This is not exactly pretty but it's actually not easy to get the artifact id of the current artifact. One option
+     * would be to pass it through the annotation processor but it's not exactly ideal.
      */
     public ExtensionModule getExtensionModule() {
         Optional<Path> pom = filerUtil.getPomPath();
@@ -87,7 +87,8 @@ public final class ExtensionUtil {
                 for (int j = 0; j < parentChildren.getLength(); j++) {
                     Node parentChild = parentChildren.item(j);
                     if ("groupId".equals(parentChild.getNodeName())) {
-                        parentGroupId = parentChild.getTextContent() != null ? parentChild.getTextContent().trim() : null;
+                        parentGroupId = parentChild.getTextContent() != null ? parentChild.getTextContent().trim()
+                                : null;
                         ;
                         break;
                     }
@@ -113,7 +114,8 @@ public final class ExtensionUtil {
         }
 
         if (groupId == null || groupId.isBlank() || artifactId == null || artifactId.isBlank()) {
-            processingEnv.getMessager().printMessage(Kind.WARNING, "Unable to determine artifact coordinates from: " + pom);
+            processingEnv.getMessager().printMessage(Kind.WARNING,
+                    "Unable to determine artifact coordinates from: " + pom);
             return ExtensionModule.createNotDetected();
         }
 
@@ -151,10 +153,9 @@ public final class ExtensionUtil {
             }
         }
 
-        return ExtensionModule.of(groupId, artifactId, moduleType,
-                Extension.of(groupId, extensionArtifactId, extensionName, extensionNameSource, guideUrl,
-                        Boolean.parseBoolean(
-                                processingEnv.getOptions().getOrDefault(Options.SPLIT_ON_CONFIG_ROOT_DESCRIPTION, "false"))));
+        return ExtensionModule.of(groupId, artifactId, moduleType, Extension.of(groupId, extensionArtifactId,
+                extensionName, extensionNameSource, guideUrl, Boolean.parseBoolean(
+                        processingEnv.getOptions().getOrDefault(Options.SPLIT_ON_CONFIG_ROOT_DESCRIPTION, "false"))));
     }
 
     private Optional<ExtensionMetadata> getExtensionMetadata() {
@@ -191,8 +192,8 @@ public final class ExtensionUtil {
 
     private ExtensionModuleType detectExtensionModuleType(String artifactId) {
         try {
-            Path runtimeMarkerFile = Paths
-                    .get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", RUNTIME_MARKER_FILE).toUri());
+            Path runtimeMarkerFile = Paths.get(processingEnv.getFiler()
+                    .getResource(StandardLocation.CLASS_OUTPUT, "", RUNTIME_MARKER_FILE).toUri());
             if (Files.exists(runtimeMarkerFile)) {
                 return ExtensionModuleType.RUNTIME;
             }

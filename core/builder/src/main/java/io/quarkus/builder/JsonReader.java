@@ -15,8 +15,8 @@ import io.quarkus.builder.json.JsonString;
 import io.quarkus.builder.json.JsonValue;
 
 /**
- * A json format reader.
- * It follows the <a href="https://www.json.org/json-en.html">ECMA-404 The JSON Data Interchange Standard.</a>.
+ * A json format reader. It follows the <a href="https://www.json.org/json-en.html">ECMA-404 The JSON Data Interchange
+ * Standard.</a>.
  */
 public class JsonReader {
 
@@ -39,8 +39,7 @@ public class JsonReader {
     }
 
     /**
-     * element
-     * |---- ws value ws
+     * element |---- ws value ws
      */
     private JsonValue readElement() {
         ignoreWhitespace();
@@ -50,14 +49,7 @@ public class JsonReader {
     }
 
     /**
-     * value
-     * |---- object
-     * |---- array
-     * |---- string
-     * |---- number
-     * |---- "true"
-     * |---- "false"
-     * |---- "null"
+     * value |---- object |---- array |---- string |---- number |---- "true" |---- "false" |---- "null"
      */
     private JsonValue readValue() {
         final int ch = peekChar();
@@ -87,13 +79,9 @@ public class JsonReader {
     }
 
     /**
-     * object
-     * |---- '{' ws '}'
-     * |---- '{' members '}'
+     * object |---- '{' ws '}' |---- '{' members '}'
      * </p>
-     * members
-     * |----- member
-     * |----- member ',' members
+     * members |----- member |----- member ',' members
      */
     private JsonValue readObject() {
         position++;
@@ -119,8 +107,7 @@ public class JsonReader {
     }
 
     /**
-     * member
-     * |----- ws string ws ':' element
+     * member |----- ws string ws ':' element
      */
     private void readMember(Map<JsonString, JsonValue> members) {
         final JsonString attribute = readString();
@@ -134,13 +121,9 @@ public class JsonReader {
     }
 
     /**
-     * array
-     * |---- '[' ws ']'
-     * |---- '[' elements ']'
+     * array |---- '[' ws ']' |---- '[' elements ']'
      * </p>
-     * elements
-     * |----- element
-     * |----- element ',' elements
+     * elements |----- element |----- element ',' elements
      */
     private JsonValue readArray() {
         position++;
@@ -166,26 +149,12 @@ public class JsonReader {
     }
 
     /**
-     * string
-     * |---- '"' characters '"'
+     * string |---- '"' characters '"'
      * </p>
-     * characters
-     * |----- ""
-     * |----- character characters
+     * characters |----- "" |----- character characters
      * </p>
-     * character
-     * |----- '0020' . '10FFFF' - '"' - '\'
-     * |----- '\' escape
-     * |----- escape
-     * |----- '"'
-     * |----- '\'
-     * |----- '/'
-     * |----- 'b'
-     * |----- 'f'
-     * |----- 'n'
-     * |----- 'r'
-     * |----- 't'
-     * |----- 'u' hex hex hex hex
+     * character |----- '0020' . '10FFFF' - '"' - '\' |----- '\' escape |----- escape |----- '"' |----- '\' |----- '/'
+     * |----- 'b' |----- 'f' |----- 'n' |----- 'r' |----- 't' |----- 'u' hex hex hex hex
      */
     private JsonString readString() {
         position++;
@@ -206,9 +175,7 @@ public class JsonReader {
 
             if ('"' == ch) {
                 final String chunk = text.substring(start, position - 1);
-                final String result = unicodeString != null
-                        ? unicodeString.append(chunk).toString()
-                        : chunk;
+                final String result = unicodeString != null ? unicodeString.append(chunk).toString() : chunk;
 
                 // End of string
                 return new JsonString(result);
@@ -248,15 +215,12 @@ public class JsonReader {
     }
 
     /**
-     * number
-     * |---- integer fraction exponent
+     * number |---- integer fraction exponent
      */
     private JsonValue readNumber(int numStartIndex) {
         final boolean isFraction = skipToEndOfNumber();
         final String number = text.substring(numStartIndex, position);
-        return isFraction
-                ? new JsonDouble(Double.parseDouble(number))
-                : new JsonInteger(Long.parseLong(number));
+        return isFraction ? new JsonDouble(Double.parseDouble(number)) : new JsonInteger(Long.parseLong(number));
     }
 
     private boolean skipToEndOfNumber() {
@@ -314,12 +278,7 @@ public class JsonReader {
     }
 
     /**
-     * ws
-     * |---- ""
-     * |---- '0020' ws
-     * |---- '000A' ws
-     * |---- '000D' ws
-     * |---- '0009' ws
+     * ws |---- "" |---- '0020' ws |---- '000A' ws |---- '000D' ws |---- '0009' ws
      */
     private void ignoreWhitespace() {
         while (position < length) {
@@ -338,9 +297,7 @@ public class JsonReader {
     }
 
     private int peekChar() {
-        return position < length
-                ? text.charAt(position)
-                : -1;
+        return position < length ? text.charAt(position) : -1;
     }
 
     private int nextChar() {

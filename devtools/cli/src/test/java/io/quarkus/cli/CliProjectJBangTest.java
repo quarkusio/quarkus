@@ -44,11 +44,9 @@ public class CliProjectJBangTest {
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
-        Assertions.assertTrue(project.resolve("jbang").toFile().exists(),
-                "Wrapper should exist by default");
+        Assertions.assertTrue(project.resolve("jbang").toFile().exists(), "Wrapper should exist by default");
 
-        validateBasicIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
-                CreateProjectHelper.DEFAULT_ARTIFACT_ID,
+        validateBasicIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID, CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
 
         Path javaMain = validateJBangSourcePackage(project, ""); // no package name
@@ -69,22 +67,17 @@ public class CliProjectJBangTest {
         Path nested = workspaceRoot.resolve("cli-nested");
         project = nested.resolve("my-project");
 
-        List<String> configs = Arrays.asList("custom.app.config1=val1",
-                "custom.app.config2=val2", "lib.config=val3");
+        List<String> configs = Arrays.asList("custom.app.config1=val1", "custom.app.config2=val2", "lib.config=val3");
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "--verbose", "-e", "-B",
-                "--package-name=custom.pkg",
-                "--output-directory=" + nested,
-                "--app-config=" + String.join(",", configs),
-                "-x reactive-routes",
-                "silly:my-project:0.1.0");
+                "--package-name=custom.pkg", "--output-directory=" + nested,
+                "--app-config=" + String.join(",", configs), "-x reactive-routes", "silly:my-project:0.1.0");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
-        Assertions.assertTrue(project.resolve("jbang").toFile().exists(),
-                "Wrapper should exist by default");
+        Assertions.assertTrue(project.resolve("jbang").toFile().exists(), "Wrapper should exist by default");
 
         validateBasicIdentifiers(project, "silly", "my-project", "0.1.0");
         Path javaMain = validateJBangSourcePackage(project, "");
@@ -105,11 +98,9 @@ public class CliProjectJBangTest {
         Assertions.assertTrue(result.stdout.contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
 
-        Assertions.assertTrue(project.resolve("jbang").toFile().exists(),
-                "Wrapper should exist by default");
+        Assertions.assertTrue(project.resolve("jbang").toFile().exists(), "Wrapper should exist by default");
 
-        validateBasicIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID,
-                CreateProjectHelper.DEFAULT_ARTIFACT_ID,
+        validateBasicIdentifiers(project, CreateProjectHelper.DEFAULT_GROUP_ID, CreateProjectHelper.DEFAULT_ARTIFACT_ID,
                 CreateProjectHelper.DEFAULT_VERSION);
 
         Path javaMain = validateJBangSourcePackage(project, ""); // no package name
@@ -122,8 +113,8 @@ public class CliProjectJBangTest {
 
         result = CliDriver.invokeValidateDryRunBuild(project);
 
-        result = CliDriver.execute(project, "build", "-e", "-B", "--clean", "--verbose",
-                "-Dproperty=value1", "-Dproperty2=value2");
+        result = CliDriver.execute(project, "build", "-e", "-B", "--clean", "--verbose", "-Dproperty=value1",
+                "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
     }
@@ -134,34 +125,29 @@ public class CliProjectJBangTest {
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
 
         // 1 --clean --tests --native --offline
-        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
-                "--clean", "--tests", "--native", "--offline");
+        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run", "--clean", "--tests", "--native",
+                "--offline");
 
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("--fresh"),
-                "jbang command should specify '--fresh'\n" + result);
+        Assertions.assertTrue(result.stdout.contains("--fresh"), "jbang command should specify '--fresh'\n" + result);
 
         // presently no support for --tests or --no-tests
 
-        Assertions.assertTrue(result.stdout.contains("--native"),
-                "jbang command should specify --native\n" + result);
+        Assertions.assertTrue(result.stdout.contains("--native"), "jbang command should specify --native\n" + result);
 
-        Assertions.assertTrue(result.stdout.contains("--offline"),
-                "jbang command should specify --offline\n" + result);
+        Assertions.assertTrue(result.stdout.contains("--offline"), "jbang command should specify --offline\n" + result);
 
         // 2 --no-clean --no-tests
-        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run",
-                "--no-clean", "--no-tests");
+        result = CliDriver.execute(project, "build", "-e", "-B", "--dry-run", "--no-clean", "--no-tests");
 
         Assertions.assertFalse(result.stdout.contains("--fresh"),
                 "jbang command should not specify '--fresh'\n" + result);
 
         // presently no support for --tests or --no-tests
 
-        Assertions.assertFalse(result.stdout.contains("native"),
-                "jbang command should not specify native\n" + result);
+        Assertions.assertFalse(result.stdout.contains("native"), "jbang command should not specify native\n" + result);
 
         Assertions.assertFalse(result.stdout.contains("offline"),
                 "jbang command should not specify offline\n" + result);
@@ -169,8 +155,7 @@ public class CliProjectJBangTest {
 
     @Test
     public void testCreateArgJava17() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
-                "-e", "-B", "--verbose",
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "-e", "-B", "--verbose",
                 "--java", "17");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through
@@ -184,8 +169,7 @@ public class CliProjectJBangTest {
 
     @Test
     public void testCreateArgJava21() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
-                "-e", "-B", "--verbose",
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang", "-e", "-B", "--verbose",
                 "--java", "21");
 
         // We don't need to retest this, just need to make sure all the arguments were passed through

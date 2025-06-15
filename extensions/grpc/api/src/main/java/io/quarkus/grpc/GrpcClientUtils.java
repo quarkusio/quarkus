@@ -11,13 +11,16 @@ import io.quarkus.arc.ClientProxy;
 public class GrpcClientUtils {
 
     /**
-     * Attach headers to a gRPC client.
+     * Attach headers to a gRPC client. To make a call with headers, first invoke this method and then perform the
+     * intended call with the <b>returned</b> client
      *
-     * To make a call with headers, first invoke this method and then perform the intended call with the <b>returned</b> client
+     * @param client
+     *        any kind of gRPC client
+     * @param extraHeaders
+     *        headers to attach
+     * @param <T>
+     *        type of the client
      *
-     * @param client any kind of gRPC client
-     * @param extraHeaders headers to attach
-     * @param <T> type of the client
      * @return a client with headers attached
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -29,7 +32,8 @@ public class GrpcClientUtils {
         client = getProxiedObject(client);
 
         if (client instanceof AbstractStub) {
-            return (T) ((AbstractStub) client).withInterceptors(MetadataUtils.newAttachHeadersInterceptor(extraHeaders));
+            return (T) ((AbstractStub) client)
+                    .withInterceptors(MetadataUtils.newAttachHeadersInterceptor(extraHeaders));
         } else if (client instanceof MutinyClient) {
             MutinyClient mutinyClient = (MutinyClient) client;
             AbstractStub stub = mutinyClient.getStub()

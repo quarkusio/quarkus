@@ -43,8 +43,7 @@ public class InfinispanHealthCheck implements HealthCheck {
 
     public void configure(InfinispanClientsRuntimeConfig config) {
         Iterable<InstanceHandle<RemoteCacheManager>> handle = Arc.container()
-                .select(RemoteCacheManager.class, Any.Literal.INSTANCE)
-                .handles();
+                .select(RemoteCacheManager.class, Any.Literal.INSTANCE).handles();
 
         if (config.defaultInfinispanClient() != null) {
             RemoteCacheManager client = getClient(handle, null);
@@ -54,16 +53,17 @@ public class InfinispanHealthCheck implements HealthCheck {
             }
         }
 
-        config.namedInfinispanClients().entrySet().forEach(new Consumer<Map.Entry<String, InfinispanClientRuntimeConfig>>() {
-            @Override
-            public void accept(Map.Entry<String, InfinispanClientRuntimeConfig> namedInfinispanClientConfig) {
-                RemoteCacheManager client = getClient(handle, namedInfinispanClientConfig.getKey());
-                if (client != null) {
-                    checks.add(new InfinispanClientCheck(namedInfinispanClientConfig.getKey(), client,
-                            namedInfinispanClientConfig.getValue()));
-                }
-            }
-        });
+        config.namedInfinispanClients().entrySet()
+                .forEach(new Consumer<Map.Entry<String, InfinispanClientRuntimeConfig>>() {
+                    @Override
+                    public void accept(Map.Entry<String, InfinispanClientRuntimeConfig> namedInfinispanClientConfig) {
+                        RemoteCacheManager client = getClient(handle, namedInfinispanClientConfig.getKey());
+                        if (client != null) {
+                            checks.add(new InfinispanClientCheck(namedInfinispanClientConfig.getKey(), client,
+                                    namedInfinispanClientConfig.getValue()));
+                        }
+                    }
+                });
     }
 
     private class HealthInfo {
@@ -83,7 +83,8 @@ public class InfinispanHealthCheck implements HealthCheck {
         final RemoteCacheManager remoteCacheManager;
         final InfinispanClientRuntimeConfig config;
 
-        InfinispanClientCheck(String name, RemoteCacheManager remoteCacheManager, InfinispanClientRuntimeConfig config) {
+        InfinispanClientCheck(String name, RemoteCacheManager remoteCacheManager,
+                InfinispanClientRuntimeConfig config) {
             this.name = name;
             this.remoteCacheManager = remoteCacheManager;
             this.config = config;
@@ -97,9 +98,7 @@ public class InfinispanHealthCheck implements HealthCheck {
                     int cacheNamesCount = remoteCacheManager.getCacheNames().size();
                     return new HealthInfo("OK", servers, cacheNamesCount);
                 }
-            })
-                    .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                    .onItemOrFailure().transform(toResult(name));
+            }).runSubscriptionOn(Infrastructure.getDefaultExecutor()).onItemOrFailure().transform(toResult(name));
         }
     }
 
@@ -136,7 +135,8 @@ public class InfinispanHealthCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {
-        HealthCheckResponseBuilder builder = HealthCheckResponse.named("Infinispan cluster connection health check").up();
+        HealthCheckResponseBuilder builder = HealthCheckResponse.named("Infinispan cluster connection health check")
+                .up();
         List<Uni<Tuple2<String, HealthInfo>>> unis = new ArrayList<>();
         for (InfinispanClientCheck clientCheck : checks) {
             unis.add(clientCheck.get());
@@ -146,8 +146,7 @@ public class InfinispanHealthCheck implements HealthCheck {
             return builder.build();
         }
 
-        return Uni.combine().all().unis(unis)
-                .collectFailures() // We collect all failures to avoid partial responses.
+        return Uni.combine().all().unis(unis).collectFailures() // We collect all failures to avoid partial responses.
                 .combinedWith(new Function<List<?>, HealthCheckResponse>() {
                     @Override
                     public HealthCheckResponse apply(List<?> list) {
@@ -164,8 +163,7 @@ public class InfinispanHealthCheck implements HealthCheck {
                 builder.up().withData(tuple.getItem1() + ".servers", tuple.getItem2().servers)
                         .withData(tuple.getItem1() + ".caches-size", tuple.getItem2().cachesCount);
             } else {
-                builder.down()
-                        .withData(tuple.getItem1(), "reason: " + tuple.getItem2().state);
+                builder.down().withData(tuple.getItem1(), "reason: " + tuple.getItem2().state);
             }
         }
         return builder.build();

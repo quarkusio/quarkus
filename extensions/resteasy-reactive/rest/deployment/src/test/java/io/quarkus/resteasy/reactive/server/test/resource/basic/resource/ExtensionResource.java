@@ -36,8 +36,8 @@ public class ExtensionResource {
         List<Locale> languages = headers.getAcceptableLanguages();
         Assertions.assertEquals(1, languages.size(), "Wrong number of accepted languages");
         Assertions.assertEquals(new Locale("en", "us"), languages.get(0), "Wrong accepted language");
-        Assertions.assertEquals(MediaType.valueOf("text/html"),
-                headers.getAcceptableMediaTypes().get(0), "Wrong accepted language");
+        Assertions.assertEquals(MediaType.valueOf("text/html"), headers.getAcceptableMediaTypes().get(0),
+                "Wrong accepted language");
         return "html";
     }
 
@@ -48,8 +48,8 @@ public class ExtensionResource {
         List<Locale> languages = headers.getAcceptableLanguages();
         Assertions.assertEquals(1, languages.size(), "Wrong number of accepted languages");
         Assertions.assertEquals(new Locale("en", "us"), languages.get(0), "Wrong accepted language");
-        Assertions.assertEquals(MediaType.valueOf("text/plain"),
-                headers.getAcceptableMediaTypes().get(0), "Wrong accepted language");
+        Assertions.assertEquals(MediaType.valueOf("text/plain"), headers.getAcceptableMediaTypes().get(0),
+                "Wrong accepted language");
         return "plain";
     }
 }

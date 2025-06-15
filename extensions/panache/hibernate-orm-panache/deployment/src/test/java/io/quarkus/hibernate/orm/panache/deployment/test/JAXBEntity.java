@@ -23,10 +23,7 @@ public class JAXBEntity extends PanacheEntity {
     @XmlAttribute
     public String defaultAnnotatedProp;
 
-    @XmlElements({
-            @XmlElement(name = "array1"),
-            @XmlElement(name = "array2")
-    })
+    @XmlElements({ @XmlElement(name = "array1"), @XmlElement(name = "array2") })
     public String arrayAnnotatedProp;
 
     public String unAnnotatedProp;

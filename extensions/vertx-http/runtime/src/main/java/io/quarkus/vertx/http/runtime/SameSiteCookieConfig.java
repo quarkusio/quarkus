@@ -6,8 +6,8 @@ import io.vertx.core.http.CookieSameSite;
 /**
  * Configuration that allows for automatically setting the SameSite attribute on cookies
  * <p>
- * As some API's (Servlet, JAX-RS) don't current support this attribute this config allows
- * it to be set based on the cookie name pattern.
+ * As some API's (Servlet, JAX-RS) don't current support this attribute this config allows it to be set based on the
+ * cookie name pattern.
  */
 public interface SameSiteCookieConfig {
     /**
@@ -28,8 +28,8 @@ public interface SameSiteCookieConfig {
     boolean enableClientChecker();
 
     /**
-     * If this is true then the 'secure' attribute will automatically be sent on
-     * cookies with a SameSite attribute of None.
+     * If this is true then the 'secure' attribute will automatically be sent on cookies with a SameSite attribute of
+     * None.
      */
     @WithDefault("true")
     boolean addSecureForNone();

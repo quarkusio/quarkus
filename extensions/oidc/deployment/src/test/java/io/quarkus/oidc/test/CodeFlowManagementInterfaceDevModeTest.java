@@ -27,24 +27,20 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 public class CodeFlowManagementInterfaceDevModeTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(CodeFlowManagementRoute.class)
-                    .addAsResource(
-                            new StringAsset("""
-                                    quarkus.management.enabled=true
-                                    quarkus.management.auth.enabled=true
-                                    quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
-                                    quarkus.oidc.client-id=quarkus-web-app
-                                    quarkus.oidc.credentials.secret=secret
-                                    quarkus.oidc.application-type=web-app
-                                    quarkus.management.auth.permission.code-flow.paths=/code-flow
-                                    quarkus.management.auth.permission.code-flow.policy=authenticated
-                                    quarkus.management.auth.permission.code-flow.auth-mechanism=code
-                                    quarkus.log.category."org.htmlunit".level=ERROR
-                                    quarkus.log.file.enable=true
-                                    """),
-                            "application.properties"));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClasses(CodeFlowManagementRoute.class).addAsResource(new StringAsset("""
+                    quarkus.management.enabled=true
+                    quarkus.management.auth.enabled=true
+                    quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
+                    quarkus.oidc.client-id=quarkus-web-app
+                    quarkus.oidc.credentials.secret=secret
+                    quarkus.oidc.application-type=web-app
+                    quarkus.management.auth.permission.code-flow.paths=/code-flow
+                    quarkus.management.auth.permission.code-flow.policy=authenticated
+                    quarkus.management.auth.permission.code-flow.auth-mechanism=code
+                    quarkus.log.category."org.htmlunit".level=ERROR
+                    quarkus.log.file.enable=true
+                    """), "application.properties"));
 
     @Test
     public void testAuthenticatedHttpPermission() throws IOException {
@@ -75,10 +71,8 @@ public class CodeFlowManagementInterfaceDevModeTest {
     @Singleton
     public static class CodeFlowManagementRoute {
         void setupManagementRoutes(@Observes ManagementInterface managementInterface, IdentityProviderManager ipm) {
-            managementInterface.router().get("/code-flow").handler(rc -> QuarkusHttpUser
-                    .getSecurityIdentity(rc, ipm)
-                    .map(i -> i.getPrincipal().getName())
-                    .subscribe().with(rc::end, err -> rc.fail(500, err)));
+            managementInterface.router().get("/code-flow").handler(rc -> QuarkusHttpUser.getSecurityIdentity(rc, ipm)
+                    .map(i -> i.getPrincipal().getName()).subscribe().with(rc::end, err -> rc.fail(500, err)));
         }
     }
 }

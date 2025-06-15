@@ -44,20 +44,19 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
     @BuildStep(onlyIf = AppCDSRequired.class)
     public void requested(PackageConfig packageConfig, OutputTargetBuildItem outputTarget,
-            BuildProducer<JvmStartupOptimizerArchiveRequestedBuildItem> producer)
-            throws IOException {
+            BuildProducer<JvmStartupOptimizerArchiveRequestedBuildItem> producer) throws IOException {
         Path archiveDir = outputTarget.getOutputDirectory().resolve("jvmstartuparchive");
         IoUtils.createOrEmptyDir(archiveDir);
 
-        producer.produce(
-                new JvmStartupOptimizerArchiveRequestedBuildItem(outputTarget.getOutputDirectory().resolve("jvmstartuparchive"),
-                        packageConfig.jar().appcds().useAot() ? JvmStartupOptimizerArchiveType.AOT
-                                : JvmStartupOptimizerArchiveType.AppCDS));
+        producer.produce(new JvmStartupOptimizerArchiveRequestedBuildItem(
+                outputTarget.getOutputDirectory().resolve("jvmstartuparchive"),
+                packageConfig.jar().appcds().useAot() ? JvmStartupOptimizerArchiveType.AOT
+                        : JvmStartupOptimizerArchiveType.AppCDS));
     }
 
     @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
-    public void build(Optional<JvmStartupOptimizerArchiveRequestedBuildItem> requested,
-            JarBuildItem jarResult, OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
+    public void build(Optional<JvmStartupOptimizerArchiveRequestedBuildItem> requested, JarBuildItem jarResult,
+            OutputTargetBuildItem outputTarget, PackageConfig packageConfig,
             CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<JvmStartupOptimizerArchiveContainerImageBuildItem> jvmStartupOptimizerArchiveContainerImage,
             BuildProducer<JvmStartupOptimizerArchiveResultBuildItem> jvmStartupOptimizerArchive,
@@ -66,7 +65,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
             return;
         }
 
-        // to actually execute the commands needed to generate the AppCDS file, either the JVM in the container image will be used
+        // to actually execute the commands needed to generate the AppCDS file, either the JVM in the container image
+        // will be used
         // (if specified), or the JVM running the build
         String containerImage = determineContainerImage(packageConfig, jvmStartupOptimizerArchiveContainerImage);
         String javaBinPath = null;
@@ -86,8 +86,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         log.infof("Launching %s creation process.", archiveType);
         boolean isFastJar = packageConfig.jar().type() == FAST_JAR;
         if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
-            archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage,
-                    isFastJar);
+            archivePath = createAppCDSFromExit(jarResult, outputTarget, javaBinPath, containerImage, isFastJar);
         } else if (archiveType == JvmStartupOptimizerArchiveType.AOT) {
             archivePath = createAot(jarResult, outputTarget, javaBinPath, containerImage, isFastJar);
         } else {
@@ -102,18 +101,14 @@ public class JvmStartupOptimizerArchiveBuildStep {
         log.infof("%s archive successfully created at: '%s'.", archiveType, archivePath.toAbsolutePath().toString());
         if (containerImage == null) {
             if (archiveType == JvmStartupOptimizerArchiveType.AppCDS) {
-                log.infof(
-                        "To ensure they are loaded properly, " +
-                                "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' "
-                                +
-                                "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                log.infof("To ensure they are loaded properly, "
+                        + "run the application jar from its directory and also add the '-XX:SharedArchiveFile=app-cds.jsa' "
+                        + "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
                         System.getProperty("java.version"));
             } else {
-                log.infof(
-                        "To ensure they are loaded properly, " +
-                                "run the application jar from its directory and also add the '-XX:AOTCache=app.aot' "
-                                +
-                                "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
+                log.infof("To ensure they are loaded properly, "
+                        + "run the application jar from its directory and also add the '-XX:AOTCache=app.aot' "
+                        + "JVM flag.\nMoreover, make sure to use the exact same Java version (%s) to run the application as was used to build it.",
                         System.getProperty("java.version"));
             }
         }
@@ -171,9 +166,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
     /**
      * @return The path of the created app-cds.jsa file or null if the file was not created
      */
-    private Path createAppCDSFromExit(JarBuildItem jarResult,
-            OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
-            boolean isFastJar) {
+    private Path createAppCDSFromExit(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
+            String containerImage, boolean isFastJar) {
 
         ArchivePathsContainer appCDSPathsContainer = ArchivePathsContainer.appCDSFromQuarkusJar(jarResult.getPath());
         Path workingDirectory = appCDSPathsContainer.workingDirectory;
@@ -191,7 +185,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
         List<String> command;
         if (containerImage != null) {
             List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
-                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                    isFastJar
+                            ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
                             : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
             command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
             command.addAll(dockerRunCommand);
@@ -207,9 +202,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
             command.add(javaBinPath);
             command.addAll(javaArgs);
             if (isFastJar) {
-                command
-                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
-                                .getFileName().toString());
+                command.add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                        .getFileName().toString());
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
             }
@@ -221,14 +215,14 @@ public class JvmStartupOptimizerArchiveBuildStep {
     /**
      * @return The path of the created app.aot file or null if the file was not created
      */
-    private Path createAot(JarBuildItem jarResult,
-            OutputTargetBuildItem outputTarget, String javaBinPath, String containerImage,
-            boolean isFastJar) {
+    private Path createAot(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
+            String containerImage, boolean isFastJar) {
         // first we run java -XX:AOTMode=record -XX:AOTConfiguration=app.aotconf -jar ...
-        ArchivePathsContainer aotConfigPathContainers = ArchivePathsContainer.aotConfFromQuarkusJar(jarResult.getPath());
+        ArchivePathsContainer aotConfigPathContainers = ArchivePathsContainer
+                .aotConfFromQuarkusJar(jarResult.getPath());
         Path aotConfPath = launchArchiveCreateCommand(aotConfigPathContainers.workingDirectory,
-                aotConfigPathContainers.resultingFile,
-                recordAotConfCommand(jarResult, outputTarget, javaBinPath, containerImage, isFastJar, aotConfigPathContainers));
+                aotConfigPathContainers.resultingFile, recordAotConfCommand(jarResult, outputTarget, javaBinPath,
+                        containerImage, isFastJar, aotConfigPathContainers));
         if (aotConfPath == null) {
             // something went wrong, bail as the issue has already been logged
             return null;
@@ -241,8 +235,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
     }
 
-    private List<String> recordAotConfCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
-            String containerImage, boolean isFastJar,
+    private List<String> recordAotConfCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget,
+            String javaBinPath, String containerImage, boolean isFastJar,
             ArchivePathsContainer aotConfigPathContainers) {
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("-XX:AOTMode=record");
@@ -253,7 +247,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
         List<String> command;
         if (containerImage != null) {
             List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
-                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                    isFastJar
+                            ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
                             : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
             command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
             command.addAll(dockerRunCommand);
@@ -269,9 +264,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
             command.add(javaBinPath);
             command.addAll(javaArgs);
             if (isFastJar) {
-                command
-                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
-                                .getFileName().toString());
+                command.add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                        .getFileName().toString());
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
             }
@@ -279,9 +273,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
         return command;
     }
 
-    private List<String> createAotCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget, String javaBinPath,
-            String containerImage, boolean isFastJar,
-            Path aotConfPath) {
+    private List<String> createAotCommand(JarBuildItem jarResult, OutputTargetBuildItem outputTarget,
+            String javaBinPath, String containerImage, boolean isFastJar, Path aotConfPath) {
         List<String> javaArgs = new ArrayList<>();
         javaArgs.add("-XX:AOTMode=create");
         javaArgs.add("-XX:AOTConfiguration=" + aotConfPath.getFileName().toString());
@@ -291,7 +284,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
         List<String> command;
         if (containerImage != null) {
             List<String> dockerRunCommand = dockerRunCommands(outputTarget, containerImage,
-                    isFastJar ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
+                    isFastJar
+                            ? CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + JarResultBuildStep.DEFAULT_FAST_JAR_DIRECTORY_NAME
                             : CONTAINER_IMAGE_BASE_BUILD_DIR + "/" + jarResult.getPath().getFileName().toString());
             command = new ArrayList<>(dockerRunCommand.size() + 1 + javaArgs.size());
             command.addAll(dockerRunCommand);
@@ -307,9 +301,8 @@ public class JvmStartupOptimizerArchiveBuildStep {
             command.add(javaBinPath);
             command.addAll(javaArgs);
             if (isFastJar) {
-                command
-                        .add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
-                                .getFileName().toString());
+                command.add(jarResult.getLibraryDir().getParent().resolve(JarResultBuildStep.QUARKUS_RUN_JAR)
+                        .getFileName().toString());
             } else {
                 command.add(jarResult.getPath().getFileName().toString());
             }
@@ -324,12 +317,12 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
         int exitCode;
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(command)
-                    .directory(workingDirectory.toFile());
+            ProcessBuilder processBuilder = new ProcessBuilder(command).directory(workingDirectory.toFile());
             if (log.isDebugEnabled()) {
                 processBuilder.inheritIO();
             } else {
-                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD).redirectOutput(ProcessBuilder.Redirect.DISCARD);
+                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD)
+                        .redirectOutput(ProcessBuilder.Redirect.DISCARD);
             }
             exitCode = processBuilder.start().waitFor();
         } catch (Exception e) {

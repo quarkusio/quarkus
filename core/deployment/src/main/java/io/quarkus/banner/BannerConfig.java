@@ -14,8 +14,7 @@ public interface BannerConfig {
     String DEFAULT_BANNER_FILE = "default_banner.txt";
 
     /**
-     * The path of the banner (path relative to root of classpath)
-     * which could be provided by user
+     * The path of the banner (path relative to root of classpath) which could be provided by user
      */
     @WithDefault(DEFAULT_BANNER_FILE)
     String path();

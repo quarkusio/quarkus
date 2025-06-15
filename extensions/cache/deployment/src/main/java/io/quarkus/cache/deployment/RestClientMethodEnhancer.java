@@ -49,11 +49,11 @@ class RestClientMethodEnhancer implements BiFunction<String, ClassVisitor, Class
                         public void visitEnd() {
 
                             /*
-                             * If the method parameters at positions 0 and 2 are annotated with @CacheKey, the following code
-                             * will add the `@CacheKeyParameterPositions(value={0, 2})` annotation to the method.
+                             * If the method parameters at positions 0 and 2 are annotated with @CacheKey, the following
+                             * code will add the `@CacheKeyParameterPositions(value={0, 2})` annotation to the method.
                              */
-                            AnnotationVisitor annotation = super.visitAnnotation(CACHE_KEY_PARAMETER_POSITIONS_DESCRIPTOR,
-                                    true);
+                            AnnotationVisitor annotation = super.visitAnnotation(
+                                    CACHE_KEY_PARAMETER_POSITIONS_DESCRIPTOR, true);
                             annotation.visit("value", cacheKeyParameterPositions);
                             annotation.visitEnd();
                             super.visitEnd();

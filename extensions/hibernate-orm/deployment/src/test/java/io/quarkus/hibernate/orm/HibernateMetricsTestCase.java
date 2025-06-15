@@ -26,9 +26,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HibernateMetricsTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
-            .addAsResource("application-metrics-enabled.properties", "application.properties")
-            .addClasses(DummyEntity.class));
+    static QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource("application-metrics-enabled.properties", "application.properties")
+                    .addClasses(DummyEntity.class));
 
     @Entity(name = "DummyEntity")
     static class DummyEntity {
@@ -59,9 +59,10 @@ public class HibernateMetricsTestCase {
                 new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
         assertEquals(0L, getCounterValueOrNull("hibernate.entities.inserts",
                 new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)));
-        assertEquals(0L, getCounterValueOrNull("hibernate.cache.query.requests",
-                new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
-                new Tag("result", "miss")));
+        assertEquals(0L,
+                getCounterValueOrNull("hibernate.cache.query.requests",
+                        new Tag("entityManagerFactory", PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME),
+                        new Tag("result", "miss")));
         Arc.container().requestContext().activate();
         try {
             DummyEntity entity = new DummyEntity();

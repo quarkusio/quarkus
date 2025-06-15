@@ -71,7 +71,7 @@ public class MultipartParser {
          */
         private final byte[] boundary;
 
-        //0=preamble
+        // 0=preamble
         private int state = 0;
         private int subState = Integer.MAX_VALUE; // used for preamble parsing
         private ByteArrayOutputStream currentString = null;
@@ -122,7 +122,7 @@ public class MultipartParser {
             while (buffer.hasRemaining()) {
                 final byte b = buffer.get();
                 if (subState >= 0) {
-                    //handle the case of no preamble. In this case there is no CRLF
+                    // handle the case of no preamble. In this case there is no CRLF
                     if (subState == Integer.MAX_VALUE) {
                         if (boundary[2] == b) {
                             subState = 2;
@@ -147,7 +147,7 @@ public class MultipartParser {
                 } else if (subState == -2) {
                     if (b == LF) {
                         subState = 0;
-                        state = 1;//preamble is done
+                        state = 1;// preamble is done
                         headers = new CaseInsensitiveMap<String>();
                         return;
                     } else {
@@ -157,7 +157,8 @@ public class MultipartParser {
             }
         }
 
-        private void headerName(final ByteBuffer buffer) throws MalformedMessageException, UnsupportedEncodingException {
+        private void headerName(final ByteBuffer buffer)
+                throws MalformedMessageException, UnsupportedEncodingException {
             while (buffer.hasRemaining()) {
                 final byte b = buffer.get();
                 if (b == ':') {
@@ -183,7 +184,7 @@ public class MultipartParser {
                     state = 3;
                     subState = 0;
                     partHandler.beginPart(headers);
-                    //select the appropriate encoding
+                    // select the appropriate encoding
                     String encoding = headers.getFirst(CONTENT_TRANSFER_ENCODING);
                     if (encoding == null) {
                         encodingHandler = new IdentityEncoding();
@@ -208,28 +209,29 @@ public class MultipartParser {
             }
         }
 
-        private void headerValue(final ByteBuffer buffer) throws MalformedMessageException, UnsupportedEncodingException {
+        private void headerValue(final ByteBuffer buffer)
+                throws MalformedMessageException, UnsupportedEncodingException {
             while (buffer.hasRemaining()) {
                 final byte b = buffer.get();
                 if (subState == 2) {
-                    if (b == CR) { //end of headers section
-                        headers.put(currentHeaderName.trim(),
-                                Collections.singletonList(new String(currentString.toByteArray(), requestCharset).trim()));
-                        //set state for headerName to verify end of headers section
+                    if (b == CR) { // end of headers section
+                        headers.put(currentHeaderName.trim(), Collections
+                                .singletonList(new String(currentString.toByteArray(), requestCharset).trim()));
+                        // set state for headerName to verify end of headers section
                         state = 1;
-                        subState = 1; //CR already encountered
+                        subState = 1; // CR already encountered
                         currentString = null;
                         return;
-                    } else if (b == SP || b == HTAB) { //multi-line header
+                    } else if (b == SP || b == HTAB) { // multi-line header
                         currentString.write(b);
                         subState = 0;
-                    } else { //next header name
-                        headers.put(currentHeaderName.trim(),
-                                Collections.singletonList(new String(currentString.toByteArray(), requestCharset).trim()));
-                        //set state for headerName to collect next header's name
+                    } else { // next header name
+                        headers.put(currentHeaderName.trim(), Collections
+                                .singletonList(new String(currentString.toByteArray(), requestCharset).trim()));
+                        // set state for headerName to collect next header's name
                         state = 1;
                         subState = 0;
-                        //start name collection for headerName to finish
+                        // start name collection for headerName to finish
                         currentString = new ByteArrayOutputStream();
                         currentString.write(b);
                         return;
@@ -257,11 +259,11 @@ public class MultipartParser {
                 final byte b = buffer.get();
                 if (subState >= 0) {
                     if (b == boundary[subState]) {
-                        //if we have a potential boundary match
+                        // if we have a potential boundary match
                         subState++;
                         if (subState == boundary.length) {
                             startingSubState = 0;
-                            //we have our data
+                            // we have our data
                             ByteBuffer retBuffer = buffer.duplicate();
                             retBuffer.position(pos);
 
@@ -271,16 +273,18 @@ public class MultipartParser {
                             subState = -1;
                         }
                     } else if (b == boundary[0]) {
-                        //we started half way through a boundary, but it turns out we did not actually meet the boundary condition
-                        //so we call the part handler with our copy of the boundary data
+                        // we started half way through a boundary, but it turns out we did not actually meet the
+                        // boundary condition
+                        // so we call the part handler with our copy of the boundary data
                         if (startingSubState > 0) {
                             encodingHandler.handle(partHandler, ByteBuffer.wrap(boundary, 0, startingSubState));
                             startingSubState = 0;
                         }
                         subState = 1;
                     } else {
-                        //we started half way through a boundary, but it turns out we did not actually meet the boundary condition
-                        //so we call the part handler with our copy of the boundary data
+                        // we started half way through a boundary, but it turns out we did not actually meet the
+                        // boundary condition
+                        // so we call the part handler with our copy of the boundary data
                         if (startingSubState > 0) {
                             encodingHandler.handle(partHandler, ByteBuffer.wrap(boundary, 0, startingSubState));
                             startingSubState = 0;
@@ -295,7 +299,7 @@ public class MultipartParser {
                     }
                 } else if (subState == -2) {
                     if (b == LF) {
-                        //ok, we have our data
+                        // ok, we have our data
                         subState = 0;
                         state = 1;
                         headers = new CaseInsensitiveMap<String>();
@@ -307,21 +311,21 @@ public class MultipartParser {
                     }
                 } else if (subState == -3) {
                     if (b == DASH) {
-                        state = -1; //we are done
+                        state = -1; // we are done
                         return;
                     } else {
                         subState = -1;
                     }
                 }
             }
-            //handle the data we read so far
+            // handle the data we read so far
             ByteBuffer retBuffer = buffer.duplicate();
             retBuffer.position(pos);
             if (subState == 0) {
-                //if we end partially through a boundary we do not handle the data
+                // if we end partially through a boundary we do not handle the data
                 encodingHandler.handle(partHandler, retBuffer);
             } else if (retBuffer.remaining() > subState && subState > 0) {
-                //we have some data to handle, and the end of the buffer might be a boundary match
+                // we have some data to handle, and the end of the buffer might be a boundary match
                 retBuffer.limit(retBuffer.limit() - subState);
                 encodingHandler.handle(partHandler, retBuffer);
             }
@@ -376,15 +380,15 @@ public class MultipartParser {
                     if (equalsSeen) {
                         if (firstCharacter == 0) {
                             if (b == '\n' || b == '\r') {
-                                //soft line break
-                                //ignore
+                                // soft line break
+                                // ignore
                                 equalsSeen = false;
                             } else {
                                 firstCharacter = b;
                             }
                         } else {
                             int result = Character.digit((char) firstCharacter, 16);
-                            result <<= 4; //shift it 4 bytes and then add the next value to the end
+                            result <<= 4; // shift it 4 bytes and then add the next value to the end
                             result += Character.digit((char) b, 16);
                             buf.put((byte) result);
                             equalsSeen = false;

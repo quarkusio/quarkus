@@ -25,7 +25,9 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resource
+ *
  * @tpChapter Integration tests
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Generic Entity Test")
@@ -34,16 +36,15 @@ public class GenericEntityTest {
     static Client client;
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, GenericEntityResource.class, GenericEntityDoubleWriter.class,
-                            GenericEntityFloatWriter.class, GenericEntityIntegerServerMessageBodyWriter.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class, GenericEntityResource.class, GenericEntityDoubleWriter.class,
+                    GenericEntityFloatWriter.class, GenericEntityIntegerServerMessageBodyWriter.class);
+            return war;
+        }
+    });
 
     @BeforeAll
     public static void init() {
@@ -62,6 +63,7 @@ public class GenericEntityTest {
 
     /**
      * @tpTestDetails Resource returning GenericEntity with custom MessageBodyWriter returning double values
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -80,6 +82,7 @@ public class GenericEntityTest {
 
     /**
      * @tpTestDetails Resource returning GenericEntity with custom MessageBodyWriter returning float values
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

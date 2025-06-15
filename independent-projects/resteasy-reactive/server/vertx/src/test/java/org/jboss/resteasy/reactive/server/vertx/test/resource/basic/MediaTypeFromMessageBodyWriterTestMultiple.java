@@ -25,8 +25,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * @tpSubChapter Resteasy server
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Test that MessageBodyWriters can be consulted for media type
+ *
  * @tpSince RESTEasy 3.1.3.Final
  */
 @DisplayName("Media Type From Message Body Writer Test")
@@ -74,16 +77,15 @@ public class MediaTypeFromMessageBodyWriterTestMultiple {
         accepts.add("text/plain");
     }
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, MediaTypeFromMessageBodyWriterListAsText.class,
-                            MediaTypeFromMessageBodyWriterListAsXML.class, MediaTypeFromMessageBodyWriterResource.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class, MediaTypeFromMessageBodyWriterListAsText.class,
+                    MediaTypeFromMessageBodyWriterListAsXML.class, MediaTypeFromMessageBodyWriterResource.class);
+            return war;
+        }
+    });
 
     @BeforeEach
     public void init() {
@@ -100,11 +102,13 @@ public class MediaTypeFromMessageBodyWriterTestMultiple {
     }
 
     private String generateURLUserCase(String path) {
-        return PortProviderUtil.generateURL(path, MediaTypeFromMessageBodyWriterTestMultiple.class.getSimpleName() + "_single");
+        return PortProviderUtil.generateURL(path,
+                MediaTypeFromMessageBodyWriterTestMultiple.class.getSimpleName() + "_single");
     }
 
     /**
      * @tpTestDetails Test that MessageBodyWriters can be consulted for media type
+     *
      * @tpSince RESTEasy 3.1.3.Final
      */
     @Test
@@ -115,8 +119,8 @@ public class MediaTypeFromMessageBodyWriterTestMultiple {
         for (Target tgt : tgts) {
             for (String accept : accepts) {
                 if (tgt.queryName != null) {
-                    response = base.path(tgt.path).queryParam(tgt.queryName, tgt.queryValue).request().header("Accept", accept)
-                            .get();
+                    response = base.path(tgt.path).queryParam(tgt.queryName, tgt.queryValue).request()
+                            .header("Accept", accept).get();
                 } else {
                     response = base.path(tgt.path).request().header("Accept", accept).get();
                 }

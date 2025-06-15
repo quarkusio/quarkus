@@ -19,29 +19,22 @@ public class SmallRyeMetricsDevUiProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     CardPageBuildItem create(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            SmallRyeMetricsConfig config,
-            LaunchModeBuildItem launchModeBuildItem,
-            SmallRyeMetricsRecorder unused) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, SmallRyeMetricsConfig config,
+            LaunchModeBuildItem launchModeBuildItem, SmallRyeMetricsRecorder unused) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
-        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(),
-                managementBuildTimeConfig, launchModeBuildItem);
-        pageBuildItem.addPage(Page.externalPageBuilder("All Metrics")
-                .icon("font-awesome-solid:chart-line")
-                .url(path));
+        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(), managementBuildTimeConfig,
+                launchModeBuildItem);
+        pageBuildItem.addPage(Page.externalPageBuilder("All Metrics").icon("font-awesome-solid:chart-line").url(path));
 
-        pageBuildItem.addPage(Page.externalPageBuilder("Vendor Metrics")
-                .icon("font-awesome-solid:chart-line")
-                .url(path + "/vendor"));
+        pageBuildItem.addPage(
+                Page.externalPageBuilder("Vendor Metrics").icon("font-awesome-solid:chart-line").url(path + "/vendor"));
 
-        pageBuildItem.addPage(Page.externalPageBuilder("Application Metrics")
-                .icon("font-awesome-solid:chart-line")
+        pageBuildItem.addPage(Page.externalPageBuilder("Application Metrics").icon("font-awesome-solid:chart-line")
                 .url(path + "/application"));
 
-        pageBuildItem.addPage(Page.externalPageBuilder("Base Metrics")
-                .icon("font-awesome-solid:chart-line")
-                .url(path + "/base"));
+        pageBuildItem.addPage(
+                Page.externalPageBuilder("Base Metrics").icon("font-awesome-solid:chart-line").url(path + "/base"));
 
         return pageBuildItem;
     }

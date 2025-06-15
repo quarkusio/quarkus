@@ -42,19 +42,15 @@ public class SslServerWithPemTest {
     URL url;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
-                    .addAsResource(new StringAsset((configuration)), "application.properties")
-                    .addAsResource(new File("target/certs/ssl-test.key"), "server-key.pem")
-                    .addAsResource(new File("target/certs/ssl-test.crt"), "server-cert.pem"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyBean.class).addAsResource(new StringAsset((configuration)), "application.properties")
+            .addAsResource(new File("target/certs/ssl-test.key"), "server-key.pem")
+            .addAsResource(new File("target/certs/ssl-test.crt"), "server-cert.pem"));
 
     @Test
     public void testSslServerWithPem() {
-        RestAssured
-                .given()
-                .trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret")
-                .get(url).then().statusCode(200).body(is("ssl"));
+        RestAssured.given().trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret").get(url).then()
+                .statusCode(200).body(is("ssl"));
     }
 
     @ApplicationScoped

@@ -26,61 +26,37 @@ public class SyncValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoutes.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyRoutes.class));
 
     @Test
     public void test() {
         // Valid result
-        get("/valid").then().statusCode(200)
-                .body("name", is("luke"))
-                .body("welcome", is("hello"));
+        get("/valid").then().statusCode(200).body("name", is("luke")).body("welcome", is("hello"));
 
         // Valid parameter
-        given()
-                .queryParam("name", "neo")
-                .when()
-                .get("/query")
-                .then().statusCode(200);
+        given().queryParam("name", "neo").when().get("/query").then().statusCode(200);
 
         // Invalid parameter
-        given()
-                .when()
-                .get("/invalid-param")
-                .then()
-                .statusCode(400)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(400))
+        given().when().get("/invalid-param").then().statusCode(400)
+                .body("title", containsString("Constraint Violation")).body("status", is(400))
                 .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
 
         // Invalid parameter - HTML output
-        get("/invalid-param-html")
-                .then()
+        get("/invalid-param-html").then()
                 // the return value is ok but the param is invalid
-                .statusCode(400)
-                .body(containsString("ConstraintViolation"), is(not(emptyString())));
+                .statusCode(400).body(containsString("ConstraintViolation"), is(not(emptyString())));
 
         // JSON output
-        given()
-                .header("Accept", "application/json")
-                .when()
-                .get("/invalid")
-                .then()
-                .statusCode(500)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(500))
+        given().header("Accept", "application/json").when().get("/invalid").then().statusCode(500)
+                .body("title", containsString("Constraint Violation")).body("status", is(500))
                 .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
 
-        given()
-                .header("Accept", "application/json")
-                .when()
-                .get("/invalid2").then().statusCode(500)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(500))
+        given().header("Accept", "application/json").when().get("/invalid2").then().statusCode(500)
+                .body("title", containsString("Constraint Violation")).body("status", is(500))
                 .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", anyOf(containsString("name"), containsString("welcome")))
                 .body("violations[0].message", is(not(emptyString())))
@@ -88,26 +64,15 @@ public class SyncValidationTest {
                 .body("violations[1].message", is(not(emptyString())));
 
         // Input parameter violation - JSON
-        given()
-                .header("Accept", "application/json")
-                .queryParam("name", "doesNotMatch")
-                .when()
-                .get("/query")
-                .then().statusCode(400)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(400))
+        given().header("Accept", "application/json").queryParam("name", "doesNotMatch").when().get("/query").then()
+                .statusCode(400).body("title", containsString("Constraint Violation")).body("status", is(400))
                 .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
 
         // Input parameter violation - JSON
-        given()
-                .queryParam("name", "doesNotMatch")
-                .when()
-                .get("/query")
-                .then().statusCode(400)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(400))
+        given().queryParam("name", "doesNotMatch").when().get("/query").then().statusCode(400)
+                .body("title", containsString("Constraint Violation")).body("status", is(400))
                 .body("detail", containsString("validation constraint violations"));
     }
 

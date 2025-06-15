@@ -28,8 +28,8 @@ public class TwoConnectorsAttachmentOutgoingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyDummyConnector.class, MySecondDummyConnector.class, MySource.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyDummyConnector.class,
+                    MySecondDummyConnector.class, MySource.class));
 
     @Inject
     @Connector("dummy")
@@ -41,12 +41,8 @@ public class TwoConnectorsAttachmentOutgoingTest {
 
     @Test
     public void testAutoAttachmentOfOutgoingChannel() {
-        await()
-                .pollDelay(Duration.ofMillis(100))
-                .until(() -> connector.getList().isEmpty());
-        await()
-                .pollDelay(Duration.ofMillis(100))
-                .until(() -> connector2.getList().isEmpty());
+        await().pollDelay(Duration.ofMillis(100)).until(() -> connector.getList().isEmpty());
+        await().pollDelay(Duration.ofMillis(100)).until(() -> connector2.getList().isEmpty());
     }
 
     @ApplicationScoped

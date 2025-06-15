@@ -530,8 +530,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
 
                     @Override
                     public Optional<Duration> cleanUpTimerInterval() {
-                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL_CLEAN_UP_TIMER_INTERVAL,
-                                true);
+                        invocationsRecorder.put(ConfigMappingMethods.LOGOUT_BACK_CHANNEL_CLEAN_UP_TIMER_INTERVAL, true);
                         return Optional.empty();
                     }
 
@@ -956,20 +955,22 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                         return new Provider() {
                             @Override
                             public Optional<String> name() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_NAME, true);
-                                return Optional.empty();
-                            }
-
-                            @Override
-                            public Optional<String> keyringName() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_KEYRING_NAME,
+                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_NAME,
                                         true);
                                 return Optional.empty();
                             }
 
                             @Override
+                            public Optional<String> keyringName() {
+                                invocationsRecorder.put(
+                                        ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_KEYRING_NAME, true);
+                                return Optional.empty();
+                            }
+
+                            @Override
                             public Optional<String> key() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_KEY, true);
+                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_CLIENT_SECRET_PROVIDER_KEY,
+                                        true);
                                 return Optional.empty();
                             }
                         };
@@ -1011,14 +1012,15 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                         return new Provider() {
                             @Override
                             public Optional<String> name() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SECRET_PROVIDER_NAME, true);
+                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SECRET_PROVIDER_NAME,
+                                        true);
                                 return Optional.empty();
                             }
 
                             @Override
                             public Optional<String> keyringName() {
-                                invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_SECRET_PROVIDER_KEYRING_NAME,
-                                        true);
+                                invocationsRecorder
+                                        .put(ConfigMappingMethods.CREDENTIALS_JWT_SECRET_PROVIDER_KEYRING_NAME, true);
                                 return Optional.empty();
                             }
 

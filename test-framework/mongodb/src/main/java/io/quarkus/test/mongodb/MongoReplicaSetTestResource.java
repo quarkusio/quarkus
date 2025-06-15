@@ -39,11 +39,7 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
     private List<TransitionWalker.ReachedState<RunningMongodProcess>> startedServers = Collections.emptyList();
 
     private static Net net(String hostName, int port) {
-        return Net.builder()
-                .from(Net.defaults())
-                .bindIp(hostName)
-                .port(port)
-                .build();
+        return Net.builder().from(Net.defaults()).bindIp(hostName).port(port).build();
     }
 
     public static String setReplicaSet(Map<String, String> initArgs) {
@@ -52,7 +48,8 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
 
     private static List<TransitionWalker.ReachedState<RunningMongodProcess>> startReplicaSet(
             IFeatureAwareVersion version, int basePort, String replicaSet) {
-        TransitionWalker.ReachedState<RunningMongodProcess> firstStarted = mongodWithPort(basePort, replicaSet).start(version);
+        TransitionWalker.ReachedState<RunningMongodProcess> firstStarted = mongodWithPort(basePort, replicaSet)
+                .start(version);
         try {
             TransitionWalker.ReachedState<RunningMongodProcess> secondStarted = mongodWithPort(basePort + 1, replicaSet)
                     .start(version);
@@ -61,8 +58,8 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
                 ServerAddress firstAddress = firstStarted.current().getServerAddress();
                 ServerAddress secondAddress = secondStarted.current().getServerAddress();
                 initializeReplicaSet(Arrays.asList(firstAddress, secondAddress), replicaSet);
-                LOGGER.infof("ReplicaSet initialized with servers - firstServer: %s , secondServer: %s",
-                        firstAddress, secondAddress);
+                LOGGER.infof("ReplicaSet initialized with servers - firstServer: %s , secondServer: %s", firstAddress,
+                        secondAddress);
                 return Arrays.asList(secondStarted, firstStarted);
             } catch (Exception ex) {
                 LOGGER.error("Shutting down second Mongo Server.");
@@ -80,15 +77,15 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
     private static Mongod mongodWithPort(int port, String replicaSet) {
         return Mongod.instance().withNet(Start.to(Net.class).initializedWith(net("localhost", port)))
                 .withProcessOutput(Start.to(ProcessOutput.class).initializedWith(ProcessOutput.silent()))
-                .withMongodArguments(Start.to(MongodArguments.class).initializedWith(
-                        MongodArguments.defaults().withArgs(Map.of("--replSet", replicaSet)).withSyncDelay(10)
-                                .withUseSmallFiles(true).withUseNoJournal(false)));
+                .withMongodArguments(Start.to(MongodArguments.class)
+                        .initializedWith(MongodArguments.defaults().withArgs(Map.of("--replSet", replicaSet))
+                                .withSyncDelay(10).withUseSmallFiles(true).withUseNoJournal(false)));
     }
 
     private static void initializeReplicaSet(final List<ServerAddress> mongodConfigList, String replicaSet)
             throws UnknownHostException {
-        String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost()
-                + ":" + mongodConfigList.get(0).getPort();
+        String arbitrerAddress = "mongodb://" + mongodConfigList.get(0).getHost() + ":"
+                + mongodConfigList.get(0).getPort();
         MongoClientSettings mo = MongoClientSettings.builder()
                 .applyConnectionString(new ConnectionString(arbitrerAddress)).build();
 
@@ -126,7 +123,8 @@ public class MongoReplicaSetTestResource implements QuarkusTestResourceLifecycle
         List<Document> members = new ArrayList<>();
         int i = 0;
         for (ServerAddress mongoConfig : configList) {
-            members.add(new Document().append("_id", i++).append("host", mongoConfig.getHost() + ":" + mongoConfig.getPort()));
+            members.add(new Document().append("_id", i++).append("host",
+                    mongoConfig.getHost() + ":" + mongoConfig.getPort()));
         }
 
         replicaSetSetting.append("members", members);

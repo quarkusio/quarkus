@@ -64,8 +64,7 @@ public class BulkheadConfigTest {
         executor.submit(() -> bean.waitingTaskQueue(barrier1));
         executor.submit(() -> bean.waitingTaskQueue(barrier2));
         Thread.sleep(500);
-        assertThatThrownBy(() -> bean.waitingTaskQueue(null).get())
-                .isExactlyInstanceOf(ExecutionException.class)
+        assertThatThrownBy(() -> bean.waitingTaskQueue(null).get()).isExactlyInstanceOf(ExecutionException.class)
                 .hasCauseExactlyInstanceOf(BulkheadException.class);
 
         barrier1.complete(null);

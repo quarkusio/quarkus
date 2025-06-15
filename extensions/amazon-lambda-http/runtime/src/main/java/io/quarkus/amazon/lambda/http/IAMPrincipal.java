@@ -5,10 +5,8 @@ import java.security.Principal;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 
 /**
- * Used if IAM is used for authentication.
- *
- * Will only be allocated if requestContext.authorizer.iam.userId is set
- * in the http event sent by API Gateway
+ * Used if IAM is used for authentication. Will only be allocated if requestContext.authorizer.iam.userId is set in the
+ * http event sent by API Gateway
  */
 public class IAMPrincipal implements Principal {
     private String name;

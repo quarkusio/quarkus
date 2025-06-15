@@ -10,9 +10,8 @@ import io.restassured.RestAssured;
 public class SubresourceLocatorTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PingResource.class, PingsResource.class, MyService.class, SuperPingResource.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(PingResource.class, PingsResource.class, MyService.class, SuperPingResource.class));
 
     @Test
     public void testSubresourceLocator() {

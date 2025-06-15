@@ -28,8 +28,8 @@ public class DisabledConnectorAttachmentOutgoingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyDummyConnector.class, MySource.class))
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(MyDummyConnector.class, MySource.class))
             .overrideConfigKey("quarkus.messaging.auto-connector-attachment", "false");
 
     @Inject
@@ -41,8 +41,7 @@ public class DisabledConnectorAttachmentOutgoingTest {
 
     @Test
     public void testAutoAttachmentOfOutgoingChannel() {
-        assertThatThrownBy(() -> source.generate())
-                .hasCauseInstanceOf(DefinitionException.class);
+        assertThatThrownBy(() -> source.generate()).hasCauseInstanceOf(DefinitionException.class);
     }
 
     @ApplicationScoped

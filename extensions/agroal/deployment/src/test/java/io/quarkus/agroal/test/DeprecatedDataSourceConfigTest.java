@@ -13,11 +13,10 @@ public class DeprecatedDataSourceConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-deprecated-config.properties")
-            .assertException(e -> {
+            .withConfigurationResource("application-deprecated-config.properties").assertException(e -> {
                 assertThat(e).isInstanceOf(ConfigurationException.class);
-                assertThat(e)
-                        .hasMessageStartingWith("quarkus.datasource.url and quarkus.datasource.driver have been deprecated");
+                assertThat(e).hasMessageStartingWith(
+                        "quarkus.datasource.url and quarkus.datasource.driver have been deprecated");
             });
 
     @Test

@@ -43,10 +43,8 @@ public class ObservabilityProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
-    void preAuthFailureFilter(Capabilities capabilities,
-            Optional<MetricsCapabilityBuildItem> metricsCapability,
-            ObservabilityIntegrationRecorder recorder,
-            ResteasyReactiveDeploymentBuildItem deployment,
+    void preAuthFailureFilter(Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
+            ObservabilityIntegrationRecorder recorder, ResteasyReactiveDeploymentBuildItem deployment,
             BuildProducer<FilterBuildItem> filterProducer,
             BuildProducer<ObservabilityIntegrationBuildItem> observabilityIntegrationProducer) {
         boolean integrationNeeded = integrationNeeded(capabilities, metricsCapability);
@@ -54,16 +52,15 @@ public class ObservabilityProcessor {
             return;
         }
 
-        filterProducer.produce(FilterBuildItem.ofPreAuthenticationFailureHandler(
-                recorder.preAuthFailureHandler(deployment.getDeployment())));
+        filterProducer.produce(FilterBuildItem
+                .ofPreAuthenticationFailureHandler(recorder.preAuthFailureHandler(deployment.getDeployment())));
         observabilityIntegrationProducer.produce(new ObservabilityIntegrationBuildItem());
     }
 
     private boolean integrationNeeded(Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsCapability) {
-        return capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
-                (metricsCapability.isPresent()
-                        && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER));
+        return capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) || (metricsCapability.isPresent()
+                && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER));
     }
 
 }

@@ -48,35 +48,23 @@ class ConnectionToReplicaSetTest extends MongoWithReplicasTestBase {
         String cs = "mongodb://localhost:27018,localhost:27019";
         client = new ReactiveMongoClientImpl(MongoClients.create(cs));
         List<Throwable> failures = new CopyOnWriteArrayList<>();
-        client.watch().onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
+        client.watch().onFailure().invoke(failures::add).onItem().ignoreAsUni().subscribeAsCompletionStage();
+        client.watch(Document.class).onFailure().invoke(failures::add).onItem().ignoreAsUni()
                 .subscribeAsCompletionStage();
-        client.watch(Document.class).onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
+        client.watch(Collections.emptyList()).onFailure().invoke(failures::add).onItem().ignoreAsUni()
                 .subscribeAsCompletionStage();
-        client.watch(Collections.emptyList()).onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
+        client.watch(Collections.emptyList(), Document.class).onFailure().invoke(failures::add).onItem().ignoreAsUni()
                 .subscribeAsCompletionStage();
-        client.watch(Collections.emptyList(), Document.class).onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
-                .subscribeAsCompletionStage();
-        client.watch(Collections.emptyList(), Document.class, null).onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
-                .subscribeAsCompletionStage();
+        client.watch(Collections.emptyList(), Document.class, null).onFailure().invoke(failures::add).onItem()
+                .ignoreAsUni().subscribeAsCompletionStage();
         client.watch(Collections.emptyList(), Document.class,
-                new ChangeStreamOptions().maxAwaitTime(1, TimeUnit.SECONDS)).onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
+                new ChangeStreamOptions().maxAwaitTime(1, TimeUnit.SECONDS)).onFailure().invoke(failures::add).onItem()
+                .ignoreAsUni().subscribeAsCompletionStage();
+        client.watch(new ChangeStreamOptions().fullDocument(FullDocument.DEFAULT)).onFailure().invoke(failures::add)
+                .onItem().ignoreAsUni().subscribeAsCompletionStage();
+        client.watch((ChangeStreamOptions) null).onFailure().invoke(failures::add).onItem().ignoreAsUni()
                 .subscribeAsCompletionStage();
-        client.watch(new ChangeStreamOptions().fullDocument(FullDocument.DEFAULT))
-                .onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
-                .subscribeAsCompletionStage();
-        client.watch((ChangeStreamOptions) null).onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
-                .subscribeAsCompletionStage();
-        client.watch(Document.class)
-                .onFailure().invoke(failures::add)
-                .onItem().ignoreAsUni()
+        client.watch(Document.class).onFailure().invoke(failures::add).onItem().ignoreAsUni()
                 .subscribeAsCompletionStage();
         assertThat(failures).isEmpty();
     }

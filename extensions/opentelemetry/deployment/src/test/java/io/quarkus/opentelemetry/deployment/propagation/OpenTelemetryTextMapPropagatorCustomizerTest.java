@@ -34,15 +34,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OpenTelemetryTextMapPropagatorCustomizerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TestSpanExporter.class)
-                    .addClass(TestSpanExporterProvider.class)
-                    .addClass(TestTextMapPropagatorCustomizer.class)
-                    .addAsResource("resource-config/application-no-metrics.properties", "application.properties")
-                    .addAsResource(
-                            "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClass(TestSpanExporter.class).addClass(TestSpanExporterProvider.class)
+            .addClass(TestTextMapPropagatorCustomizer.class)
+            .addAsResource("resource-config/application-no-metrics.properties", "application.properties").addAsResource(
+                    "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"));
     @Inject
     TestSpanExporter spanExporter;
 
@@ -62,9 +59,11 @@ public class OpenTelemetryTextMapPropagatorCustomizerTest {
         SpanData serverSpan = getSpanByKindAndParentId(spans, SpanKind.SERVER, clientSpan.getSpanId());
         assertEquals("GET /hello", serverSpan.getName());
 
-        assertThat(TestTextMapPropagatorCustomizer.PROPAGATORS_USED).containsOnly(W3CTraceContextPropagator.class.getName());
+        assertThat(TestTextMapPropagatorCustomizer.PROPAGATORS_USED)
+                .containsOnly(W3CTraceContextPropagator.class.getName());
 
-        assertThat(TestTextMapPropagatorCustomizer.PROPAGATORS_DISCARDED).containsOnly(W3CBaggagePropagator.class.getName());
+        assertThat(TestTextMapPropagatorCustomizer.PROPAGATORS_DISCARDED)
+                .containsOnly(W3CBaggagePropagator.class.getName());
 
     }
 

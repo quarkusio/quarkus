@@ -11,8 +11,8 @@ import io.smallrye.config.ConfigMapping;
 public interface OidcClientGraphQLConfig {
 
     /**
-     * Name of the configured OidcClient used by GraphQL clients. You can override this configuration
-     * for typesafe clients with the `io.quarkus.oidc.client.filter.OidcClientFilter` annotation.
+     * Name of the configured OidcClient used by GraphQL clients. You can override this configuration for typesafe
+     * clients with the `io.quarkus.oidc.client.filter.OidcClientFilter` annotation.
      */
     Optional<String> clientName();
 }

@@ -25,8 +25,8 @@ public class FragmentMethodsAdder {
         this.index = index;
     }
 
-    public void add(ClassCreator classCreator, String generatedClassName,
-            List<DotName> customInterfaceNamesToImplement, Map<String, FieldDescriptor> customImplNameToHandle) {
+    public void add(ClassCreator classCreator, String generatedClassName, List<DotName> customInterfaceNamesToImplement,
+            Map<String, FieldDescriptor> customImplNameToHandle) {
         for (DotName customInterfaceToImplement : customInterfaceNamesToImplement) {
             String customImplementationClassName = FragmentMethodsUtil
                     .getImplementationDotName(customInterfaceToImplement, index).toString();
@@ -48,8 +48,8 @@ public class FragmentMethodsAdder {
 
                 String methodReturnType = methodToImplement.returnType().name().toString();
 
-                MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(generatedClassName, methodToImplement.name(),
-                        methodReturnType, methodParameterTypes);
+                MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(generatedClassName,
+                        methodToImplement.name(), methodReturnType, methodParameterTypes);
 
                 if (!classCreator.getExistingMethods().contains(methodDescriptor)) {
                     try (MethodCreator methodCreator = classCreator.getMethodCreator(methodDescriptor)) {
@@ -63,10 +63,11 @@ public class FragmentMethodsAdder {
                         }
 
                         // delegate call to bean
-                        ResultHandle result = methodCreator.invokeVirtualMethod(
-                                MethodDescriptor.ofMethod(customImplementationClassName, methodToImplement.name(),
-                                        methodReturnType, methodParameterTypes),
-                                bean, methodParameterHandles);
+                        ResultHandle result = methodCreator
+                                .invokeVirtualMethod(
+                                        MethodDescriptor.ofMethod(customImplementationClassName,
+                                                methodToImplement.name(), methodReturnType, methodParameterTypes),
+                                        bean, methodParameterHandles);
                         if (void.class.getName().equals(methodReturnType)) {
                             methodCreator.returnValue(null);
                         } else {

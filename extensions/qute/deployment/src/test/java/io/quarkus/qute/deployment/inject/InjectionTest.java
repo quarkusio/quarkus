@@ -25,10 +25,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class)
-                    .addAsResource(new StringAsset("{this}"), "templates/foo.txt")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(SimpleBean.class).addAsResource(new StringAsset("{this}"), "templates/foo.txt")
                     .addAsResource(new StringAsset("<strong>{this}</strong>"), "templates/foo.qute.html")
                     .addAsResource(new StringAsset("{@String foo}{this}"), "templates/bars/bar.txt")
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/foo.1.html")
@@ -48,13 +46,11 @@ public class InjectionTest {
         assertNotNull(simpleBean.engine);
         assertTrue(simpleBean.engine.locate("foo.txt").isPresent());
         // foo.qute.html takes precedence
-        assertTrue(simpleBean.engine.locate("foo").orElseThrow().getVariant().get().getContentType().equals(Variant.TEXT_HTML));
+        assertTrue(simpleBean.engine.locate("foo").orElseThrow().getVariant().get().getContentType()
+                .equals(Variant.TEXT_HTML));
         assertTrue(simpleBean.engine.locate("foo.html").isEmpty());
         assertEquals("bar",
-                simpleBean.foo.instance()
-                        .setVariant(Variant.forContentType(Variant.TEXT_PLAIN))
-                        .data("bar")
-                        .render());
+                simpleBean.foo.instance().setVariant(Variant.forContentType(Variant.TEXT_PLAIN)).data("bar").render());
         assertEquals("<strong>bar</strong>", simpleBean.foo2.render("bar"));
         assertEquals("bar", simpleBean.bar.render("bar"));
 
@@ -83,14 +79,12 @@ public class InjectionTest {
         assertEquals(1, fooQuteVariants.size());
         assertTrue(fooVariants.contains("foo.qute.html"));
 
-        assertEquals("Hello &lt;strong&gt;Foo&lt;/strong&gt;!", templateProducer.getInjectableTemplate("foo.1").instance()
-                .setVariant(Variant.forContentType(Variant.TEXT_HTML))
-                .data("name", "<strong>Foo</strong>")
-                .render());
+        assertEquals("Hello &lt;strong&gt;Foo&lt;/strong&gt;!",
+                templateProducer.getInjectableTemplate("foo.1").instance()
+                        .setVariant(Variant.forContentType(Variant.TEXT_HTML)).data("name", "<strong>Foo</strong>")
+                        .render());
         assertEquals("Hello <strong>Foo</strong>!", templateProducer.getInjectableTemplate("foo.1").instance()
-                .setVariant(Variant.forContentType(Variant.TEXT_PLAIN))
-                .data("name", "<strong>Foo</strong>")
-                .render());
+                .setVariant(Variant.forContentType(Variant.TEXT_PLAIN)).data("name", "<strong>Foo</strong>").render());
     }
 
     @Dependent

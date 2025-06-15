@@ -8,10 +8,8 @@ import io.grpc.ServerCall.Listener;
 import io.grpc.StatusException;
 
 /**
- * Provider for AuthExceptionHandler.
- *
- * To use a custom AuthExceptionHandler, extend {@link AuthExceptionHandler} and implement
- * an {@link AuthExceptionHandlerProvider} with priority greater than the default one.
+ * Provider for AuthExceptionHandler. To use a custom AuthExceptionHandler, extend {@link AuthExceptionHandler} and
+ * implement an {@link AuthExceptionHandlerProvider} with priority greater than the default one.
  */
 public interface AuthExceptionHandlerProvider extends Prioritized {
     int DEFAULT_PRIORITY = 0;
@@ -20,7 +18,9 @@ public interface AuthExceptionHandlerProvider extends Prioritized {
             ServerCall<ReqT, RespT> serverCall, Metadata metadata);
 
     /**
-     * @param failure security exception this provider can handle according to the {@link #handlesException(Throwable)}
+     * @param failure
+     *        security exception this provider can handle according to the {@link #handlesException(Throwable)}
+     *
      * @return status exception
      */
     default StatusException transformToStatusException(Throwable failure) {
@@ -30,7 +30,9 @@ public interface AuthExceptionHandlerProvider extends Prioritized {
     }
 
     /**
-     * @param failure any gRPC request failure
+     * @param failure
+     *        any gRPC request failure
+     *
      * @return whether this provider should create response status for given failure
      */
     default boolean handlesException(Throwable failure) {

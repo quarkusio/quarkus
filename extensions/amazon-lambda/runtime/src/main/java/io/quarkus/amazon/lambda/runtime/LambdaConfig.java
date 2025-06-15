@@ -11,13 +11,10 @@ import io.smallrye.config.ConfigMapping;
 public interface LambdaConfig {
 
     /**
-     * The handler name. Handler names are specified on handler classes using the {@link @jakarta.inject.Named} annotation.
-     *
-     * If this name is unspecified and there is exactly one unnamed implementation of
-     * {@link com.amazonaws.services.lambda.runtime.RequestHandler}
-     * then this unnamed handler will be used. If there is only a single named handler and the name is unspecified
-     * then the named handler will be used.
-     *
+     * The handler name. Handler names are specified on handler classes using the {@link @jakarta.inject.Named}
+     * annotation. If this name is unspecified and there is exactly one unnamed implementation of
+     * {@link com.amazonaws.services.lambda.runtime.RequestHandler} then this unnamed handler will be used. If there is
+     * only a single named handler and the name is unspecified then the named handler will be used.
      */
     Optional<String> handler();
 }

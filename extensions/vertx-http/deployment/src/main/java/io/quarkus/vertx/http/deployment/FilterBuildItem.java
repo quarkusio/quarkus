@@ -11,7 +11,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public final class FilterBuildItem extends MultiBuildItem {
 
-    //predefined system priorities
+    // predefined system priorities
     public static final int CORS = 300;
     public static final int AUTHENTICATION = 200;
     public static final int AUTHORIZATION = 100;
@@ -24,9 +24,11 @@ public final class FilterBuildItem extends MultiBuildItem {
     /**
      * Creates a new instance of {@link FilterBuildItem}.
      *
-     * @param handler the handler, if {@code null} the filter won't be used.
-     * @param priority the priority, higher priority gets invoked first. Priority is only used to sort filters, user
-     *        routes are called afterwards. Must be positive.
+     * @param handler
+     *        the handler, if {@code null} the filter won't be used.
+     * @param priority
+     *        the priority, higher priority gets invoked first. Priority is only used to sort filters, user routes
+     *        are called afterwards. Must be positive.
      */
     public FilterBuildItem(Handler<RoutingContext> handler, int priority) {
         this.handler = handler;
@@ -35,7 +37,8 @@ public final class FilterBuildItem extends MultiBuildItem {
         this.isFailureHandler = false;
     }
 
-    private FilterBuildItem(Handler<RoutingContext> handler, int priority, boolean checkPriority, boolean isFailureHandler) {
+    private FilterBuildItem(Handler<RoutingContext> handler, int priority, boolean checkPriority,
+            boolean isFailureHandler) {
         this.handler = handler;
         if (checkPriority) {
             checkPriority(priority);
@@ -47,7 +50,8 @@ public final class FilterBuildItem extends MultiBuildItem {
     /**
      * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler.
      *
-     * @param authFailureHandler authentication failure handler
+     * @param authFailureHandler
+     *        authentication failure handler
      */
     private FilterBuildItem(Handler<RoutingContext> authFailureHandler) {
         this.handler = authFailureHandler;
@@ -56,17 +60,16 @@ public final class FilterBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler.
-     * The handler will be added as next to last, right before {@link io.quarkus.vertx.http.runtime.QuarkusErrorHandler}.
+     * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler. The handler will be
+     * added as next to last, right before {@link io.quarkus.vertx.http.runtime.QuarkusErrorHandler}.
      */
     public static FilterBuildItem ofAuthenticationFailureHandler(Handler<RoutingContext> authFailureHandler) {
         return new FilterBuildItem(authFailureHandler);
     }
 
     /**
-     * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler.
-     * The handler will be added right before any handlers added by
-     * {@link FilterBuildItem#ofAuthenticationFailureHandler(Handler)}
+     * Creates a new instance of {@link FilterBuildItem} with an authentication failure handler. The handler will be
+     * added right before any handlers added by {@link FilterBuildItem#ofAuthenticationFailureHandler(Handler)}
      */
     public static FilterBuildItem ofPreAuthenticationFailureHandler(Handler<RoutingContext> authFailureHandler) {
         return new FilterBuildItem(authFailureHandler, AUTH_FAILURE_HANDLER + 1, false, true);

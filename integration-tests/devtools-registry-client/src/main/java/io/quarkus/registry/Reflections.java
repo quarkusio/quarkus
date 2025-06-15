@@ -2,16 +2,11 @@ package io.quarkus.registry;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection(targets = {
-        io.quarkus.registry.catalog.CategoryImpl.class,
-        io.quarkus.registry.catalog.ExtensionCatalogImpl.class,
-        io.quarkus.registry.catalog.ExtensionImpl.class,
-        io.quarkus.registry.catalog.ExtensionOriginImpl.class,
-        io.quarkus.registry.catalog.PlatformCatalogImpl.class,
-        io.quarkus.registry.catalog.PlatformImpl.class,
-        io.quarkus.registry.catalog.PlatformReleaseImpl.class,
-        io.quarkus.registry.catalog.PlatformReleaseVersion.class,
-        io.quarkus.registry.catalog.PlatformStreamImpl.class,
+@RegisterForReflection(targets = { io.quarkus.registry.catalog.CategoryImpl.class,
+        io.quarkus.registry.catalog.ExtensionCatalogImpl.class, io.quarkus.registry.catalog.ExtensionImpl.class,
+        io.quarkus.registry.catalog.ExtensionOriginImpl.class, io.quarkus.registry.catalog.PlatformCatalogImpl.class,
+        io.quarkus.registry.catalog.PlatformImpl.class, io.quarkus.registry.catalog.PlatformReleaseImpl.class,
+        io.quarkus.registry.catalog.PlatformReleaseVersion.class, io.quarkus.registry.catalog.PlatformStreamImpl.class,
 
         io.quarkus.registry.config.RegistriesConfigImpl.class,
         io.quarkus.registry.config.RegistryArtifactConfigImpl.class,
@@ -27,7 +22,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         io.quarkus.registry.json.JsonArtifactCoordsMixin.class,
         io.quarkus.registry.json.JsonArtifactCoordsSerializer.class,
         io.quarkus.registry.json.JsonBooleanTrueFilter.class,
-        io.quarkus.registry.json.JsonEntityWithAnySupport.class,
-}, ignoreNested = true)
+        io.quarkus.registry.json.JsonEntityWithAnySupport.class, }, ignoreNested = true)
 public class Reflections {
 }

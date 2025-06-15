@@ -43,7 +43,8 @@ public class AuthorizationCodeTokens {
     /**
      * Set the ID token
      *
-     * @param idToken ID token
+     * @param idToken
+     *        ID token
      */
     public void setIdToken(String idToken) {
         this.idToken = idToken;
@@ -61,7 +62,8 @@ public class AuthorizationCodeTokens {
     /**
      * Set the access token
      *
-     * @param accessToken the access token
+     * @param accessToken
+     *        the access token
      */
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
@@ -79,15 +81,15 @@ public class AuthorizationCodeTokens {
     /**
      * Set the refresh token
      *
-     * @param refreshToken refresh token
+     * @param refreshToken
+     *        refresh token
      */
     public void setRefreshToken(String refreshToken) {
         this.refreshToken = refreshToken;
     }
 
     /**
-     * Get the access token expires_in value in seconds.
-     * It is relative to the time the access token is issued at.
+     * Get the access token expires_in value in seconds. It is relative to the time the access token is issued at.
      *
      * @return access token expires_in value in seconds.
      */
@@ -96,10 +98,10 @@ public class AuthorizationCodeTokens {
     }
 
     /**
-     * Set the access token expires_in value in seconds.
-     * It is relative to the time the access token is issued at.
+     * Set the access token expires_in value in seconds. It is relative to the time the access token is issued at.
      *
-     * @param accessTokenExpiresIn access token expires_in value in seconds.
+     * @param accessTokenExpiresIn
+     *        access token expires_in value in seconds.
      */
     public void setAccessTokenExpiresIn(Long accessTokenExpiresIn) {
         this.accessTokenExpiresIn = accessTokenExpiresIn;
@@ -117,7 +119,8 @@ public class AuthorizationCodeTokens {
     /**
      * Set the access token scope.
      *
-     * @param accessTokenScope access token scope.
+     * @param accessTokenScope
+     *        access token scope.
      */
     public void setAccessTokenScope(String accessTokenScope) {
         this.accessTokenScope = accessTokenScope;

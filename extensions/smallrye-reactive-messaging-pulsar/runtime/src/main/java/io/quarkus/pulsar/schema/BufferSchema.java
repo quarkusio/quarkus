@@ -12,9 +12,7 @@ public class BufferSchema extends AbstractSchema<Buffer> {
 
     public static final BufferSchema INSTANCE = new BufferSchema();
 
-    private static final SchemaInfo SCHEMA_INFO = SchemaInfoImpl.builder()
-            .name("Buffer")
-            .type(SchemaType.BYTES)
+    private static final SchemaInfo SCHEMA_INFO = SchemaInfoImpl.builder().name("Buffer").type(SchemaType.BYTES)
             .schema(new byte[0]).build();
 
     @Override

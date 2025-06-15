@@ -26,8 +26,7 @@ public class LiquibaseExtensionConfigUrlMissingNamedDataSourceDynamicInjectionTe
             // We need this otherwise the *default* datasource may impact this test
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.datasource.username", "sa")
-            .overrideConfigKey("quarkus.datasource.password", "sa")
-            .overrideConfigKey("quarkus.datasource.jdbc.url",
+            .overrideConfigKey("quarkus.datasource.password", "sa").overrideConfigKey("quarkus.datasource.jdbc.url",
                     "jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1");
 
     @Inject
@@ -37,12 +36,12 @@ public class LiquibaseExtensionConfigUrlMissingNamedDataSourceDynamicInjectionTe
     @Test
     @DisplayName("If the URL is missing for a named datasource, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibase.get().getConfiguration())
-                .isInstanceOf(InactiveBeanException.class)
+        assertThatThrownBy(() -> liquibase.get().getConfiguration()).isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
                         "Liquibase for datasource 'users' was deactivated automatically because this datasource was deactivated",
                         "Datasource 'users' was deactivated automatically because its URL is not set.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic
+                        // hints
                         "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'.",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }

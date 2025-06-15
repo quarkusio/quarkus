@@ -22,8 +22,7 @@ import io.vertx.ext.web.RoutingContext;
 public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
     /**
-     * Normalized of quarkus.http.root-path.
-     * Must end in a slash
+     * Normalized of quarkus.http.root-path. Must end in a slash
      */
     final URI httpRootPath;
 
@@ -44,7 +43,8 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
     final boolean attachedToMainRouter;
 
-    public NonApplicationRootPathBuildItem(String httpRootPath, String nonApplicationRootPath, String managementRootPath) {
+    public NonApplicationRootPathBuildItem(String httpRootPath, String nonApplicationRootPath,
+            String managementRootPath) {
         // Presume value always starts with a slash and is normalized
         this.httpRootPath = UriNormalizationUtil.toURI(httpRootPath, true);
 
@@ -55,7 +55,8 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
 
         this.dedicatedRouterRequired = !this.nonApplicationRootPath.getPath().equals(this.httpRootPath.getPath());
 
-        // Is the non-application root path underneath the http root path. Do we add non-application root to main router or not.
+        // Is the non-application root path underneath the http root path. Do we add non-application root to main router
+        // or not.
         this.attachedToMainRouter = this.nonApplicationRootPath.getPath().startsWith(this.httpRootPath.getPath());
     }
 
@@ -73,11 +74,9 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Path to the Non-application root for use with Vert.x Routers,
-     * has a leading slash.
+     * Path to the Non-application root for use with Vert.x Routers, has a leading slash.
      * <p>
-     * If it's under the HTTP Root, return a path relative to HTTP Root.
-     * Otherwise, return an absolute path.
+     * If it's under the HTTP Root, return a path relative to HTTP Root. Otherwise, return an absolute path.
      *
      * @return String Path suitable for use with Vert.x Router. It has a leading slash
      */
@@ -94,14 +93,13 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Return normalized root path configured from {@literal quarkus.http.root-path}
-     * and {quarkus.http.non-application-root-path}.
-     * This path will always end in a slash.
+     * Return normalized root path configured from {@literal quarkus.http.root-path} and
+     * {quarkus.http.non-application-root-path}. This path will always end in a slash.
      * <p>
-     * Use {@link #resolvePath(String)} if you need to construct a URI for
-     * a non-application endpoint.
+     * Use {@link #resolvePath(String)} if you need to construct a URI for a non-application endpoint.
      *
      * @return Normalized non-application root path ending with a slash
+     *
      * @see #resolvePath(String)
      */
     public String getNonApplicationRootPath() {
@@ -121,31 +119,26 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Resolve path into an absolute path.
-     * If path is relative, it will be resolved against `quarkus.http.non-application-root-path`.
-     * An absolute path will be normalized and returned.
+     * Resolve path into an absolute path. If path is relative, it will be resolved against
+     * `quarkus.http.non-application-root-path`. An absolute path will be normalized and returned.
      * <p>
-     * Given {@literal quarkus.http.root-path=/} and
-     * {@literal quarkus.http.non-application-root-path="q"}
+     * Given {@literal quarkus.http.root-path=/} and {@literal quarkus.http.non-application-root-path="q"}
      * <ul>
      * <li>{@code resolvePath("foo")} will return {@literal /q/foo}</li>
      * <li>{@code resolvePath("/foo")} will return {@literal /foo}</li>
      * </ul>
      * <p>
-     * Given {@literal quarkus.http.root-path=/} and
-     * {@literal quarkus.http.non-application-root-path="/q"}
+     * Given {@literal quarkus.http.root-path=/} and {@literal quarkus.http.non-application-root-path="/q"}
      * <ul>
      * <li>{@code resolvePath("foo")} will return {@literal /q/foo}</li>
      * <li>{@code resolvePath("/foo")} will return {@literal /foo}</li>
      * </ul>
-     * Given {@literal quarkus.http.root-path=/app} and
-     * {@literal quarkus.http.non-application-root-path="q"}
+     * Given {@literal quarkus.http.root-path=/app} and {@literal quarkus.http.non-application-root-path="q"}
      * <ul>
      * <li>{@code resolvePath("foo")} will return {@literal /app/q/foo}</li>
      * <li>{@code resolvePath("/foo")} will return {@literal /foo}</li>
      * </ul>
-     * Given {@literal quarkus.http.root-path=/app} and
-     * {@literal quarkus.http.non-application-root-path="/q"}
+     * Given {@literal quarkus.http.root-path=/app} and {@literal quarkus.http.non-application-root-path="/q"}
      * <ul>
      * <li>{@code resolvePath("foo")} will return {@literal /q/foo}</li>
      * <li>{@code resolvePath("/foo")} will return {@literal /foo}</li>
@@ -153,9 +146,14 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      * <p>
      * The returned path will not end with a slash.
      *
-     * @param path Path to be resolved to an absolute path.
+     * @param path
+     *        Path to be resolved to an absolute path.
+     *
      * @return An absolute path not ending with a slash
-     * @throws IllegalArgumentException if path is null or empty
+     *
+     * @throws IllegalArgumentException
+     *         if path is null or empty
+     *
      * @see UriNormalizationUtil#normalizeWithBase(URI, String, boolean)
      */
     public String resolvePath(String path) {
@@ -198,7 +196,9 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     /**
      * Best effort to deduce the URL prefix (scheme, host, port) of the management interface.
      *
-     * @param mode the mode, influencing the default port
+     * @param mode
+     *        the mode, influencing the default port
+     *
      * @return the prefix
      */
     public static String getManagementUrlPrefix(LaunchModeBuildItem mode) {
@@ -217,14 +217,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Resolve a base path and a sub-resource against the non-application root.
-     * This will call resolvePath on the base path (to establish a fully-resolved,
-     * absolute path), and then will resolve the subRoute against that resolved path.
-     * This allows a configured subpath to be configured (consistently)
-     * as an absolute URI.
+     * Resolve a base path and a sub-resource against the non-application root. This will call resolvePath on the base
+     * path (to establish a fully-resolved, absolute path), and then will resolve the subRoute against that resolved
+     * path. This allows a configured subpath to be configured (consistently) as an absolute URI.
      * <p>
-     * Given {@literal quarkus.http.root-path=/} and
-     * {@literal quarkus.http.non-application-root-path="q"}
+     * Given {@literal quarkus.http.root-path=/} and {@literal quarkus.http.non-application-root-path="q"}
      * <ul>
      * <li>{@code resolveNestedPath("foo", "a")} will return {@literal /q/foo/a}</li>
      * <li>{@code resolveNestedPath("foo", "/a)} will return {@literal /a}</li>
@@ -232,9 +229,14 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      * <p>
      * The returned path will not end with a slash.
      *
-     * @param path Path to be resolved to an absolute path.
+     * @param path
+     *        Path to be resolved to an absolute path.
+     *
      * @return An absolute path not ending with a slash
-     * @throws IllegalArgumentException if path is null or empty
+     *
+     * @throws IllegalArgumentException
+     *         if path is null or empty
+     *
      * @see UriNormalizationUtil#normalizeWithBase(URI, String, boolean)
      * @see #resolvePath(String)
      */
@@ -442,7 +444,9 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
     /**
      * Best effort to check if the management interface is using {@code https}.
      *
-     * @param config the config
+     * @param config
+     *        the config
+     *
      * @return {@code true} if the management interface configuration contains a key or a certificate (indicating TLS)
      */
     private static boolean isTlsConfigured(Config config) {
@@ -460,10 +464,11 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
         var hasKeys = config.getOptionalValue("quarkus.management.ssl.certificate.key-files", String.class).isPresent();
         var hasCerts = config.getOptionalValue("quarkus.management.ssl.certificate.files", String.class).isPresent();
 
-        var hasProvider = config.getOptionalValue("quarkus.management.ssl.certificate.credential-provider", String.class)
-                .isPresent();
+        var hasProvider = config
+                .getOptionalValue("quarkus.management.ssl.certificate.credential-provider", String.class).isPresent();
         var hasProviderName = config
-                .getOptionalValue("quarkus.management.ssl.certificate.credential-provider-name", String.class).isPresent();
+                .getOptionalValue("quarkus.management.ssl.certificate.credential-provider-name", String.class)
+                .isPresent();
 
         var hasKeyStore = config.getOptionalValue("quarkus.management.ssl.certificate.key-store-file", String.class)
                 .isPresent();

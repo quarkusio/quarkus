@@ -18,20 +18,16 @@ public class DeploymentUtil {
     private static final Pattern QUARKUS_DEPLOY_PATTERN = Pattern.compile("quarkus\\.([^\\.]+)\\.deploy");
 
     /**
-     * Get the available deployers.
-     * The list is obtained by checking for properties {@code quarkus.xxx.deploy}.
-     * These properties have a default value and thus they will be found regardless of the
-     * actual user configuration, so we check for property names instead.
+     * Get the available deployers. The list is obtained by checking for properties {@code quarkus.xxx.deploy}. These
+     * properties have a default value and thus they will be found regardless of the actual user configuration, so we
+     * check for property names instead.
      *
      * @return a {@link List} with all available deployers.
      */
     public static List<String> getDeployers() {
         Config config = ConfigProvider.getConfig();
-        return StreamSupport.stream(config.getPropertyNames().spliterator(), false)
-                .map(QUARKUS_DEPLOY_PATTERN::matcher)
-                .filter(Matcher::matches)
-                .map(m -> m.group(1))
-                .collect(Collectors.toList());
+        return StreamSupport.stream(config.getPropertyNames().spliterator(), false).map(QUARKUS_DEPLOY_PATTERN::matcher)
+                .filter(Matcher::matches).map(m -> m.group(1)).collect(Collectors.toList());
     }
 
     /**
@@ -52,14 +48,17 @@ public class DeploymentUtil {
     /**
      * Check if any of the specified deployers are enabled.
      *
-     * @param deployers name of the specified deployers.
+     * @param deployers
+     *        name of the specified deployers.
+     *
      * @return {@code true} if the specified deployer is explicitly enabled, {@code false} otherwise.
      */
     public static boolean isDeploymentEnabled(String... deployers) {
         if (deployers == null) {
             return false;
         }
-        return getDeployers().stream().filter(isDeployExplicitlyEnabled()).anyMatch(d -> Arrays.asList(deployers).contains(d));
+        return getDeployers().stream().filter(isDeployExplicitlyEnabled())
+                .anyMatch(d -> Arrays.asList(deployers).contains(d));
     }
 
     /**

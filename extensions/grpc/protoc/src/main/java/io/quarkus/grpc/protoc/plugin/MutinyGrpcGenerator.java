@@ -75,11 +75,8 @@ public class MutinyGrpcGenerator extends Generator {
 
         protos.forEach(fileProto -> {
             for (int serviceNumber = 0; serviceNumber < fileProto.getServiceCount(); serviceNumber++) {
-                ServiceContext serviceContext = buildServiceContext(
-                        fileProto.getService(serviceNumber),
-                        typeMap,
-                        fileProto.getSourceCodeInfo().getLocationList(),
-                        serviceNumber);
+                ServiceContext serviceContext = buildServiceContext(fileProto.getService(serviceNumber), typeMap,
+                        fileProto.getSourceCodeInfo().getLocationList(), serviceNumber);
                 serviceContext.protoName = fileProto.getName();
                 serviceContext.packageName = extractPackageName(fileProto);
                 contexts.add(serviceContext);
@@ -101,8 +98,8 @@ public class MutinyGrpcGenerator extends Generator {
         return Strings.nullToEmpty(proto.getPackage());
     }
 
-    private ServiceContext buildServiceContext(DescriptorProtos.ServiceDescriptorProto serviceProto, ProtoTypeMap typeMap,
-            List<DescriptorProtos.SourceCodeInfo.Location> locations, int serviceNumber) {
+    private ServiceContext buildServiceContext(DescriptorProtos.ServiceDescriptorProto serviceProto,
+            ProtoTypeMap typeMap, List<DescriptorProtos.SourceCodeInfo.Location> locations, int serviceNumber) {
         ServiceContext serviceContext = new ServiceContext();
         serviceContext.classPrefix = CLASS_PREFIX;
         serviceContext.fileName = CLASS_PREFIX + serviceProto.getName() + "Grpc.java";
@@ -111,22 +108,18 @@ public class MutinyGrpcGenerator extends Generator {
         serviceContext.deprecated = serviceProto.getOptions() != null && serviceProto.getOptions().getDeprecated();
 
         List<DescriptorProtos.SourceCodeInfo.Location> allLocationsForService = locations.stream()
-                .filter(location -> location.getPathCount() >= 2 &&
-                        location.getPath(0) == DescriptorProtos.FileDescriptorProto.SERVICE_FIELD_NUMBER &&
-                        location.getPath(1) == serviceNumber)
+                .filter(location -> location.getPathCount() >= 2
+                        && location.getPath(0) == DescriptorProtos.FileDescriptorProto.SERVICE_FIELD_NUMBER
+                        && location.getPath(1) == serviceNumber)
                 .collect(Collectors.toList());
 
         DescriptorProtos.SourceCodeInfo.Location serviceLocation = allLocationsForService.stream()
-                .filter(location -> location.getPathCount() == SERVICE_NUMBER_OF_PATHS)
-                .findFirst()
+                .filter(location -> location.getPathCount() == SERVICE_NUMBER_OF_PATHS).findFirst()
                 .orElseGet(DescriptorProtos.SourceCodeInfo.Location::getDefaultInstance);
         serviceContext.javaDoc = getJavaDoc(getComments(serviceLocation), getServiceJavaDocPrefix());
 
         for (int methodNumber = 0; methodNumber < serviceProto.getMethodCount(); methodNumber++) {
-            MethodContext methodContext = buildMethodContext(
-                    serviceProto.getMethod(methodNumber),
-                    typeMap,
-                    locations,
+            MethodContext methodContext = buildMethodContext(serviceProto.getMethod(methodNumber), typeMap, locations,
                     methodNumber);
 
             serviceContext.methods.add(methodContext);
@@ -146,10 +139,9 @@ public class MutinyGrpcGenerator extends Generator {
         methodContext.methodNumber = methodNumber;
 
         DescriptorProtos.SourceCodeInfo.Location methodLocation = locations.stream()
-                .filter(location -> location.getPathCount() == METHOD_NUMBER_OF_PATHS &&
-                        location.getPath(METHOD_NUMBER_OF_PATHS - 1) == methodNumber)
-                .findFirst()
-                .orElseGet(DescriptorProtos.SourceCodeInfo.Location::getDefaultInstance);
+                .filter(location -> location.getPathCount() == METHOD_NUMBER_OF_PATHS
+                        && location.getPath(METHOD_NUMBER_OF_PATHS - 1) == methodNumber)
+                .findFirst().orElseGet(DescriptorProtos.SourceCodeInfo.Location::getDefaultInstance);
         methodContext.javaDoc = getJavaDoc(getComments(methodLocation), getMethodJavaDocPrefix());
 
         if (!methodProto.getClientStreaming() && !methodProto.getServerStreaming()) {
@@ -277,13 +269,10 @@ public class MutinyGrpcGenerator extends Generator {
         return files;
     }
 
-    private PluginProtos.CodeGeneratorResponse.File buildFile(ServiceContext context, String templateName, String fileName) {
+    private PluginProtos.CodeGeneratorResponse.File buildFile(ServiceContext context, String templateName,
+            String fileName) {
         String content = applyTemplate(templateName, context);
-        return PluginProtos.CodeGeneratorResponse.File
-                .newBuilder()
-                .setName(fileName)
-                .setContent(content)
-                .build();
+        return PluginProtos.CodeGeneratorResponse.File.newBuilder().setName(fileName).setContent(content).build();
     }
 
     private String absoluteFileName(ServiceContext ctx, String fileName) {
@@ -304,14 +293,11 @@ public class MutinyGrpcGenerator extends Generator {
 
     private String getJavaDoc(String comments, String prefix) {
         if (!comments.isEmpty()) {
-            StringBuilder builder = new StringBuilder("/**\n")
-                    .append(prefix).append(" * <pre>\n");
+            StringBuilder builder = new StringBuilder("/**\n").append(prefix).append(" * <pre>\n");
             Arrays.stream(HtmlEscapers.htmlEscaper().escape(comments).split("\n"))
                     .map(line -> line.replace("*/", "&#42;&#47;").replace("*", "&#42;"))
                     .forEach(line -> builder.append(prefix).append(" * ").append(line).append("\n"));
-            builder
-                    .append(prefix).append(" * </pre>\n")
-                    .append(prefix).append(" */");
+            builder.append(prefix).append(" * </pre>\n").append(prefix).append(" */");
             return builder.toString();
         }
         return null;

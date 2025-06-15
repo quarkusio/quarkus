@@ -13,8 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BeforeRetryHandlerTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeforeRetryHandlerService.class, MyDependency.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeforeRetryHandlerService.class, MyDependency.class));
 
     @Inject
     BeforeRetryHandlerService service;
@@ -22,8 +21,6 @@ public class BeforeRetryHandlerTest {
     @Test
     public void test() {
         assertThrows(IllegalArgumentException.class, service::hello);
-        assertThat(BeforeRetryHandlerService.ids)
-                .hasSize(3)
-                .containsExactly(1, 2, 3);
+        assertThat(BeforeRetryHandlerService.ids).hasSize(3).containsExactly(1, 2, 3);
     }
 }

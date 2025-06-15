@@ -20,21 +20,14 @@ public class CheckedTemplateRequireTypeSafeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Templates.class, Fool.class)
-                    .addAsResource(new StringAsset(
-                            "Hello {name}!"
-                                    + "{any} "
-                                    + "{inject:fool.getJoke(null)} "
-                                    + "{inject:fool.getJoke(identifier)} "
-                                    + "{#each name.chars.iterator}"
-                                    // {it_index} is not considered an error because the binding is registered by the loop section !
-                                    + "{it_index}."
-                                    // however, {index} is an error
-                                    + "{index}"
-                                    + "{it}"
-                                    + "{/each}"),
-                            "templates/CheckedTemplateRequireTypeSafeTest/hola.txt"))
+            .withApplicationRoot((jar) -> jar.addClasses(Templates.class, Fool.class)
+                    .addAsResource(new StringAsset("Hello {name}!" + "{any} " + "{inject:fool.getJoke(null)} "
+                            + "{inject:fool.getJoke(identifier)} " + "{#each name.chars.iterator}"
+                            // {it_index} is not considered an error because the binding is registered by the loop
+                            // section !
+                            + "{it_index}."
+                            // however, {index} is an error
+                            + "{index}" + "{it}" + "{/each}"), "templates/CheckedTemplateRequireTypeSafeTest/hola.txt"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

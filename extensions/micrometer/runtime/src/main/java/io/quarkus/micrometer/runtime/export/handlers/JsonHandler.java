@@ -27,11 +27,9 @@ public class JsonHandler implements Handler<RoutingContext> {
 
         HttpServerResponse response = routingContext.response();
         if (registry == null) {
-            response.setStatusCode(500)
-                    .setStatusMessage("Unable to resolve JSON registry instance");
+            response.setStatusCode(500).setStatusMessage("Unable to resolve JSON registry instance");
         } else {
-            response.putHeader("Content-Type", "application/json")
-                    .end(Buffer.buffer(registry.scrape()));
+            response.putHeader("Content-Type", "application/json").end(Buffer.buffer(registry.scrape()));
         }
     }
 

@@ -28,7 +28,8 @@ public final class HttpSecurityUtils {
     }
 
     public static boolean hasSecurityAnnotation(MethodInfo methodInfo) {
-        return SecurityTransformerUtils.hasSecurityAnnotation(methodInfo) || hasAuthorizationPolicyAnnotation(methodInfo);
+        return SecurityTransformerUtils.hasSecurityAnnotation(methodInfo)
+                || hasAuthorizationPolicyAnnotation(methodInfo);
     }
 
     public static boolean hasSecurityAnnotation(ClassInfo classInfo) {

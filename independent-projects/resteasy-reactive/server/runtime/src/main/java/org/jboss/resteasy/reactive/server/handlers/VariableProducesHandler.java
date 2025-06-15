@@ -19,9 +19,8 @@ import org.jboss.resteasy.reactive.server.core.serialization.FixedEntityWriterAr
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
- * Handler that negotiates the content type for endpoints that
- * have multiple produces types, or for whatever reason can't have
- * their writer list and media type determined at build time.
+ * Handler that negotiates the content type for endpoints that have multiple produces types, or for whatever reason
+ * can't have their writer list and media type determined at build time.
  */
 public class VariableProducesHandler implements ServerRestHandler {
 
@@ -41,7 +40,7 @@ public class VariableProducesHandler implements ServerRestHandler {
             return;
         }
         if (entity == null) {
-            //TODO?
+            // TODO?
             return;
         }
         MediaType res = null;
@@ -57,18 +56,17 @@ public class VariableProducesHandler implements ServerRestHandler {
                     .getKey();
         }
         if (res == null) {
-            throw new WebApplicationException(Response
-                    .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())
-                    .build());
+            throw new WebApplicationException(
+                    Response.notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build()).build());
         }
-        if (MediaTypeHelper.isUnsupportedWildcardSubtype(res)) { // spec says the acceptable wildcard subtypes are */* or application/*
+        if (MediaTypeHelper.isUnsupportedWildcardSubtype(res)) { // spec says the acceptable wildcard subtypes are */*
+                                                                 // or application/*
             throw new NotAcceptableException();
         }
         List<MessageBodyWriter<?>> writers = serialisers.findWriters(null, entity.getClass(), res, RuntimeType.SERVER);
         if (writers == null || writers.isEmpty()) {
-            throw new WebApplicationException(Response
-                    .notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build())
-                    .build());
+            throw new WebApplicationException(
+                    Response.notAcceptable(Variant.mediaTypes(mediaTypeList.getSortedMediaTypes()).build()).build());
         }
         requestContext.setResponseContentType(res);
         requestContext.setEntityWriter(new FixedEntityWriterArray(writers.toArray(EMPTY), serialisers));

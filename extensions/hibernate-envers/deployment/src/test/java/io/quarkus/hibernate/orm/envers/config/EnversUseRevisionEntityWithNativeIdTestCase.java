@@ -13,16 +13,13 @@ import io.restassured.RestAssured;
 public class EnversUseRevisionEntityWithNativeIdTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class, EnversTestUseRevisionEntityWithNativeIdResource.class,
-                            AbstractEnversResource.class)
-                    .addAsResource("application-with-use-revision-entity-with-native-id.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedEntity.class, EnversTestUseRevisionEntityWithNativeIdResource.class,
+                    AbstractEnversResource.class)
+            .addAsResource("application-with-use-revision-entity-with-native-id.properties", "application.properties"));
 
     @Test
     public void testUseRevisionEntityWithNativeId() {
-        RestAssured.when().get("/envers-use-revision-entity-with-native-id").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-use-revision-entity-with-native-id").then().body(is("OK"));
     }
 }

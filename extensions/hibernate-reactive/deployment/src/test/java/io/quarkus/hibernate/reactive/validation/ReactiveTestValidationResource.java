@@ -27,24 +27,21 @@ public class ReactiveTestValidationResource {
             MyEntity entity = new MyEntity();
             entity.setName(name);
             return s.persist(entity);
-        }).onItemOrFailure()
-                .transform((v, ex) -> {
-                    if (ex != null) {
-                        Throwable e = ex;
-                        while (e != null && !(e instanceof ConstraintViolationException)) {
-                            e = e.getCause();
-                        }
-                        if (e instanceof ConstraintViolationException ce) {
-                            return ce.getConstraintViolations()
-                                    .stream()
-                                    .map(ConstraintViolation::getMessage)
-                                    .collect(Collectors.joining());
-                        } else {
-                            return ex.getMessage();
-                        }
-                    }
-                    return "OK";
-                });
+        }).onItemOrFailure().transform((v, ex) -> {
+            if (ex != null) {
+                Throwable e = ex;
+                while (e != null && !(e instanceof ConstraintViolationException)) {
+                    e = e.getCause();
+                }
+                if (e instanceof ConstraintViolationException ce) {
+                    return ce.getConstraintViolations().stream().map(ConstraintViolation::getMessage)
+                            .collect(Collectors.joining());
+                } else {
+                    return ex.getMessage();
+                }
+            }
+            return "OK";
+        });
     }
 
     @GET
@@ -52,9 +49,9 @@ public class ReactiveTestValidationResource {
         // there's no access to mapping metamodel from the reactive session, so let's try an insert
         // with a query and see how it either passes or fails, to test the validation-to-ddl part:
         return sessionFactory
-                .withTransaction(s -> s.createNativeQuery("insert into my_entity_table(name) values (null)").executeUpdate())
-                .onItemOrFailure()
-                .transform((v, ex) -> {
+                .withTransaction(
+                        s -> s.createNativeQuery("insert into my_entity_table(name) values (null)").executeUpdate())
+                .onItemOrFailure().transform((v, ex) -> {
                     if (ex != null) {
                         return "nullable: false";
                     }

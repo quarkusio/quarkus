@@ -15,11 +15,10 @@ public class NestedVirtualMethodSuccessTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Movie.class, MovieExtensions.class)
-                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
+            .withApplicationRoot((jar) -> jar.addClasses(Movie.class, MovieExtensions.class).addAsResource(
+                    new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
                             + "{movie.findServices(movie.name,movie.toNumber(movie.getName))}"),
-                            "templates/nested.html"));
+                    "templates/nested.html"));
 
     @Inject
     Template nested;

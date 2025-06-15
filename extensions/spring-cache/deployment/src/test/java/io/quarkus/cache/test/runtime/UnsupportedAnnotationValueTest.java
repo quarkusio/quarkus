@@ -15,8 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnsupportedAnnotationValueTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(CachedService.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(CachedService.class))
             .setExpectedException(IllegalArgumentException.class);
 
     @Test

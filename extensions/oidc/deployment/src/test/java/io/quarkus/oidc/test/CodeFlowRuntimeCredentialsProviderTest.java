@@ -30,17 +30,12 @@ import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 @QuarkusTestResource(value = KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowRuntimeCredentialsProviderTest {
 
-    private static final Class<?>[] TEST_CLASSES = {
-            ProtectedResource.class,
-            RuntimeSecretProvider.class,
-            CodeFlowRuntimeCredentialsProviderTest.class,
-            TestRecorder.class
-    };
+    private static final Class<?>[] TEST_CLASSES = { ProtectedResource.class, RuntimeSecretProvider.class,
+            CodeFlowRuntimeCredentialsProviderTest.class, TestRecorder.class };
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TEST_CLASSES)
+            .withApplicationRoot((jar) -> jar.addClasses(TEST_CLASSES)
                     .addAsResource("application-runtime-cred-provider.properties", "application.properties"))
             .addBuildChainCustomizer(buildCustomizer());
 
@@ -82,15 +77,10 @@ public class CodeFlowRuntimeCredentialsProviderTest {
                             Method creator = recorderProxy.getClass().getDeclaredMethod("createRuntimeSecretProvider");
                             Object proxy1 = creator.invoke(recorderProxy, new Object[] {});
 
-                            context.produce(SyntheticBeanBuildItem
-                                    .configure(RuntimeSecretProvider.class)
-                                    .types(CredentialsProvider.class)
-                                    .scope(ApplicationScoped.class)
-                                    .named("runtime-vault-secret-provider")
-                                    .setRuntimeInit()
-                                    .unremovable()
-                                    .runtimeProxy(proxy1)
-                                    .done());
+                            context.produce(SyntheticBeanBuildItem.configure(RuntimeSecretProvider.class)
+                                    .types(CredentialsProvider.class).scope(ApplicationScoped.class)
+                                    .named("runtime-vault-secret-provider").setRuntimeInit().unremovable()
+                                    .runtimeProxy(proxy1).done());
 
                         } catch (Exception e) {
                             throw new RuntimeException(e);

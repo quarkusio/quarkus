@@ -40,104 +40,92 @@ public class TransactionRunnerTest {
         QuarkusTransaction.requiringNew().run(() -> register(sync));
         assertEquals(Status.STATUS_COMMITTED, sync.completionStatus);
 
-        assertEquals(Status.STATUS_COMMITTED,
-                QuarkusTransaction.requiringNew().call(this::register).completionStatus);
+        assertEquals(Status.STATUS_COMMITTED, QuarkusTransaction.requiringNew().call(this::register).completionStatus);
     }
 
     @Test
     public void rollback() {
         var sync1 = new TestSync();
-        assertThrows(QuarkusTransactionException.class,
-                () -> QuarkusTransaction.requiringNew().run(() -> {
-                    register(sync1);
-                    QuarkusTransaction.rollback();
-                }));
+        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew().run(() -> {
+            register(sync1);
+            QuarkusTransaction.rollback();
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync1.completionStatus);
 
         var sync2 = new TestSync();
-        assertThrows(QuarkusTransactionException.class,
-                () -> QuarkusTransaction.requiringNew().call(() -> {
-                    register(sync2);
-                    QuarkusTransaction.rollback();
-                    return null;
-                }));
+        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew().call(() -> {
+            register(sync2);
+            QuarkusTransaction.rollback();
+            return null;
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync2.completionStatus);
     }
 
     @Test
     public void rollbackOnly() {
         var sync1 = new TestSync();
-        assertThrows(QuarkusTransactionException.class,
-                () -> QuarkusTransaction.requiringNew().run(() -> {
-                    register(sync1);
-                    QuarkusTransaction.setRollbackOnly();
-                }));
+        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew().run(() -> {
+            register(sync1);
+            QuarkusTransaction.setRollbackOnly();
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync1.completionStatus);
 
         var sync2 = new TestSync();
-        assertThrows(QuarkusTransactionException.class,
-                () -> QuarkusTransaction.requiringNew().call(() -> {
-                    register(sync2);
-                    QuarkusTransaction.setRollbackOnly();
-                    return null;
-                }));
+        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew().call(() -> {
+            register(sync2);
+            QuarkusTransaction.setRollbackOnly();
+            return null;
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync2.completionStatus);
     }
 
     @Test
     public void timeout() {
         var sync1 = new TestSync();
-        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew()
-                .timeout(1)
-                .run(() -> {
-                    register(sync1);
-                    try {
-                        Thread.sleep(1200);
-                    } catch (InterruptedException e) {
-                        fail("Interrupted unexpectedly");
-                    }
-                }));
+        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew().timeout(1).run(() -> {
+            register(sync1);
+            try {
+                Thread.sleep(1200);
+            } catch (InterruptedException e) {
+                fail("Interrupted unexpectedly");
+            }
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync1.completionStatus);
 
         var sync2 = new TestSync();
-        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew()
-                .timeout(1)
-                .call(() -> {
-                    register(sync2);
-                    try {
-                        Thread.sleep(1200);
-                    } catch (InterruptedException e) {
-                        fail("Interrupted unexpectedly");
-                    }
-                    return null;
-                }));
+        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew().timeout(1).call(() -> {
+            register(sync2);
+            try {
+                Thread.sleep(1200);
+            } catch (InterruptedException e) {
+                fail("Interrupted unexpectedly");
+            }
+            return null;
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync2.completionStatus);
     }
 
     @Test
     public void exception() {
         var sync1 = new TestSync();
-        assertThrows(MyRuntimeException.class, () -> QuarkusTransaction.requiringNew()
-                .run(() -> {
-                    register(sync1);
-                    throw new MyRuntimeException();
-                }));
+        assertThrows(MyRuntimeException.class, () -> QuarkusTransaction.requiringNew().run(() -> {
+            register(sync1);
+            throw new MyRuntimeException();
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync1.completionStatus);
 
         var sync2 = new TestSync();
-        assertThrows(MyRuntimeException.class, () -> QuarkusTransaction.requiringNew()
-                .call(() -> {
-                    register(sync2);
-                    throw new MyRuntimeException();
-                }));
+        assertThrows(MyRuntimeException.class, () -> QuarkusTransaction.requiringNew().call(() -> {
+            register(sync2);
+            throw new MyRuntimeException();
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync2.completionStatus);
 
         var sync3 = new TestSync();
-        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew()
-                .call(() -> {
-                    register(sync3);
-                    throw new MyCheckedException();
-                }));
+        assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew().call(() -> {
+            register(sync3);
+            throw new MyCheckedException();
+        }));
         assertEquals(Status.STATUS_ROLLEDBACK, sync3.completionStatus);
     }
 
@@ -145,8 +133,7 @@ public class TransactionRunnerTest {
     public void exceptionHandler() {
         var sync1 = new TestSync();
         assertThrows(MyRuntimeException.class, () -> QuarkusTransaction.requiringNew()
-                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT)
-                .run(() -> {
+                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT).run(() -> {
                     register(sync1);
                     throw new MyRuntimeException();
                 }));
@@ -154,8 +141,7 @@ public class TransactionRunnerTest {
 
         var sync2 = new TestSync();
         assertThrows(MyRuntimeException.class, () -> QuarkusTransaction.requiringNew()
-                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT)
-                .call(() -> {
+                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT).call(() -> {
                     register(sync2);
                     throw new MyRuntimeException();
                 }));
@@ -163,8 +149,7 @@ public class TransactionRunnerTest {
 
         var sync3 = new TestSync();
         assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.requiringNew()
-                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT)
-                .call(() -> {
+                .exceptionHandler((e) -> TransactionExceptionResult.COMMIT).call(() -> {
                     register(sync3);
                     throw new MyCheckedException();
                 }));
@@ -176,14 +161,12 @@ public class TransactionRunnerTest {
     public void suspendingExisting() {
         QuarkusTransaction.begin();
         assertTrue(QuarkusTransaction.isActive());
-        QuarkusTransaction.suspendingExisting()
-                .run(() -> assertFalse(QuarkusTransaction.isActive()));
+        QuarkusTransaction.suspendingExisting().run(() -> assertFalse(QuarkusTransaction.isActive()));
         assertTrue(QuarkusTransaction.isActive());
         QuarkusTransaction.rollback();
 
         assertFalse(QuarkusTransaction.isActive());
-        QuarkusTransaction.suspendingExisting()
-                .run(() -> assertFalse(QuarkusTransaction.isActive()));
+        QuarkusTransaction.suspendingExisting().run(() -> assertFalse(QuarkusTransaction.isActive()));
         assertFalse(QuarkusTransaction.isActive());
     }
 
@@ -207,8 +190,7 @@ public class TransactionRunnerTest {
     @ActivateRequestContext
     public void requiringNew() throws SystemException {
         assertFalse(QuarkusTransaction.isActive());
-        assertEquals(Status.STATUS_COMMITTED,
-                QuarkusTransaction.requiringNew().call(this::register).completionStatus);
+        assertEquals(Status.STATUS_COMMITTED, QuarkusTransaction.requiringNew().call(this::register).completionStatus);
         assertFalse(QuarkusTransaction.isActive());
 
         QuarkusTransaction.begin();

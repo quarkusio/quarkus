@@ -19,8 +19,8 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
 /**
- * Convenience helper to generate the {@link SmallRyeConfigBuilderCustomizer} bytecode, by wrapping methods that
- * require varargs or collections as parameters.
+ * Convenience helper to generate the {@link SmallRyeConfigBuilderCustomizer} bytecode, by wrapping methods that require
+ * varargs or collections as parameters.
  */
 public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCustomizer {
 
@@ -29,7 +29,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
     }
 
     @SuppressWarnings("unchecked")
-    protected static <T> void withConverter(SmallRyeConfigBuilder builder, String type, int priority, Converter<T> converter) {
+    protected static <T> void withConverter(SmallRyeConfigBuilder builder, String type, int priority,
+            Converter<T> converter) {
         try {
             // To support converters that are not public
             builder.withConverter((Class<T>) Class.forName(type, false, builder.getClassLoader()), priority, converter);
@@ -42,8 +43,7 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
         builder.withInterceptors(interceptor);
     }
 
-    protected static void withInterceptorFactory(
-            SmallRyeConfigBuilder builder,
+    protected static void withInterceptorFactory(SmallRyeConfigBuilder builder,
             ConfigSourceInterceptorFactory interceptorFactory) {
         builder.withInterceptorFactories(interceptorFactory);
     }
@@ -84,7 +84,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
 
     protected static void withMappingInstance(SmallRyeConfigBuilder builder, ConfigClass mapping) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        builder.getMappingsBuilder().mappingInstance(mapping, config.getConfigMapping(mapping.getType(), mapping.getPrefix()));
+        builder.getMappingsBuilder().mappingInstance(mapping,
+                config.getConfigMapping(mapping.getType(), mapping.getPrefix()));
     }
 
     protected static void withBuilder(SmallRyeConfigBuilder builder, ConfigBuilder configBuilder) {
@@ -119,7 +120,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
     public static ConfigClass configClass(final String mappingClass, final String prefix) {
         try {
             // To support mappings that are not public
-            return ConfigClass.configClass(Thread.currentThread().getContextClassLoader().loadClass(mappingClass), prefix);
+            return ConfigClass.configClass(Thread.currentThread().getContextClassLoader().loadClass(mappingClass),
+                    prefix);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

@@ -20,8 +20,7 @@ public class CustomDataInfoTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestInfoContributor.class))
+            .withApplicationRoot((jar) -> jar.addClasses(TestInfoContributor.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     protected static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -32,9 +31,7 @@ public class CustomDataInfoTest {
                 builder.addBuildStep(context -> {
                     context.produce(new InfoBuildTimeContributorBuildItem(new TestInfoContributor()));
                     context.produce(new InfoBuildTimeValuesBuildItem("test2", Map.of("key", "value")));
-                })
-                        .produces(InfoBuildTimeContributorBuildItem.class)
-                        .produces(InfoBuildTimeValuesBuildItem.class)
+                }).produces(InfoBuildTimeContributorBuildItem.class).produces(InfoBuildTimeValuesBuildItem.class)
                         .build();
             }
         };
@@ -42,21 +39,11 @@ public class CustomDataInfoTest {
 
     @Test
     public void test() {
-        when().get("/q/info")
-                .then()
-                .statusCode(200)
-                .body("os", is(notNullValue()))
-                .body("os.name", is(notNullValue()))
-                .body("java", is(notNullValue()))
-                .body("java.version", is(notNullValue()))
-                .body("build", is(notNullValue()))
-                .body("build.time", is(notNullValue()))
-                .body("git", is(notNullValue()))
-                .body("git.branch", is(notNullValue()))
-                .body("test", is(notNullValue()))
-                .body("test.foo", is("bar"))
-                .body("test2", is(notNullValue()))
-                .body("test2.key", is("value"));
+        when().get("/q/info").then().statusCode(200).body("os", is(notNullValue())).body("os.name", is(notNullValue()))
+                .body("java", is(notNullValue())).body("java.version", is(notNullValue()))
+                .body("build", is(notNullValue())).body("build.time", is(notNullValue()))
+                .body("git", is(notNullValue())).body("git.branch", is(notNullValue())).body("test", is(notNullValue()))
+                .body("test.foo", is("bar")).body("test2", is(notNullValue())).body("test2.key", is("value"));
 
     }
 

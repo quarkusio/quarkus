@@ -93,17 +93,13 @@ public class ReportAnalyzer {
     }
 
     /**
-     * Analyze the contents of the call tree report produced by Substrate when using -H:+PrintAnalysisCallTree,
-     * and does a more meaningful analysis of what is causing a type to be retained.
-     *
-     * In particular for virtual or interface methods that have multiple implementations what is calling this method
-     * is not really important, it is what caused this particular instance of the class to be created that is important
-     * (e.g. if you have an instance of Runnable, you don't care about all the different parts that call runnable, you
-     * care about what created this particular instance).
-     *
-     * If a virtual or interface call is detected with multiple implementations then printing the current call flow
-     * is abandoned, and instead the call flow for the constructor of the current object is printed instead.
-     *
+     * Analyze the contents of the call tree report produced by Substrate when using -H:+PrintAnalysisCallTree, and does
+     * a more meaningful analysis of what is causing a type to be retained. In particular for virtual or interface
+     * methods that have multiple implementations what is calling this method is not really important, it is what caused
+     * this particular instance of the class to be created that is important (e.g. if you have an instance of Runnable,
+     * you don't care about all the different parts that call runnable, you care about what created this particular
+     * instance). If a virtual or interface call is detected with multiple implementations then printing the current
+     * call flow is abandoned, and instead the call flow for the constructor of the current object is printed instead.
      */
     public String analyse(String className, String methodName) throws Exception {
 
@@ -142,8 +138,8 @@ public class ReportAnalyzer {
                         sb.append("\n");
                         ret.append(sb);
                     }
-                    //note that we discard the string builder if it is part of attemptedClasses, as this basically
-                    //represents an alternate path that we have already displayed
+                    // note that we discard the string builder if it is part of attemptedClasses, as this basically
+                    // represents an alternate path that we have already displayed
                     sb.setLength(0);
                     break;
                 }

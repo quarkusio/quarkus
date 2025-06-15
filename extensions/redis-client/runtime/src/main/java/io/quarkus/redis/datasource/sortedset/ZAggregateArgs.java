@@ -18,11 +18,13 @@ public class ZAggregateArgs implements RedisCommandExtraArguments {
     private Aggregate aggregate;
 
     /**
-     * Using the WEIGHTS option, it is possible to specify a multiplication factor for each input sorted set.
-     * This means that the score of every element in every input sorted set is multiplied by this factor before being
-     * passed to the aggregation function. When WEIGHTS is not given, the multiplication factors default to 1.
+     * Using the WEIGHTS option, it is possible to specify a multiplication factor for each input sorted set. This means
+     * that the score of every element in every input sorted set is multiplied by this factor before being passed to the
+     * aggregation function. When WEIGHTS is not given, the multiplication factors default to 1.
      *
-     * @param weights the weight values
+     * @param weights
+     *        the weight values
+     *
      * @return the current {@code ZAggregateArgs}
      **/
     public ZAggregateArgs weights(double... weights) {
@@ -36,12 +38,14 @@ public class ZAggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * With the AGGREGATE option, it is possible to specify how the results of the union are aggregated.
-     * This option defaults to SUM, where the score of an element is summed across the inputs where it exists.
-     * When this option is set to either MIN or MAX, the resulting set will contain the minimum or maximum score of
-     * an element across the inputs where it exists.
+     * With the AGGREGATE option, it is possible to specify how the results of the union are aggregated. This option
+     * defaults to SUM, where the score of an element is summed across the inputs where it exists. When this option is
+     * set to either MIN or MAX, the resulting set will contain the minimum or maximum score of an element across the
+     * inputs where it exists.
      *
-     * @param aggregate the aggregate value
+     * @param aggregate
+     *        the aggregate value
+     *
      * @return the current {@code ZAggregateArgs}
      **/
     public ZAggregateArgs aggregate(Aggregate aggregate) {

@@ -29,10 +29,8 @@ public class KubernetesDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     CardPageBuildItem create(CurateOutcomeBuildItem bi) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("Kubernetes Manifests")
-                .componentLink("qwc-kubernetes-manifest.js")
-                .icon("font-awesome-solid:rocket"));
+        pageBuildItem.addPage(Page.webComponentPageBuilder().title("Kubernetes Manifests")
+                .componentLink("qwc-kubernetes-manifest.js").icon("font-awesome-solid:rocket"));
 
         return pageBuildItem;
     }
@@ -65,8 +63,7 @@ public class KubernetesDevUIProcessor {
                     if (manifests == null) {
                         manifests = new ArrayList<>();
                         QuarkusBootstrap existing = (QuarkusBootstrap) DevConsoleManager.getQuarkusBootstrap();
-                        QuarkusBootstrap quarkusBootstrap = existing.clonedBuilder()
-                                .setMode(QuarkusBootstrap.Mode.PROD)
+                        QuarkusBootstrap quarkusBootstrap = existing.clonedBuilder().setMode(QuarkusBootstrap.Mode.PROD)
                                 .setIsolateDeployment(true).build();
                         try (CuratedApplication bootstrap = quarkusBootstrap.bootstrap()) {
                             AugmentAction augmentor = bootstrap.createAugmentor();
@@ -89,17 +86,14 @@ public class KubernetesDevUIProcessor {
         @Override
         public void accept(Map<String, byte[]> context, BuildResult buildResult) {
             // the idea here is to only display the content of the manifest file that will be selected for deployment
-            var selectedTargetBI = buildResult
-                    .consumeOptional(SelectedKubernetesDeploymentTargetBuildItem.class);
+            var selectedTargetBI = buildResult.consumeOptional(SelectedKubernetesDeploymentTargetBuildItem.class);
             if (selectedTargetBI == null) {
                 return;
             }
 
-            var generatedFilesBI = buildResult
-                    .consumeMulti(GeneratedKubernetesResourceBuildItem.class);
+            var generatedFilesBI = buildResult.consumeMulti(GeneratedKubernetesResourceBuildItem.class);
             for (var bi : generatedFilesBI) {
-                if (bi.getName().startsWith(selectedTargetBI.getEntry().getName())
-                        && bi.getName().endsWith(".yml")) {
+                if (bi.getName().startsWith(selectedTargetBI.getEntry().getName()) && bi.getName().endsWith(".yml")) {
                     context.put(bi.getName(), bi.getContent());
                 }
             }

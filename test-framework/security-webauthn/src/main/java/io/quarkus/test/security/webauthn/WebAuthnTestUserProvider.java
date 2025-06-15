@@ -13,8 +13,7 @@ import io.quarkus.security.webauthn.WebAuthnUserProvider;
 import io.smallrye.mutiny.Uni;
 
 /**
- * UserProvider suitable for tests, which fetches and updates credentials from a list,
- * so you can use it in your tests.
+ * UserProvider suitable for tests, which fetches and updates credentials from a list, so you can use it in your tests.
  */
 public class WebAuthnTestUserProvider implements WebAuthnUserProvider {
 

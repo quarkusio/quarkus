@@ -15,10 +15,8 @@ public class InsertTagConflictTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("{#insert row}{/}"), "templates/base.html")
-                    .addAsResource(new StringAsset("Nuke!"),
-                            "templates/tags/row.html"))
+            .withApplicationRoot(root -> root.addAsResource(new StringAsset("{#insert row}{/}"), "templates/base.html")
+                    .addAsResource(new StringAsset("Nuke!"), "templates/tags/row.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

@@ -9,10 +9,8 @@ import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 
 public class ArtifactExtensionDependency extends ExtensionDependency<ArtifactCoords> {
-    public ArtifactExtensionDependency(ModuleVersionIdentifier extensionId,
-            ArtifactCoords deploymentModule,
-            List<Dependency> conditionalDependencies,
-            List<Dependency> conditionalDevDeps,
+    public ArtifactExtensionDependency(ModuleVersionIdentifier extensionId, ArtifactCoords deploymentModule,
+            List<Dependency> conditionalDependencies, List<Dependency> conditionalDevDeps,
             List<ArtifactKey> dependencyConditions) {
         super(extensionId, deploymentModule, conditionalDependencies, conditionalDevDeps, dependencyConditions);
     }

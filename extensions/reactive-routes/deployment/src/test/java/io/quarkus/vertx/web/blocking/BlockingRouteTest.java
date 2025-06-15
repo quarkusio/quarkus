@@ -17,22 +17,15 @@ public class BlockingRouteTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoutes.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyRoutes.class));
 
     @Test
     public void testBlockingRoutes() {
-        get("/non-blocking")
-                .then().statusCode(200)
-                .body(containsString("nonBlocking-"), containsString("eventloop"));
+        get("/non-blocking").then().statusCode(200).body(containsString("nonBlocking-"), containsString("eventloop"));
 
-        get("/blocking")
-                .then().statusCode(200)
-                .body(containsString("blocking-"), containsString("executor"));
+        get("/blocking").then().statusCode(200).body(containsString("blocking-"), containsString("executor"));
 
-        get("/worker")
-                .then().statusCode(200)
-                .body(containsString("worker-"), containsString("worker"));
+        get("/worker").then().statusCode(200).body(containsString("worker-"), containsString("worker"));
     }
 
     @ApplicationScoped

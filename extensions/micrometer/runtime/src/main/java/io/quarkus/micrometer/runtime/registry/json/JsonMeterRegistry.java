@@ -26,8 +26,8 @@ import io.micrometer.core.instrument.internal.DefaultMeter;
 import io.micrometer.core.instrument.noop.NoopLongTaskTimer;
 
 /**
- * A registry that, when exported, mimics the JSON exporter from MP Metrics 3.0
- * as closely as it is reasonable to attempt to.
+ * A registry that, when exported, mimics the JSON exporter from MP Metrics 3.0 as closely as it is reasonable to
+ * attempt to.
  */
 public class JsonMeterRegistry extends MeterRegistry {
 
@@ -56,17 +56,14 @@ public class JsonMeterRegistry extends MeterRegistry {
     protected Timer newTimer(Meter.Id id, DistributionStatisticConfig distributionStatisticConfig,
             PauseDetector pauseDetector) {
         // turn off percentiles and histograms because we don't need them for the JSON export
-        distributionStatisticConfig = DistributionStatisticConfig.builder()
-                .percentilesHistogram(false)
-                .percentiles(new double[0])
-                .build()
-                .merge(distributionStatisticConfig);
+        distributionStatisticConfig = DistributionStatisticConfig.builder().percentilesHistogram(false)
+                .percentiles(new double[0]).build().merge(distributionStatisticConfig);
         return new JsonTimer(id, clock, distributionStatisticConfig, pauseDetector, getBaseTimeUnit());
     }
 
     @Override
-    protected DistributionSummary newDistributionSummary(Meter.Id id, DistributionStatisticConfig distributionStatisticConfig,
-            double scale) {
+    protected DistributionSummary newDistributionSummary(Meter.Id id,
+            DistributionStatisticConfig distributionStatisticConfig, double scale) {
         return new JsonDistributionSummary(id, clock, distributionStatisticConfig, scale, false);
     }
 
@@ -78,8 +75,8 @@ public class JsonMeterRegistry extends MeterRegistry {
     @Override
     protected <T> FunctionTimer newFunctionTimer(Meter.Id id, T obj, ToLongFunction<T> countFunction,
             ToDoubleFunction<T> totalTimeFunction, TimeUnit totalTimeFunctionUnit) {
-        return new CumulativeFunctionTimer<>(id, obj, countFunction, totalTimeFunction,
-                totalTimeFunctionUnit, getBaseTimeUnit());
+        return new CumulativeFunctionTimer<>(id, obj, countFunction, totalTimeFunction, totalTimeFunctionUnit,
+                getBaseTimeUnit());
     }
 
     @Override
@@ -99,20 +96,12 @@ public class JsonMeterRegistry extends MeterRegistry {
 
     @Override
     protected DistributionStatisticConfig defaultHistogramConfig() {
-        return DistributionStatisticConfig.builder()
-                .percentiles(0.5, 0.75, 0.95, 0.98, 0.99, 0.999)
-                .percentilePrecision(3)
-                .percentilesHistogram(false)
-                .minimumExpectedValue(Double.MIN_VALUE)
-                .maximumExpectedValue(Double.POSITIVE_INFINITY)
-                .bufferLength(bufferLength)
-                .expiry(expiry)
-                .build();
+        return DistributionStatisticConfig.builder().percentiles(0.5, 0.75, 0.95, 0.98, 0.99, 0.999)
+                .percentilePrecision(3).percentilesHistogram(false).minimumExpectedValue(Double.MIN_VALUE)
+                .maximumExpectedValue(Double.POSITIVE_INFINITY).bufferLength(bufferLength).expiry(expiry).build();
     }
 
     public String scrape() {
-        return jsonExporter
-                .exportEverything(this)
-                .toString();
+        return jsonExporter.exportEverything(this).toString();
     }
 }

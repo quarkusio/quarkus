@@ -16,25 +16,24 @@ import io.vertx.ext.web.RoutingContext;
 
 abstract class AbstractOidcAuthenticationMechanism {
     /**
-     * System property key that is resolved to true if OIDC auth mechanism should put
-     * `TokenCredential` into Vert.x duplicated context.
+     * System property key that is resolved to true if OIDC auth mechanism should put `TokenCredential` into Vert.x
+     * duplicated context.
      */
-    private static final String OIDC_PROPAGATE_TOKEN_CREDENTIAL = "io.quarkus.oidc.runtime." +
-            "AbstractOidcAuthenticationMechanism.PROPAGATE_TOKEN_CREDENTIAL_WITH_DUPLICATED_CTX";
+    private static final String OIDC_PROPAGATE_TOKEN_CREDENTIAL = "io.quarkus.oidc.runtime."
+            + "AbstractOidcAuthenticationMechanism.PROPAGATE_TOKEN_CREDENTIAL_WITH_DUPLICATED_CTX";
     private static final String ERROR_MSG = "OIDC requires a safe (isolated) Vert.x sub-context for propagation of the '"
             + TokenCredential.class.getName() + "', but the current context hasn't been flagged as such.";
     protected DefaultTenantConfigResolver resolver;
     /**
-     * Propagate {@link TokenCredential} via Vert.X duplicated context if explicitly enabled and request context
-     * can not be activated.
+     * Propagate {@link TokenCredential} via Vert.X duplicated context if explicitly enabled and request context can not
+     * be activated.
      */
     private final boolean propagateTokenCredentialWithDuplicatedCtx;
     private HttpAuthenticationMechanism parent;
 
     AbstractOidcAuthenticationMechanism() {
         // we use system property in order to keep this option internal and avoid introducing SPI
-        this.propagateTokenCredentialWithDuplicatedCtx = Boolean
-                .getBoolean(OIDC_PROPAGATE_TOKEN_CREDENTIAL);
+        this.propagateTokenCredentialWithDuplicatedCtx = Boolean.getBoolean(OIDC_PROPAGATE_TOKEN_CREDENTIAL);
     }
 
     protected Uni<SecurityIdentity> authenticate(IdentityProviderManager identityProviderManager,
@@ -51,8 +50,8 @@ abstract class AbstractOidcAuthenticationMechanism {
                     ? new AccessTokenCredential(context.get(OidcConstants.ACCESS_TOKEN_VALUE))
                     : token;
             ctx.putLocal(TokenCredential.class.getName(), tokenCredential);
-            return identityProviderManager
-                    .authenticate(HttpSecurityUtils.setRoutingContextAttribute(new TokenAuthenticationRequest(token), context))
+            return identityProviderManager.authenticate(
+                    HttpSecurityUtils.setRoutingContextAttribute(new TokenAuthenticationRequest(token), context))
                     .invoke(new Runnable() {
                         @Override
                         public void run() {
@@ -62,8 +61,8 @@ abstract class AbstractOidcAuthenticationMechanism {
                     });
         }
 
-        return identityProviderManager.authenticate(HttpSecurityUtils.setRoutingContextAttribute(
-                new TokenAuthenticationRequest(token), context));
+        return identityProviderManager.authenticate(
+                HttpSecurityUtils.setRoutingContextAttribute(new TokenAuthenticationRequest(token), context));
     }
 
     void init(HttpAuthenticationMechanism parent, DefaultTenantConfigResolver resolver) {

@@ -12,11 +12,8 @@ import io.quarkus.maven.dependency.ArtifactKey;
 public class HibernateOrmCodestartIT {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("hibernate-orm")
-            .extension(ArtifactKey.ga("io.quarkus", "quarkus-jdbc-h2"))
-            .languages(JAVA, KOTLIN)
-            .build();
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("hibernate-orm")
+            .extension(ArtifactKey.ga("io.quarkus", "quarkus-jdbc-h2")).languages(JAVA, KOTLIN).build();
 
     @Test
     void testContent() throws Throwable {

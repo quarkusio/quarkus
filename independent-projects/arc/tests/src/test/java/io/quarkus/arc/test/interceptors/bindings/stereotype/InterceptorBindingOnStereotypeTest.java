@@ -1,8 +1,5 @@
 package io.quarkus.arc.test.interceptors.bindings.stereotype;
 
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.TYPE;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.lang.annotation.Documented;

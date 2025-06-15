@@ -66,7 +66,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Integer> {
 
     List<Customer> findByNameOrderByNameAsc(String name);
 
-    //-------------------nested fields--------------------------------
+    // -------------------nested fields--------------------------------
     List<Customer> findAllByAddressZipCode(String zipCode);
 
     List<Customer> findAllByAddressCountryIsoCode(String isoCode);

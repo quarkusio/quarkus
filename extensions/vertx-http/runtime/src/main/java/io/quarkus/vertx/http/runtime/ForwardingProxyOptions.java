@@ -20,17 +20,10 @@ public class ForwardingProxyOptions {
     public final TrustedProxyCheckBuilder trustedProxyCheckBuilder;
     final boolean enableTrustedProxyHeader;
 
-    public ForwardingProxyOptions(final boolean proxyAddressForwarding,
-            boolean allowForwarded,
-            boolean allowXForwarded,
-            boolean enableForwardedHost,
-            boolean enableTrustedProxyHeader,
-            AsciiString forwardedHostHeader,
-            boolean enableForwardedPrefix,
-            boolean strictForwardedControl,
-            ForwardedPrecedence forwardedPrecedence,
-            AsciiString forwardedPrefixHeader,
-            TrustedProxyCheckBuilder trustedProxyCheckBuilder) {
+    public ForwardingProxyOptions(final boolean proxyAddressForwarding, boolean allowForwarded, boolean allowXForwarded,
+            boolean enableForwardedHost, boolean enableTrustedProxyHeader, AsciiString forwardedHostHeader,
+            boolean enableForwardedPrefix, boolean strictForwardedControl, ForwardedPrecedence forwardedPrecedence,
+            AsciiString forwardedPrefixHeader, TrustedProxyCheckBuilder trustedProxyCheckBuilder) {
         this.proxyAddressForwarding = proxyAddressForwarding;
         this.allowForwarded = allowForwarded;
         this.allowXForwarded = allowXForwarded;
@@ -56,10 +49,11 @@ public class ForwardingProxyOptions {
         final AsciiString forwardedPrefixHeader = AsciiString.cached(proxyConfig.forwardedPrefixHeader());
         final AsciiString forwardedHostHeader = AsciiString.cached(proxyConfig.forwardedHostHeader());
 
-        final List<TrustedProxyCheckPart> parts = proxyConfig.trustedProxies()
-                .isPresent() ? List.copyOf(proxyConfig.trustedProxies().get()) : List.of();
-        final var proxyCheckBuilder = (!allowXForwarded && !allowForwarded)
-                || parts.isEmpty() ? null : TrustedProxyCheckBuilder.builder(parts);
+        final List<TrustedProxyCheckPart> parts = proxyConfig.trustedProxies().isPresent()
+                ? List.copyOf(proxyConfig.trustedProxies().get())
+                : List.of();
+        final var proxyCheckBuilder = (!allowXForwarded && !allowForwarded) || parts.isEmpty() ? null
+                : TrustedProxyCheckBuilder.builder(parts);
 
         return new ForwardingProxyOptions(proxyAddressForwarding, allowForwarded, allowXForwarded, enableForwardedHost,
                 enableTrustedProxyHeader, forwardedHostHeader, enableForwardedPrefix, strictForwardedControl,

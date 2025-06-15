@@ -20,10 +20,8 @@ public class RestClientReactiveDevUIProcessor {
     @BuildStep(onlyIf = IsDevelopment.class)
     CardPageBuildItem create(JaxrsClientReactiveInfoBuildItem jaxrsClientReactiveInfoBuildItem) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("REST Clients")
-                .componentLink("qwc-rest-client-clients.js")
-                .icon("font-awesome-solid:server")
+        pageBuildItem.addPage(Page.webComponentPageBuilder().title("REST Clients")
+                .componentLink("qwc-rest-client-clients.js").icon("font-awesome-solid:server")
                 .staticLabel(String.valueOf(jaxrsClientReactiveInfoBuildItem.getInterfaceNames().size())));
 
         return pageBuildItem;

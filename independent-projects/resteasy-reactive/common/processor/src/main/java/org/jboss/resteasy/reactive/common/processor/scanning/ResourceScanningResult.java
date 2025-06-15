@@ -23,12 +23,10 @@ public final class ResourceScanningResult {
     final Set<DotName> requestScopedResources;
 
     public ResourceScanningResult(IndexView index, Map<DotName, ClassInfo> scannedResources,
-            Map<DotName, String> scannedResourcePaths,
-            Map<DotName, ClassInfo> possibleSubResources, Map<DotName, String> pathInterfaces,
-            Map<DotName, String> clientInterfaces,
-            Map<DotName, MethodInfo> resourcesThatNeedCustomProducer,
-            Map<DotName, String> httpAnnotationToMethod, List<MethodInfo> classLevelExceptionMappers,
-            Set<DotName> requestScopedResources) {
+            Map<DotName, String> scannedResourcePaths, Map<DotName, ClassInfo> possibleSubResources,
+            Map<DotName, String> pathInterfaces, Map<DotName, String> clientInterfaces,
+            Map<DotName, MethodInfo> resourcesThatNeedCustomProducer, Map<DotName, String> httpAnnotationToMethod,
+            List<MethodInfo> classLevelExceptionMappers, Set<DotName> requestScopedResources) {
         this.index = index;
         this.scannedResources = scannedResources;
         this.scannedResourcePaths = scannedResourcePaths;

@@ -35,34 +35,29 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 /**
- * Test services exposed by the gRPC server implemented using the regular gRPC model.
- * Communication uses TLS and the key is loaded from the classpath.
+ * Test services exposed by the gRPC server implemented using the regular gRPC model. Communication uses TLS and the key
+ * is loaded from the classpath.
  */
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "grpc-tls", password = "wibble", formats = {
         Format.JKS, Format.PEM, Format.PKCS12 }))
 public class RegularGrpcServiceWithSSLFromClasspathTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true).setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloService.class, TestService.class, AssertHelper.class,
-                                    GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
-                                    HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
-                                    EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
-                                    TestServiceGrpc.class)
-                            .addAsResource(new File("target/certs/grpc-tls-keystore.jks"), "server-keystore.jks"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(HelloService.class, TestService.class, AssertHelper.class, GreeterGrpc.class,
+                            HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class, HelloRequestOrBuilder.class,
+                            HelloReplyOrBuilder.class, EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
+                            TestServiceGrpc.class)
+                    .addAsResource(new File("target/certs/grpc-tls-keystore.jks"), "server-keystore.jks"))
             .withConfigurationResource("grpc-server-tls-classpath-configuration.properties");
 
     @Override
     @BeforeEach
     public void init() throws Exception {
-        SslContext sslcontext = GrpcSslContexts.forClient()
-                .trustManager(new File("target/certs/grpc-tls-ca.crt"))
+        SslContext sslcontext = GrpcSslContexts.forClient().trustManager(new File("target/certs/grpc-tls-ca.crt"))
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
-                .sslContext(sslcontext)
-                .build();
+        channel = NettyChannelBuilder.forAddress("localhost", 9001).sslContext(sslcontext).build();
     }
 
     // Create a TrustManager which trusts everything

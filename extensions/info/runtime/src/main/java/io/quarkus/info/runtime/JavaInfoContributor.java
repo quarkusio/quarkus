@@ -19,7 +19,7 @@ public class JavaInfoContributor implements InfoContributor {
 
     @Override
     public Map<String, Object> data() {
-        //TODO: should we add more information like 'java.runtime.*' and 'java.vm.*' ?
+        // TODO: should we add more information like 'java.runtime.*' and 'java.vm.*' ?
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("version", getVersion());
         result.put("vendor", getVendor());

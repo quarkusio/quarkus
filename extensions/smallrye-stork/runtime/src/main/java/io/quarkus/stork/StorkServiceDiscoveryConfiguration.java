@@ -9,16 +9,13 @@ import io.smallrye.config.WithParentName;
 public interface StorkServiceDiscoveryConfiguration {
 
     /**
-     * Configures the service discovery type, e.g. "consul".
-     * ServiceDiscoveryProvider for the type has to be available
-     *
+     * Configures the service discovery type, e.g. "consul". ServiceDiscoveryProvider for the type has to be available
      */
     String type();
 
     /**
-     * ServiceDiscovery parameters.
-     * Check the documentation of the selected service discovery type for available parameters.
-     *
+     * ServiceDiscovery parameters. Check the documentation of the selected service discovery type for available
+     * parameters.
      */
     @WithParentName
     Map<String, String> params();

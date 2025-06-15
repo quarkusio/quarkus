@@ -15,12 +15,11 @@ import io.quarkus.runtime.configuration.MemorySize;
 
 /**
  * Some RESTEasy components use this class for configuration. This bridges MP Config to ResteasyConfiguration
- *
  */
 public class ResteasyConfigurationMPConfig implements ResteasyConfiguration {
 
-    private static final Map<String, Function<Config, Optional<String>>> RESTEASY_QUARKUS_MAPPING_PARAMS = Map.of(
-            ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT, ResteasyConfigurationMPConfig::getGzipMaxInput);
+    private static final Map<String, Function<Config, Optional<String>>> RESTEASY_QUARKUS_MAPPING_PARAMS = Map
+            .of(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT, ResteasyConfigurationMPConfig::getGzipMaxInput);
 
     @Override
     public String getParameter(String name) {
@@ -37,8 +36,7 @@ public class ResteasyConfigurationMPConfig implements ResteasyConfiguration {
         }
 
         // if the parameter name is not mapped or there is no value, use the parameter name as provided
-        return value.or(() -> config.getOptionalValue(name, String.class))
-                .orElse(null);
+        return value.or(() -> config.getOptionalValue(name, String.class)).orElse(null);
     }
 
     @Override

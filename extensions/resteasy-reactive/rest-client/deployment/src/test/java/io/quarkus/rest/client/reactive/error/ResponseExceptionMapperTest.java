@@ -24,10 +24,8 @@ import io.smallrye.mutiny.Uni;
 public class ResponseExceptionMapperTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class, MyExceptionMapper.class).addAsResource(
-                            new StringAsset(setUrlForClass(Client.class)),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class, MyExceptionMapper.class)
+                    .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties"));
     public static final String ERROR_MESSAGE = "The entity was not found";
 
     @RestClient

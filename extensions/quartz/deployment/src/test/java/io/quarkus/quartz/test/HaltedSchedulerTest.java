@@ -15,10 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public final class HaltedSchedulerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=halted"),
-                            "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.scheduler.start-mode=halted"), "application.properties"));
 
     @Inject
     Scheduler scheduler;

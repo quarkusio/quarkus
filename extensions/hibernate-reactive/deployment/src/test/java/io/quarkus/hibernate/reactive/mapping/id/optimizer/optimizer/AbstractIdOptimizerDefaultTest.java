@@ -29,20 +29,15 @@ public abstract class AbstractIdOptimizerDefaultTest {
 
     @Test
     public void defaults() {
-        assertThat(List.of(
-                EntityWithDefaultGenerator.class,
-                EntityWithGenericGenerator.class,
-                EntityWithSequenceGenerator.class,
-                EntityWithTableGenerator.class))
+        assertThat(List.of(EntityWithDefaultGenerator.class, EntityWithGenericGenerator.class,
+                EntityWithSequenceGenerator.class, EntityWithTableGenerator.class))
                 .allSatisfy(c -> assertOptimizer(c).isInstanceOf(defaultOptimizerType()));
     }
 
     @Test
     public void explicitOverrides() {
-        assertOptimizer(EntityWithGenericGeneratorAndPooledOptimizer.class)
-                .isInstanceOf(PooledOptimizer.class);
-        assertOptimizer(EntityWithGenericGeneratorAndPooledLoOptimizer.class)
-                .isInstanceOf(PooledLoOptimizer.class);
+        assertOptimizer(EntityWithGenericGeneratorAndPooledOptimizer.class).isInstanceOf(PooledOptimizer.class);
+        assertOptimizer(EntityWithGenericGeneratorAndPooledLoOptimizer.class).isInstanceOf(PooledLoOptimizer.class);
     }
 
     @Test
@@ -54,16 +49,22 @@ public abstract class AbstractIdOptimizerDefaultTest {
             asserter.assertThat(() -> sessionFactory.withTransaction(s -> {
                 var entity = new EntityWithSequenceGenerator();
                 return s.persist(entity).replaceWith(() -> entity.id);
-            }),
-                    id -> assertThat(id).isEqualTo(expectedId));
+            }), id -> assertThat(id).isEqualTo(expectedId));
         }
     }
 
     AbstractObjectAssert<?, Optimizer> assertOptimizer(Class<?> entityType) {
         return assertThat(SchemaUtil.getGenerator(entityType, SchemaUtil.mappingMetamodel(sessionFactory)))
                 .as("Reactive ID generator wrapper for entity type " + entityType.getSimpleName())
-                .asInstanceOf(InstanceOfAssertFactories.type(ReactiveGeneratorWrapper.class))
-                .extracting("generator") // Needs reflection, unfortunately the blocking generator is not exposed...
+                .asInstanceOf(InstanceOfAssertFactories.type(ReactiveGeneratorWrapper.class)).extracting("generator") // Needs
+                // reflection,
+                // unfortunately
+                // the
+                // blocking
+                // generator
+                // is
+                // not
+                // exposed...
                 .as("Blocking ID generator for entity type " + entityType.getSimpleName())
                 .asInstanceOf(InstanceOfAssertFactories.type(OptimizableGenerator.class))
                 .extracting(OptimizableGenerator::getOptimizer)

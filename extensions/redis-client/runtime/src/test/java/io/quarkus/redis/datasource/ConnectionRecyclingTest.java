@@ -35,8 +35,8 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
     void verifyThatConnectionsAreClosedWithTheReactiveDataSource() {
         String k = "increment";
         for (int i = 0; i < 1000; i++) {
-            rds.withConnection(x -> x.value(String.class, Integer.class).incr(k)
-                    .replaceWithVoid()).await().indefinitely();
+            rds.withConnection(x -> x.value(String.class, Integer.class).incr(k).replaceWithVoid()).await()
+                    .indefinitely();
         }
 
         assertThat(rds.value(String.class, Integer.class).get(k).await().indefinitely()).isEqualTo(1000);

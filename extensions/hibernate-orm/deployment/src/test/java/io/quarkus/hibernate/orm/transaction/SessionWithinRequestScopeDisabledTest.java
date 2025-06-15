@@ -20,8 +20,7 @@ public class SessionWithinRequestScopeDisabledTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
                     .addAsResource(EmptyAsset.INSTANCE, "import.sql"))
             .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "false");
 
@@ -36,16 +35,15 @@ public class SessionWithinRequestScopeDisabledTest {
     @Test
     public void read() {
         assertThatThrownBy(() -> session
-                .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class).getResultCount())
-                .hasMessageContaining(
-                        "Cannot use the EntityManager/Session because no transaction is active");
+                .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
+                .getResultCount())
+                .hasMessageContaining("Cannot use the EntityManager/Session because no transaction is active");
     }
 
     @Test
     public void write() {
         assertThatThrownBy(() -> session.persist(new MyEntity("john")))
-                .hasMessageContaining(
-                        "Cannot use the EntityManager/Session because no transaction is active");
+                .hasMessageContaining("Cannot use the EntityManager/Session because no transaction is active");
     }
 
     @AfterEach

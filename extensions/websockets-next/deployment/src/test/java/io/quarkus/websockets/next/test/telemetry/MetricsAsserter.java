@@ -60,19 +60,18 @@ public final class MetricsAsserter {
         clientErrorCount += clientErrorsDelta;
         serverErrorCount += serverErrorsDelta;
 
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> getMetrics()
-                .body(assertServerConnectionOpenedTotal(serverConnectionOpenedCount))
-                .body(assertClientConnectionOpenedTotal(clientConnectionOpenedCount))
-                .body(assertServerErrorTotal(serverErrorCount))
-                .body(assertClientErrorTotal(clientErrorCount))
-                .body(assertClientMessagesCountReceived(clientReceivedCount))
-                .body(assertClientMessagesCountBytesSent(clientSentCountBytes))
-                .body(assertClientMessagesCountBytesReceived(clientReceivedCountBytes))
-                .body(assertClientMessagesCountSent(clientSentCount))
-                .body(assertServerMessagesCountBytesReceived(serverReceivedCountBytes))
-                .body(assertServerMessagesCountBytesSent(serverSentCountBytes))
-                .body(assertServerMessagesCountReceived(serverReceivedCount))
-                .body(assertServerMessagesCountSent(serverSentCount)));
+        Awaitility.await().atMost(Duration.ofSeconds(12))
+                .untilAsserted(() -> getMetrics().body(assertServerConnectionOpenedTotal(serverConnectionOpenedCount))
+                        .body(assertClientConnectionOpenedTotal(clientConnectionOpenedCount))
+                        .body(assertServerErrorTotal(serverErrorCount)).body(assertClientErrorTotal(clientErrorCount))
+                        .body(assertClientMessagesCountReceived(clientReceivedCount))
+                        .body(assertClientMessagesCountBytesSent(clientSentCountBytes))
+                        .body(assertClientMessagesCountBytesReceived(clientReceivedCountBytes))
+                        .body(assertClientMessagesCountSent(clientSentCount))
+                        .body(assertServerMessagesCountBytesReceived(serverReceivedCountBytes))
+                        .body(assertServerMessagesCountBytesSent(serverSentCountBytes))
+                        .body(assertServerMessagesCountReceived(serverReceivedCount))
+                        .body(assertServerMessagesCountSent(serverSentCount)));
     }
 
     static Matcher<String> assertClientMessagesCountBytesSent(String path, int clientSentCountBytes) {
@@ -123,7 +122,8 @@ public final class MetricsAsserter {
         return assertTotal(CLIENT_ENDPOINT_COUNT_ERRORS, clientErrorCount, path, null);
     }
 
-    static Matcher<String> assertServerConnectionOpeningFailedTotal(String path, int serverConnectionOpeningFailedCount) {
+    static Matcher<String> assertServerConnectionOpeningFailedTotal(String path,
+            int serverConnectionOpeningFailedCount) {
         return assertTotal(SERVER_CONNECTION_ON_OPEN_ERROR, serverConnectionOpeningFailedCount, path, null);
     }
 
@@ -189,22 +189,15 @@ public final class MetricsAsserter {
             @Override
             public boolean matches(Object o) {
                 if (o instanceof String str) {
-                    var sameKeyMultipleTags = str
-                            .lines()
-                            .filter(l -> l.contains(prometheusFormatKey))
+                    var sameKeyMultipleTags = str.lines().filter(l -> l.contains(prometheusFormatKey))
                             .filter(l -> path == null || l.contains(path)) // filter by path
-                            .filter(l -> direction == null || l.contains(direction.toString()))
-                            .map(String::trim)
+                            .filter(l -> direction == null || l.contains(direction.toString())).map(String::trim)
                             .toList();
                     // quarkus_websockets_server_messages_count_received_total{<<some path tag>>} 2.0
                     // quarkus_websockets_server_messages_count_received_total{<<different path tag>>} 5.0
                     // = 7
-                    var totalSum = sameKeyMultipleTags
-                            .stream()
-                            .map(l -> l.substring(l.lastIndexOf(" ")).trim())
-                            .map(Double::parseDouble)
-                            .map(Double::intValue)
-                            .reduce(0, Integer::sum);
+                    var totalSum = sameKeyMultipleTags.stream().map(l -> l.substring(l.lastIndexOf(" ")).trim())
+                            .map(Double::parseDouble).map(Double::intValue).reduce(0, Integer::sum);
                     return totalSum == expectedCount;
                 }
                 return false;
@@ -212,8 +205,8 @@ public final class MetricsAsserter {
 
             @Override
             public void describeTo(Description description) {
-                description.appendText(
-                        "Key '%s' with value '%d' and direction '%s'".formatted(prometheusFormatKey, expectedCount, direction));
+                description.appendText("Key '%s' with value '%d' and direction '%s'".formatted(prometheusFormatKey,
+                        expectedCount, direction));
             }
         };
     }

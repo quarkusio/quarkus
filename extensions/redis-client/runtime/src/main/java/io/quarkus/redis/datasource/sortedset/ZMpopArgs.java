@@ -36,7 +36,9 @@ public class ZMpopArgs implements RedisCommandExtraArguments {
     /**
      * The optional {@code COUNT} can be used to specify the number of elements to pop, and is set to 1 by default.
      *
-     * @param count the count value
+     * @param count
+     *        the count value
+     *
      * @return the current {@code ZmpopArgs}
      **/
     public ZMpopArgs count(int count) {

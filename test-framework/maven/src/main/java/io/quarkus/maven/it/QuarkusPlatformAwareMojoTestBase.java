@@ -27,7 +27,8 @@ public class QuarkusPlatformAwareMojoTestBase extends MojoTestBase {
     }
 
     private Properties getQuarkusProperties() {
-        return quarkusProps == null ? quarkusProps = ToolsUtils.readQuarkusProperties(getPlatformDescriptor()) : quarkusProps;
+        return quarkusProps == null ? quarkusProps = ToolsUtils.readQuarkusProperties(getPlatformDescriptor())
+                : quarkusProps;
     }
 
     protected String getMavenPluginGroupId() {

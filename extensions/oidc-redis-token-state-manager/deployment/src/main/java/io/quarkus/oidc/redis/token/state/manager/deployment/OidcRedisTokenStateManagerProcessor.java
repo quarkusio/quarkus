@@ -32,20 +32,15 @@ public class OidcRedisTokenStateManagerProcessor {
     SyntheticBeanBuildItem createTokenStateManager(OidcRedisTokenStateManagerRecorder recorder,
             OidcRedisTokenStateManagerBuildConfig buildConfig) {
         var redisClientName = buildConfig.redisClientName();
-        var beanConfigurator = SyntheticBeanBuildItem.configure(TokenStateManager.class)
-                .priority(1)
-                .alternative(true)
-                .unremovable()
-                .scope(ApplicationScoped.class);
+        var beanConfigurator = SyntheticBeanBuildItem.configure(TokenStateManager.class).priority(1).alternative(true)
+                .unremovable().scope(ApplicationScoped.class);
         if (RedisConfig.isDefaultClient(redisClientName)) {
-            beanConfigurator
-                    .createWith(recorder.createTokenStateManager(null))
+            beanConfigurator.createWith(recorder.createTokenStateManager(null))
                     .addInjectionPoint(Type.create(ReactiveRedisDataSource.class));
         } else {
-            beanConfigurator
-                    .createWith(recorder.createTokenStateManager(redisClientName))
-                    .addInjectionPoint(Type.create(ReactiveRedisDataSource.class),
-                            AnnotationInstance.builder(RedisClientName.class).value(redisClientName).build());
+            beanConfigurator.createWith(recorder.createTokenStateManager(redisClientName)).addInjectionPoint(
+                    Type.create(ReactiveRedisDataSource.class),
+                    AnnotationInstance.builder(RedisClientName.class).value(redisClientName).build());
         }
         return beanConfigurator.done();
     }

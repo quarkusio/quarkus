@@ -28,52 +28,39 @@ public class ImplementationOverridingInterfaceTest {
                 public void accept(ResteasyReactiveDeploymentManager.ScanStep scanStep) {
                     scanStep.addMethodScanner(new CacheControlScanner());
                 }
-            })
-            .setArchiveProducer(new Supplier<>() {
+            }).setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(IResourceWithCache.class, ResourceWithCache.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(IResourceWithCache.class,
+                            ResourceWithCache.class);
                 }
             });
 
     @Test
     public void testWith() {
         // expect method annotation on implementation to override class annotation on interface
-        RestAssured.get("/test/with")
-                .then()
-                .statusCode(200)
-                .body(equalTo("with"))
-                .header("Cache-Control", "no-store, max-age=100, private");
+        RestAssured.get("/test/with").then().statusCode(200).body(equalTo("with")).header("Cache-Control",
+                "no-store, max-age=100, private");
     }
 
     @Test
     public void testWithout() {
         // expect class annotation on interface
-        RestAssured.get("/test/without")
-                .then()
-                .statusCode(200)
-                .body(equalTo("without"))
-                .header("Cache-Control", "no-cache");
+        RestAssured.get("/test/without").then().statusCode(200).body(equalTo("without")).header("Cache-Control",
+                "no-cache");
     }
 
     @Test
     public void testOverridden() {
         // expect method annotation on implementation to override method/class annotations on interface
-        RestAssured.get("/test/overridden")
-                .then()
-                .statusCode(200)
-                .body(equalTo("overridden"))
-                .header("Cache-Control", "max-age=50");
+        RestAssured.get("/test/overridden").then().statusCode(200).body(equalTo("overridden")).header("Cache-Control",
+                "max-age=50");
     }
 
     @Test
     public void testUnoverridden() {
         // expect method annotation on default implementation in interface
-        RestAssured.get("/test/unoverridden")
-                .then()
-                .statusCode(200)
-                .body(equalTo("unoverridden"))
+        RestAssured.get("/test/unoverridden").then().statusCode(200).body(equalTo("unoverridden"))
                 .header("Cache-Control", "no-store");
     }
 

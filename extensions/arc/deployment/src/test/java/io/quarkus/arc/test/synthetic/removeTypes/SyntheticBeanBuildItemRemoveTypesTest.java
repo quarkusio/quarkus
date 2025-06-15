@@ -23,10 +23,9 @@ public class SyntheticBeanBuildItemRemoveTypesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SyntheticBeanBuildItemRemoveTypesTest.class, FooCreator.class, FooInterface.class, Foo.class,
-                            FooSubclass.class, Charlie.class, CharlieSubclass.class, CharlieInterface.class, BarInterface.class,
-                            BazInterface.class))
+            .withApplicationRoot((jar) -> jar.addClasses(SyntheticBeanBuildItemRemoveTypesTest.class, FooCreator.class,
+                    FooInterface.class, Foo.class, FooSubclass.class, Charlie.class, CharlieSubclass.class,
+                    CharlieInterface.class, BarInterface.class, BazInterface.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -42,11 +41,8 @@ public class SyntheticBeanBuildItemRemoveTypesTest {
                                 .addTypeClosure(FooSubclass.class)
                                 .removeTypes(DotName.createSimple(CharlieSubclass.class))
                                 .removeTypes(DotName.createSimple(FooSubclass.class))
-                                .removeTypes(Type.create(BazInterface.class))
-                                .scope(BuiltinScope.SINGLETON.getInfo())
-                                .unremovable()
-                                .creator(FooCreator.class)
-                                .done());
+                                .removeTypes(Type.create(BazInterface.class)).scope(BuiltinScope.SINGLETON.getInfo())
+                                .unremovable().creator(FooCreator.class).done());
                     }
                 }).produces(SyntheticBeanBuildItem.class).build();
             }

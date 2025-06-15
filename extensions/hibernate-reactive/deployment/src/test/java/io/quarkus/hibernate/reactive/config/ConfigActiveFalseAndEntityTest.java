@@ -15,8 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigActiveFalseAndEntityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClass(MyEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.active", "false");
 
@@ -29,11 +28,9 @@ public class ConfigActiveFalseAndEntityTest {
         // So the bean cannot be null.
         assertThat(sessionFactory).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        assertThatThrownBy(sessionFactory::getMetamodel)
-                .isInstanceOf(CreationException.class)
-                .hasMessageContainingAll(
-                        "Cannot retrieve the Mutiny.SessionFactory for persistence unit default-reactive",
-                        "Hibernate Reactive was deactivated through configuration properties");
+        assertThatThrownBy(sessionFactory::getMetamodel).isInstanceOf(CreationException.class).hasMessageContainingAll(
+                "Cannot retrieve the Mutiny.SessionFactory for persistence unit default-reactive",
+                "Hibernate Reactive was deactivated through configuration properties");
     }
 
 }

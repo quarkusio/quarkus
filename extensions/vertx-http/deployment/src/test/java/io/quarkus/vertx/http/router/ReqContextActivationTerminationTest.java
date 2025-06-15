@@ -16,8 +16,8 @@ import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
 /**
- * Test is located here so that {@code VertxCurrentContextFactory} is used within req. context implementation.
- * See also https://github.com/quarkusio/quarkus/issues/37741
+ * Test is located here so that {@code VertxCurrentContextFactory} is used within req. context implementation. See also
+ * https://github.com/quarkusio/quarkus/issues/37741
  */
 public class ReqContextActivationTerminationTest {
 

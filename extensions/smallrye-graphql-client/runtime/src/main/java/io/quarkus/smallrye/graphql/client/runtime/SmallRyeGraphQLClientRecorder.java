@@ -39,7 +39,8 @@ public class SmallRyeGraphQLClientRecorder {
             public T apply(SyntheticCreationalContext<T> context) {
                 TypesafeGraphQLClientBuilder builder = TypesafeGraphQLClientBuilder.newBuilder();
                 ClientModels clientModels = context.getInjectedReference(ClientModels.class);
-                return (((VertxTypesafeGraphQLClientBuilder) builder).clientModels(clientModels)).build(targetClassName);
+                return (((VertxTypesafeGraphQLClientBuilder) builder).clientModels(clientModels))
+                        .build(targetClassName);
             }
         };
     }
@@ -64,8 +65,8 @@ public class SmallRyeGraphQLClientRecorder {
             // so translate that into the fully qualified name if applicable
             String rawConfigKey = client.getKey();
             Map<String, String> shortNamesToQualifiedNamesMapping = support.getShortNamesToQualifiedNamesMapping();
-            String configKey = shortNamesToQualifiedNamesMapping != null &&
-                    shortNamesToQualifiedNamesMapping.containsKey(rawConfigKey)
+            String configKey = shortNamesToQualifiedNamesMapping != null
+                    && shortNamesToQualifiedNamesMapping.containsKey(rawConfigKey)
                             ? shortNamesToQualifiedNamesMapping.get(rawConfigKey)
                             : rawConfigKey;
 
@@ -91,10 +92,10 @@ public class SmallRyeGraphQLClientRecorder {
                         testUrl = getTestingServerUrl();
                     }
                     logger.info("Automatically wiring the URL of GraphQL client named " + configKey + " to " + testUrl
-                            + ". If this is incorrect, " +
-                            "please set it manually using the quarkus.smallrye-graphql-client." + maybeWithQuotes(configKey)
-                            + ".url property. Also note that" +
-                            " this autowiring is only supported during tests.");
+                            + ". If this is incorrect, "
+                            + "please set it manually using the quarkus.smallrye-graphql-client."
+                            + maybeWithQuotes(configKey) + ".url property. Also note that"
+                            + " this autowiring is only supported during tests.");
                     config.setUrl(testUrl);
                 }
             }
@@ -113,32 +114,32 @@ public class SmallRyeGraphQLClientRecorder {
         }
     }
 
-    // translates a Quarkus `GraphQLClientConfig` configuration object to `GraphQLClientConfiguration` which is understood
+    // translates a Quarkus `GraphQLClientConfig` configuration object to `GraphQLClientConfiguration` which is
+    // understood
     // by SmallRye GraphQL
     private GraphQLClientConfiguration toSmallRyeNativeConfiguration(GraphQLClientConfig quarkusConfig) {
         GraphQLClientConfiguration transformed = new GraphQLClientConfiguration();
         transformed.setHeaders(quarkusConfig.headers());
-        transformed.setInitPayload(Optional.ofNullable(quarkusConfig.initPayload())
-                .map(m -> new HashMap<String, Object>(m)).orElse(null));
+        transformed.setInitPayload(
+                Optional.ofNullable(quarkusConfig.initPayload()).map(m -> new HashMap<String, Object>(m)).orElse(null));
         quarkusConfig.url().ifPresent(transformed::setUrl);
         transformed.setWebsocketSubprotocols(quarkusConfig.subprotocols().orElse(new ArrayList<>()));
-        resolveTlsConfigurationForRegistry(quarkusConfig)
-                .ifPresentOrElse(tlsConfiguration -> {
-                    transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
-                    transformed.setTlsTrustStoreOptions(tlsConfiguration.getTrustStoreOptions());
-                    transformed.setSslOptions(tlsConfiguration.getSSLOptions());
-                    tlsConfiguration.getHostnameVerificationAlgorithm()
-                            .ifPresent(transformed::setHostnameVerificationAlgorithm);
-                    transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
-                }, () -> {
-                    // DEPRECATED
-                    quarkusConfig.keyStore().ifPresent(transformed::setKeyStore);
-                    quarkusConfig.keyStoreType().ifPresent(transformed::setKeyStoreType);
-                    quarkusConfig.keyStorePassword().ifPresent(transformed::setKeyStorePassword);
-                    quarkusConfig.trustStore().ifPresent(transformed::setTrustStore);
-                    quarkusConfig.trustStoreType().ifPresent(transformed::setTrustStoreType);
-                    quarkusConfig.trustStorePassword().ifPresent(transformed::setTrustStorePassword);
-                });
+        resolveTlsConfigurationForRegistry(quarkusConfig).ifPresentOrElse(tlsConfiguration -> {
+            transformed.setTlsKeyStoreOptions(tlsConfiguration.getKeyStoreOptions());
+            transformed.setTlsTrustStoreOptions(tlsConfiguration.getTrustStoreOptions());
+            transformed.setSslOptions(tlsConfiguration.getSSLOptions());
+            tlsConfiguration.getHostnameVerificationAlgorithm()
+                    .ifPresent(transformed::setHostnameVerificationAlgorithm);
+            transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
+        }, () -> {
+            // DEPRECATED
+            quarkusConfig.keyStore().ifPresent(transformed::setKeyStore);
+            quarkusConfig.keyStoreType().ifPresent(transformed::setKeyStoreType);
+            quarkusConfig.keyStorePassword().ifPresent(transformed::setKeyStorePassword);
+            quarkusConfig.trustStore().ifPresent(transformed::setTrustStore);
+            quarkusConfig.trustStoreType().ifPresent(transformed::setTrustStoreType);
+            quarkusConfig.trustStorePassword().ifPresent(transformed::setTrustStorePassword);
+        });
         quarkusConfig.proxyHost().ifPresent(transformed::setProxyHost);
         quarkusConfig.proxyPort().ifPresent(transformed::setProxyPort);
         quarkusConfig.proxyUsername().ifPresent(transformed::setProxyUsername);
@@ -154,9 +155,11 @@ public class SmallRyeGraphQLClientRecorder {
 
     private String getTestingServerUrl() {
         Config config = ConfigProvider.getConfig();
-        // the client extension doesn't have dependencies on neither the server extension nor quarkus-vertx-http, so guessing
+        // the client extension doesn't have dependencies on neither the server extension nor quarkus-vertx-http, so
+        // guessing
         // is somewhat limited
-        return "http://localhost:" + config.getOptionalValue("quarkus.http.test-port", int.class).orElse(8081) + "/graphql";
+        return "http://localhost:" + config.getOptionalValue("quarkus.http.test-port", int.class).orElse(8081)
+                + "/graphql";
     }
 
     public RuntimeValue<ClientModels> getRuntimeClientModel(ClientModels clientModel) {
@@ -165,7 +168,8 @@ public class SmallRyeGraphQLClientRecorder {
 
     private Optional<TlsConfiguration> resolveTlsConfigurationForRegistry(GraphQLClientConfig quarkusConfig) {
         if (Arc.container() != null) {
-            TlsConfigurationRegistry tlsConfigurationRegistry = Arc.container().select(TlsConfigurationRegistry.class).orNull();
+            TlsConfigurationRegistry tlsConfigurationRegistry = Arc.container().select(TlsConfigurationRegistry.class)
+                    .orNull();
             if (tlsConfigurationRegistry != null) {
                 if (tlsConfigurationRegistry.getDefault().isPresent()
                         && (tlsConfigurationRegistry.getDefault().get().getTrustStoreOptions() != null

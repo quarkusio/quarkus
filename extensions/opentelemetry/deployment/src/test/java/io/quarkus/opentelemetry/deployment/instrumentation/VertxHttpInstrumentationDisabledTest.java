@@ -31,12 +31,10 @@ import io.vertx.ext.web.Router;
 public class VertxHttpInstrumentationDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Events.class, TestUtil.class, TestSpanExporter.class,
-                            TestSpanExporterProvider.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(Events.class, TestUtil.class, TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .overrideConfigKey("quarkus.otel.traces.exporter", "test-span-exporter")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.logs.exporter", "none")
@@ -53,10 +51,7 @@ public class VertxHttpInstrumentationDisabledTest {
 
     @Test
     void testTracingDisabled() throws Exception {
-        RestAssured.when().get("/hello/foo")
-                .then()
-                .statusCode(HTTP_OK)
-                .body(equalTo("oof"));
+        RestAssured.when().get("/hello/foo").then().statusCode(HTTP_OK).body(equalTo("oof"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
         assertEquals(1, spans.size());
@@ -74,8 +69,7 @@ public class VertxHttpInstrumentationDisabledTest {
 
         void registerRoutes(@Observes Router router, EventBus eventBus) {
             router.get("/hello/foo").handler(rc -> {
-                tracer.spanBuilder("io.quarkus.vertx.opentelemetry").startSpan()
-                        .setAttribute("test.message", "dummy")
+                tracer.spanBuilder("io.quarkus.vertx.opentelemetry").startSpan().setAttribute("test.message", "dummy")
                         .end();
                 rc.end("oof");
             });

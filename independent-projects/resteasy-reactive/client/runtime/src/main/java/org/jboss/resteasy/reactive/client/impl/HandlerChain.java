@@ -37,13 +37,11 @@ class HandlerChain {
     private ClientRestHandler preClientSendHandler = null;
 
     public HandlerChain(boolean captureStacktrace, int maxChunkSize, int inputStreamChunkSize, boolean followRedirects,
-            LoggingScope loggingScope,
-            Map<Class<?>, MultipartResponseData> multipartData, ClientLogger clientLogger) {
+            LoggingScope loggingScope, Map<Class<?>, MultipartResponseData> multipartData, ClientLogger clientLogger) {
         this.clientCaptureCurrentContextRestHandler = new ClientCaptureCurrentContextRestHandler(captureStacktrace);
         this.clientSwitchToRequestContextRestHandler = new ClientSwitchToRequestContextRestHandler();
-        this.clientSendHandler = new ClientSendRequestHandler(maxChunkSize, inputStreamChunkSize, followRedirects, loggingScope,
-                clientLogger,
-                multipartData);
+        this.clientSendHandler = new ClientSendRequestHandler(maxChunkSize, inputStreamChunkSize, followRedirects,
+                loggingScope, clientLogger, multipartData);
         this.clientSetResponseEntityRestHandler = new ClientSetResponseEntityRestHandler();
         this.clientResponseCompleteRestHandler = new ClientResponseCompleteRestHandler();
         this.clientErrorHandler = new ClientErrorHandler(loggingScope);
@@ -63,7 +61,8 @@ class HandlerChain {
 
     private HandlerChain newInstance() {
         return new HandlerChain(clientCaptureCurrentContextRestHandler, clientSwitchToRequestContextRestHandler,
-                clientSendHandler, clientSetResponseEntityRestHandler, clientResponseCompleteRestHandler, clientErrorHandler);
+                clientSendHandler, clientSetResponseEntityRestHandler, clientResponseCompleteRestHandler,
+                clientErrorHandler);
     }
 
     HandlerChain setPreClientSendHandler(ClientRestHandler preClientSendHandler) {
@@ -77,9 +76,7 @@ class HandlerChain {
         List<ClientResponseFilter> responseFilters = configuration.getResponseFilters();
         if (requestFilters.isEmpty() && responseFilters.isEmpty()) {
             return new ClientRestHandler[] { clientCaptureCurrentContextRestHandler,
-                    clientSwitchToRequestContextRestHandler,
-                    clientSendHandler,
-                    clientSetResponseEntityRestHandler,
+                    clientSwitchToRequestContextRestHandler, clientSendHandler, clientSetResponseEntityRestHandler,
                     clientResponseCompleteRestHandler };
         }
         List<ClientRestHandler> result = new ArrayList<>(

@@ -40,8 +40,7 @@ public class DeploymentExceptionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, TestBean.class))
-            .assertException(t -> {
+            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, TestBean.class)).assertException(t -> {
                 assertEquals(DeploymentException.class, t.getClass());
                 assertEquals(8, t.getSuppressed().length);
                 assertVoidReturnTypeTargetException(t, "showThrowVoidReturnTypeTargetException");

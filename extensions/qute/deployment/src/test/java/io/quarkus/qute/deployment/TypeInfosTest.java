@@ -37,8 +37,8 @@ public class TypeInfosTest {
 
     @Test
     public void testCreate() throws IOException {
-        List<Expression> expressions = Engine.builder().build()
-                .parse("{@io.quarkus.qute.deployment.TypeInfosTest$Foo foo}{@java.util.Map<? extends org.acme.Foo, String> list}{config:['foo.bar.baz']}{foo.name}{list.size}")
+        List<Expression> expressions = Engine.builder().build().parse(
+                "{@io.quarkus.qute.deployment.TypeInfosTest$Foo foo}{@java.util.Map<? extends org.acme.Foo, String> list}{config:['foo.bar.baz']}{foo.name}{list.size}")
                 .getExpressions();
         IndexView index = index(Foo.class, Map.class);
 
@@ -50,7 +50,8 @@ public class TypeInfosTest {
         infos = TypeInfos.create(expressions.get(1), index, id -> "dummy");
         assertEquals(2, infos.size());
         assertTrue(infos.get(0).isTypeInfo());
-        assertEquals("io.quarkus.qute.deployment.TypeInfosTest$Foo", infos.get(0).asTypeInfo().rawClass.name().toString());
+        assertEquals("io.quarkus.qute.deployment.TypeInfosTest$Foo",
+                infos.get(0).asTypeInfo().rawClass.name().toString());
         assertTrue(infos.get(1).isProperty());
         assertEquals("name", infos.get(1).value);
 
@@ -68,8 +69,7 @@ public class TypeInfosTest {
     @Test
     public void testNestedGenerics() throws IOException {
         List<Expression> expressions = Engine.builder().build()
-                .parse("{@java.util.List<java.util.Map$Entry<String,Integer>> list}{list.size}")
-                .getExpressions();
+                .parse("{@java.util.List<java.util.Map$Entry<String,Integer>> list}{list.size}").getExpressions();
         IndexView index = index(Foo.class, List.class, Entry.class);
         List<Info> infos = TypeInfos.create(expressions.get(0), index, id -> "dummy");
         assertEquals(2, infos.size());
@@ -96,8 +96,7 @@ public class TypeInfosTest {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             final String resourceName = ClassLoaderHelper.fromClassNameToResourceName(clazz.getName());
-            try (InputStream stream = TypeInfosTest.class.getClassLoader()
-                    .getResourceAsStream(resourceName)) {
+            try (InputStream stream = TypeInfosTest.class.getClassLoader().getResourceAsStream(resourceName)) {
                 indexer.index(stream);
             }
         }

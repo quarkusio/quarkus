@@ -21,10 +21,10 @@ public class ConfigPropertyBuildItemCandidateUtil {
     private static final Logger LOGGER = Logger.getLogger(ConfigPropertyBuildItemCandidateUtil.class);
 
     /**
-     * This method inspects the {@code configClass} bytecode to identify all fields that have a default value set in the class
-     * constructor. These fields are removed from the {@link ConfigPropertyBuildItemCandidate} list because we don't want to
-     * throw an exception if no config property value was provided for them. There is no bytecode modification performed during
-     * this process.
+     * This method inspects the {@code configClass} bytecode to identify all fields that have a default value set in the
+     * class constructor. These fields are removed from the {@link ConfigPropertyBuildItemCandidate} list because we
+     * don't want to throw an exception if no config property value was provided for them. There is no bytecode
+     * modification performed during this process.
      */
     public static void removePropertiesWithDefaultValue(ClassLoader classLoader, String configClass,
             List<ConfigPropertyBuildItemCandidate> candidates) {
@@ -49,7 +49,8 @@ public class ConfigPropertyBuildItemCandidateUtil {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor superMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals("<init>") && descriptor.equals("()V")) {
                 if (access != Modifier.PUBLIC) {
@@ -74,7 +75,8 @@ public class ConfigPropertyBuildItemCandidateUtil {
 
         @Override
         public void visitFieldInsn(int opcode, String owner, String name, String descriptor) {
-            // For each instruction in the config class constructor that is setting a field value, we remove that field from
+            // For each instruction in the config class constructor that is setting a field value, we remove that field
+            // from
             // the candidates list if the field was part it.
             if (opcode == Opcodes.PUTFIELD) {
                 candidates.removeIf(candidate -> candidate.getFieldName().equals(name));

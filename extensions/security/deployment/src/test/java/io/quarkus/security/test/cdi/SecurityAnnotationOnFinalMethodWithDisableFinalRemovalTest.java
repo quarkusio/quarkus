@@ -17,13 +17,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SecurityAnnotationOnFinalMethodWithDisableFinalRemovalTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithSecuredFinalMethod.class, IdentityMock.class,
-                            AuthData.class, SecurityTestUtils.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.arc.transform-unproxyable-classes=false"),
-                            "application.properties"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(BeanWithSecuredFinalMethod.class, IdentityMock.class, AuthData.class, SecurityTestUtils.class)
+            .addAsResource(new StringAsset("quarkus.arc.transform-unproxyable-classes=false"),
+                    "application.properties"))
             .setExpectedException(DeploymentException.class);
 
     @Inject

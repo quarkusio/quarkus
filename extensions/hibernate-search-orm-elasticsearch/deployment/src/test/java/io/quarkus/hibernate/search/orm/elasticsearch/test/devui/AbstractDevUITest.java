@@ -13,8 +13,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 
 /**
- * All DevUI tests check the same api call, with different configuration and different expected results.
- * This abstract class reduces the code in each test.
+ * All DevUI tests check the same api call, with different configuration and different expected results. This abstract
+ * class reduces the code in each test.
  */
 public abstract class AbstractDevUITest extends DevUIJsonRPCTest {
 

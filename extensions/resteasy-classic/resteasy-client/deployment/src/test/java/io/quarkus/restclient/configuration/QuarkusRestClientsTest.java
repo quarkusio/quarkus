@@ -16,9 +16,8 @@ public class QuarkusRestClientsTest extends AbstractRestClientsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class,
-                            EchoClient.class, EchoClientWithConfigKey.class, ShortNameEchoClient.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EchoResource.class, EchoClient.class,
+                    EchoClientWithConfigKey.class, ShortNameEchoClient.class))
             .withConfigurationResource("quarkus-restclients-test-application.properties");
 
     @RestClient

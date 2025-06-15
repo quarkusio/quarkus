@@ -6,23 +6,28 @@ import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 
 /**
- * Base REST data Panache resource interface.
- * Defines JAX-RS operations that will be implemented by the data store specific extensions such as Hibernate ORM or MongoDB.
+ * Base REST data Panache resource interface. Defines JAX-RS operations that will be implemented by the data store
+ * specific extensions such as Hibernate ORM or MongoDB.
  * <p>
- * User shouldn't use this interface directly but rather its sub-interfaces defined by the data store specific extensions.
+ * User shouldn't use this interface directly but rather its sub-interfaces defined by the data store specific
+ * extensions.
  *
- * @param <Entity> Entity type that is handled by this resource.
- * @param <ID> ID type of the entity.
+ * @param <Entity>
+ *        Entity type that is handled by this resource.
+ * @param <ID>
+ *        ID type of the entity.
  */
 public interface RestDataResource<Entity, ID> {
 
     /**
-     * Return entities as a JSON array.
-     * The response is paged by default, but that could be disabled with {@link ResourceProperties} annotation.
-     * Response content type: application/json.
+     * Return entities as a JSON array. The response is paged by default, but that could be disabled with
+     * {@link ResourceProperties} annotation. Response content type: application/json.
      *
-     * @param page Panache page instance that should be used in a query. Will be null if pagination is disabled.
-     * @param sort Panache sort instance that should be used in a query.
+     * @param page
+     *        Panache page instance that should be used in a query. Will be null if pagination is disabled.
+     * @param sort
+     *        Panache sort instance that should be used in a query.
+     *
      * @return A response with an entities JSON array.
      */
     default List<Entity> list(Page page, Sort sort) {
@@ -37,10 +42,11 @@ public interface RestDataResource<Entity, ID> {
     }
 
     /**
-     * Return an entity as a JSON object.
-     * Response content type: application/json.
+     * Return an entity as a JSON object. Response content type: application/json.
      *
-     * @param id Entity identifier.
+     * @param id
+     *        Entity identifier.
+     *
      * @return A response with a JSON object representing an entity.
      */
     default Entity get(ID id) {
@@ -48,11 +54,12 @@ public interface RestDataResource<Entity, ID> {
     }
 
     /**
-     * Create a new entity from the provided JSON object.
-     * Request body type: application/json.
-     * Response content type: application/json.
+     * Create a new entity from the provided JSON object. Request body type: application/json. Response content type:
+     * application/json.
      *
-     * @param entity Entity to be created
+     * @param entity
+     *        Entity to be created
+     *
      * @return A response with a JSON object representing an entity and a location header of the new entity.
      */
     default Entity add(Entity entity) {
@@ -60,14 +67,16 @@ public interface RestDataResource<Entity, ID> {
     }
 
     /**
-     * Update an existing entity or create a new one from the provided JSON object.
-     * Request content type: application/json
-     * Response content type: application/json
+     * Update an existing entity or create a new one from the provided JSON object. Request content type:
+     * application/json Response content type: application/json
      *
-     * @param id Entity identifier.
-     * @param entity Entity to be updated or created.
-     * @return A response with no-content status in case of the update.
-     *         A response with a JSON object representing an entity and a location header in case of the create.
+     * @param id
+     *        Entity identifier.
+     * @param entity
+     *        Entity to be updated or created.
+     *
+     * @return A response with no-content status in case of the update. A response with a JSON object representing an
+     *         entity and a location header in case of the create.
      */
     default Entity update(ID id, Entity entity) {
         throw new RuntimeException("Not implemented yet");
@@ -76,7 +85,9 @@ public interface RestDataResource<Entity, ID> {
     /**
      * Delete an entity.
      *
-     * @param id Entity identifier.
+     * @param id
+     *        Entity identifier.
+     *
      * @return A boolean indicated whether the entity was deleted or not.
      */
     default boolean delete(ID id) {

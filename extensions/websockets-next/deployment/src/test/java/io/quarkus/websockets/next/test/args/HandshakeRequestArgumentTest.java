@@ -21,10 +21,9 @@ import io.vertx.core.http.WebSocketConnectOptions;
 public class HandshakeRequestArgumentTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(XTest.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(XTest.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

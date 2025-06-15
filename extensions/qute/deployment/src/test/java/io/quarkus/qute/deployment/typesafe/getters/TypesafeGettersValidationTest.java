@@ -14,13 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TypesafeGettersValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SomeBean.class, SomeInterface.class)
-                    .addAsResource(new StringAsset("""
-                            {@io.quarkus.qute.deployment.typesafe.getters.TypesafeGettersValidationTest$SomeBean some}
-                            {some.image.length}::{some.hasImage}::{some.hasImage('bar')}::{some.png}::{some.hasPng('bar')}
-                            """), "templates/some.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addClasses(SomeBean.class, SomeInterface.class).addAsResource(new StringAsset("""
+                    {@io.quarkus.qute.deployment.typesafe.getters.TypesafeGettersValidationTest$SomeBean some}
+                    {some.image.length}::{some.hasImage}::{some.hasImage('bar')}::{some.png}::{some.hasPng('bar')}
+                    """), "templates/some.html"));
 
     @Inject
     Template some;

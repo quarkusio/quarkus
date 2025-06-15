@@ -35,13 +35,9 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
         Tags tags = Tags.of(Tag.of("pool.type", poolType), Tag.of("pool.name", poolName));
 
         queueDelay = Timer.builder(name("queue.delay"))
-                .description("Time spent in the waiting queue before being processed")
-                .tags(tags)
-                .register(registry);
+                .description("Time spent in the waiting queue before being processed").tags(tags).register(registry);
 
-        usage = Timer.builder(name("usage"))
-                .description("Time spent using resources from the pool")
-                .tags(tags)
+        usage = Timer.builder(name("usage")).description("Time spent using resources from the pool").tags(tags)
                 .register(registry);
 
         Gauge.builder(name("queue.size"), new Supplier<Number>() {
@@ -49,10 +45,7 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
             public Number get() {
                 return queue.doubleValue();
             }
-        })
-                .description("Number of pending elements in the waiting queue")
-                .tags(tags)
-                .strongReference(true)
+        }).description("Number of pending elements in the waiting queue").tags(tags).strongReference(true)
                 .register(registry);
 
         Gauge.builder(name("active"), new Supplier<Number>() {
@@ -60,10 +53,7 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
             public Number get() {
                 return current.doubleValue();
             }
-        })
-                .description("The number of resources from the pool currently used")
-                .tags(tags)
-                .strongReference(true)
+        }).description("The number of resources from the pool currently used").tags(tags).strongReference(true)
                 .register(registry);
 
         if (maxPoolSize > 0) {
@@ -72,27 +62,19 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
                 public Number get() {
                     return maxPoolSize - current.doubleValue();
                 }
-            })
-                    .description("The number of resources from the pool currently used")
-                    .tags(tags)
-                    .strongReference(true)
+            }).description("The number of resources from the pool currently used").tags(tags).strongReference(true)
                     .register(registry);
 
-            Gauge.builder(name("ratio"), ratio::get)
-                    .description("Pool usage ratio")
-                    .tags(tags)
-                    .strongReference(true)
+            Gauge.builder(name("ratio"), ratio::get).description("Pool usage ratio").tags(tags).strongReference(true)
                     .register(registry);
         }
 
         completed = Counter.builder(name("completed"))
-                .description("Number of times resources from the pool have been acquired")
-                .tags(tags)
+                .description("Number of times resources from the pool have been acquired").tags(tags)
                 .register(registry);
 
         rejected = Counter.builder(name("rejected"))
-                .description("Number of times submissions to the pool have been rejected")
-                .tags(tags)
+                .description("Number of times submissions to the pool have been rejected").tags(tags)
                 .register(registry);
 
     }

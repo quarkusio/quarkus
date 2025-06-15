@@ -18,9 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class StatelessSessionWithinTransactionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Address.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(Address.class))
             .withConfigurationResource("application.properties");
 
     @Inject

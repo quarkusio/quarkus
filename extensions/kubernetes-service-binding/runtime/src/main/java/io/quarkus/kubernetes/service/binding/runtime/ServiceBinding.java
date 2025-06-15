@@ -83,8 +83,7 @@ public final class ServiceBinding {
         if (files != null) {
             for (File f : files) {
                 try {
-                    result.put(f.toPath().getFileName().toString(),
-                            Files.readString(f.toPath()).trim());
+                    result.put(f.toPath().getFileName().toString(), Files.readString(f.toPath()).trim());
                 } catch (IOException e) {
                     throw new IllegalStateException("Unable to read file '" + f + "'", e);
                 }
@@ -115,11 +114,8 @@ public final class ServiceBinding {
 
     @Override
     public String toString() {
-        return "ServiceBinding{" +
-                "name='" + name + '\'' +
-                ", provider='" + provider + '\'' +
-                ", type='" + type + '\'' +
-                '}';
+        return "ServiceBinding{" + "name='" + name + '\'' + ", provider='" + provider + '\'' + ", type='" + type + '\''
+                + '}';
     }
 
     public static List<ServiceBinding> matchingByType(String type, List<ServiceBinding> all) {

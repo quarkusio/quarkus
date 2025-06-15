@@ -28,7 +28,8 @@ public class DynamicFeatures {
         for (int i = 0; i < resourceDynamicFeatures.size(); i++) {
             ResourceDynamicFeature resourceFeature = resourceDynamicFeatures.get(i);
             if (resourceFeature.getFactory() == null) {
-                resourceFeature.setFactory((BeanFactory<DynamicFeature>) factoryCreator.apply(resourceFeature.getClassName()));
+                resourceFeature
+                        .setFactory((BeanFactory<DynamicFeature>) factoryCreator.apply(resourceFeature.getClassName()));
             }
         }
     }

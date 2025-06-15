@@ -12,8 +12,10 @@ import java.util.TreeMap;
 /**
  * Simple implementation of a multi valued tree map to use for case-insensitive headers
  *
- * @param <Key> The type for the map key
- * @param <Value> The type for the map values
+ * @param <Key>
+ *        The type for the map key
+ * @param <Value>
+ *        The type for the map values
  */
 public class MultiValuedTreeMap<Key, Value> implements Map<Key, List<Value>>, Serializable, Cloneable {
 

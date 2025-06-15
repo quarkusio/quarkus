@@ -22,7 +22,8 @@ public class ImplicitSimpleKeyCacheTest {
     private static final Object KEY_2 = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;

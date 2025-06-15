@@ -39,7 +39,9 @@ public class Panache {
     /**
      * Returns the {@link EntityManager} for the given {@link Class<?> entity}
      *
-     * @param clazz the entity class corresponding to the entity manager persistence unit.
+     * @param clazz
+     *        the entity class corresponding to the entity manager persistence unit.
+     *
      * @return {@link EntityManager}
      */
     public static EntityManager getEntityManager(Class<?> clazz) {
@@ -49,7 +51,9 @@ public class Panache {
     /**
      * Returns the {@link Session} for the given {@link Class<?> entity}
      *
-     * @param clazz the entity class corresponding to the session persistence unit.
+     * @param clazz
+     *        the entity class corresponding to the session persistence unit.
+     *
      * @return {@link Session}
      */
     public static Session getSession(Class<?> clazz) {
@@ -59,7 +63,9 @@ public class Panache {
     /**
      * Returns the {@link EntityManager} for the given persistence unit
      *
-     * @param persistenceUnit the persistence unit for this entity manager.
+     * @param persistenceUnit
+     *        the persistence unit for this entity manager.
+     *
      * @return {@link EntityManager}
      */
     public static EntityManager getEntityManager(String persistenceUnit) {
@@ -69,7 +75,9 @@ public class Panache {
     /**
      * Returns the {@link Session} for the given persistence unit
      *
-     * @param persistenceUnit the persistence unit for this session.
+     * @param persistenceUnit
+     *        the persistence unit for this session.
+     *
      * @return {@link Session}
      */
     public static Session getSession(String persistenceUnit) {
@@ -88,8 +96,11 @@ public class Panache {
     /**
      * Executes a database update operation and return the number of rows operated on.
      *
-     * @param query a normal HQL query
-     * @param params optional list of indexed parameters
+     * @param query
+     *        a normal HQL query
+     * @param params
+     *        optional list of indexed parameters
+     *
      * @return the number of rows operated on.
      */
     public static int executeUpdate(String query, Object... params) {
@@ -99,8 +110,11 @@ public class Panache {
     /**
      * Executes a database update operation and return the number of rows operated on.
      *
-     * @param query a normal HQL query
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a normal HQL query
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return the number of rows operated on.
      */
     public static int executeUpdate(String query, Map<String, Object> params) {
@@ -110,8 +124,11 @@ public class Panache {
     /**
      * Executes a database update operation and return the number of rows operated on.
      *
-     * @param query a normal HQL query
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a normal HQL query
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return the number of rows operated on.
      */
     public static int executeUpdate(String query, Parameters params) {
@@ -119,8 +136,8 @@ public class Panache {
     }
 
     /**
-     * Marks the current transaction as "rollback-only", which means that it will not be
-     * committed: it will be rolled back at the end of this transaction lifecycle.
+     * Marks the current transaction as "rollback-only", which means that it will not be committed: it will be rolled
+     * back at the end of this transaction lifecycle.
      */
     public static void setRollbackOnly() {
         AbstractJpaOperations.setRollbackOnly();
@@ -136,7 +153,8 @@ public class Panache {
     /**
      * Flushes all pending changes to the database using the entity manager for the given {@link Class<?> entity}
      *
-     * @param clazz the entity class corresponding to the entity manager persistence unit.
+     * @param clazz
+     *        the entity class corresponding to the entity manager persistence unit.
      */
     public static void flush(Class<?> clazz) {
         getSession(clazz).flush();
@@ -145,7 +163,8 @@ public class Panache {
     /**
      * Flushes all pending changes to the database using the entity manager for the given persistence unit
      *
-     * @param persistenceUnit the persistence unit for this entity manager.
+     * @param persistenceUnit
+     *        the persistence unit for this entity manager.
      */
     public static void flush(String persistenceUnit) {
         getSession(persistenceUnit).flush();

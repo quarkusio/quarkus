@@ -14,10 +14,11 @@ public class UnitisedTime {
     }
 
     /**
-     * Convert a {@link Duration} to a {@link UnitisedTime} with the smallest possible
-     * {@link TimeUnit} starting from {@link TimeUnit#MILLISECONDS}.
+     * Convert a {@link Duration} to a {@link UnitisedTime} with the smallest possible {@link TimeUnit} starting from
+     * {@link TimeUnit#MILLISECONDS}.
      *
-     * @param duration Duration to convert
+     * @param duration
+     *        Duration to convert
      *
      * @return UnitisedTime
      */

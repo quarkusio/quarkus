@@ -11,8 +11,6 @@ public class RestClientTest {
 
     @Test
     public void fetchDefault() {
-        given().get("hibernate-validator/test-rest-client")
-                .then()
-                .statusCode(200);
+        given().get("hibernate-validator/test-rest-client").then().statusCode(200);
     }
 }

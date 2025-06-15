@@ -35,8 +35,9 @@ public class UnknownDriverConfigTest {
     }
 
     private static void testDataSource(AgroalDataSource dataSource, String username, int minSize, int maxSize,
-            int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
-            Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql) throws SQLException {
+            int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout,
+            Duration leakDetectionInterval, Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql)
+            throws SQLException {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
                 .connectionFactoryConfiguration();

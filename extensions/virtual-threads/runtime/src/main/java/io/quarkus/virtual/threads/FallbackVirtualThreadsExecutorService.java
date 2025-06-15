@@ -11,11 +11,11 @@ import io.vertx.core.Vertx;
 import io.vertx.core.impl.ContextInternal;
 
 /**
- * Fallback executor service implementation in case the virtual threads are disabled or not available on the current platform.
+ * Fallback executor service implementation in case the virtual threads are disabled or not available on the current
+ * platform.
  * <p>
- * Executes tasks on the current Vert.x context worker pool, or when not available, on the Mutiny Infrastructure default worker
- * pool
- * Shutdown methods are no-op as the executor service is a wrapper around these previous execute methods.
+ * Executes tasks on the current Vert.x context worker pool, or when not available, on the Mutiny Infrastructure default
+ * worker pool Shutdown methods are no-op as the executor service is a wrapper around these previous execute methods.
  */
 class FallbackVirtualThreadsExecutorService extends AbstractExecutorService {
 

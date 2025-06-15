@@ -8,13 +8,11 @@ public abstract class AbstractDeleteMethodTest {
 
     @Test
     void shouldNotDeleteNonExistentObject() {
-        when().delete("/items/100")
-                .then().statusCode(404);
+        when().delete("/items/100").then().statusCode(404);
     }
 
     @Test
     void shouldDeleteObject() {
-        when().delete("/items/1")
-                .then().statusCode(204);
+        when().delete("/items/1").then().statusCode(204);
     }
 }

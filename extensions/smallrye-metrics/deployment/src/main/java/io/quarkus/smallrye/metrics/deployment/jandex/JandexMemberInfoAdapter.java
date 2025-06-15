@@ -46,31 +46,22 @@ public class JandexMemberInfoAdapter implements MemberInfoAdapter<AnnotationTarg
             declaringClassName = input.asMethod().declaringClass().name().toString();
             declaringClassSimpleName = input.asMethod().declaringClass().simpleName();
             name = input.asMethod().name();
-            annotationInformation = transformedAnnotations.getAnnotations(input)
-                    .stream()
-                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
-                    .map(annotationInfoAdapter::convert)
+            annotationInformation = transformedAnnotations.getAnnotations(input).stream()
+                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation).map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
-            parameterTypeNames = input.asMethod().parameterTypes().stream()
-                    .map(type -> type.name().toString())
+            parameterTypeNames = input.asMethod().parameterTypes().stream().map(type -> type.name().toString())
                     .toArray(String[]::new);
         } else {
             declaringClassName = input.asField().declaringClass().name().toString();
             declaringClassSimpleName = input.asField().declaringClass().simpleName();
             name = input.asField().name();
-            annotationInformation = transformedAnnotations.getAnnotations(input)
-                    .stream()
-                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation)
-                    .map(annotationInfoAdapter::convert)
+            annotationInformation = transformedAnnotations.getAnnotations(input).stream()
+                    .filter(SmallRyeMetricsDotNames::isMetricAnnotation).map(annotationInfoAdapter::convert)
                     .collect(Collectors.toList());
             parameterTypeNames = new String[0];
         }
 
-        return new RawMemberInfo(memberType,
-                declaringClassName,
-                declaringClassSimpleName,
-                name,
-                annotationInformation,
+        return new RawMemberInfo(memberType, declaringClassName, declaringClassSimpleName, name, annotationInformation,
                 parameterTypeNames);
     }
 }

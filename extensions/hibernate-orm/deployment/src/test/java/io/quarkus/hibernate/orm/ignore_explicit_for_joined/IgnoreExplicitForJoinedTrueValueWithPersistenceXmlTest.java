@@ -18,12 +18,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class IgnoreExplicitForJoinedTrueValueWithPersistenceXmlTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addAsManifestResource("META-INF/persistence-discriminator-ignore-explicit-for-joined-true-value.xml",
-                            "persistence.xml")
-                    .addAsResource("application-datasource-only.properties", "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class)
+            .addAsManifestResource("META-INF/persistence-discriminator-ignore-explicit-for-joined-true-value.xml",
+                    "persistence.xml")
+            .addAsResource("application-datasource-only.properties", "application.properties"));
 
     @Inject
     EntityManager em;

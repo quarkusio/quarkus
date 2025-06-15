@@ -54,7 +54,8 @@ public class JsonFormatter extends ExtFormatter {
         jsonObject.put(SOURCE_LINE_NUMBER, logRecord.getSourceLineNumber());
         if (logRecord.getSourceClassName() != null) {
             String justClassName = getJustClassName(logRecord.getSourceClassName());
-            jsonObject.put(SOURCE_CLASS_NAME_FULL_SHORT, getShortFullClassName(logRecord.getSourceClassName(), justClassName));
+            jsonObject.put(SOURCE_CLASS_NAME_FULL_SHORT,
+                    getShortFullClassName(logRecord.getSourceClassName(), justClassName));
             jsonObject.put(SOURCE_CLASS_NAME_FULL, logRecord.getSourceClassName());
             jsonObject.put(SOURCE_CLASS_NAME, justClassName);
         }

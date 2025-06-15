@@ -10,7 +10,7 @@ import io.vertx.ext.web.Router;
 public class StartupFailer {
 
     public void route(@Observes Router router) {
-        //fail();
+        // fail();
     }
 
     void fail() {

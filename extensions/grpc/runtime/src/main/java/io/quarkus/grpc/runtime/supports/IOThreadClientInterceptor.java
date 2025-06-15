@@ -35,44 +35,45 @@ public class IOThreadClientInterceptor implements ClientInterceptor, Prioritized
                 Context context = Vertx.currentContext();
                 boolean isOnIOThread = context != null && Context.isOnEventLoopThread();
 
-                super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
+                super.start(
+                        new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
 
-                    @Override
-                    public void onReady() {
-                        if (isOnIOThread) {
-                            context.runOnContext(unused -> super.onReady());
-                        } else {
-                            super.onReady();
-                        }
-                    }
+                            @Override
+                            public void onReady() {
+                                if (isOnIOThread) {
+                                    context.runOnContext(unused -> super.onReady());
+                                } else {
+                                    super.onReady();
+                                }
+                            }
 
-                    @Override
-                    public void onHeaders(Metadata headers) {
-                        if (isOnIOThread) {
-                            context.runOnContext(unused -> super.onHeaders(headers));
-                        } else {
-                            super.onHeaders(headers);
-                        }
-                    }
+                            @Override
+                            public void onHeaders(Metadata headers) {
+                                if (isOnIOThread) {
+                                    context.runOnContext(unused -> super.onHeaders(headers));
+                                } else {
+                                    super.onHeaders(headers);
+                                }
+                            }
 
-                    @Override
-                    public void onMessage(RespT message) {
-                        if (isOnIOThread) {
-                            context.runOnContext(unused -> super.onMessage(message));
-                        } else {
-                            super.onMessage(message);
-                        }
-                    }
+                            @Override
+                            public void onMessage(RespT message) {
+                                if (isOnIOThread) {
+                                    context.runOnContext(unused -> super.onMessage(message));
+                                } else {
+                                    super.onMessage(message);
+                                }
+                            }
 
-                    @Override
-                    public void onClose(Status status, Metadata trailers) {
-                        if (isOnIOThread) {
-                            context.runOnContext(unused -> super.onClose(status, trailers));
-                        } else {
-                            super.onClose(status, trailers);
-                        }
-                    }
-                }, headers);
+                            @Override
+                            public void onClose(Status status, Metadata trailers) {
+                                if (isOnIOThread) {
+                                    context.runOnContext(unused -> super.onClose(status, trailers));
+                                } else {
+                                    super.onClose(status, trailers);
+                                }
+                            }
+                        }, headers);
             }
         };
     }

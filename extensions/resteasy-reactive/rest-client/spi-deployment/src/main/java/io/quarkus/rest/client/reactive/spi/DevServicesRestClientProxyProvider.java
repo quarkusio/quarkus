@@ -5,15 +5,15 @@ import java.io.Closeable;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Extensions that integrate with the REST Client can use this interface in order to provide their own proxy
- * when users have {@code quarkus.rest-client."full-class-name".enable-local-proxy"} enabled, can implement
- * this interface and register it by producing {@link BuildItem}.
+ * Extensions that integrate with the REST Client can use this interface in order to provide their own proxy when users
+ * have {@code quarkus.rest-client."full-class-name".enable-local-proxy"} enabled, can implement this interface and
+ * register it by producing {@link BuildItem}.
  */
 public interface DevServicesRestClientProxyProvider {
 
     /**
-     * Used by Quarkus to determine which provider to use when multiple providers exist.
-     * User control this if necessary by setting {@code quarkus.rest-client."full-class-name".local-proxy-provider}
+     * Used by Quarkus to determine which provider to use when multiple providers exist. User control this if necessary
+     * by setting {@code quarkus.rest-client."full-class-name".local-proxy-provider}
      */
     String name();
 

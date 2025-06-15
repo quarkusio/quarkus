@@ -32,7 +32,8 @@ public class JsonbSerdeTest {
         entity.id = 42L;
         entity.name = "Bob";
 
-        try (Jsonb jsonb = JsonbBuilder.create(); JsonbSerde<MyEntity> serde = new JsonbSerde<>(MyEntity.class, jsonb)) {
+        try (Jsonb jsonb = JsonbBuilder.create();
+                JsonbSerde<MyEntity> serde = new JsonbSerde<>(MyEntity.class, jsonb)) {
             byte[] serialized = serde.serializer().serialize("my-topic", entity);
             MyEntity deserialized = serde.deserializer().deserialize("my-topic", serialized);
 

@@ -25,7 +25,8 @@ final class LinuxIDUtil {
 
             process = idPB.start();
             try (InputStream inputStream = process.getInputStream()) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                     while ((line = reader.readLine()) != null) {
                         responseBuilder.append(line);
                     }
@@ -36,8 +37,8 @@ final class LinuxIDUtil {
                 safeWaitFor(process);
                 throw t;
             }
-        } catch (IOException e) { //from process.start()
-            //swallow and return null id
+        } catch (IOException e) { // from process.start()
+            // swallow and return null id
             return null;
         }
     }

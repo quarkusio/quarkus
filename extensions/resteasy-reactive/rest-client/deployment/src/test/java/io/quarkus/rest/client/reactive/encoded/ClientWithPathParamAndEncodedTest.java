@@ -30,17 +30,14 @@ public class ClientWithPathParamAndEncodedTest {
 
     @Test
     public void testClientWithoutEncoded() {
-        ClientWithoutEncoded client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                .build(ClientWithoutEncoded.class);
+        ClientWithoutEncoded client = RestClientBuilder.newBuilder().baseUri(baseUri).build(ClientWithoutEncoded.class);
         ClientWebApplicationException ex = assertThrows(ClientWebApplicationException.class, () -> client.call("a/b"));
         assertTrue(ex.getMessage().contains("Not Found"));
     }
 
     @Test
     public void testClientWithEncodedInParameter() {
-        ClientWithEncodedInParameter client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
+        ClientWithEncodedInParameter client = RestClientBuilder.newBuilder().baseUri(baseUri)
                 .build(ClientWithEncodedInParameter.class);
         assertEquals("Hello A/B", client.call("a/b"));
         assertEquals("Hello A/B/C", client.sub().call("b/c"));
@@ -48,8 +45,7 @@ public class ClientWithPathParamAndEncodedTest {
 
     @Test
     public void testClientWithEncodedInMethod() {
-        ClientWithEncodedInMethod client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
+        ClientWithEncodedInMethod client = RestClientBuilder.newBuilder().baseUri(baseUri)
                 .build(ClientWithEncodedInMethod.class);
         assertEquals("Hello A/B", client.call("a/b"));
         assertEquals("Hello A/B/C", client.sub1().call("b/c"));
@@ -59,8 +55,7 @@ public class ClientWithPathParamAndEncodedTest {
 
     @Test
     public void testClientWithEncodedInClass() {
-        ClientWithEncodedInClass client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
+        ClientWithEncodedInClass client = RestClientBuilder.newBuilder().baseUri(baseUri)
                 .build(ClientWithEncodedInClass.class);
         assertEquals("Hello A/B", client.call("a/b"));
         assertEquals("Hello A/B/C", client.sub().call("b/c"));

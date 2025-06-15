@@ -28,9 +28,6 @@ public class GreetingResource {
 
     @GET
     public Object getGreetings() {
-        return em
-                .createNativeQuery("SELECT greeting FROM Greeting")
-                .getResultList()
-                .get(0);
+        return em.createNativeQuery("SELECT greeting FROM Greeting").getResultList().get(0);
     }
 }

@@ -32,17 +32,18 @@ public class JsonObjectWriter implements AsyncMessageBodyWriter<JsonObject> {
     }
 
     @Override
-    public void writeTo(JsonObject jsonObject, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(JsonObject jsonObject, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         entityStream.write(jsonObject.toBuffer().getBytes());
         entityStream.flush();
         entityStream.close();
     }
 
     @Override
-    public CompletionStage<Void> asyncWriteTo(JsonObject jsonObject, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, AsyncOutputStream entityStream) {
+    public CompletionStage<Void> asyncWriteTo(JsonObject jsonObject, Class<?> type, Type genericType,
+            Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders,
+            AsyncOutputStream entityStream) {
         return entityStream.asyncWrite(jsonObject.toBuffer().getBytes());
     }
 }

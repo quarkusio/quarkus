@@ -42,7 +42,8 @@ public class FixedResponseBuilderAndStreamingResponseCustomizer implements Handl
     }
 
     @Override
-    public PublisherResponseHandler.StreamingResponseCustomizer streamingResponseCustomizer(ServerResourceMethod method) {
+    public PublisherResponseHandler.StreamingResponseCustomizer streamingResponseCustomizer(
+            ServerResourceMethod method) {
         return streamingResponseCustomizer;
     }
 }

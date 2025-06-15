@@ -43,9 +43,8 @@ import org.hibernate.type.format.jakartajson.JsonBJsonFormatMapper;
 import org.hibernate.type.format.jaxb.JaxbXmlFormatMapper;
 
 /**
- * Similar to {@link org.hibernate.boot.registry.selector.internal.StrategySelectorBuilder} but
- * omits registering the components we don't support, and uses a new pattern of registration
- * meant to avoid class initializations.
+ * Similar to {@link org.hibernate.boot.registry.selector.internal.StrategySelectorBuilder} but omits registering the
+ * components we don't support, and uses a new pattern of registration meant to avoid class initializations.
  *
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
@@ -54,8 +53,8 @@ public final class QuarkusStrategySelectorBuilder {
     /**
      * Builds the selector.
      *
-     * @param classLoaderService The class loading service used to (attempt to) resolve any un-registered
-     *        strategy implementations.
+     * @param classLoaderService
+     *        The class loading service used to (attempt to) resolve any un-registered strategy implementations.
      *
      * @return The selector.
      */
@@ -63,8 +62,7 @@ public final class QuarkusStrategySelectorBuilder {
         final StrategySelectorImpl strategySelector = new StrategySelectorImpl(classLoaderService);
 
         // build the baseline...
-        strategySelector.registerStrategyLazily(
-                Dialect.class,
+        strategySelector.registerStrategyLazily(Dialect.class,
                 new AggregatedDialectSelector(classLoaderService.loadJavaServices(DialectSelector.class)));
         strategySelector.registerStrategyLazily(JtaPlatform.class, new DefaultJtaPlatformSelector());
         addTransactionCoordinatorBuilders(strategySelector);
@@ -78,7 +76,8 @@ public final class QuarkusStrategySelectorBuilder {
 
         // Required to support well known extensions e.g. Envers
         // TODO: should we introduce a new integrator SPI to limit these to extensions supported by Quarkus?
-        for (StrategyRegistrationProvider provider : classLoaderService.loadJavaServices(StrategyRegistrationProvider.class)) {
+        for (StrategyRegistrationProvider provider : classLoaderService
+                .loadJavaServices(StrategyRegistrationProvider.class)) {
             for (StrategyRegistration<?> discoveredStrategyRegistration : provider.getStrategyRegistrations()) {
                 applyFromStrategyRegistration(strategySelector, discoveredStrategyRegistration);
             }
@@ -90,8 +89,8 @@ public final class QuarkusStrategySelectorBuilder {
     /**
      * Builds the selector for runtime use.
      *
-     * @param classLoaderService The class loading service used to (attempt to) resolve any un-registered
-     *        strategy implementations.
+     * @param classLoaderService
+     *        The class loading service used to (attempt to) resolve any un-registered strategy implementations.
      *
      * @return The selector.
      */
@@ -106,130 +105,81 @@ public final class QuarkusStrategySelectorBuilder {
     private static <T> void applyFromStrategyRegistration(StrategySelectorImpl strategySelector,
             StrategyRegistration<T> strategyRegistration) {
         for (String name : strategyRegistration.getSelectorNames()) {
-            strategySelector.registerStrategyImplementor(
-                    strategyRegistration.getStrategyRole(),
-                    name,
+            strategySelector.registerStrategyImplementor(strategyRegistration.getStrategyRole(), name,
                     strategyRegistration.getStrategyImplementation());
         }
     }
 
     private static void addTransactionCoordinatorBuilders(StrategySelectorImpl strategySelector) {
-        strategySelector.registerStrategyImplementor(
-                TransactionCoordinatorBuilder.class,
+        strategySelector.registerStrategyImplementor(TransactionCoordinatorBuilder.class,
                 JdbcResourceLocalTransactionCoordinatorBuilderImpl.SHORT_NAME,
                 JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
-        strategySelector.registerStrategyImplementor(
-                TransactionCoordinatorBuilder.class,
-                JtaTransactionCoordinatorBuilderImpl.SHORT_NAME,
-                JtaTransactionCoordinatorBuilderImpl.class);
+        strategySelector.registerStrategyImplementor(TransactionCoordinatorBuilder.class,
+                JtaTransactionCoordinatorBuilderImpl.SHORT_NAME, JtaTransactionCoordinatorBuilderImpl.class);
     }
 
     private static void addSqmMultiTableInsertStrategies(StrategySelectorImpl strategySelector) {
-        strategySelector.registerStrategyImplementor(
-                SqmMultiTableInsertStrategy.class,
-                CteInsertStrategy.SHORT_NAME,
+        strategySelector.registerStrategyImplementor(SqmMultiTableInsertStrategy.class, CteInsertStrategy.SHORT_NAME,
                 CteInsertStrategy.class);
-        strategySelector.registerStrategyImplementor(
-                SqmMultiTableInsertStrategy.class,
-                GlobalTemporaryTableInsertStrategy.SHORT_NAME,
-                GlobalTemporaryTableInsertStrategy.class);
-        strategySelector.registerStrategyImplementor(
-                SqmMultiTableInsertStrategy.class,
-                LocalTemporaryTableInsertStrategy.SHORT_NAME,
-                LocalTemporaryTableInsertStrategy.class);
-        strategySelector.registerStrategyImplementor(
-                SqmMultiTableInsertStrategy.class,
-                PersistentTableInsertStrategy.SHORT_NAME,
-                PersistentTableInsertStrategy.class);
+        strategySelector.registerStrategyImplementor(SqmMultiTableInsertStrategy.class,
+                GlobalTemporaryTableInsertStrategy.SHORT_NAME, GlobalTemporaryTableInsertStrategy.class);
+        strategySelector.registerStrategyImplementor(SqmMultiTableInsertStrategy.class,
+                LocalTemporaryTableInsertStrategy.SHORT_NAME, LocalTemporaryTableInsertStrategy.class);
+        strategySelector.registerStrategyImplementor(SqmMultiTableInsertStrategy.class,
+                PersistentTableInsertStrategy.SHORT_NAME, PersistentTableInsertStrategy.class);
     }
 
     private static void addSqmMultiTableMutationStrategies(StrategySelectorImpl strategySelector) {
-        strategySelector.registerStrategyImplementor(
-                SqmMultiTableMutationStrategy.class,
-                CteMutationStrategy.SHORT_NAME,
-                CteMutationStrategy.class);
-        strategySelector.registerStrategyImplementor(
-                SqmMultiTableMutationStrategy.class,
-                GlobalTemporaryTableMutationStrategy.SHORT_NAME,
-                GlobalTemporaryTableMutationStrategy.class);
-        strategySelector.registerStrategyImplementor(
-                SqmMultiTableMutationStrategy.class,
-                LocalTemporaryTableMutationStrategy.SHORT_NAME,
-                LocalTemporaryTableMutationStrategy.class);
-        strategySelector.registerStrategyImplementor(
-                SqmMultiTableMutationStrategy.class,
-                PersistentTableMutationStrategy.SHORT_NAME,
-                PersistentTableMutationStrategy.class);
+        strategySelector.registerStrategyImplementor(SqmMultiTableMutationStrategy.class,
+                CteMutationStrategy.SHORT_NAME, CteMutationStrategy.class);
+        strategySelector.registerStrategyImplementor(SqmMultiTableMutationStrategy.class,
+                GlobalTemporaryTableMutationStrategy.SHORT_NAME, GlobalTemporaryTableMutationStrategy.class);
+        strategySelector.registerStrategyImplementor(SqmMultiTableMutationStrategy.class,
+                LocalTemporaryTableMutationStrategy.SHORT_NAME, LocalTemporaryTableMutationStrategy.class);
+        strategySelector.registerStrategyImplementor(SqmMultiTableMutationStrategy.class,
+                PersistentTableMutationStrategy.SHORT_NAME, PersistentTableMutationStrategy.class);
     }
 
     private static void addImplicitNamingStrategies(StrategySelectorImpl strategySelector) {
-        strategySelector.registerStrategyImplementor(
-                ImplicitNamingStrategy.class,
-                "default",
+        strategySelector.registerStrategyImplementor(ImplicitNamingStrategy.class, "default",
                 ImplicitNamingStrategyJpaCompliantImpl.class);
-        strategySelector.registerStrategyImplementor(
-                ImplicitNamingStrategy.class,
-                "jpa",
+        strategySelector.registerStrategyImplementor(ImplicitNamingStrategy.class, "jpa",
                 ImplicitNamingStrategyJpaCompliantImpl.class);
-        strategySelector.registerStrategyImplementor(
-                ImplicitNamingStrategy.class,
-                "component-path",
+        strategySelector.registerStrategyImplementor(ImplicitNamingStrategy.class, "component-path",
                 ImplicitNamingStrategyComponentPathImpl.class);
-        strategySelector.registerStrategyImplementor(
-                ImplicitDatabaseObjectNamingStrategy.class,
-                StandardNamingStrategy.STRATEGY_NAME,
-                StandardNamingStrategy.class);
-        strategySelector.registerStrategyImplementor(
-                ImplicitDatabaseObjectNamingStrategy.class,
-                SingleNamingStrategy.STRATEGY_NAME,
-                SingleNamingStrategy.class);
-        strategySelector.registerStrategyImplementor(
-                ImplicitDatabaseObjectNamingStrategy.class,
-                LegacyNamingStrategy.STRATEGY_NAME,
-                LegacyNamingStrategy.class);
+        strategySelector.registerStrategyImplementor(ImplicitDatabaseObjectNamingStrategy.class,
+                StandardNamingStrategy.STRATEGY_NAME, StandardNamingStrategy.class);
+        strategySelector.registerStrategyImplementor(ImplicitDatabaseObjectNamingStrategy.class,
+                SingleNamingStrategy.STRATEGY_NAME, SingleNamingStrategy.class);
+        strategySelector.registerStrategyImplementor(ImplicitDatabaseObjectNamingStrategy.class,
+                LegacyNamingStrategy.STRATEGY_NAME, LegacyNamingStrategy.class);
     }
 
     private static void addColumnOrderingStrategies(StrategySelectorImpl strategySelector) {
-        strategySelector.registerStrategyImplementor(
-                ColumnOrderingStrategy.class,
-                "default",
+        strategySelector.registerStrategyImplementor(ColumnOrderingStrategy.class, "default",
                 ColumnOrderingStrategyStandard.class);
-        strategySelector.registerStrategyImplementor(
-                ColumnOrderingStrategy.class,
-                "legacy",
+        strategySelector.registerStrategyImplementor(ColumnOrderingStrategy.class, "legacy",
                 ColumnOrderingStrategyLegacy.class);
     }
 
     private static void addCacheKeysFactories(StrategySelectorImpl strategySelector) {
-        strategySelector.registerStrategyImplementor(
-                CacheKeysFactory.class,
-                DefaultCacheKeysFactory.SHORT_NAME,
+        strategySelector.registerStrategyImplementor(CacheKeysFactory.class, DefaultCacheKeysFactory.SHORT_NAME,
                 DefaultCacheKeysFactory.class);
-        strategySelector.registerStrategyImplementor(
-                CacheKeysFactory.class,
-                SimpleCacheKeysFactory.SHORT_NAME,
+        strategySelector.registerStrategyImplementor(CacheKeysFactory.class, SimpleCacheKeysFactory.SHORT_NAME,
                 SimpleCacheKeysFactory.class);
     }
 
     private static void addJsonFormatMappers(StrategySelectorImpl strategySelector) {
-        strategySelector.registerStrategyImplementor(
-                FormatMapper.class,
-                JacksonJsonFormatMapper.SHORT_NAME,
+        strategySelector.registerStrategyImplementor(FormatMapper.class, JacksonJsonFormatMapper.SHORT_NAME,
                 JacksonJsonFormatMapper.class);
-        strategySelector.registerStrategyImplementor(
-                FormatMapper.class,
-                JsonBJsonFormatMapper.SHORT_NAME,
+        strategySelector.registerStrategyImplementor(FormatMapper.class, JsonBJsonFormatMapper.SHORT_NAME,
                 JsonBJsonFormatMapper.class);
     }
 
     private static void addXmlFormatMappers(StrategySelectorImpl strategySelector) {
-        strategySelector.registerStrategyImplementor(
-                FormatMapper.class,
-                JacksonXmlFormatMapper.SHORT_NAME,
+        strategySelector.registerStrategyImplementor(FormatMapper.class, JacksonXmlFormatMapper.SHORT_NAME,
                 JacksonXmlFormatMapper.class);
-        strategySelector.registerStrategyImplementor(
-                FormatMapper.class,
-                JaxbXmlFormatMapper.SHORT_NAME,
+        strategySelector.registerStrategyImplementor(FormatMapper.class, JaxbXmlFormatMapper.SHORT_NAME,
                 JaxbXmlFormatMapper.class);
     }
 }

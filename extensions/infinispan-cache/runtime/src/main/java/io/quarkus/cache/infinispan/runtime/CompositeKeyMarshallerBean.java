@@ -19,7 +19,8 @@ public class CompositeKeyMarshallerBean {
                 .packageName(CompositeCacheKeyMarshaller.PACKAGE)
                 .addImport("org/infinispan/protostream/message-wrapping.proto")
                 .addMessage(CompositeCacheKeyMarshaller.NAME)
-                .addRepeatedField(Type.create("org.infinispan.protostream.WrappedMessage"), CompositeCacheKeyMarshaller.KEYS, 1)
+                .addRepeatedField(Type.create("org.infinispan.protostream.WrappedMessage"),
+                        CompositeCacheKeyMarshaller.KEYS, 1)
                 .build();
     }
 

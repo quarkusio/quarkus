@@ -69,7 +69,8 @@ class HibernateSearchElasticsearchDevInfo {
         IndexedEntity(SearchIndexedEntity<?> searchIndexedEntity) {
             this.jpaName = searchIndexedEntity.jpaName();
             this.javaClass = searchIndexedEntity.javaClass().getName();
-            ElasticsearchIndexManager indexManager = searchIndexedEntity.indexManager().unwrap(ElasticsearchIndexManager.class);
+            ElasticsearchIndexManager indexManager = searchIndexedEntity.indexManager()
+                    .unwrap(ElasticsearchIndexManager.class);
             indexNames.add(indexManager.descriptor().readName());
             indexNames.add(indexManager.descriptor().writeName());
         }

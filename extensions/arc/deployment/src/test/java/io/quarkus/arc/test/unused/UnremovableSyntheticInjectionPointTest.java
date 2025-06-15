@@ -27,9 +27,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnremovableSyntheticInjectionPointTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UnremovableSyntheticInjectionPointTest.class, Alpha.class, Gama.class, GamaCreator.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(UnremovableSyntheticInjectionPointTest.class, Alpha.class, Gama.class, GamaCreator.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -42,11 +41,8 @@ public class UnremovableSyntheticInjectionPointTest {
                     @Override
                     public void execute(BuildContext context) {
                         context.produce(SyntheticBeanBuildItem.configure(Gama.class)
-                                .scope(BuiltinScope.SINGLETON.getInfo())
-                                .unremovable()
-                                .addInjectionPoint(ClassType.create(Alpha.class))
-                                .creator(GamaCreator.class)
-                                .done());
+                                .scope(BuiltinScope.SINGLETON.getInfo()).unremovable()
+                                .addInjectionPoint(ClassType.create(Alpha.class)).creator(GamaCreator.class).done());
                     }
                 }).produces(SyntheticBeanBuildItem.class).build();
             }

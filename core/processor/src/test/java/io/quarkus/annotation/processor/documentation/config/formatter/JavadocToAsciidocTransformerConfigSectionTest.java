@@ -23,17 +23,8 @@ public class JavadocToAsciidocTransformerConfigSectionTest {
     @Test
     public void passThroughAConfigSectionInAsciiDoc() {
         String title = "My Asciidoc";
-        String details = "Let's have a https://quarkus.io[link to our website].\n" +
-                "\n" +
-                "[TIP]\n" +
-                "====\n" +
-                "A nice tip\n" +
-                "====\n" +
-                "\n" +
-                "[source,java]\n" +
-                "----\n" +
-                "And some code\n" +
-                "----";
+        String details = "Let's have a https://quarkus.io[link to our website].\n" + "\n" + "[TIP]\n" + "====\n"
+                + "A nice tip\n" + "====\n" + "\n" + "[source,java]\n" + "----\n" + "And some code\n" + "----";
 
         String asciidoc = "=== " + title + "\n\n" + details;
 
@@ -41,21 +32,12 @@ public class JavadocToAsciidocTransformerConfigSectionTest {
         assertEquals(title, JavadocToAsciidocTransformer.toAsciidoc(sectionHolder.title(), sectionHolder.format()));
         assertEquals(details, JavadocToAsciidocTransformer.toAsciidoc(sectionHolder.details(), sectionHolder.format()));
 
-        asciidoc = "Asciidoc title. \n" +
-                "\n" +
-                "Let's have a https://quarkus.io[link to our website].\n" +
-                "\n" +
-                "[TIP]\n" +
-                "====\n" +
-                "A nice tip\n" +
-                "====\n" +
-                "\n" +
-                "[source,java]\n" +
-                "----\n" +
-                "And some code\n" +
-                "----";
+        asciidoc = "Asciidoc title. \n" + "\n" + "Let's have a https://quarkus.io[link to our website].\n" + "\n"
+                + "[TIP]\n" + "====\n" + "A nice tip\n" + "====\n" + "\n" + "[source,java]\n" + "----\n"
+                + "And some code\n" + "----";
 
         sectionHolder = JavadocUtil.parseConfigSectionJavadoc(asciidoc + "\n" + "@asciidoclet");
-        assertEquals("Asciidoc title", JavadocToAsciidocTransformer.toAsciidoc(sectionHolder.title(), sectionHolder.format()));
+        assertEquals("Asciidoc title",
+                JavadocToAsciidocTransformer.toAsciidoc(sectionHolder.title(), sectionHolder.format()));
     }
 }

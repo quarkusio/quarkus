@@ -98,14 +98,11 @@ public class TransactionalStreamCommandsTest extends DatasourceTestBase {
             var stream = tx.stream(String.class);
             assertThat(stream.getDataSource()).isEqualTo(tx);
 
-            return stream.xadd(key, payload)
-                    .chain(x -> stream.xtrim(key, new XTrimArgs().maxlen(0)))
-                    .chain(x -> stream.xgroupCreate(key, "g1", "0"))
-                    .chain(x -> stream.xpending(key, "g1"))
+            return stream.xadd(key, payload).chain(x -> stream.xtrim(key, new XTrimArgs().maxlen(0)))
+                    .chain(x -> stream.xgroupCreate(key, "g1", "0")).chain(x -> stream.xpending(key, "g1"))
                     .chain(x -> stream.xadd(key, payload))
                     .chain(x -> stream.xadd(key, new XAddArgs().nomkstream(), payload))
-                    .chain(x -> stream.xread(key, "0"))
-                    .chain(x -> stream.xreadgroup("g1", "c1", key, ">"))
+                    .chain(x -> stream.xread(key, "0")).chain(x -> stream.xreadgroup("g1", "c1", key, ">"))
                     .chain(x -> stream.xpending(key, "g1"))
                     .chain(x -> stream.xpending(key, "g1", StreamRange.of("-", "+"), 10));
 

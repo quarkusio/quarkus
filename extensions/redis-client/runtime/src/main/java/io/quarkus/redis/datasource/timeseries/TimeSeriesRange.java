@@ -20,8 +20,11 @@ public class TimeSeriesRange {
     /**
      * Creates a time series range using the given timestamps
      *
-     * @param begin the beginning of the range
-     * @param end the end of the range
+     * @param begin
+     *        the beginning of the range
+     * @param end
+     *        the end of the range
+     *
      * @return the time series range
      */
     public static TimeSeriesRange fromTimestamps(long begin, long end) {
@@ -56,8 +59,7 @@ public class TimeSeriesRange {
     }
 
     public List<String> toArgs() {
-        return List.of(
-                start == Long.MAX_VALUE ? "-" : Long.toString(start),
+        return List.of(start == Long.MAX_VALUE ? "-" : Long.toString(start),
                 end == Long.MAX_VALUE ? "+" : Long.toString(end));
     }
 

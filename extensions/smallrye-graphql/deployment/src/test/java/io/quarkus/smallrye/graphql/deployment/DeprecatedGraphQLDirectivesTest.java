@@ -16,37 +16,26 @@ import io.smallrye.graphql.api.Deprecated;
 public class DeprecatedGraphQLDirectivesTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Person.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.schema-include-directives=true"),
-                            "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Person.class)
+            .addAsResource(new StringAsset("quarkus.smallrye-graphql.schema-include-directives=true"),
+                    "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void deprecatedDirectivesPresentInSchema() {
-        get("/graphql/schema.graphql")
-                .then()
-                .body(
-                        containsString("input PersonInput {\n" +
-                                "  age: Int! @deprecated\n" +
-                                "  name: String @deprecated(reason : \"reason0\")\n" +
-                                "  numberOfEyes: BigInteger! @deprecated\n" +
-                                "}\n"),
+        get("/graphql/schema.graphql").then()
+                .body(containsString("input PersonInput {\n"
+                        + "  age: Int! @deprecated\n" + "  name: String @deprecated(reason : \"reason0\")\n"
+                        + "  numberOfEyes: BigInteger! @deprecated\n" + "}\n"),
                         containsString("graphQLDeprecatedQuery: String @deprecated"),
                         containsString("javaLangDeprecatedQuery: String @deprecated"),
                         containsString(
                                 "queryWithGraphQLDeprecatedArgument(deprecated: String @deprecated(reason : \"reason1\")): String"),
                         containsString("queryWithJavaLangDeprecatedArgument(deprecated: String @deprecated): String"),
-                        containsString("type Person {\n" +
-                                "  age: Int! @deprecated\n" +
-                                "  name: String @deprecated(reason : \"reason0\")\n" +
-                                "  numberOfEyes: BigInteger! @deprecated\n" +
-                                "}"),
-                        containsString("enum SomeEnum {\n" +
-                                "  A @deprecated\n" +
-                                "  B @deprecated\n" +
-                                "}"));
+                        containsString("type Person {\n" + "  age: Int! @deprecated\n"
+                                + "  name: String @deprecated(reason : \"reason0\")\n"
+                                + "  numberOfEyes: BigInteger! @deprecated\n" + "}"),
+                        containsString("enum SomeEnum {\n" + "  A @deprecated\n" + "  B @deprecated\n" + "}"));
     }
 
     @GraphQLApi

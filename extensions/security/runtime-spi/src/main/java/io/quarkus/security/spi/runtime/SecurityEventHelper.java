@@ -11,7 +11,8 @@ import io.quarkus.security.identity.SecurityIdentity;
 
 public class SecurityEventHelper<S extends SecurityEvent, F extends SecurityEvent> {
 
-    public static final AuthorizationFailureEvent AUTHORIZATION_FAILURE = new AuthorizationFailureEvent(null, null, null);
+    public static final AuthorizationFailureEvent AUTHORIZATION_FAILURE = new AuthorizationFailureEvent(null, null,
+            null);
     public static final AuthorizationSuccessEvent AUTHORIZATION_SUCCESS = new AuthorizationSuccessEvent(null, null);
     public static final AuthenticationFailureEvent AUTHENTICATION_FAILURE = new AuthenticationFailureEvent(null, null);
     public static final AuthenticationSuccessEvent AUTHENTICATION_SUCCESS = new AuthenticationSuccessEvent(null, null);
@@ -94,13 +95,15 @@ public class SecurityEventHelper<S extends SecurityEvent, F extends SecurityEven
     }
 
     /**
-     * Creates {@link SecurityEventHelper} initialized on first request.
-     * This method should only be used when there is a risk the helper will be initialized during the static init phase.
-     * During the runtime init phase, prefer the constructor.
+     * Creates {@link SecurityEventHelper} initialized on first request. This method should only be used when there is a
+     * risk the helper will be initialized during the static init phase. During the runtime init phase, prefer the
+     * constructor.
      */
-    public static <S extends SecurityEvent, F extends SecurityEvent> SecurityEventHelper<S, F> lazilyOf(Event<S> successEvent,
-            Event<F> failureEvent, S successInstance, F failureInstance, BeanManager beanManager) {
-        return new SecurityEventHelper<>(successEvent, failureEvent, successInstance, failureInstance, beanManager, true) {
+    public static <S extends SecurityEvent, F extends SecurityEvent> SecurityEventHelper<S, F> lazilyOf(
+            Event<S> successEvent, Event<F> failureEvent, S successInstance, F failureInstance,
+            BeanManager beanManager) {
+        return new SecurityEventHelper<>(successEvent, failureEvent, successInstance, failureInstance, beanManager,
+                true) {
 
             private volatile Boolean eventsDisabled = null;
 
@@ -108,8 +111,8 @@ public class SecurityEventHelper<S extends SecurityEvent, F extends SecurityEven
                 if (eventsDisabled == null) {
                     synchronized (this) {
                         if (eventsDisabled == null) {
-                            this.eventsDisabled = !ConfigProvider.getConfig().getValue("quarkus.security.events.enabled",
-                                    Boolean.class);
+                            this.eventsDisabled = !ConfigProvider.getConfig()
+                                    .getValue("quarkus.security.events.enabled", Boolean.class);
                         }
                     }
                 }

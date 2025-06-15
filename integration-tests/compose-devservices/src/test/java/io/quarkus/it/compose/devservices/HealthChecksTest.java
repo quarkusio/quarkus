@@ -13,14 +13,9 @@ public class HealthChecksTest {
 
     @Test
     public void health() {
-        RestAssured.when().get("/q/health/ready").then()
-                .body("status", is("UP"),
-                        "checks.name",
-                        containsInAnyOrder(
-                                "Redis connection health check",
-                                "Kafka connection health check",
-                                "Database connections health check",
-                                "SmallRye Reactive Messaging - readiness check"));
+        RestAssured.when().get("/q/health/ready").then().body("status", is("UP"), "checks.name",
+                containsInAnyOrder("Redis connection health check", "Kafka connection health check",
+                        "Database connections health check", "SmallRye Reactive Messaging - readiness check"));
     }
 
 }

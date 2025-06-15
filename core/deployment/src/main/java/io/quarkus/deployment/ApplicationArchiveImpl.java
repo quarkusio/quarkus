@@ -66,6 +66,7 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
     @Deprecated
     /**
      * @deprecated in favor of {@link #getKey()}
+     *
      * @return archive key
      */
     public AppArtifactKey getArtifactKey() {
@@ -101,7 +102,8 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
         try (OpenPathTree openTree = this.openTree.getOriginalTree().open()) {
             return func.apply(openTree);
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to open path tree with root " + openTree.getOriginalTree().getRoots(), e);
+            throw new UncheckedIOException(
+                    "Failed to open path tree with root " + openTree.getOriginalTree().getRoots(), e);
         }
     }
 
@@ -120,7 +122,8 @@ public final class ApplicationArchiveImpl extends MultiBuildItem implements Appl
         try (OpenPathTree openTree = this.openTree.getOriginalTree().open()) {
             func.accept(openTree);
         } catch (IOException e) {
-            throw new UncheckedIOException("Failed to open path tree with root " + openTree.getOriginalTree().getRoots(), e);
+            throw new UncheckedIOException(
+                    "Failed to open path tree with root " + openTree.getOriginalTree().getRoots(), e);
         }
     }
 }

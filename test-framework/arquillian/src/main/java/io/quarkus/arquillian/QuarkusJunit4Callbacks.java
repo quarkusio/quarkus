@@ -3,8 +3,8 @@ package io.quarkus.arquillian;
 import java.lang.reflect.InvocationTargetException;
 
 /**
- * Note that we cannot use event.getExecutor().invoke() directly because the callbacks would be invoked upon the original test
- * class instance and not the real test instance.
+ * Note that we cannot use event.getExecutor().invoke() directly because the callbacks would be invoked upon the
+ * original test class instance and not the real test instance.
  * <p>
  * This class works for JUnit callbacks only, see {@link QuarkusTestNgCallbacks} for TestNG
  */

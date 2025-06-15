@@ -4,7 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Exchange attribute that represents a combination of attributes that should be merged into a single string.
- *
  */
 public class CompositeExchangeAttribute implements ExchangeAttribute {
 

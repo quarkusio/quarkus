@@ -39,7 +39,7 @@ public class DevOptions {
 
     @Override
     public String toString() {
-        return "DevOptions [clean=" + clean + ", tests=" + runTests + ", offline=" + offline +
-                ", batch-mode=" + batchMode + ", dry-run=" + isDryRun() + "]";
+        return "DevOptions [clean=" + clean + ", tests=" + runTests + ", offline=" + offline + ", batch-mode="
+                + batchMode + ", dry-run=" + isDryRun() + "]";
     }
 }

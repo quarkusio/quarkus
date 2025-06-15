@@ -17,8 +17,8 @@ import jakarta.ws.rs.ext.Provider;
 public class MediaTypeFromMessageBodyWriterListAsText implements MessageBodyWriter<Iterable<?>> {
 
     @Override
-    public long getSize(final Iterable<?> t, final Class<?> type, final Type genericType, final Annotation[] annotations,
-            final MediaType mediaType) {
+    public long getSize(final Iterable<?> t, final Class<?> type, final Type genericType,
+            final Annotation[] annotations, final MediaType mediaType) {
         return -1L;
     }
 

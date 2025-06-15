@@ -54,30 +54,30 @@ class AbstractBitMapCommands<K> extends AbstractRedisCommands {
     Uni<Response> _bitopAnd(K destination, K... keys) {
         nonNull(destination, "destination");
         notNullOrEmpty(keys, "keys");
-        return execute(RedisCommand.of(Command.BITOP).put("AND")
-                .put(marshaller.encode(destination)).put(marshaller.encode(keys)));
+        return execute(RedisCommand.of(Command.BITOP).put("AND").put(marshaller.encode(destination))
+                .put(marshaller.encode(keys)));
     }
 
     Uni<Response> _bitopNot(K destination, K source) {
         nonNull(destination, "destination");
         nonNull(source, "source");
-        return execute(RedisCommand.of(Command.BITOP).put("NOT")
-                .put(marshaller.encode(destination)).put(marshaller.encode(source)));
+        return execute(RedisCommand.of(Command.BITOP).put("NOT").put(marshaller.encode(destination))
+                .put(marshaller.encode(source)));
     }
 
     final Uni<Response> _bitopOr(K destination, K... keys) {
         nonNull(destination, "destination");
         notNullOrEmpty(keys, "keys");
-        return execute(RedisCommand.of(Command.BITOP).put("OR")
-                .put(marshaller.encode(destination)).put(marshaller.encode(keys)));
+        return execute(RedisCommand.of(Command.BITOP).put("OR").put(marshaller.encode(destination))
+                .put(marshaller.encode(keys)));
     }
 
     @SafeVarargs
     final Uni<Response> _bitopXor(K destination, K... keys) {
         nonNull(destination, "destination");
         notNullOrEmpty(keys, "keys");
-        return execute(RedisCommand.of(Command.BITOP).put("XOR")
-                .put(marshaller.encode(destination)).put(marshaller.encode(keys)));
+        return execute(RedisCommand.of(Command.BITOP).put("XOR").put(marshaller.encode(destination))
+                .put(marshaller.encode(keys)));
     }
 
     List<Long> decodeListOfLongs(Response r) {

@@ -44,7 +44,8 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
                     switchToWorkerThreadPoolAndRetry(restClientContext);
                     break;
                 } else {
-                    // we have an exception mapper, we don't need the response anymore, we can map it to response right away (I hope :D)
+                    // we have an exception mapper, we don't need the response anymore, we can map it to response right
+                    // away (I hope :D)
                     ResponseImpl response = ClientResponseCompleteRestHandler.mapToResponse(restClientContext, false);
                     Throwable throwable;
                     if (exceptionMapper instanceof ResteasyReactiveResponseExceptionMapper) {
@@ -53,7 +54,8 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
                     } else {
                         throwable = exceptionMapper.toThrowable(response);
                     }
-                    requestContext.setProperty(INVOKED_EXCEPTION_MAPPER_CLASS_NAME_PROP, exceptionMapper.getClass().getName());
+                    requestContext.setProperty(INVOKED_EXCEPTION_MAPPER_CLASS_NAME_PROP,
+                            exceptionMapper.getClass().getName());
                     if (throwable != null) {
                         throw new UnwrappableException(throwable);
                     }

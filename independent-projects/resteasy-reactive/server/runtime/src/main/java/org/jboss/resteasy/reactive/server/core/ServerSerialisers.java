@@ -85,19 +85,18 @@ public class ServerSerialisers extends Serialisers {
     private static final String TYPE_LOWER = "type";
     private static final String LENGTH = "Length";
     private static final String LENGTH_LOWER = "length";
-    private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because the TCK expects upper case
+    private static final String CONTENT_TYPE = CONTENT + "-" + TYPE; // use this instead of the Vert.x constant because
+                                                                     // the TCK expects upper case
     private static final String TRANSFER_ENCODING = "Transfer-Encoding";
 
     public final static List<Serialisers.BuiltinReader> BUILTIN_READERS = List.of(
-            new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinReader(Boolean.class, ServerBooleanMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
+            new Serialisers.BuiltinReader(String.class, ServerStringMessageBodyHandler.class, MediaType.WILDCARD),
+            new Serialisers.BuiltinReader(Boolean.class, ServerBooleanMessageBodyHandler.class, MediaType.TEXT_PLAIN),
             new Serialisers.BuiltinReader(Character.class, ServerCharacterMessageBodyHandler.class,
                     MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinReader(Number.class, ServerNumberMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinReader(InputStream.class, ServerInputStreamMessageBodyHandler.class, MediaType.WILDCARD),
+            new Serialisers.BuiltinReader(Number.class, ServerNumberMessageBodyHandler.class, MediaType.TEXT_PLAIN),
+            new Serialisers.BuiltinReader(InputStream.class, ServerInputStreamMessageBodyHandler.class,
+                    MediaType.WILDCARD),
             new Serialisers.BuiltinReader(Reader.class, ServerReaderBodyHandler.class, MediaType.WILDCARD),
             new Serialisers.BuiltinReader(File.class, ServerFileBodyHandler.class, MediaType.WILDCARD),
 
@@ -105,38 +104,26 @@ public class ServerSerialisers extends Serialisers {
             new Serialisers.BuiltinReader(Object.class, ServerDefaultTextPlainBodyHandler.class, MediaType.TEXT_PLAIN,
                     RuntimeType.SERVER));
     public final static List<Serialisers.BuiltinWriter> BUILTIN_WRITERS = List.of(
-            new Serialisers.BuiltinWriter(String.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Number.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Boolean.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Character.class, ServerStringMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(Object.class, ServerStringMessageBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(char[].class, ServerCharArrayMessageBodyHandler.class,
-                    MediaType.TEXT_PLAIN),
-            new Serialisers.BuiltinWriter(byte[].class, ServerByteArrayMessageBodyHandler.class,
-                    MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(String.class, ServerStringMessageBodyHandler.class, MediaType.TEXT_PLAIN),
+            new Serialisers.BuiltinWriter(Number.class, ServerStringMessageBodyHandler.class, MediaType.TEXT_PLAIN),
+            new Serialisers.BuiltinWriter(Boolean.class, ServerStringMessageBodyHandler.class, MediaType.TEXT_PLAIN),
+            new Serialisers.BuiltinWriter(Character.class, ServerStringMessageBodyHandler.class, MediaType.TEXT_PLAIN),
+            new Serialisers.BuiltinWriter(Object.class, ServerStringMessageBodyHandler.class, MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(char[].class, ServerCharArrayMessageBodyHandler.class, MediaType.TEXT_PLAIN),
+            new Serialisers.BuiltinWriter(byte[].class, ServerByteArrayMessageBodyHandler.class, MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(MultivaluedMap.class, ServerFormUrlEncodedProvider.class,
                     MediaType.APPLICATION_FORM_URLENCODED),
             new Serialisers.BuiltinWriter(InputStream.class, ServerInputStreamMessageBodyHandler.class,
                     MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(StreamingOutput.class, StreamingOutputMessageBodyWriter.class,
                     MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(Reader.class, ServerReaderBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(File.class, ServerFileBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(FilePart.class, ServerFilePartBodyHandler.class,
-                    MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(Reader.class, ServerReaderBodyHandler.class, MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(File.class, ServerFileBodyHandler.class, MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(FilePart.class, ServerFilePartBodyHandler.class, MediaType.WILDCARD),
             new Serialisers.BuiltinWriter(MultipartFormDataOutput.class, MultipartMessageBodyWriter.class,
                     MediaType.MULTIPART_FORM_DATA),
-            new Serialisers.BuiltinWriter(java.nio.file.Path.class, ServerPathBodyHandler.class,
-                    MediaType.WILDCARD),
-            new Serialisers.BuiltinWriter(PathPart.class, ServerPathPartBodyHandler.class,
-                    MediaType.WILDCARD));
+            new Serialisers.BuiltinWriter(java.nio.file.Path.class, ServerPathBodyHandler.class, MediaType.WILDCARD),
+            new Serialisers.BuiltinWriter(PathPart.class, ServerPathPartBodyHandler.class, MediaType.WILDCARD));
 
     public static final MessageBodyWriter<?>[] NO_WRITER = new MessageBodyWriter[0];
     public static final MessageBodyReader<?>[] NO_READER = new MessageBodyReader[0];
@@ -149,7 +136,7 @@ public class ServerSerialisers extends Serialisers {
             List<ResourceWriter> writers = new ArrayList<>();
             Set<Class<?>> seenInterfaces = new HashSet<>();
             while (c != null) {
-                //TODO: the spec doesn't seem to be totally clear about the sorting here
+                // TODO: the spec doesn't seem to be totally clear about the sorting here
                 // the way the writers are sorted here takes the distance from the requested type
                 // first and foremost and then uses the rest of the criteria
 
@@ -181,14 +168,13 @@ public class ServerSerialisers extends Serialisers {
     };
 
     public static boolean invokeWriter(ResteasyReactiveRequestContext context, Object entity, MessageBodyWriter writer,
-            ServerSerialisers serialisers)
-            throws IOException {
+            ServerSerialisers serialisers) throws IOException {
         return invokeWriter(context, entity, writer, serialisers, null);
     }
 
     public static boolean invokeWriter(ResteasyReactiveRequestContext context, Object entity, MessageBodyWriter writer,
             ServerSerialisers serialisers, MediaType mediaType) throws IOException {
-        //note that GenericEntity is not a factor here. It should have already been unwrapped
+        // note that GenericEntity is not a factor here. It should have already been unwrapped
 
         WriterInterceptor[] writerInterceptors = context.getWriterInterceptors();
         boolean outputStreamSet = context.getOutputStream() != null;
@@ -196,7 +182,8 @@ public class ServerSerialisers extends Serialisers {
 
         RuntimeResource target = context.getTarget();
         Type genericType;
-        if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we use it
+        if (context.hasGenericReturnType()) { // make sure that when a Response with a GenericEntity was returned, we
+                                              // use it
             genericType = context.getGenericReturnType();
         } else {
             genericType = target == null ? null : target.getReturnType();
@@ -207,11 +194,8 @@ public class ServerSerialisers extends Serialisers {
                 ServerMessageBodyWriter<Object> quarkusRestWriter = (ServerMessageBodyWriter<Object>) writer;
 
                 Class<?> entityClass = entity.getClass();
-                if (quarkusRestWriter.isWriteable(
-                        entityClass,
-                        genericType,
-                        target == null ? null : target.getLazyMethod(),
-                        context.getResponseMediaType())) {
+                if (quarkusRestWriter.isWriteable(entityClass, genericType,
+                        target == null ? null : target.getLazyMethod(), context.getResponseMediaType())) {
                     if (mediaType != null) {
                         context.setResponseContentType(mediaType);
                     }
@@ -228,8 +212,8 @@ public class ServerSerialisers extends Serialisers {
                         context.setResponseContentType(mediaType);
                     }
                     if (writerInterceptors == null) {
-                        writer.writeTo(entity, entity.getClass(), genericType,
-                                context.getAllAnnotations(), context.getResponseMediaType(), response.getHeaders(),
+                        writer.writeTo(entity, entity.getClass(), genericType, context.getAllAnnotations(),
+                                context.getResponseMediaType(), response.getHeaders(),
                                 context.getOrCreateOutputStream());
                         context.getOrCreateOutputStream().close();
                     } else {
@@ -241,9 +225,9 @@ public class ServerSerialisers extends Serialisers {
                 }
             }
         } catch (Throwable e) {
-            //clear the pre-commit listener, as if this error is unrecoverable
-            //the error handling will want to write out its own response
-            //and the pre commit listener will interfere with that
+            // clear the pre-commit listener, as if this error is unrecoverable
+            // the error handling will want to write out its own response
+            // and the pre commit listener will interfere with that
             context.serverResponse().setPreCommitListener(null);
             // also clear the stream in order to try to avoid writing out any data that
             // might have been put on the stream before the exception occurred
@@ -259,11 +243,12 @@ public class ServerSerialisers extends Serialisers {
         }
     }
 
-    public static void runWriterInterceptors(ResteasyReactiveRequestContext context, Object entity, MessageBodyWriter writer,
-            Response response, WriterInterceptor[] writerInterceptor, ServerSerialisers serialisers) throws IOException {
+    public static void runWriterInterceptors(ResteasyReactiveRequestContext context, Object entity,
+            MessageBodyWriter writer, Response response, WriterInterceptor[] writerInterceptor,
+            ServerSerialisers serialisers) throws IOException {
         WriterInterceptorContextImpl wc = new WriterInterceptorContextImpl(context, writerInterceptor, writer,
-                context.getAllAnnotations(), entity.getClass(), context.getGenericReturnType(), entity, response.getMediaType(),
-                response.getHeaders(), serialisers);
+                context.getAllAnnotations(), entity.getClass(), context.getGenericReturnType(), entity,
+                response.getMediaType(), response.getHeaders(), serialisers);
         wc.proceed();
     }
 
@@ -276,9 +261,8 @@ public class ServerSerialisers extends Serialisers {
     }
 
     /**
-     * Find the best matching writer based on the 'Accept' HTTP header
-     * This is probably more complex than it needs to be, but some RESTEasy tests show that the response type
-     * is influenced by the provider's weight of the media types
+     * Find the best matching writer based on the 'Accept' HTTP header This is probably more complex than it needs to
+     * be, but some RESTEasy tests show that the response type is influenced by the provider's weight of the media types
      */
     public BestMatchingServerWriterResult findBestMatchingServerWriter(ConfigurationImpl configuration,
             Class<?> entityType, ServerHttpRequest request) {
@@ -297,8 +281,8 @@ public class ServerSerialisers extends Serialisers {
         BestMatchingServerWriterResult result = new BestMatchingServerWriterResult();
         do {
             if (klass == Object.class) {
-                //spec extension, look for interfaces as well
-                //we match interfaces before Object
+                // spec extension, look for interfaces as well
+                // we match interfaces before Object
                 Set<Class<?>> seen = new HashSet<>(toProcess);
                 while (!toProcess.isEmpty()) {
                     Class<?> iface = toProcess.poll();
@@ -321,8 +305,8 @@ public class ServerSerialisers extends Serialisers {
         return result;
     }
 
-    private void serverResourceWriterLookup(ServerHttpRequest request,
-            List<ResourceWriter> candidates, BestMatchingServerWriterResult result) {
+    private void serverResourceWriterLookup(ServerHttpRequest request, List<ResourceWriter> candidates,
+            BestMatchingServerWriterResult result) {
         if (candidates == null) {
             return;
         }
@@ -384,12 +368,8 @@ public class ServerSerialisers extends Serialisers {
                 acceptable.addAll(i.mediaTypes());
             }
 
-            throw new WebApplicationException(Response
-                    .notAcceptable(Variant
-                            .mediaTypes(
-                                    acceptable.toArray(new MediaType[0]))
-                            .build())
-                    .build());
+            throw new WebApplicationException(
+                    Response.notAcceptable(Variant.mediaTypes(acceptable.toArray(new MediaType[0])).build()).build());
         }
         if (selected.isWildcardType() || (selected.getType().equals("application") && selected.isWildcardSubtype())) {
             selected = MediaType.APPLICATION_OCTET_STREAM_TYPE;
@@ -480,8 +460,8 @@ public class ServerSerialisers extends Serialisers {
         ServerHttpResponse vertxResponse = requestContext.serverResponse();
         LazyResponse lazyResponse = requestContext.getResponse();
         if (!lazyResponse.isCreated() && lazyResponse.isPredetermined()) {
-            //fast path
-            //there is no response, so we just set the content type
+            // fast path
+            // there is no response, so we just set the content type
             if (requestContext.getResponseEntity() == null) {
                 vertxResponse.setStatusCode(Response.Status.NO_CONTENT.getStatusCode());
             }

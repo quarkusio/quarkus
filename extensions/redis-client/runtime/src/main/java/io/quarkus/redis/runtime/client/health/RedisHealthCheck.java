@@ -53,8 +53,8 @@ class RedisHealthCheck implements HealthCheck {
             clients.putIfAbsent(clientName == null ? DEFAULT_CLIENT : clientName, redis);
         }
 
-        for (InstanceHandle<RedisDataSource> handle : Arc.container().select(RedisDataSource.class, Any.Literal.INSTANCE)
-                .handles()) {
+        for (InstanceHandle<RedisDataSource> handle : Arc.container()
+                .select(RedisDataSource.class, Any.Literal.INSTANCE).handles()) {
             String clientName = getClientName(handle.getBean());
             Redis redis = handle.get().getReactive().getRedis();
             clients.putIfAbsent(clientName == null ? DEFAULT_CLIENT : clientName, redis);

@@ -3,8 +3,8 @@ package io.quarkus.cache;
 import java.util.Objects;
 
 /**
- * A default cache key is used by the annotations caching API when a no-args method annotated with {@link CacheResult} or
- * {@link CacheInvalidate} is invoked. This class can also be used with the programmatic caching API.
+ * A default cache key is used by the annotations caching API when a no-args method annotated with {@link CacheResult}
+ * or {@link CacheInvalidate} is invoked. This class can also be used with the programmatic caching API.
  */
 public class DefaultCacheKey {
 
@@ -13,8 +13,11 @@ public class DefaultCacheKey {
     /**
      * Constructor.
      *
-     * @param cacheName cache name
-     * @throws NullPointerException if the cache name is {@code null}
+     * @param cacheName
+     *        cache name
+     *
+     * @throws NullPointerException
+     *         if the cache name is {@code null}
      */
     public DefaultCacheKey(String cacheName) {
         this.cacheName = Objects.requireNonNull(cacheName);

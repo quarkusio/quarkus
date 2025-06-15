@@ -20,7 +20,6 @@ import io.quarkus.undertow.deployment.FilterBuildItem;
 
 /**
  * If resteasy metrics are enabled, register additional filters specific to smallrye metrics.
- *
  */
 @BuildSteps(onlyIf = JaxRsMetricsProcessor.RestMetricsEnabled.class)
 public class JaxRsMetricsProcessor {
@@ -28,14 +27,15 @@ public class JaxRsMetricsProcessor {
     static final String SMALLRYE_JAXRS_SERVLET_FILTER_CLASS_NAME = "io.smallrye.metrics.jaxrs.JaxRsMetricsServletFilter";
     static final String SMALLRYE_QUARKUS_RESTEASY_FILTER_CLASS_NAME = "io.quarkus.smallrye.metrics.runtime.QuarkusRestEasyMetricsFilter";
     static final String SMALLRYE_QUARKUS_REST_FILTER_CLASS_NAME = "io.quarkus.smallrye.metrics.runtime.QuarkusRestMetricsFilter";
-    static final String RESTEASY_CONFIG_PROPERTY = "quarkus.resteasy.metrics.enabled"; // TODO: we probably want to remove this now...
+    static final String RESTEASY_CONFIG_PROPERTY = "quarkus.resteasy.metrics.enabled"; // TODO: we probably want to
+                                                                                       // remove this now...
 
     static class RestMetricsEnabled implements BooleanSupplier {
         SmallRyeMetricsConfig smConfig;
 
         public boolean getAsBoolean() {
-            boolean resteasyConfigEnabled = ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, Boolean.class)
-                    .orElse(false);
+            boolean resteasyConfigEnabled = ConfigProvider.getConfig()
+                    .getOptionalValue(RESTEASY_CONFIG_PROPERTY, Boolean.class).orElse(false);
             return smConfig.extensionsEnabled() && (smConfig.jaxrsEnabled() || resteasyConfigEnabled);
         }
     }
@@ -43,8 +43,7 @@ public class JaxRsMetricsProcessor {
     // Ensure class is present (smallrye metrics extension) and resteasy metrics are enabled
     @BuildStep
     void enableMetrics(Optional<MetricsCapabilityBuildItem> metricsCapabilityBuildItem,
-            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxRsProviders,
-            BuildProducer<FilterBuildItem> servletFilters,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> jaxRsProviders, BuildProducer<FilterBuildItem> servletFilters,
             BuildProducer<ContainerRequestFilterBuildItem> containerRequestFilters,
             BuildProducer<CustomContainerResponseFilterBuildItem> customContainerResponseFilters,
             Capabilities capabilities) {
@@ -53,20 +52,15 @@ public class JaxRsMetricsProcessor {
         if (metricsCapabilityBuildItem.isPresent()) {
             if (capabilities.isPresent(Capability.SERVLET)) {
                 // if running with servlet, use the MetricsFilter implementation from SmallRye
-                jaxRsProviders.produce(
-                        new ResteasyJaxrsProviderBuildItem(SMALLRYE_JAXRS_FILTER_CLASS_NAME));
-                servletFilters.produce(
-                        FilterBuildItem.builder("metricsFilter", SMALLRYE_JAXRS_SERVLET_FILTER_CLASS_NAME)
-                                .setAsyncSupported(true)
-                                .addFilterUrlMapping("*", DispatcherType.FORWARD)
-                                .addFilterUrlMapping("*", DispatcherType.INCLUDE)
-                                .addFilterUrlMapping("*", DispatcherType.REQUEST)
-                                .addFilterUrlMapping("*", DispatcherType.ASYNC)
-                                .addFilterUrlMapping("*", DispatcherType.ERROR)
-                                .build());
+                jaxRsProviders.produce(new ResteasyJaxrsProviderBuildItem(SMALLRYE_JAXRS_FILTER_CLASS_NAME));
+                servletFilters.produce(FilterBuildItem
+                        .builder("metricsFilter", SMALLRYE_JAXRS_SERVLET_FILTER_CLASS_NAME).setAsyncSupported(true)
+                        .addFilterUrlMapping("*", DispatcherType.FORWARD)
+                        .addFilterUrlMapping("*", DispatcherType.INCLUDE)
+                        .addFilterUrlMapping("*", DispatcherType.REQUEST).addFilterUrlMapping("*", DispatcherType.ASYNC)
+                        .addFilterUrlMapping("*", DispatcherType.ERROR).build());
             } else if (capabilities.isPresent(Capability.RESTEASY)) {
-                jaxRsProviders.produce(
-                        new ResteasyJaxrsProviderBuildItem(SMALLRYE_QUARKUS_RESTEASY_FILTER_CLASS_NAME));
+                jaxRsProviders.produce(new ResteasyJaxrsProviderBuildItem(SMALLRYE_QUARKUS_RESTEASY_FILTER_CLASS_NAME));
             } else if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
                 customContainerResponseFilters
                         .produce(new CustomContainerResponseFilterBuildItem(SMALLRYE_QUARKUS_REST_FILTER_CLASS_NAME));
@@ -76,8 +70,8 @@ public class JaxRsMetricsProcessor {
 
     private void warnIfDeprecatedResteasyPropertiesPresent() {
         if (ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, Boolean.class).isPresent()) {
-            SmallRyeMetricsProcessor.LOGGER.warn(
-                    "`quarkus.resteasy.metrics.enabled` is deprecated and will be removed in a future version. "
+            SmallRyeMetricsProcessor.LOGGER
+                    .warn("`quarkus.resteasy.metrics.enabled` is deprecated and will be removed in a future version. "
                             + "Use `quarkus.smallrye-metrics.jaxrs.enabled` to enable metrics for REST endpoints "
                             + "using the smallrye-metrics extension");
         }

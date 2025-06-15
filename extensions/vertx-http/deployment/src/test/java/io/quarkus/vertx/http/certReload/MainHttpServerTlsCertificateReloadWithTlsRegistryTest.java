@@ -39,10 +39,8 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.ext.web.Router;
 
-@Certificates(baseDir = "target/certificates", certificates = {
-        @Certificate(name = "reload-A", formats = Format.PEM),
-        @Certificate(name = "reload-B", formats = Format.PEM, duration = 365),
-})
+@Certificates(baseDir = "target/certificates", certificates = { @Certificate(name = "reload-A", formats = Format.PEM),
+        @Certificate(name = "reload-B", formats = Format.PEM, duration = 365), })
 @DisabledOnOs(OS.WINDOWS)
 public class MainHttpServerTlsCertificateReloadWithTlsRegistryTest {
 
@@ -58,8 +56,7 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryTest {
             .overrideConfigKey("quarkus.http.ssl.certificate.reload-period", "30s")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.cert", temp.getAbsolutePath() + "/tls.crt")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.key", temp.getAbsolutePath() + "/tls.key")
-            .overrideConfigKey("loc", temp.getAbsolutePath())
-            .setBeforeAllCustomizer(() -> {
+            .overrideConfigKey("loc", temp.getAbsolutePath()).setBeforeAllCustomizer(() -> {
                 try {
                     // Prepare a random directory to store the certificates.
                     temp.mkdirs();
@@ -72,8 +69,7 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryTest {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            })
-            .setAfterAllCustomizer(() -> {
+            }).setAfterAllCustomizer(() -> {
                 try {
                     Files.deleteIfExists(new File(temp, "/tls.crt").toPath());
                     Files.deleteIfExists(new File(temp, "/tls.key").toPath());
@@ -92,44 +88,32 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryTest {
 
     @Test
     void test() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        var options = new HttpClientOptions()
-                .setSsl(true)
-                .setDefaultPort(url.getPort())
-                .setDefaultHost(url.getHost())
+        var options = new HttpClientOptions().setSsl(true).setDefaultPort(url.getPort()).setDefaultHost(url.getHost())
                 .setTrustOptions(new PemTrustOptions().addCertPath("target/certificates/reload-A-ca.crt"));
 
-        String response1 = vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        String response1 = vertx.createHttpClient(options).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join();
 
         // Update certs
-        Files.copy(new File("target/certificates/reload-B.crt").toPath(),
-                new File(certs, "/tls.crt").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(new File("target/certificates/reload-B.key").toPath(),
-                new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-B.crt").toPath(), new File(certs, "/tls.crt").toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-B.key").toPath(), new File(certs, "/tls.key").toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         // Trigger the reload
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         // The client truststore is not updated, thus it should fail.
-        assertThatThrownBy(() -> vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        assertThatThrownBy(() -> vertx.createHttpClient(options).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
 
         var options2 = new HttpClientOptions(options)
                 .setTrustOptions(new PemTrustOptions().addCertPath("target/certificates/reload-B-ca.crt"));
 
-        var response2 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        var response2 = vertx.createHttpClient(options2).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join();
 
         assertThat(response1).isNotEqualTo(response2); // Because cert duration are different.
@@ -137,11 +121,8 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryTest {
         // Trigger another reload
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
-        var response3 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        var response3 = vertx.createHttpClient(options2).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join();
 
         assertThat(response2).isEqualTo(response3);
@@ -151,8 +132,8 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryTest {
 
         public void onStart(@Observes Router router) {
             router.get("/hello").handler(rc -> {
-                var exp = ((X509Certificate) rc.request().connection().sslSession().getLocalCertificates()[0]).getNotAfter()
-                        .toInstant().toEpochMilli();
+                var exp = ((X509Certificate) rc.request().connection().sslSession().getLocalCertificates()[0])
+                        .getNotAfter().toInstant().toEpochMilli();
                 rc.response().end("Hello " + exp);
             });
         }

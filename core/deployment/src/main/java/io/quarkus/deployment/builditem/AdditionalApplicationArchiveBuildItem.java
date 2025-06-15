@@ -17,6 +17,7 @@ public final class AdditionalApplicationArchiveBuildItem extends MultiBuildItem 
 
     /**
      * @deprecated in favor of {@link #getResolvedPaths()}
+     *
      * @return
      */
     @Deprecated

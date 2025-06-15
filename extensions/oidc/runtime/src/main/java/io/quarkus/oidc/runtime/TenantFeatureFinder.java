@@ -35,9 +35,8 @@ public class TenantFeatureFinder {
                     throw new OIDCException("Unable to find TokenCustomizer " + customizerName);
                 }
             } else if (oidcConfig.tenantId().isPresent()) {
-                return container
-                        .instance(TokenCustomizer.class, TenantFeature.TenantFeatureLiteral.of(oidcConfig.tenantId().get()))
-                        .get();
+                return container.instance(TokenCustomizer.class,
+                        TenantFeature.TenantFeatureLiteral.of(oidcConfig.tenantId().get())).get();
             }
         }
         return null;

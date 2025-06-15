@@ -65,18 +65,27 @@ public class SpringWebResteasyReactiveProcessor {
 
     private static final DotName REQUEST_MAPPING = DotName
             .createSimple("org.springframework.web.bind.annotation.RequestMapping");
-    private static final DotName GET_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.GetMapping");
-    private static final DotName POST_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.PostMapping");
-    private static final DotName PUT_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.PutMapping");
-    private static final DotName DELETE_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping");
-    private static final DotName PATCH_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping");
+    private static final DotName GET_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.GetMapping");
+    private static final DotName POST_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.PostMapping");
+    private static final DotName PUT_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.PutMapping");
+    private static final DotName DELETE_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.DeleteMapping");
+    private static final DotName PATCH_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.PatchMapping");
     private static final List<DotName> MAPPING_ANNOTATIONS = List.of(REQUEST_MAPPING, GET_MAPPING, POST_MAPPING,
             PUT_MAPPING, DELETE_MAPPING, PATCH_MAPPING);
 
-    private static final DotName PATH_VARIABLE = DotName.createSimple("org.springframework.web.bind.annotation.PathVariable");
-    private static final DotName REQUEST_PARAM = DotName.createSimple("org.springframework.web.bind.annotation.RequestParam");
-    private static final DotName REQUEST_HEADER = DotName.createSimple("org.springframework.web.bind.annotation.RequestHeader");
-    private static final DotName COOKIE_VALUE = DotName.createSimple("org.springframework.web.bind.annotation.CookieValue");
+    private static final DotName PATH_VARIABLE = DotName
+            .createSimple("org.springframework.web.bind.annotation.PathVariable");
+    private static final DotName REQUEST_PARAM = DotName
+            .createSimple("org.springframework.web.bind.annotation.RequestParam");
+    private static final DotName REQUEST_HEADER = DotName
+            .createSimple("org.springframework.web.bind.annotation.RequestHeader");
+    private static final DotName COOKIE_VALUE = DotName
+            .createSimple("org.springframework.web.bind.annotation.CookieValue");
     private static final DotName MATRIX_VARIABLE = DotName
             .createSimple("org.springframework.web.bind.annotation.MatrixVariable");
 
@@ -99,8 +108,7 @@ public class SpringWebResteasyReactiveProcessor {
     public AdditionalJaxRsResourceMethodParamAnnotations additionalJaxRsResourceMethodParamAnnotations() {
         return new AdditionalJaxRsResourceMethodParamAnnotations(
                 Arrays.asList(DotName.createSimple("org.springframework.web.bind.annotation.RequestParam"),
-                        PATH_VARIABLE,
-                        DotName.createSimple("org.springframework.web.bind.annotation.RequestBody"),
+                        PATH_VARIABLE, DotName.createSimple("org.springframework.web.bind.annotation.RequestBody"),
                         DotName.createSimple("org.springframework.web.bind.annotation.MatrixVariable"),
                         DotName.createSimple("org.springframework.web.bind.annotation.RequestHeader"),
                         DotName.createSimple("org.springframework.web.bind.annotation.CookieValue")));
@@ -118,8 +126,7 @@ public class SpringWebResteasyReactiveProcessor {
 
         validateControllers(index.getIndex());
 
-        for (AnnotationInstance restController : index.getIndex()
-                .getAnnotations(REST_CONTROLLER_ANNOTATION)) {
+        for (AnnotationInstance restController : index.getIndex().getAnnotations(REST_CONTROLLER_ANNOTATION)) {
             ClassInfo targetClass = restController.target().asClass();
             additionalResourceClassProducer.produce(new AdditionalResourceClassBuildItem(targetClass,
                     getSinglePathOfInstance(targetClass.declaredAnnotation(REQUEST_MAPPING), "")));
@@ -229,11 +236,12 @@ public class SpringWebResteasyReactiveProcessor {
                                     "Usage of multiple methods using '@RequestMapping' is not allowed. Offending method is '"
                                             + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
                         }
-                        DotName methodDotName = ResteasyReactiveScanner.METHOD_TO_BUILTIN_HTTP_ANNOTATIONS.get(methods[0]);
+                        DotName methodDotName = ResteasyReactiveScanner.METHOD_TO_BUILTIN_HTTP_ANNOTATIONS
+                                .get(methods[0]);
                         if (methodDotName == null) {
-                            throw new IllegalArgumentException(
-                                    "Unsupported HTTP method '" + methods[0] + "' for @RequestMapping. Offending method is '"
-                                            + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
+                            throw new IllegalArgumentException("Unsupported HTTP method '" + methods[0]
+                                    + "' for @RequestMapping. Offending method is '"
+                                    + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
                         }
                         jaxRSMethodAnnotation = methodDotName;
                     }
@@ -272,11 +280,9 @@ public class SpringWebResteasyReactiveProcessor {
                 for (AnnotationInstance annotation : methodInfo.annotations()) {
                     if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                         DotName annotationName = annotation.name();
-                        //TODO: add Cookie and Matrix handling
-                        if (annotationName.equals(REQUEST_PARAM)
-                                || annotationName.equals(REQUEST_HEADER)
-                                || annotationName.equals(COOKIE_VALUE)
-                                || annotationName.equals(MATRIX_VARIABLE)) {
+                        // TODO: add Cookie and Matrix handling
+                        if (annotationName.equals(REQUEST_PARAM) || annotationName.equals(REQUEST_HEADER)
+                                || annotationName.equals(COOKIE_VALUE) || annotationName.equals(MATRIX_VARIABLE)) {
 
                             DotName jaxRsAnnotation;
                             if (annotationName.equals(REQUEST_PARAM)) {
@@ -295,7 +301,8 @@ public class SpringWebResteasyReactiveProcessor {
                                 annotationValues = Collections.emptyList();
 
                             } else {
-                                annotationValues = Collections.singletonList(AnnotationValue.createStringValue("value", name));
+                                annotationValues = Collections
+                                        .singletonList(AnnotationValue.createStringValue("value", name));
                             }
                             transform.add(create(jaxRsAnnotation, annotation.target(), annotationValues));
 
@@ -309,20 +316,21 @@ public class SpringWebResteasyReactiveProcessor {
                                     if (requiredValue.asBoolean()) {
                                         throw new IllegalArgumentException(
                                                 "Using required @RequestMapping is not supported. Offending method is '"
-                                                        + methodInfo.declaringClass().name() + "#" + methodInfo.name() + "'");
+                                                        + methodInfo.declaringClass().name() + "#" + methodInfo.name()
+                                                        + "'");
                                     }
                                 }
                             }
                             if (defaultValueStr != null) {
-                                transform.add(create(DEFAULT_VALUE, annotation.target(),
-                                        Collections
-                                                .singletonList(AnnotationValue.createStringValue("value", defaultValueStr))));
+                                transform.add(create(DEFAULT_VALUE, annotation.target(), Collections
+                                        .singletonList(AnnotationValue.createStringValue("value", defaultValueStr))));
                             }
                         } else if (annotationName.equals(PATH_VARIABLE)) {
                             String name = getNameOrDefaultFromParamAnnotation(annotation);
                             List<AnnotationValue> annotationValues = Collections.emptyList();
                             if (name != null) {
-                                annotationValues = Collections.singletonList(AnnotationValue.createStringValue("value", name));
+                                annotationValues = Collections
+                                        .singletonList(AnnotationValue.createStringValue("value", name));
                             }
                             transform.add(create(REST_PATH_PARAM, annotation.target(), annotationValues));
                         }
@@ -345,8 +353,8 @@ public class SpringWebResteasyReactiveProcessor {
                 return null;
             }
 
-            private void addStringArrayValuedAnnotation(Transformation transform, AnnotationTarget target, String[] value,
-                    DotName annotationDotName) {
+            private void addStringArrayValuedAnnotation(Transformation transform, AnnotationTarget target,
+                    String[] value, DotName annotationDotName) {
                 if ((value != null) && value.length > 0) {
                     AnnotationValue[] values = new AnnotationValue[value.length];
                     for (int i = 0; i < values.length; i++) {
@@ -361,8 +369,8 @@ public class SpringWebResteasyReactiveProcessor {
                 if (path == null) {
                     return;
                 }
-                transform.add(AnnotationInstance.create(ResteasyReactiveDotNames.PATH, target,
-                        new AnnotationValue[] { AnnotationValue.createStringValue("value", replaceSpringWebWildcards(path)) }));
+                transform.add(AnnotationInstance.create(ResteasyReactiveDotNames.PATH, target, new AnnotationValue[] {
+                        AnnotationValue.createStringValue("value", replaceSpringWebWildcards(path)) }));
             }
 
             private String replaceSpringWebWildcards(String methodPath) {
@@ -373,9 +381,9 @@ public class SpringWebResteasyReactiveProcessor {
                     methodPath = methodPath.replace("/*", "/{unusedPlaceHolderVar}");
                 }
                 /*
-                 * Spring Web allows the use of '?' to capture a single character. We support this by
-                 * converting each url path using it to a JAX-RS syntax of variable followed by a regex.
-                 * So '/car?/s?o?/info' would become '/{notusedPlaceHolderVar0:car.}/{notusedPlaceHolderVar1:s.o.}/info'
+                 * Spring Web allows the use of '?' to capture a single character. We support this by converting each
+                 * url path using it to a JAX-RS syntax of variable followed by a regex. So '/car?/s?o?/info' would
+                 * become '/{notusedPlaceHolderVar0:car.}/{notusedPlaceHolderVar1:s.o.}/info'
                  */
                 String[] parts = methodPath.split("/");
                 if (parts.length > 0) {
@@ -391,7 +399,8 @@ public class SpringWebResteasyReactiveProcessor {
                         if ((part.startsWith("{") && part.endsWith("}")) || !part.contains("?")) {
                             sb.append(part);
                         } else {
-                            sb.append(String.format("{notusedPlaceHolderVar%s:", i)).append(part.replace('?', '.')).append("}");
+                            sb.append(String.format("{notusedPlaceHolderVar%s:", i)).append(part.replace('?', '.'))
+                                    .append("}");
                         }
                     }
                     if (methodPath.endsWith("/")) {
@@ -409,26 +418,27 @@ public class SpringWebResteasyReactiveProcessor {
     MethodScannerBuildItem scanner() {
         return new MethodScannerBuildItem(new MethodScanner() {
             /**
-             * In Spring, parameters annotated with {@code @RequestParam} are required by default unless explicitly marked as
-             * optional.
-             * This method ensures the same behavior in Quarkus by checking if a parameter is required and enforcing its
-             * presence.
-             *
-             * The method scans for parameters annotated with {@code @RequestParam} and verifies:
+             * In Spring, parameters annotated with {@code @RequestParam} are required by default unless explicitly
+             * marked as optional. This method ensures the same behavior in Quarkus by checking if a parameter is
+             * required and enforcing its presence. The method scans for parameters annotated with {@code @RequestParam}
+             * and verifies:
              * <ul>
              * <li>If the parameter is marked as required (default behavior in Spring).</li>
              * <li>If it has no default value.</li>
              * <li>If it is not of type {@code Optional<T>}.</li>
              * </ul>
-             *
              * If all these conditions are met, it registers a {@link SpringRequestParamHandler} to enforce the required
              * constraint.
              *
-             * @param method The method being scanned.
-             * @param actualEndpointClass The actual class defining the endpoint.
-             * @param methodContext A map containing metadata about the method.
-             * @return A singleton list with {@link SpringRequestParamHandler} if the conditions are met,
-             *         otherwise an empty list.
+             * @param method
+             *        The method being scanned.
+             * @param actualEndpointClass
+             *        The actual class defining the endpoint.
+             * @param methodContext
+             *        A map containing metadata about the method.
+             *
+             * @return A singleton list with {@link SpringRequestParamHandler} if the conditions are met, otherwise an
+             *         empty list.
              */
 
             @Override
@@ -438,7 +448,8 @@ public class SpringWebResteasyReactiveProcessor {
                     for (MethodParameterInfo parameterInfo : method.parameters()) {
                         if (parameterInfo.annotation(REQUEST_PARAM) != null) {
                             AnnotationInstance annotation = parameterInfo.annotation(REQUEST_PARAM);
-                            boolean required = annotation.value("required") == null || annotation.value("required").asBoolean();
+                            boolean required = annotation.value("required") == null
+                                    || annotation.value("required").asBoolean();
                             String defaultValue = annotation.value("defaultValue") != null
                                     ? annotation.value("defaultValue").asString()
                                     : "";
@@ -455,8 +466,8 @@ public class SpringWebResteasyReactiveProcessor {
             }
 
             @Override
-            public ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
-                    boolean field, Map<String, Object> methodContext) {
+            public ParameterExtractor handleCustomParameter(Type paramType,
+                    Map<DotName, AnnotationInstance> annotations, boolean field, Map<String, Object> methodContext) {
                 if (annotations.containsKey(REQUEST_PARAM)) {
                     methodContext.put("RequestParam", true);
                     if (paramType.name().equals(SPRING_MULTIVALUE_MAP)) {
@@ -490,7 +501,7 @@ public class SpringWebResteasyReactiveProcessor {
         });
     }
 
-    //TODO: replace with RESTEasy Reactive @ResponseStatus support using an annotation transformer
+    // TODO: replace with RESTEasy Reactive @ResponseStatus support using an annotation transformer
     @BuildStep
     public MethodScannerBuildItem responseStatusSupport() {
         return new MethodScannerBuildItem(new MethodScanner() {
@@ -499,7 +510,8 @@ public class SpringWebResteasyReactiveProcessor {
                     Map<String, Object> methodContext) {
                 AnnotationInstance responseStatus = method.annotation(RESPONSE_STATUS);
                 if (responseStatus != null) {
-                    int newStatus = Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(); // default value for @ResponseStatus
+                    int newStatus = Response.Status.INTERNAL_SERVER_ERROR.getStatusCode(); // default value for
+                                                                                           // @ResponseStatus
                     AnnotationValue codeValue = responseStatus.value("code");
                     if (codeValue != null) {
                         newStatus = HttpStatus.valueOf(codeValue.asEnum()).value();
@@ -515,8 +527,8 @@ public class SpringWebResteasyReactiveProcessor {
                     handler.setDefaultResponseCode(
                             method.returnType().kind() != Type.Kind.VOID ? Response.Status.OK.getStatusCode()
                                     : Response.Status.NO_CONTENT.getStatusCode());
-                    return Collections.singletonList(
-                            new FixedHandlerChainCustomizer(handler, HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
+                    return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
+                            HandlerChainCustomizer.Phase.AFTER_RESPONSE_CREATED));
                 }
 
                 return Collections.emptyList();

@@ -28,8 +28,8 @@ public class TypesTest {
 
     @Test
     public void testIsAssignableFrom() throws IOException {
-        Index index = index(String.class, CharSequence.class, BigDecimal.class, Number.class, Serializable.class, Boolean.class,
-                Double.class);
+        Index index = index(String.class, CharSequence.class, BigDecimal.class, Number.class, Serializable.class,
+                Boolean.class, Double.class);
 
         ClassType stringType = ClassType.create(DotName.createSimple(String.class));
         ClassType charSequenceType = ClassType.create(DotName.createSimple(CharSequence.class));
@@ -65,8 +65,8 @@ public class TypesTest {
 
     @Test
     public void testIsImplementorOf() throws IOException {
-        Index index = index(MyResolver1.class, MyResolver2.class, MyResolver3.class, MyResolver4.class, CoolResolver.class,
-                BaseResolver.class, String.class);
+        Index index = index(MyResolver1.class, MyResolver2.class, MyResolver3.class, MyResolver4.class,
+                CoolResolver.class, BaseResolver.class, String.class);
 
         assertTrue(Types.isImplementorOf(index.getClassByName(MyResolver1.class), Names.VALUE_RESOLVER, index));
         assertTrue(Types.isImplementorOf(index.getClassByName(MyResolver2.class), Names.VALUE_RESOLVER, index));
@@ -80,8 +80,7 @@ public class TypesTest {
         Indexer indexer = new Indexer();
         for (Class<?> clazz : classes) {
             final String resourceName = ClassLoaderHelper.fromClassNameToResourceName(clazz.getName());
-            try (InputStream stream = TypesTest.class.getClassLoader()
-                    .getResourceAsStream(resourceName)) {
+            try (InputStream stream = TypesTest.class.getClassLoader().getResourceAsStream(resourceName)) {
                 indexer.index(stream);
             }
         }

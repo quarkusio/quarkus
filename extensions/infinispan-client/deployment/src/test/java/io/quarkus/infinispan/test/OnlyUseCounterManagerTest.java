@@ -17,11 +17,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class OnlyUseCounterManagerTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @Inject
     CounterManager defaultCounterManager;
 
-    //end::injection[]
+    // end::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

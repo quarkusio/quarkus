@@ -43,7 +43,7 @@ public class QuarkusHttpFunction implements HttpFunction {
     static {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
-        if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock unit testing.
+        if (Application.currentApplication() == null) { // were we already bootstrapped? Needed for mock unit testing.
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
             try {
                 // For GCP functions, we need to set the TCCL to the QuarkusHttpFunction classloader then restore it.
@@ -116,7 +116,8 @@ public class QuarkusHttpFunction implements HttpFunction {
         }
 
         ResponseHandler handler = new ResponseHandler(response);
-        VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP);
+        VirtualClientConnection<?> connection = VirtualClientConnection.connect(handler,
+                VertxHttpRecorder.VIRTUAL_HTTP);
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);
         try {

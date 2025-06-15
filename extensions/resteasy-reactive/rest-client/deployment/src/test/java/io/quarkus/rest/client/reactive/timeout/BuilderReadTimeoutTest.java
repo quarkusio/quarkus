@@ -29,14 +29,11 @@ public class BuilderReadTimeoutTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class));
 
     @Test
     void shouldTimeoutIfReadTimeoutSetShort() {
-        Client client = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(uri)
-                .readTimeout(1, TimeUnit.SECONDS)
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri).readTimeout(1, TimeUnit.SECONDS)
                 .build(Client.class);
 
         RuntimeException exception = assertThrows(RuntimeException.class, client::slow);
@@ -45,9 +42,7 @@ public class BuilderReadTimeoutTest {
 
     @Test
     void shouldNotTimeoutOnFastResponse() {
-        Client client = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(uri)
-                .readTimeout(1, TimeUnit.SECONDS)
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri).readTimeout(1, TimeUnit.SECONDS)
                 .build(Client.class);
 
         assertThat(client.fast()).isEqualTo("fast-response");
@@ -55,9 +50,7 @@ public class BuilderReadTimeoutTest {
 
     @Test
     void shouldNotTimeoutOnDefaultTimeout() {
-        Client client = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(uri)
-                .build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(Client.class);
 
         assertThat(client.slow()).isEqualTo("slow-response");
     }

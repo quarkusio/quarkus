@@ -11,9 +11,7 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 public class GoogleCloudFunctionsHttpCodestartTest {
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("google-cloud-functions-http")
-            .languages(JAVA)
-            .build();
+            .codestarts("google-cloud-functions-http").languages(JAVA).build();
 
     @Test
     void testContent() throws Throwable {

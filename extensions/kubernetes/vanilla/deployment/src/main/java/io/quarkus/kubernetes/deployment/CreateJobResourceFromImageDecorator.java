@@ -25,7 +25,8 @@ public class CreateJobResourceFromImageDecorator extends ResourceProvidingDecora
     private final List<String> command;
     private final List<String> arguments;
 
-    public CreateJobResourceFromImageDecorator(String name, String image, List<String> command, List<String> arguments) {
+    public CreateJobResourceFromImageDecorator(String name, String image, List<String> command,
+            List<String> arguments) {
         this.name = name;
         this.image = image;
         this.command = command;
@@ -35,25 +36,10 @@ public class CreateJobResourceFromImageDecorator extends ResourceProvidingDecora
     @Override
     public void visit(KubernetesListBuilder list) {
         if (!contains(list, JOB_API_VERSION, JOB, name)) {
-            list.addToItems(new JobBuilder()
-                    .withNewMetadata()
-                    .withName(name)
-                    .endMetadata()
-                    .withNewSpec()
-                    .withCompletionMode(DEFAULT_COMPLETION_MODE)
-                    .withNewTemplate()
-                    .withNewSpec()
-                    .withRestartPolicy(DEFAULT_RESTART_POLICY)
-                    .addNewContainer()
-                    .withName(name)
-                    .withImage(image)
-                    .withCommand(command)
-                    .withArgs(arguments)
-                    .endContainer()
-                    .endSpec()
-                    .endTemplate()
-                    .endSpec()
-                    .build());
+            list.addToItems(new JobBuilder().withNewMetadata().withName(name).endMetadata().withNewSpec()
+                    .withCompletionMode(DEFAULT_COMPLETION_MODE).withNewTemplate().withNewSpec()
+                    .withRestartPolicy(DEFAULT_RESTART_POLICY).addNewContainer().withName(name).withImage(image)
+                    .withCommand(command).withArgs(arguments).endContainer().endSpec().endTemplate().endSpec().build());
         }
     }
 }

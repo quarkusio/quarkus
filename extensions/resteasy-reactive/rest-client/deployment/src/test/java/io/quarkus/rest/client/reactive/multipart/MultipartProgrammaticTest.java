@@ -32,8 +32,7 @@ public class MultipartProgrammaticTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Resource.class, FormData.class, Client.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Resource.class, FormData.class, Client.class));
 
     @TestHTTPResource
     URI baseUri;
@@ -43,8 +42,8 @@ public class MultipartProgrammaticTest {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         AtomicLong i = new AtomicLong();
-        Multi<Byte> content = Multi.createBy().repeating().supplier(
-                () -> (byte) ((i.getAndIncrement() + 1) % 123)).atMost(BYTES_SENT);
+        Multi<Byte> content = Multi.createBy().repeating().supplier(() -> (byte) ((i.getAndIncrement() + 1) % 123))
+                .atMost(BYTES_SENT);
         String result = client.postMultipart(ClientMultipartForm.create()
                 .multiAsBinaryFileUpload("fileFormName", "fileName", content, MediaType.APPLICATION_OCTET_STREAM)
                 .stringFileUpload("otherFormName", "whatever", "test", MediaType.TEXT_PLAIN));

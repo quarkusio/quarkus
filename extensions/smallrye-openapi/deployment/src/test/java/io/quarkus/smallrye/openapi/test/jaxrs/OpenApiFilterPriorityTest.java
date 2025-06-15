@@ -12,15 +12,12 @@ public class OpenApiFilterPriorityTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class,
-                            MyBuildTimeFilterPrioDefault.class, MyBuildTimeFilterPrio2.class, MyBuildTimeFilterPrio0.class));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class,
+                    MyBuildTimeFilterPrioDefault.class, MyBuildTimeFilterPrio2.class, MyBuildTimeFilterPrio0.class));
 
     @Test
     public void shouldApplyFilterSortedByPriority() {
-        RestAssured.given().header("Accept", "application/json")
-                .when().get(OPEN_API_PATH)
-                .then()
+        RestAssured.given().header("Accept", "application/json").when().get(OPEN_API_PATH).then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("info.description", Matchers.equalTo("210"));
 

@@ -21,8 +21,7 @@ public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands impleme
     private final List<String> extra = new ArrayList<>();
 
     public <K> HScanReactiveCursorImpl(RedisCommandExecutor redis, K key, Marshaller marshaller, Type typeOfField,
-            Type typeOfValue,
-            List<String> extra) {
+            Type typeOfValue, List<String> extra) {
         super(redis, marshaller);
         this.key = marshaller.encode(key);
         this.typeOfField = typeOfField;
@@ -43,16 +42,13 @@ public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands impleme
         cmd.put(key);
         cmd.put(pos);
         cmd.putAll(extra);
-        return execute(cmd)
-                .invoke(response -> cursor = response.get(0).toLong())
+        return execute(cmd).invoke(response -> cursor = response.get(0).toLong())
                 .map(response -> decode(response.get(1)));
     }
 
     public Multi<Map.Entry<F, V>> toMulti() {
-        return Multi.createBy().repeating()
-                .uni(this::next)
-                .whilst(m -> hasNext())
-                .onItem().transformToMultiAndConcatenate(map -> Multi.createFrom().items(map.entrySet().stream()));
+        return Multi.createBy().repeating().uni(this::next).whilst(m -> hasNext()).onItem()
+                .transformToMultiAndConcatenate(map -> Multi.createFrom().items(map.entrySet().stream()));
     }
 
     public Map<F, V> decode(Response response) {

@@ -41,8 +41,8 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
     }
 
     /**
-     * Gradle is run by default with {@code --no-watch-fs} to reduce I/O load during tests. Some tests might run into issues
-     * with this option.
+     * Gradle is run by default with {@code --no-watch-fs} to reduce I/O load during tests. Some tests might run into
+     * issues with this option.
      */
     protected void gradleNoWatchFs(boolean noWatchFs) {
         this.noWatchFs = noWatchFs;
@@ -88,9 +88,7 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         File logOutput = new File(projectDir, "command-output.log");
 
         System.out.println("$ " + String.join(" ", command));
-        ProcessBuilder pb = new ProcessBuilder()
-                .directory(projectDir)
-                .command(command)
+        ProcessBuilder pb = new ProcessBuilder().directory(projectDir).command(command)
                 .redirectInput(ProcessBuilder.Redirect.INHERIT)
                 // Should prevent "fragmented" output (parts of stdout and stderr interleaved)
                 .redirectErrorStream(true);
@@ -113,8 +111,8 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
             p.waitFor();
             done = true;
         } else {
-            //long timeout for native tests
-            //that may also need to download docker
+            // long timeout for native tests
+            // that may also need to download docker
             done = p.waitFor(10, TimeUnit.MINUTES);
         }
 
@@ -176,15 +174,13 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
     }
 
     private void printCommandOutput(File projectDir, List<String> command, BuildResult commandResult, int exitCode) {
-        System.err.println(
-                "Command: " + String.join(" ", command) + " ran from: " + projectDir.getAbsolutePath()
-                        + " failed with exit code: " + exitCode + " and the following output:");
+        System.err.println("Command: " + String.join(" ", command) + " ran from: " + projectDir.getAbsolutePath()
+                + " failed with exit code: " + exitCode + " and the following output:");
         System.err.println(commandResult.getOutput());
     }
 
     /**
-     * Try to destroy the process normally a few times
-     * and resort to forceful destruction if necessary
+     * Try to destroy the process normally a few times and resort to forceful destruction if necessary
      */
     private static void destroyProcess(Process wrapperProcess) {
         wrapperProcess.destroy();
@@ -209,7 +205,9 @@ public class QuarkusGradleWrapperTestBase extends QuarkusGradleTestBase {
         return ManagementFactory.getRuntimeMXBean().getInputArguments().toString().contains("jdwp");
     }
 
-    private record LogRedirectAndStopper(Process process, File targetFile, Boolean forwardToStdOut) implements Runnable {
+    private record LogRedirectAndStopper(Process process, File targetFile, Boolean forwardToStdOut)
+            implements
+                Runnable {
         @Override
         public void run() {
             try (BufferedReader stdOutReader = process.inputReader();

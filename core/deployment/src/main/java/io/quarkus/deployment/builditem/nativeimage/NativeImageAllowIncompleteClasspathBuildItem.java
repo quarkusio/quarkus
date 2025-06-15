@@ -3,13 +3,12 @@ package io.quarkus.deployment.builditem.nativeimage;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * If any build item of this type is produced, the native-image build tool
- * will run with {@literal --allow-incomplete-classpath} set for versions prior to 22.1 or
- * without {@literal --link-at-build-time} set for versions later than 22.0.
+ * If any build item of this type is produced, the native-image build tool will run with
+ * {@literal --allow-incomplete-classpath} set for versions prior to 22.1 or without {@literal --link-at-build-time} set
+ * for versions later than 22.0.
  * <p>
- * This should be strongly discouraged as it makes diagnostics of any issue
- * much more complex, and we have seen it affect error messages of code
- * seemingly unrelated to the code which is having the broken classpath.
+ * This should be strongly discouraged as it makes diagnostics of any issue much more complex, and we have seen it
+ * affect error messages of code seemingly unrelated to the code which is having the broken classpath.
  * <p>
  * Use of this build item will trigger a warning during build.
  *
@@ -21,7 +20,8 @@ public final class NativeImageAllowIncompleteClasspathBuildItem extends MultiBui
     private final String extensionName;
 
     /**
-     * @param extensionName Name the extension requiring this, so that it can be shamed appropriately during build.
+     * @param extensionName
+     *        Name the extension requiring this, so that it can be shamed appropriately during build.
      */
     public NativeImageAllowIncompleteClasspathBuildItem(String extensionName) {
         this.extensionName = extensionName;

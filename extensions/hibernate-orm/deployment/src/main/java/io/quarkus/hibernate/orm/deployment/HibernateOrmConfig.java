@@ -23,11 +23,9 @@ import io.smallrye.config.WithUnnamedKey;
 public interface HibernateOrmConfig {
 
     /**
-     * Whether Hibernate ORM is enabled *during the build*.
-     *
-     * If Hibernate ORM is disabled during the build, all processing related to Hibernate ORM will be skipped,
-     * but it will not be possible to activate Hibernate ORM at runtime:
-     * `quarkus.hibernate-orm.active` will default to `false` and setting it to `true` will lead to an error.
+     * Whether Hibernate ORM is enabled *during the build*. If Hibernate ORM is disabled during the build, all
+     * processing related to Hibernate ORM will be skipped, but it will not be possible to activate Hibernate ORM at
+     * runtime: `quarkus.hibernate-orm.active` will default to `false` and setting it to `true` will lead to an error.
      *
      * @asciidoclet
      */
@@ -35,12 +33,9 @@ public interface HibernateOrmConfig {
     boolean enabled();
 
     /**
-     * Whether Hibernate ORM is working in blocking mode.
-     *
-     * Hibernate ORM's blocking `EntityManager`/`Session`/`SessionFactory`
-     * are normally disabled by default if no JDBC datasource is found.
-     * You can set this property to `false` if you want to disable them
-     * despite having a JDBC datasource.
+     * Whether Hibernate ORM is working in blocking mode. Hibernate ORM's blocking
+     * `EntityManager`/`Session`/`SessionFactory` are normally disabled by default if no JDBC datasource is found. You
+     * can set this property to `false` if you want to disable them despite having a JDBC datasource.
      *
      * @asciidoclet
      */
@@ -85,16 +80,15 @@ public interface HibernateOrmConfig {
     HibernateOrmConfigLog log();
 
     /**
-     * Whether statistics collection is enabled. If 'metrics.enabled' is true, then the default here is
-     * considered true, otherwise the default is false.
+     * Whether statistics collection is enabled. If 'metrics.enabled' is true, then the default here is considered true,
+     * otherwise the default is false.
      */
     Optional<Boolean> statistics();
 
     /**
-     * Whether session metrics should be appended into the server log for each Hibernate session. This
-     * only has effect if statistics are enabled (`quarkus.hibernate-orm.statistics`). The default is false
-     * (which means both `statistics` and `log-session-metrics` need to be enabled for the session metrics
-     * to appear in the log).
+     * Whether session metrics should be appended into the server log for each Hibernate session. This only has effect
+     * if statistics are enabled (`quarkus.hibernate-orm.statistics`). The default is false (which means both
+     * `statistics` and `log-session-metrics` need to be enabled for the session metrics to appear in the log).
      */
     Optional<Boolean> logSessionMetrics();
 
@@ -112,20 +106,17 @@ public interface HibernateOrmConfig {
 
     default boolean isAnyNonPersistenceXmlPropertySet() {
         // Do NOT include persistenceXml in here.
-        return defaultPersistenceUnit().isAnyPropertySet() ||
-                !namedPersistenceUnits().isEmpty() ||
-                log().isAnyPropertySet() ||
-                statistics().isPresent() ||
-                logSessionMetrics().isPresent() ||
-                metrics().isAnyPropertySet();
+        return defaultPersistenceUnit().isAnyPropertySet() || !namedPersistenceUnits().isEmpty()
+                || log().isAnyPropertySet() || statistics().isPresent() || logSessionMetrics().isPresent()
+                || metrics().isAnyPropertySet();
     }
 
     @ConfigGroup
     interface HibernateOrmConfigPersistenceXml {
 
         /**
-         * If {@code true}, Quarkus will ignore any {@code persistence.xml} file in the classpath
-         * and rely exclusively on the Quarkus configuration.
+         * If {@code true}, Quarkus will ignore any {@code persistence.xml} file in the classpath and rely exclusively
+         * on the Quarkus configuration.
          */
         @WithDefault("false")
         boolean ignore();
@@ -160,25 +151,16 @@ public interface HibernateOrmConfig {
     @ConfigGroup
     interface HibernateOrmConfigDatabase {
         /**
-         * When set, attempts to exchange data with the database
-         * as the given version of Hibernate ORM would have,
-         * *on a best-effort basis*.
-         *
-         * Please note:
-         *
-         * * schema validation may still fail in some cases:
-         * this attempts to make Hibernate ORM 6+ behave correctly at runtime,
-         * but it may still expect a different (but runtime-compatible) schema.
-         * * robust test suites are still useful and recommended:
-         * you should still check that your application behaves as intended with your legacy schema.
-         * * this feature is inherently unstable:
-         * some aspects of it may stop working in future versions of Quarkus,
-         * and older versions will be dropped as Hibernate ORM changes pile up
-         * and support for those older versions becomes too unreliable.
-         * * you should still plan a migration of your schema to a newer version of Hibernate ORM.
-         * For help with migration, refer to
-         * link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[the Quarkus 3
-         * migration guide from Hibernate ORM 5 to 6].
+         * When set, attempts to exchange data with the database as the given version of Hibernate ORM would have, *on a
+         * best-effort basis*. Please note: * schema validation may still fail in some cases: this attempts to make
+         * Hibernate ORM 6+ behave correctly at runtime, but it may still expect a different (but runtime-compatible)
+         * schema. * robust test suites are still useful and recommended: you should still check that your application
+         * behaves as intended with your legacy schema. * this feature is inherently unstable: some aspects of it may
+         * stop working in future versions of Quarkus, and older versions will be dropped as Hibernate ORM changes pile
+         * up and support for those older versions becomes too unreliable. * you should still plan a migration of your
+         * schema to a newer version of Hibernate ORM. For help with migration, refer to
+         * link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[the
+         * Quarkus 3 migration guide from Hibernate ORM 5 to 6].
          *
          * @asciidoclet
          */

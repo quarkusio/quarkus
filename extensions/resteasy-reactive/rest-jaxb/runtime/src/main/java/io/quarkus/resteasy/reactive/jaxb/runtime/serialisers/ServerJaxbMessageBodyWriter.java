@@ -49,7 +49,8 @@ public class ServerJaxbMessageBodyWriter extends ServerMessageBodyWriter.AllWrit
         setContentTypeIfNecessary(context);
         OutputStream stream = context.getOrCreateOutputStream();
         marshal(o, stream);
-        // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
+        // we don't use try-with-resources because that results in writing to the http output without the exception
+        // mapping coming into play
         stream.close();
     }
 
@@ -78,8 +79,7 @@ public class ServerJaxbMessageBodyWriter extends ServerMessageBodyWriter.AllWrit
             return marshaller;
         }
 
-        return providers.getContextResolver(JAXBContext.class, MediaType.APPLICATION_XML_TYPE)
-                .getContext(type)
+        return providers.getContextResolver(JAXBContext.class, MediaType.APPLICATION_XML_TYPE).getContext(type)
                 .createMarshaller();
     }
 

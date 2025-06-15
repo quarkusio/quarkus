@@ -16,9 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SchemaValidateTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Hero.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(Hero.class))
             .withConfigurationResource("application.properties")
             .assertException(SchemaValidateTest::isSchemaValidationException)
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "validate");

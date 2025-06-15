@@ -31,7 +31,9 @@ public class TlsConfigUtils {
      * <p>
      * The file is read from the classpath if it exists, otherwise it is read from the file system.
      *
-     * @param path the path, must not be {@code null}
+     * @param path
+     *        the path, must not be {@code null}
+     *
      * @return the content of the file
      */
     public static byte[] read(Path path) {
@@ -57,8 +59,10 @@ public class TlsConfigUtils {
     /**
      * Configure the {@link TCPSSLOptions} with the given {@link TlsConfiguration}.
      *
-     * @param options the options to configure
-     * @param configuration the configuration to use
+     * @param options
+     *        the options to configure
+     * @param configuration
+     *        the configuration to use
      */
     public static void configure(TCPSSLOptions options, TlsConfiguration configuration) {
         options.setSsl(true);
@@ -87,8 +91,7 @@ public class TlsConfigUtils {
             try {
                 options.setUseAlpn(sslOptions.isUseAlpn());
             } catch (UnsupportedOperationException e) {
-                log.warnf(
-                        "ALPN configuration not supported by implementation: %s. ALPN setting will be ignored.",
+                log.warnf("ALPN configuration not supported by implementation: %s. ALPN setting will be ignored.",
                         options.getClass().getName());
             }
         }
@@ -97,8 +100,10 @@ public class TlsConfigUtils {
     /**
      * Configure the {@link ClientOptionsBase} with the given {@link TlsConfiguration}.
      *
-     * @param options the options to configure
-     * @param configuration the configuration to use
+     * @param options
+     *        the options to configure
+     * @param configuration
+     *        the configuration to use
      */
     public static void configure(ClientOptionsBase options, TlsConfiguration configuration) {
         configure((TCPSSLOptions) options, configuration);
@@ -110,8 +115,10 @@ public class TlsConfigUtils {
     /**
      * Configure the {@link NetClientOptions} with the given {@link TlsConfiguration}.
      *
-     * @param options the options to configure
-     * @param configuration the configuration to use
+     * @param options
+     *        the options to configure
+     * @param configuration
+     *        the configuration to use
      */
     public static void configure(NetClientOptions options, TlsConfiguration configuration) {
         configure((ClientOptionsBase) options, configuration);
@@ -123,8 +130,10 @@ public class TlsConfigUtils {
     /**
      * Configure the {@link HttpClientOptions} with the given {@link TlsConfiguration}.
      *
-     * @param options the options to configure
-     * @param configuration the configuration to use
+     * @param options
+     *        the options to configure
+     * @param configuration
+     *        the configuration to use
      */
     public static void configure(HttpClientOptions options, TlsConfiguration configuration) {
         configure((ClientOptionsBase) options, configuration);
@@ -139,8 +148,10 @@ public class TlsConfigUtils {
     /**
      * Configure the {@link WebSocketClientOptions} with the given {@link TlsConfiguration}.
      *
-     * @param options the options to configure
-     * @param configuration the configuration to use
+     * @param options
+     *        the options to configure
+     * @param configuration
+     *        the configuration to use
      */
     public static void configure(WebSocketClientOptions options, TlsConfiguration configuration) {
         configure((ClientOptionsBase) options, configuration);

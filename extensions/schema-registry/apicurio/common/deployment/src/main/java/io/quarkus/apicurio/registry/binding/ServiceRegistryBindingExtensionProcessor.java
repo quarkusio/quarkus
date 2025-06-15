@@ -9,8 +9,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 class ServiceRegistryBindingExtensionProcessor {
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.apicurio.registry.binding.ServiceRegistryBindingConverter",

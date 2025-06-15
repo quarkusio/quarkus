@@ -25,10 +25,8 @@ import io.smallrye.common.annotation.Identifier;
 public class CompositeJobDefinitionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-            })
-            .overrideConfigKey("quarkus.scheduler.use-composite-scheduler", "true")
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+    }).overrideConfigKey("quarkus.scheduler.use-composite-scheduler", "true")
             .overrideConfigKey("quarkus.scheduler.start-mode", "forced");
 
     @Constituent
@@ -55,27 +53,20 @@ public class CompositeJobDefinitionTest {
     public void testExecution() throws InterruptedException {
 
         assertEquals("Scheduler implementation not available: bar",
-                assertThrows(IllegalArgumentException.class, () -> composite.newJob("foo").setExecuteWith("bar")).getMessage());
+                assertThrows(IllegalArgumentException.class, () -> composite.newJob("foo").setExecuteWith("bar"))
+                        .getMessage());
 
-        composite.newJob("simple")
-                .setInterval("1s")
-                .setExecuteWith(Scheduled.SIMPLE)
-                .setTask(se -> {
-                    simpleLatch.countDown();
-                }).schedule();
+        composite.newJob("simple").setInterval("1s").setExecuteWith(Scheduled.SIMPLE).setTask(se -> {
+            simpleLatch.countDown();
+        }).schedule();
 
-        composite.newJob("quartz")
-                .setInterval("1s")
-                .setExecuteWith(Scheduled.QUARTZ)
-                .setTask(se -> {
-                    quartzLatch.countDown();
-                }).schedule();
+        composite.newJob("quartz").setInterval("1s").setExecuteWith(Scheduled.QUARTZ).setTask(se -> {
+            quartzLatch.countDown();
+        }).schedule();
 
-        composite.newJob("auto")
-                .setInterval("1s")
-                .setTask(se -> {
-                    autoLatch.countDown();
-                }).schedule();
+        composite.newJob("auto").setInterval("1s").setTask(se -> {
+            autoLatch.countDown();
+        }).schedule();
 
         assertTrue(simpleLatch.await(5, TimeUnit.SECONDS));
         assertTrue(quartzLatch.await(5, TimeUnit.SECONDS));

@@ -34,16 +34,12 @@ public class ProjectExtensionsAdd extends BaseBuildCommand implements Callable<I
 
             return runner.addExtension(runMode, extensions);
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to add extension(s): " + e.getMessage());
+            return output.handleCommandException(e, "Unable to add extension(s): " + e.getMessage());
         }
     }
 
     void dryRunAdd(CommandLine.Help help, BuildTool buildTool) {
-        output.printText(new String[] {
-                "\nAdd extensions to the current project\n",
-                "\t" + projectRoot().toString()
-        });
+        output.printText(new String[] { "\nAdd extensions to the current project\n", "\t" + projectRoot().toString() });
         Map<String, String> dryRunOutput = new TreeMap<>();
 
         dryRunOutput.put("Build tool", buildTool.name());

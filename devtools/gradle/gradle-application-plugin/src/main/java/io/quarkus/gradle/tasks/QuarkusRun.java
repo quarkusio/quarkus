@@ -54,7 +54,8 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
                 .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+        workingDirectory
+                .convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
 
         jvmArgs = objectFactory.listProperty(String.class);
     }
@@ -104,71 +105,68 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
         Properties sysProps = new Properties();
         sysProps.putAll(extension().buildEffectiveConfiguration(appModel).getValues());
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
-                .setBaseClassLoader(getClass().getClassLoader())
-                .setExistingModel(appModel)
-                .setTargetDirectory(getProject().getBuildDir().toPath())
-                .setBaseName(extension().finalName())
-                .setBuildSystemProperties(sysProps)
-                .setAppArtifact(appModel.getAppArtifact())
-                .setLocalProjectDiscovery(false)
-                .setIsolateDeployment(true)
-                .setMode(QuarkusBootstrap.Mode.TEST)
-                .build().bootstrap()) {
+                .setBaseClassLoader(getClass().getClassLoader()).setExistingModel(appModel)
+                .setTargetDirectory(getProject().getBuildDir().toPath()).setBaseName(extension().finalName())
+                .setBuildSystemProperties(sysProps).setAppArtifact(appModel.getAppArtifact())
+                .setLocalProjectDiscovery(false).setIsolateDeployment(true).setMode(QuarkusBootstrap.Mode.TEST).build()
+                .bootstrap()) {
 
             AugmentAction action = curatedApplication.createAugmentor();
             AtomicReference<Boolean> exists = new AtomicReference<>();
             AtomicReference<String> tooMany = new AtomicReference<>();
             String target = System.getProperty("quarkus.run.target");
-            action.performCustomBuild(StartDevServicesAndRunCommandHandler.class.getName(), new Consumer<Map<String, List>>() {
-                @Override
-                public void accept(Map<String, List> cmds) {
-                    List cmd = null;
-                    if (target != null) {
-                        cmd = cmds.get(target);
-                        if (cmd == null) {
-                            exists.set(false);
-                            return;
+            action.performCustomBuild(StartDevServicesAndRunCommandHandler.class.getName(),
+                    new Consumer<Map<String, List>>() {
+                        @Override
+                        public void accept(Map<String, List> cmds) {
+                            List cmd = null;
+                            if (target != null) {
+                                cmd = cmds.get(target);
+                                if (cmd == null) {
+                                    exists.set(false);
+                                    return;
+                                }
+                            } else if (cmds.size() == 1) { // defaults to pure java run
+                                cmd = cmds.values().iterator().next();
+                            } else if (cmds.size() == 2) { // choose not default
+                                for (Map.Entry<String, List> entry : cmds.entrySet()) {
+                                    if (entry.getKey().equals("java"))
+                                        continue;
+                                    cmd = entry.getValue();
+                                    break;
+                                }
+                            } else if (cmds.size() > 2) {
+                                tooMany.set(cmds.keySet().stream().collect(Collectors.joining(" ")));
+                                return;
+                            } else {
+                                throw new RuntimeException("Should never reach this!");
+                            }
+                            List<String> args = (List<String>) cmd.get(0);
+                            if (getJvmArguments().isPresent() && !getJvmArguments().get().isEmpty()) {
+                                args.addAll(1, getJvmArgs());
+                            }
+
+                            getProject().getLogger().info("Executing \"" + String.join(" ", args) + "\"");
+                            Path wd = (Path) cmd.get(1);
+                            File wdir = wd != null ? wd.toFile() : workingDirectory.get();
+
+                            try {
+                                // this was all very touchy to get the process outputing to console and exiting cleanly
+                                // change at your own risk
+
+                                // We cannot use getProject().exec() as contrl-c is not processed correctly
+                                // and the spawned process will not shutdown
+                                //
+                                // This also requires running with --no-daemon as control-c doesn't seem to trigger the
+                                // shutdown hook
+                                // this poor gradle behavior is a long known issue with gradle
+                                ProcessUtil.launch(args, wdir, getProject().getLogger());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
-                    } else if (cmds.size() == 1) { // defaults to pure java run
-                        cmd = cmds.values().iterator().next();
-                    } else if (cmds.size() == 2) { // choose not default
-                        for (Map.Entry<String, List> entry : cmds.entrySet()) {
-                            if (entry.getKey().equals("java"))
-                                continue;
-                            cmd = entry.getValue();
-                            break;
-                        }
-                    } else if (cmds.size() > 2) {
-                        tooMany.set(cmds.keySet().stream().collect(Collectors.joining(" ")));
-                        return;
-                    } else {
-                        throw new RuntimeException("Should never reach this!");
-                    }
-                    List<String> args = (List<String>) cmd.get(0);
-                    if (getJvmArguments().isPresent() && !getJvmArguments().get().isEmpty()) {
-                        args.addAll(1, getJvmArgs());
-                    }
-
-                    getProject().getLogger().info("Executing \"" + String.join(" ", args) + "\"");
-                    Path wd = (Path) cmd.get(1);
-                    File wdir = wd != null ? wd.toFile() : workingDirectory.get();
-
-                    try {
-                        // this was all very touchy to get the process outputing to console and exiting cleanly
-                        // change at your own risk
-
-                        // We cannot use getProject().exec() as contrl-c is not processed correctly
-                        // and the spawned process will not shutdown
-                        //
-                        // This also requires running with --no-daemon as control-c doesn't seem to trigger the shutdown hook
-                        // this poor gradle behavior is a long known issue with gradle
-                        ProcessUtil.launch(args, wdir, getProject().getLogger());
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            },
-                    RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());
+                    }, RunCommandActionResultBuildItem.class.getName(),
+                    DevServicesLauncherConfigResultBuildItem.class.getName());
             if (target != null && !exists.get()) {
                 getProject().getLogger().error("quarkus.run.target " + target + " is not found");
                 return;

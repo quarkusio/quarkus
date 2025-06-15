@@ -19,10 +19,9 @@ import io.vertx.core.Vertx;
 public class UnhandledMessageFailureLogStrategyTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(EchoMessageError.class, WSClient.class);
-            }).overrideConfigKey("quarkus.websockets-next.server.unhandled-failure-strategy", "log");
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(EchoMessageError.class, WSClient.class);
+    }).overrideConfigKey("quarkus.websockets-next.server.unhandled-failure-strategy", "log");
 
     @Inject
     Vertx vertx;

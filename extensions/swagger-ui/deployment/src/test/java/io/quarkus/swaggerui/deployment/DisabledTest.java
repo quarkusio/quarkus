@@ -10,9 +10,8 @@ import io.restassured.RestAssured;
 public class DisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.swagger-ui.enable=false"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.swagger-ui.enable=false"), "application.properties"));
 
     @Test
     public void shouldUseDefaultConfig() {

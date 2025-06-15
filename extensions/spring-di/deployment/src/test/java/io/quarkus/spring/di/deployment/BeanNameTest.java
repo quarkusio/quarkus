@@ -13,8 +13,7 @@ public class BeanNameTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Bean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Bean.class));
 
     @Inject
     Bean consumer;

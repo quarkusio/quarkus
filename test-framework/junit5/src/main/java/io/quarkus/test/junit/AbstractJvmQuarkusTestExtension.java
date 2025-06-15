@@ -31,7 +31,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
     protected static Class<? extends QuarkusTestProfile> quarkusTestProfile;
 
-    //needed for @Nested
+    // needed for @Nested
     protected static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
     protected static Class<?> currentJUnitTestClass;
 
@@ -82,7 +82,8 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
         if (testClass.isAnnotationPresent(Nested.class)) {
 
-            // This is unlikely to work since we recursed up the test class stack, but err on the side of double-checking?
+            // This is unlikely to work since we recursed up the test class stack, but err on the side of
+            // double-checking?
             // if not found, let's try the parents
             Optional<ExtensionContext> parentContext = extensionContext.getParent();
             while (parentContext.isPresent()) {
@@ -136,37 +137,42 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             return ConditionEvaluationResult.enabled("Quarkus Test Profile tags only affect classes");
         }
 
-        // At this point, the TCCL is usually the FacadeClassLoader, but sometimes it's a deployment classloader (for multimodule tests), or the runtime classloader (for nested tests)
-        // Getting back to the FacadeClassLoader is non-trivial. We can't use the singleton on the class, because we will be accessing it from different classloaders.
+        // At this point, the TCCL is usually the FacadeClassLoader, but sometimes it's a deployment classloader (for
+        // multimodule tests), or the runtime classloader (for nested tests)
+        // Getting back to the FacadeClassLoader is non-trivial. We can't use the singleton on the class, because we
+        // will be accessing it from different classloaders.
         // We can't have a hook back from the runtime classloader to the facade classloader, because
-        // when evaluating execution conditions for native tests, the test will have been loaded with the system classloader, not the runtime classloader.
-        // The one classloader we can reliably get to when evaluating test execution is the system classloader, so hook our config on that.
+        // when evaluating execution conditions for native tests, the test will have been loaded with the system
+        // classloader, not the runtime classloader.
+        // The one classloader we can reliably get to when evaluating test execution is the system classloader, so hook
+        // our config on that.
 
         // To avoid instanceof check, check for the system classloader instead of checking for the quarkusclassloader
         boolean isFlatClasspath = this.getClass().getClassLoader() == ClassLoader.getSystemClassLoader();
 
         ClassLoader original = Thread.currentThread().getContextClassLoader();
 
-        // In native mode tests, a testconfig will not have been registered on the system classloader with a testconfig instance of our classloader, so in those cases, we do not want to set the TCCL
+        // In native mode tests, a testconfig will not have been registered on the system classloader with a testconfig
+        // instance of our classloader, so in those cases, we do not want to set the TCCL
         if (!isFlatClasspath && !(original instanceof FacadeClassLoader)) {
-            // In most cases, we reset the TCCL to the system classloader after discovery finishes, so we could get away without this setting of the TCCL
-            // However, in multi-module and continuous tests the TCCL lifecycle is more complex, so this setting is still needed (for now)
+            // In most cases, we reset the TCCL to the system classloader after discovery finishes, so we could get away
+            // without this setting of the TCCL
+            // However, in multi-module and continuous tests the TCCL lifecycle is more complex, so this setting is
+            // still needed (for now)
             Thread.currentThread().setContextClassLoader(ClassLoader.getSystemClassLoader());
         }
 
         TestConfig testConfig;
         try {
-            testConfig = ConfigProvider.getConfig()
-                    .unwrap(SmallRyeConfig.class)
-                    .getConfigMapping(TestConfig.class);
+            testConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(TestConfig.class);
         } catch (Exception | ServiceConfigurationError e) {
             String javaCommand = System.getProperty("sun.java.command");
-            boolean isEclipse = javaCommand != null
-                    && javaCommand.contains("JUnit5TestLoader");
+            boolean isEclipse = javaCommand != null && javaCommand.contains("JUnit5TestLoader");
 
             // VS Code has the exact same java command and runner as Eclipse, but needs its own message
             boolean isVSCode = isEclipse && (System.getProperty("java.class.path").contains("vscode"));
-            boolean isMaybeVSCode = isEclipse && (javaCommand.contains("testNames") && javaCommand.contains("testNameFile"));
+            boolean isMaybeVSCode = isEclipse
+                    && (javaCommand.contains("testNames") && javaCommand.contains("testNameFile"));
 
             if (isVSCode) {
                 // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
@@ -195,8 +201,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                     ? "Could not execute test class because it was loaded with the wrong classloader by the VS Code test runner. Try running test methods individually instead."
                     : isEclipse
                             ? "Could not execute test class because it was loaded with the wrong classloader by the Eclipse test runner. Try running test methods individually, or edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
-                                    + context.getRequiredTestClass().getName()
-                                    + "]` in the program arguments. "
+                                    + context.getRequiredTestClass().getName() + "]` in the program arguments. "
                             : "Internal error: Test class was loaded with an unexpected classloader or the thread context classloader was incorrect.";
             throw new IllegalStateException(message, e);
         } finally {

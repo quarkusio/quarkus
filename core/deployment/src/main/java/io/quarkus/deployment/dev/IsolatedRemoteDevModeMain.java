@@ -87,15 +87,14 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     private synchronized JarResult generateApplication() {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
-            //ok, we have resolved all the deps
+            // ok, we have resolved all the deps
             try {
                 AugmentResult start = augmentAction.createProductionApplication();
                 if (!start.getJar().mutable()) {
-                    throw new RuntimeException(
-                            "remote-dev can only be used with mutable applications i.e. " +
-                                    "using the mutable-jar package type");
+                    throw new RuntimeException("remote-dev can only be used with mutable applications i.e. "
+                            + "using the mutable-jar package type");
                 }
-                //now extract the artifacts, to mirror the remote side
+                // now extract the artifacts, to mirror the remote side
                 DevModeTask.extractDevModeClasses(start.getJar().getPath().getParent(),
                         curatedApplication.getApplicationModel(), null);
                 return start.getJar();
@@ -125,7 +124,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 log.error("Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;
             }
-            //this is never the remote side
+            // this is never the remote side
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(applicationRoot, context, compiler,
                     DevModeType.REMOTE_LOCAL_SIDE, this::regenerateApplication,
                     new BiConsumer<DevModeContext.ModuleInfo, String>() {
@@ -153,7 +152,8 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                     public void run() {
                         ClassLoader old = Thread.currentThread().getContextClassLoader();
                         try {
-                            Thread.currentThread().setContextClassLoader(curatedApplication.getOrCreateAugmentClassLoader());
+                            Thread.currentThread()
+                                    .setContextClassLoader(curatedApplication.getOrCreateAugmentClassLoader());
                             service.handleFailedInitialStart();
                         } finally {
                             Thread.currentThread().setContextClassLoader(old);
@@ -196,10 +196,10 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
 
     }
 
-    //the main entry point, but loaded inside the augmentation class loader
+    // the main entry point, but loaded inside the augmentation class loader
     @Override
     public void accept(CuratedApplication o, Map<String, Object> o2) {
-        LoggingSetupRecorder.handleFailedStart(); //we are not going to actually run an app
+        LoggingSetupRecorder.handleFailedStart(); // we are not going to actually run an app
         Timing.staticInitStarted(o.getOrCreateBaseRuntimeClassLoader(), false);
         try {
             curatedApplication = o;
@@ -207,12 +207,13 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
             if (potentialContext instanceof DevModeContext) {
                 context = (DevModeContext) potentialContext;
             } else {
-                //this was from the external class loader
-                //we need to copy it into this one
+                // this was from the external class loader
+                // we need to copy it into this one
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ObjectOutputStream oo = new ObjectOutputStream(out);
                 oo.writeObject(potentialContext);
-                context = (DevModeContext) new ObjectInputStream(new ByteArrayInputStream(out.toByteArray())).readObject();
+                context = (DevModeContext) new ObjectInputStream(new ByteArrayInputStream(out.toByteArray()))
+                        .readObject();
             }
 
             augmentAction = new AugmentActionImpl(curatedApplication);
@@ -281,7 +282,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     }
 
     private RemoteDevClient.SyncResult runSync() {
-        //do hot reload stuff
+        // do hot reload stuff
         Set<String> removed = new HashSet<>();
         Map<String, byte[]> changed = new HashMap<>();
         try {
@@ -330,7 +331,8 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
     }
 
     static Map<String, String> createHashes(Path appRoot) throws IOException {
-        Path quarkus = appRoot.resolve(JarResultBuildStep.QUARKUS); //we filter this jar, it has no relevance for remote dev
+        Path quarkus = appRoot.resolve(JarResultBuildStep.QUARKUS); // we filter this jar, it has no relevance for
+                                                                    // remote dev
         Map<String, String> hashes = new HashMap<>();
         Files.walkFileTree(appRoot, new FileVisitor<Path>() {
             @Override

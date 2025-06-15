@@ -11,8 +11,8 @@ import java.lang.annotation.Target;
 import org.eclipse.microprofile.config.spi.Converter;
 
 /**
- * Defines a {@link Converter} to be used for conversion of a config property.
- * This will override the default converter on the target config item.
+ * Defines a {@link Converter} to be used for conversion of a config property. This will override the default converter
+ * on the target config item.
  */
 @Retention(RUNTIME)
 @Target({ FIELD, PARAMETER })

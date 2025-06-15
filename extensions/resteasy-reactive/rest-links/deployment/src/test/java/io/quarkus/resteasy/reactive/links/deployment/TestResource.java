@@ -28,37 +28,31 @@ public class TestResource {
 
     private static final AtomicInteger ID_COUNTER = new AtomicInteger(0);
 
-    private static final List<TestRecord> RECORDS = new LinkedList<>(Arrays.asList(
-            new TestRecord(ID_COUNTER.incrementAndGet(), "first", "First value"),
-            new TestRecord(ID_COUNTER.incrementAndGet(), "second", "Second value")));
+    private static final List<TestRecord> RECORDS = new LinkedList<>(
+            Arrays.asList(new TestRecord(ID_COUNTER.incrementAndGet(), "first", "First value"),
+                    new TestRecord(ID_COUNTER.incrementAndGet(), "second", "Second value")));
 
     private static final List<TestRecordWithIdAndPersistenceIdAndRestLinkId> ID_AND_PERSISTENCE_ID_AND_REST_LINK_IDS = new LinkedList<>(
-            Arrays.asList(
-                    new TestRecordWithIdAndPersistenceIdAndRestLinkId(100, 10, 1, "One"),
+            Arrays.asList(new TestRecordWithIdAndPersistenceIdAndRestLinkId(100, 10, 1, "One"),
                     new TestRecordWithIdAndPersistenceIdAndRestLinkId(101, 11, 2, "Two")));
 
     private static final List<TestRecordWithPersistenceIdAndRestLinkId> PERSISTENCE_ID_AND_REST_LINK_IDS = new LinkedList<>(
-            Arrays.asList(
-                    new TestRecordWithPersistenceIdAndRestLinkId(100, 10, "One"),
+            Arrays.asList(new TestRecordWithPersistenceIdAndRestLinkId(100, 10, "One"),
                     new TestRecordWithPersistenceIdAndRestLinkId(101, 11, "Two")));
 
     private static final List<TestRecordWithIdAndPersistenceId> ID_AND_PERSISTENCE_ID_RECORDS = new LinkedList<>(
-            Arrays.asList(
-                    new TestRecordWithIdAndPersistenceId(10, 1, "One"),
+            Arrays.asList(new TestRecordWithIdAndPersistenceId(10, 1, "One"),
                     new TestRecordWithIdAndPersistenceId(11, 2, "Two")));
 
     private static final List<TestRecordWithIdAndRestLinkId> ID_AND_REST_LINK_ID_RECORDS = new LinkedList<>(
-            Arrays.asList(
-                    new TestRecordWithIdAndRestLinkId(100, 1, "One"),
+            Arrays.asList(new TestRecordWithIdAndRestLinkId(100, 1, "One"),
                     new TestRecordWithIdAndRestLinkId(101, 2, "Two")));
 
-    private static final List<TestRecordWithPersistenceId> PERSISTENCE_ID_RECORDS = new LinkedList<>(Arrays.asList(
-            new TestRecordWithPersistenceId(10, "One"),
-            new TestRecordWithPersistenceId(11, "Two")));
+    private static final List<TestRecordWithPersistenceId> PERSISTENCE_ID_RECORDS = new LinkedList<>(
+            Arrays.asList(new TestRecordWithPersistenceId(10, "One"), new TestRecordWithPersistenceId(11, "Two")));
 
-    private static final List<TestRecordWithRestLinkId> REST_LINK_ID_RECORDS = new LinkedList<>(Arrays.asList(
-            new TestRecordWithRestLinkId(100, "One"),
-            new TestRecordWithRestLinkId(101, "Two")));
+    private static final List<TestRecordWithRestLinkId> REST_LINK_ID_RECORDS = new LinkedList<>(
+            Arrays.asList(new TestRecordWithRestLinkId(100, "One"), new TestRecordWithRestLinkId(101, "Two")));
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
@@ -82,10 +76,7 @@ public class TestResource {
     @RestLink(entityType = TestRecord.class)
     @InjectRestLinks(RestLinkType.INSTANCE)
     public TestRecord getById(@PathParam("id") int id) {
-        return RECORDS.stream()
-                .filter(record -> record.getId() == id)
-                .findFirst()
-                .orElseThrow(NotFoundException::new);
+        return RECORDS.stream().filter(record -> record.getId() == id).findFirst().orElseThrow(NotFoundException::new);
     }
 
     @GET
@@ -94,9 +85,7 @@ public class TestResource {
     @RestLink(rel = "get-by-slug")
     @InjectRestLinks(RestLinkType.INSTANCE)
     public TestRecord getBySlug(@PathParam("slug") String slug) {
-        return RECORDS.stream()
-                .filter(record -> record.getSlug().equals(slug))
-                .findFirst()
+        return RECORDS.stream().filter(record -> record.getSlug().equals(slug)).findFirst()
                 .orElseThrow(NotFoundException::new);
     }
 
@@ -108,8 +97,7 @@ public class TestResource {
         return RECORDS.stream()
                 .filter(record -> record.getSlug().equals(slugOrId)
                         || slugOrId.equalsIgnoreCase(String.valueOf(record.getId())))
-                .findFirst()
-                .orElseThrow(NotFoundException::new);
+                .findFirst().orElseThrow(NotFoundException::new);
     }
 
     @GET
@@ -117,11 +105,10 @@ public class TestResource {
     @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
     @RestLink(entityType = TestRecordWithIdAndPersistenceIdAndRestLinkId.class)
     @InjectRestLinks
-    public TestRecordWithIdAndPersistenceIdAndRestLinkId getWithIdAndPersistenceIdAndRestLinkId(@PathParam("id") int id) {
-        return ID_AND_PERSISTENCE_ID_AND_REST_LINK_IDS.stream()
-                .filter(record -> record.getRestLinkId() == id)
-                .findFirst()
-                .orElseThrow(NotFoundException::new);
+    public TestRecordWithIdAndPersistenceIdAndRestLinkId getWithIdAndPersistenceIdAndRestLinkId(
+            @PathParam("id") int id) {
+        return ID_AND_PERSISTENCE_ID_AND_REST_LINK_IDS.stream().filter(record -> record.getRestLinkId() == id)
+                .findFirst().orElseThrow(NotFoundException::new);
     }
 
     @GET
@@ -130,9 +117,7 @@ public class TestResource {
     @RestLink(entityType = TestRecordWithPersistenceIdAndRestLinkId.class)
     @InjectRestLinks
     public TestRecordWithPersistenceIdAndRestLinkId getWithPersistenceIdAndRestLinkId(@PathParam("id") int id) {
-        return PERSISTENCE_ID_AND_REST_LINK_IDS.stream()
-                .filter(record -> record.getRestLinkId() == id)
-                .findFirst()
+        return PERSISTENCE_ID_AND_REST_LINK_IDS.stream().filter(record -> record.getRestLinkId() == id).findFirst()
                 .orElseThrow(NotFoundException::new);
     }
 
@@ -142,9 +127,7 @@ public class TestResource {
     @RestLink(entityType = TestRecordWithIdAndPersistenceId.class)
     @InjectRestLinks
     public TestRecordWithIdAndPersistenceId getWithIdAndPersistenceId(@PathParam("id") int id) {
-        return ID_AND_PERSISTENCE_ID_RECORDS.stream()
-                .filter(record -> record.getPersistenceId() == id)
-                .findFirst()
+        return ID_AND_PERSISTENCE_ID_RECORDS.stream().filter(record -> record.getPersistenceId() == id).findFirst()
                 .orElseThrow(NotFoundException::new);
     }
 
@@ -154,9 +137,7 @@ public class TestResource {
     @RestLink(entityType = TestRecordWithIdAndRestLinkId.class)
     @InjectRestLinks
     public TestRecordWithIdAndRestLinkId getWithIdAndRestLinkId(@PathParam("id") int id) {
-        return ID_AND_REST_LINK_ID_RECORDS.stream()
-                .filter(record -> record.getRestLinkId() == id)
-                .findFirst()
+        return ID_AND_REST_LINK_ID_RECORDS.stream().filter(record -> record.getRestLinkId() == id).findFirst()
                 .orElseThrow(NotFoundException::new);
     }
 
@@ -166,9 +147,7 @@ public class TestResource {
     @RestLink(entityType = TestRecordWithPersistenceId.class)
     @InjectRestLinks
     public TestRecordWithPersistenceId getWithPersistenceId(@PathParam("id") int id) {
-        return PERSISTENCE_ID_RECORDS.stream()
-                .filter(record -> record.getPersistenceId() == id)
-                .findFirst()
+        return PERSISTENCE_ID_RECORDS.stream().filter(record -> record.getPersistenceId() == id).findFirst()
                 .orElseThrow(NotFoundException::new);
     }
 
@@ -178,9 +157,7 @@ public class TestResource {
     @RestLink(entityType = TestRecordWithRestLinkId.class, title = "The with rest link title", type = MediaType.APPLICATION_JSON)
     @InjectRestLinks
     public TestRecordWithRestLinkId getWithRestLinkId(@PathParam("id") int id) {
-        return REST_LINK_ID_RECORDS.stream()
-                .filter(record -> record.getRestLinkId() == id)
-                .findFirst()
+        return REST_LINK_ID_RECORDS.stream().filter(record -> record.getRestLinkId() == id).findFirst()
                 .orElseThrow(NotFoundException::new);
     }
 
@@ -190,12 +167,8 @@ public class TestResource {
     public HalEntityWrapper<TestRecordWithIdAndPersistenceIdAndRestLinkId> getAllFieldsFromLink() {
 
         var entity = new TestRecordWithIdAndPersistenceIdAndRestLinkId(1, 10, 100, "one");
-        return new HalEntityWrapper<>(entity,
-                Link.fromUri(URI.create("/records/with-rest-link-id/100"))
-                        .rel("all")
-                        .title("The title link")
-                        .type(MediaType.APPLICATION_JSON)
-                        .build());
+        return new HalEntityWrapper<>(entity, Link.fromUri(URI.create("/records/with-rest-link-id/100")).rel("all")
+                .title("The title link").type(MediaType.APPLICATION_JSON).build());
     }
 
 }

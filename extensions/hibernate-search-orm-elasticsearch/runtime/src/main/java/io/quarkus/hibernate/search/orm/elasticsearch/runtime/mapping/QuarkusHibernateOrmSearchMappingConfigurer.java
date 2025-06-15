@@ -16,8 +16,7 @@ public class QuarkusHibernateOrmSearchMappingConfigurer implements HibernateOrmS
     public void configure(HibernateOrmMappingConfigurationContext context) {
         // Jandex is not available at runtime in Quarkus,
         // so Hibernate Search cannot perform classpath scanning on startup.
-        context.annotationMapping()
-                .discoverJandexIndexesFromAddedTypes(false)
+        context.annotationMapping().discoverJandexIndexesFromAddedTypes(false)
                 .buildMissingDiscoveredJandexIndexes(false);
 
         // ... but we do better: we perform classpath scanning during the build,

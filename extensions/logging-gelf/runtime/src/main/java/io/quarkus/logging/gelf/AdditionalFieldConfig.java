@@ -14,9 +14,8 @@ public interface AdditionalFieldConfig {
     String value();
 
     /**
-     * Additional field type specification.
-     * Supported types: String, long, Long, double, Double and discover.
-     * Discover is the default if not specified, it discovers field type based on parseability.
+     * Additional field type specification. Supported types: String, long, Long, double, Double and discover. Discover
+     * is the default if not specified, it discovers field type based on parseability.
      */
     @WithDefault("discover")
     String type();

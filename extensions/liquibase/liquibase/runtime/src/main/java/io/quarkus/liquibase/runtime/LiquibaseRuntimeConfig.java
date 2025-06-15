@@ -22,7 +22,6 @@ public interface LiquibaseRuntimeConfig {
 
     /**
      * Flag to enable / disable Liquibase.
-     *
      */
     @WithDefault("true")
     boolean enabled();

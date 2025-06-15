@@ -22,16 +22,14 @@ public class QuarkusHibernateSearchStandaloneMappingConfigurer implements Standa
     public void configure(StandalonePojoMappingConfigurationContext context) {
         // Jandex is not available at runtime in Quarkus,
         // so Hibernate Search cannot perform classpath scanning on startup.
-        context.annotationMapping()
-                .discoverJandexIndexesFromAddedTypes(false)
+        context.annotationMapping().discoverJandexIndexesFromAddedTypes(false)
                 .buildMissingDiscoveredJandexIndexes(false);
 
         // ... but we do better: we perform classpath scanning during the build,
         // and propagate the result here.
         context.annotationMapping().add(rootAnnotationMappedClasses);
 
-        context.defaultReindexOnUpdate(MappingStructure.DOCUMENT.equals(structure)
-                ? ReindexOnUpdate.SHALLOW
-                : ReindexOnUpdate.DEFAULT);
+        context.defaultReindexOnUpdate(
+                MappingStructure.DOCUMENT.equals(structure) ? ReindexOnUpdate.SHALLOW : ReindexOnUpdate.DEFAULT);
     }
 }

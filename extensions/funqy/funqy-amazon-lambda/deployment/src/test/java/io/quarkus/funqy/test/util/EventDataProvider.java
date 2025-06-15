@@ -9,8 +9,7 @@ public class EventDataProvider {
 
     public static String getData(String path) {
         try {
-            return IOUtils.toString(
-                    EventDataProvider.class.getClassLoader().getResourceAsStream("events/" + path),
+            return IOUtils.toString(EventDataProvider.class.getClassLoader().getResourceAsStream("events/" + path),
                     Charset.defaultCharset());
         } catch (IOException e) {
             throw new RuntimeException(e);

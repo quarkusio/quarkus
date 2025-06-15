@@ -12,11 +12,9 @@ import io.restassured.RestAssured;
 public class SqsFunctionNoBatchItemFailuresTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("no-batch-function.properties", "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource("no-batch-function.properties", "application.properties")
                     .addAsResource("events/sqs", "events")
-                    .addClasses(TestFunctions.class, Item.class,
-                            EventDataProvider.class));
+                    .addClasses(TestFunctions.class, Item.class, EventDataProvider.class));
 
     @Test
     public void should_return_no_failures_if_processing_is_ok() {
@@ -24,9 +22,7 @@ public class SqsFunctionNoBatchItemFailuresTest {
         var body = getData("ok.json");
 
         // when
-        var response = RestAssured.given().contentType("application/json")
-                .body(body)
-                .post("/");
+        var response = RestAssured.given().contentType("application/json").body(body).post("/");
 
         // then
         response.then().statusCode(204);
@@ -38,9 +34,7 @@ public class SqsFunctionNoBatchItemFailuresTest {
         var body = getData("fail.json");
 
         // when
-        var response = RestAssured.given().contentType("application/json")
-                .body(body)
-                .post("/");
+        var response = RestAssured.given().contentType("application/json").body(body).post("/");
 
         // then
         response.then().statusCode(204);

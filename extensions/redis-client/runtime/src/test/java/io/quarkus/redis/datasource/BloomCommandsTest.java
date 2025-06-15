@@ -102,7 +102,8 @@ public class BloomCommandsTest extends DatasourceTestBase {
 
         assertThatThrownBy(() -> bloom.bfinsert("key2",
                 new BfInsertArgs().capacity(600000).errorRate(0.0001).nonScaling().nocreate(), luke, leia, anakin));
-        assertThatThrownBy(() -> bloom.bfinsert("key3", new BfInsertArgs().capacity(600000).errorRate(0.0001).expansion(1)));
+        assertThatThrownBy(
+                () -> bloom.bfinsert("key3", new BfInsertArgs().capacity(600000).errorRate(0.0001).expansion(1)));
     }
 
     @Test

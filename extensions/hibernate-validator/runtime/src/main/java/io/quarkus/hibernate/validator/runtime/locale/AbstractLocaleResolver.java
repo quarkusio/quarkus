@@ -17,6 +17,7 @@ abstract class AbstractLocaleResolver implements LocaleResolver {
 
     /**
      * @return case-insensitive map
+     *
      * @see CaseInsensitiveMap
      */
     protected abstract Map<String, List<String>> getHeaders();

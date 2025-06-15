@@ -36,24 +36,20 @@ public class MutinyTestService extends MutinyTestServiceGrpc.TestServiceImplBase
             Messages.StreamingOutputCallRequest request) {
         assertThat(request).isNotNull();
         assertThatTheRequestScopeIsActive();
-        return Multi.createFrom().range(0, 10)
-                .map(i -> ByteString.copyFromUtf8(Integer.toString(i)))
+        return Multi.createFrom().range(0, 10).map(i -> ByteString.copyFromUtf8(Integer.toString(i)))
                 .map(s -> Messages.Payload.newBuilder().setBody(s).build())
-                .map(p -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(p).build())
-                .onItem().invoke(() -> assertThatTheRequestScopeIsActive());
+                .map(p -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(p).build()).onItem()
+                .invoke(() -> assertThatTheRequestScopeIsActive());
     }
 
     @Override
     public Uni<Messages.StreamingInputCallResponse> streamingInputCall(
             Multi<Messages.StreamingInputCallRequest> request) {
         assertThatTheRequestScopeIsActive();
-        return request.map(i -> i.getPayload().getBody().toStringUtf8())
-                .collect().asList()
-                .map(list -> {
-                    assertThat(list).containsExactly("a", "b", "c", "d");
-                    return Messages.StreamingInputCallResponse.newBuilder().build();
-                })
-                .onItem().invoke(() -> assertThatTheRequestScopeIsActive());
+        return request.map(i -> i.getPayload().getBody().toStringUtf8()).collect().asList().map(list -> {
+            assertThat(list).containsExactly("a", "b", "c", "d");
+            return Messages.StreamingInputCallResponse.newBuilder().build();
+        }).onItem().invoke(() -> assertThatTheRequestScopeIsActive());
     }
 
     @Override
@@ -61,25 +57,20 @@ public class MutinyTestService extends MutinyTestServiceGrpc.TestServiceImplBase
             Multi<Messages.StreamingOutputCallRequest> request) {
         assertThatTheRequestScopeIsActive();
         AtomicInteger counter = new AtomicInteger();
-        return request
-                .map(r -> r.getPayload().getBody().toStringUtf8())
-                .map(r -> r + counter.incrementAndGet())
+        return request.map(r -> r.getPayload().getBody().toStringUtf8()).map(r -> r + counter.incrementAndGet())
                 .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
-                .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build())
-                .onItem().invoke(() -> assertThatTheRequestScopeIsActive());
+                .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build()).onItem()
+                .invoke(() -> assertThatTheRequestScopeIsActive());
     }
 
     @Override
     public Multi<Messages.StreamingOutputCallResponse> halfDuplexCall(
             Multi<Messages.StreamingOutputCallRequest> request) {
         assertThatTheRequestScopeIsActive();
-        return request
-                .map(r -> r.getPayload().getBody().toStringUtf8())
-                .map(String::toUpperCase)
-                .collect().asList()
+        return request.map(r -> r.getPayload().getBody().toStringUtf8()).map(String::toUpperCase).collect().asList()
                 .onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
                 .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
-                .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build())
-                .onItem().invoke(() -> assertThatTheRequestScopeIsActive());
+                .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build()).onItem()
+                .invoke(() -> assertThatTheRequestScopeIsActive());
     }
 }

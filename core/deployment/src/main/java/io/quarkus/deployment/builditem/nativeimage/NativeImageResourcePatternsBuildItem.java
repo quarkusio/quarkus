@@ -17,10 +17,9 @@ import io.quarkus.util.GlobUtil;
  * Globs passed to the {@code includeGlob*()} methods of the {@link Builder} are transformed to regular expressions
  * internally. See {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
  * <p>
- * The patterns are passed to the native image builder using {@code resource-config.json}.
- * The same mechanism (and regular expression syntax) is used by {@code native-image}'s
- * {@code -H:ResourceConfigurationFiles}, {@code -H:IncludeResources} and {@code -H:ExcludeResources} (since
- * GraalVM 20.3.0) command line options.
+ * The patterns are passed to the native image builder using {@code resource-config.json}. The same mechanism (and
+ * regular expression syntax) is used by {@code native-image}'s {@code -H:ResourceConfigurationFiles},
+ * {@code -H:IncludeResources} and {@code -H:ExcludeResources} (since GraalVM 20.3.0) command line options.
  * <p>
  * Related build items:
  * <ul>
@@ -70,7 +69,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
          * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
          *
-         * @param glob the glob pattern to add to the list of patterns to exclude
+         * @param glob
+         *        the glob pattern to add to the list of patterns to exclude
+         *
          * @return this {@link Builder}
          */
         public Builder excludeGlob(String glob) {
@@ -79,13 +80,15 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         }
 
         /**
-         * Add a collection of glob patterns for matching resource paths that should <strong>not</strong> be added to the
-         * native image.
+         * Add a collection of glob patterns for matching resource paths that should <strong>not</strong> be added to
+         * the native image.
          * <p>
          * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
          * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
          *
-         * @param globs the glob patterns to add to the list of patterns to exclude
+         * @param globs
+         *        the glob patterns to add to the list of patterns to exclude
+         *
          * @return this {@link Builder}
          */
         public Builder excludeGlobs(Collection<String> globs) {
@@ -100,7 +103,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
          * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
          *
-         * @param globs the glob patterns to add to the list of patterns to exclude
+         * @param globs
+         *        the glob patterns to add to the list of patterns to exclude
+         *
          * @return this {@link Builder}
          */
         public Builder excludeGlobs(String... globs) {
@@ -114,7 +119,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * <p>
          * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
          *
-         * @param pattern the regular expression to add to the list of patterns to exclude
+         * @param pattern
+         *        the regular expression to add to the list of patterns to exclude
+         *
          * @return this {@link Builder}
          */
         public Builder excludePattern(String pattern) {
@@ -128,7 +135,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * <p>
          * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
          *
-         * @param patterns the regular expressions to add to the list of patterns to exclude
+         * @param patterns
+         *        the regular expressions to add to the list of patterns to exclude
+         *
          * @return this {@link Builder}
          */
         public Builder excludePatterns(Collection<String> patterns) {
@@ -137,12 +146,14 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
         }
 
         /**
-         * Add an array of regular expressions for matching resource paths that should <strong>not</strong> be added
-         * to the native image.
+         * Add an array of regular expressions for matching resource paths that should <strong>not</strong> be added to
+         * the native image.
          * <p>
          * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
          *
-         * @param patterns the regular expressions to add to the list of patterns to exclude
+         * @param patterns
+         *        the regular expressions to add to the list of patterns to exclude
+         *
          * @return this {@link Builder}
          */
         public Builder excludePatterns(String... patterns) {
@@ -156,7 +167,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
          * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
          *
-         * @param glob the glob pattern to add
+         * @param glob
+         *        the glob pattern to add
+         *
          * @return this {@link Builder}
          */
         public Builder includeGlob(String glob) {
@@ -170,7 +183,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
          * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
          *
-         * @param globs the glob patterns to add
+         * @param globs
+         *        the glob patterns to add
+         *
          * @return this {@link Builder}
          */
         public Builder includeGlobs(Collection<String> globs) {
@@ -184,7 +199,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
          * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
          *
-         * @param globs the glob patterns to add
+         * @param globs
+         *        the glob patterns to add
+         *
          * @return this {@link Builder}
          */
         public Builder includeGlobs(String... patterns) {
@@ -197,7 +214,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * <p>
          * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
          *
-         * @param pattern the regular expression to add
+         * @param pattern
+         *        the regular expression to add
+         *
          * @return this {@link Builder}
          */
         public Builder includePattern(String pattern) {
@@ -210,7 +229,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * <p>
          * Use slash ({@code /}) as a path separator on all platforms. The patterns must not start with slash.
          *
-         * @param patterns the regular expressions to add
+         * @param patterns
+         *        the regular expressions to add
+         *
          * @return this {@link Builder}
          */
         public Builder includePatterns(Collection<String> patterns) {
@@ -223,7 +244,9 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
          * <p>
          * Use slash ({@code /}) as a path separator on all platforms. The patterns must not start with slash.
          *
-         * @param patterns the regular expressions to add
+         * @param patterns
+         *        the regular expressions to add
+         *
          * @return this {@link Builder}
          */
         public Builder includePatterns(String... patterns) {

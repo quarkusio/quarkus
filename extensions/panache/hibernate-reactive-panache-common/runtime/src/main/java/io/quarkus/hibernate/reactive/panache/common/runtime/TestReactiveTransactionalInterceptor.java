@@ -29,10 +29,8 @@ public class TestReactiveTransactionalInterceptor {
 
     protected boolean isSpecialTestMethod(InvocationContext ic) {
         Method method = ic.getMethod();
-        return hasParameter(UNI_ASSERTER_CLASS, method)
-                && (hasAnnotation(JUNIT_TEST_ANN, method)
-                        || hasAnnotation(JUNIT_BEFORE_EACH_ANN, method)
-                        || hasAnnotation(JUNIT_AFTER_EACH_ANN, method));
+        return hasParameter(UNI_ASSERTER_CLASS, method) && (hasAnnotation(JUNIT_TEST_ANN, method)
+                || hasAnnotation(JUNIT_BEFORE_EACH_ANN, method) || hasAnnotation(JUNIT_AFTER_EACH_ANN, method));
     }
 
     protected Object handleSpecialTestMethod(InvocationContext ic) {
@@ -53,7 +51,8 @@ public class TestReactiveTransactionalInterceptor {
         }
         try {
             Method execute = uniAsserterClass.getMethod("surroundWith", Function.class);
-            // here our execution differs: we can run the test method first, which uses the UniAsserter, and all its code is deferred
+            // here our execution differs: we can run the test method first, which uses the UniAsserter, and all its
+            // code is deferred
             // by pushing execution into the asserter pipeline
             try {
                 ic.proceed();

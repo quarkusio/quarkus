@@ -9,9 +9,8 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 
 public interface ServerMessageBodyReader<T> extends MessageBodyReader<T> {
 
-    boolean isReadable(Class<?> type, Type genericType,
-            ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType);
+    boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType);
 
-    T readFrom(Class<T> type, Type genericType, MediaType mediaType,
-            ServerRequestContext context) throws WebApplicationException, IOException;
+    T readFrom(Class<T> type, Type genericType, MediaType mediaType, ServerRequestContext context)
+            throws WebApplicationException, IOException;
 }

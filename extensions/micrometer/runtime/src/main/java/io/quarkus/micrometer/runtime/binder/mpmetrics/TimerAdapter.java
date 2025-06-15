@@ -24,9 +24,7 @@ public class TimerAdapter
     public TimerAdapter register(MpMetadata metadata, MetricDescriptor descriptor) {
         if (timer == null || metadata.cleanDirtyMetadata()) {
             timer = io.micrometer.core.instrument.Timer.builder(descriptor.name())
-                    .description(metadata.getDescription())
-                    .tags(descriptor.tags())
-                    .register(registry);
+                    .description(metadata.getDescription()).tags(descriptor.tags()).register(registry);
         }
         return this;
     }

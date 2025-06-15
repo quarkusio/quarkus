@@ -15,10 +15,8 @@ import io.smallrye.config.WithDefault;
 public interface DevServicesBuildTimeConfig {
 
     /**
-     * Whether this Dev Service should start with the application in dev mode or tests.
-     *
-     * Dev Services are enabled by default
-     * unless connection configuration (e.g. the JDBC URL or reactive client URL) is set explicitly.
+     * Whether this Dev Service should start with the application in dev mode or tests. Dev Services are enabled by
+     * default unless connection configuration (e.g. the JDBC URL or reactive client URL) is set explicitly.
      *
      * @asciidoclet
      */
@@ -40,8 +38,8 @@ public interface DevServicesBuildTimeConfig {
     /**
      * Generic properties that are passed for additional container configuration.
      * <p>
-     * Properties defined here are database-specific
-     * and are interpreted specifically in each database dev service implementation.
+     * Properties defined here are database-specific and are interpreted specifically in each database dev service
+     * implementation.
      */
     @ConfigDocMapKey("property-key")
     Map<String, String> containerProperties();
@@ -89,22 +87,20 @@ public interface DevServicesBuildTimeConfig {
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScriptPath();
 
     /**
-     * The paths to SQL scripts to be loaded from the classpath and applied to the Dev Service database using the SYS privileged
-     * user.
-     * Not all databases provide a privileged user. In these cases, the property is ignored.
-     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     * The paths to SQL scripts to be loaded from the classpath and applied to the Dev Service database using the SYS
+     * privileged user. Not all databases provide a privileged user. In these cases, the property is ignored. This has
+     * no effect if the provider is not a container-based database, such as H2 or Derby.
      */
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initPrivilegedScriptPath();
 
     /**
      * The volumes to be mapped to the container.
      * <p>
-     * The map key corresponds to the host location; the map value is the container location.
-     * If the host location starts with "classpath:",
-     * the mapping loads the resource from the classpath with read-only permission.
+     * The map key corresponds to the host location; the map value is the container location. If the host location
+     * starts with "classpath:", the mapping loads the resource from the classpath with read-only permission.
      * <p>
-     * When using a file system location, the volume will be generated with read-write permission,
-     * potentially leading to data loss or modification in your file system.
+     * When using a file system location, the volume will be generated with read-write permission, potentially leading
+     * to data loss or modification in your file system.
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
@@ -112,24 +108,16 @@ public interface DevServicesBuildTimeConfig {
     Map<String, String> volumes();
 
     /**
-     * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
-     * to reuse them in the next dev mode session or test suite execution.
-     *
-     * Within a dev mode session or test suite execution,
-     * Quarkus will always reuse Dev Services as long as their configuration
-     * (username, password, environment, port bindings, ...) did not change.
-     * This feature is specifically about keeping containers running
-     * **when Quarkus is not running** to reuse them across runs.
-     *
-     * WARNING: This feature needs to be enabled explicitly in `testcontainers.properties`,
-     * may require changes to how you configure data initialization in dev mode and tests,
-     * and may leave containers running indefinitely, forcing you to stop and remove them manually.
-     * See xref:databases-dev-services.adoc#reuse[this section of the documentation] for more information.
-     *
-     * This configuration property is set to `true` by default,
-     * so it is mostly useful to *disable* reuse,
-     * if you enabled it in `testcontainers.properties`
-     * but only want to use it for some of your Quarkus applications or datasources.
+     * Whether to keep Dev Service containers running *after a dev mode session or test suite execution* to reuse them
+     * in the next dev mode session or test suite execution. Within a dev mode session or test suite execution, Quarkus
+     * will always reuse Dev Services as long as their configuration (username, password, environment, port bindings,
+     * ...) did not change. This feature is specifically about keeping containers running **when Quarkus is not
+     * running** to reuse them across runs. WARNING: This feature needs to be enabled explicitly in
+     * `testcontainers.properties`, may require changes to how you configure data initialization in dev mode and tests,
+     * and may leave containers running indefinitely, forcing you to stop and remove them manually. See
+     * xref:databases-dev-services.adoc#reuse[this section of the documentation] for more information. This
+     * configuration property is set to `true` by default, so it is mostly useful to *disable* reuse, if you enabled it
+     * in `testcontainers.properties` but only want to use it for some of your Quarkus applications or datasources.
      *
      * @asciidoclet
      */

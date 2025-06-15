@@ -26,8 +26,8 @@ public class VertxJsonProcessor {
         }
         runtimeReinitializedClassProducer
                 .produce(new RuntimeReinitializedClassBuildItem(io.vertx.core.json.Json.class.getName()));
-        runtimeReinitializedClassProducer
-                .produce(new RuntimeReinitializedClassBuildItem("io.quarkus.vertx.runtime.jackson.QuarkusJacksonJsonCodec"));
+        runtimeReinitializedClassProducer.produce(
+                new RuntimeReinitializedClassBuildItem("io.quarkus.vertx.runtime.jackson.QuarkusJacksonJsonCodec"));
         serviceProviderBuildItemBuildProducer
                 .produce(ServiceProviderBuildItem.allProvidersFromClassPath(JsonFactory.class.getName()));
     }
@@ -35,11 +35,9 @@ public class VertxJsonProcessor {
     @BuildStep
     JacksonModuleBuildItem registerJacksonSerDeser() {
         return new JacksonModuleBuildItem.Builder("VertxTypes")
-                .add(JsonArraySerializer.class.getName(),
-                        JsonArrayDeserializer.class.getName(),
+                .add(JsonArraySerializer.class.getName(), JsonArrayDeserializer.class.getName(),
                         JsonArray.class.getName())
-                .add(JsonObjectSerializer.class.getName(),
-                        JsonObjectDeserializer.class.getName(),
+                .add(JsonObjectSerializer.class.getName(), JsonObjectDeserializer.class.getName(),
                         JsonObject.class.getName())
                 .build();
     }

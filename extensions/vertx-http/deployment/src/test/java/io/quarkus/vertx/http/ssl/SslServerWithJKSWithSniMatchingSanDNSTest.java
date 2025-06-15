@@ -26,10 +26,10 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test-sni", password = "secret", formats = {
-        Format.JKS, Format.PKCS12, Format.PEM }, cn = "acme.org", subjectAlternativeNames = "DNS:example.com", aliases = {
+        Format.JKS, Format.PKCS12,
+        Format.PEM }, cn = "acme.org", subjectAlternativeNames = "DNS:example.com", aliases = {
                 @Alias(name = "alias", cn = "foo.com", subjectAlternativeNames = "DNS:acme.org", password = "secret"),
-                @Alias(name = "alias-2", cn = "bar.biz", subjectAlternativeNames = "DNS:localhost", password = "secret")
-        }))
+                @Alias(name = "alias-2", cn = "bar.biz", subjectAlternativeNames = "DNS:localhost", password = "secret") }))
 public class SslServerWithJKSWithSniMatchingSanDNSTest {
 
     @TestHTTPResource(value = "/ssl", ssl = true)
@@ -37,8 +37,7 @@ public class SslServerWithJKSWithSniMatchingSanDNSTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-sni-keystore.jks"), "server-keystore.jks"))
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret")
@@ -51,15 +50,13 @@ public class SslServerWithJKSWithSniMatchingSanDNSTest {
     @Test
     public void testSslServerWithJKS() {
         // Cannot use RESTAssured as it does not validate the certificate names (even when forced.)
-        WebClientOptions options = new WebClientOptions()
-                .setSsl(true)
-                .setTrustOptions(new io.vertx.core.net.JksOptions()
-                        .setPath("target/certs/ssl-test-sni-truststore.jks")
+        WebClientOptions options = new WebClientOptions().setSsl(true)
+                .setTrustOptions(new io.vertx.core.net.JksOptions().setPath("target/certs/ssl-test-sni-truststore.jks")
                         .setPassword("secret"))
                 .setForceSni(true);
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm()).send().toCompletionStage().toCompletableFuture()
-                .join();
+        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm()).send().toCompletionStage()
+                .toCompletableFuture().join();
         Assertions.assertThat(response.statusCode()).isEqualTo(200);
         Assertions.assertThat(response.bodyAsString()).isEqualTo("ssl");
     }

@@ -24,8 +24,7 @@ public final class SecurityTransformerUtils {
     private static final Set<DotName> SECURITY_ANNOTATIONS = Set.of(DotName.createSimple(RolesAllowed.class.getName()),
             DotName.createSimple(PermissionsAllowed.class.getName()),
             DotName.createSimple(PermissionsAllowed.List.class.getName()),
-            DotName.createSimple(Authenticated.class.getName()),
-            DotName.createSimple(DenyAll.class.getName()),
+            DotName.createSimple(Authenticated.class.getName()), DotName.createSimple(DenyAll.class.getName()),
             DotName.createSimple(PermitAll.class.getName()));
 
     private SecurityTransformerUtils() {
@@ -56,7 +55,8 @@ public final class SecurityTransformerUtils {
         return findFirstStandardSecurityAnnotation(classInfo.declaredAnnotations());
     }
 
-    public static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(Collection<AnnotationInstance> instances) {
+    public static Optional<AnnotationInstance> findFirstStandardSecurityAnnotation(
+            Collection<AnnotationInstance> instances) {
         for (AnnotationInstance instance : instances) {
             if (SECURITY_ANNOTATIONS.contains(instance.name())) {
                 return Optional.of(instance);

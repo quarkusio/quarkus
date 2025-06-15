@@ -32,36 +32,35 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 /**
  * Generate deployment package zip for lambda.
- *
  */
 public class FunctionZipProcessor {
     private static final Logger log = Logger.getLogger(FunctionZipProcessor.class);
 
     /**
-     * Function.zip is same as the runner jar plus dependencies in lib/
-     * plus anything in src/main/zip.jvm
+     * Function.zip is same as the runner jar plus dependencies in lib/ plus anything in src/main/zip.jvm
      *
      * @param target
      * @param artifactResultProducer
      * @param jar
+     *
      * @throws Exception
      */
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
-    public void jvmZip(OutputTargetBuildItem target,
-            PackageConfig packageConfig,
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            JarBuildItem jar) throws Exception {
+    public void jvmZip(OutputTargetBuildItem target, PackageConfig packageConfig,
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer, JarBuildItem jar) throws Exception {
 
         if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
-            throw new BuildException("Lambda deployments need to use a legacy JAR, " +
-                    "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
+            throw new BuildException(
+                    "Lambda deployments need to use a legacy JAR, "
+                            + "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
                     List.of());
         }
 
         Path zipPath = target.getOutputDirectory().resolve("function.zip");
         Path zipDir = findJvmZipDir(target.getOutputDirectory());
         try (ZipArchiveOutputStream zip = new ZipArchiveOutputStream(zipPath.toFile())) {
-            try (ZipArchiveInputStream zinput = new ZipArchiveInputStream(new FileInputStream(jar.getPath().toFile()))) {
+            try (ZipArchiveInputStream zinput = new ZipArchiveInputStream(
+                    new FileInputStream(jar.getPath().toFile()))) {
                 for (;;) {
                     ZipArchiveEntry entry = zinput.getNextZipEntry();
                     if (entry == null)
@@ -72,49 +71,53 @@ public class FunctionZipProcessor {
             }
             if (zipDir != null) {
                 try (Stream<Path> paths = Files.walk(zipDir)) {
-                    paths.filter(Files::isRegularFile)
-                            .forEach(path -> {
-                                try {
-                                    int mode = Files.isExecutable(path) ? 0755 : 0644;
-                                    addZipEntry(zip, path, zipDir.relativize(path).toString().replace('\\', '/'), mode);
-                                } catch (Exception ex) {
-                                    throw new RuntimeException(ex);
-                                }
-                            });
+                    paths.filter(Files::isRegularFile).forEach(path -> {
+                        try {
+                            int mode = Files.isExecutable(path) ? 0755 : 0644;
+                            addZipEntry(zip, path, zipDir.relativize(path).toString().replace('\\', '/'), mode);
+                        } catch (Exception ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    });
                 }
             }
             if (!jar.isUberJar()) {
                 try (Stream<Path> paths = Files.walk(jar.getLibraryDir())) {
-                    paths.filter(Files::isRegularFile)
-                            .forEach(path -> {
-                                try {
-                                    int mode = Files.isExecutable(path) ? 0755 : 0644;
-                                    addZipEntry(zip, path,
-                                            "lib/" + jar.getLibraryDir().relativize(path).toString().replace('\\', '/'),
-                                            mode);
-                                } catch (Exception ex) {
-                                    throw new RuntimeException(ex);
-                                }
-                            });
+                    paths.filter(Files::isRegularFile).forEach(path -> {
+                        try {
+                            int mode = Files.isExecutable(path) ? 0755 : 0644;
+                            addZipEntry(zip, path,
+                                    "lib/" + jar.getLibraryDir().relativize(path).toString().replace('\\', '/'), mode);
+                        } catch (Exception ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    });
                 }
             }
         }
     }
 
     /**
-     * Native function.zip adds anything in src/main/zip.native. If src/main/zip.native/bootstrap
-     * exists then the native executable is renamed to "runner".
+     * Native function.zip adds anything in src/main/zip.native. If src/main/zip.native/bootstrap exists then the native
+     * executable is renamed to "runner".
      *
      * @param target
      * @param artifactResultProducer
      * @param nativeImage
+     *
      * @throws Exception
      */
     @BuildStep(onlyIf = { IsNormal.class, NativeBuild.class })
-    public void nativeZip(OutputTargetBuildItem target,
-            Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
-            BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            NativeImageBuildItem nativeImage,
+    public void nativeZip(OutputTargetBuildItem target, Optional<UpxCompressedBuildItem> upxCompressed, // used to
+            // ensure that
+            // we work with
+            // the
+            // compressed
+            // native binary
+            // if
+            // compression
+            // was enabled
+            BuildProducer<ArtifactResultBuildItem> artifactResultProducer, NativeImageBuildItem nativeImage,
             NativeImageRunnerBuildItem nativeImageRunner) throws Exception {
         Path zipDir = findNativeZipDir(target.getOutputDirectory());
 
@@ -130,19 +133,18 @@ public class FunctionZipProcessor {
                 }
 
                 try (Stream<Path> paths = Files.walk(zipDir)) {
-                    paths.filter(Files::isRegularFile)
-                            .forEach(path -> {
-                                try {
-                                    if (bootstrap.equals(path.toFile())) {
-                                        addZipEntry(zip, path, "bootstrap", 0755);
-                                    } else {
-                                        int mode = Files.isExecutable(path) ? 0755 : 0644;
-                                        addZipEntry(zip, path, zipDir.relativize(path).toString().replace('\\', '/'), mode);
-                                    }
-                                } catch (Exception ex) {
-                                    throw new RuntimeException(ex);
-                                }
-                            });
+                    paths.filter(Files::isRegularFile).forEach(path -> {
+                        try {
+                            if (bootstrap.equals(path.toFile())) {
+                                addZipEntry(zip, path, "bootstrap", 0755);
+                            } else {
+                                int mode = Files.isExecutable(path) ? 0755 : 0644;
+                                addZipEntry(zip, path, zipDir.relativize(path).toString().replace('\\', '/'), mode);
+                            }
+                        } catch (Exception ex) {
+                            throw new RuntimeException(ex);
+                        }
+                    });
                 }
             }
             addZipEntry(zip, nativeImage.getPath(), executableName, 0755);
@@ -159,7 +161,8 @@ public class FunctionZipProcessor {
                     }
                 });
             } catch (IOException e) {
-                log.errorf("Could not list files in directory %s. Continuing. Error: %s", nativeImage.getPath().getParent(), e);
+                log.errorf("Could not list files in directory %s. Continuing. Error: %s",
+                        nativeImage.getPath().getParent(), e);
             }
         }
     }

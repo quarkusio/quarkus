@@ -24,16 +24,14 @@ public class MultiClientImportPreloadingWithOnlyIfEmptyTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.redis.hosts=${quarkus.redis.tr}\n" +
-                                    "quarkus.redis.load-script=import/my-import.redis\n" +
-                                    "quarkus.redis.my-redis.hosts=${quarkus.redis.tr}\n" +
-                                    "quarkus.redis.my-redis.load-script=sample.redis\n" +
-                                    // Do not erase as it's using the same database
-                                    // As the data base is not empty, the second load will be skipped
-                                    "quarkus.redis.my-redis.flush-before-load=false\n" +
-                                    "quarkus.redis.my-redis.load-only-if-empty=true"),
-                            "application.properties")
+                    .addAsResource(new StringAsset("quarkus.redis.hosts=${quarkus.redis.tr}\n"
+                            + "quarkus.redis.load-script=import/my-import.redis\n"
+                            + "quarkus.redis.my-redis.hosts=${quarkus.redis.tr}\n"
+                            + "quarkus.redis.my-redis.load-script=sample.redis\n" +
+                            // Do not erase as it's using the same database
+                            // As the data base is not empty, the second load will be skipped
+                            "quarkus.redis.my-redis.flush-before-load=false\n"
+                            + "quarkus.redis.my-redis.load-only-if-empty=true"), "application.properties")
                     .addAsResource(new File("src/test/resources/imports/import.redis"), "import/my-import.redis")
                     .addAsResource(new File("src/test/resources/imports/sample.redis"), "sample.redis")
 
@@ -48,7 +46,6 @@ public class MultiClientImportPreloadingWithOnlyIfEmptyTest {
 
     @Test
     void verifyImport() {
-        assertThat(my.key().keys("*"))
-                .containsOnly("foo", "bar", "key1", "key2", "key3", "key4");
+        assertThat(my.key().keys("*")).containsOnly("foo", "bar", "key1", "key2", "key3", "key4");
     }
 }

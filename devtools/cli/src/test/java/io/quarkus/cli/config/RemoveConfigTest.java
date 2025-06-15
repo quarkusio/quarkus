@@ -49,8 +49,6 @@ public class RemoveConfigTest {
     private SmallRyeConfig config() throws Exception {
         PropertiesConfigSource propertiesConfigSource = new PropertiesConfigSource(
                 tempDir.resolve("src/main/resources/application.properties").toUri().toURL());
-        return new SmallRyeConfigBuilder()
-                .withSources(propertiesConfigSource)
-                .build();
+        return new SmallRyeConfigBuilder().withSources(propertiesConfigSource).build();
     }
 }

@@ -35,18 +35,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OtelLoggingFileTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(JBossLoggingBean.class)
-                            .addClasses(InMemoryLogRecordExporter.class, InMemoryLogRecordExporterProvider.class)
-                            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
-                            .add(new StringAsset(
-                                    "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.log.file.enable=true\n" + // enable log file
-                                            "quarkus.otel.traces.enabled=false\n"),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(JBossLoggingBean.class)
+            .addClasses(InMemoryLogRecordExporter.class, InMemoryLogRecordExporterProvider.class)
+            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
+            .add(new StringAsset("quarkus.otel.logs.enabled=true\n" + "quarkus.log.file.enable=true\n" + // enable log
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // file
+                    "quarkus.otel.traces.enabled=false\n"), "application.properties"));
 
     @Inject
     InMemoryLogRecordExporter logRecordExporter;
@@ -67,27 +63,19 @@ public class OtelLoggingFileTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        OpenTelemetryAssertions.assertThat(last)
-                .hasSeverity(Severity.INFO)
-                .hasSeverityText("INFO")
-                .hasBody(message)
-                .hasAttributesSatisfying(
-                        attributes -> OpenTelemetryAssertions.assertThat(attributes)
-                                .containsEntry(CODE_NAMESPACE.getKey(),
-                                        "io.quarkus.opentelemetry.deployment.logs.OtelLoggingFileTest$JBossLoggingBean")
-                                .containsEntry(CODE_FUNCTION.getKey(), "hello")
-                                .containsEntry(THREAD_NAME.getKey(), Thread.currentThread().getName())
-                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
-                                .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
-                                .containsEntry(LOG_FILE_PATH, "target" + File.separator + "quarkus.log")
-                                .containsKey(CODE_LINENO.getKey())
-                                .doesNotContainKey(EXCEPTION_TYPE)
-                                .doesNotContainKey(EXCEPTION_MESSAGE)
-                                .doesNotContainKey(EXCEPTION_STACKTRACE)
-                                // attributes do not duplicate tracing data
-                                .doesNotContainKey("spanId")
-                                .doesNotContainKey("traceId")
-                                .doesNotContainKey("sampled"));
+        OpenTelemetryAssertions.assertThat(last).hasSeverity(Severity.INFO).hasSeverityText("INFO").hasBody(message)
+                .hasAttributesSatisfying(attributes -> OpenTelemetryAssertions.assertThat(attributes)
+                        .containsEntry(CODE_NAMESPACE.getKey(),
+                                "io.quarkus.opentelemetry.deployment.logs.OtelLoggingFileTest$JBossLoggingBean")
+                        .containsEntry(CODE_FUNCTION.getKey(), "hello")
+                        .containsEntry(THREAD_NAME.getKey(), Thread.currentThread().getName())
+                        .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
+                        .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
+                        .containsEntry(LOG_FILE_PATH, "target" + File.separator + "quarkus.log")
+                        .containsKey(CODE_LINENO.getKey()).doesNotContainKey(EXCEPTION_TYPE)
+                        .doesNotContainKey(EXCEPTION_MESSAGE).doesNotContainKey(EXCEPTION_STACKTRACE)
+                        // attributes do not duplicate tracing data
+                        .doesNotContainKey("spanId").doesNotContainKey("traceId").doesNotContainKey("sampled"));
     }
 
     @ApplicationScoped

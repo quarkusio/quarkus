@@ -3,8 +3,8 @@ package io.quarkus.rest.client.reactive;
 import java.util.List;
 
 /**
- * Allows methods that are meant to compute a value for a Rest Client method to have access to the
- * context on which they are invoked
+ * Allows methods that are meant to compute a value for a Rest Client method to have access to the context on which they
+ * are invoked
  */
 public interface ComputedParamContext {
     /**

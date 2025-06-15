@@ -10,10 +10,9 @@ import io.quarkus.runtime.ExecutorRecorder;
 import io.vertx.core.Context;
 
 /**
- * This is added by the Reactive Rest Client if the `@Blocking` annotation is used in some scenarios. For example, when users
- * provide a custom ResponseExceptionMapper that is annotates with the `@Blocking` annotation.
- *
- * Then this handler is applied, the execution of the next handlers will use the worker thread pool.
+ * This is added by the Reactive Rest Client if the `@Blocking` annotation is used in some scenarios. For example, when
+ * users provide a custom ResponseExceptionMapper that is annotates with the `@Blocking` annotation. Then this handler
+ * is applied, the execution of the next handlers will use the worker thread pool.
  */
 public class ClientUseWorkerExecutorRestHandler implements ClientRestHandler {
 
@@ -28,7 +27,7 @@ public class ClientUseWorkerExecutorRestHandler implements ClientRestHandler {
     @Override
     public void handle(RestClientRequestContext requestContext) throws Exception {
         if (!Context.isOnEventLoopThread()) {
-            return; //already dispatched
+            return; // already dispatched
         }
 
         if (executor == null) {

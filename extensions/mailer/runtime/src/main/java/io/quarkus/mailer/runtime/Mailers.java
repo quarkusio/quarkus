@@ -40,8 +40,7 @@ import io.vertx.ext.mail.StartTLSOptions;
 /**
  * This class is a sort of producer for mailer instances.
  * <p>
- * It isn't a CDI producer in the literal sense, but it creates a synthetic bean
- * from {@code MailerProcessor}.
+ * It isn't a CDI producer in the literal sense, but it creates a synthetic bean from {@code MailerProcessor}.
  */
 @Singleton
 public class Mailers {
@@ -66,45 +65,40 @@ public class Mailers {
         if (mailerSupport.hasDefaultMailer) {
             MailerRuntimeConfig defaultMailerConfig = mailersRuntimeConfig.mailers().get(DEFAULT_MAILER_NAME);
 
-            MailClient mailClient = createMailClient(vertx, DEFAULT_MAILER_NAME, defaultMailerConfig,
-                    tlsRegistry);
-            io.vertx.mutiny.ext.mail.MailClient mutinyMailClient = io.vertx.mutiny.ext.mail.MailClient.newInstance(mailClient);
+            MailClient mailClient = createMailClient(vertx, DEFAULT_MAILER_NAME, defaultMailerConfig, tlsRegistry);
+            io.vertx.mutiny.ext.mail.MailClient mutinyMailClient = io.vertx.mutiny.ext.mail.MailClient
+                    .newInstance(mailClient);
             MockMailboxImpl mockMailbox = new MockMailboxImpl();
             localClients.put(DEFAULT_MAILER_NAME, mailClient);
             localMutinyClients.put(DEFAULT_MAILER_NAME, mutinyMailClient);
             localMockMailboxes.put(DEFAULT_MAILER_NAME, mockMailbox);
             localMutinyMailers.put(DEFAULT_MAILER_NAME,
                     new MutinyMailerImpl(mutinyVertx, mutinyMailClient, mockMailbox,
-                            defaultMailerConfig.from().orElse(null),
-                            defaultMailerConfig.bounceAddress().orElse(null),
+                            defaultMailerConfig.from().orElse(null), defaultMailerConfig.bounceAddress().orElse(null),
                             defaultMailerConfig.mock().orElse(launchMode.isDevOrTest()),
-                            defaultMailerConfig.approvedRecipients().orElse(List.of()).stream()
-                                    .filter(Objects::nonNull).collect(Collectors.toList()),
-                            defaultMailerConfig.logRejectedRecipients(),
-                            defaultMailerConfig.logInvalidRecipients(), sentMailEvent));
+                            defaultMailerConfig.approvedRecipients().orElse(List.of()).stream().filter(Objects::nonNull)
+                                    .collect(Collectors.toList()),
+                            defaultMailerConfig.logRejectedRecipients(), defaultMailerConfig.logInvalidRecipients(),
+                            sentMailEvent));
         }
 
         for (String name : mailerSupport.namedMailers) {
             MailerRuntimeConfig namedMailerRuntimeConfig = mailersRuntimeConfig.mailers().get(name);
 
-            MailClient namedMailClient = createMailClient(vertx, name, namedMailerRuntimeConfig,
-                    tlsRegistry);
+            MailClient namedMailClient = createMailClient(vertx, name, namedMailerRuntimeConfig, tlsRegistry);
             io.vertx.mutiny.ext.mail.MailClient namedMutinyMailClient = io.vertx.mutiny.ext.mail.MailClient
                     .newInstance(namedMailClient);
             MockMailboxImpl namedMockMailbox = new MockMailboxImpl();
             localClients.put(name, namedMailClient);
             localMutinyClients.put(name, namedMutinyMailClient);
             localMockMailboxes.put(name, namedMockMailbox);
-            localMutinyMailers.put(name,
-                    new MutinyMailerImpl(mutinyVertx, namedMutinyMailClient, namedMockMailbox,
-                            namedMailerRuntimeConfig.from().orElse(null),
-                            namedMailerRuntimeConfig.bounceAddress().orElse(null),
-                            namedMailerRuntimeConfig.mock().orElse(false),
-                            namedMailerRuntimeConfig.approvedRecipients().orElse(List.of()).stream()
-                                    .filter(p -> p != null).collect(Collectors.toList()),
-                            namedMailerRuntimeConfig.logRejectedRecipients(),
-                            namedMailerRuntimeConfig.logInvalidRecipients(),
-                            sentMailEvent));
+            localMutinyMailers.put(name, new MutinyMailerImpl(mutinyVertx, namedMutinyMailClient, namedMockMailbox,
+                    namedMailerRuntimeConfig.from().orElse(null), namedMailerRuntimeConfig.bounceAddress().orElse(null),
+                    namedMailerRuntimeConfig.mock().orElse(false),
+                    namedMailerRuntimeConfig.approvedRecipients().orElse(List.of()).stream().filter(p -> p != null)
+                            .collect(Collectors.toList()),
+                    namedMailerRuntimeConfig.logRejectedRecipients(), namedMailerRuntimeConfig.logInvalidRecipients(),
+                    sentMailEvent));
         }
 
         this.clients = Collections.unmodifiableMap(localClients);
@@ -150,16 +144,14 @@ public class Mailers {
     private io.vertx.ext.mail.DKIMSignOptions toVertxDkimSignOptions(DkimSignOptionsConfig optionsConfig) {
         DKIMSignOptions vertxDkimOptions = new io.vertx.ext.mail.DKIMSignOptions();
 
-        String sdid = optionsConfig.sdid()
-                .orElseThrow(() -> {
-                    throw new ConfigurationException("Must provide the Signing Domain Identifier (sdid).");
-                });
+        String sdid = optionsConfig.sdid().orElseThrow(() -> {
+            throw new ConfigurationException("Must provide the Signing Domain Identifier (sdid).");
+        });
         vertxDkimOptions.setSdid(sdid);
 
-        String selector = optionsConfig.selector()
-                .orElseThrow(() -> {
-                    throw new ConfigurationException("Must provide the selector.");
-                });
+        String selector = optionsConfig.selector().orElseThrow(() -> {
+            throw new ConfigurationException("Must provide the selector.");
+        });
         vertxDkimOptions.setSelector(selector);
 
         if (optionsConfig.auid().isPresent()) {
@@ -177,13 +169,13 @@ public class Mailers {
         }
 
         if (optionsConfig.bodyCanonAlgo().isPresent()) {
-            vertxDkimOptions
-                    .setBodyCanonAlgo(CanonicalizationAlgorithm.valueOf(optionsConfig.bodyCanonAlgo().get().toString()));
+            vertxDkimOptions.setBodyCanonAlgo(
+                    CanonicalizationAlgorithm.valueOf(optionsConfig.bodyCanonAlgo().get().toString()));
         }
 
         if (optionsConfig.headerCanonAlgo().isPresent()) {
-            vertxDkimOptions
-                    .setHeaderCanonAlgo(CanonicalizationAlgorithm.valueOf(optionsConfig.headerCanonAlgo().get().toString()));
+            vertxDkimOptions.setHeaderCanonAlgo(
+                    CanonicalizationAlgorithm.valueOf(optionsConfig.headerCanonAlgo().get().toString()));
         }
 
         if (optionsConfig.privateKey().isPresent()) {
@@ -263,7 +255,8 @@ public class Mailers {
         return cfg;
     }
 
-    private void configureTLS(String name, MailerRuntimeConfig config, TlsConfigurationRegistry tlsRegistry, MailConfig cfg) {
+    private void configureTLS(String name, MailerRuntimeConfig config, TlsConfigurationRegistry tlsRegistry,
+            MailConfig cfg) {
         TlsConfiguration configuration = null;
         boolean defaultTrustAll = false;
         if (config.tlsConfigurationName().isPresent()) {
@@ -366,8 +359,8 @@ public class Mailers {
             } else if (actualType.equalsIgnoreCase("PEM")) {
                 return configurePemTrustOptions(actualPaths, pwd);
             } else {
-                throw new ConfigurationException("Unsupported value for the SMTP trust store type. The value (" + actualType
-                        + ") must be JKS, PKCS or PEM");
+                throw new ConfigurationException("Unsupported value for the SMTP trust store type. The value ("
+                        + actualType + ") must be JKS, PKCS or PEM");
             }
         }
 
@@ -416,7 +409,8 @@ public class Mailers {
     private TrustOptions configurePemTrustOptions(List<String> paths, Optional<String> pwd) {
         PemTrustOptions options = new PemTrustOptions();
         if (pwd.isPresent()) {
-            throw new ConfigurationException("Invalid SMTP trust store configuration, PEM trust store to not support password");
+            throw new ConfigurationException(
+                    "Invalid SMTP trust store configuration, PEM trust store to not support password");
         }
         for (String path : paths) {
             options.addCertPath(path.trim());

@@ -20,19 +20,19 @@ public class JBangIntegration {
 
     public static final String CONFIG = "//Q:CONFIG";
 
-    public static Map<String, Object> postBuild(Path appClasses, Path pomFile, List<Map.Entry<String, String>> repositories,
-            List<Map.Entry<String, Path>> originalDeps,
+    public static Map<String, Object> postBuild(Path appClasses, Path pomFile,
+            List<Map.Entry<String, String>> repositories, List<Map.Entry<String, Path>> originalDeps,
             List<String> comments, boolean nativeImage) throws IOException {
-        //dev mode takes a very different path
+        // dev mode takes a very different path
         if (Boolean.getBoolean("quarkus.dev")) {
-            System.clearProperty("quarkus.dev"); //avoid unknown config key warnings
+            System.clearProperty("quarkus.dev"); // avoid unknown config key warnings
             HashMap<String, byte[]> files = new HashMap<>();
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
-            //pom file contents
+            // pom file contents
             String pomContents = String.join("\n", Files.readAllLines(pomFile));
             dataOutputStream.writeUTF(pomContents);
-            //Source file locations
+            // Source file locations
             dataOutputStream.writeUTF(System.getProperty("jbang.source"));
             dataOutputStream.writeInt(originalDeps.size());
             for (Map.Entry<String, Path> i : originalDeps) {
@@ -49,7 +49,7 @@ public class JBangIntegration {
 
         Properties configurationProperties = new Properties();
         for (String comment : comments) {
-            //we allow config to be provided via //Q:CONFIG name=value
+            // we allow config to be provided via //Q:CONFIG name=value
             if (comment.startsWith(CONFIG)) {
                 String conf = comment.substring(CONFIG.length()).trim();
                 int equals = conf.indexOf("=");
@@ -60,10 +60,10 @@ public class JBangIntegration {
             }
         }
 
-        //huge hack
-        //jbang does not consider the pom when resolving dependencies
-        //so can get the wrong version of asm
-        //we remove it from the deps list so we can use the correct one
+        // huge hack
+        // jbang does not consider the pom when resolving dependencies
+        // so can get the wrong version of asm
+        // we remove it from the deps list so we can use the correct one
         List<Map.Entry<String, Path>> dependencies = new ArrayList<>();
         for (Map.Entry<String, Path> i : originalDeps) {
             if (!i.getKey().startsWith("org.ow2.asm:asm:")) {
@@ -84,9 +84,9 @@ public class JBangIntegration {
                         protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
                             if (name.startsWith("org.") && !(name.startsWith("org.xml.") || name.startsWith("org.w3c.")
                                     || (name.startsWith("org.jboss.") && !name.startsWith("org.jboss.logging.")))) {
-                                //jbang has some but not all the maven resolver classes we need on its
-                                //class path. These all start with org. so we filter them out to make sure
-                                //we get a complete class path
+                                // jbang has some but not all the maven resolver classes we need on its
+                                // class path. These all start with org. so we filter them out to make sure
+                                // we get a complete class path
                                 throw new ClassNotFoundException();
                             }
                             return super.loadClass(name, resolve);
@@ -96,9 +96,9 @@ public class JBangIntegration {
                         public URL getResource(String name) {
                             if (name.startsWith("org/") && !(name.startsWith("org/xml/") || name.startsWith("org/w3c/")
                                     || name.startsWith("org/jboss/"))) {
-                                //jbang has some but not all the maven resolver classes we need on its
-                                //class path. These all start with org. so we filter them out to make sure
-                                //we get a complete class path
+                                // jbang has some but not all the maven resolver classes we need on its
+                                // class path. These all start with org. so we filter them out to make sure
+                                // we get a complete class path
                                 return null;
                             }
                             return super.getResource(name);
@@ -108,9 +108,9 @@ public class JBangIntegration {
                         public Enumeration<URL> getResources(String name) throws IOException {
                             if (name.startsWith("org/") && !(name.startsWith("org/xml/") || name.startsWith("org/w3c/")
                                     || name.startsWith("org/jboss/"))) {
-                                //jbang has some but not all the maven resolver classes we need on its
-                                //class path. These all start with org. so we filter them out to make sure
-                                //we get a complete class path
+                                // jbang has some but not all the maven resolver classes we need on its
+                                // class path. These all start with org. so we filter them out to make sure
+                                // we get a complete class path
                                 return Collections.emptyEnumeration();
                             }
                             return super.getResources(name);
@@ -118,17 +118,9 @@ public class JBangIntegration {
                     });
             Thread.currentThread().setContextClassLoader(loader);
             Class<?> launcher = loader.loadClass("io.quarkus.bootstrap.jbang.JBangBuilderImpl");
-            return (Map<String, Object>) launcher
-                    .getDeclaredMethod("postBuild", Path.class, Path.class, List.class, List.class, Properties.class,
-                            boolean.class)
-                    .invoke(
-                            null,
-                            appClasses,
-                            pomFile,
-                            repositories,
-                            dependencies,
-                            configurationProperties,
-                            nativeImage);
+            return (Map<String, Object>) launcher.getDeclaredMethod("postBuild", Path.class, Path.class, List.class,
+                    List.class, Properties.class, boolean.class).invoke(null, appClasses, pomFile, repositories,
+                            dependencies, configurationProperties, nativeImage);
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {

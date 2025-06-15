@@ -27,19 +27,15 @@ public class GrpcServerInboundMessageWithSeparateServerTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addClass(HelloService.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage())
+                    .addClass(HelloService.class).add(new StringAsset(configuration), "application.properties"));
 
     protected ManagedChannel channel;
 
     @BeforeEach
     public void init() throws Exception {
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
-                .usePlaintext()
-                .build();
+        channel = NettyChannelBuilder.forAddress("localhost", 9001).usePlaintext().build();
     }
 
     @AfterEach
@@ -54,8 +50,7 @@ public class GrpcServerInboundMessageWithSeparateServerTest {
         var sizeInChars = 400 * 1024;
         HelloRequest request = HelloRequest.newBuilder().setName("a".repeat(sizeInChars)).build();
 
-        HelloReply reply = GreeterGrpc.newBlockingStub(channel)
-                .sayHello(request);
+        HelloReply reply = GreeterGrpc.newBlockingStub(channel).sayHello(request);
         assertThat(reply).isNotNull();
     }
 
@@ -65,7 +60,6 @@ public class GrpcServerInboundMessageWithSeparateServerTest {
         HelloRequest request = HelloRequest.newBuilder().setName("a".repeat(sizeInChars)).build();
 
         assertThatThrownBy(() -> GreeterGrpc.newBlockingStub(channel).sayHello(request))
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasMessageContaining("RESOURCE_EXHAUSTED");
+                .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("RESOURCE_EXHAUSTED");
     }
 }

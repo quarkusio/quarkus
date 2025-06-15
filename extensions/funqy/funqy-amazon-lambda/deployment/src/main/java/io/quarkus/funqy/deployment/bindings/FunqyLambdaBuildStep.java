@@ -34,12 +34,9 @@ public class FunqyLambdaBuildStep {
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public void init(List<FunctionBuildItem> functions,
-            FunqyLambdaBindingRecorder recorder,
-            BuildProducer<FeatureBuildItem> feature,
-            Optional<FunctionInitializedBuildItem> hasFunctions,
-            LambdaObjectMapperInitializedBuildItem mapperDependency,
-            BeanContainerBuildItem beanContainer,
+    public void init(List<FunctionBuildItem> functions, FunqyLambdaBindingRecorder recorder,
+            BuildProducer<FeatureBuildItem> feature, Optional<FunctionInitializedBuildItem> hasFunctions,
+            LambdaObjectMapperInitializedBuildItem mapperDependency, BeanContainerBuildItem beanContainer,
             FunqyAmazonBuildTimeConfig buildTimeConfig) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
@@ -49,8 +46,7 @@ public class FunqyLambdaBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public RuntimeComplete choose(FunqyConfig config,
-            FunqyAmazonConfig amazonConfig,
+    public RuntimeComplete choose(FunqyConfig config, FunqyAmazonConfig amazonConfig,
             FunqyLambdaBindingRecorder recorder) {
         recorder.chooseInvoker(config, amazonConfig);
         return new RuntimeComplete();
@@ -61,10 +57,8 @@ public class FunqyLambdaBuildStep {
      */
     @BuildStep(onlyIf = NativeBuild.class)
     @Record(RUNTIME_INIT)
-    public void startPoolLoop(FunqyLambdaBindingRecorder recorder,
-            RuntimeComplete ignored,
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
+    public void startPoolLoop(FunqyLambdaBindingRecorder recorder, RuntimeComplete ignored,
+            ShutdownContextBuildItem shutdownContextBuildItem, LaunchModeBuildItem launchModeBuildItem,
             List<ServiceStartBuildItem> orderServicesFirst // try to order this after service recorders
     ) {
         recorder.startPollLoop(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
@@ -72,11 +66,9 @@ public class FunqyLambdaBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void startPoolLoopDevOrTest(RuntimeComplete ignored,
-            FunqyLambdaBindingRecorder recorder,
+    public void startPoolLoopDevOrTest(RuntimeComplete ignored, FunqyLambdaBindingRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            LaunchModeBuildItem launchModeBuildItem) {
+            ShutdownContextBuildItem shutdownContextBuildItem, LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
         if (mode.isDevOrTest()) {
             recorder.startPollLoop(shutdownContextBuildItem, mode);

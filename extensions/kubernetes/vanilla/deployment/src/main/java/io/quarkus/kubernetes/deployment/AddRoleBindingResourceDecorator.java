@@ -26,9 +26,8 @@ public class AddRoleBindingResourceDecorator extends ResourceProvidingDecorator<
     private final RoleRef roleRef;
     private final Subject[] subjects;
 
-    public AddRoleBindingResourceDecorator(String deploymentName, String name, String namespace, Map<String, String> labels,
-            RoleRef roleRef,
-            Subject... subjects) {
+    public AddRoleBindingResourceDecorator(String deploymentName, String name, String namespace,
+            Map<String, String> labels, RoleRef roleRef, Subject... subjects) {
         this.deploymentName = deploymentName;
         this.name = name;
         this.labels = labels;
@@ -43,32 +42,22 @@ public class AddRoleBindingResourceDecorator extends ResourceProvidingDecorator<
         }
 
         Map<String, String> roleBindingLabels = new HashMap<>(labels);
-        getDeploymentMetadata(list, deploymentName)
-                .map(ObjectMeta::getLabels)
-                .ifPresent(roleBindingLabels::putAll);
+        getDeploymentMetadata(list, deploymentName).map(ObjectMeta::getLabels).ifPresent(roleBindingLabels::putAll);
 
-        final var metadataBuilder = new RoleBindingBuilder().withNewMetadata()
-                .withName(name)
+        final var metadataBuilder = new RoleBindingBuilder().withNewMetadata().withName(name)
                 .withLabels(roleBindingLabels);
         // add namespace if it was specified
         if (namespace != null) {
             metadataBuilder.withNamespace(namespace);
         }
-        RoleBindingBuilder builder = metadataBuilder
-                .endMetadata()
-                .withNewRoleRef()
-                .withKind(roleRef.isClusterWide() ? CLUSTER_ROLE : ROLE)
-                .withName(roleRef.getName())
-                .withApiGroup(RBAC_API_GROUP)
-                .endRoleRef();
+        RoleBindingBuilder builder = metadataBuilder.endMetadata().withNewRoleRef()
+                .withKind(roleRef.isClusterWide() ? CLUSTER_ROLE : ROLE).withName(roleRef.getName())
+                .withApiGroup(RBAC_API_GROUP).endRoleRef();
 
         for (Subject subject : subjects) {
-            builder.addNewSubject()
-                    .withApiGroup(subject.getApiGroup())
-                    .withKind(subject.getKind())
+            builder.addNewSubject().withApiGroup(subject.getApiGroup()).withKind(subject.getKind())
                     .withName(Strings.defaultIfEmpty(subject.getName(), deploymentName))
-                    .withNamespace(subject.getNamespace())
-                    .endSubject();
+                    .withNamespace(subject.getNamespace()).endSubject();
         }
 
         list.addToItems(builder.build());

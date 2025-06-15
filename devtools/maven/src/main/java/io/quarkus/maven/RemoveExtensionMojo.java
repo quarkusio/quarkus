@@ -16,10 +16,9 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 
 /**
- * Allow removing an extension from an existing pom.xml file.
- * Because you can remove one or several extension in one go, there are 2 mojos:
- * {@code remove-extensions} and {@code remove-extension}. Both supports the {@code extension} and {@code extensions}
- * parameters.
+ * Allow removing an extension from an existing pom.xml file. Because you can remove one or several extension in one go,
+ * there are 2 mojos: {@code remove-extensions} and {@code remove-extension}. Both supports the {@code extension} and
+ * {@code extensions} parameters.
  */
 @Mojo(name = "remove-extension")
 public class RemoveExtensionMojo extends QuarkusProjectMojoBase {
@@ -58,8 +57,7 @@ public class RemoveExtensionMojo extends QuarkusProjectMojoBase {
 
         try {
             final QuarkusCommandOutcome outcome = new RemoveExtensions(quarkusProject)
-                    .extensions(ext.stream().map(String::trim).collect(Collectors.toSet()))
-                    .execute();
+                    .extensions(ext.stream().map(String::trim).collect(Collectors.toSet())).execute();
             if (!outcome.isSuccess()) {
                 throw new MojoExecutionException("Unable to remove extensions");
             }

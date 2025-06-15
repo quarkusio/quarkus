@@ -28,7 +28,9 @@ public class ContainerUtil {
     /**
      * Convert an InspectContainerResponse to a RunningContainer.
      *
-     * @param inspectContainer The container inspect response.
+     * @param inspectContainer
+     *        The container inspect response.
+     *
      * @return The running container.
      */
     public static RunningContainer toRunningContainer(InspectContainerResponse inspectContainer) {
@@ -38,17 +40,17 @@ public class ContainerUtil {
     /**
      * Convert an InspectContainerResponse to a ContainerInfo.
      *
-     * @param inspectContainer The container inspect response.
+     * @param inspectContainer
+     *        The container inspect response.
+     *
      * @return The container info.
      */
     public static ContainerInfo toContainerInfo(InspectContainerResponse inspectContainer) {
         String[] names = inspectContainer.getNetworkSettings().getNetworks().values().stream()
-                .flatMap(c -> c.getAliases() == null ? Stream.of() : c.getAliases().stream())
-                .toArray(String[]::new);
+                .flatMap(c -> c.getAliases() == null ? Stream.of() : c.getAliases().stream()).toArray(String[]::new);
         return new ContainerInfo(inspectContainer.getId(), names, inspectContainer.getConfig().getImage(),
                 inspectContainer.getState().getStatus(), getNetworks(inspectContainer),
-                inspectContainer.getConfig().getLabels(),
-                getExposedPorts(inspectContainer));
+                inspectContainer.getConfig().getLabels(), getExposedPorts(inspectContainer));
     }
 
     private static Map<String, String[]> getNetworks(InspectContainerResponse container) {
@@ -63,29 +65,27 @@ public class ContainerUtil {
         if (networkSettings == null) {
             return null;
         }
-        return networkSettings.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
-                        e -> {
-                            List<String> aliases = e.getValue().getAliases();
-                            return aliases == null ? new String[0] : aliases.toArray(new String[0]);
-                        }));
+        return networkSettings.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> {
+            List<String> aliases = e.getValue().getAliases();
+            return aliases == null ? new String[0] : aliases.toArray(new String[0]);
+        }));
     }
 
     private static ContainerInfo.ContainerPort[] getExposedPorts(InspectContainerResponse inspectContainer) {
         return inspectContainer.getNetworkSettings().getPorts().getBindings().entrySet().stream()
                 .filter(e -> e.getValue() != null)
                 .flatMap(e -> Arrays.stream(e.getValue())
-                        .map(b -> new ContainerInfo.ContainerPort(b.getHostIp(),
-                                e.getKey().getPort(),
-                                Integer.parseInt(b.getHostPortSpec()),
-                                e.getKey().getProtocol().toString())))
+                        .map(b -> new ContainerInfo.ContainerPort(b.getHostIp(), e.getKey().getPort(),
+                                Integer.parseInt(b.getHostPortSpec()), e.getKey().getProtocol().toString())))
                 .toArray(ContainerInfo.ContainerPort[]::new);
     }
 
     /**
      * Get the environment variables for a container.
      *
-     * @param inspectContainer The container info.
+     * @param inspectContainer
+     *        The container info.
+     *
      * @return A map of environment variables to their values.
      */
     public static Map<String, String> getContainerEnv(InspectContainerResponse inspectContainer) {
@@ -93,16 +93,18 @@ public class ContainerUtil {
         if (env == null) {
             return Collections.emptyMap();
         }
-        return Arrays.stream(env)
-                .map(e -> e.split("=", 2))
+        return Arrays.stream(env).map(e -> e.split("=", 2))
                 .collect(Collectors.toMap(e -> e[0], e -> e.length > 1 ? e[1] : ""));
     }
 
     /**
      * Get the environment variable configuration for a list of containers.
      *
-     * @param instances A list of suppliers that provide the container info.
-     * @param envVarMappingHint A function that maps the container environment variable to config key.
+     * @param instances
+     *        A list of suppliers that provide the container info.
+     * @param envVarMappingHint
+     *        A function that maps the container environment variable to config key.
+     *
      * @return A map of config keys to their values.
      */
     public static Map<String, String> getEnvVarConfig(List<? extends Supplier<InspectContainerResponse>> instances,
@@ -117,8 +119,11 @@ public class ContainerUtil {
     /**
      * Get the environment variable configuration for a container.
      *
-     * @param containerInfoSupplier A supplier that provides the container info.
-     * @param envVarMappingHint A function that maps the container environment variable to config key.
+     * @param containerInfoSupplier
+     *        A supplier that provides the container info.
+     * @param envVarMappingHint
+     *        A function that maps the container environment variable to config key.
+     *
      * @return A map of environment variables to their values.
      */
     public static Map<String, String> getEnvVarConfig(Supplier<InspectContainerResponse> containerInfoSupplier,
@@ -142,8 +147,11 @@ public class ContainerUtil {
     /**
      * Get the port configuration for a list of containers.
      *
-     * @param instances A list of suppliers that provide the container info.
-     * @param envVarMappingHint A function that maps the container port to a config key.
+     * @param instances
+     *        A list of suppliers that provide the container info.
+     * @param envVarMappingHint
+     *        A function that maps the container port to a config key.
+     *
      * @return A map of config keys to their values.
      */
     public static Map<String, String> getPortConfig(List<? extends Supplier<InspectContainerResponse>> instances,
@@ -158,8 +166,11 @@ public class ContainerUtil {
     /**
      * Get the port configuration for a container.
      *
-     * @param containerResponseSupplier A supplier that provides the container info.
-     * @param envVarMappingHint A function that maps the container port to a config key.
+     * @param containerResponseSupplier
+     *        A supplier that provides the container info.
+     * @param envVarMappingHint
+     *        A function that maps the container port to a config key.
+     *
      * @return A map of config keys to their values.
      */
     public static Map<String, String> getPortConfig(Supplier<InspectContainerResponse> containerResponseSupplier,

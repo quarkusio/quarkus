@@ -13,35 +13,26 @@ public class OpenApiDefaultPathTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-openapi.store-schema-directory=target"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class).addAsResource(
+                    new StringAsset("quarkus.smallrye-openapi.store-schema-directory=target"),
+                    "application.properties"));
 
     @Test
     public void testOpenApiPathAccessResource() {
-        RestAssured.given().header("Accept", "application/yaml")
-                .when().get(OPEN_API_PATH)
-                .then().header("Content-Type", "application/yaml;charset=UTF-8");
-        RestAssured.given().queryParam("format", "YAML")
-                .when().get(OPEN_API_PATH)
-                .then().header("Content-Type", "application/yaml;charset=UTF-8");
-        RestAssured.given().header("Accept", "application/json")
-                .when().get(OPEN_API_PATH)
-                .then().header("Content-Type", "application/json;charset=UTF-8");
-        RestAssured.given().queryParam("format", "JSON")
-                .when().get(OPEN_API_PATH)
-                .then()
-                .header("Content-Type", "application/json;charset=UTF-8")
-                .body("openapi", Matchers.startsWith("3.1"))
+        RestAssured.given().header("Accept", "application/yaml").when().get(OPEN_API_PATH).then().header("Content-Type",
+                "application/yaml;charset=UTF-8");
+        RestAssured.given().queryParam("format", "YAML").when().get(OPEN_API_PATH).then().header("Content-Type",
+                "application/yaml;charset=UTF-8");
+        RestAssured.given().header("Accept", "application/json").when().get(OPEN_API_PATH).then().header("Content-Type",
+                "application/json;charset=UTF-8");
+        RestAssured.given().queryParam("format", "JSON").when().get(OPEN_API_PATH).then()
+                .header("Content-Type", "application/json;charset=UTF-8").body("openapi", Matchers.startsWith("3.1"))
                 .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("tags.name[0]", Matchers.equalTo("test"))
                 .body("paths.'/resource'.get.servers[0]", Matchers.hasKey("url"))
                 .body("paths.'/resource'.get.security[0]", Matchers.hasKey("securityRequirement"))
                 .body("paths.'/resource'.get", Matchers.hasKey("x-openApiExtension"));
 
-        RestAssured.given()
-                .when().options(OPEN_API_PATH)
-                .then().header("Allow", "GET, HEAD, OPTIONS");
+        RestAssured.given().when().options(OPEN_API_PATH).then().header("Allow", "GET, HEAD, OPTIONS");
     }
 }

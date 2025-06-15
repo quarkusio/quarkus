@@ -15,14 +15,10 @@ public class UnknownQuarkusConfigPropertyTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addAsResource(
-                    new StringAsset("quarkus.log.level: INFO\n" +
-                            "quarkus:\n" +
-                            "  log:\n" +
-                            "    level: INFO\n"),
+                    new StringAsset("quarkus.log.level: INFO\n" + "quarkus:\n" + "  log:\n" + "    level: INFO\n"),
                     "application.yaml"))
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
-            .assertLogRecords(logRecords -> assertTrue(logRecords.stream()
-                    .map(LogRecord::getMessage)
+            .assertLogRecords(logRecords -> assertTrue(logRecords.stream().map(LogRecord::getMessage)
                     .anyMatch(message -> message.startsWith("Unrecognized configuration key"))));;
 
     @Test

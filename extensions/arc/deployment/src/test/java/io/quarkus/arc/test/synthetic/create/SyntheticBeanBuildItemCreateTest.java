@@ -21,14 +21,14 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Tests that {@link SyntheticBeanBuildItem#create(DotName)} does not add automatically register the param type as bean type
+ * Tests that {@link SyntheticBeanBuildItem#create(DotName)} does not add automatically register the param type as bean
+ * type
  */
 public class SyntheticBeanBuildItemCreateTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SyntheticBeanBuildItemCreateTest.class, FooCreator.class, FooInterface.class, Foo.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(SyntheticBeanBuildItemCreateTest.class, FooCreator.class, FooInterface.class, Foo.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -40,11 +40,8 @@ public class SyntheticBeanBuildItemCreateTest {
 
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(SyntheticBeanBuildItem.create(Foo.class)
-                                .addType(FooInterface.class)
-                                .scope(BuiltinScope.SINGLETON.getInfo())
-                                .unremovable()
-                                .creator(FooCreator.class)
+                        context.produce(SyntheticBeanBuildItem.create(Foo.class).addType(FooInterface.class)
+                                .scope(BuiltinScope.SINGLETON.getInfo()).unremovable().creator(FooCreator.class)
                                 .done());
                     }
                 }).produces(SyntheticBeanBuildItem.class).build();

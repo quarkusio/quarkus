@@ -28,10 +28,8 @@ public class SnapStartProcessor {
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     @Record(ExecutionTime.STATIC_INIT)
     public void processSnapStart(BuildProducer<PreloadClassesEnabledBuildItem> preload,
-            BuildProducer<SnapStartEnabledBuildItem> snapStartEnabled,
-            SnapStartRecorder recorder,
-            SnapStartConfig config,
-            Optional<SnapStartDefaultValueBuildItem> defaultVal) {
+            BuildProducer<SnapStartEnabledBuildItem> snapStartEnabled, SnapStartRecorder recorder,
+            SnapStartConfig config, Optional<SnapStartDefaultValueBuildItem> defaultVal) {
         if (config.enable().isPresent()) {
             if (!config.enable().get().booleanValue()) {
                 return;
@@ -47,12 +45,9 @@ public class SnapStartProcessor {
     }
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
-    public void generateClassListFromApplication(
-            SnapStartConfig config,
-            Optional<SnapStartDefaultValueBuildItem> defaultVal,
-            BuildProducer<PreloadClassBuildItem> producer,
-            TransformedClassesBuildItem transformedClasses,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    public void generateClassListFromApplication(SnapStartConfig config,
+            Optional<SnapStartDefaultValueBuildItem> defaultVal, BuildProducer<PreloadClassBuildItem> producer,
+            TransformedClassesBuildItem transformedClasses, ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<GeneratedClassBuildItem> generatedClasses) {
         if (config.enable().isPresent()) {
             if (!config.enable().get()) {

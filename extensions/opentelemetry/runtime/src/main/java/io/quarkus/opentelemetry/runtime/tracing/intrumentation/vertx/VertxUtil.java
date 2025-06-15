@@ -79,7 +79,7 @@ public final class VertxUtil {
             try {
                 return Long.parseLong(portString);
             } catch (NumberFormatException e) {
-                //ignore
+                // ignore
             }
         }
         if (httpRequest.remoteAddress() != null) {

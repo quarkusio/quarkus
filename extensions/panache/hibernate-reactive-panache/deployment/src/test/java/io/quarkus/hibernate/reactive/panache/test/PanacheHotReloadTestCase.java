@@ -13,10 +13,8 @@ import io.restassured.RestAssured;
 public class PanacheHotReloadTestCase {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, MyTestResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, MyTestResource.class)
+                    .addAsResource("application.properties").addAsResource("import.sql"));
 
     public void testAddNewFieldToEntity() {
         String expectedName = "{\"id\":1,\"name\":\"my name\"}";

@@ -17,7 +17,7 @@ public class HelloResource {
                 event.response().end("hello " + event.pathParam("name"));
             }
         });
-        //setup(router);
+        // setup(router);
     }
 
     void setup(Router router) {

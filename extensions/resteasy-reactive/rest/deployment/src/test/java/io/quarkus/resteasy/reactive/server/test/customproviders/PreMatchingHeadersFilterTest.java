@@ -25,24 +25,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class PreMatchingHeadersFilterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class);
+        }
+    });
 
     @Test
     public void testJsonHeaderAdded() {
-        given()
-                .body("{\"foo\": \"bar\"}")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
-                .body("foo", equalTo("bar"));
+        given().body("{\"foo\": \"bar\"}").when().post("/test").then().statusCode(200).body("foo", equalTo("bar"));
     }
 
     @Path("test")

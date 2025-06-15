@@ -61,8 +61,10 @@ public final class TestClassIndexer {
             IndexWriter indexWriter = new IndexWriter(fos);
             indexWriter.write(index);
         } catch (IOException ignored) {
-            // don't fail to write the index because this error is recoverable at the read site (by just recreating the index)
-            // this is necessary for tests that are not part of the application itself, but instead reside in a jar (like the Quarkus Platform tests)
+            // don't fail to write the index because this error is recoverable at the read site (by just recreating the
+            // index)
+            // this is necessary for tests that are not part of the application itself, but instead reside in a jar
+            // (like the Quarkus Platform tests)
         }
     }
 
@@ -92,10 +94,12 @@ public final class TestClassIndexer {
     }
 
     /**
-     * Returns a test classes index file for a given test class location,
-     * which is resolved by adding {@link #TEST_CLASSES_IDX} to the test class location.
+     * Returns a test classes index file for a given test class location, which is resolved by adding
+     * {@link #TEST_CLASSES_IDX} to the test class location.
      *
-     * @param testClassLocation test class location
+     * @param testClassLocation
+     *        test class location
+     *
      * @return test classes index file for a given test class location
      */
     private static Path indexPath(Path testClassLocation) {
@@ -105,8 +109,7 @@ public final class TestClassIndexer {
     private static void indexTestClassesDir(Indexer indexer, final Path testClassesLocation) throws IOException {
         Files.walkFileTree(testClassesLocation, new FileVisitor<>() {
             @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                    throws IOException {
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                 return FileVisitResult.CONTINUE;
             }
 

@@ -87,38 +87,13 @@ public class JaxbProcessor {
 
     private static Logger LOG = Logger.getLogger(JaxbProcessor.class);
 
-    private static final List<Class<? extends Annotation>> JAXB_ANNOTATIONS = List.of(
-            XmlAccessorType.class,
-            XmlAnyAttribute.class,
-            XmlAnyElement.class,
-            XmlAttachmentRef.class,
-            XmlAttribute.class,
-            XmlElement.class,
-            XmlElementDecl.class,
-            XmlElementRef.class,
-            XmlElementRefs.class,
-            XmlElements.class,
-            XmlElementWrapper.class,
-            XmlEnum.class,
-            XmlEnumValue.class,
-            XmlID.class,
-            XmlIDREF.class,
-            XmlInlineBinaryData.class,
-            XmlList.class,
-            XmlMimeType.class,
-            XmlMixed.class,
-            XmlNs.class,
-            XmlRegistry.class,
-            XmlRootElement.class,
-            XmlSchema.class,
-            XmlSchemaType.class,
-            XmlSchemaTypes.class,
-            XmlSeeAlso.class,
-            XmlTransient.class,
-            XmlType.class,
-            XmlValue.class,
-            XmlJavaTypeAdapter.class,
-            XmlJavaTypeAdapters.class);
+    private static final List<Class<? extends Annotation>> JAXB_ANNOTATIONS = List.of(XmlAccessorType.class,
+            XmlAnyAttribute.class, XmlAnyElement.class, XmlAttachmentRef.class, XmlAttribute.class, XmlElement.class,
+            XmlElementDecl.class, XmlElementRef.class, XmlElementRefs.class, XmlElements.class, XmlElementWrapper.class,
+            XmlEnum.class, XmlEnumValue.class, XmlID.class, XmlIDREF.class, XmlInlineBinaryData.class, XmlList.class,
+            XmlMimeType.class, XmlMixed.class, XmlNs.class, XmlRegistry.class, XmlRootElement.class, XmlSchema.class,
+            XmlSchemaType.class, XmlSchemaTypes.class, XmlSeeAlso.class, XmlTransient.class, XmlType.class,
+            XmlValue.class, XmlJavaTypeAdapter.class, XmlJavaTypeAdapters.class);
 
     private static final List<Class<?>> JAXB_REFLECTIVE_CLASSES = List.of(XmlAccessOrder.class);
 
@@ -134,12 +109,12 @@ public class JaxbProcessor {
 
     private static final List<DotName> JAXB_ROOT_ANNOTATIONS = List.of(XML_ROOT_ELEMENT, XML_TYPE, XML_REGISTRY);
 
-    private static final List<DotName> IGNORE_TYPES = List.of(DotName.createSimple("javax.xml.datatype.XMLGregorianCalendar"));
+    private static final List<DotName> IGNORE_TYPES = List
+            .of(DotName.createSimple("javax.xml.datatype.XMLGregorianCalendar"));
 
     private static final List<String> NATIVE_PROXY_DEFINITIONS = List.of(
             "org.glassfish.jaxb.core.marshaller.CharacterEscapeHandler",
-            "com.sun.xml.txw2.output.CharacterEscapeHandler",
-            "org.glassfish.jaxb.core.v2.schemagen.episode.Bindings",
+            "com.sun.xml.txw2.output.CharacterEscapeHandler", "org.glassfish.jaxb.core.v2.schemagen.episode.Bindings",
             "org.glassfish.jaxb.core.v2.schemagen.episode.SchemaBindings",
             "org.glassfish.jaxb.core.v2.schemagen.episode.Klass",
             "org.glassfish.jaxb.core.v2.schemagen.episode.Package",
@@ -184,16 +159,13 @@ public class JaxbProcessor {
             "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.TypeDefParticle",
             "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.TypeHost",
             "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Union",
-            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Wildcard",
-            "com.sun.xml.txw2.TypedXmlWriter");
+            "org.glassfish.jaxb.runtime.v2.schemagen.xmlschema.Wildcard", "com.sun.xml.txw2.TypedXmlWriter");
 
     @BuildStep
-    void processAnnotationsAndIndexFiles(
-            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
+    void processAnnotationsAndIndexFiles(BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
             BuildProducer<ServiceProviderBuildItem> providerItem,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            List<JaxbFileRootBuildItem> fileRoots,
+            CombinedIndexBuildItem combinedIndexBuildItem, List<JaxbFileRootBuildItem> fileRoots,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
@@ -209,21 +181,19 @@ public class JaxbProcessor {
         boolean jaxbRootAnnotationsDetected = false;
 
         for (DotName jaxbRootAnnotation : JAXB_ROOT_ANNOTATIONS) {
-            for (AnnotationInstance jaxbRootAnnotationInstance : index
-                    .getAnnotations(jaxbRootAnnotation)) {
+            for (AnnotationInstance jaxbRootAnnotationInstance : index.getAnnotations(jaxbRootAnnotation)) {
                 if (jaxbRootAnnotationInstance.target().kind() == Kind.CLASS
                         && !JAXB_ANNOTATIONS.contains(jaxbRootAnnotationInstance.target().asClass().getClass())) {
                     ClassInfo targetClassInfo = jaxbRootAnnotationInstance.target().asClass();
                     final var name = targetClassInfo.name();
 
-                    reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
-                            .builder(name)
-                            .index(index)
-                            .ignoreTypePredicate(t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
-                                    || IGNORE_TYPES.contains(t))
+                    reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem.builder(name).index(index)
+                            .ignoreTypePredicate(
+                                    t -> ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE.test(t)
+                                            || IGNORE_TYPES.contains(t))
                             .ignoreFieldPredicate(JaxbProcessor::isFieldIgnored)
-                            .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored)
-                            .source(getClass().getSimpleName() + " annotated with @" + jaxbRootAnnotation + " > " + name)
+                            .ignoreMethodPredicate(JaxbProcessor::isMethodIgnored).source(getClass().getSimpleName()
+                                    + " annotated with @" + jaxbRootAnnotation + " > " + name)
                             .build());
                     classesToBeBound.add(targetClassInfo.name().toString());
                     jaxbRootAnnotationsDetected = true;
@@ -241,32 +211,26 @@ public class JaxbProcessor {
                 String className = xmlSchemaInstance.target().asClass().name().toString();
 
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
-                        .reason(getClass().getName() + " annotated with @" + XML_SCHEMA)
-                        .build());
+                        .reason(getClass().getName() + " annotated with @" + XML_SCHEMA).build());
             }
         }
 
         // Register XML Java type adapters for reflection
         for (AnnotationInstance xmlJavaTypeAdapterInstance : index.getAnnotations(XML_JAVA_TYPE_ADAPTER)) {
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(xmlJavaTypeAdapterInstance.value().asClass().name().toString())
-                            .reason(getClass().getName() + " @" + XML_JAVA_TYPE_ADAPTER + " value")
-                            .methods().fields().build());
+            reflectiveClass.produce(ReflectiveClassBuildItem
+                    .builder(xmlJavaTypeAdapterInstance.value().asClass().name().toString())
+                    .reason(getClass().getName() + " @" + XML_JAVA_TYPE_ADAPTER + " value").methods().fields().build());
         }
 
         if (!index.getAnnotations(XML_ANY_ELEMENT).isEmpty()) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder("jakarta.xml.bind.annotation.W3CDomHandler")
-                    .reason(getClass().getName() + " @" + XML_ANY_ELEMENT + " annotation present")
-                    .build());
+                    .reason(getClass().getName() + " @" + XML_ANY_ELEMENT + " annotation present").build());
         }
 
-        JAXB_ANNOTATIONS.stream()
-                .map(Class::getName)
-                .forEach(className -> {
-                    reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
-                            .reason(getClass().getName() + " JAXB annotation")
-                            .methods().build());
-                });
+        JAXB_ANNOTATIONS.stream().map(Class::getName).forEach(className -> {
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
+                    .reason(getClass().getName() + " JAXB annotation").methods().build());
+        });
 
         // Register @XmlSeeAlso
         proxyDefinitions.produce(new NativeImageProxyDefinitionBuildItem(XmlSeeAlso.class.getName(),
@@ -276,8 +240,7 @@ public class JaxbProcessor {
             Type[] types = value.asClassArray();
             for (Type t : types) {
                 reflectiveClass.produce(ReflectiveClassBuildItem.builder(t.name().toString())
-                        .reason(getClass().getName() + " @" + XML_SEE_ALSO + " value")
-                        .build());
+                        .reason(getClass().getName() + " @" + XML_SEE_ALSO + " value").build());
             }
         }
         // Register Native proxy definitions
@@ -286,7 +249,8 @@ public class JaxbProcessor {
         }
 
         for (JaxbFileRootBuildItem i : fileRoots) {
-            iterateResources(applicationArchivesBuildItem, i.getFileRoot(), resource, reflectiveClass, classesToBeBound);
+            iterateResources(applicationArchivesBuildItem, i.getFileRoot(), resource, reflectiveClass,
+                    classesToBeBound);
         }
 
         classesToBeBoundProducer.produce(new JaxbClassesToBeBoundBuildItem(classesToBeBound));
@@ -300,46 +264,36 @@ public class JaxbProcessor {
     }
 
     @BuildStep
-    void registerClasses(
-            BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
+    void registerClasses(BuildProducer<NativeImageSystemPropertyBuildItem> nativeImageProps,
             BuildProducer<ServiceProviderBuildItem> providerItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                "org.glassfish.jaxb.runtime.v2.ContextFactory",
-                "com.sun.xml.internal.stream.XMLInputFactoryImpl",
-                "com.sun.xml.internal.stream.XMLOutputFactoryImpl",
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.glassfish.jaxb.runtime.v2.ContextFactory",
+                "com.sun.xml.internal.stream.XMLInputFactoryImpl", "com.sun.xml.internal.stream.XMLOutputFactoryImpl",
                 "com.sun.org.apache.xpath.internal.functions.FuncNot",
-                "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl")
-                .reason(getClass().getName())
+                "com.sun.org.apache.xerces.internal.impl.dv.xs.SchemaDVFactoryImpl").reason(getClass().getName())
                 .methods().build());
 
         addResourceBundle(resourceBundle, "jakarta.xml.bind.Messages");
         addResourceBundle(resourceBundle, "jakarta.xml.bind.helpers.Messages");
 
-        nativeImageProps
-                .produce(new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
+        nativeImageProps.produce(
+                new NativeImageSystemPropertyBuildItem("com.sun.xml.bind.v2.bytecode.ClassTailor.noOptimize", "true"));
 
-        JAXB_REFLECTIVE_CLASSES.stream()
-                .map(Class::getName)
+        JAXB_REFLECTIVE_CLASSES.stream().map(Class::getName)
                 .forEach(className -> reflectiveClass.produce(ReflectiveClassBuildItem.builder(className)
-                        .reason(getClass().getName() + " JAXB reflective class")
-                        .methods().build()));
+                        .reason(getClass().getName() + " JAXB reflective class").methods().build()));
 
-        providerItem
-                .produce(new ServiceProviderBuildItem(JAXBContext.class.getName(),
-                        "org.glassfish.jaxb.runtime.v2.ContextFactory"));
+        providerItem.produce(new ServiceProviderBuildItem(JAXBContext.class.getName(),
+                "org.glassfish.jaxb.runtime.v2.ContextFactory"));
     }
 
     @BuildStep
-    FilteredJaxbClassesToBeBoundBuildItem filterBoundClasses(
-            JaxbConfig config,
+    FilteredJaxbClassesToBeBoundBuildItem filterBoundClasses(JaxbConfig config,
             List<JaxbClassesToBeBoundBuildItem> classesToBeBoundBuildItems) {
 
         FilteredJaxbClassesToBeBoundBuildItem.Builder builder = FilteredJaxbClassesToBeBoundBuildItem.builder();
-        classesToBeBoundBuildItems.stream()
-                .map(JaxbClassesToBeBoundBuildItem::getClasses)
-                .forEach(builder::classNames);
+        classesToBeBoundBuildItems.stream().map(JaxbClassesToBeBoundBuildItem::getClasses).forEach(builder::classNames);
 
         // remove classes that have been excluded by users
         if (config.excludeClasses().isPresent()) {
@@ -350,9 +304,7 @@ public class JaxbProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void bindClassesToJaxbContext(
-            JaxbConfig config,
-            FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
+    void bindClassesToJaxbContext(JaxbConfig config, FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
             SynthesisFinishedBuildItem beanContainerState,
             JaxbContextConfigRecorder jaxbContextConfig /* Force the build time container to invoke this method */) {
 
@@ -373,21 +325,20 @@ public class JaxbProcessor {
         additionalBeans.produce(new AdditionalBeanBuildItem(JaxbContextProducer.class));
     }
 
-    private void validateJaxbContext(FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound, BeanResolver beanResolver,
-            Set<BeanInfo> beans) {
+    private void validateJaxbContext(FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
+            BeanResolver beanResolver, Set<BeanInfo> beans) {
         final BeanInfo bean = beanResolver.resolveAmbiguity(beans);
         if (bean.isDefaultBean()) {
             /*
-             * Validate the default JAXB context at build time and fail early.
-             * Do this only if the user application actually requires the default JAXBContext bean
+             * Validate the default JAXB context at build time and fail early. Do this only if the user application
+             * actually requires the default JAXBContext bean
              */
             try {
                 JAXBContext.newInstance(filteredClassesToBeBound.getClasses().toArray(new Class[0]));
             } catch (JAXBException e) {
                 /*
-                 * Producing a ValidationErrorBuildItem would perhaps be more natural here,
-                 * but doing so causes a cycle between this and reactive JAXB extension
-                 * Throwing from here works well too
+                 * Producing a ValidationErrorBuildItem would perhaps be more natural here, but doing so causes a cycle
+                 * between this and reactive JAXB extension Throwing from here works well too
                  */
                 throw new DeploymentException("Failed to create or validate the default JAXBContext", e);
             }
@@ -395,8 +346,7 @@ public class JaxbProcessor {
     }
 
     private void handleJaxbFile(Path p, BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<String> classesToBeBound) {
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<String> classesToBeBound) {
         try {
             String path = p.toAbsolutePath().toString().substring(1);
             String pkg = p.toAbsolutePath().getParent().toString().substring(1)
@@ -419,22 +369,20 @@ public class JaxbProcessor {
                 }
             }
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(classes.toArray(new Class[0]))
-                    .reason(getClass().getName() + " jaxb.index file " + path)
-                    .methods().fields().build());
+                    .reason(getClass().getName() + " jaxb.index file " + path).methods().fields().build());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
     private void iterateResources(ApplicationArchivesBuildItem applicationArchivesBuildItem, String path,
-            BuildProducer<NativeImageResourceBuildItem> resource, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<String> classesToBeBound) {
+            BuildProducer<NativeImageResourceBuildItem> resource,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, List<String> classesToBeBound) {
         for (ApplicationArchive archive : applicationArchivesBuildItem.getAllApplicationArchives()) {
             archive.accept(tree -> {
                 var arch = tree.getPath(path);
                 if (arch != null && Files.isDirectory(arch)) {
-                    JaxbProcessor.safeWalk(arch)
-                            .filter(Files::isRegularFile)
+                    JaxbProcessor.safeWalk(arch).filter(Files::isRegularFile)
                             .filter(p -> p.getFileName().toString().equals("jaxb.index"))
                             .forEach(p1 -> handleJaxbFile(p1, resource, reflectiveClass, classesToBeBound));
                 }
@@ -491,8 +439,8 @@ public class JaxbProcessor {
         // and XmlAccessType
         MethodInfo getterSetterCounterpart = getGetterSetterCounterPart(methodInfo);
 
-        if (methodInfo.hasAnnotation(XML_TRANSIENT) ||
-                (getterSetterCounterpart != null && getterSetterCounterpart.hasAnnotation(XML_TRANSIENT))) {
+        if (methodInfo.hasAnnotation(XML_TRANSIENT)
+                || (getterSetterCounterpart != null && getterSetterCounterpart.hasAnnotation(XML_TRANSIENT))) {
             return true;
         }
         if (Modifier.isStatic(methodInfo.flags())) {
@@ -526,7 +474,8 @@ public class JaxbProcessor {
             return null;
         }
 
-        return methodInfo.declaringClass().method(methodInfo.name().replaceFirst("get", "set"), methodInfo.returnType());
+        return methodInfo.declaringClass().method(methodInfo.name().replaceFirst("get", "set"),
+                methodInfo.returnType());
     }
 
     private static XmlAccessType getXmlAccessType(ClassInfo classInfo) {

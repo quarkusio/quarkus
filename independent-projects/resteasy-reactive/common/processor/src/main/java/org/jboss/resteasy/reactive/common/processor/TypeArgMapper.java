@@ -22,7 +22,7 @@ public class TypeArgMapper implements Function<String, Type> {
 
     @Override
     public Type apply(String v) {
-        //we attempt to resolve type variables
+        // we attempt to resolve type variables
         ClassInfo declarer = declaringClass;
         int pos = -1;
         for (;;) {
@@ -41,9 +41,7 @@ public class TypeArgMapper implements Function<String, Type> {
             }
             declarer = index.getClassByName(declarer.superName());
         }
-        Type type = JandexUtil
-                .resolveTypeParameters(declaringClass.name(), declarer.name(), index)
-                .get(pos);
+        Type type = JandexUtil.resolveTypeParameters(declaringClass.name(), declarer.name(), index).get(pos);
         if (type.kind() == Type.Kind.TYPE_VARIABLE && type.asTypeVariable().identifier().equals(v)) {
             List<Type> bounds = type.asTypeVariable().bounds();
             if (bounds.isEmpty()) {

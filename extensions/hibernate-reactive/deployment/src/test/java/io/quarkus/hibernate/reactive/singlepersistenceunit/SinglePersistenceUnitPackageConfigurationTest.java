@@ -25,22 +25,19 @@ public class SinglePersistenceUnitPackageConfigurationTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(EntityIncludedThroughPackageConfig.class.getPackage().getName())
-                    .addPackage(ExcludedEntity.class.getPackage().getName()))
+            .withApplicationRoot(
+                    (jar) -> jar.addPackage(EntityIncludedThroughPackageConfig.class.getPackage().getName())
+                            .addPackage(ExcludedEntity.class.getPackage().getName()))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.packages",
                     EntityIncludedThroughPackageConfig.class.getPackage().getName())
             // Expect a warning on startup
-            .setLogRecordPredicate(
-                    record -> record.getMessage().contains("Could not find a suitable persistence unit for model classes"))
-            .assertLogRecords(records -> assertThat(records)
-                    .as("Warnings on startup")
-                    .hasSize(1)
-                    .element(0).satisfies(record -> {
+            .setLogRecordPredicate(record -> record.getMessage()
+                    .contains("Could not find a suitable persistence unit for model classes"))
+            .assertLogRecords(
+                    records -> assertThat(records).as("Warnings on startup").hasSize(1).element(0).satisfies(record -> {
                         assertThat(record.getLevel()).isEqualTo(Level.WARNING);
-                        assertThat(LOG_FORMATTER.formatMessage(record))
-                                .contains(ExcludedEntity.class.getName());
+                        assertThat(LOG_FORMATTER.formatMessage(record)).contains(ExcludedEntity.class.getName());
                     }));
 
     @Inject

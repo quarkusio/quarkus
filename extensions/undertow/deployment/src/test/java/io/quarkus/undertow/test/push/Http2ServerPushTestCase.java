@@ -33,8 +33,7 @@ public class Http2ServerPushTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ServerPushServlet.class, MessageServlet.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ServerPushServlet.class, MessageServlet.class)
                     .addAsResource(new File("src/test/resources/ssl-jks.conf"), "application.properties")
                     .addAsResource(new File("src/test/resources/server-keystore.jks"), "server-keystore.jks"));
 
@@ -50,46 +49,45 @@ public class Http2ServerPushTestCase {
 
             // Vert.x 4 Migration: review for correctness
             //
-            //            request.pushHandler(new Handler<HttpClientRequest>() {
-            //                @Override
-            //                public void handle(HttpClientRequest event) {
-            //                    pushedPath.complete(event.path());
-            //                    event.handler(new Handler<HttpClientResponse>() {
-            //                        @Override
-            //                        public void handle(HttpClientResponse event) {
-            //                            event.bodyHandler(new Handler<Buffer>() {
-            //                                @Override
-            //                                public void handle(Buffer event) {
-            //                                    pushedBody.complete(new String(event.getBytes(), StandardCharsets.UTF_8));
-            //                                }
-            //                            });
-            //                            event.exceptionHandler(new Handler<Throwable>() {
-            //                                @Override
-            //                                public void handle(Throwable event) {
-            //                                    pushedBody.completeExceptionally(event);
-            //                                    pushedPath.completeExceptionally(event);
-            //                                }
-            //                            });
-            //                        }
-            //                    });
-            //                }
-            //            });
-            //            request.handler(new Handler<HttpClientResponse>() {
-            //                @Override
-            //                public void handle(HttpClientResponse event) {
-            //                    event.endHandler(new Handler<Void>() {
-            //                        @Override
-            //                        public void handle(Void event) {
+            // request.pushHandler(new Handler<HttpClientRequest>() {
+            // @Override
+            // public void handle(HttpClientRequest event) {
+            // pushedPath.complete(event.path());
+            // event.handler(new Handler<HttpClientResponse>() {
+            // @Override
+            // public void handle(HttpClientResponse event) {
+            // event.bodyHandler(new Handler<Buffer>() {
+            // @Override
+            // public void handle(Buffer event) {
+            // pushedBody.complete(new String(event.getBytes(), StandardCharsets.UTF_8));
+            // }
+            // });
+            // event.exceptionHandler(new Handler<Throwable>() {
+            // @Override
+            // public void handle(Throwable event) {
+            // pushedBody.completeExceptionally(event);
+            // pushedPath.completeExceptionally(event);
+            // }
+            // });
+            // }
+            // });
+            // }
+            // });
+            // request.handler(new Handler<HttpClientResponse>() {
+            // @Override
+            // public void handle(HttpClientResponse event) {
+            // event.endHandler(new Handler<Void>() {
+            // @Override
+            // public void handle(Void event) {
             //
-            //                        }
-            //                    });
-            //                }
-            //            });
-            //            request.end();
+            // }
+            // });
+            // }
+            // });
+            // request.end();
 
             HttpClient client = vertx.createHttpClient(options);
-            client.request(HttpMethod.GET, sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath())
-                    .toCompletionStage()
+            client.request(HttpMethod.GET, sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath()).toCompletionStage()
                     .thenAccept(new Consumer<HttpClientRequest>() {
                         @Override
                         public void accept(HttpClientRequest req) {
@@ -107,12 +105,10 @@ public class Http2ServerPushTestCase {
                                     pushedRequest.response().toCompletionStage()
                                             .thenCompose(new Function<HttpClientResponse, CompletionStage<Buffer>>() {
                                                 @Override
-                                                public CompletionStage<Buffer> apply(
-                                                        HttpClientResponse resp) {
+                                                public CompletionStage<Buffer> apply(HttpClientResponse resp) {
                                                     return resp.body().toCompletionStage();
                                                 }
-                                            })
-                                            .thenAccept(new Consumer<Buffer>() {
+                                            }).thenAccept(new Consumer<Buffer>() {
                                                 @Override
                                                 public void accept(Buffer buffer) {
                                                     pushedBody.complete(

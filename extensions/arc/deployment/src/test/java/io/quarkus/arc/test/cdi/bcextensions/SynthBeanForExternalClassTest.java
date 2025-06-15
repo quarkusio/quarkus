@@ -32,11 +32,11 @@ public class SynthBeanForExternalClassTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class, MyExtension.class, MySyntheticBeanCreator.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, MyExtension.class, MySyntheticBeanCreator.class)
                     .addAsServiceProvider(BuildCompatibleExtension.class, MyExtension.class))
             // we need a non-application archive, so cannot use `withAdditionalDependency()`
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement", Version.getVersion())));
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement", Version.getVersion())));
 
     @Inject
     MyBean bean;
@@ -67,11 +67,8 @@ public class SynthBeanForExternalClassTest {
     public static class MyExtension implements BuildCompatibleExtension {
         @Synthesis
         public void synthesis(SyntheticComponents syn) {
-            syn.addBean(SomeClassInExternalLibrary.class)
-                    .type(SomeClassInExternalLibrary.class)
-                    .scope(Dependent.class)
-                    .createWith(MySyntheticBeanCreator.class)
-                    .disposeWith(MySyntheticBeanDisposer.class);
+            syn.addBean(SomeClassInExternalLibrary.class).type(SomeClassInExternalLibrary.class).scope(Dependent.class)
+                    .createWith(MySyntheticBeanCreator.class).disposeWith(MySyntheticBeanDisposer.class);
         }
     }
 

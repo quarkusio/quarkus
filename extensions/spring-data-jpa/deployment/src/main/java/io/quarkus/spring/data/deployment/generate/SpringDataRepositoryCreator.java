@@ -41,13 +41,14 @@ public class SpringDataRepositoryCreator {
     private final CustomQueryMethodsAdder customQueryMethodsAdder;
 
     public SpringDataRepositoryCreator(ClassOutput classOutput, ClassOutput otherClassOutput, IndexView index,
-            Consumer<String> fragmentImplClassResolvedCallback,
-            Consumer<String> customClassCreatedCallback, TypeBundle typeBundle) {
+            Consumer<String> fragmentImplClassResolvedCallback, Consumer<String> customClassCreatedCallback,
+            TypeBundle typeBundle) {
         this.classOutput = classOutput;
         this.index = index;
         this.fragmentMethodsAdder = new FragmentMethodsAdder(fragmentImplClassResolvedCallback, index);
         this.stockMethodsAdder = new StockMethodsAdder(index, typeBundle);
-        this.derivedMethodsAdder = new DerivedMethodsAdder(index, typeBundle, otherClassOutput, customClassCreatedCallback);
+        this.derivedMethodsAdder = new DerivedMethodsAdder(index, typeBundle, otherClassOutput,
+                customClassCreatedCallback);
 
         // custom queries may generate non-bean classes
         this.customQueryMethodsAdder = new CustomQueryMethodsAdder(index, otherClassOutput, customClassCreatedCallback,
@@ -68,7 +69,8 @@ public class SpringDataRepositoryCreator {
         }
 
         // handle the fragment repositories
-        // Spring Data allows users to define (and implement their own interfaces containing data access related methods)
+        // Spring Data allows users to define (and implement their own interfaces containing data access related
+        // methods)
         // that can then be used along with any of the typical Spring Data repository interfaces in the final
         // repository in order to compose functionality
 
@@ -84,10 +86,8 @@ public class SpringDataRepositoryCreator {
         Map<String, FieldDescriptor> fragmentImplNameToFieldDescriptor = new HashMap<>();
         String repositoryToImplementStr = repositoryToImplement.name().toString();
         String generatedClassName = repositoryToImplementStr + "_" + HashUtil.sha1(repositoryToImplementStr) + "Impl";
-        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
-                .className(generatedClassName)
-                .interfaces(repositoryToImplementStr)
-                .build()) {
+        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
+                .interfaces(repositoryToImplementStr).build()) {
             classCreator.addAnnotation(ApplicationScoped.class);
 
             FieldCreator entityClassFieldCreator = classCreator.getFieldCreator("entityClass", Class.class.getName())
@@ -137,21 +137,25 @@ public class SpringDataRepositoryCreator {
         // we need to pull the entity and ID types for the Spring Data generic types
         // we also need to make sure that the user didn't try to specify multiple different types
         // in the same interface (which is possible if only Repository is used)
-        for (DotName extendedSpringDataRepo : GenerationUtil.extendedSpringDataRepos(repositoryToImplement, indexView)) {
-            List<Type> types = JandexUtil.resolveTypeParameters(repositoryToImplement.name(), extendedSpringDataRepo, index);
+        for (DotName extendedSpringDataRepo : GenerationUtil.extendedSpringDataRepos(repositoryToImplement,
+                indexView)) {
+            List<Type> types = JandexUtil.resolveTypeParameters(repositoryToImplement.name(), extendedSpringDataRepo,
+                    index);
             if (!(types.get(0) instanceof ClassType)) {
                 throw new IllegalArgumentException(
                         "Entity generic argument of " + repositoryToImplement + " is not a regular class type");
             }
             DotName newEntityDotName = types.get(0).name();
             if ((entityDotName != null) && !newEntityDotName.equals(entityDotName)) {
-                throw new IllegalArgumentException("Repository " + repositoryToImplement + " specifies multiple Entity types");
+                throw new IllegalArgumentException(
+                        "Repository " + repositoryToImplement + " specifies multiple Entity types");
             }
             entityDotName = newEntityDotName;
 
             DotName newIdDotName = types.get(1).name();
             if ((idDotName != null) && !newIdDotName.equals(idDotName)) {
-                throw new IllegalArgumentException("Repository " + repositoryToImplement + " specifies multiple ID types");
+                throw new IllegalArgumentException(
+                        "Repository " + repositoryToImplement + " specifies multiple ID types");
             }
             idDotName = newIdDotName;
         }
@@ -179,12 +183,16 @@ public class SpringDataRepositoryCreator {
         int i = 0;
         for (String customImplClassName : customImplClassNames) {
             FieldCreator customClassField = repositoryImpl
-                    .getFieldCreator("customImplClass" + (i + 1), customImplClassName)
-                    .setModifiers(Modifier.PROTECTED); // done to prevent warning during the build
+                    .getFieldCreator("customImplClass" + (i + 1), customImplClassName).setModifiers(Modifier.PROTECTED); // done
+                                                                                                                                                                       // to
+                                                                                                                                                                       // prevent
+                                                                                                                                                                       // warning
+                                                                                                                                                                       // during
+                                                                                                                                                                       // the
+                                                                                                                                                                       // build
             customClassField.addAnnotation(Inject.class);
 
-            customImplNameToFieldDescriptor.put(customImplClassName,
-                    customClassField.getFieldDescriptor());
+            customImplNameToFieldDescriptor.put(customImplClassName, customClassField.getFieldDescriptor());
             i++;
         }
     }

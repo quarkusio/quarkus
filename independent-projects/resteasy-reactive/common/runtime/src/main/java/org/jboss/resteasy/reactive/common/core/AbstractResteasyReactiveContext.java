@@ -23,7 +23,8 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasyReactiveContext<T, H>, H extends RestHandler<T>>
         implements Runnable, Closeable, ResteasyReactiveCallbackContext {
     protected static final Logger log = Logger.getLogger(AbstractResteasyReactiveContext.class);
-    protected static final Logger logWebApplicationExceptions = Logger.getLogger(WebApplicationException.class.getSimpleName());
+    protected static final Logger logWebApplicationExceptions = Logger
+            .getLogger(WebApplicationException.class.getSimpleName());
     protected H[] handlers;
     protected H[] abortHandlerChain;
     protected int position;
@@ -31,10 +32,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     private boolean suspended = false;
     private volatile boolean requestScopeActivated = false;
     private boolean running = false;
-    private volatile Executor executor; // ephemerally set by handlers to signal that we resume, it needs to be on this executor
-    private volatile Executor lastExecutor; // contains the last executor which was provided during resume - needed to submit there if suspended again
-    // This is used to store properties used in the various JAX-RS context objects, but it also stores some of the properties of this
-    // object that are very infrequently accessed. This is done in order to cut down the size of this object in order to take advantage of better caching
+    private volatile Executor executor; // ephemerally set by handlers to signal that we resume, it needs to be on this
+                                        // executor
+    private volatile Executor lastExecutor; // contains the last executor which was provided during resume - needed to
+                                            // submit there if suspended again
+                                            // This is used to store properties used in the various JAX-RS context objects, but it also stores some of the
+                                            // properties of this
+                                            // object that are very infrequently accessed. This is done in order to cut down the size of this object in order to
+                                            // take advantage of better caching
     private Map<String, Object> properties;
     private final ThreadSetupAction requestContext;
     private ThreadSetupAction.ThreadState currentRequestScope;
@@ -110,7 +115,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
             return;
         }
         closed = true;
-        //TODO: do we even have any other resources to close?
+        // TODO: do we even have any other resources to close?
         if (currentRequestScope != null) {
             currentRequestScope.close();
         }
@@ -135,14 +140,14 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     public void run() {
         running = true;
         boolean processingSuspended = false;
-        //if this is a blocking target we don't activate for the initial non-blocking part
-        //unless there are pre-mapping filters as these may require CDI
+        // if this is a blocking target we don't activate for the initial non-blocking part
+        // unless there are pre-mapping filters as these may require CDI
         boolean disassociateRequestScope = false;
         boolean aborted = false;
         try {
             while (position < handlers.length) {
                 int pos = position;
-                position++; //increment before, as reset may reset it to zero
+                position++; // increment before, as reset may reset it to zero
                 try {
                     invokeHandler(pos);
                     if (suspended) {
@@ -177,9 +182,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     if (aborted) {
                         return;
                     } else if (suspended) {
-                        log.error("Uncaught exception thrown when the request context is suspended. " +
-                                " Resuming the request to unlock processing the error." +
-                                " This may not be appropriate in your situation, please resume the request context when this exception is thrown. ",
+                        log.error("Uncaught exception thrown when the request context is suspended. "
+                                + " Resuming the request to unlock processing the error."
+                                + " This may not be appropriate in your situation, please resume the request context when this exception is thrown. ",
                                 t);
                         resume(t);
                     }
@@ -207,7 +212,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 synchronized (this) {
                     running = false;
                     if (this.executor != null) {
-                        //resume happened in the meantime
+                        // resume happened in the meantime
                         suspended = false;
                         exec = this.executor;
                         // prevent future suspensions from re-submitting the task
@@ -217,7 +222,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                     }
                 }
                 if (exec != null) {
-                    //outside sync block
+                    // outside sync block
                     exec.execute(this);
                 } else if (resumed) {
                     resume();
@@ -279,7 +284,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
      * <p>
      * Generally used to abort processing.
      *
-     * @param newHandlerChain The new handler chain
+     * @param newHandlerChain
+     *        The new handler chain
      */
     public void restart(H[] newHandlerChain) {
         restart(newHandlerChain, false);
@@ -316,8 +322,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     }
 
     /**
-     * If we are on the abort chain already, send a 500. If not, turn the throwable into
-     * a response result and switch to the abort chain
+     * If we are on the abort chain already, send a 500. If not, turn the throwable into a response result and switch to
+     * the abort chain
      */
     public void handleException(Throwable t) {
         handleException(t, false);
@@ -413,7 +419,8 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
     @Override
     public synchronized void registerConnectionCallback(ConnectionCallback callback) {
-        List<ConnectionCallback> connectionCallbacks = (List<ConnectionCallback>) getProperty(CONNECTION_CALLBACK_PROPERTY_KEY);
+        List<ConnectionCallback> connectionCallbacks = (List<ConnectionCallback>) getProperty(
+                CONNECTION_CALLBACK_PROPERTY_KEY);
         if (connectionCallbacks == null) {
             connectionCallbacks = new ArrayList<>();
             setProperty(CONNECTION_CALLBACK_PROPERTY_KEY, connectionCallbacks);

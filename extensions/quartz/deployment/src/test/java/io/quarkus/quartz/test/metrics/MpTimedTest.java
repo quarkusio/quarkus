@@ -20,11 +20,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MpTimedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.metrics.enabled=true"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("quarkus.scheduler.metrics.enabled=true"), "application.properties"));
 
     @Inject
     MetricRegistry metricRegistry;

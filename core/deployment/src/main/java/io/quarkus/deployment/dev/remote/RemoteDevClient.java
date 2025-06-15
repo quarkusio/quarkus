@@ -11,7 +11,8 @@ import io.quarkus.dev.spi.RemoteDevState;
 public interface RemoteDevClient {
 
     Closeable sendConnectRequest(RemoteDevState initialState,
-            Function<Set<String>, Map<String, byte[]>> initialConnectFunction, Supplier<SyncResult> changeRequestFunction);
+            Function<Set<String>, Map<String, byte[]>> initialConnectFunction,
+            Supplier<SyncResult> changeRequestFunction);
 
     interface SyncResult {
         Map<String, byte[]> getChangedFiles();

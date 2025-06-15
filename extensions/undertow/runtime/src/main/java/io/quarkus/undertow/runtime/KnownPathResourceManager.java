@@ -146,8 +146,9 @@ public class KnownPathResourceManager implements ResourceManager {
                                     resource = new DirectoryResource(file);
                                 }
                                 if (resource == null) {
-                                    throw new RuntimeException("Unable to get listed resource " + i + " from directory " + path
-                                            + " for path " + slashPath + " from underlying manager " + underlying);
+                                    throw new RuntimeException("Unable to get listed resource " + i + " from directory "
+                                            + path + " for path " + slashPath + " from underlying manager "
+                                            + underlying);
                                 }
                                 ret.add(resource);
                             } catch (IOException e) {

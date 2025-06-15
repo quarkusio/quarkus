@@ -12,13 +12,13 @@ import io.smallrye.common.constraint.Assert;
 public final class Target_org_wildfly_security_password_interfaces_BCryptPassword {
 
     @Substitute
-    static Target_org_wildfly_security_password_interfaces_BCryptPassword createRaw(String algorithm, byte[] hash, byte[] salt,
-            int iterationCount) {
+    static Target_org_wildfly_security_password_interfaces_BCryptPassword createRaw(String algorithm, byte[] hash,
+            byte[] salt, int iterationCount) {
         Assert.checkNotNullParam("hash", hash);
         Assert.checkNotNullParam("salt", salt);
         Assert.checkNotNullParam("algorithm", algorithm);
-        return (Target_org_wildfly_security_password_interfaces_BCryptPassword) (Object) new RawBCryptPassword(algorithm,
-                Arrays.copyOf(hash, hash.length), Arrays.copyOf(salt, salt.length), iterationCount);
+        return (Target_org_wildfly_security_password_interfaces_BCryptPassword) (Object) new RawBCryptPassword(
+                algorithm, Arrays.copyOf(hash, hash.length), Arrays.copyOf(salt, salt.length), iterationCount);
     }
 
     @TargetClass(className = "org.wildfly.security.password.interfaces.RawBCryptPassword")

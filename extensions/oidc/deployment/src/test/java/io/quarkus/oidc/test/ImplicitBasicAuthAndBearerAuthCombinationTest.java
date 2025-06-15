@@ -22,31 +22,24 @@ public class ImplicitBasicAuthAndBearerAuthCombinationTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BasicBearerResource.class)
-                    .addAsResource(
-                            new StringAsset("""
-                                    quarkus.security.users.embedded.enabled=true
-                                    quarkus.security.users.embedded.plain-text=true
-                                    quarkus.security.users.embedded.users.alice=alice
-                                    quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
-                                    quarkus.oidc.client-id=quarkus-service-app
-                                    quarkus.oidc.credentials.secret=secret
-                                    quarkus.http.auth.proactive=false
-                                    """),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(BasicBearerResource.class).addAsResource(new StringAsset("""
+                    quarkus.security.users.embedded.enabled=true
+                    quarkus.security.users.embedded.plain-text=true
+                    quarkus.security.users.embedded.users.alice=alice
+                    quarkus.oidc.auth-server-url=${keycloak.url}/realms/quarkus
+                    quarkus.oidc.client-id=quarkus-service-app
+                    quarkus.oidc.credentials.secret=secret
+                    quarkus.http.auth.proactive=false
+                    """), "application.properties"));
 
     @Test
     public void testBasicEnabledAsSelectedWithAnnotation() {
         // endpoint is annotated with 'BasicAuthentication', so basic auth must be enabled
-        RestAssured.given().auth().oauth2(getAccessToken()).get("/basic-bearer/bearer")
-                .then().statusCode(200).body(Matchers.is("alice"));
-        RestAssured.given().auth().basic("alice", "alice").get("/basic-bearer/basic")
-                .then().statusCode(204);
-        RestAssured.given().auth().basic("alice", "alice").get("/basic-bearer/bearer")
-                .then().statusCode(401);
-        RestAssured.given().auth().oauth2(getAccessToken()).get("/basic-bearer/basic")
-                .then().statusCode(401);
+        RestAssured.given().auth().oauth2(getAccessToken()).get("/basic-bearer/bearer").then().statusCode(200)
+                .body(Matchers.is("alice"));
+        RestAssured.given().auth().basic("alice", "alice").get("/basic-bearer/basic").then().statusCode(204);
+        RestAssured.given().auth().basic("alice", "alice").get("/basic-bearer/bearer").then().statusCode(401);
+        RestAssured.given().auth().oauth2(getAccessToken()).get("/basic-bearer/basic").then().statusCode(401);
     }
 
     private static String getAccessToken() {

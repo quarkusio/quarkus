@@ -26,8 +26,8 @@ class ConfigMapConfigSourceUtilTest {
 
     @Test
     void testOnlyLiteralData() {
-        ConfigMap configMap = configMapBuilder("testOnlyLiteralData")
-                .addToData("some.key", "someValue").addToData("some.other", "someOtherValue").build();
+        ConfigMap configMap = configMapBuilder("testOnlyLiteralData").addToData("some.key", "someValue")
+                .addToData("some.other", "someOtherValue").build();
 
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata(), configMap.getData(), 0);
 
@@ -91,29 +91,25 @@ class ConfigMapConfigSourceUtilTest {
 
     @Test
     void testWithAllKindsOfData() {
-        ConfigMap configMap = configMapBuilder("testWithAllKindsOfData")
-                .addToData("some.key", "someValue")
+        ConfigMap configMap = configMapBuilder("testWithAllKindsOfData").addToData("some.key", "someValue")
                 .addToData("application.properties", "key1=value1\napp.key=val")
                 .addToData("app.properties", "ignored1=ignoredValue1")
                 .addToData("application.yaml", "key2: value2\nsome:\n  otherKey: someOtherValue")
-                .addToData("app.yaml", "ignored2: ignoredValue2")
-                .addToData("application.yml", "key3: value3")
-                .addToData("app.yml", "ignored3: ignoredValue3")
-                .build();
+                .addToData("app.yaml", "ignored2: ignoredValue2").addToData("application.yml", "key3: value3")
+                .addToData("app.yml", "ignored3: ignoredValue3").build();
 
         List<ConfigSource> configSources = sut.toConfigSources(configMap.getMetadata(), configMap.getData(), 0);
 
         assertThat(configSources).hasSize(4);
 
-        assertThat(configSources.get(0).getClass().getName().contains("ConfigMapLiteralDataPropertiesConfigSource")).isTrue();
+        assertThat(configSources.get(0).getClass().getName().contains("ConfigMapLiteralDataPropertiesConfigSource"))
+                .isTrue();
 
         assertThat(configSources).filteredOn(c -> !c.getName().toLowerCase().contains("application"))
                 .hasOnlyOneElementSatisfying(c -> {
-                    assertThat(c.getProperties()).containsOnly(
-                            entry("some.key", "someValue"),
+                    assertThat(c.getProperties()).containsOnly(entry("some.key", "someValue"),
                             entry("app.properties", "ignored1=ignoredValue1"),
-                            entry("app.yaml", "ignored2: ignoredValue2"),
-                            entry("app.yml", "ignored3: ignoredValue3"));
+                            entry("app.yaml", "ignored2: ignoredValue2"), entry("app.yml", "ignored3: ignoredValue3"));
                 });
 
         assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.properties"))
@@ -125,15 +121,14 @@ class ConfigMapConfigSourceUtilTest {
                     assertThat(c.getProperties()).containsOnly(entry("key2", "value2"),
                             entry("some.otherKey", "someOtherValue"));
                 });
-        assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.yml"))
-                .singleElement().satisfies(c -> {
+        assertThat(configSources).filteredOn(c -> c.getName().toLowerCase().contains("application.yml")).singleElement()
+                .satisfies(c -> {
                     assertThat(c.getProperties()).containsOnly(entry("key3", "value3"));
                 });
     }
 
     private ConfigMapBuilder configMapBuilder(String name) {
-        return new ConfigMapBuilder().withNewMetadata()
-                .withName(name).withNamespace("namespace").withUid("uid")
+        return new ConfigMapBuilder().withNewMetadata().withName(name).withNamespace("namespace").withUid("uid")
                 .withResourceVersion("version").endMetadata();
     }
 

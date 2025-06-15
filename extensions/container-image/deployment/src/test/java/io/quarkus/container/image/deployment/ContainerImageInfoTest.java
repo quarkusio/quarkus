@@ -77,8 +77,7 @@ public class ContainerImageInfoTest {
     public void shouldFailWhenSpacesInGroupProperty() {
         givenProperty(GROUP_PROPERTY, "group with space");
         // user error should not be auto-corrected
-        thenImagePublicationFails(
-                IllegalArgumentException.class,
+        thenImagePublicationFails(IllegalArgumentException.class,
                 "The supplied combination of container-image group 'group with space' and name 'repo/name' is invalid");
     }
 
@@ -99,13 +98,8 @@ public class ContainerImageInfoTest {
     }
 
     private void whenPublishImageInfo() {
-        SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .addDefaultInterceptors()
-                .addDefaultSources()
-                .addDiscoveredConverters()
-                .addDiscoveredCustomizers()
-                .withMapping(ContainerImageConfig.class)
-                .build();
+        SmallRyeConfig config = new SmallRyeConfigBuilder().addDefaultInterceptors().addDefaultSources()
+                .addDiscoveredConverters().addDiscoveredCustomizers().withMapping(ContainerImageConfig.class).build();
 
         ContainerImageConfig containerImageConfig = config.getConfigMapping(ContainerImageConfig.class);
 
@@ -121,15 +115,12 @@ public class ContainerImageInfoTest {
         assertEquals(expectedImage, actualContainerImageInfo.getImage());
     }
 
-    private <T extends Throwable> void thenImagePublicationFails(Class<T> expectedErrorType, String expectedErrorMessage) {
-        T thrown = assertThrows(
-                expectedErrorType,
-                this::whenPublishImageInfo,
-                String.format("Expected %s to be thrown from ContainerImageProcessor.publishImageInfo",
-                        expectedErrorType.getName()));
+    private <T extends Throwable> void thenImagePublicationFails(Class<T> expectedErrorType,
+            String expectedErrorMessage) {
+        T thrown = assertThrows(expectedErrorType, this::whenPublishImageInfo, String.format(
+                "Expected %s to be thrown from ContainerImageProcessor.publishImageInfo", expectedErrorType.getName()));
 
-        assertTrue(
-                thrown.getMessage().contains(expectedErrorMessage),
-                String.format("Expected the error message to be '%s' but was '%s'", expectedErrorMessage, thrown.getMessage()));
+        assertTrue(thrown.getMessage().contains(expectedErrorMessage), String.format(
+                "Expected the error message to be '%s' but was '%s'", expectedErrorMessage, thrown.getMessage()));
     }
 }

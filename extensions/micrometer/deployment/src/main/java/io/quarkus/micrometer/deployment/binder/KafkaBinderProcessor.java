@@ -8,9 +8,8 @@ import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 /**
- * Add support for Kafka Producer, Consumer and Streams instrumentation. Note that
- * various bits of support may not be present at deploy time. Avoid referencing
- * classes that in turn import optional dependencies.
+ * Add support for Kafka Producer, Consumer and Streams instrumentation. Note that various bits of support may not be
+ * present at deploy time. Avoid referencing classes that in turn import optional dependencies.
  */
 public class KafkaBinderProcessor {
     static final String KAFKA_CONSUMER_CLASS_NAME = "org.apache.kafka.clients.consumer.Consumer";
@@ -27,7 +26,8 @@ public class KafkaBinderProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return KAFKA_CONSUMER_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().kafka());
+            return KAFKA_CONSUMER_CLASS_CLASS != null
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().kafka());
         }
     }
 
@@ -41,15 +41,12 @@ public class KafkaBinderProcessor {
 
     @BuildStep(onlyIf = KafkaSupportEnabled.class)
     AdditionalBeanBuildItem createCDIEventConsumer() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(KAFKA_EVENT_CONSUMER_CLASS_NAME)
-                .setUnremovable().build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(KAFKA_EVENT_CONSUMER_CLASS_NAME).setUnremovable().build();
     }
 
     @BuildStep(onlyIf = KafkaStreamsSupportEnabled.class)
     AdditionalBeanBuildItem createKafkaStreamsEventObserver() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(KAFKA_STREAMS_METRICS_PRODUCER_CLASS_NAME)
+        return AdditionalBeanBuildItem.builder().addBeanClass(KAFKA_STREAMS_METRICS_PRODUCER_CLASS_NAME)
                 .setUnremovable().build();
     }
 }

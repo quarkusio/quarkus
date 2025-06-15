@@ -25,46 +25,33 @@ import io.quarkus.test.QuarkusUnitTest;
 public class JsonViewSubResourceTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(User.class, Views.class, UsersResource.class, PublicUserResource.class,
-                                    PrivateUserResource.class, MixedUserResource.class, SerializeDeserializeUserResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(User.class, Views.class, UsersResource.class,
+                    PublicUserResource.class, PrivateUserResource.class, MixedUserResource.class,
+                    SerializeDeserializeUserResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        given().accept("application/json").get("users/public")
-                .then()
-                .statusCode(200)
-                .body(not(containsString("1")), containsString("test"));
+        given().accept("application/json").get("users/public").then().statusCode(200).body(not(containsString("1")),
+                containsString("test"));
 
-        given().accept("application/json").get("users/private")
-                .then()
-                .statusCode(200)
-                .body(containsString("1"), containsString("test"));
+        given().accept("application/json").get("users/private").then().statusCode(200).body(containsString("1"),
+                containsString("test"));
 
-        given().accept("application/json").get("users/mixed")
-                .then()
-                .statusCode(200)
-                .body(containsString("1"), containsString("test"));
+        given().accept("application/json").get("users/mixed").then().statusCode(200).body(containsString("1"),
+                containsString("test"));
 
-        given().accept("application/json")
-                .contentType("application/json")
-                .body("""
-                        {
-                         "id": 1,
-                         "name": "Foo"
-                        }
-                        """)
-                .post("users/serialize-deserialize")
-                .then()
-                .statusCode(201)
-                .body("id", equalTo(0))
-                .body("name", equalTo("Foo"));
+        given().accept("application/json").contentType("application/json").body("""
+                {
+                 "id": 1,
+                 "name": "Foo"
+                }
+                """).post("users/serialize-deserialize").then().statusCode(201).body("id", equalTo(0)).body("name",
+                equalTo("Foo"));
     }
 
     @Path("users")

@@ -69,8 +69,7 @@ public class JobParameter {
         if (!(o instanceof JobParameter))
             return false;
         JobParameter that = (JobParameter) o;
-        return Objects.equals(className, that.className)
-                && Objects.equals(actualClassName, that.actualClassName)
+        return Objects.equals(className, that.className) && Objects.equals(actualClassName, that.actualClassName)
                 && Objects.equals(object, that.object);
     }
 

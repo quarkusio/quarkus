@@ -12,6 +12,7 @@ import jakarta.ws.rs.core.Variant;
  * {@link Variant} selection.
  *
  * @author Pascal S. de Kloe
+ *
  * @see "RFC 2296"
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
@@ -98,7 +99,7 @@ public class ServerDrivenNegotiation {
     }
 
     public Variant getBestMatch(List<Variant> available) {
-        //      BigDecimal bestQuality = BigDecimal.ZERO;
+        // BigDecimal bestQuality = BigDecimal.ZERO;
         VariantQuality bestQuality = null;
         Variant bestOption = null;
         for (Variant option : available) {
@@ -112,10 +113,10 @@ public class ServerDrivenNegotiation {
             if (!applyLanguage(option, quality))
                 continue;
 
-            //         BigDecimal optionQuality = quality.getOverallQuality();
-            //         if (isBetterOption(bestQuality, bestOption, optionQuality, option))
+            // BigDecimal optionQuality = quality.getOverallQuality();
+            // if (isBetterOption(bestQuality, bestOption, optionQuality, option))
             if (isBetterOption(bestQuality, bestOption, quality, option)) {
-                //            bestQuality = optionQuality;
+                // bestQuality = optionQuality;
                 bestQuality = quality;
                 bestOption = option;
             }
@@ -126,10 +127,10 @@ public class ServerDrivenNegotiation {
     /**
      * Tests whether {@code option} is preferable over the current {@code bestOption}.
      */
-    //   private static boolean isBetterOption(BigDecimal bestQuality, Variant best,
-    //                                         BigDecimal optionQuality, Variant option)
-    private static boolean isBetterOption(VariantQuality bestQuality, Variant best,
-            VariantQuality optionQuality, Variant option) {
+    // private static boolean isBetterOption(BigDecimal bestQuality, Variant best,
+    // BigDecimal optionQuality, Variant option)
+    private static boolean isBetterOption(VariantQuality bestQuality, Variant best, VariantQuality optionQuality,
+            Variant option) {
         if (best == null)
             return true;
 
@@ -276,8 +277,7 @@ public class ServerDrivenNegotiation {
             return false;
         }
 
-        quality.setMediaTypeQualityValue(bestQuality)
-                .setRequestMediaType(bestRequestMediaType);
+        quality.setMediaTypeQualityValue(bestQuality).setRequestMediaType(bestRequestMediaType);
         return true;
     }
 
@@ -290,8 +290,7 @@ public class ServerDrivenNegotiation {
             String value = requiredEntry.getValue();
             String availableValue = available.get(name);
             if (availableValue == null && "charset".equals(name)) {
-                if (requestedCharacterSets != null
-                        && !requestedCharacterSets.containsKey(null)
+                if (requestedCharacterSets != null && !requestedCharacterSets.containsKey(null)
                         && !requestedCharacterSets.containsKey(value)) {
                     return false;
                 }

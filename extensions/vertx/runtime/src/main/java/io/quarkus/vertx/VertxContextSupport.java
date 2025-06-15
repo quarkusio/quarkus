@@ -27,12 +27,15 @@ public final class VertxContextSupport {
     }
 
     /**
-     * Subscribes to the supplied {@link Uni} on a Vertx duplicated context; blocks the current thread and waits for the result.
+     * Subscribes to the supplied {@link Uni} on a Vertx duplicated context; blocks the current thread and waits for the
+     * result.
      * <p>
      * If it's necessary, the CDI request context is activated during execution of the asynchronous code.
      *
      * @param uniSupplier
-     * @throws IllegalStateException If called on an event loop thread.
+     *
+     * @throws IllegalStateException
+     *         If called on an event loop thread.
      */
     public static <T> T subscribeAndAwait(Supplier<Uni<T>> uniSupplier) throws Throwable {
         Context context = getContext(false);
@@ -104,7 +107,9 @@ public final class VertxContextSupport {
      *
      * @param <T>
      * @param callable
+     *
      * @return the produced {@link Uni}
+     *
      * @see VertxContext#getOrCreateDuplicatedContext(Vertx)
      */
     public static <T> Uni<T> executeBlocking(Callable<T> callable) {
@@ -135,7 +140,8 @@ public final class VertxContextSupport {
         } else {
             // Executed on a vertx thread...
             if (!blocking && Context.isOnEventLoopThread()) {
-                throw new IllegalStateException("VertxContextSupport#subscribeAndAwait() must not be called on an event loop!");
+                throw new IllegalStateException(
+                        "VertxContextSupport#subscribeAndAwait() must not be called on an event loop!");
             }
             context = VertxContext.getOrCreateDuplicatedContext(context);
         }

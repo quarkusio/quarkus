@@ -20,16 +20,14 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 
 public class DecompressionTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.http.enable-decompression=true\n";
+    private static final String APP_PROPS = "" + "quarkus.http.enable-decompression=true\n";
 
     private static final String LONG_STRING = IntStream.range(0, 1000).mapToObj(i -> "Hello World;")
             .collect(Collectors.joining());
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(CompressionTest.BeanRegisteringRouteUsingObserves.class));
 
     @Test
@@ -45,16 +43,10 @@ public class DecompressionTest {
         // RestAssured is aware of quarkus.http.root-path
         // If this changes then please modify quarkus-azure-functions-http maven archetype to reflect this
         // in its test classes
-        RestAssured.given()
-                .header("content-encoding", "gzip")
-                .body(compressed)
-                .post("/echo").then().statusCode(200)
+        RestAssured.given().header("content-encoding", "gzip").body(compressed).post("/echo").then().statusCode(200)
                 .body(Matchers.equalTo(LONG_STRING));
 
-        RestAssured.given()
-                .body(LONG_STRING)
-                .post("/echo").then().statusCode(200)
-                .body(Matchers.equalTo(LONG_STRING));
+        RestAssured.given().body(LONG_STRING).post("/echo").then().statusCode(200).body(Matchers.equalTo(LONG_STRING));
     }
 
     @ApplicationScoped

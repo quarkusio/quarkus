@@ -17,7 +17,8 @@ public class VirtualThreadBinderProcessor {
     static final String VIRTUAL_THREAD_COLLECTOR_CLASS_NAME = "io.quarkus.micrometer.runtime.binder.virtualthreads.VirtualThreadCollector";
 
     static final String VIRTUAL_THREAD_BINDER_CLASS_NAME = "io.micrometer.java21.instrument.binder.jdk.VirtualThreadMetrics";
-    static final Class<?> VIRTUAL_THREAD_BINDER_CLASS = MicrometerRecorder.getClassForName(VIRTUAL_THREAD_BINDER_CLASS_NAME);
+    static final Class<?> VIRTUAL_THREAD_BINDER_CLASS = MicrometerRecorder
+            .getClassForName(VIRTUAL_THREAD_BINDER_CLASS_NAME);
 
     static class VirtualThreadSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
@@ -30,9 +31,8 @@ public class VirtualThreadBinderProcessor {
 
     @BuildStep(onlyIf = VirtualThreadSupportEnabled.class)
     AdditionalBeanBuildItem createCDIEventConsumer() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(VIRTUAL_THREAD_COLLECTOR_CLASS_NAME)
-                .setUnremovable().build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(VIRTUAL_THREAD_COLLECTOR_CLASS_NAME).setUnremovable()
+                .build();
     }
 
     @BuildStep(onlyIf = VirtualThreadSupportEnabled.class)

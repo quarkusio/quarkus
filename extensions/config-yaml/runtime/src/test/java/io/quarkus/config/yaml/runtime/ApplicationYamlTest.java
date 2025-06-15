@@ -11,9 +11,8 @@ import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
- * Test the YAML config provider (plan JUnit). We aren't re-testing the whole config source
- * (that's done in SmallRye Config) but we do make sure that both the file system and in-JAR
- * properties are being picked up.
+ * Test the YAML config provider (plan JUnit). We aren't re-testing the whole config source (that's done in SmallRye
+ * Config) but we do make sure that both the file system and in-JAR properties are being picked up.
  */
 public class ApplicationYamlTest {
 

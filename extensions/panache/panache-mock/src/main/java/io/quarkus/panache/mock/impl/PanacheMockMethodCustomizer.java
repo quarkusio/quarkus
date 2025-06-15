@@ -20,47 +20,18 @@ public class PanacheMockMethodCustomizer implements PanacheMethodCustomizer {
     @Override
     public void customize(Type entityClassSignature, MethodInfo method, MethodVisitor mv) {
         /*
-         * Generated code:
-         *
-         * if(PanacheMock.IsMockEnabled && PanacheMock.isMocked(TestClass.class)) {
-         * try {
-         * return (int)PanacheMock.mockMethod(TestClass.class, "foo", new Class<?>[] {int.class}, new Object[] {arg});
-         * } catch (PanacheMock.InvokeRealMethodException e) {
-         * // fall-through
-         * }
-         * }
-         *
-         * Bytecode approx:
-         *
-         * 0: getstatic #16 // Field PanacheMock.IsMockEnabled:Z
-         * 3: ifeq 50
-         * 6: ldc #1 // class MyTestMockito$TestClass
-         * 8: invokestatic #22 // Method PanacheMock.isMocked:(Ljava/lang/Class;)Z
-         * 11: ifeq 50
-         * 14: ldc #1 // class MyTestMockito$TestClass
-         * 16: ldc #26 // String foo
-         *
-         * 18: iconst_1
-         * 19: anewarray #27 // class java/lang/Class
-         * 22: dup
-         * 23: iconst_0
-         * 24: getstatic #29 // Field java/lang/Integer.TYPE:Ljava/lang/Class;
-         * 27: aastore
-         *
-         * 28: iconst_1
-         * 29: anewarray #3 // class java/lang/Object
-         * 32: dup
-         * 33: iconst_0
-         * 34: iload_0
-         * 35: invokestatic #35 // Method java/lang/Integer.valueOf:(I)Ljava/lang/Integer;
-         * 38: aastore
-         *
-         * 39: invokestatic #39 // Method
-         * PanacheMock.mockMethod:(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;[Ljava/lang/Object;)Ljava/lang/Object;
-         * 42: checkcast #30 // class java/lang/Integer
-         * 45: invokevirtual #43 // Method java/lang/Integer.intValue:()I
-         * 48: ireturn
-         * 49: astore_1
+         * Generated code: if(PanacheMock.IsMockEnabled && PanacheMock.isMocked(TestClass.class)) { try { return
+         * (int)PanacheMock.mockMethod(TestClass.class, "foo", new Class<?>[] {int.class}, new Object[] {arg}); } catch
+         * (PanacheMock.InvokeRealMethodException e) { // fall-through } } Bytecode approx: 0: getstatic #16 // Field
+         * PanacheMock.IsMockEnabled:Z 3: ifeq 50 6: ldc #1 // class MyTestMockito$TestClass 8: invokestatic #22 //
+         * Method PanacheMock.isMocked:(Ljava/lang/Class;)Z 11: ifeq 50 14: ldc #1 // class MyTestMockito$TestClass 16:
+         * ldc #26 // String foo 18: iconst_1 19: anewarray #27 // class java/lang/Class 22: dup 23: iconst_0 24:
+         * getstatic #29 // Field java/lang/Integer.TYPE:Ljava/lang/Class; 27: aastore 28: iconst_1 29: anewarray #3 //
+         * class java/lang/Object 32: dup 33: iconst_0 34: iload_0 35: invokestatic #35 // Method
+         * java/lang/Integer.valueOf:(I)Ljava/lang/Integer; 38: aastore 39: invokestatic #39 // Method
+         * PanacheMock.mockMethod:(Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/Class;[Ljava/lang/Object;)Ljava/lang/
+         * Object; 42: checkcast #30 // class java/lang/Integer 45: invokevirtual #43 // Method
+         * java/lang/Integer.intValue:()I 48: ireturn 49: astore_1
          */
         Label realMethodLabel = new Label();
 

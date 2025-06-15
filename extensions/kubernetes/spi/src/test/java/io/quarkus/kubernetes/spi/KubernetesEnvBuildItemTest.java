@@ -13,10 +13,10 @@
  */
 package io.quarkus.kubernetes.spi;
 
-import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.create;
 import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.EnvType.configmap;
 import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.EnvType.secret;
 import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.EnvType.var;
+import static io.quarkus.kubernetes.spi.KubernetesEnvBuildItem.create;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 

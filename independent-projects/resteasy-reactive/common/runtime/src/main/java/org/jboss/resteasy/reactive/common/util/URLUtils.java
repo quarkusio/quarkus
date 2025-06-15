@@ -49,8 +49,8 @@ public class URLUtils {
     };
 
     // RFC-3986 (URI Generic Syntax) states:
-    // URI         = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
-    // scheme      = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+    // URI = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
+    // scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
     // "The scheme and path components are required, though the path may be empty (no characters)."
     private static final Pattern SCHEME_PATTERN = Pattern.compile("^[a-zA-Z][a-zA-Z0-9+-.]*:.*");
 
@@ -63,18 +63,23 @@ public class URLUtils {
         QUERY_STRING_PARSER.parse(string, exchange, charset, doDecode, maxParameters);
     }
 
-    public static int parsePathParams(final String string, final MultivaluedMap<String, String> exchange, final Charset charset,
-            final boolean doDecode, int maxParameters) {
+    public static int parsePathParams(final String string, final MultivaluedMap<String, String> exchange,
+            final Charset charset, final boolean doDecode, int maxParameters) {
         return PATH_PARAM_PARSER.parse(string, exchange, charset, doDecode, maxParameters);
     }
 
     /**
      * Decodes a URL. If the decoding fails for any reason then an IllegalArgumentException will be thrown.
      *
-     * @param s The string to decode
-     * @param enc The encoding
-     * @param decodeSlash If slash characters should be decoded
-     * @param buffer The string builder to use as a buffer.
+     * @param s
+     *        The string to decode
+     * @param enc
+     *        The encoding
+     * @param decodeSlash
+     *        If slash characters should be decoded
+     * @param buffer
+     *        The string builder to use as a buffer.
+     *
      * @return The decoded URL
      */
     public static String decode(String s, Charset enc, boolean decodeSlash, StringBuilder buffer) {
@@ -84,13 +89,19 @@ public class URLUtils {
     /**
      * Decodes a URL. If the decoding fails for any reason then an IllegalArgumentException will be thrown.
      *
-     * @param s The string to decode
-     * @param enc The encoding
-     * @param decodeSlash If slash characters should be decoded
-     * @param buffer The string builder to use as a buffer.
+     * @param s
+     *        The string to decode
+     * @param enc
+     *        The encoding
+     * @param decodeSlash
+     *        If slash characters should be decoded
+     * @param buffer
+     *        The string builder to use as a buffer.
+     *
      * @return The decoded URL
      */
-    public static String decode(String s, Charset enc, boolean decodeSlash, boolean formEncoding, StringBuilder buffer) {
+    public static String decode(String s, Charset enc, boolean decodeSlash, boolean formEncoding,
+            StringBuilder buffer) {
         if (buffer != null) {
             buffer.setLength(0);
         }
@@ -102,17 +113,11 @@ public class URLUtils {
                 buffer = new StringBuilder();
                 buffer.append(s, 0, i);
                 /*
-                 * Starting with this instance of a character
-                 * that needs to be encoded, process all
-                 * consecutive substrings of the form %xy. Each
-                 * substring %xy will yield a byte. Convert all
-                 * consecutive bytes obtained this way to whatever
-                 * character(s) they represent in the provided
-                 * encoding.
-                 *
-                 * Note that we need to decode the whole rest of the value, we can't just decode
-                 * three characters. For multi code point characters there if the code point can be
-                 * represented as an alphanumeric
+                 * Starting with this instance of a character that needs to be encoded, process all consecutive
+                 * substrings of the form %xy. Each substring %xy will yield a byte. Convert all consecutive bytes
+                 * obtained this way to whatever character(s) they represent in the provided encoding. Note that we need
+                 * to decode the whole rest of the value, we can't just decode three characters. For multi code point
+                 * characters there if the code point can be represented as an alphanumeric
                  */
                 try {
                     // guess the size of the remaining bytes
@@ -228,8 +233,8 @@ public class URLUtils {
     }
 
     /**
-     * Extract path param names out of a JAX-RS path. Does not detect errors, but should
-     * be fast and correct if the input is correct.
+     * Extract path param names out of a JAX-RS path. Does not detect errors, but should be fast and correct if the
+     * input is correct.
      */
     public static void parsePathParameters(String path, Set<String> pathParameters) {
         if (path == null || path.isEmpty() || path.indexOf('{') == -1)
@@ -332,7 +337,8 @@ public class URLUtils {
             return new RuntimeException("Too many parameters: max=" + max);
         }
 
-        private String decode(Charset charset, String attrName, final boolean doDecode) throws UnsupportedEncodingException {
+        private String decode(Charset charset, String attrName, final boolean doDecode)
+                throws UnsupportedEncodingException {
             if (doDecode) {
                 return URLUtils.decode(attrName, charset, true, true, new StringBuilder());
             }
@@ -343,10 +349,12 @@ public class URLUtils {
     }
 
     /**
-     * Adds a '/' prefix to the beginning of a path if one isn't present
-     * and removes trailing slashes if any are present.
+     * Adds a '/' prefix to the beginning of a path if one isn't present and removes trailing slashes if any are
+     * present.
      *
-     * @param path the path to normalize
+     * @param path
+     *        the path to normalize
+     *
      * @return a normalized (with respect to slashes) result
      */
     public static String normalizeSlashes(final String path) {
@@ -355,7 +363,8 @@ public class URLUtils {
         boolean modified = false;
 
         // remove all trailing '/'s except the first one
-        while (builder.length() > 0 && builder.length() != 1 && PATH_SEPARATOR == builder.charAt(builder.length() - 1)) {
+        while (builder.length() > 0 && builder.length() != 1
+                && PATH_SEPARATOR == builder.charAt(builder.length() - 1)) {
             builder.deleteCharAt(builder.length() - 1);
             modified = true;
         }
@@ -377,7 +386,9 @@ public class URLUtils {
     /**
      * Test if provided location is an absolute URI or not.
      *
-     * @param location location to check, null = relative, having scheme = absolute
+     * @param location
+     *        location to check, null = relative, having scheme = absolute
+     *
      * @return true if location is considered absolute
      */
     public static boolean isAbsoluteUrl(String location) {

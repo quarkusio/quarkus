@@ -65,7 +65,8 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
         ts.tsAdd(key, 27);
 
         Thread.sleep(1); // Do make sure we have a different timestamp
-        ts.tsMAdd(SeriesSample.from(key, 51), SeriesSample.from(key, 1626434637915L, 52), SeriesSample.from("sensor", 22));
+        ts.tsMAdd(SeriesSample.from(key, 51), SeriesSample.from(key, 1626434637915L, 52),
+                SeriesSample.from("sensor", 22));
 
         var list = ts.tsRange(key, TimeSeriesRange.fromTimeSeries());
         assertThat(list).hasSize(4);
@@ -86,8 +87,8 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
     @Test
     void testCreationWhileAdding() {
         long timestamp = System.currentTimeMillis() - 1000;
-        ts.tsAdd(key, timestamp, 26, new AddArgs().compressed().label("foo", "bar")
-                .setRetention(Duration.ofDays(1)).chunkSize(1024));
+        ts.tsAdd(key, timestamp, 26,
+                new AddArgs().compressed().label("foo", "bar").setRetention(Duration.ofDays(1)).chunkSize(1024));
         ts.tsAdd(key, 27);
 
         var list = ts.tsRange(key, TimeSeriesRange.fromTimeSeries());
@@ -171,13 +172,8 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
     @Test
     void testFiltering() {
-        ts.tsCreate(key, new CreateArgs()
-                .label("area", 1)
-                .label("common", "1")
-                .label("foo", "bar"));
-        ts.tsCreate("sensor", new CreateArgs()
-                .label("common", "1")
-                .label("foo", "baz"));
+        ts.tsCreate(key, new CreateArgs().label("area", 1).label("common", "1").label("foo", "bar"));
+        ts.tsCreate("sensor", new CreateArgs().label("common", "1").label("foo", "baz"));
 
         ts.tsAdd(key, 500, 50, new AddArgs().label("area", 51));
         ts.tsAdd("sensor", 2003, 42, new AddArgs().label("area", 52));
@@ -191,8 +187,7 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
         ts.tsAdd("sensor", 2004, 45, new AddArgs().label("area", 12));
         ts.tsAdd(key, 3000, 45, new AddArgs().label("area", 12));
 
-        var map = ts.tsMRange(TimeSeriesRange.fromTimestamps(10, 10000),
-                Filter.withLabel("foo", "bar"));
+        var map = ts.tsMRange(TimeSeriesRange.fromTimestamps(10, 10000), Filter.withLabel("foo", "bar"));
         assertThat(map).hasSize(1);
         assertThat(map.get(key).group()).isEqualTo(key);
         assertThat(map.get(key).samples()).hasSize(6);
@@ -221,11 +216,12 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
                 Filter.withLabel("foo", "bar"));
         assertThat(map.get(key).samples()).hasSize(3);
 
-        map = ts.tsMRange(TimeSeriesRange.fromTimeSeries(), new MRangeArgs().filterByValue(25, 30), Filter.withLabel("foo"),
-                Filter.withLabel("area", 1));
+        map = ts.tsMRange(TimeSeriesRange.fromTimeSeries(), new MRangeArgs().filterByValue(25, 30),
+                Filter.withLabel("foo"), Filter.withLabel("area", 1));
         assertThat(map).hasSize(0);
 
-        l = ts.tsRange(key, TimeSeriesRange.fromTimeSeries(), new RangeArgs().filterByTimestamp(1000, 1001, 2000, 2005));
+        l = ts.tsRange(key, TimeSeriesRange.fromTimeSeries(),
+                new RangeArgs().filterByTimestamp(1000, 1001, 2000, 2005));
         assertThat(l).hasSize(3);
 
         map = ts.tsMRange(TimeSeriesRange.fromTimeSeries(), new MRangeArgs().filterByTimestamp(1000, 1001, 2000, 2005),
@@ -235,13 +231,8 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
     @Test
     void testAggregationInRange() {
-        ts.tsCreate(key, new CreateArgs()
-                .label("area", 1)
-                .label("common", "1")
-                .label("foo", "bar"));
-        ts.tsCreate("sensor", new CreateArgs()
-                .label("common", "1")
-                .label("foo", "baz"));
+        ts.tsCreate(key, new CreateArgs().label("area", 1).label("common", "1").label("foo", "bar"));
+        ts.tsCreate("sensor", new CreateArgs().label("common", "1").label("foo", "baz"));
 
         ts.tsAdd(key, 500, 50);
         ts.tsAdd("sensor", 2003, 42);
@@ -271,13 +262,8 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
     @Test
     void testAggregationInRevRange() {
-        ts.tsCreate(key, new CreateArgs()
-                .label("area", 1)
-                .label("common", "1")
-                .label("foo", "bar"));
-        ts.tsCreate("sensor", new CreateArgs()
-                .label("common", "1")
-                .label("foo", "baz"));
+        ts.tsCreate(key, new CreateArgs().label("area", 1).label("common", "1").label("foo", "bar"));
+        ts.tsCreate("sensor", new CreateArgs().label("common", "1").label("foo", "baz"));
 
         ts.tsAdd(key, 500, 50);
         ts.tsAdd("sensor", 2003, 42);
@@ -309,12 +295,10 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
     void testQueryIndex() {
         ts.tsCreate("telemetry:study:temperature",
                 new CreateArgs().label("rooms", "study").label("type", "temperature"));
-        ts.tsCreate("telemetry:study:humidity",
-                new CreateArgs().label("rooms", "study").label("type", "humidity"));
+        ts.tsCreate("telemetry:study:humidity", new CreateArgs().label("rooms", "study").label("type", "humidity"));
         ts.tsCreate("telemetry:kitchen:temperature",
                 new CreateArgs().label("rooms", "kitchen").label("type", "temperature"));
-        ts.tsCreate("telemetry:kitchen:humidity",
-                new CreateArgs().label("rooms", "kitchen").label("type", "humidity"));
+        ts.tsCreate("telemetry:kitchen:humidity", new CreateArgs().label("rooms", "kitchen").label("type", "humidity"));
 
         var list = ts.tsQueryIndex(Filter.withLabel("rooms", "kitchen"));
         assertThat(list).containsExactlyInAnyOrder("telemetry:kitchen:humidity", "telemetry:kitchen:temperature");
@@ -328,16 +312,10 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
         ts.tsCreate("temp:TLV", new CreateArgs().label("type", "temp").label("location", "TLV"));
         ts.tsCreate("temp:JLM", new CreateArgs().label("type", "temp").label("location", "JLM"));
 
-        ts.tsMAdd(
-                SeriesSample.from("temp:TLV", 1000, 30),
-                SeriesSample.from("temp:TLV", 1010, 35),
-                SeriesSample.from("temp:TLV", 1020, 9999),
-                SeriesSample.from("temp:TLV", 1030, 40));
-        ts.tsMAdd(
-                SeriesSample.from("temp:JLM", 1005, 30),
-                SeriesSample.from("temp:JLM", 1015, 35),
-                SeriesSample.from("temp:JLM", 1025, 9999),
-                SeriesSample.from("temp:JLM", 1035, 40));
+        ts.tsMAdd(SeriesSample.from("temp:TLV", 1000, 30), SeriesSample.from("temp:TLV", 1010, 35),
+                SeriesSample.from("temp:TLV", 1020, 9999), SeriesSample.from("temp:TLV", 1030, 40));
+        ts.tsMAdd(SeriesSample.from("temp:JLM", 1005, 30), SeriesSample.from("temp:JLM", 1015, 35),
+                SeriesSample.from("temp:JLM", 1025, 9999), SeriesSample.from("temp:JLM", 1035, 40));
 
         assertThat(ts.tsGet("temp:JLM").value).isEqualTo(40);
     }
@@ -346,9 +324,7 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
     void testRevRange() {
         ts.tsCreate("temp:TLV", new CreateArgs().label("type", "temp").label("location", "TLV"));
 
-        ts.tsMAdd(
-                SeriesSample.from("temp:TLV", 1000, 30),
-                SeriesSample.from("temp:TLV", 1010, 40),
+        ts.tsMAdd(SeriesSample.from("temp:TLV", 1000, 30), SeriesSample.from("temp:TLV", 1010, 40),
                 SeriesSample.from("temp:TLV", 1030, 35));
 
         var list = ts.tsRevRange("temp:TLV", TimeSeriesRange.fromTimeSeries());
@@ -371,11 +347,11 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
         ts.tsMAdd(SeriesSample.from(a, 1000, 100), SeriesSample.from(a, 1010, 110), SeriesSample.from(a, 1020, 120));
         ts.tsMAdd(SeriesSample.from(b, 1000, 110), SeriesSample.from(b, 1010, 110), SeriesSample.from(a, 1020, 100));
         var res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
-                new MRangeArgs().withLabels().groupBy("type", Reducer.MAX),
-                Filter.withLabel("type", "stock"));
+                new MRangeArgs().withLabels().groupBy("type", Reducer.MAX), Filter.withLabel("type", "stock"));
         assertThat(res).hasSize(1);
         assertThat(res.get("type=stock").labels().get("type")).isEqualTo("stock");
-        assertThat(res.get("type=stock").samples().stream().map(s -> s.value)).containsExactlyInAnyOrder(110.0, 110.0, 120.0);
+        assertThat(res.get("type=stock").samples().stream().map(s -> s.value)).containsExactlyInAnyOrder(110.0, 110.0,
+                120.0);
     }
 
     @SuppressWarnings("unchecked")
@@ -395,70 +371,63 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
         ts.tsMAdd(SeriesSample.from(a, 3000, 300), SeriesSample.from(a, 3010, 310), SeriesSample.from(a, 3020, 320));
         ts.tsMAdd(SeriesSample.from(b, 3000, 320), SeriesSample.from(b, 3010, 310), SeriesSample.from(a, 3020, 300));
 
-        var res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
-                new MRangeArgs().withLabels()
-                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000))
-                        .groupBy("type", Reducer.MIN),
+        var res = ts.tsMRange(
+                TimeSeriesRange.fromTimeSeries(), new MRangeArgs().withLabels()
+                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000)).groupBy("type", Reducer.MIN),
                 Filter.withLabel("type", "stock"));
         assertThat(res).hasSize(1);
         assertThat(res.get("type=stock").labels().get("type")).isEqualTo("stock");
-        assertThat(res.get("type=stock").samples().stream().map(s -> s.value)).containsExactlyInAnyOrder(110.0, 210.0, 310.0);
+        assertThat(res.get("type=stock").samples().stream().map(s -> s.value)).containsExactlyInAnyOrder(110.0, 210.0,
+                310.0);
 
-        res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
-                new MRangeArgs().withLabels()
-                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000))
-                        .groupBy("type", Reducer.MIN),
+        res = ts.tsMRange(
+                TimeSeriesRange.fromTimeSeries(), new MRangeArgs().withLabels()
+                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000)).groupBy("type", Reducer.MIN),
                 Filter.withLabel("type", "stock"));
         assertThat(res).hasSize(1);
         assertThat(res.get("type=stock").labels().get("type")).isEqualTo("stock");
-        assertThat(res.get("type=stock").samples().stream().map(s -> s.value)).containsExactlyInAnyOrder(110.0, 210.0, 310.0);
+        assertThat(res.get("type=stock").samples().stream().map(s -> s.value)).containsExactlyInAnyOrder(110.0, 210.0,
+                310.0);
 
         res = ts.tsMRange(TimeSeriesRange.fromTimestamps(0, 5000),
-                new MRangeArgs().withLabels()
-                        .alignUsingRangeStart()
-                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000)).count(2)
-                        .groupBy("type", Reducer.MIN),
+                new MRangeArgs().withLabels().alignUsingRangeStart()
+                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000)).count(2).groupBy("type", Reducer.MIN),
                 Filter.withLabel("type", "stock"));
         assertThat(res).hasSize(1);
         assertThat(res.get("type=stock").labels().get("type")).isEqualTo("stock");
         assertThat(res.get("type=stock").samples()).hasSize(2);
 
-        res = ts.tsMRange(TimeSeriesRange.fromTimestamps(0, 5000),
-                new MRangeArgs().withLabels()
-                        .alignUsingRangeEnd()
-                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000)).empty()
-                        .groupBy("type", Reducer.MIN),
+        res = ts.tsMRange(
+                TimeSeriesRange.fromTimestamps(0, 5000), new MRangeArgs().withLabels().alignUsingRangeEnd()
+                        .aggregation(Aggregation.AVG, Duration.ofMillis(1000)).empty().groupBy("type", Reducer.MIN),
                 Filter.withLabel("type", "stock"));
         assertThat(res).hasSize(1);
     }
 
     @Test
     void groupByReturningMultipleGroupTest() {
-        ts.tsAdd("ts1", 1548149180000L, 90, new AddArgs()
-                .label("metric", "cpu").label("metric_name", "system").label("team", "NY"));
+        ts.tsAdd("ts1", 1548149180000L, 90,
+                new AddArgs().label("metric", "cpu").label("metric_name", "system").label("team", "NY"));
         ts.tsAdd("ts1", 1548149185000L, 45);
 
-        ts.tsAdd("ts2", 1548149180000L, 99, new AddArgs()
-                .label("metric", "cpu").label("metric_name", "user").label("team", "SF"));
+        ts.tsAdd("ts2", 1548149180000L, 99,
+                new AddArgs().label("metric", "cpu").label("metric_name", "user").label("team", "SF"));
 
         var res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
-                new MRangeArgs().withLabels().groupBy("metric_name", Reducer.MAX),
-                Filter.withLabel("metric", "cpu"));
+                new MRangeArgs().withLabels().groupBy("metric_name", Reducer.MAX), Filter.withLabel("metric", "cpu"));
         assertThat(res).hasSize(2);
         assertThat(res.get("metric_name=system").samples()).hasSize(2);
         assertThat(res.get("metric_name=user").samples()).containsExactly(new Sample(1548149180000L, 99));
 
         // Test query by value
-        res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
-                new MRangeArgs().withLabels().filterByValue(90, 100),
+        res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(), new MRangeArgs().withLabels().filterByValue(90, 100),
                 Filter.withLabel("metric", "cpu"));
         assertThat(res).hasSize(2);
         assertThat(res.get("ts1").samples()).containsExactly(new Sample(1548149180000L, 90));
         assertThat(res.get("ts2").samples()).containsExactly(new Sample(1548149180000L, 99));
 
         // Test query using label
-        res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
-                new MRangeArgs().selectedLabels("team"),
+        res = ts.tsMRange(TimeSeriesRange.fromTimeSeries(), new MRangeArgs().selectedLabels("team"),
                 Filter.withLabel("metric", "cpu"));
         assertThat(res).hasSize(2);
         assertThat(res.get("ts1").labels()).containsExactly(entry("team", "NY"));
@@ -479,13 +448,9 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
     @Test
     void testRange() {
-        ts.tsCreate("temp", new CreateArgs()
-                .chunkSize(1024).compressed().label("location", "TLV").forever());
-        ts.tsMAdd(
-                SeriesSample.from("temp", 1000, 30),
-                SeriesSample.from("temp", 1010, 35),
-                SeriesSample.from("temp", 1020, 9999),
-                SeriesSample.from("temp", 1030, 40));
+        ts.tsCreate("temp", new CreateArgs().chunkSize(1024).compressed().label("location", "TLV").forever());
+        ts.tsMAdd(SeriesSample.from("temp", 1000, 30), SeriesSample.from("temp", 1010, 35),
+                SeriesSample.from("temp", 1020, 9999), SeriesSample.from("temp", 1030, 40));
 
         // Filter by value
         assertThat(ts.tsRange("temp", TimeSeriesRange.fromTimeSeries(), new RangeArgs().filterByValue(-100, 100)))
@@ -493,8 +458,8 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
         // With aggregation
         assertThat(ts.tsRange("temp", TimeSeriesRange.fromTimestamps(0, 2000), new RangeArgs().filterByValue(-100, 100)
-                .aggregation(Aggregation.AVG, Duration.ofSeconds(1)).alignUsingRangeEnd()))
-                .hasSize(1).containsExactly(new Sample(1000, 35));
+                .aggregation(Aggregation.AVG, Duration.ofSeconds(1)).alignUsingRangeEnd())).hasSize(1)
+                .containsExactly(new Sample(1000, 35));
     }
 
     @Test
@@ -508,28 +473,20 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
         var list = ts.tsRange(a, TimeSeriesRange.fromTimeSeries(),
                 new RangeArgs().aggregation(Aggregation.MIN, Duration.ofMillis(20)).empty());
-        assertThat(list)
-                .contains(new Sample(1000, 100), new Sample(1020, 120), new Sample(2000, 200),
-                        new Sample(2020, 220), new Sample(3000, 300), new Sample(3020, 320));
+        assertThat(list).contains(new Sample(1000, 100), new Sample(1020, 120), new Sample(2000, 200),
+                new Sample(2020, 220), new Sample(3000, 300), new Sample(3020, 320));
 
-        list = ts.tsRange(a, TimeSeriesRange.fromTimeSeries(), new RangeArgs()
-                .align(10).count(2)
-                .aggregation(Aggregation.MIN, Duration.ofMillis(20)));
-        assertThat(list)
-                .hasSize(2)
-                .contains(new Sample(990, 100), new Sample(1010, 110));
+        list = ts.tsRange(a, TimeSeriesRange.fromTimeSeries(),
+                new RangeArgs().align(10).count(2).aggregation(Aggregation.MIN, Duration.ofMillis(20)));
+        assertThat(list).hasSize(2).contains(new Sample(990, 100), new Sample(1010, 110));
 
-        list = ts.tsRange(a, TimeSeriesRange.fromTimestampToLatest(5), new RangeArgs()
-                .alignUsingRangeStart()
-                .aggregation(Aggregation.MIN, Duration.ofMillis(20)));
-        assertThat(list)
-                .contains(new Sample(985, 100), new Sample(1005, 110));
+        list = ts.tsRange(a, TimeSeriesRange.fromTimestampToLatest(5),
+                new RangeArgs().alignUsingRangeStart().aggregation(Aggregation.MIN, Duration.ofMillis(20)));
+        assertThat(list).contains(new Sample(985, 100), new Sample(1005, 110));
 
-        list = ts.tsRange(a, TimeSeriesRange.fromEarliestToTimestamp(3000), new RangeArgs()
-                .alignUsingRangeEnd()
-                .aggregation(Aggregation.MIN, Duration.ofMillis(20)));
-        assertThat(list)
-                .contains(new Sample(1000, 100), new Sample(2000, 200));
+        list = ts.tsRange(a, TimeSeriesRange.fromEarliestToTimestamp(3000),
+                new RangeArgs().alignUsingRangeEnd().aggregation(Aggregation.MIN, Duration.ofMillis(20)));
+        assertThat(list).contains(new Sample(1000, 100), new Sample(2000, 200));
 
     }
 
@@ -545,8 +502,8 @@ public class TimeSeriesCommandsTest extends DatasourceTestBase {
 
     @Test
     void testIncrementWithCreation() {
-        ts.tsIncrBy(key, 10, new IncrementArgs().setTimestamp(1000).label("foo", "bar")
-                .uncompressed().chunkSize(1024).setRetention(Duration.ofDays(1)));
+        ts.tsIncrBy(key, 10, new IncrementArgs().setTimestamp(1000).label("foo", "bar").uncompressed().chunkSize(1024)
+                .setRetention(Duration.ofDays(1)));
         assertThat(ts.tsGet(key).value()).isEqualTo(10L);
         assertThat(ts.tsGet(key).timestamp()).isEqualTo(1000);
     }

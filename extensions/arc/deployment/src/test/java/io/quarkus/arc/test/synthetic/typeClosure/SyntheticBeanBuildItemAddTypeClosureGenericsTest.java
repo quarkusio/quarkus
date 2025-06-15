@@ -24,11 +24,10 @@ public class SyntheticBeanBuildItemAddTypeClosureGenericsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SyntheticBeanBuildItemAddTypeClosureGenericsTest.class, FooCreator.class, FooInterface.class,
-                            Foo.class,
-                            FooSubclass.class, Charlie.class, CharlieSubclass.class, CharlieInterface.class, BarInterface.class,
-                            BazInterface.class, Alpha.class, Beta.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(SyntheticBeanBuildItemAddTypeClosureGenericsTest.class, FooCreator.class,
+                            FooInterface.class, Foo.class, FooSubclass.class, Charlie.class, CharlieSubclass.class,
+                            CharlieInterface.class, BarInterface.class, BazInterface.class, Alpha.class, Beta.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -41,10 +40,9 @@ public class SyntheticBeanBuildItemAddTypeClosureGenericsTest {
                     @Override
                     public void execute(BuildContext context) {
                         context.produce(SyntheticBeanBuildItem.create(FooSubclass.class)
-                                .addTypeClosure(ParameterizedType.builder(FooSubclass.class).addArgument(Beta.class).build())
-                                .scope(BuiltinScope.SINGLETON.getInfo())
-                                .unremovable()
-                                .creator(FooCreator.class)
+                                .addTypeClosure(
+                                        ParameterizedType.builder(FooSubclass.class).addArgument(Beta.class).build())
+                                .scope(BuiltinScope.SINGLETON.getInfo()).unremovable().creator(FooCreator.class)
                                 .done());
                     }
                 }).produces(SyntheticBeanBuildItem.class).build();

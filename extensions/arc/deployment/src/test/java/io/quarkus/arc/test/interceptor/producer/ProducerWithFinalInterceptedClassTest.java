@@ -25,9 +25,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class ProducerWithFinalInterceptedClassTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClasses(MyBinding.class, MyInterceptor.class, MyNonbean.class, MyProducer.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            jar -> jar.addClasses(MyBinding.class, MyInterceptor.class, MyNonbean.class, MyProducer.class));
 
     @Test
     public void test() {

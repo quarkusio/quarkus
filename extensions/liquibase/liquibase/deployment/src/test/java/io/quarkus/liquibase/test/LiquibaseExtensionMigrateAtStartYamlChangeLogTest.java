@@ -22,10 +22,8 @@ public class LiquibaseExtensionMigrateAtStartYamlChangeLogTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/yaml/changeLog.yaml")
-                    .addAsResource("db/yaml/create-tables.yaml")
-                    .addAsResource("db/yaml/test/test.yaml")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/yaml/changeLog.yaml")
+                    .addAsResource("db/yaml/create-tables.yaml").addAsResource("db/yaml/test/test.yaml")
                     .addAsResource("migrate-at-start-yaml-config.properties", "application.properties"));
 
     @Test

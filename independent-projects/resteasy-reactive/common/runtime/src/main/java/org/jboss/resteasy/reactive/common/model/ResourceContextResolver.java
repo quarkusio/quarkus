@@ -45,7 +45,7 @@ public class ResourceContextResolver {
 
     public List<MediaType> mediaTypes() {
         if (mediaTypes == null) {
-            //todo: does this actually need to be threadsafe?
+            // todo: does this actually need to be threadsafe?
             synchronized (this) {
                 List<MediaType> ret = new ArrayList<>();
                 for (String i : mediaTypeStrings) {

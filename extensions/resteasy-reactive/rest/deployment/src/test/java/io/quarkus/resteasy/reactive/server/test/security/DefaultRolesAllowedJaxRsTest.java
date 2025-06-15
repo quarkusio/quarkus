@@ -15,20 +15,16 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class DefaultRolesAllowedJaxRsTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PermitAllResource.class, UnsecuredResource.class,
-                            TestIdentityProvider.class, UnsecuredResourceInterface.class,
-                            TestIdentityController.class,
-                            UnsecuredSubResource.class, HelloResource.class, UnsecuredParentResource.class)
-                    .addAsResource(new StringAsset("quarkus.security.jaxrs.default-roles-allowed=admin\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(PermitAllResource.class, UnsecuredResource.class, TestIdentityProvider.class,
+                    UnsecuredResourceInterface.class, TestIdentityController.class, UnsecuredSubResource.class,
+                    HelloResource.class, UnsecuredParentResource.class)
+            .addAsResource(new StringAsset("quarkus.security.jaxrs.default-roles-allowed=admin\n"),
+                    "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -92,25 +88,13 @@ public class DefaultRolesAllowedJaxRsTest {
 
     @Test
     public void testServerExceptionMapper() {
-        given()
-                .get("/hello")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("unauthorizedExceptionMapper"));
+        given().get("/hello").then().statusCode(200).body(Matchers.equalTo("unauthorizedExceptionMapper"));
     }
 
     private void assertStatus(String path, int adminStatus, int userStatus, int anonStatus) {
-        given().auth().preemptive()
-                .basic("admin", "admin").get(path)
-                .then()
-                .statusCode(adminStatus);
-        given().auth().preemptive()
-                .basic("user", "user").get(path)
-                .then()
-                .statusCode(userStatus);
-        when().get(path)
-                .then()
-                .statusCode(anonStatus);
+        given().auth().preemptive().basic("admin", "admin").get(path).then().statusCode(adminStatus);
+        given().auth().preemptive().basic("user", "user").get(path).then().statusCode(userStatus);
+        when().get(path).then().statusCode(anonStatus);
 
     }
 

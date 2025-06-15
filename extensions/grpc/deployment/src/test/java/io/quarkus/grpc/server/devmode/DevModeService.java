@@ -15,6 +15,7 @@ public class DevModeService implements devmodetest.v1.DevModeService {
 
     // test will add override here
     public Multi<DevModeResponse> streamCheck(Devmodetest.DevModeRequest request) {
-        return Multi.createFrom().item(DevModeResponse.newBuilder().setStatus(DevModeResponse.Status.NOT_SERVING).build());
+        return Multi.createFrom()
+                .item(DevModeResponse.newBuilder().setStatus(DevModeResponse.Status.NOT_SERVING).build());
     }
 }

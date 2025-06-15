@@ -11,7 +11,8 @@ public interface BuildStep {
     /**
      * Execute a build step.
      *
-     * @param context the context of the build operation (not {@code null})
+     * @param context
+     *        the context of the build operation (not {@code null})
      */
     void execute(BuildContext context);
 

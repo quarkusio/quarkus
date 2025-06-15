@@ -144,15 +144,15 @@ public class OidcBuildStep {
     public void provideSecurityInformation(BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
         // TODO: By default quarkus.oidc.application-type = service
         // Also look at other options (web-app, hybrid)
-        securityInformationProducer
-                .produce(SecurityInformationBuildItem.OPENIDCONNECT("quarkus.oidc.auth-server-url"));
+        securityInformationProducer.produce(SecurityInformationBuildItem.OPENIDCONNECT("quarkus.oidc.auth-server-url"));
     }
 
     @BuildStep
     void checkClaim(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
 
-        for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+        for (InjectionPointInfo injectionPoint : beanRegistrationPhase.getContext()
+                .get(BuildExtension.Key.INJECTION_POINTS)) {
             if (injectionPoint.hasDefaultedQualifier()) {
                 continue;
             }
@@ -197,15 +197,11 @@ public class OidcBuildStep {
     public void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
 
-        builder.addBeanClass(OidcAuthenticationMechanism.class)
-                .addBeanClass(OidcJsonWebTokenProducer.class)
+        builder.addBeanClass(OidcAuthenticationMechanism.class).addBeanClass(OidcJsonWebTokenProducer.class)
                 .addBeanClass(OidcTokenCredentialProducer.class)
-                .addBeanClass(OidcConfigurationAndProviderProducer.class)
-                .addBeanClass(OidcIdentityProvider.class)
-                .addBeanClass(DefaultTenantConfigResolver.class)
-                .addBeanClass(DefaultTokenStateManager.class)
-                .addBeanClass(OidcSessionImpl.class)
-                .addBeanClass(BackChannelLogoutHandler.class)
+                .addBeanClass(OidcConfigurationAndProviderProducer.class).addBeanClass(OidcIdentityProvider.class)
+                .addBeanClass(DefaultTenantConfigResolver.class).addBeanClass(DefaultTokenStateManager.class)
+                .addBeanClass(OidcSessionImpl.class).addBeanClass(BackChannelLogoutHandler.class)
                 .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
     }
@@ -218,15 +214,12 @@ public class OidcBuildStep {
 
     @BuildStep(onlyIf = IsCacheEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    public SyntheticBeanBuildItem addDefaultCacheBean(OidcConfig config,
-            OidcRecorder recorder,
+    public SyntheticBeanBuildItem addDefaultCacheBean(OidcConfig config, OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem) {
         return SyntheticBeanBuildItem.configure(DefaultTokenIntrospectionUserInfoCache.class).unremovable()
                 .types(DefaultTokenIntrospectionUserInfoCache.class, TokenIntrospectionCache.class, UserInfoCache.class)
-                .supplier(recorder.setupTokenCache(config, vertxBuildItem.getVertx()))
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .done();
+                .supplier(recorder.setupTokenCache(config, vertxBuildItem.getVertx())).scope(Singleton.class)
+                .setRuntimeInit().done();
     }
 
     @BuildStep
@@ -260,8 +253,7 @@ public class OidcBuildStep {
             public void transform(TransformationContext ctx) {
                 var tenantAnnotation = Annotations.find(ctx.getAllTargetAnnotations(), TENANT_NAME);
                 if (tenantAnnotation != null && tenantAnnotation.value() != null) {
-                    ctx
-                            .transform()
+                    ctx.transform()
                             .add(NAMED, AnnotationValue.createStringValue("value", tenantAnnotation.value().asString()))
                             .done();
                 }
@@ -271,10 +263,8 @@ public class OidcBuildStep {
 
     /**
      * Produce {@link TenantIdentityProvider} with already selected tenant for each {@link TenantIdentityProvider}
-     * injection point annotated with {@link Tenant} annotation.
-     * For example, we produce {@link TenantIdentityProvider} with pre-selected tenant 'my-tenant' for injection point:
-     *
-     * <code>
+     * injection point annotated with {@link Tenant} annotation. For example, we produce {@link TenantIdentityProvider}
+     * with pre-selected tenant 'my-tenant' for injection point: <code>
      *  &#064;Inject
      *  &#064;Tenant("my-tenant")
      *  TenantIdentityProvider identityProvider;
@@ -286,42 +276,25 @@ public class OidcBuildStep {
             OidcRecorder recorder, BeanDiscoveryFinishedBuildItem beans, CombinedIndexBuildItem combinedIndex) {
         if (!combinedIndex.getIndex().getAnnotations(TENANT_NAME).isEmpty()) {
             // create TenantIdentityProviders for tenants selected with @Tenant like: @Tenant("my-tenant")
-            beans
-                    .getInjectionPoints()
-                    .stream()
-                    .filter(OidcBuildStep::isTenantIdentityProviderType)
+            beans.getInjectionPoints().stream().filter(OidcBuildStep::isTenantIdentityProviderType)
                     .filter(ip -> ip.getRequiredQualifier(NAMED) != null)
-                    .map(ip -> ip.getRequiredQualifier(NAMED).value().asString())
-                    .distinct()
-                    .forEach(tenantName -> syntheticBeanProducer.produce(
-                            SyntheticBeanBuildItem
-                                    .configure(TenantIdentityProvider.class)
-                                    .named(tenantName)
-                                    .scope(APPLICATION.getInfo())
-                                    .supplier(recorder.createTenantIdentityProvider(tenantName))
-                                    .unremovable()
-                                    .done()));
+                    .map(ip -> ip.getRequiredQualifier(NAMED).value().asString()).distinct()
+                    .forEach(tenantName -> syntheticBeanProducer.produce(SyntheticBeanBuildItem
+                            .configure(TenantIdentityProvider.class).named(tenantName).scope(APPLICATION.getInfo())
+                            .supplier(recorder.createTenantIdentityProvider(tenantName)).unremovable().done()));
         }
         // create TenantIdentityProvider for default tenant when tenant is not explicitly selected via @Tenant
-        boolean createTenantIdentityProviderForDefaultTenant = beans
-                .getInjectionPoints()
-                .stream()
+        boolean createTenantIdentityProviderForDefaultTenant = beans.getInjectionPoints().stream()
                 .filter(ip -> ip.getRequiredQualifier(NAMED) == null)
                 .anyMatch(OidcBuildStep::isTenantIdentityProviderType);
         if (createTenantIdentityProviderForDefaultTenant) {
-            syntheticBeanProducer.produce(
-                    SyntheticBeanBuildItem
-                            .configure(TenantIdentityProvider.class)
-                            .scope(APPLICATION.getInfo())
-                            .addQualifier(DEFAULT)
-                            // named beans are implicitly default according to the specs
-                            // when no other qualifiers are present other than @Named and @Any
-                            // which means we need to handle ambiguous resolution
-                            .alternative(true)
-                            .priority(1)
-                            .supplier(recorder.createTenantIdentityProvider(DEFAULT_TENANT_ID))
-                            .unremovable()
-                            .done());
+            syntheticBeanProducer.produce(SyntheticBeanBuildItem.configure(TenantIdentityProvider.class)
+                    .scope(APPLICATION.getInfo()).addQualifier(DEFAULT)
+                    // named beans are implicitly default according to the specs
+                    // when no other qualifiers are present other than @Named and @Any
+                    // which means we need to handle ambiguous resolution
+                    .alternative(true).priority(1).supplier(recorder.createTenantIdentityProvider(DEFAULT_TENANT_ID))
+                    .unremovable().done());
         }
     }
 
@@ -351,28 +324,23 @@ public class OidcBuildStep {
             CoreVertxBuildItem vertxBuildItem, TlsRegistryBuildItem tlsRegistryBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
-                .createWith(recorder.createTenantConfigBean(config, vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
-                        securityConfig))
-                .destroyer(TenantConfigBean.Destroyer.class)
-                .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
-                .setRuntimeInit()
-                .done();
+                .createWith(recorder.createTenantConfigBean(config, vertxBuildItem.getVertx(),
+                        tlsRegistryBuildItem.registry(), securityConfig))
+                .destroyer(TenantConfigBean.Destroyer.class).scope(Singleton.class) // this should have been
+                // @ApplicationScoped but fails for
+                // some reason
+                .setRuntimeInit().done();
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void registerTenantResolverInterceptor(Capabilities capabilities, OidcRecorder recorder,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            CombinedIndexBuildItem combinedIndexBuildItem,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<EagerSecurityInterceptorBindingBuildItem> bindingProducer,
             BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
-        if (!httpBuildTimeConfig.auth().proactive()
-                && (capabilities.isPresent(Capability.RESTEASY_REACTIVE) || capabilities.isPresent(Capability.RESTEASY)
-                        || capabilities.isPresent(Capability.WEBSOCKETS_NEXT))) {
-            boolean foundTenantResolver = combinedIndexBuildItem
-                    .getIndex()
-                    .getAnnotations(TENANT_NAME)
-                    .stream()
+        if (!httpBuildTimeConfig.auth().proactive() && (capabilities.isPresent(Capability.RESTEASY_REACTIVE)
+                || capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.WEBSOCKETS_NEXT))) {
+            boolean foundTenantResolver = combinedIndexBuildItem.getIndex().getAnnotations(TENANT_NAME).stream()
                     .map(AnnotationInstance::target)
                     // ignore field injection points and injection setters
                     // as we don't want to count in the TenantIdentityProvider injection point;
@@ -380,10 +348,10 @@ public class OidcBuildStep {
                     .anyMatch(t -> isMethodWithTenantAnnButNotInjPoint(t) || t.kind() == CLASS);
             if (foundTenantResolver) {
                 // register method interceptor that will be run before security checks
-                bindingProducer.produce(
-                        new EagerSecurityInterceptorBindingBuildItem(recorder.tenantResolverInterceptorCreator(), TENANT_NAME));
-                systemPropertyProducer.produce(new SystemPropertyBuildItem(OidcUtils.ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED,
-                        Boolean.TRUE.toString()));
+                bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(
+                        recorder.tenantResolverInterceptorCreator(), TENANT_NAME));
+                systemPropertyProducer.produce(new SystemPropertyBuildItem(
+                        OidcUtils.ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED, Boolean.TRUE.toString()));
             }
         }
     }
@@ -400,18 +368,20 @@ public class OidcBuildStep {
     void detectAccessTokenVerificationRequired(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> runtimeConfigDefaultProducer) {
         if (isInjected(beanRegistrationPhaseBuildItem, JSON_WEB_TOKEN_NAME, ID_TOKEN_NAME)) {
-            runtimeConfigDefaultProducer.produce(
-                    new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.authentication.verify-access-token", "true"));
-            runtimeConfigDefaultProducer.produce(
-                    new RunTimeConfigurationDefaultBuildItem("quarkus.oidc.*.authentication.verify-access-token", "true"));
+            runtimeConfigDefaultProducer.produce(new RunTimeConfigurationDefaultBuildItem(
+                    "quarkus.oidc.authentication.verify-access-token", "true"));
+            runtimeConfigDefaultProducer.produce(new RunTimeConfigurationDefaultBuildItem(
+                    "quarkus.oidc.*.authentication.verify-access-token", "true"));
         }
     }
 
     @BuildStep
     List<HttpAuthMechanismAnnotationBuildItem> registerHttpAuthMechanismAnnotation() {
         return List.of(
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(AuthorizationCodeFlow.class), CODE_FLOW_CODE),
-                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class), BEARER_SCHEME));
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(AuthorizationCodeFlow.class),
+                        CODE_FLOW_CODE),
+                new HttpAuthMechanismAnnotationBuildItem(DotName.createSimple(BearerTokenAuthentication.class),
+                        BEARER_SCHEME));
     }
 
     @BuildStep
@@ -431,8 +401,8 @@ public class OidcBuildStep {
         if (authCtxAnnotations.isEmpty() || !areEagerSecInterceptorsSupported(capabilities, httpBuildTimeConfig)) {
             return;
         }
-        bindingProducer.produce(new EagerSecurityInterceptorBindingBuildItem(recorder.authenticationContextInterceptorCreator(),
-                ai -> {
+        bindingProducer.produce(
+                new EagerSecurityInterceptorBindingBuildItem(recorder.authenticationContextInterceptorCreator(), ai -> {
                     AnnotationValue maxAgeAnnotationValue = ai.value("maxAge");
                     String maxAge = maxAgeAnnotationValue == null ? "" : maxAgeAnnotationValue.asString();
 
@@ -452,12 +422,9 @@ public class OidcBuildStep {
 
         // @AuthenticationContext -> authentication required
         // register @Authenticated for annotated methods
-        Set<MethodInfo> annotatedMethods = collectMethodsWithoutRbacAnnotation(authCtxAnnotations
-                .stream()
-                .map(AnnotationInstance::target)
-                .filter(at -> at.kind() == METHOD)
-                .map(AnnotationTarget::asMethod)
-                .toList());
+        Set<MethodInfo> annotatedMethods = collectMethodsWithoutRbacAnnotation(
+                authCtxAnnotations.stream().map(AnnotationInstance::target).filter(at -> at.kind() == METHOD)
+                        .map(AnnotationTarget::asMethod).toList());
         additionalSecuredMethodsProducer
                 .produce(new AdditionalSecuredMethodsBuildItem(annotatedMethods, Optional.of(List.of("**"))));
         // method-level security; this registers @Authenticated if no RBAC is explicitly declared
@@ -469,9 +436,8 @@ public class OidcBuildStep {
         // class-level security; this registers @Authenticated if no RBAC is explicitly declared
         collectAnnotatedClasses(authCtxAnnotations, useClassLevelSecurity).stream()
                 .filter(Predicate.not(HttpSecurityUtils::hasSecurityAnnotation))
-                .forEach(c -> registerClassSecurityCheckProducer.produce(
-                        new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
-                                .builder(Authenticated.class).buildWithTarget(c))));
+                .forEach(c -> registerClassSecurityCheckProducer.produce(new RegisterClassSecurityCheckBuildItem(
+                        c.name(), AnnotationInstance.builder(Authenticated.class).buildWithTarget(c))));
     }
 
     @BuildStep
@@ -487,15 +453,16 @@ public class OidcBuildStep {
         if (httpBuildTimeConfig.auth().proactive()) {
             throw new RuntimeException("The '%s' annotation is only supported when proactive authentication is disabled"
                     .formatted(AUTHENTICATION_CONTEXT_NAME));
-        } else if (capabilities.isMissing(Capability.WEBSOCKETS_NEXT) && capabilities.isMissing(Capability.RESTEASY_REACTIVE)
+        } else if (capabilities.isMissing(Capability.WEBSOCKETS_NEXT)
+                && capabilities.isMissing(Capability.RESTEASY_REACTIVE)
                 && capabilities.isMissing(Capability.RESTEASY)) {
             throw new RuntimeException("The '%s' can only be used on Jakarta REST or WebSockets Next endpoints");
         }
         return true;
     }
 
-    private static boolean isInjected(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem, DotName requiredType,
-            DotName withoutQualifier) {
+    private static boolean isInjected(BeanRegistrationPhaseBuildItem beanRegistrationPhaseBuildItem,
+            DotName requiredType, DotName withoutQualifier) {
         for (InjectionPointInfo injectionPoint : beanRegistrationPhaseBuildItem.getInjectionPoints()) {
             if (requiredType.equals(injectionPoint.getRequiredType().name())
                     && isApplicationPackage(injectionPoint.getTargetInfo())

@@ -72,8 +72,8 @@ public class PgPoolRecorder {
                     return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
                 }
                 if (reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().url().isEmpty()) {
-                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
-                            "reactive.url"));
+                    return ActiveResult.inactive(
+                            DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName, "reactive.url"));
                 }
                 return ActiveResult.active();
             }
@@ -81,18 +81,13 @@ public class PgPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<PgPool>, PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            Supplier<Integer> eventLoopCount, String dataSourceName, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
-            ShutdownContext shutdown) {
+            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public PgPool apply(SyntheticCreationalContext<PgPool> context) {
-                PgPool pgPool = initialize((VertxInternal) vertx.getValue(),
-                        eventLoopCount.get(),
-                        dataSourceName,
+                PgPool pgPool = initialize((VertxInternal) vertx.getValue(), eventLoopCount.get(), dataSourceName,
                         dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                         dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
                         dataSourcesReactivePostgreSQLConfig.dataSources().get(dataSourceName).reactive().postgresql(),
@@ -110,15 +105,13 @@ public class PgPoolRecorder {
             @SuppressWarnings("unchecked")
             @Override
             public io.vertx.mutiny.pgclient.PgPool apply(SyntheticCreationalContext context) {
-                return io.vertx.mutiny.pgclient.PgPool.newInstance(
-                        (PgPool) context.getInjectedReference(PgPool.class, qualifier(dataSourceName)));
+                return io.vertx.mutiny.pgclient.PgPool
+                        .newInstance((PgPool) context.getInjectedReference(PgPool.class, qualifier(dataSourceName)));
             }
         };
     }
 
-    private PgPool initialize(VertxInternal vertx,
-            Integer eventLoopCount,
-            String dataSourceName,
+    private PgPool initialize(VertxInternal vertx, Integer eventLoopCount, String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig,
@@ -131,8 +124,8 @@ public class PgPoolRecorder {
         return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName, databasesSupplier, context);
     }
 
-    private Supplier<Future<PgConnectOptions>> toDatabasesSupplier(Vertx vertx, List<PgConnectOptions> pgConnectOptionsList,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+    private Supplier<Future<PgConnectOptions>> toDatabasesSupplier(Vertx vertx,
+            List<PgConnectOptions> pgConnectOptionsList, DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<PgConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
@@ -179,7 +172,8 @@ public class PgPoolRecorder {
         return poolOptions;
     }
 
-    private List<PgConnectOptions> toPgConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private List<PgConnectOptions> toPgConnectOptions(String dataSourceName,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactivePostgreSQLConfig dataSourceReactivePostgreSQLConfig) {
         List<PgConnectOptions> pgConnectOptionsList = new ArrayList<>();
@@ -261,7 +255,8 @@ public class PgPoolRecorder {
 
             dataSourceReactiveRuntimeConfig.additionalProperties().forEach(pgConnectOptions::addProperty);
 
-            // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with postgresql.
+            // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with
+            // postgresql.
             // and the client_name as tag.
             // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
             // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName

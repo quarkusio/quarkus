@@ -23,16 +23,15 @@ public class ExtensionMethodCompletionStageTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Extensions.class, FooParentService.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Foo.class, Extensions.class, FooParentService.class));
 
     @Inject
     Engine engine;
 
     @Test
     public void testTemplateExtensions() throws InterruptedException, ExecutionException {
-        CompletableFuture<String> result = engine.parse("{foo.parent.name}").data("foo", new Foo("alpha", 10l)).renderAsync()
-                .toCompletableFuture();
+        CompletableFuture<String> result = engine.parse("{foo.parent.name}").data("foo", new Foo("alpha", 10l))
+                .renderAsync().toCompletableFuture();
         assertFalse(result.isDone());
         FooParentService.parent.complete(new Foo("bravo", 1l));
         assertEquals("bravo", result.toCompletableFuture().get());

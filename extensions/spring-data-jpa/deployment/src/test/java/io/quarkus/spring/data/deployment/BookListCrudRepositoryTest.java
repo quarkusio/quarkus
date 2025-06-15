@@ -22,10 +22,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BookListCrudRepositoryTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("import_books.sql", "import.sql")
-                    .addClasses(Book.class, BookListCrudRepository.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addAsResource("import_books.sql", "import.sql")
+                            .addClasses(Book.class, BookListCrudRepository.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -38,8 +38,8 @@ public class BookListCrudRepositoryTest {
         List<Book> all = repo.findAll();
         assertThat(all).isNotEmpty();
         assertThat(all).hasSize(3);
-        assertThat(all.stream().map(Book::getName)).containsExactlyInAnyOrder("Talking to Strangers", "The Ascent of Money",
-                "A Short History of Everything");
+        assertThat(all.stream().map(Book::getName)).containsExactlyInAnyOrder("Talking to Strangers",
+                "The Ascent of Money", "A Short History of Everything");
     }
 
     @Test
@@ -50,7 +50,8 @@ public class BookListCrudRepositoryTest {
         List<Book> all = repo.findAllById(ids);
         assertThat(all).isNotEmpty();
         assertThat(all).hasSize(2);
-        assertThat(all.stream().map(Book::getName)).containsExactlyInAnyOrder("Talking to Strangers", "The Ascent of Money");
+        assertThat(all.stream().map(Book::getName)).containsExactlyInAnyOrder("Talking to Strangers",
+                "The Ascent of Money");
     }
 
     @Test

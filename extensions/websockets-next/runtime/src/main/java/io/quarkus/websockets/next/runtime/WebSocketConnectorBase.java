@@ -69,9 +69,8 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
 
     protected final TlsConfigurationRegistry tlsConfigurationRegistry;
 
-    WebSocketConnectorBase(Vertx vertx, Codecs codecs,
-            ClientConnectionManager connectionManager, WebSocketsClientRuntimeConfig config,
-            TlsConfigurationRegistry tlsConfigurationRegistry) {
+    WebSocketConnectorBase(Vertx vertx, Codecs codecs, ClientConnectionManager connectionManager,
+            WebSocketsClientRuntimeConfig config, TlsConfigurationRegistry tlsConfigurationRegistry) {
         this.headers = new HashMap<>();
         this.subprotocols = new HashSet<>();
         this.pathParams = new HashMap<>();
@@ -196,8 +195,7 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
                 Optional.ofNullable(tlsConfigurationName));
         if (maybeTlsConfiguration.isEmpty()) {
-            maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
-                    config.tlsConfigurationName());
+            maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry, config.tlsConfigurationName());
         }
         if (maybeTlsConfiguration.isPresent()) {
             TlsConfigUtils.configure(clientOptions, maybeTlsConfiguration.get());
@@ -206,8 +204,7 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
     }
 
     protected WebSocketConnectOptions newConnectOptions(URI serverEndpointUri) {
-        WebSocketConnectOptions connectOptions = new WebSocketConnectOptions()
-                .setSsl(isSecure(serverEndpointUri))
+        WebSocketConnectOptions connectOptions = new WebSocketConnectOptions().setSsl(isSecure(serverEndpointUri))
                 .setHost(serverEndpointUri.getHost());
         if (serverEndpointUri.getPort() != -1) {
             connectOptions.setPort(serverEndpointUri.getPort());

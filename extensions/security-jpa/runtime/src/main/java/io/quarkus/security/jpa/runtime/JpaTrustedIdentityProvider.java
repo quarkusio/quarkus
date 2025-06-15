@@ -74,6 +74,5 @@ public abstract class JpaTrustedIdentityProvider implements IdentityProvider<Tru
         return JpaIdentityProviderUtil.getSingleUser(results);
     }
 
-    public abstract SecurityIdentity authenticate(EntityManager em,
-            TrustedAuthenticationRequest request);
+    public abstract SecurityIdentity authenticate(EntityManager em, TrustedAuthenticationRequest request);
 }

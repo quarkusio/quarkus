@@ -35,9 +35,8 @@ public final class TemplateExtensionMethodBuildItem extends MultiBuildItem {
         this(method, matchName, List.of(), matchRegex, matchType, priority, namespace);
     }
 
-    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, List<String> matchNames, String matchRegex,
-            Type matchType,
-            int priority, String namespace) {
+    public TemplateExtensionMethodBuildItem(MethodInfo method, String matchName, List<String> matchNames,
+            String matchRegex, Type matchType, int priority, String namespace) {
         this.method = method;
         this.matchName = matchName;
         this.matchNames = List.copyOf(matchNames);

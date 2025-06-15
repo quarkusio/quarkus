@@ -19,8 +19,7 @@ public class HeaderFieldInSuperClassDependentScopeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(AbstractResource.class, Resource.class))
-            .assertException(t -> {
+            .withApplicationRoot(jar -> jar.addClasses(AbstractResource.class, Resource.class)).assertException(t -> {
                 org.junit.jupiter.api.Assertions.assertEquals(DeploymentException.class, t.getClass());
             });
 

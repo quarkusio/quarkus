@@ -44,15 +44,13 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
 
     @Override
     public boolean supportsMethod(Class<?> originalTestClass, Method originalTestMethod) {
-        return hasSupportedAnnotation(originalTestClass, originalTestMethod)
-                && hasSupportedParams(originalTestMethod);
+        return hasSupportedAnnotation(originalTestClass, originalTestMethod) && hasSupportedParams(originalTestMethod);
     }
 
     private boolean hasSupportedParams(Method originalTestMethod) {
-        return originalTestMethod.getParameterCount() == 0
-                || (originalTestMethod.getParameterCount() == 1
-                        // we need to use the class name to avoid ClassLoader issues
-                        && originalTestMethod.getParameterTypes()[0].getName().equals(UniAsserter.class.getName()));
+        return originalTestMethod.getParameterCount() == 0 || (originalTestMethod.getParameterCount() == 1
+                // we need to use the class name to avoid ClassLoader issues
+                && originalTestMethod.getParameterTypes()[0].getName().equals(UniAsserter.class.getName()));
     }
 
     protected boolean hasSupportedAnnotation(Class<?> originalTestClass, Method originalTestMethod) {
@@ -84,8 +82,9 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
 
         Vertx vertx = VertxCoreRecorder.getVertx().get();
         if (vertx == null) {
-            throw new IllegalStateException("Vert.x instance has not been created before attempting to run test method '"
-                    + actualTestMethod.getName() + "' of test class '" + testClassName + "'");
+            throw new IllegalStateException(
+                    "Vert.x instance has not been created before attempting to run test method '"
+                            + actualTestMethod.getName() + "' of test class '" + testClassName + "'");
         }
 
         Context context = vertx.getOrCreateContext();
@@ -159,8 +158,8 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private final UnwrappableUniAsserter uniAsserter;
         private final CompletableFuture<Object> future;
 
-        public RunTestMethodOnVertxEventLoopContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
-                UniAsserter uniAsserter, CompletableFuture<Object> future) {
+        public RunTestMethodOnVertxEventLoopContextHandler(Object testInstance, Method targetMethod,
+                List<Object> methodArgs, UniAsserter uniAsserter, CompletableFuture<Object> future) {
             this.testInstance = testInstance;
             this.future = future;
             this.targetMethod = targetMethod;
@@ -221,8 +220,8 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
         private final List<Object> methodArgs;
         private final UnwrappableUniAsserter uniAsserter;
 
-        public RunTestMethodOnVertxBlockingContextHandler(Object testInstance, Method targetMethod, List<Object> methodArgs,
-                UniAsserter uniAsserter) {
+        public RunTestMethodOnVertxBlockingContextHandler(Object testInstance, Method targetMethod,
+                List<Object> methodArgs, UniAsserter uniAsserter) {
             this.testInstance = testInstance;
             this.targetMethod = targetMethod;
             this.methodArgs = methodArgs;

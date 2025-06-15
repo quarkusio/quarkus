@@ -28,11 +28,10 @@ import io.vertx.mutiny.core.MultiMap;
 public class HeadersMessageConsumerMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> {
-                jar.addClasses(VertxMessageConsumers.class);
-                jar.addClasses(MutinyMessageConsumers.class);
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> {
+        jar.addClasses(VertxMessageConsumers.class);
+        jar.addClasses(MutinyMessageConsumers.class);
+    });
 
     @Inject
     VertxMessageConsumers vertxBean;
@@ -48,8 +47,7 @@ public class HeadersMessageConsumerMethodTest {
         // Given
         VertxMessageConsumers.MESSAGES.clear();
         VertxMessageConsumers.latch = new CountDownLatch(1);
-        DeliveryOptions options = new DeliveryOptions()
-                .addHeader("header", "testSend");
+        DeliveryOptions options = new DeliveryOptions().addHeader("header", "testSend");
 
         // When
         bus.send("vertx-headers", "void", options);
@@ -67,8 +65,7 @@ public class HeadersMessageConsumerMethodTest {
         // Given
         MutinyMessageConsumers.MESSAGES.clear();
         MutinyMessageConsumers.latch = new CountDownLatch(1);
-        DeliveryOptions options = new DeliveryOptions()
-                .addHeader("header", "testMutinySend");
+        DeliveryOptions options = new DeliveryOptions().addHeader("header", "testMutinySend");
 
         // When
         bus.send("mutiny-headers", "void", options);
@@ -85,8 +82,7 @@ public class HeadersMessageConsumerMethodTest {
     public void testRequest() throws InterruptedException {
         // Given
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        DeliveryOptions options = new DeliveryOptions()
-                .addHeader("header", "testRequest");
+        DeliveryOptions options = new DeliveryOptions().addHeader("header", "testRequest");
 
         // When
         bus.request("vertx-headers-reply", "String", options, ar -> {
@@ -109,8 +105,7 @@ public class HeadersMessageConsumerMethodTest {
     public void testMutinyRequest() throws InterruptedException {
         // Given
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        DeliveryOptions options = new DeliveryOptions()
-                .addHeader("header", "testMutinyRequest");
+        DeliveryOptions options = new DeliveryOptions().addHeader("header", "testMutinyRequest");
 
         // When
         bus.request("mutiny-headers-reply", "String", options, ar -> {
@@ -133,8 +128,7 @@ public class HeadersMessageConsumerMethodTest {
     public void testRequestUni() throws InterruptedException {
         // Given
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        DeliveryOptions options = new DeliveryOptions()
-                .addHeader("header", "testRequestUni");
+        DeliveryOptions options = new DeliveryOptions().addHeader("header", "testRequestUni");
 
         // When
         bus.request("vertx-headers-replyUni", "String", options, ar -> {
@@ -157,8 +151,7 @@ public class HeadersMessageConsumerMethodTest {
     public void testMutinyRequestUni() throws InterruptedException {
         // Given
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
-        DeliveryOptions options = new DeliveryOptions()
-                .addHeader("header", "testMutinyRequestUni");
+        DeliveryOptions options = new DeliveryOptions().addHeader("header", "testMutinyRequestUni");
 
         // When
         bus.request("mutiny-headers-replyUni", "String", options, ar -> {

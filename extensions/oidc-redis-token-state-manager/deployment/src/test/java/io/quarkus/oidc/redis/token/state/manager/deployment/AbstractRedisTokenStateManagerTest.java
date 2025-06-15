@@ -25,9 +25,8 @@ import io.restassured.RestAssured;
 public abstract class AbstractRedisTokenStateManagerTest {
 
     protected static QuarkusUnitTest createQuarkusUnitTest(String... extraProps) {
-        return new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addClasses(ProtectedResource.class, UnprotectedResource.class, PublicResource.class)
+        return new QuarkusUnitTest().withApplicationRoot(
+                (jar) -> jar.addClasses(ProtectedResource.class, UnprotectedResource.class, PublicResource.class)
                         .addAsResource(new StringAsset("""
                                 quarkus.oidc.client-id=quarkus-web-app
                                 quarkus.oidc.application-type=web-app
@@ -78,11 +77,7 @@ public abstract class AbstractRedisTokenStateManagerTest {
     }
 
     protected static void assertTokenStateCount(Integer tokenStateCount) {
-        RestAssured
-                .given()
-                .get("public/oidc-token-states-count")
-                .then()
-                .statusCode(200)
+        RestAssured.given().get("public/oidc-token-states-count").then().statusCode(200)
                 .body(Matchers.is(tokenStateCount.toString()));
     }
 

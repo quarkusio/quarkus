@@ -24,11 +24,8 @@ public class ConfigMapVolumeConverter {
         if (cm.items() != null && !cm.items().isEmpty()) {
             List<Item> items = new ArrayList<>(cm.items().size());
             for (Map.Entry<String, VolumeItemConfig> item : cm.items().entrySet()) {
-                items.add(new ItemBuilder()
-                        .withKey(item.getKey())
-                        .withPath(item.getValue().path())
-                        .withMode(item.getValue().mode())
-                        .build());
+                items.add(new ItemBuilder().withKey(item.getKey()).withPath(item.getValue().path())
+                        .withMode(item.getValue().mode()).build());
             }
 
             b.withItems(items.toArray(new Item[items.size()]));

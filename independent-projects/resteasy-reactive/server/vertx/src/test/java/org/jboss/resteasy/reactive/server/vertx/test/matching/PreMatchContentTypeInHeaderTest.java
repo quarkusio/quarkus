@@ -24,59 +24,32 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class PreMatchContentTypeInHeaderTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class);
+        }
+    });
 
     @Test
     public void filterNotSettingContentType() {
-        given()
-                .header("Content-Type", "application/json")
-                .body("[]")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
+        given().header("Content-Type", "application/json").body("[]").when().post("/test").then().statusCode(200)
                 .body(is("json-[]"));
 
-        given()
-                .header("Content-Type", "text/plain")
-                .body("input")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
+        given().header("Content-Type", "text/plain").body("input").when().post("/test").then().statusCode(200)
                 .body(is("text-input"));
     }
 
     @Test
     public void filterSettingContentTypeToText() {
-        given()
-                .header("Content-Type", "application/json")
-                .header("test-content-type", "text/plain")
-                .body("[]")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
-                .body(is("text-[]"));
+        given().header("Content-Type", "application/json").header("test-content-type", "text/plain").body("[]").when()
+                .post("/test").then().statusCode(200).body(is("text-[]"));
     }
 
     @Test
     public void filterSettingContentTypeToJson() {
-        given()
-                .header("Content-Type", "text/plain")
-                .header("test-content-type", "application/json")
-                .body("input")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
-                .body(is("json-input"));
+        given().header("Content-Type", "text/plain").header("test-content-type", "application/json").body("input")
+                .when().post("/test").then().statusCode(200).body(is("json-input"));
     }
 
     @Path("test")

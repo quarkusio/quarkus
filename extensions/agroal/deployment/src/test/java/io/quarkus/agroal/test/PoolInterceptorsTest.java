@@ -18,7 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class PoolInterceptorsTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @Inject
     AgroalDataSource defaultDataSource;
 
@@ -29,12 +29,11 @@ public class PoolInterceptorsTest {
     @Inject
     @DataSource("pure")
     AgroalDataSource pureDataSource;
-    //end::injection[]
+    // end::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
+            .withApplicationRoot((jar) -> jar.addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
                     .addClasses(PoolInterceptorsTest.class)
                     .addClasses(DefaultInterceptor.class, AnotherInterceptor.class, AnotherPriorityInterceptor.class))
             .withConfigurationResource("application-pool-interception.properties");

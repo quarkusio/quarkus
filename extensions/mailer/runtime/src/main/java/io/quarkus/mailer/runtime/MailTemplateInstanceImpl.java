@@ -131,24 +131,23 @@ class MailTemplateInstanceImpl implements MailTemplate.MailTemplateInstance {
             @SuppressWarnings("unchecked")
             List<Variant> variants = (List<Variant>) variantsAttr;
             for (Variant variant : variants) {
-                if (variant.getContentType().equals(Variant.TEXT_HTML) || variant.getContentType().equals(Variant.TEXT_PLAIN)) {
+                if (variant.getContentType().equals(Variant.TEXT_HTML)
+                        || variant.getContentType().equals(Variant.TEXT_PLAIN)) {
                     results.add(new Result(variant,
-                            Uni.createFrom().completionStage(
-                                    new Supplier<CompletionStage<? extends String>>() {
-                                        @Override
-                                        public CompletionStage<? extends String> get() {
-                                            return templateInstance
-                                                    .setAttribute(TemplateInstance.SELECTED_VARIANT, variant).renderAsync();
-                                        }
-                                    })));
+                            Uni.createFrom().completionStage(new Supplier<CompletionStage<? extends String>>() {
+                                @Override
+                                public CompletionStage<? extends String> get() {
+                                    return templateInstance.setAttribute(TemplateInstance.SELECTED_VARIANT, variant)
+                                            .renderAsync();
+                                }
+                            })));
                 }
             }
             if (results.isEmpty()) {
                 throw new IllegalStateException("No suitable template variant found");
             }
             List<Uni<String>> unis = results.stream().map(Result::resolve).collect(Collectors.toList());
-            return Uni.combine().all().unis(unis)
-                    .combinedWith(combine(results))
+            return Uni.combine().all().unis(unis).combinedWith(combine(results))
                     .chain(new Function<Mail, Uni<? extends Void>>() {
                         @Override
                         public Uni<? extends Void> apply(Mail m) {

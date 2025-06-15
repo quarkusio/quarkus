@@ -31,8 +31,7 @@ public class FormTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(BeanRegisteringRouteUsingObserves.class));
 
     @Inject
@@ -161,16 +160,14 @@ public class FormTest {
 
         public void register(@Observes Router router) {
 
-            router
-                    .post().order(Integer.MIN_VALUE).handler(rc -> {
-                        rc.request().setExpectMultipart(true);
-                        rc.next();
-                    });
+            router.post().order(Integer.MIN_VALUE).handler(rc -> {
+                rc.request().setExpectMultipart(true);
+                rc.next();
+            });
             router.post().handler(BodyHandler.create());
-            router.post("/form")
-                    .handler(rc -> {
-                        rc.response().end("OK");
-                    });
+            router.post("/form").handler(rc -> {
+                rc.response().end("OK");
+            });
         }
 
     }

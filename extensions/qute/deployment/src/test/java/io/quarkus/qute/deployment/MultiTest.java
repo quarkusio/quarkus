@@ -20,10 +20,8 @@ public class MultiTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Foo.class)
-                    .addAsResource(new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"),
-                            "templates/foo.txt"));
+            .withApplicationRoot((jar) -> jar.addClass(Foo.class).addAsResource(
+                    new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"), "templates/foo.txt"));
 
     @Inject
     Template foo;
@@ -32,10 +30,8 @@ public class MultiTest {
     public void testCreateMulti() {
         Multi<String> multi = foo.data("roundingMode", RoundingMode.HALF_UP)
                 .data("foo", new Foo(new BigDecimal("123.4563"))).createMulti();
-        assertEquals("123.4563 is not 123.46", multi
-                .collect().in(StringBuffer::new, StringBuffer::append)
-                .onItem().transform(StringBuffer::toString)
-                .await().indefinitely());
+        assertEquals("123.4563 is not 123.46", multi.collect().in(StringBuffer::new, StringBuffer::append).onItem()
+                .transform(StringBuffer::toString).await().indefinitely());
     }
 
     @TemplateData

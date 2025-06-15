@@ -110,8 +110,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         boolean isDockerLaunch = isContainer(artifactType)
                 || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
 
-        devServicesLaunchResult = handleDevServices(extensionContext,
-                isDockerLaunch);
+        devServicesLaunchResult = handleDevServices(extensionContext, isDockerLaunch);
         devServicesProps = devServicesLaunchResult.properties();
 
         ExtensionContext root = extensionContext.getRoot();
@@ -120,7 +119,8 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
 
     private ArtifactLauncher.LaunchResult doProcessStart(ExtensionContext context, String[] args) {
         try {
-            Class<? extends QuarkusTestProfile> profile = IntegrationTestUtil.findProfile(context.getRequiredTestClass());
+            Class<? extends QuarkusTestProfile> profile = IntegrationTestUtil
+                    .findProfile(context.getRequiredTestClass());
             TestResourceManager testResourceManager = null;
             Map<String, String> old = new HashMap<>();
             String artifactType = quarkusArtifactProperties.getProperty("type");
@@ -128,16 +128,17 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 Class<?> requiredTestClass = context.getRequiredTestClass();
 
                 Map<String, String> sysPropRestore = getSysPropsToRestore();
-                TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
+                TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile,
+                        sysPropRestore);
 
                 testResourceManager = new TestResourceManager(requiredTestClass, profile,
                         copyEntriesFromProfile(testProfileAndProperties.testProfile,
                                 context.getRequiredTestClass().getClassLoader()),
                         testProfileAndProperties.testProfile != null
                                 && testProfileAndProperties.testProfile.disableGlobalTestResources());
-                testResourceManager.init(
-                        testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
-                                : null);
+                testResourceManager.init(testProfileAndProperties.testProfile != null
+                        ? testProfileAndProperties.testProfile.getClass().getName()
+                        : null);
 
                 Map<String, String> additionalProperties = new HashMap<>();
 
@@ -145,7 +146,8 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 Properties existingSysProps = System.getProperties();
                 for (String name : existingSysProps.stringPropertyNames()) {
                     if (name.startsWith("quarkus.")
-                            // don't include 'quarkus.profile' as that has already been taken into account when determining the launch profile
+                            // don't include 'quarkus.profile' as that has already been taken into account when
+                            // determining the launch profile
                             // so we don't want this to end up in multiple launch arguments
                             && !name.equals("quarkus.profile")) {
                         additionalProperties.put(name, existingSysProps.getProperty(name));
@@ -153,8 +155,9 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 }
 
                 additionalProperties.putAll(testProfileAndProperties.properties);
-                //also make the dev services props accessible from the test
-                Map<String, String> resourceManagerProps = new HashMap<>(QuarkusMainIntegrationTestExtension.devServicesProps);
+                // also make the dev services props accessible from the test
+                Map<String, String> resourceManagerProps = new HashMap<>(
+                        QuarkusMainIntegrationTestExtension.devServicesProps);
                 // Allow override of dev services props by integration test extensions
                 resourceManagerProps.putAll(testResourceManager.start());
                 for (Map.Entry<String, String> i : resourceManagerProps.entrySet()) {
@@ -178,9 +181,8 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                 for (ArtifactLauncherProvider launcherProvider : loader) {
                     if (launcherProvider.supportsArtifactType(artifactType, testConfig.integrationTestProfile())) {
-                        launcher = launcherProvider.create(
-                                new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context, requiredTestClass,
-                                        devServicesLaunchResult));
+                        launcher = launcherProvider.create(new DefaultArtifactLauncherCreateContext(
+                                quarkusArtifactProperties, context, requiredTestClass, devServicesLaunchResult));
                         break;
                     }
                 }
@@ -252,7 +254,8 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
         DefaultArtifactLauncherCreateContext(Properties quarkusArtifactProperties, ExtensionContext context,
-                Class<?> requiredTestClass, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+                Class<?> requiredTestClass,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
             this.quarkusArtifactProperties = quarkusArtifactProperties;
             this.context = context;
             this.requiredTestClass = requiredTestClass;

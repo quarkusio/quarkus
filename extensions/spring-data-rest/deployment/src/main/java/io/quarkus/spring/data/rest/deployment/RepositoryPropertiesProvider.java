@@ -31,8 +31,7 @@ public class RepositoryPropertiesProvider extends ResourcePropertiesProvider {
         methodPredicates.put("list", methodInfo -> methodInfo.name().equals(LIST.getName()));
         methodPredicates.put("listIterable", methodInfo -> methodInfo.name().equals(LIST_ITERABLE.getName()));
         methodPredicates.put("listPaged", methodInfo -> methodInfo.name().equals(LIST_PAGED.getName())
-                && methodInfo.parametersCount() == 1
-                && methodInfo.parameterType(0).name().equals(PAGEABLE));
+                && methodInfo.parametersCount() == 1 && methodInfo.parameterType(0).name().equals(PAGEABLE));
         methodPredicates.put("addAll", methodInfo -> methodInfo.name().equals(SAVE_LIST.getName()));
         methodPredicates.put("get", methodInfo -> methodInfo.name().equals(GET.getName()));
         methodPredicates.put("add", methodInfo -> methodInfo.name().equals(ADD.getName()));

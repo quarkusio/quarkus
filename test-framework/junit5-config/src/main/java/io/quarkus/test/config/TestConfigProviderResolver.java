@@ -20,7 +20,9 @@ import io.smallrye.config.SmallRyeConfigProviderResolver;
  */
 public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
 
-    // Note that this class both *extends* and *consumes* SmallRyeConfigProviderResolver. Every method in SmallRyeConfigProviderResolver should be replicated here with a delegation to the instance variable, or there will be subtle and horrible bugs.
+    // Note that this class both *extends* and *consumes* SmallRyeConfigProviderResolver. Every method in
+    // SmallRyeConfigProviderResolver should be replicated here with a delegation to the instance variable, or there
+    // will be subtle and horrible bugs.
     private final SmallRyeConfigProviderResolver resolver;
     private final ClassLoader classLoader;
     private final Map<LaunchMode, SmallRyeConfig> configs;
@@ -37,14 +39,16 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     }
 
     /**
-     * Registers a config in the Test classloader, by {@link LaunchMode}. Required for tests that launch Quarkus in
-     * Dev mode (which uses the <code>dev</code> config profile, instead of <code>test</code>.
+     * Registers a config in the Test classloader, by {@link LaunchMode}. Required for tests that launch Quarkus in Dev
+     * mode (which uses the <code>dev</code> config profile, instead of <code>test</code>.
      * <p>
      * Retrieving the {@link Config} in a {@link LaunchMode} other than {@link LaunchMode#TEST}, must call
      * {@link TestConfigProviderResolver#restoreConfig()} after using the config, to avoid mismatches in the config
      * profile through the stack.
      *
-     * @param mode the {@link LaunchMode}
+     * @param mode
+     *        the {@link LaunchMode}
+     *
      * @return the registed {@link Config} instance
      */
     public Config getConfig(final LaunchMode mode) {
@@ -56,8 +60,7 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
                     LaunchMode current = LaunchMode.current();
                     LaunchMode.set(launchMode);
                     SmallRyeConfig config = ConfigUtils.configBuilder(false, true, mode)
-                            .withCustomizers(new TestConfigCustomizer(mode))
-                            .build();
+                            .withCustomizers(new TestConfigCustomizer(mode)).build();
                     LaunchMode.set(current);
                     return config;
                 }

@@ -23,8 +23,7 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-registration", password = "password", formats = Format.PKCS12)
-})
+        @Certificate(name = "test-registration", password = "password", formats = Format.PKCS12) })
 public class RuntimeRegistrationTest {
 
     private static final String configuration = """
@@ -33,8 +32,7 @@ public class RuntimeRegistrationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry registry;
@@ -46,9 +44,11 @@ public class RuntimeRegistrationTest {
         assertThat(registry.get("named")).isEmpty();
 
         KeyStore ks = KeyStore.getInstance("PKCS12");
-        ks.load(getClass().getResourceAsStream("target/certs/test-registration-keystore.p12"), "password".toCharArray());
+        ks.load(getClass().getResourceAsStream("target/certs/test-registration-keystore.p12"),
+                "password".toCharArray());
         KeyStore ts = KeyStore.getInstance("PKCS12");
-        ts.load(getClass().getResourceAsStream("target/certs/test-registration-truststore.p12"), "password".toCharArray());
+        ts.load(getClass().getResourceAsStream("target/certs/test-registration-truststore.p12"),
+                "password".toCharArray());
 
         registry.register("named", new BaseTlsConfiguration() {
             @Override
@@ -79,22 +79,19 @@ public class RuntimeRegistrationTest {
 
     @Test
     void cannotRegisterWithNull() {
-        assertThatThrownBy(() -> registry.register(null, null))
-                .isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> registry.register(null, null)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("The name of the TLS configuration to register cannot be null");
     }
 
     @Test
     void cannotRegisterWithDefault() {
-        assertThatThrownBy(() -> registry.register("<default>", null))
-                .isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> registry.register("<default>", null)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("The name of the TLS configuration to register cannot be <default>");
     }
 
     @Test
     void cannotRegisterNull() {
-        assertThatThrownBy(() -> registry.register("foo", null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> registry.register("foo", null)).isInstanceOf(IllegalArgumentException.class);
     }
 
 }

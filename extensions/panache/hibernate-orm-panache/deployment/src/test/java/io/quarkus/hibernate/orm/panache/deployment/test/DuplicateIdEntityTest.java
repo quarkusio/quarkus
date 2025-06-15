@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DuplicateIdEntityTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(BuildException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DuplicateIdEntity.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(BuildException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(DuplicateIdEntity.class));
 
     @Test
     void shouldThrow() {

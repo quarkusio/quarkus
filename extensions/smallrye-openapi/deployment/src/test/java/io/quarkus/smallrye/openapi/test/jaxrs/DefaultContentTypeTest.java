@@ -13,16 +13,13 @@ public class DefaultContentTypeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DefaultContentTypeResource.class, Greeting.class)
+            .withApplicationRoot((jar) -> jar.addClasses(DefaultContentTypeResource.class, Greeting.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-openapi.store-schema-directory=target"),
                             "application.properties"));
 
     @Test
     public void testOpenApiPathAccessResource() {
-        RestAssured.given().queryParam("format", "JSON")
-                .when().get(OPEN_API_PATH)
-                .then()
+        RestAssured.given().queryParam("format", "JSON").when().get(OPEN_API_PATH).then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("paths.'/greeting/goodbye'.get.responses.'200'.content.'application/xml'.schema.$ref",
                         Matchers.containsString("#/components/schemas/Greeting"))

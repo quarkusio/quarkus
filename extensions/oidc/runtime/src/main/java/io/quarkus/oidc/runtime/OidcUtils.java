@@ -116,7 +116,8 @@ public final class OidcUtils {
 
     // Browsers enforce that the total Set-Cookie expression such as
     // `q_session_tenant-a=<value>,Path=/somepath,Expires=...` does not exceed 4096
-    // Setting the max cookie value length to 4056 gives extra 40 bytes to cover for the name, path, expires attributes in most cases
+    // Setting the max cookie value length to 4056 gives extra 40 bytes to cover for the name, path, expires attributes
+    // in most cases
     // and can be tuned further if necessary.
     public static final Integer MAX_COOKIE_VALUE_LENGTH = 4056;
     public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
@@ -130,8 +131,8 @@ public final class OidcUtils {
     static final BlockingTaskRunner<Void> deleteTokensRequestContext = new BlockingTaskRunner<Void>();
 
     /**
-     * This pattern uses a positive lookahead to split an expression around the forward slashes
-     * ignoring those which are located inside a pair of the double quotes.
+     * This pattern uses a positive lookahead to split an expression around the forward slashes ignoring those which are
+     * located inside a pair of the double quotes.
      */
     private static final Pattern CLAIM_PATH_PATTERN = Pattern.compile("\\/(?=(?:(?:[^\"]*\"){2})*[^\"]*$)");
     private static final String EXTRACTED_BEARER_TOKEN = "quarkus.oidc.extracted-bearer-token";
@@ -205,10 +206,10 @@ public final class OidcUtils {
     public static String getCookieSuffix(OidcTenantConfig oidcConfig) {
         String tenantId = oidcConfig.tenantId().get();
         boolean cookieSuffixConfigured = oidcConfig.authentication().cookieSuffix().isPresent();
-        String tenantIdSuffix = (cookieSuffixConfigured || !DEFAULT_TENANT_ID.equals(tenantId)) ? UNDERSCORE + tenantId : "";
+        String tenantIdSuffix = (cookieSuffixConfigured || !DEFAULT_TENANT_ID.equals(tenantId)) ? UNDERSCORE + tenantId
+                : "";
 
-        return cookieSuffixConfigured
-                ? (tenantIdSuffix + UNDERSCORE + oidcConfig.authentication().cookieSuffix().get())
+        return cookieSuffixConfigured ? (tenantIdSuffix + UNDERSCORE + oidcConfig.authentication().cookieSuffix().get())
                 : tenantIdSuffix;
     }
 
@@ -323,14 +324,15 @@ public final class OidcUtils {
         return list;
     }
 
-    static QuarkusSecurityIdentity validateAndCreateIdentity(Map<String, Object> requestData, TokenCredential credential,
-            TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson, UserInfo userInfo,
-            TokenIntrospection introspectionResult, TokenAuthenticationRequest request) {
+    static QuarkusSecurityIdentity validateAndCreateIdentity(Map<String, Object> requestData,
+            TokenCredential credential, TenantConfigContext resolvedContext, JsonObject tokenJson, JsonObject rolesJson,
+            UserInfo userInfo, TokenIntrospection introspectionResult, TokenAuthenticationRequest request) {
 
         OidcTenantConfig config = resolvedContext.oidcConfig();
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.addCredential(credential);
-        AuthorizationCodeTokens codeTokens = (AuthorizationCodeTokens) requestData.get(AuthorizationCodeTokens.class.getName());
+        AuthorizationCodeTokens codeTokens = (AuthorizationCodeTokens) requestData
+                .get(AuthorizationCodeTokens.class.getName());
         if (codeTokens != null) {
             RefreshToken refreshTokenCredential = new RefreshToken(codeTokens.getRefreshToken());
             builder.addCredential(refreshTokenCredential);
@@ -360,20 +362,23 @@ public final class OidcUtils {
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
         setBlockingApiAttribute(builder, vertxContext);
         setTenantIdAttribute(builder, config);
-        TokenVerificationResult codeFlowAccessTokenResult = (TokenVerificationResult) requestData.get(CODE_ACCESS_TOKEN_RESULT);
+        TokenVerificationResult codeFlowAccessTokenResult = (TokenVerificationResult) requestData
+                .get(CODE_ACCESS_TOKEN_RESULT);
         if (codeFlowAccessTokenResult != null) {
             builder.addAttribute(CODE_ACCESS_TOKEN_RESULT, codeFlowAccessTokenResult);
             if (Roles.Source.accesstoken == config.roles().source().orElse(null)) {
                 setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult);
                 if (codeTokens != null && codeTokens.getAccessTokenScope() != null) {
-                    builder.addPermissionsAsString(new HashSet<>(Arrays.asList(codeTokens.getAccessTokenScope().split(" "))));
+                    builder.addPermissionsAsString(
+                            new HashSet<>(Arrays.asList(codeTokens.getAccessTokenScope().split(" "))));
                 }
             }
         }
         return builder.build();
     }
 
-    static void setIntrospectionScopes(QuarkusSecurityIdentity.Builder builder, TokenIntrospection introspectionResult) {
+    static void setIntrospectionScopes(QuarkusSecurityIdentity.Builder builder,
+            TokenIntrospection introspectionResult) {
         if (introspectionResult != null) {
             Set<String> scopes = introspectionResult.getScopes();
             if (scopes != null) {
@@ -413,7 +418,8 @@ public final class OidcUtils {
         builder.addAttribute(TENANT_ID_ATTRIBUTE, config.tenantId().orElse(DEFAULT_TENANT_ID));
     }
 
-    public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder, RoutingContext routingContext) {
+    public static void setRoutingContextAttribute(QuarkusSecurityIdentity.Builder builder,
+            RoutingContext routingContext) {
         builder.addAttribute(RoutingContext.class.getName(), routingContext);
     }
 
@@ -492,7 +498,8 @@ public final class OidcUtils {
     }
 
     static void setCookiePath(RoutingContext context, Authentication auth, ServerCookie cookie) {
-        if (auth.cookiePathHeader().isPresent() && context.request().headers().contains(auth.cookiePathHeader().get())) {
+        if (auth.cookiePathHeader().isPresent()
+                && context.request().headers().contains(auth.cookiePathHeader().get())) {
             cookie.setPath(context.request().getHeader(auth.cookiePathHeader().get()));
         } else {
             cookie.setPath(auth.cookiePath());
@@ -500,16 +507,16 @@ public final class OidcUtils {
     }
 
     /**
-     * Merge the current tenant and well-known OpenId Connect provider configurations.
-     * Initialized properties take priority over uninitialized properties.
+     * Merge the current tenant and well-known OpenId Connect provider configurations. Initialized properties take
+     * priority over uninitialized properties. Initialized properties in the current tenant configuration take priority
+     * over the same initialized properties in the well-known OpenId Connect provider configuration. Tenant id property
+     * of the current tenant must be set before the merge operation.
      *
-     * Initialized properties in the current tenant configuration take priority
-     * over the same initialized properties in the well-known OpenId Connect provider configuration.
+     * @param tenant
+     *        current tenant configuration
+     * @param provider
+     *        well-known OpenId Connect provider configuration
      *
-     * Tenant id property of the current tenant must be set before the merge operation.
-     *
-     * @param tenant current tenant configuration
-     * @param provider well-known OpenId Connect provider configuration
      * @return merged configuration
      */
     static OidcTenantConfig mergeTenantConfig(OidcTenantConfig tenant, OidcTenantConfig provider) {
@@ -643,10 +650,11 @@ public final class OidcUtils {
         return decryptString(jweString, key, KeyEncryptionAlgorithm.A256GCMKW);
     }
 
-    public static String decryptString(String jweString, Key key, KeyEncryptionAlgorithm algorithm) throws JoseException {
+    public static String decryptString(String jweString, Key key, KeyEncryptionAlgorithm algorithm)
+            throws JoseException {
         JsonWebEncryption jwe = new JsonWebEncryption();
-        jwe.setAlgorithmConstraints(new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT,
-                algorithm.getAlgorithm()));
+        jwe.setAlgorithmConstraints(
+                new AlgorithmConstraints(AlgorithmConstraints.ConstraintType.PERMIT, algorithm.getAlgorithm()));
         jwe.setKey(key);
         jwe.setCompactSerialization(jweString);
         return jwe.getPlaintextString();
@@ -654,8 +662,7 @@ public final class OidcUtils {
 
     public static boolean isFormUrlEncodedRequest(RoutingContext context) {
         String contentType = context.request().getHeader("Content-Type");
-        return context.request().method() == HttpMethod.POST
-                && contentType != null
+        return context.request().method() == HttpMethod.POST && contentType != null
                 && (contentType.equals(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString())
                         || contentType.startsWith(HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED + ";"));
     }
@@ -692,8 +699,7 @@ public final class OidcUtils {
         }
         scopes.addAll(oidcConfigScopes);
         // Extra scopes if any
-        String extraScopeValue = oidcConfig.authentication().extraParams()
-                .get(OidcConstants.TOKEN_SCOPE);
+        String extraScopeValue = oidcConfig.authentication().extraParams().get(OidcConstants.TOKEN_SCOPE);
         if (extraScopeValue != null) {
             String[] extraScopes = extraScopeValue.split(COMMA);
             scopes.addAll(List.of(extraScopes));
@@ -756,7 +762,8 @@ public final class OidcUtils {
             if (sessionCookie && suffix.startsWith(OidcUtils.SESSION_COOKIE_CHUNK_START)) {
                 return OidcUtils.DEFAULT_TENANT_ID;
             } else {
-                // It can be either a tenant_id, or a tenant_id and cookie suffix property, example, q_session_github or q_session_github_test
+                // It can be either a tenant_id, or a tenant_id and cookie suffix property, example, q_session_github or
+                // q_session_github_test
                 // or it can be a session cookie chunk like q_session_chunk_1 in which case the suffix will be chunk_1
                 int index = suffix.indexOf("_", 0);
                 return index == -1 ? suffix : suffix.substring(0, index);
@@ -776,8 +783,8 @@ public final class OidcUtils {
                 && oidcConfig.tokenStateManager().encryptionRequired();
     }
 
-    public static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig,
-            String name, String value, long maxAge) {
+    public static ServerCookie createCookie(RoutingContext context, OidcTenantConfig oidcConfig, String name,
+            String value, long maxAge) {
         ServerCookie cookie = new CookieImpl(name, value);
         cookie.setHttpOnly(true);
         cookie.setSecure(oidcConfig.authentication().cookieForceSecure() || context.request().isSSL());
@@ -900,8 +907,8 @@ public final class OidcUtils {
         String keyContent = KeyUtils.readKeyContent(decryptionKeyLocation);
         if (keyContent != null) {
             List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
-            if (keys != null && keys.size() == 1 &&
-                    (keys.get(0).getAlgorithm() == null
+            if (keys != null && keys.size() == 1
+                    && (keys.get(0).getAlgorithm() == null
                             || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
                     && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
                 key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
@@ -922,8 +929,9 @@ public final class OidcUtils {
                 throw new AuthenticationFailedException();
             }
 
-            //TODO: Make the encryption algorithm configurable
-            KeyEncryptionAlgorithm encryptionAlgorithm = decryptionKey instanceof PrivateKey ? KeyEncryptionAlgorithm.RSA_OAEP
+            // TODO: Make the encryption algorithm configurable
+            KeyEncryptionAlgorithm encryptionAlgorithm = decryptionKey instanceof PrivateKey
+                    ? KeyEncryptionAlgorithm.RSA_OAEP
                     : KeyEncryptionAlgorithm.A256GCMKW;
 
             try {

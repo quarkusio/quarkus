@@ -4,8 +4,7 @@ import picocli.CommandLine;
 
 public class RunModeOption {
 
-    @CommandLine.Option(names = { "-B",
-            "--batch-mode" }, description = "Run in non-interactive (batch) mode.")
+    @CommandLine.Option(names = { "-B", "--batch-mode" }, description = "Run in non-interactive (batch) mode.")
     boolean batchMode;
 
     // Allow the option variant, but don't crowd help

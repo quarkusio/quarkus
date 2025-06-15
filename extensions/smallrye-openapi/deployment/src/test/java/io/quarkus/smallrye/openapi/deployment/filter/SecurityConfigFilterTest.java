@@ -20,7 +20,8 @@ class SecurityConfigFilterTest {
     @Test
     void testConfigureApiKeySecuritySchemeMissingName() {
         SecurityScheme securityScheme = OASFactory.createSecurityScheme();
-        SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey, null, null);
+        SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey, null,
+                null);
         assertThrows(ConfigurationException.class,
                 () -> new SecurityConfigFilter(config).configureApiKeySecurityScheme(securityScheme));
     }
@@ -59,8 +60,7 @@ class SecurityConfigFilterTest {
         private String apiKeyParameterName;
         private String apiKeyParameterIn;
 
-        DummySmallRyeOpenApiConfig(SecurityScheme securityScheme,
-                String apiKeyParameterName,
+        DummySmallRyeOpenApiConfig(SecurityScheme securityScheme, String apiKeyParameterName,
                 String apiKeyParameterIn) {
             this.securityScheme = securityScheme;
             this.apiKeyParameterName = apiKeyParameterName;

@@ -41,10 +41,8 @@ public class RedisDatasourceProcessor {
             DotName.createSimple(ReactiveRedisDataSource.class.getName()));
 
     @BuildStep
-    public void detectUsage(BuildProducer<RequestedRedisClientBuildItem> request,
-            RedisBuildTimeConfig buildTimeConfig,
-            BeanArchiveIndexBuildItem indexBuildItem,
-            BeanDiscoveryFinishedBuildItem beans) {
+    public void detectUsage(BuildProducer<RequestedRedisClientBuildItem> request, RedisBuildTimeConfig buildTimeConfig,
+            BeanArchiveIndexBuildItem indexBuildItem, BeanDiscoveryFinishedBuildItem beans) {
         // Collect the used redis datasource, the unused clients will not be instantiated.
         Set<String> names = new HashSet<>();
         IndexView indexView = indexBuildItem.getIndex();
@@ -55,14 +53,11 @@ public class RedisDatasourceProcessor {
 
         // Check if the application use the default Redis datasource.
         beans.getInjectionPoints().stream().filter(InjectionPointInfo::hasDefaultedQualifier)
-                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
-                .findAny()
+                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name())).findAny()
                 .ifPresent(x -> names.add(DEFAULT_CLIENT_NAME));
 
-        beans.getInjectionPoints().stream()
-                .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
-                .filter(InjectionPointInfo::isProgrammaticLookup)
-                .findAny()
+        beans.getInjectionPoints().stream().filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
+                .filter(InjectionPointInfo::isProgrammaticLookup).findAny()
                 .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
 
         for (String name : names) {
@@ -81,12 +76,9 @@ public class RedisDatasourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void init(RedisClientRecorder recorder,
-            List<RequestedRedisClientBuildItem> clients,
-            ShutdownContextBuildItem shutdown,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            VertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
+    public void init(RedisClientRecorder recorder, List<RequestedRedisClientBuildItem> clients,
+            ShutdownContextBuildItem shutdown, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            VertxBuildItem vertxBuildItem, TlsRegistryBuildItem tlsRegistryBuildItem) {
 
         if (clients.isEmpty()) {
             return;
@@ -101,8 +93,8 @@ public class RedisDatasourceProcessor {
         // Create the supplier and define the beans.
         for (String name : names) {
             // Data sources
-            syntheticBeans.produce(configureAndCreateSyntheticBean(name, RedisDataSource.class,
-                    recorder.getBlockingDataSource(name)));
+            syntheticBeans.produce(
+                    configureAndCreateSyntheticBean(name, RedisDataSource.class, recorder.getBlockingDataSource(name)));
             syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisDataSource.class,
                     recorder.getReactiveDataSource(name)));
         }

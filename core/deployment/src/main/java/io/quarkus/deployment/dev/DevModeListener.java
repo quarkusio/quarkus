@@ -19,8 +19,8 @@ public interface DevModeListener {
     void beforeShutdown();
 
     /**
-     * Determines the order with which the listeners are executed. Classes with a lower order are executed
-     * first during start (the order is reverse for shutdown)
+     * Determines the order with which the listeners are executed. Classes with a lower order are executed first during
+     * start (the order is reverse for shutdown)
      */
     default int order() {
         return DEFAULT_ORDER;

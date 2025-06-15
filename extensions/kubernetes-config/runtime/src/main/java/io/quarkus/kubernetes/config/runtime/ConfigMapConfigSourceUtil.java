@@ -30,7 +30,8 @@ public class ConfigMapConfigSourceUtil extends AbstractKubernetesConfigSourceUti
     }
 
     @Override
-    ConfigSource createPropertiesConfigSource(String kubernetesConfigSourceName, String fileName, String input, int ordinal) {
+    ConfigSource createPropertiesConfigSource(String kubernetesConfigSourceName, String fileName, String input,
+            int ordinal) {
         return new ConfigMapStringInputPropertiesConfigSource(kubernetesConfigSourceName, fileName, input, ordinal);
     }
 
@@ -43,7 +44,8 @@ public class ConfigMapConfigSourceUtil extends AbstractKubernetesConfigSourceUti
 
         private static final String NAME_PREFIX = "ConfigMapLiteralDataPropertiesConfigSource[configMap=";
 
-        public ConfigMapLiteralDataPropertiesConfigSource(String configMapName, Map<String, String> propertyMap, int ordinal) {
+        public ConfigMapLiteralDataPropertiesConfigSource(String configMapName, Map<String, String> propertyMap,
+                int ordinal) {
             super(NAME_PREFIX + configMapName + "]", propertyMap, ordinal);
         }
     }

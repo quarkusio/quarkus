@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NonStaticScheduledInterfaceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(IllegalStateException.class)
-            .withApplicationRoot(root -> root
-                    .addClasses(InterfaceWitchScheduledMethod.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(IllegalStateException.class)
+            .withApplicationRoot(root -> root.addClasses(InterfaceWitchScheduledMethod.class));
 
     @Test
     public void test() {

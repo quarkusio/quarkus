@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class RemoteCacheManagerCreationWithRemoteCacheClientNameTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @Inject
     @InfinispanClientName("conn-2")
     @Remote("cache1")

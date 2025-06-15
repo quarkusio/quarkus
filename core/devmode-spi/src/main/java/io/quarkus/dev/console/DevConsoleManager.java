@@ -19,8 +19,7 @@ public class DevConsoleManager {
     private static volatile Object quarkusBootstrap;
     private static volatile boolean doingHttpInitiatedReload;
     /**
-     * Global map that can be used to share data between the runtime and deployment side
-     * to enable communication.
+     * Global map that can be used to share data between the runtime and deployment side to enable communication.
      * <p>
      * Key names should be namespaced.
      * <p>
@@ -35,7 +34,8 @@ public class DevConsoleManager {
     public static void sentRequest(DevConsoleRequest request) {
         Consumer<DevConsoleRequest> h = DevConsoleManager.handler;
         if (h == null) {
-            request.getResponse().complete(new DevConsoleResponse(503, Collections.emptyMap(), new byte[0])); //service unavailable
+            request.getResponse().complete(new DevConsoleResponse(503, Collections.emptyMap(), new byte[0])); // service
+                                                                                                              // unavailable
         } else {
             h.accept(request);
         }
@@ -68,8 +68,10 @@ public class DevConsoleManager {
     /**
      * Sets a global that is shared between both the runtime and deployment parts
      *
-     * @param name A namespaced key
-     * @param value A value
+     * @param name
+     *        A namespaced key
+     * @param value
+     *        A value
      */
     public static void setGlobal(String name, Object value) {
         globals.put(name, value);
@@ -78,7 +80,9 @@ public class DevConsoleManager {
     /**
      * Gets a shared global
      *
-     * @param name The key
+     * @param name
+     *        The key
+     *
      * @return The value
      */
     public static <T> T getGlobal(String name) {
@@ -104,8 +108,8 @@ public class DevConsoleManager {
     }
 
     /**
-     * A list of action that can be executed.
-     * The action registered here should be used with the Dev UI / JSON RPC services.
+     * A list of action that can be executed. The action registered here should be used with the Dev UI / JSON RPC
+     * services.
      */
     private static final Map<String, Function<Map<String, String>, ?>> actions = new HashMap<>();
     private static final Map<String, BiFunction<Object, Map<String, String>, ?>> assistantActions = new HashMap<>();
@@ -113,23 +117,25 @@ public class DevConsoleManager {
     /**
      * Registers an action that will be called by a JSON RPC service at runtime
      *
-     * @param name the name of the action, should be namespaced to avoid conflicts
-     * @param action the action. The function receives a Map as parameters (named parameters) and returns an object of type
-     *        {@code T}.
-     *        Note that the type {@code T} must be a class shared by both the deployment and the runtime.
+     * @param name
+     *        the name of the action, should be namespaced to avoid conflicts
+     * @param action
+     *        the action. The function receives a Map as parameters (named parameters) and returns an object of type
+     *        {@code T}. Note that the type {@code T} must be a class shared by both the deployment and the runtime.
      */
     public static <T> void register(String name, Function<Map<String, String>, T> action) {
         actions.put(name, action);
     }
 
     /**
-     * Registers an action that will be called by a JSON RPC service at runtime, this action will include the assistant if
-     * available
+     * Registers an action that will be called by a JSON RPC service at runtime, this action will include the assistant
+     * if available
      *
-     * @param name the name of the action, should be namespaced to avoid conflicts
-     * @param action the action. The function receives a Map as parameters (named parameters) and returns an object of type
-     *        {@code T}.
-     *        Note that the type {@code T} must be a class shared by both the deployment and the runtime.
+     * @param name
+     *        the name of the action, should be namespaced to avoid conflicts
+     * @param action
+     *        the action. The function receives a Map as parameters (named parameters) and returns an object of type
+     *        {@code T}. Note that the type {@code T} must be a class shared by both the deployment and the runtime.
      */
     public static <T> void register(String name, BiFunction<Object, Map<String, String>, T> action) {
         assistantActions.put(name, action);
@@ -138,7 +144,9 @@ public class DevConsoleManager {
     /**
      * Invokes a registered action
      *
-     * @param name the name of the action
+     * @param name
+     *        the name of the action
+     *
      * @return the result of the invocation. An empty map is returned for action not returning any result.
      */
     @SuppressWarnings("unchecked")
@@ -149,8 +157,11 @@ public class DevConsoleManager {
     /**
      * Invokes a registered action
      *
-     * @param name the name of the action
-     * @param params the named parameters
+     * @param name
+     *        the name of the action
+     * @param params
+     *        the named parameters
+     *
      * @return the result of the invocation. An empty map is returned for action not returning any result.
      */
     @SuppressWarnings("unchecked")

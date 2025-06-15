@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class NamedAndDefaultRemoteCacheClientNameTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @Inject
     @Remote("cache") // default connection
     RemoteCache<String, String> cache;
@@ -29,7 +29,7 @@ public class NamedAndDefaultRemoteCacheClientNameTest {
     @InfinispanClientName("conn-2") // conn-2 connection
     @Remote("cache")
     RemoteCache cacheConn2;
-    //tag::injection[]
+    // tag::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -55,7 +55,8 @@ public class NamedAndDefaultRemoteCacheClientNameTest {
         assertThat(cache.getRemoteCacheContainer().getConfiguration().servers().get(0).host()).isEqualTo("localhost");
         assertThat(cache.getRemoteCacheContainer().getConfiguration().servers().get(0).port()).isEqualTo(11222);
         assertThat(cacheConn2.getRemoteCacheContainer().getConfiguration().servers().size()).isEqualTo(1);
-        assertThat(cacheConn2.getRemoteCacheContainer().getConfiguration().servers().get(0).host()).isEqualTo("localhost");
+        assertThat(cacheConn2.getRemoteCacheContainer().getConfiguration().servers().get(0).host())
+                .isEqualTo("localhost");
         assertThat(cacheConn2.getRemoteCacheContainer().getConfiguration().servers().get(0).port()).isEqualTo(31222);
     }
 }

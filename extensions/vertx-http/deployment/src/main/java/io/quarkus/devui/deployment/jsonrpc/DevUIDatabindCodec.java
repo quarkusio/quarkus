@@ -36,8 +36,7 @@ public class DevUIDatabindCodec implements JsonMapper {
     private final Function<Map<String, Object>, ?> runtimeObjectDeserializer;
     private final Function<List<?>, ?> runtimeArrayDeserializer;
 
-    private DevUIDatabindCodec(ObjectMapper mapper,
-            Function<Map<String, Object>, ?> runtimeObjectDeserializer,
+    private DevUIDatabindCodec(ObjectMapper mapper, Function<Map<String, Object>, ?> runtimeObjectDeserializer,
             Function<List<?>, ?> runtimeArrayDeserializer) {
         this.mapper = mapper;
         prettyMapper = mapper.copy();

@@ -35,8 +35,8 @@ public class ExecutorRecorder {
         this.threadPoolConfig = threadPoolConfig;
     }
 
-    public ScheduledExecutorService setupRunTime(ShutdownContext shutdownContext,
-            LaunchMode launchMode, ThreadFactory threadFactory, ContextHandler<Object> contextHandler) {
+    public ScheduledExecutorService setupRunTime(ShutdownContext shutdownContext, LaunchMode launchMode,
+            ThreadFactory threadFactory, ContextHandler<Object> contextHandler) {
         final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig, threadFactory, contextHandler);
         if (launchMode == LaunchMode.DEVELOPMENT) {
             shutdownContext.addLastShutdownTask(new Runnable() {
@@ -59,13 +59,17 @@ public class ExecutorRecorder {
             underlying.prestartAllCoreThreads();
         }
         ScheduledExecutorService managed = underlying;
-        // In prod and test mode, we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not delegated
+        // In prod and test mode, we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not
+        // delegated
         // This is to prevent the application and other extensions from shutting down the executor service
         // The problem was described in https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
         // and https://github.com/quarkusio/quarkus/issues/43228
-        // For example, the Vertx instance is closed before io.quarkus.runtime.ExecutorRecorder.createShutdownTask() is used
-        // And when it's closed the underlying worker thread pool (which is in the prod mode backed by the ExecutorBuildItem) is closed as well
-        // As a result the quarkus.thread-pool.shutdown-interrupt config property and logic defined in ExecutorRecorder.createShutdownTask() is completely ignored
+        // For example, the Vertx instance is closed before io.quarkus.runtime.ExecutorRecorder.createShutdownTask() is
+        // used
+        // And when it's closed the underlying worker thread pool (which is in the prod mode backed by the
+        // ExecutorBuildItem) is closed as well
+        // As a result the quarkus.thread-pool.shutdown-interrupt config property and logic defined in
+        // ExecutorRecorder.createShutdownTask() is completely ignored
         if (launchMode != LaunchMode.DEVELOPMENT) {
             managed = new NoopShutdownScheduledExecutorService(underlying);
         }
@@ -89,8 +93,8 @@ public class ExecutorRecorder {
                 int loop = 1;
                 for (;;) {
                     // This log can be very useful when debugging problems
-                    log.debugf("loop: %s, remaining: %s, intervalRemaining: %s, interruptRemaining: %s", loop++, remaining,
-                            intervalRemaining, interruptRemaining);
+                    log.debugf("loop: %s, remaining: %s, intervalRemaining: %s, interruptRemaining: %s", loop++,
+                            remaining, intervalRemaining, interruptRemaining);
                     try {
                         if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.NANOSECONDS)) {
                             long elapsed = System.nanoTime() - start;
@@ -104,7 +108,8 @@ public class ExecutorRecorder {
                                 // done waiting
                                 final List<Runnable> runnables = executor.shutdownNow();
                                 if (!runnables.isEmpty()) {
-                                    log.warnf("Thread pool shutdown failed: discarding %d tasks, %d threads still running",
+                                    log.warnf(
+                                            "Thread pool shutdown failed: discarding %d tasks, %d threads still running",
                                             runnables.size(), executor.getActiveCount());
                                 } else {
                                     log.warnf("Thread pool shutdown failed: %d threads still running",
@@ -128,10 +133,12 @@ public class ExecutorRecorder {
                                                 && stackTrace[i].getMethodName().equals("exit")) {
                                             final Throwable t = new Throwable();
                                             t.setStackTrace(stackTrace);
-                                            log.errorf(t, "Thread %s is blocked in System.exit(); pooled (Executor) threads "
-                                                    + "should never call this method because it never returns, thus preventing "
-                                                    + "the thread pool from shutting down in a timely manner.  This is the "
-                                                    + "stack trace of the call", thr.getName());
+                                            log.errorf(t,
+                                                    "Thread %s is blocked in System.exit(); pooled (Executor) threads "
+                                                            + "should never call this method because it never returns, thus preventing "
+                                                            + "the thread pool from shutting down in a timely manner.  This is the "
+                                                            + "stack trace of the call",
+                                                    thr.getName());
                                             // don't bother waiting for exit() to return
                                             realWaiting--;
                                             break;
@@ -160,8 +167,7 @@ public class ExecutorRecorder {
             threadFactory = new JBossThreadFactory(new ThreadGroup("executor"), Boolean.TRUE, null,
                     "executor-thread-%t", JBossExecutors.loggingExceptionHandler("org.jboss.executor.uncaught"), null);
         }
-        final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
-                .setRegisterMBean(false)
+        final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder().setRegisterMBean(false)
                 .setHandoffExecutor(JBossExecutors.rejectingExecutor())
                 .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
         // run time config variables
@@ -212,7 +218,8 @@ public class ExecutorRecorder {
 
         private static class Holder {
             private static final int DEFAULT_MAX_THREADS = 200;
-            private static final int CALCULATION = Math.max(8 * ProcessorInfo.availableProcessors(), DEFAULT_MAX_THREADS);
+            private static final int CALCULATION = Math.max(8 * ProcessorInfo.availableProcessors(),
+                    DEFAULT_MAX_THREADS);
         }
     }
 

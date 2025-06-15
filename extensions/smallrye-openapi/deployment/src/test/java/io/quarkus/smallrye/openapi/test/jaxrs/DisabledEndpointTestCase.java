@@ -18,18 +18,14 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 /**
- * Verify that REST endpoints that are disabled via the {@link EndpointDisabled} annotation are not included in the OpenAPI
- * document.
+ * Verify that REST endpoints that are disabled via the {@link EndpointDisabled} annotation are not included in the
+ * OpenAPI document.
  */
 public class DisabledEndpointTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DisabledEndpoint.class,
-                            DisabledOtherEndpoint.class,
-                            DisabledRootEndpoint.class,
-                            EnabledEndpoint.class)
-                    .add(new StringAsset(""), "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(DisabledEndpoint.class, DisabledOtherEndpoint.class, DisabledRootEndpoint.class,
+                    EnabledEndpoint.class).add(new StringAsset(""), "application.properties"));
 
     @EndpointDisabled(name = "xxx", disableIfMissing = true, stringValue = "xxx")
     @Path("/disabled")
@@ -116,9 +112,7 @@ public class DisabledEndpointTestCase {
 
     @Test
     public void testDisabledEndpoint() {
-        RestAssured.given().header("Accept", "application/json")
-                .when().get("/q/openapi")
-                .prettyPeek().then()
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").prettyPeek().then()
                 // All paths from DisabledEndpoint missing
                 .body("paths.\"/disabled\"", nullValue())
                 // Paths from DisabledOtherEndpoint
@@ -126,8 +120,7 @@ public class DisabledEndpointTestCase {
                 // Paths from DisabledRootEndpoint
                 .body("paths.\"/\".get", nullValue())
                 // Paths from EnabledEndpoint
-                .body("paths.\"/enabled\".get", notNullValue())
-                .body("paths.\"/enabled/hello3\".get", notNullValue())
+                .body("paths.\"/enabled\".get", notNullValue()).body("paths.\"/enabled/hello3\".get", notNullValue())
                 .body("paths.\"/enabled/hello4/{param1}\".get", notNullValue())
                 .body("paths.\"/enabled/hello5\".post", notNullValue());
     }

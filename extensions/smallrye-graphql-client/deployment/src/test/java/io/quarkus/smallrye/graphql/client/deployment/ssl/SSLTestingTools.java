@@ -15,9 +15,8 @@ import io.vertx.core.net.PfxOptions;
 public class SSLTestingTools {
     private Vertx vertx;
 
-    public HttpServer runServer(String keystorePath, String keystorePassword,
-            String truststorePath, String truststorePassword)
-            throws InterruptedException, ExecutionException, TimeoutException {
+    public HttpServer runServer(String keystorePath, String keystorePassword, String truststorePath,
+            String truststorePassword) throws InterruptedException, ExecutionException, TimeoutException {
         vertx = Vertx.vertx();
         HttpServerOptions options = new HttpServerOptions();
         options.setSsl(true);
@@ -42,11 +41,7 @@ public class SSLTestingTools {
 
         HttpServer server = vertx.createHttpServer(options);
         server.requestHandler(request -> {
-            request.response().send("{\n" +
-                    "  \"data\": {\n" +
-                    "    \"result\": \"HelloWorld\"\n" +
-                    "  }\n" +
-                    "}");
+            request.response().send("{\n" + "  \"data\": {\n" + "    \"result\": \"HelloWorld\"\n" + "  }\n" + "}");
         });
 
         return server.listen(63805).toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);

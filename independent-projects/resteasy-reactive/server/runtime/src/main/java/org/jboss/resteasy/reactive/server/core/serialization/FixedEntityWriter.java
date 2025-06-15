@@ -10,8 +10,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 
 /**
- * A fixed entity writer that can be used when we know the result will always be written
- * by a given provider.
+ * A fixed entity writer that can be used when we know the result will always be written by a given provider.
  */
 public class FixedEntityWriter implements EntityWriter {
 

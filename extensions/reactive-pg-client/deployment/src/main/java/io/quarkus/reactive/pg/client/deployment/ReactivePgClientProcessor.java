@@ -79,8 +79,8 @@ class ReactivePgClientProcessor {
 
     @BuildStep
     NativeImageConfigBuildItem config() {
-        return NativeImageConfigBuildItem.builder().addRuntimeInitializedClass("io.vertx.pgclient.impl.codec.StartupMessage")
-                .build();
+        return NativeImageConfigBuildItem.builder()
+                .addRuntimeInitializedClass("io.vertx.pgclient.impl.codec.StartupMessage").build();
     }
 
     @BuildStep
@@ -90,13 +90,9 @@ class ReactivePgClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<PgPoolBuildItem> pgPool,
-            BuildProducer<VertxPoolBuildItem> vertxPool,
-            PgPoolRecorder recorder,
-            VertxBuildItem vertx,
-            EventLoopCountBuildItem eventLoopCount,
-            ShutdownContextBuildItem shutdown,
+    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature, BuildProducer<PgPoolBuildItem> pgPool,
+            BuildProducer<VertxPoolBuildItem> vertxPool, PgPoolRecorder recorder, VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount, ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
@@ -111,8 +107,8 @@ class ReactivePgClientProcessor {
         Stream.Builder<String> pgPoolNamesBuilder = Stream.builder();
         for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
 
-            if (!isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+            if (!isReactivePostgreSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
+                    dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 continue;
             }
 
@@ -124,12 +120,8 @@ class ReactivePgClientProcessor {
 
         Set<String> pgPoolNames = pgPoolNamesBuilder.build().collect(toSet());
         if (!pgPoolNames.isEmpty()) {
-            syntheticBeans.produce(SyntheticBeanBuildItem.configure(PgPoolSupport.class)
-                    .scope(Singleton.class)
-                    .unremovable()
-                    .runtimeValue(recorder.createPgPoolSupport(pgPoolNames))
-                    .setRuntimeInit()
-                    .done());
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(PgPoolSupport.class).scope(Singleton.class)
+                    .unremovable().runtimeValue(recorder.createPgPoolSupport(pgPoolNames)).setRuntimeInit().done());
         }
 
         // Enable SSL support by default
@@ -140,13 +132,11 @@ class ReactivePgClientProcessor {
     }
 
     /**
-     * The health check needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance creation
-     * consumes the AdditionalBeanBuildItems).
+     * The health check needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance
+     * creation consumes the AdditionalBeanBuildItems).
      */
     @BuildStep
-    void addHealthCheck(
-            Capabilities capabilities,
-            BuildProducer<HealthBuildItem> healthChecks,
+    void addHealthCheck(Capabilities capabilities, BuildProducer<HealthBuildItem> healthChecks,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
@@ -160,8 +150,8 @@ class ReactivePgClientProcessor {
             return;
         }
 
-        healthChecks
-                .produce(new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourcesHealthCheck",
+        healthChecks.produce(
+                new HealthBuildItem("io.quarkus.reactive.pg.client.runtime.health.ReactivePgDataSourcesHealthCheck",
                         dataSourcesBuildTimeConfig.healthEnabled()));
     }
 
@@ -175,7 +165,8 @@ class ReactivePgClientProcessor {
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors) {
         // no two PgPoolCreator beans can be associated with the same datasource
         Map<String, Boolean> seen = new HashMap<>();
-        for (BeanInfo beanInfo : validationPhase.getContext().beans().matchBeanTypes(new PgPoolCreatorBeanClassPredicate())) {
+        for (BeanInfo beanInfo : validationPhase.getContext().beans()
+                .matchBeanTypes(new PgPoolCreatorBeanClassPredicate())) {
             Set<Name> qualifiers = new TreeSet<>(); // use a TreeSet in order to get a predictable iteration order
             for (AnnotationInstance qualifier : beanInfo.getQualifiers()) {
                 qualifiers.add(Name.from(qualifier));
@@ -183,9 +174,8 @@ class ReactivePgClientProcessor {
             String qualifiersStr = qualifiers.stream().map(Name::toString).collect(Collectors.joining("_"));
             if (seen.getOrDefault(qualifiersStr, false)) {
                 errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                        new IllegalStateException(
-                                "There can be at most one bean of type '" + PgPoolCreator.class.getName()
-                                        + "' for each datasource.")));
+                        new IllegalStateException("There can be at most one bean of type '"
+                                + PgPoolCreator.class.getName() + "' for each datasource.")));
             } else {
                 seen.put(qualifiersStr, true);
             }
@@ -196,60 +186,40 @@ class ReactivePgClientProcessor {
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            PostgreSQLServiceBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    PostgreSQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.POSTGRESQL));
     }
 
-    private void createPool(PgPoolRecorder recorder,
-            VertxBuildItem vertx,
-            EventLoopCountBuildItem eventLoopCount,
-            ShutdownContextBuildItem shutdown,
-            BuildProducer<PgPoolBuildItem> pgPool,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            String dataSourceName,
+    private void createPool(PgPoolRecorder recorder, VertxBuildItem vertx, EventLoopCountBuildItem eventLoopCount,
+            ShutdownContextBuildItem shutdown, BuildProducer<PgPoolBuildItem> pgPool,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans, String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
             DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig) {
 
         Function<SyntheticCreationalContext<PgPool>, PgPool> poolFunction = recorder.configurePgPool(vertx.getVertx(),
-                eventLoopCount.getEventLoopCount(),
-                dataSourceName,
-                dataSourcesRuntimeConfig,
-                dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactivePostgreSQLConfig,
-                shutdown);
+                eventLoopCount.getEventLoopCount(), dataSourceName, dataSourcesRuntimeConfig,
+                dataSourcesReactiveRuntimeConfig, dataSourcesReactivePostgreSQLConfig, shutdown);
         pgPool.produce(new PgPoolBuildItem(dataSourceName, poolFunction));
 
-        ExtendedBeanConfigurator pgPoolBeanConfigurator = SyntheticBeanBuildItem.configure(PgPool.class)
-                .defaultBean()
-                .addType(Pool.class)
-                .scope(ApplicationScoped.class)
-                .qualifiers(qualifiers(dataSourceName))
+        ExtendedBeanConfigurator pgPoolBeanConfigurator = SyntheticBeanBuildItem.configure(PgPool.class).defaultBean()
+                .addType(Pool.class).scope(ApplicationScoped.class).qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, qualifier(dataSourceName))
-                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
-                .createWith(poolFunction)
-                .unremovable()
-                .setRuntimeInit()
-                .startup();
+                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName)).createWith(poolFunction).unremovable()
+                .setRuntimeInit().startup();
 
         syntheticBeans.produce(pgPoolBeanConfigurator.done());
 
         // the Mutiny pool is created by using the Vertx pool
         ExtendedBeanConfigurator mutinyPgPoolConfigurator = SyntheticBeanBuildItem
-                .configure(io.vertx.mutiny.pgclient.PgPool.class)
-                .defaultBean()
-                .addType(io.vertx.mutiny.sqlclient.Pool.class)
-                .scope(ApplicationScoped.class)
-                .qualifiers(qualifiers(dataSourceName))
-                .addInjectionPoint(VERTX_PG_POOL_TYPE, qualifier(dataSourceName))
+                .configure(io.vertx.mutiny.pgclient.PgPool.class).defaultBean()
+                .addType(io.vertx.mutiny.sqlclient.Pool.class).scope(ApplicationScoped.class)
+                .qualifiers(qualifiers(dataSourceName)).addInjectionPoint(VERTX_PG_POOL_TYPE, qualifier(dataSourceName))
                 .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
-                .createWith(recorder.mutinyPgPool(dataSourceName))
-                .unremovable()
-                .setRuntimeInit()
-                .startup();
+                .createWith(recorder.mutinyPgPool(dataSourceName)).unremovable().setRuntimeInit().startup();
 
         syntheticBeans.produce(mutinyPgPoolConfigurator.done());
     }
@@ -258,8 +228,8 @@ class ReactivePgClientProcessor {
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .dataSources().get(dataSourceName);
+        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
+                .get(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .dataSources().get(dataSourceName).reactive();
 
@@ -273,8 +243,7 @@ class ReactivePgClientProcessor {
             return false;
         }
 
-        if (!DatabaseKind.isPostgreSQL(dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled()) {
+        if (!DatabaseKind.isPostgreSQL(dbKind.get()) || !dataSourceReactiveBuildTimeConfig.enabled()) {
             return false;
         }
 

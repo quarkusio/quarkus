@@ -16,7 +16,7 @@ public final class DisabledBytecodeProviderInitiator implements StandardServiceI
 
     @Override
     public BytecodeProvider initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        //This one disables any use of bytecode enhancement at runtime.
+        // This one disables any use of bytecode enhancement at runtime.
         return new BytecodeProviderImpl();
     }
 

@@ -24,12 +24,9 @@ public class ClientStubCompressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyConsumer.class,
-                            MutinyGreeterGrpc.class, GreeterGrpc.class,
-                            MutinyGreeterGrpc.MutinyGreeterStub.class,
-                            HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(MyConsumer.class, MutinyGreeterGrpc.class,
+                    GreeterGrpc.class, MutinyGreeterGrpc.MutinyGreeterStub.class, HelloService.class,
+                    HelloRequest.class, HelloReply.class, HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
             .withConfigurationResource("hello-config-compression.properties");
 
     @Inject

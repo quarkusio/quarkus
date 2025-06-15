@@ -10,12 +10,10 @@ import java.util.stream.Stream;
 
 /**
  * Can extract information from Dockerfile that uses
- * {@code registry.access.redhat.com/ubi([8-9]|[1-9][0-9]+)/openjdk-$d-runtime:$d.$d} as the
- * base image
+ * {@code registry.access.redhat.com/ubi([8-9]|[1-9][0-9]+)/openjdk-$d-runtime:$d.$d} as the base image
  */
 class RedHatOpenJDKRuntimeBaseProvider implements DockerFileBaseInformationProvider {
-    private static final Pattern PATTERN = Pattern
-            .compile(".*ubi([8-9]|[1-9][0-9]+)/openjdk-(\\w+)-runtime.*");
+    private static final Pattern PATTERN = Pattern.compile(".*ubi([8-9]|[1-9][0-9]+)/openjdk-(\\w+)-runtime.*");
 
     @Override
     public Optional<DockerFileBaseInformation> determine(Path dockerFile) {

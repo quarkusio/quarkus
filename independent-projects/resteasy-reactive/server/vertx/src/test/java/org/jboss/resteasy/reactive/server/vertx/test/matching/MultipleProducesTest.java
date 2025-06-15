@@ -29,15 +29,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class MultipleProducesTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Entity.class, FirstResource.class, SecondResource.class, ExcelMessageBodyWriter.class,
-                                    TextPlainMessageBodyWriter.class, ApplicationJsonMessageBodyWriter.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Entity.class, FirstResource.class,
+                    SecondResource.class, ExcelMessageBodyWriter.class, TextPlainMessageBodyWriter.class,
+                    ApplicationJsonMessageBodyWriter.class);
+        }
+    });
 
     @Test
     public void firstResourceShouldReturnJson() {
@@ -70,13 +69,7 @@ public class MultipleProducesTest {
     }
 
     private void doTest(String path, String acceptType, String expectBody) {
-        given()
-                .accept(acceptType)
-                .when().get(path)
-                .then()
-                .statusCode(200)
-                .contentType(acceptType)
-                .body(is(expectBody));
+        given().accept(acceptType).when().get(path).then().statusCode(200).contentType(acceptType).body(is(expectBody));
     }
 
     public static class Entity {
@@ -113,15 +106,14 @@ public class MultipleProducesTest {
 
         @Override
         public boolean isWriteable(Class<?> clazz, Type type, Annotation[] annotations, MediaType mediaType) {
-            return clazz.equals(Entity.class) &&
-                    mediaType.getType().equals("application") &&
-                    mediaType.getSubtype().equals("vnd.ms-excel");
+            return clazz.equals(Entity.class) && mediaType.getType().equals("application")
+                    && mediaType.getSubtype().equals("vnd.ms-excel");
         }
 
         @Override
-        public void writeTo(Entity entity, Class<?> aClass, Type type, Annotation[] annotations,
-                MediaType mediaType, MultivaluedMap<String, Object> multivaluedMap,
-                OutputStream outputStream) throws IOException, WebApplicationException {
+        public void writeTo(Entity entity, Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType,
+                MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream)
+                throws IOException, WebApplicationException {
 
             outputStream.write(entity.data.getBytes(StandardCharsets.UTF_8));
         }
@@ -136,8 +128,8 @@ public class MultipleProducesTest {
         }
 
         @Override
-        public void writeTo(Entity myResponseEntity, Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream)
+        public void writeTo(Entity myResponseEntity, Class<?> aClass, Type type, Annotation[] annotations,
+                MediaType mediaType, MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream)
                 throws IOException, WebApplicationException {
             outputStream.write("text/plain".getBytes());
         }
@@ -152,8 +144,8 @@ public class MultipleProducesTest {
         }
 
         @Override
-        public void writeTo(Entity myResponseEntity, Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream)
+        public void writeTo(Entity myResponseEntity, Class<?> aClass, Type type, Annotation[] annotations,
+                MediaType mediaType, MultivaluedMap<String, Object> multivaluedMap, OutputStream outputStream)
                 throws IOException, WebApplicationException {
             outputStream.write("application/json".getBytes());
         }

@@ -12,9 +12,8 @@ public interface HttpClientConfigGroup extends MicrometerConfig.CapabilityEnable
     /**
      * Outbound HTTP request metrics support.
      * <p>
-     * Support for HTTP client metrics will be enabled if Micrometer
-     * support is enabled, the REST client feature is enabled,
-     * and either this value is true, or this value is unset and
+     * Support for HTTP client metrics will be enabled if Micrometer support is enabled, the REST client feature is
+     * enabled, and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.binder-enabled-default} is true.
      */
     @Override

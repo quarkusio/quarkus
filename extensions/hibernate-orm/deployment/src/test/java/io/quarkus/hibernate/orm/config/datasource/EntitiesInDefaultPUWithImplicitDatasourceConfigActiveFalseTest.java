@@ -13,19 +13,15 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EntitiesInDefaultPUWithImplicitDatasourceConfigActiveFalseTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class))
             .overrideConfigKey("quarkus.datasource.active", "false")
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            "Unable to find datasource '<default>' for persistence unit '<default>'",
-                            "Datasource '<default>' was deactivated through configuration properties.",
-                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
-                            "To activate the datasource, set configuration property 'quarkus.datasource.active'"
-                                    + " to 'true' and configure datasource '<default>'",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class).hasMessageContainingAll(
+                    "Unable to find datasource '<default>' for persistence unit '<default>'",
+                    "Datasource '<default>' was deactivated through configuration properties.",
+                    "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                    "To activate the datasource, set configuration property 'quarkus.datasource.active'"
+                            + " to 'true' and configure datasource '<default>'",
+                    "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
     public void testInvalidConfiguration() {

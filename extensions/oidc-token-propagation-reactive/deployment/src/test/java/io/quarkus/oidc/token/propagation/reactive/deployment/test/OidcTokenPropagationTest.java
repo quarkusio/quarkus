@@ -15,25 +15,17 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(OidcWiremockTestResource.class)
 public class OidcTokenPropagationTest {
 
-    private static Class<?>[] testClasses = {
-            FrontendResource.class,
-            ProtectedResource.class,
-            AccessTokenPropagationService.class
-    };
+    private static Class<?>[] testClasses = { FrontendResource.class, ProtectedResource.class,
+            AccessTokenPropagationService.class };
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addAsResource("application.properties"));
 
     @Test
     public void testGetUserNameWithTokenPropagation() {
-        RestAssured.given().auth().oauth2(getBearerAccessToken())
-                .when().get("/frontend/token-propagation")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Token issued to alice has been exchanged, new user name: bob"));
+        RestAssured.given().auth().oauth2(getBearerAccessToken()).when().get("/frontend/token-propagation").then()
+                .statusCode(200).body(equalTo("Token issued to alice has been exchanged, new user name: bob"));
     }
 
     public String getBearerAccessToken() {

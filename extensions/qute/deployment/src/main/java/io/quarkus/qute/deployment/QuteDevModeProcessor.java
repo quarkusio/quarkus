@@ -38,7 +38,8 @@ public class QuteDevModeProcessor {
         DevConsoleManager.setGlobal(QuteErrorPageSetup.GENERATED_CONTENTS, contents);
     }
 
-    // This build step is only used to for a QuarkusDevModeTest that contains the QuteDummyTemplateGlobalMarker interface
+    // This build step is only used to for a QuarkusDevModeTest that contains the QuteDummyTemplateGlobalMarker
+    // interface
     @BuildStep
     void generateTestTemplateGlobal(ApplicationIndexBuildItem applicationIndex,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanClasses) {

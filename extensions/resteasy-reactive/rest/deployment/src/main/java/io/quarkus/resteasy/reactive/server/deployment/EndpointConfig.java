@@ -34,8 +34,9 @@ public class EndpointConfig {
         if (o == null || getClass() != o.getClass())
             return false;
         EndpointConfig that = (EndpointConfig) o;
-        return Objects.equals(path, that.path) && Objects.equals(verb, that.verb) && Objects.equals(consumes, that.consumes)
-                && Objects.equals(produces, that.produces) && Objects.equals(exposingMethod, that.exposingMethod);
+        return Objects.equals(path, that.path) && Objects.equals(verb, that.verb)
+                && Objects.equals(consumes, that.consumes) && Objects.equals(produces, that.produces)
+                && Objects.equals(exposingMethod, that.exposingMethod);
     }
 
     @Override

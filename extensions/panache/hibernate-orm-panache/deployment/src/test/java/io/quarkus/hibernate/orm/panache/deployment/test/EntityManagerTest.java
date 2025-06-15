@@ -10,10 +10,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EntityManagerTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-test.properties", "application.properties")
-                    .addClasses(MyEntity.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource("application-test.properties", "application.properties").addClasses(MyEntity.class));
 
     @Test
     void entityManagerShouldExist() {

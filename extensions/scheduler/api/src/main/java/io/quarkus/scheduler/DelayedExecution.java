@@ -18,7 +18,6 @@ public class DelayedExecution {
     }
 
     /**
-     *
      * @return the delay in milliseconds
      */
     public long getDelay() {
@@ -27,9 +26,7 @@ public class DelayedExecution {
 
     @Override
     public String toString() {
-        return "Delayed execution of [" +
-                execution.getTrigger().getId() +
-                "]";
+        return "Delayed execution of [" + execution.getTrigger().getId() + "]";
     }
 
 }

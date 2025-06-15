@@ -19,25 +19,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HeaderFieldNoScopeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(Resource.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClasses(Resource.class));
 
     @Test
     public void test() {
-        given()
-                .header("foo", "f")
-                .header("bar", "b")
-                .when()
-                .get("/test")
-                .then()
-                .statusCode(200)
+        given().header("foo", "f").header("bar", "b").when().get("/test").then().statusCode(200)
                 .body(is("foo: f, bar: b"));
 
-        when()
-                .get("/test")
-                .then()
-                .statusCode(200)
-                .body(is("foo: null, bar: null"));
+        when().get("/test").then().statusCode(200).body(is("foo: null, bar: null"));
     }
 
     @Path("/test")

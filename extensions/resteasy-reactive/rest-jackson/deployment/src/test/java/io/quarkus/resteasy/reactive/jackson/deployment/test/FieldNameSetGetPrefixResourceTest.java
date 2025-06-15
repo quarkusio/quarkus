@@ -18,23 +18,17 @@ import io.smallrye.common.annotation.NonBlocking;
 class FieldNameSetGetPrefixResourceTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Resource.class, Resource.UncommonBody.class).addAsResource(
-                            new StringAsset(
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, Resource.UncommonBody.class)
+                            .addAsResource(new StringAsset(
                                     "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),
-                            "application.properties"));
+                                    "application.properties"));
 
     @Test
     void testFieldNameSetGetIsPrefix() {
-        RestAssured.get("/field-name-prefixes")
-                .then()
-                .statusCode(200)
-                .contentType("application/json")
-                .body("id", Matchers.equalTo("id"))
-                .body("set", Matchers.is(true))
-                .body("get", Matchers.is(true))
-                .body("is", Matchers.is(false))
-                .body("setText", Matchers.equalTo("setText"));
+        RestAssured.get("/field-name-prefixes").then().statusCode(200).contentType("application/json")
+                .body("id", Matchers.equalTo("id")).body("set", Matchers.is(true)).body("get", Matchers.is(true))
+                .body("is", Matchers.is(false)).body("setText", Matchers.equalTo("setText"));
     }
 
     @NonBlocking

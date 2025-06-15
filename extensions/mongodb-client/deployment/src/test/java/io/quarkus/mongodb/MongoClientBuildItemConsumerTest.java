@@ -22,8 +22,7 @@ public class MongoClientBuildItemConsumerTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
-            .withConfigurationResource("default-mongoclient.properties")
-            .addBuildChainCustomizer(buildCustomizer());
+            .withConfigurationResource("default-mongoclient.properties").addBuildChainCustomizer(buildCustomizer());
 
     @Test
     public void testContainerHasBeans() {
@@ -39,9 +38,7 @@ public class MongoClientBuildItemConsumerTest {
                 builder.addBuildStep(context -> {
                     List<MongoClientBuildItem> mongoClientBuildItems = context.consumeMulti(MongoClientBuildItem.class);
                     context.produce(new FeatureBuildItem("dummy"));
-                }).consumes(MongoClientBuildItem.class)
-                        .produces(FeatureBuildItem.class)
-                        .build();
+                }).consumes(MongoClientBuildItem.class).produces(FeatureBuildItem.class).build();
             }
         };
     }

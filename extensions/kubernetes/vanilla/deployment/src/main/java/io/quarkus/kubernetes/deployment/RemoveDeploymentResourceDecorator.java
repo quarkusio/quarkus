@@ -20,10 +20,8 @@ public class RemoveDeploymentResourceDecorator extends Decorator<KubernetesListB
 
     @Override
     public void visit(KubernetesListBuilder builder) {
-        List<HasMetadata> deployments = builder.buildItems().stream()
-                .filter(d -> d != null &&
-                        d.getKind().equals(DEPLOYMENT) &&
-                        d.getMetadata().getName().equalsIgnoreCase(name))
+        List<HasMetadata> deployments = builder.buildItems().stream().filter(
+                d -> d != null && d.getKind().equals(DEPLOYMENT) && d.getMetadata().getName().equalsIgnoreCase(name))
                 .collect(Collectors.toList());
 
         builder.removeAllFromItems(deployments);

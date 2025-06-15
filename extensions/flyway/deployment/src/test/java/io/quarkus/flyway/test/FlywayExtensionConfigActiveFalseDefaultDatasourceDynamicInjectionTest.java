@@ -16,8 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FlywayExtensionConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.datasource.active", "false");
+    static final QuarkusUnitTest config = new QuarkusUnitTest().overrideConfigKey("quarkus.datasource.active", "false");
 
     @Inject
     Instance<Flyway> flyway;
@@ -25,13 +24,11 @@ public class FlywayExtensionConfigActiveFalseDefaultDatasourceDynamicInjectionTe
     @Test
     @DisplayName("If the default datasource is deactivated, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flyway::get)
-                .isInstanceOf(InactiveBeanException.class)
-                .hasMessageContainingAll(
-                        "Flyway for datasource '<default>' was deactivated automatically because this datasource was deactivated.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
-                        "To activate the datasource, set configuration property 'quarkus.datasource.active'"
-                                + " to 'true' and configure datasource '<default>'",
-                        "Refer to https://quarkus.io/guides/datasource for guidance.");
+        assertThatThrownBy(flyway::get).isInstanceOf(InactiveBeanException.class).hasMessageContainingAll(
+                "Flyway for datasource '<default>' was deactivated automatically because this datasource was deactivated.",
+                "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                "To activate the datasource, set configuration property 'quarkus.datasource.active'"
+                        + " to 'true' and configure datasource '<default>'",
+                "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

@@ -43,8 +43,7 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
     }
 
     @Override
-    public void unaryCall(Messages.SimpleRequest request,
-            StreamObserver<Messages.SimpleResponse> responseObserver) {
+    public void unaryCall(Messages.SimpleRequest request, StreamObserver<Messages.SimpleResponse> responseObserver) {
         assertThat(request).isNotNull();
         assertRunOnEventLoop();
         assertRunOnDuplicatedContext();
@@ -174,9 +173,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
                 assertRunOnDuplicatedContext();
                 assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 Messages.Payload payload = streamingOutputCallRequest.getPayload();
-                ByteString value = ByteString
-                        .copyFromUtf8(payload.getBody().toStringUtf8() + counter.incrementAndGet() + "-"
-                                + Thread.currentThread().getName());
+                ByteString value = ByteString.copyFromUtf8(payload.getBody().toStringUtf8() + counter.incrementAndGet()
+                        + "-" + Thread.currentThread().getName());
                 Messages.Payload resp = Messages.Payload.newBuilder().setBody(value).build();
                 Messages.StreamingOutputCallResponse response = Messages.StreamingOutputCallResponse.newBuilder()
                         .setPayload(resp).build();
@@ -212,9 +210,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
                 assertRunOnDuplicatedContext();
                 assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 Messages.Payload payload = streamingOutputCallRequest.getPayload();
-                ByteString value = ByteString
-                        .copyFromUtf8(payload.getBody().toStringUtf8() + counter.incrementAndGet() + "-"
-                                + Thread.currentThread().getName());
+                ByteString value = ByteString.copyFromUtf8(payload.getBody().toStringUtf8() + counter.incrementAndGet()
+                        + "-" + Thread.currentThread().getName());
                 Messages.Payload resp = Messages.Payload.newBuilder().setBody(value).build();
                 Messages.StreamingOutputCallResponse response = Messages.StreamingOutputCallResponse.newBuilder()
                         .setPayload(resp).build();
@@ -249,7 +246,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
                 assertRunOnDuplicatedContext();
                 assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 String payload = streamingOutputCallRequest.getPayload().getBody().toStringUtf8();
-                ByteString value = ByteString.copyFromUtf8(payload.toUpperCase() + "-" + Thread.currentThread().getName());
+                ByteString value = ByteString
+                        .copyFromUtf8(payload.toUpperCase() + "-" + Thread.currentThread().getName());
                 Messages.Payload response = Messages.Payload.newBuilder().setBody(value).build();
                 Messages.StreamingOutputCallResponse resp = Messages.StreamingOutputCallResponse.newBuilder()
                         .setPayload(response).build();
@@ -286,7 +284,8 @@ public class BlockingTestService extends BlockingTestServiceGrpc.BlockingTestSer
                 assertRunOnDuplicatedContext();
                 assertThat(ctxt).isEqualTo(Vertx.currentContext());
                 String payload = streamingOutputCallRequest.getPayload().getBody().toStringUtf8();
-                ByteString value = ByteString.copyFromUtf8(payload.toUpperCase() + "-" + Thread.currentThread().getName());
+                ByteString value = ByteString
+                        .copyFromUtf8(payload.toUpperCase() + "-" + Thread.currentThread().getName());
                 Messages.Payload response = Messages.Payload.newBuilder().setBody(value).build();
                 Messages.StreamingOutputCallResponse resp = Messages.StreamingOutputCallResponse.newBuilder()
                         .setPayload(response).build();

@@ -23,10 +23,8 @@ public class DeprecatedChannelConsumer {
     Publisher<Message<String>> sourceStream;
 
     public List<String> consume() {
-        return Multi.createFrom().publisher(AdaptersToFlow.publisher(sourceStream))
-                .onItem().transform(Message::getPayload)
-                .collect().asList()
-                .await().indefinitely();
+        return Multi.createFrom().publisher(AdaptersToFlow.publisher(sourceStream)).onItem()
+                .transform(Message::getPayload).collect().asList().await().indefinitely();
     }
 
     @Outgoing("source-channel")

@@ -20,11 +20,10 @@ import io.smallrye.config.WithUnnamedKey;
 public interface HibernateSearchStandaloneBuildTimeConfig {
 
     /**
-     * Whether Hibernate Search Standalone is enabled **during the build**.
-     *
-     * If Hibernate Search is disabled during the build, all processing related to Hibernate Search will be skipped,
-     * but it will not be possible to activate Hibernate Search at runtime:
-     * `quarkus.hibernate-search-standalone.active` will default to `false` and setting it to `true` will lead to an error.
+     * Whether Hibernate Search Standalone is enabled **during the build**. If Hibernate Search is disabled during the
+     * build, all processing related to Hibernate Search will be skipped, but it will not be possible to activate
+     * Hibernate Search at runtime: `quarkus.hibernate-search-standalone.active` will default to `false` and setting it
+     * to `true` will lead to an error.
      *
      * @asciidoclet
      */
@@ -42,24 +41,14 @@ public interface HibernateSearchStandaloneBuildTimeConfig {
 
     /**
      * A xref:hibernate-search-standalone-elasticsearch.adoc#bean-reference-note-anchor[bean reference] to a component
-     * that should be notified of any failure occurring in a background process
-     * (mainly index operations).
-     *
-     * The referenced bean must implement `FailureHandler`.
-     *
-     * See
-     * link:{hibernate-search-docs-url}#configuration-background-failure-handling[this section of the reference documentation]
-     * for more information.
-     *
-     * [NOTE]
-     * ====
-     * Instead of setting this configuration property,
-     * you can simply annotate your custom `FailureHandler` implementation with `@SearchExtension`
-     * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
-     * See xref:hibernate-search-standalone-elasticsearch.adoc#plugging-in-custom-components[this section]
-     * for more information.
-     *
-     * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
+     * that should be notified of any failure occurring in a background process (mainly index operations). The
+     * referenced bean must implement `FailureHandler`. See
+     * link:{hibernate-search-docs-url}#configuration-background-failure-handling[this section of the reference
+     * documentation] for more information. [NOTE] ==== Instead of setting this configuration property, you can simply
+     * annotate your custom `FailureHandler` implementation with `@SearchExtension` and leave the configuration property
+     * unset: Hibernate Search will use the annotated implementation automatically. See
+     * xref:hibernate-search-standalone-elasticsearch.adoc#plugging-in-custom-components[this section] for more
+     * information. If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
      * ====
      *
      * @asciidoclet
@@ -81,24 +70,16 @@ public interface HibernateSearchStandaloneBuildTimeConfig {
     interface MappingConfig {
         /**
          * One or more xref:hibernate-search-standalone-elasticsearch.adoc#bean-reference-note-anchor[bean references]
-         * to the component(s) used to configure the Hibernate Search mapping,
-         * in particular programmatically.
-         *
-         * The referenced beans must implement `StandalonePojoMappingConfigurer`.
-         *
-         * See xref:hibernate-search-standalone-elasticsearch.adoc#programmatic-mapping[Programmatic mapping] for an example
-         * on how mapping configurers can be used to apply programmatic mappings.
-         *
-         * [NOTE]
-         * ====
-         * Instead of setting this configuration property,
-         * you can simply annotate your custom `StandalonePojoMappingConfigurer` implementations with `@SearchExtension`
-         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
-         * See xref:hibernate-search-standalone-elasticsearch.adoc#plugging-in-custom-components[this section]
-         * for more information.
-         *
-         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
-         * ====
+         * to the component(s) used to configure the Hibernate Search mapping, in particular programmatically. The
+         * referenced beans must implement `StandalonePojoMappingConfigurer`. See
+         * xref:hibernate-search-standalone-elasticsearch.adoc#programmatic-mapping[Programmatic mapping] for an example
+         * on how mapping configurers can be used to apply programmatic mappings. [NOTE] ==== Instead of setting this
+         * configuration property, you can simply annotate your custom `StandalonePojoMappingConfigurer` implementations
+         * with `@SearchExtension` and leave the configuration property unset: Hibernate Search will use the annotated
+         * implementation automatically. See
+         * xref:hibernate-search-standalone-elasticsearch.adoc#plugging-in-custom-components[this section] for more
+         * information. If this configuration property is set, it takes precedence over any `@SearchExtension`
+         * annotation. ====
          *
          * @asciidoclet
          */

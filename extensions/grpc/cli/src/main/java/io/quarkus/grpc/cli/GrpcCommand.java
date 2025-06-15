@@ -7,8 +7,8 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Spec;
 
-@Command(name = "grpc", sortOptions = false, header = "grpc", subcommands = {
-        ListCommand.class, DescribeCommand.class, InvokeCommand.class })
+@Command(name = "grpc", sortOptions = false, header = "grpc", subcommands = { ListCommand.class, DescribeCommand.class,
+        InvokeCommand.class })
 public class GrpcCommand implements Callable<Integer> {
 
     @Spec

@@ -44,8 +44,7 @@ public class WebAuthnAuthenticatorStorage {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private <T> Uni<T> runPotentiallyBlocking(Supplier<Uni<? extends T>> supplier) {
-        if (BlockingOperationControl.isBlockingAllowed()
-                || isNonBlocking(userProvider.getClass())) {
+        if (BlockingOperationControl.isBlockingAllowed() || isNonBlocking(userProvider.getClass())) {
             return (Uni<T>) supplier.get();
         }
         if (isRunOnVirtualThread(userProvider.getClass())) {

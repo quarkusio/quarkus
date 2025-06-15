@@ -24,10 +24,8 @@ public class NonDefaultFileForDefaultClientImportPreloadingTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.redis.hosts=${quarkus.redis.tr}\n" +
-                                    "quarkus.redis.load-script=import/my-import.redis"),
-                            "application.properties")
+                    .addAsResource(new StringAsset("quarkus.redis.hosts=${quarkus.redis.tr}\n"
+                            + "quarkus.redis.load-script=import/my-import.redis"), "application.properties")
                     .addAsResource(new File("src/test/resources/imports/import.redis"), "import/my-import.redis"));
 
     @Inject

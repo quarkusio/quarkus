@@ -22,17 +22,16 @@ final class SpringSecurityProcessorUtil {
                         + "' of class '" + methodInfo.declaringClass() + "' is malformed");
     }
 
-    static ClassInfo getClassInfoFromBeanName(String beanName, IndexView index, Map<String, DotName> springBeansNameToDotName,
-            Map<String, ClassInfo> springBeansNameToClassInfo,
+    static ClassInfo getClassInfoFromBeanName(String beanName, IndexView index,
+            Map<String, DotName> springBeansNameToDotName, Map<String, ClassInfo> springBeansNameToClassInfo,
             String expression, MethodInfo methodInfo) {
         ClassInfo beanClassInfo = springBeansNameToClassInfo.get(beanName);
         if (beanClassInfo == null) {
             DotName beanClassDotName = springBeansNameToDotName.get(beanName);
             if (beanClassDotName == null) {
-                throw new IllegalArgumentException("Could not find bean named '" + beanName
-                        + "' found in expression" + expression + "' in the @PreAuthorize annotation on method "
-                        + methodInfo.name() + " of class " + methodInfo.declaringClass()
-                        + " in the set of the application beans");
+                throw new IllegalArgumentException("Could not find bean named '" + beanName + "' found in expression"
+                        + expression + "' in the @PreAuthorize annotation on method " + methodInfo.name() + " of class "
+                        + methodInfo.declaringClass() + " in the set of the application beans");
             }
             beanClassInfo = index.getClassByName(beanClassDotName);
             if (beanClassInfo == null) {

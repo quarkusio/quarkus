@@ -36,7 +36,8 @@ public class QuarkusServerFileBodyHandler implements ServerMessageBodyReader<Fil
     public File readFrom(Class<File> type, Type genericType, MediaType mediaType, ServerRequestContext context)
             throws WebApplicationException, IOException {
         Path file = createFile(context);
-        return FileBodyHandler.doRead(context.getRequestHeaders().getRequestHeaders(), context.getInputStream(), file.toFile());
+        return FileBodyHandler.doRead(context.getRequestHeaders().getRequestHeaders(), context.getInputStream(),
+                file.toFile());
     }
 
     @Override

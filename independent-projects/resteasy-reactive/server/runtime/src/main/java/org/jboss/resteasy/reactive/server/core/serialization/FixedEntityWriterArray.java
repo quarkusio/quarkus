@@ -10,8 +10,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 
 /**
- * A fixed entity writer that iterates an array of providers until it finds one that can handle
- * the given types.
+ * A fixed entity writer that iterates an array of providers until it finds one that can handle the given types.
  */
 @SuppressWarnings("ForLoopReplaceableByForEach")
 public class FixedEntityWriterArray implements EntityWriter {

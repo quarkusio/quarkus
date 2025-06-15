@@ -14,12 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DefaultMethodValidationSuccessTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Name.class, Something.class)
-                    .addAsResource(new StringAsset(
-                            "{@io.quarkus.qute.deployment.typesafe.DefaultMethodValidationSuccessTest$Name name}Hello {name.fullName()}::{name.fullName}!"),
-                            "templates/name.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Name.class, Something.class)
+            .addAsResource(new StringAsset(
+                    "{@io.quarkus.qute.deployment.typesafe.DefaultMethodValidationSuccessTest$Name name}Hello {name.fullName()}::{name.fullName}!"),
+                    "templates/name.html"));
 
     @Inject
     Template name;

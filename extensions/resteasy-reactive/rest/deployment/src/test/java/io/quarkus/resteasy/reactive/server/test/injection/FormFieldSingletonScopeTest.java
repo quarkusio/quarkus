@@ -17,8 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FormFieldSingletonScopeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(Resource.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClasses(Resource.class))
             .assertException(t -> {
                 org.junit.jupiter.api.Assertions.assertEquals(DeploymentException.class, t.getClass());
             });

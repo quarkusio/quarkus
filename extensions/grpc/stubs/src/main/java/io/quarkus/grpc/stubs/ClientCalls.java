@@ -55,19 +55,17 @@ public class ClientCalls {
     }
 
     private static <I> void subscribeToUpstreamAndForwardToStreamObserver(Multi<I> items,
-            AtomicReference<Flow.Subscription> cancellable,
-            StreamObserver<I> request) {
-        items.subscribe().with(
-                new Consumer<Flow.Subscription>() {
-                    @Override
-                    public void accept(Flow.Subscription subscription) {
-                        if (!cancellable.compareAndSet(null, subscription)) {
-                            subscription.cancel();
-                        } else {
-                            subscription.request(Long.MAX_VALUE);
-                        }
-                    }
-                },
+            AtomicReference<Flow.Subscription> cancellable, StreamObserver<I> request) {
+        items.subscribe().with(new Consumer<Flow.Subscription>() {
+            @Override
+            public void accept(Flow.Subscription subscription) {
+                if (!cancellable.compareAndSet(null, subscription)) {
+                    subscription.cancel();
+                } else {
+                    subscription.request(Long.MAX_VALUE);
+                }
+            }
+        },
 
                 new Consumer<I>() {
                     @Override
@@ -76,14 +74,12 @@ public class ClientCalls {
                             request.onNext(v);
                         }
                     }
-                },
-                new Consumer<Throwable>() {
+                }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) {
                         request.onError(throwable);
                     }
-                },
-                new Runnable() {
+                }, new Runnable() {
                     @Override
                     public void run() {
                         request.onCompleted();

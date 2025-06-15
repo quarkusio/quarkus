@@ -31,17 +31,13 @@ import io.vertx.core.http.HttpServerOptions;
 public class LargerThanDefaultFormAttributeMultipartFormInputTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, Data.class)
-                            .addAsResource(new StringAsset(
-                                    "quarkus.http.limits.max-form-attribute-size=120K"),
-                                    "application.properties");
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, Data.class).addAsResource(
+                    new StringAsset("quarkus.http.limits.max-form-attribute-size=120K"), "application.properties");
+        }
+    });
 
     private final File FILE = new File("./src/test/resources/larger-than-default-form-attribute.txt");
 
@@ -55,15 +51,8 @@ public class LargerThanDefaultFormAttributeMultipartFormInputTest {
         fileContents = sb.toString();
 
         Assertions.assertTrue(fileContents.length() > HttpServerOptions.DEFAULT_MAX_FORM_ATTRIBUTE_SIZE);
-        given()
-                .multiPart("text", fileContents)
-                .accept("text/plain")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.TEXT)
-                .body(equalTo(fileContents));
+        given().multiPart("text", fileContents).accept("text/plain").when().post("/test").then().statusCode(200)
+                .contentType(ContentType.TEXT).body(equalTo(fileContents));
     }
 
     @Path("/test")

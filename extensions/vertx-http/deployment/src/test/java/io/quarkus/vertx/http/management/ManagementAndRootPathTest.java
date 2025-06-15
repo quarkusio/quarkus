@@ -27,10 +27,8 @@ public class ManagementAndRootPathTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addClasses(MyObserver.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset(APP_PROPS), "application.properties").addClasses(MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -40,17 +38,12 @@ public class ManagementAndRootPathTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        NonApplicationRootPathBuildItem buildItem = context.consume(NonApplicationRootPathBuildItem.class);
-                        context.produce(buildItem.routeBuilder()
-                                .management()
-                                .route("management-relative")
-                                .handler(new MyHandler())
-                                .blockingRoute()
-                                .build());
+                        NonApplicationRootPathBuildItem buildItem = context
+                                .consume(NonApplicationRootPathBuildItem.class);
+                        context.produce(buildItem.routeBuilder().management().route("management-relative")
+                                .handler(new MyHandler()).blockingRoute().build());
                     }
-                }).produces(RouteBuildItem.class)
-                        .consumes(NonApplicationRootPathBuildItem.class)
-                        .build();
+                }).produces(RouteBuildItem.class).consumes(NonApplicationRootPathBuildItem.class).build();
             }
         };
     }
@@ -58,24 +51,22 @@ public class ManagementAndRootPathTest {
     public static class MyHandler implements Handler<RoutingContext> {
         @Override
         public void handle(RoutingContext routingContext) {
-            routingContext.response()
-                    .setStatusCode(200)
-                    .end(routingContext.request().path());
+            routingContext.response().setStatusCode(200).end(routingContext.request().path());
         }
     }
 
     @Test
     public void testNonApplicationEndpointDirect() {
         // Note RestAssured knows the path prefix is /api
-        RestAssured.given().get("http://localhost:9001/management/management-relative")
-                .then().statusCode(200).body(Matchers.equalTo("/management/management-relative"));
+        RestAssured.given().get("http://localhost:9001/management/management-relative").then().statusCode(200)
+                .body(Matchers.equalTo("/management/management-relative"));
     }
 
     @Singleton
     static class MyObserver {
 
         void test(@Observes String event) {
-            //Do Nothing
+            // Do Nothing
         }
 
     }

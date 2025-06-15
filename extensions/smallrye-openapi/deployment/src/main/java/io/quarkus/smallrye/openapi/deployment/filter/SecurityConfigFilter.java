@@ -45,8 +45,7 @@ public class SecurityConfigFilter implements OASFilter {
         Map<String, SecurityScheme> securitySchemes = new HashMap<>();
 
         // Add any existing security
-        Optional.ofNullable(openAPI.getComponents().getSecuritySchemes())
-                .ifPresent(securitySchemes::putAll);
+        Optional.ofNullable(openAPI.getComponents().getSecuritySchemes()).ifPresent(securitySchemes::putAll);
 
         SmallRyeOpenApiConfig.SecurityScheme securitySchemeOption = config.securityScheme().get();
         SecurityScheme securityScheme = OASFactory.createSecurityScheme();
@@ -100,17 +99,14 @@ public class SecurityConfigFilter implements OASFilter {
     void configureApiKeySecurityScheme(SecurityScheme securityScheme) {
         securityScheme.setType(SecurityScheme.Type.APIKEY);
 
-        securityScheme.setName(config.apiKeyParameterName()
-                .orElseThrow(
-                        () -> new ConfigurationException("Parameter `name` is required for `apiKey` OpenAPI security scheme")));
+        securityScheme.setName(config.apiKeyParameterName().orElseThrow(
+                () -> new ConfigurationException("Parameter `name` is required for `apiKey` OpenAPI security scheme")));
 
         securityScheme.setIn(config.apiKeyParameterIn()
-                .map(in -> Stream.of(SecurityScheme.In.values())
-                        .filter(v -> v.toString().equals(in))
-                        .findFirst()
+                .map(in -> Stream.of(SecurityScheme.In.values()).filter(v -> v.toString().equals(in)).findFirst()
                         .orElseThrow(() -> new ConfigurationException(
                                 "Parameter `in` given for `apiKey` OpenAPI security schema is invalid: [" + in + ']')))
-                .orElseThrow(
-                        () -> new ConfigurationException("Parameter `in` is required for `apiKey` OpenAPI security scheme")));
+                .orElseThrow(() -> new ConfigurationException(
+                        "Parameter `in` is required for `apiKey` OpenAPI security scheme")));
     }
 }

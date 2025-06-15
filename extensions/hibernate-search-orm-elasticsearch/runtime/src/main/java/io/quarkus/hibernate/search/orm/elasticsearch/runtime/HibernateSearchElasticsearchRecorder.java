@@ -52,8 +52,7 @@ public class HibernateSearchElasticsearchRecorder {
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
             HibernateSearchOrmElasticsearchMapperContext mapperContext,
-            HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
-            Set<String> rootAnnotationMappedClassNames,
+            HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig, Set<String> rootAnnotationMappedClassNames,
             List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
         Set<Class<?>> rootAnnotationMappedClasses = new LinkedHashSet<>();
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
@@ -65,8 +64,7 @@ public class HibernateSearchElasticsearchRecorder {
             }
         }
         return new HibernateSearchIntegrationStaticInitListener(mapperContext,
-                buildTimeConfig.persistenceUnits().get(mapperContext.persistenceUnitName),
-                rootAnnotationMappedClasses,
+                buildTimeConfig.persistenceUnits().get(mapperContext.persistenceUnitName), rootAnnotationMappedClasses,
                 integrationStaticInitListeners);
     }
 
@@ -90,16 +88,14 @@ public class HibernateSearchElasticsearchRecorder {
             if (config.active().orElse(false)) {
                 var puName = entry.getKey();
                 String enabledPropertyKey = HibernateSearchElasticsearchRuntimeConfig.extensionPropertyKey("enabled");
-                String activePropertyKey = HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(puName, "active");
-                throw new ConfigurationException(
-                        "Hibernate Search activated explicitly for persistence unit '" + puName
-                                + "', but the Hibernate Search extension was disabled at build time."
-                                + " If you want Hibernate Search to be active for this persistence unit, you must set '"
-                                + enabledPropertyKey
-                                + "' to 'true' at build time."
-                                + " If you don't want Hibernate Search to be active for this persistence unit, you must leave '"
-                                + activePropertyKey
-                                + "' unset or set it to 'false'.",
+                String activePropertyKey = HibernateSearchElasticsearchRuntimeConfig.mapperPropertyKey(puName,
+                        "active");
+                throw new ConfigurationException("Hibernate Search activated explicitly for persistence unit '" + puName
+                        + "', but the Hibernate Search extension was disabled at build time."
+                        + " If you want Hibernate Search to be active for this persistence unit, you must set '"
+                        + enabledPropertyKey + "' to 'true' at build time."
+                        + " If you don't want Hibernate Search to be active for this persistence unit, you must leave '"
+                        + activePropertyKey + "' unset or set it to 'false'.",
                         Set.of(enabledPropertyKey, activePropertyKey));
             }
         }
@@ -125,8 +121,8 @@ public class HibernateSearchElasticsearchRecorder {
                 if (isDefaultPersistenceUnit) {
                     sessionFactory = Arc.container().instance(SessionFactory.class).get();
                 } else {
-                    sessionFactory = Arc.container().instance(
-                            SessionFactory.class, NamedLiteral.of(persistenceUnitName)).get();
+                    sessionFactory = Arc.container()
+                            .instance(SessionFactory.class, NamedLiteral.of(persistenceUnitName)).get();
                 }
                 return Search.mapping(sessionFactory);
             }
@@ -149,8 +145,7 @@ public class HibernateSearchElasticsearchRecorder {
                 if (isDefaultPersistenceUnit) {
                     session = Arc.container().instance(Session.class).get();
                 } else {
-                    session = Arc.container().instance(
-                            Session.class, NamedLiteral.of(persistenceUnitName)).get();
+                    session = Arc.container().instance(Session.class, NamedLiteral.of(persistenceUnitName)).get();
                 }
                 return Search.session(session);
             }
@@ -199,25 +194,21 @@ public class HibernateSearchElasticsearchRecorder {
 
         @Override
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
-            addConfig(propertyCollector,
-                    EngineSettings.BACKGROUND_FAILURE_HANDLER,
+            addConfig(propertyCollector, EngineSettings.BACKGROUND_FAILURE_HANDLER,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
                             buildTimeConfig == null ? Optional.empty() : buildTimeConfig.backgroundFailureHandler(),
                             FailureHandler.class, persistenceUnitName, null, null));
 
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.MAPPING_CONFIGURER,
+            addConfig(propertyCollector, HibernateOrmMapperSettings.MAPPING_CONFIGURER,
                     collectAllHibernateOrmSearchMappingConfigurers());
 
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.COORDINATION_STRATEGY,
+            addConfig(propertyCollector, HibernateOrmMapperSettings.COORDINATION_STRATEGY,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
                             buildTimeConfig == null ? Optional.empty() : buildTimeConfig.coordination().strategy(),
                             CoordinationStrategy.class, persistenceUnitName, null, null));
 
-            HibernateSearchBackendElasticsearchConfigHandler.contributeBackendBuildTimeProperties(
-                    propertyCollector, mapperContext,
-                    buildTimeConfig == null ? Collections.emptyMap() : buildTimeConfig.backends());
+            HibernateSearchBackendElasticsearchConfigHandler.contributeBackendBuildTimeProperties(propertyCollector,
+                    mapperContext, buildTimeConfig == null ? Collections.emptyMap() : buildTimeConfig.backends());
 
             for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
                 listener.contributeBootProperties(propertyCollector);
@@ -227,14 +218,12 @@ public class HibernateSearchElasticsearchRecorder {
         private List<BeanReference<HibernateOrmSearchMappingConfigurer>> collectAllHibernateOrmSearchMappingConfigurers() {
             List<BeanReference<HibernateOrmSearchMappingConfigurer>> configurers = new ArrayList<>();
             // 1. We add the quarkus-specific configurer:
-            configurers
-                    .add(BeanReference.ofInstance(new QuarkusHibernateOrmSearchMappingConfigurer(rootAnnotationMappedClasses)));
+            configurers.add(BeanReference
+                    .ofInstance(new QuarkusHibernateOrmSearchMappingConfigurer(rootAnnotationMappedClasses)));
             // 2. Then we check if any configurers were supplied by a user be it through a property or via an extension:
             Optional<List<BeanReference<HibernateOrmSearchMappingConfigurer>>> beanReferences = HibernateSearchBeanUtil
-                    .multiExtensionBeanReferencesFor(
-                            buildTimeConfig.mapping().configurer(),
-                            HibernateOrmSearchMappingConfigurer.class,
-                            persistenceUnitName, null, null);
+                    .multiExtensionBeanReferencesFor(buildTimeConfig.mapping().configurer(),
+                            HibernateOrmSearchMappingConfigurer.class, persistenceUnitName, null, null);
             if (beanReferences.isPresent()) {
                 configurers.addAll(beanReferences.get());
             }
@@ -247,8 +236,7 @@ public class HibernateSearchElasticsearchRecorder {
                 BiConsumer<String, Object> propertyCollector) {
             HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(metadata, bootstrapContext)
                     // MethodHandles don't work at all in GraalVM 20 and below, and seem unreliable on GraalVM 21
-                    .valueReadHandleFactory(ValueHandleFactory.usingJavaLangReflect())
-                    .build();
+                    .valueReadHandleFactory(ValueHandleFactory.usingJavaLangReflect()).build();
             booter.preBoot(propertyCollector);
 
             for (HibernateOrmIntegrationStaticInitListener listener : integrationStaticInitListeners) {
@@ -287,7 +275,8 @@ public class HibernateSearchElasticsearchRecorder {
         private final HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig;
         private final List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners;
 
-        private HibernateSearchIntegrationRuntimeInitListener(HibernateSearchOrmElasticsearchMapperContext mapperContext,
+        private HibernateSearchIntegrationRuntimeInitListener(
+                HibernateSearchOrmElasticsearchMapperContext mapperContext,
                 HibernateSearchElasticsearchRuntimeConfigPersistenceUnit runtimeConfig,
                 List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
             this.mapperContext = mapperContext;
@@ -305,39 +294,31 @@ public class HibernateSearchElasticsearchRecorder {
                     return;
                 }
 
-                addConfig(propertyCollector,
-                        HibernateOrmMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
+                addConfig(propertyCollector, HibernateOrmMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
                         runtimeConfig.schemaManagement().strategy());
-                addConfig(propertyCollector,
-                        HibernateOrmMapperSettings.AUTOMATIC_INDEXING_ENABLE_DIRTY_CHECK,
+                addConfig(propertyCollector, HibernateOrmMapperSettings.AUTOMATIC_INDEXING_ENABLE_DIRTY_CHECK,
                         runtimeConfig.automaticIndexing().enableDirtyCheck());
-                addConfig(propertyCollector,
-                        HibernateOrmMapperSettings.QUERY_LOADING_CACHE_LOOKUP_STRATEGY,
+                addConfig(propertyCollector, HibernateOrmMapperSettings.QUERY_LOADING_CACHE_LOOKUP_STRATEGY,
                         runtimeConfig.queryLoading().cacheLookup().strategy());
-                addConfig(propertyCollector,
-                        HibernateOrmMapperSettings.QUERY_LOADING_FETCH_SIZE,
+                addConfig(propertyCollector, HibernateOrmMapperSettings.QUERY_LOADING_FETCH_SIZE,
                         runtimeConfig.queryLoading().fetchSize());
-                addConfig(propertyCollector,
-                        HibernateOrmMapperSettings.MULTI_TENANCY_TENANT_IDS,
+                addConfig(propertyCollector, HibernateOrmMapperSettings.MULTI_TENANCY_TENANT_IDS,
                         runtimeConfig.multiTenancy().tenantIds());
             }
 
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.INDEXING_PLAN_SYNCHRONIZATION_STRATEGY,
+            addConfig(propertyCollector, HibernateOrmMapperSettings.INDEXING_PLAN_SYNCHRONIZATION_STRATEGY,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
                             runtimeConfig == null ? Optional.empty()
                                     : runtimeConfig.indexing().plan().synchronization().strategy(),
                             IndexingPlanSynchronizationStrategy.class, persistenceUnitName, null, null));
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
+            addConfig(propertyCollector, HibernateOrmMapperSettings.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
                             runtimeConfig == null ? Optional.empty()
                                     : runtimeConfig.automaticIndexing().synchronization().strategy(),
                             AutomaticIndexingSynchronizationStrategy.class, persistenceUnitName, null, null));
 
-            HibernateSearchBackendElasticsearchConfigHandler.contributeBackendRuntimeProperties(
-                    propertyCollector, mapperContext,
-                    runtimeConfig == null ? Collections.emptyMap() : runtimeConfig.backends());
+            HibernateSearchBackendElasticsearchConfigHandler.contributeBackendRuntimeProperties(propertyCollector,
+                    mapperContext, runtimeConfig == null ? Collections.emptyMap() : runtimeConfig.backends());
 
             for (HibernateOrmIntegrationRuntimeInitListener integrationRuntimeInitListener : integrationRuntimeInitListeners) {
                 integrationRuntimeInitListener.contributeRuntimeProperties(propertyCollector);
@@ -362,7 +343,6 @@ public class HibernateSearchElasticsearchRecorder {
     }
 
     private static void mergeInto(Map<String, Set<String>> target, String key, Set<String> values) {
-        target.computeIfAbsent(key, ignored -> new LinkedHashSet<>())
-                .addAll(values);
+        target.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).addAll(values);
     }
 }

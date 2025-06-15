@@ -29,7 +29,8 @@ public class RouteBaseTest {
 
     @Test
     public void testProduces() {
-        given().header("Accept", "application/json").when().get("/ping").then().statusCode(200).body(is("{\"ping\":\"pong\"}"));
+        given().header("Accept", "application/json").when().get("/ping").then().statusCode(200)
+                .body(is("{\"ping\":\"pong\"}"));
         given().header("Accept", "text/html").when().get("/ping").then().statusCode(200).body(is("<html>pong</html>"));
     }
 

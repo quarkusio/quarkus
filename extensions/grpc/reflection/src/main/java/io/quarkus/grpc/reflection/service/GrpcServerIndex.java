@@ -27,8 +27,7 @@ public class GrpcServerIndex {
     private final Map<String, FileDescriptor> descriptorsBySymbol;
     private final Map<String, Map<Integer, FileDescriptor>> descriptorsByExtensionAndNumber;
 
-    public GrpcServerIndex(
-            List<ServerServiceDefinition> definitions) {
+    public GrpcServerIndex(List<ServerServiceDefinition> definitions) {
         Queue<FileDescriptor> fileDescriptorsToProcess = new ArrayDeque<>();
         Set<String> files = new HashSet<>();
         Set<String> names = new HashSet<>();
@@ -90,8 +89,7 @@ public class GrpcServerIndex {
     }
 
     public FileDescriptor getFileDescriptorByExtensionAndNumber(String type, int number) {
-        Map<Integer, FileDescriptor> map = descriptorsByExtensionAndNumber
-                .getOrDefault(type, Collections.emptyMap());
+        Map<Integer, FileDescriptor> map = descriptorsByExtensionAndNumber.getOrDefault(type, Collections.emptyMap());
         return map.get(number);
     }
 
@@ -99,8 +97,7 @@ public class GrpcServerIndex {
         return descriptorsByExtensionAndNumber.getOrDefault(type, Collections.emptyMap()).keySet();
     }
 
-    private void processFileDescriptor(FileDescriptor fd,
-            Map<String, FileDescriptor> descriptorsByName,
+    private void processFileDescriptor(FileDescriptor fd, Map<String, FileDescriptor> descriptorsByName,
             Map<String, FileDescriptor> descriptorsBySymbol,
             Map<String, Map<Integer, FileDescriptor>> descriptorsByExtensionAndNumber) {
         String name = fd.getName();

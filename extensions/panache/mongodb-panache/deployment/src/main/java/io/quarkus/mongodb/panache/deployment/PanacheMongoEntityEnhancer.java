@@ -31,8 +31,9 @@ public class PanacheMongoEntityEnhancer extends PanacheEntityEnhancer {
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         ClassInfo entityInfo = indexView.getClassByName(DotName.createSimple(className));
         EntityModel entityModel = modelInfo.getEntityModel(className);
-        outputClassVisitor = new PanacheEntityClassAccessorGenerationVisitor(outputClassVisitor, entityInfo, entityModel);
-        return new PanacheEntityClassOperationGenerationVisitor(outputClassVisitor, typeBundle,
-                entityInfo, methodCustomizers, indexView);
+        outputClassVisitor = new PanacheEntityClassAccessorGenerationVisitor(outputClassVisitor, entityInfo,
+                entityModel);
+        return new PanacheEntityClassOperationGenerationVisitor(outputClassVisitor, typeBundle, entityInfo,
+                methodCustomizers, indexView);
     }
 }

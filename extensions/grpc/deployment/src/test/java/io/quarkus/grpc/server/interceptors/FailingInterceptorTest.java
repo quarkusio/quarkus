@@ -30,9 +30,8 @@ import io.smallrye.mutiny.Uni;
 public class FailingInterceptorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage())
                     .addClasses(MyFailingInterceptor.class, GreeterBean.class, HelloRequest.class, HelloService.class));
 
     @GrpcClient
@@ -42,8 +41,7 @@ public class FailingInterceptorTest {
     void test() {
         Uni<HelloReply> result = greeter.sayHello(HelloRequest.newBuilder().setName("ServiceA").build());
         assertThatThrownBy(() -> result.await().atMost(Duration.ofSeconds(4)))
-                .isInstanceOf(StatusRuntimeException.class)
-                .hasMessageContaining("INVALID_ARGUMENT");
+                .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("INVALID_ARGUMENT");
     }
 
     @ApplicationScoped

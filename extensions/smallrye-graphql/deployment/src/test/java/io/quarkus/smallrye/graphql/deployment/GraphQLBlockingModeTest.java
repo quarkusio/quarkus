@@ -30,8 +30,7 @@ public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((JavaArchive jar) -> jar
-                    .addClasses(TestThreadResource.class, TestThread.class)
+            .withApplicationRoot((JavaArchive jar) -> jar.addClasses(TestThreadResource.class, TestThread.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-graphql.nonblocking.enabled=false"),
                             "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
@@ -39,56 +38,25 @@ public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
     @Test
     public void testOnlyObject() {
 
-        String fooRequest = getPayload("{\n" +
-                "  onlyObject {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  onlyObject {\n" + "    name\n" + "    priority\n" + "    state\n"
+                + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.onlyObject.name", Matchers.startsWith("executor-thread"))
-                .and()
-                .body("data.onlyObject.vertxContextClassName", Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.onlyObject.name", Matchers.startsWith("executor-thread")).and()
+                .body("data.onlyObject.vertxContextClassName",
+                        Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
     }
 
     @Test
     public void testAnnotatedNonBlockingObject() {
 
-        String fooRequest = getPayload("{\n" +
-                "  annotatedNonBlockingObject {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  annotatedNonBlockingObject {\n" + "    name\n" + "    priority\n"
+                + "    state\n" + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedNonBlockingObject.name", Matchers.startsWith("executor-thread"))
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.annotatedNonBlockingObject.name", Matchers.startsWith("executor-thread")).and()
                 .body("data.annotatedNonBlockingObject.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
     }
@@ -96,28 +64,12 @@ public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
     @Test
     public void testAnnotatedBlockingObject() {
 
-        String fooRequest = getPayload("{\n" +
-                "  annotatedBlockingObject {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  annotatedBlockingObject {\n" + "    name\n" + "    priority\n"
+                + "    state\n" + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedBlockingObject.name", Matchers.startsWith("executor-thread"))
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.annotatedBlockingObject.name", Matchers.startsWith("executor-thread")).and()
                 .body("data.annotatedBlockingObject.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
     }
@@ -125,56 +77,25 @@ public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
     @Test
     public void testOnlyReactiveUni() {
 
-        String fooRequest = getPayload("{\n" +
-                "  onlyReactiveUni {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  onlyReactiveUni {\n" + "    name\n" + "    priority\n" + "    state\n"
+                + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.onlyReactiveUni.name", Matchers.startsWith("executor-thread"))
-                .and()
-                .body("data.onlyReactiveUni.vertxContextClassName", Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.onlyReactiveUni.name", Matchers.startsWith("executor-thread")).and()
+                .body("data.onlyReactiveUni.vertxContextClassName",
+                        Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
     }
 
     @Test
     public void testAnnotatedBlockingReactiveUni() {
 
-        String fooRequest = getPayload("{\n" +
-                "  annotatedBlockingReactiveUni {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  annotatedBlockingReactiveUni {\n" + "    name\n" + "    priority\n"
+                + "    state\n" + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedBlockingReactiveUni.name", Matchers.startsWith("executor-thread"))
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.annotatedBlockingReactiveUni.name", Matchers.startsWith("executor-thread")).and()
                 .body("data.annotatedBlockingReactiveUni.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
 
@@ -183,28 +104,12 @@ public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
     @Test
     public void testAnnotatedNonBlockingReactiveUni() {
 
-        String fooRequest = getPayload("{\n" +
-                "  annotatedNonBlockingReactiveUni {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  annotatedNonBlockingReactiveUni {\n" + "    name\n" + "    priority\n"
+                + "    state\n" + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedNonBlockingReactiveUni.name", Matchers.startsWith("executor-thread"))
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.annotatedNonBlockingReactiveUni.name", Matchers.startsWith("executor-thread")).and()
                 .body("data.annotatedNonBlockingReactiveUni.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
 
@@ -213,28 +118,12 @@ public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
     @Test
     public void testOnlyCompletionStage() {
 
-        String fooRequest = getPayload("{\n" +
-                "  onlyCompletionStage {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  onlyCompletionStage {\n" + "    name\n" + "    priority\n"
+                + "    state\n" + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.onlyCompletionStage.name", Matchers.startsWith("executor-thread"))
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.onlyCompletionStage.name", Matchers.startsWith("executor-thread")).and()
                 .body("data.onlyCompletionStage.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
 
@@ -243,28 +132,12 @@ public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
     @Test
     public void testAnnotatedBlockingCompletionStage() {
 
-        String fooRequest = getPayload("{\n" +
-                "  annotatedBlockingCompletionStage {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  annotatedBlockingCompletionStage {\n" + "    name\n"
+                + "    priority\n" + "    state\n" + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedBlockingCompletionStage.name", Matchers.startsWith("executor-thread"))
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.annotatedBlockingCompletionStage.name", Matchers.startsWith("executor-thread")).and()
                 .body("data.annotatedBlockingCompletionStage.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
 
@@ -273,28 +146,12 @@ public class GraphQLBlockingModeTest extends AbstractGraphQLTest {
     @Test
     public void testAnnotatedNonBlockingCompletionStage() {
 
-        String fooRequest = getPayload("{\n" +
-                "  annotatedNonBlockingCompletionStage {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  annotatedNonBlockingCompletionStage {\n" + "    name\n"
+                + "    priority\n" + "    state\n" + "    group\n" + "    vertxContextClassName\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedNonBlockingCompletionStage.name", Matchers.startsWith("executor-thread"))
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).post("/graphql")
+                .then().assertThat().statusCode(200).and().log().body().and()
+                .body("data.annotatedNonBlockingCompletionStage.name", Matchers.startsWith("executor-thread")).and()
                 .body("data.annotatedNonBlockingCompletionStage.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
 

@@ -11,16 +11,12 @@ import io.restassured.RestAssured;
 public class JacksonRestClientTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ZonedDateTimeObjectMapperCustomizer.class, DateDto.class, HelloResource.class,
-                            RestInterface.class,
-                            ClientResource.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("application.properties")
+            .withApplicationRoot((jar) -> jar.addClasses(ZonedDateTimeObjectMapperCustomizer.class, DateDto.class,
+                    HelloResource.class, RestInterface.class, ClientResource.class));
 
     @Test
     public void testCustomDeserialization() {
-        RestAssured.get("/client/hello").then()
-                .body(is("OK"));
+        RestAssured.get("/client/hello").then().body(is("OK"));
     }
 }

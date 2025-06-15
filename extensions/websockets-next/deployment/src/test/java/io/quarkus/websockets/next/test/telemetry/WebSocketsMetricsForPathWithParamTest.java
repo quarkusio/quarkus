@@ -30,15 +30,12 @@ public class WebSocketsMetricsForPathWithParamTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("""
-                            quarkus.websockets-next.server.metrics.enabled=true
-                            quarkus.websockets-next.client.metrics.enabled=true
-                            """), "application.properties")
-                    .addClasses(WSClient.class, MontyEcho.class))
-            .setForcedDependencies(
-                    List.of(Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus-deployment",
-                            Version.getVersion())));
+            .withApplicationRoot(root -> root.addAsResource(new StringAsset("""
+                    quarkus.websockets-next.server.metrics.enabled=true
+                    quarkus.websockets-next.client.metrics.enabled=true
+                    """), "application.properties").addClasses(WSClient.class, MontyEcho.class))
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus",
+                    "quarkus-micrometer-registry-prometheus-deployment", Version.getVersion())));
 
     @Inject
     Vertx vertx;
@@ -67,15 +64,13 @@ public class WebSocketsMetricsForPathWithParamTest {
         Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
             var body = RestAssured.given().get("/q/metrics").then().statusCode(200).extract().asString();
             assertNotNull(body);
-            var urisNotUsingPathParams = body
-                    .lines()
-                    .filter(l -> !l.trim().startsWith("#"))
+            var urisNotUsingPathParams = body.lines().filter(l -> !l.trim().startsWith("#"))
                     .filter(l -> l.contains("quarkus_websockets_server_"))
-                    .filter(l -> !l.contains("uri=\"/echo/:param1/and/:param2\""))
-                    .toList();
+                    .filter(l -> !l.contains("uri=\"/echo/:param1/and/:param2\"")).toList();
             if (!urisNotUsingPathParams.isEmpty()) {
-                Assertions.fail("Expected URI was '/echo/:param1/and/:param2', but following metrics has different URI: "
-                        + urisNotUsingPathParams);
+                Assertions
+                        .fail("Expected URI was '/echo/:param1/and/:param2', but following metrics has different URI: "
+                                + urisNotUsingPathParams);
             }
         });
     }

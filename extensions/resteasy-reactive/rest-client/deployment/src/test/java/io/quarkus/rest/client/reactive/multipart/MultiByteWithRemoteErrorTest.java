@@ -36,26 +36,22 @@ public class MultiByteWithRemoteErrorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Form.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Form.class));
 
     /*
-     * try to send 5MB file, server closes the connection after 1MB
-     * verify that the client didn't hang and got some exception
+     * try to send 5MB file, server closes the connection after 1MB verify that the client didn't hang and got some
+     * exception
      */
     @Test
     @Timeout(10)
     void shouldFailGracefullyOnRemoteError() throws ExecutionException, InterruptedException {
-        NetServerOptions options = new NetServerOptions()
-                .setHost("localhost");
+        NetServerOptions options = new NetServerOptions().setHost("localhost");
         AtomicInteger counter = new AtomicInteger();
-        NetServer netServer = vertx.createNetServer(options).connectHandler(
-                socket -> socket.handler(
-                        data -> {
-                            if (counter.addAndGet(data.length()) > 1_000_000) {
-                                socket.close();
-                            }
-                        }));
+        NetServer netServer = vertx.createNetServer(options).connectHandler(socket -> socket.handler(data -> {
+            if (counter.addAndGet(data.length()) > 1_000_000) {
+                socket.close();
+            }
+        }));
 
         CompletableFuture<Integer> port = new CompletableFuture<>();
         netServer.listen(server -> port.complete(server.result().actualPort()));
@@ -64,9 +60,7 @@ public class MultiByteWithRemoteErrorTest {
 
         String uri = String.format("http://localhost:%s", port.get());
 
-        Client client = RestClientBuilder.newBuilder()
-                .baseUri(URI.create(uri))
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(URI.create(uri)).build(Client.class);
 
         Form form = new Form();
         form.file = Multi.createBy().repeating().supplier(() -> (byte) 13).atMost(BYTES_SENT);

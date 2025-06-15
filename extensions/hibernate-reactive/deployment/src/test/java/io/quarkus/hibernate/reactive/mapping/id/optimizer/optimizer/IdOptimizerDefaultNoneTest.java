@@ -13,12 +13,10 @@ public class IdOptimizerDefaultNoneTest extends AbstractIdOptimizerDefaultTest {
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EntityWithDefaultGenerator.class, EntityWithGenericGenerator.class,
-                            EntityWithSequenceGenerator.class, EntityWithTableGenerator.class,
-                            EntityWithGenericGeneratorAndPooledOptimizer.class,
-                            EntityWithGenericGeneratorAndPooledLoOptimizer.class)
-                    .addClasses(SchemaUtil.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EntityWithDefaultGenerator.class,
+                    EntityWithGenericGenerator.class, EntityWithSequenceGenerator.class, EntityWithTableGenerator.class,
+                    EntityWithGenericGeneratorAndPooledOptimizer.class,
+                    EntityWithGenericGeneratorAndPooledLoOptimizer.class).addClasses(SchemaUtil.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping.id.optimizer.default", "none");
 

@@ -19,7 +19,8 @@ public class GeneratedClassGizmoAdaptor implements ClassOutput {
     private final Predicate<String> applicationClassPredicate;
     private final Map<String, StringWriter> sources;
 
-    public GeneratedClassGizmoAdaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses, boolean applicationClass) {
+    public GeneratedClassGizmoAdaptor(BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            boolean applicationClass) {
         this(generatedClasses, new Predicate<String>() {
             @Override
             public boolean test(String t) {

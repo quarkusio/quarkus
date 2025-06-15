@@ -30,13 +30,11 @@ public class TestUtil {
 
     protected static Logger LOG;
 
-    private static String baseResourcePath = new StringBuilder()
-            .append("src").append(File.separator)
-            .append("test").append(File.separator)
-            .append("resources").append(File.separator).toString();
+    private static String baseResourcePath = new StringBuilder().append("src").append(File.separator).append("test")
+            .append(File.separator).append("resources").append(File.separator).toString();
     /**
-     * Try to initialize logger. This is unsuccessful on EAP deployment, because EAP do not contain log4j.
-     * Logger is not necessary for this class. Some methods could be used without it.
+     * Try to initialize logger. This is unsuccessful on EAP deployment, because EAP do not contain log4j. Logger is not
+     * necessary for this class. Some methods could be used without it.
      */
     static {
         try {
@@ -53,13 +51,13 @@ public class TestUtil {
     }
 
     /**
-     * Finish preparing war deployment and deploy it.
+     * Finish preparing war deployment and deploy it. Add classes in @resources to deployment. Also, all subclasses of
+     * classes in @resources are added to deployment. But only classes in @resources (not subclasses of classes
+     * in @resources) can be used as resources (getClasses function of TestApplication class return only classes
+     * in @resources).
      *
-     * Add classes in @resources to deployment. Also, all subclasses of classes in @resources are added to deployment.
-     * But only classes in @resources (not subclasses of classes in @resources) can be used as resources
-     * (getClasses function of TestApplication class return only classes in @resources).
-     *
-     * @param resources classes used in deployment as resources
+     * @param resources
+     *        classes used in deployment as resources
      */
     public static Archive<?> finishContainerPrepare(WebArchive war, Map<String, String> contextParams,
             final Class<?>... resources) {
@@ -67,14 +65,15 @@ public class TestUtil {
     }
 
     /**
-     * Finish preparing war deployment and deploy it.
+     * Finish preparing war deployment and deploy it. Add classes in @resources to deployment. Also, all subclasses of
+     * classes in @resources are added to deployment. But only classes in @resources (not subclasses of classes
+     * in @resources) can be used as resources (getClasses function of TestApplication class return only classes
+     * in @resources).
      *
-     * Add classes in @resources to deployment. Also, all subclasses of classes in @resources are added to deployment.
-     * But only classes in @resources (not subclasses of classes in @resources) can be used as resources
-     * (getClasses function of TestApplication class return only classes in @resources).
-     *
-     * @param singletons classes used in deployment as singletons
-     * @param resources classes used in deployment as resources
+     * @param singletons
+     *        classes used in deployment as singletons
+     * @param resources
+     *        classes used in deployment as resources
      */
     public static Archive<?> finishContainerPrepare(WebArchive war, Map<String, String> contextParams,
             List<Class<?>> singletons, final Class<?>... resources) {
@@ -157,7 +156,8 @@ public class TestUtil {
     /**
      * Add package info to deployment.
      *
-     * @param clazz Package info is for package of this class.
+     * @param clazz
+     *        Package info is for package of this class.
      */
     protected WebArchive addPackageInfo(WebArchive war, final Class<?> clazz) {
         return war.addPackages(false, new org.jboss.shrinkwrap.api.Filter<ArchivePath>() {
@@ -171,7 +171,9 @@ public class TestUtil {
     /**
      * Convert input stream to String.
      *
-     * @param in Input stream
+     * @param in
+     *        Input stream
+     *
      * @return Converted string
      */
     public static String readString(final InputStream in) throws IOException {
@@ -214,12 +216,14 @@ public class TestUtil {
     }
 
     /**
-     * Get the path to the containers base dir for standalone mode (configuration, logs, etc..).
-     * When arquillian.xml contains more containers that could be started simultaneously the parameter containerQualifier
-     * is used to determine which base dir to get.
+     * Get the path to the containers base dir for standalone mode (configuration, logs, etc..). When arquillian.xml
+     * contains more containers that could be started simultaneously the parameter containerQualifier is used to
+     * determine which base dir to get.
      *
-     * @param containerQualifier container qualifier or null if the arquillian.xml contains max 1 container available
-     *        to be running at time
+     * @param containerQualifier
+     *        container qualifier or null if the arquillian.xml contains max 1 container available to be running at
+     *        time
+     *
      * @return absolute path to base dir
      */
     public static String getStandaloneDir(String containerQualifier) {
@@ -227,14 +231,17 @@ public class TestUtil {
     }
 
     /**
-     * Get the path to the containers base dir for standalone mode (configuration, logs, etc..).
-     * When arquillian.xml contains more containers that could be started simultaneously the parameter containerQualifier
-     * is used to determine which base dir to get.
+     * Get the path to the containers base dir for standalone mode (configuration, logs, etc..). When arquillian.xml
+     * contains more containers that could be started simultaneously the parameter containerQualifier is used to
+     * determine which base dir to get.
      *
-     * @param onServer whether the check is made from client side (the path is constructed) or from deployment (the path
-     *        is read from actual runtime value)
-     * @param containerQualifier container qualifier or null if the arquillian.xml contains max 1 container available
-     *        to be running at time; this has no effect when onServer is true
+     * @param onServer
+     *        whether the check is made from client side (the path is constructed) or from deployment (the path is
+     *        read from actual runtime value)
+     * @param containerQualifier
+     *        container qualifier or null if the arquillian.xml contains max 1 container available to be running at
+     *        time; this has no effect when onServer is true
+     *
      * @return absolute path to base dir
      */
     public static String getStandaloneDir(boolean onServer, String containerQualifier) {
@@ -271,14 +278,12 @@ public class TestUtil {
     }
 
     /**
-     * Get resource in test scope for some class.
-     * Example: class org.test.MyTest and name "my_resource.txt" returns "src/test/resource/org/test/my_resource.txt"
+     * Get resource in test scope for some class. Example: class org.test.MyTest and name "my_resource.txt" returns
+     * "src/test/resource/org/test/my_resource.txt"
      */
     public static String getResourcePath(Class<?> c, String name) {
-        return new StringBuilder()
-                .append(baseResourcePath)
-                .append(c.getPackage().getName().replace('.', File.separatorChar))
-                .append(File.separator).append(name)
+        return new StringBuilder().append(baseResourcePath)
+                .append(c.getPackage().getName().replace('.', File.separatorChar)).append(File.separator).append(name)
                 .toString();
     }
 

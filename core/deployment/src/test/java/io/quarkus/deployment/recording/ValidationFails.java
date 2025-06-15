@@ -36,8 +36,7 @@ public class ValidationFails {
         if (o == null || getClass() != o.getClass())
             return false;
         ValidationFails that = (ValidationFails) o;
-        return nameValid == that.nameValid &&
-                Objects.equals(name, that.name);
+        return nameValid == that.nameValid && Objects.equals(name, that.name);
     }
 
     @Override

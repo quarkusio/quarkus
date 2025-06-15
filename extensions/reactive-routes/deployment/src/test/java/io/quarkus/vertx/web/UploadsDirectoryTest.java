@@ -35,10 +35,9 @@ public class UploadsDirectoryTest {
     private static final String UPLOADS_DIR = "target/test-uploads";
     @RegisterExtension
     static final QuarkusUnitTest CONFIG = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Routes.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.http.body.uploads-directory = " + UPLOADS_DIR
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Routes.class).addAsResource(
+                            new StringAsset("quarkus.http.body.uploads-directory = " + UPLOADS_DIR
                                     + "\nquarkus.http.body.delete-uploaded-files-on-end=false\n"),
                             "application.properties"));
 
@@ -46,10 +45,10 @@ public class UploadsDirectoryTest {
     public void upload() throws IOException {
         final byte[] bytes = new byte[] { 0xc, 0xa, 0xf, 0xe, 0xb, 0xa, 0xb, 0xe };
         final String cafeBabe = "cafe babe";
-        final String uploadedPath = RestAssured.given().contentType("multipart/form-data").multiPart("file", "bytes.bin", bytes)
-                .formParam("description", cafeBabe).formParam("echoAttachment", "bytes.bin")
-                .post("/vertx-web/upload").then().statusCode(200)
-                .extract().body().asString();
+        final String uploadedPath = RestAssured.given().contentType("multipart/form-data")
+                .multiPart("file", "bytes.bin", bytes).formParam("description", cafeBabe)
+                .formParam("echoAttachment", "bytes.bin").post("/vertx-web/upload").then().statusCode(200).extract()
+                .body().asString();
         Assertions.assertTrue(uploadedPath.replace('\\', '/').startsWith(UPLOADS_DIR));
         Assertions.assertArrayEquals(bytes, Files.readAllBytes(Paths.get(uploadedPath)));
     }

@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
 
 /**
- * Used to specify that the field should be injected with the mock Kubernetes API server
- * Can only be used on type {@link KubernetesMockServer}
+ * Used to specify that the field should be injected with the mock Kubernetes API server Can only be used on type
+ * {@link KubernetesMockServer}
  *
  * @deprecated use {@link KubernetesTestServer}
  */

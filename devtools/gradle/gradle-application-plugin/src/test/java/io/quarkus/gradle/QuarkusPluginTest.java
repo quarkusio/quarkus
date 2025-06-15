@@ -57,8 +57,7 @@ public class QuarkusPluginTest {
 
         TaskContainer tasks = project.getTasks();
         Task assemble = tasks.getByName(BasePlugin.ASSEMBLE_TASK_NAME);
-        assertThat(getDependantProvidedTaskName(assemble))
-                .contains(QUARKUS_BUILD_TASK_NAME);
+        assertThat(getDependantProvidedTaskName(assemble)).contains(QUARKUS_BUILD_TASK_NAME);
     }
 
     @Test
@@ -70,17 +69,14 @@ public class QuarkusPluginTest {
         TaskContainer tasks = project.getTasks();
 
         Task quarkusAppPartsBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME);
-        assertThat(getDependantProvidedTaskName(quarkusAppPartsBuild))
-                .contains(JavaPlugin.CLASSES_TASK_NAME)
+        assertThat(getDependantProvidedTaskName(quarkusAppPartsBuild)).contains(JavaPlugin.CLASSES_TASK_NAME)
                 .contains(QuarkusPlugin.QUARKUS_GENERATE_CODE_TASK_NAME);
 
         Task quarkusDepBuild = tasks.getByName(QuarkusPlugin.QUARKUS_BUILD_DEP_TASK_NAME);
-        assertThat(getDependantProvidedTaskName(quarkusDepBuild))
-                .isEmpty();
+        assertThat(getDependantProvidedTaskName(quarkusDepBuild)).isEmpty();
 
         Task quarkusBuild = tasks.getByName(QUARKUS_BUILD_TASK_NAME);
-        assertThat(getDependantProvidedTaskName(quarkusBuild))
-                .contains(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME)
+        assertThat(getDependantProvidedTaskName(quarkusBuild)).contains(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME)
                 .contains(QuarkusPlugin.QUARKUS_BUILD_APP_PARTS_TASK_NAME);
 
         Task quarkusDev = tasks.getByName(QuarkusPlugin.QUARKUS_DEV_TASK_NAME);
@@ -113,53 +109,22 @@ public class QuarkusPluginTest {
         var quarkusBuild = quarkusProjectDir.resolve("build.gradle.kts");
         Files.createDirectory(mppProjectDir);
         Files.createDirectory(quarkusProjectDir);
-        Files.writeString(settingFile,
-                "rootProject.name = \"quarkus-mpp-sample\"\n" +
-                        "\n" +
-                        "include(\n" +
-                        "    \"mpp\",\n" +
-                        "    \"quarkus\"\n" +
-                        ")");
+        Files.writeString(settingFile, "rootProject.name = \"quarkus-mpp-sample\"\n" + "\n" + "include(\n"
+                + "    \"mpp\",\n" + "    \"quarkus\"\n" + ")");
 
-        Files.writeString(mppBuild,
-                "buildscript {\n" +
-                        "    repositories {\n" +
-                        "        mavenLocal()\n" +
-                        "        mavenCentral()\n" +
-                        "    }\n" +
-                        "    dependencies {\n" +
-                        "        classpath(\"org.jetbrains.kotlin:kotlin-gradle-plugin:" + kotlinVersion + "\")\n" +
-                        "    }\n" +
-                        "}\n" +
-                        "\n" +
-                        "apply(plugin = \"org.jetbrains.kotlin.multiplatform\")\n" +
-                        "\n" +
-                        "repositories {\n" +
-                        "    mavenCentral()\n" +
-                        "}\n" +
-                        "\n" +
-                        "configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension>{\n" +
-                        "    jvm()\n" +
-                        "}");
+        Files.writeString(mppBuild, "buildscript {\n" + "    repositories {\n" + "        mavenLocal()\n"
+                + "        mavenCentral()\n" + "    }\n" + "    dependencies {\n"
+                + "        classpath(\"org.jetbrains.kotlin:kotlin-gradle-plugin:" + kotlinVersion + "\")\n" + "    }\n"
+                + "}\n" + "\n" + "apply(plugin = \"org.jetbrains.kotlin.multiplatform\")\n" + "\n" + "repositories {\n"
+                + "    mavenCentral()\n" + "}\n" + "\n"
+                + "configure<org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension>{\n" + "    jvm()\n" + "}");
 
         Files.writeString(quarkusBuild,
-                "plugins {\n" +
-                        "    id(\"io.quarkus\")\n" +
-                        "}\n" +
-                        "\n" +
-                        "repositories {\n" +
-                        "    mavenCentral()\n" +
-                        "}\n" +
-                        "\n" +
-                        "dependencies {\n" +
-                        "    implementation(project(\":mpp\"))\n" +
-                        "}");
+                "plugins {\n" + "    id(\"io.quarkus\")\n" + "}\n" + "\n" + "repositories {\n" + "    mavenCentral()\n"
+                        + "}\n" + "\n" + "dependencies {\n" + "    implementation(project(\":mpp\"))\n" + "}");
 
-        BuildResult result = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withArguments("quarkusGenerateCode", "--stacktrace")
-                .build();
+        BuildResult result = GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir.toFile())
+                .withArguments("quarkusGenerateCode", "--stacktrace").build();
 
         assertEquals(SUCCESS, result.task(":quarkus:quarkusGenerateCode").getOutcome());
     }

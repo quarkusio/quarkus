@@ -110,12 +110,11 @@ public abstract class QuarkusDev extends QuarkusTask {
     @SuppressWarnings("unused")
     @Inject
     public QuarkusDev(Configuration quarkusDevConfiguration, QuarkusPluginExtension extension) {
-        this("Development mode: enables hot deployment with background compilation", quarkusDevConfiguration, extension);
+        this("Development mode: enables hot deployment with background compilation", quarkusDevConfiguration,
+                extension);
     }
 
-    public QuarkusDev(
-            String name,
-            Configuration quarkusDevConfiguration,
+    public QuarkusDev(String name, Configuration quarkusDevConfiguration,
             @SuppressWarnings("unused") QuarkusPluginExtension extension) {
         super(name);
         this.quarkusDevConfiguration = quarkusDevConfiguration;
@@ -125,7 +124,8 @@ public abstract class QuarkusDev extends QuarkusTask {
         final ObjectFactory objectFactory = getProject().getObjects();
 
         workingDirectory = objectFactory.property(File.class);
-        workingDirectory.convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
+        workingDirectory
+                .convention(getProject().provider(() -> QuarkusPluginExtension.getLastFile(getCompilationOutput())));
 
         environmentVariables = objectFactory.mapProperty(String.class, String.class);
 
@@ -144,8 +144,7 @@ public abstract class QuarkusDev extends QuarkusTask {
     }
 
     /**
-     * The dependency Configuration associated with this task. Used
-     * for up-to-date checks
+     * The dependency Configuration associated with this task. Used for up-to-date checks
      *
      * @return quarkusDevConfiguration returns the configuration
      */
@@ -180,10 +179,8 @@ public abstract class QuarkusDev extends QuarkusTask {
     }
 
     /**
-     * The directory to be used as the working dir for the dev process.
-     *
-     * Defaults to the main source set's classes directory. If there are
-     * multiple, one is picked at random (see {@link QuarkusPluginExtension#getLastFile}).
+     * The directory to be used as the working dir for the dev process. Defaults to the main source set's classes
+     * directory. If there are multiple, one is picked at random (see {@link QuarkusPluginExtension#getLastFile}).
      *
      * @return workingDirectory
      */
@@ -333,9 +330,9 @@ public abstract class QuarkusDev extends QuarkusTask {
         }
 
         if (!classesExist()) {
-            throw new GradleException("The project has no output yet, " +
-                    "this should not happen as build should have been executed first. " +
-                    "Does the project have any source files?");
+            throw new GradleException("The project has no output yet, "
+                    + "this should not happen as build should have been executed first. "
+                    + "Does the project have any source files?");
         }
         AnalyticsService analyticsService = new AnalyticsService(FileLocationsImpl.INSTANCE,
                 new GradleMessageWriter(getLogger()));
@@ -344,7 +341,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             try (Scanner scanner = new Scanner(new FilterInputStream(System.in) {
                 @Override
                 public void close() throws IOException {
-                    //don't close System.in!
+                    // don't close System.in!
                 }
             })) {
                 return scanner.nextLine();
@@ -361,9 +358,7 @@ public abstract class QuarkusDev extends QuarkusTask {
                 getProject().exec(action -> {
                     action.commandLine(runner.getArguments()).workingDir(getWorkingDirectory().get());
                     action.environment(getEnvVars());
-                    action.setStandardInput(System.in)
-                            .setErrorOutput(System.out)
-                            .setStandardOutput(System.out);
+                    action.setStandardInput(System.in).setErrorOutput(System.out).setStandardOutput(System.out);
                 });
             } else {
                 try (BufferedWriter is = Files.newBufferedWriter(Paths.get(outputFile))) {
@@ -382,7 +377,8 @@ public abstract class QuarkusDev extends QuarkusTask {
     }
 
     private boolean sourcesExist() {
-        final Set<FileSystemLocation> srcDirLocations = mainSourceSet.getAllJava().getSourceDirectories().getElements().get();
+        final Set<FileSystemLocation> srcDirLocations = mainSourceSet.getAllJava().getSourceDirectories().getElements()
+                .get();
         for (FileSystemLocation srcDirLocation : srcDirLocations) {
             final File srcDir = srcDirLocation.getAsFile();
             if (srcDir.exists() && srcDir.isDirectory()) {
@@ -419,22 +415,15 @@ public abstract class QuarkusDev extends QuarkusTask {
                 java = javaLauncher.get().getExecutablePath().getAsFile().getAbsolutePath();
             }
         }
-        DevModeCommandLineBuilder builder = DevModeCommandLine.builder(java)
-                .forceC2(getForceC2().getOrNull())
-                .projectDir(projectDir)
-                .buildDir(buildDir)
-                .outputDir(buildDir)
-                .debug(System.getProperty("debug"))
-                .debugHost(System.getProperty("debugHost"))
-                .debugPort(System.getProperty("debugPort"))
+        DevModeCommandLineBuilder builder = DevModeCommandLine.builder(java).forceC2(getForceC2().getOrNull())
+                .projectDir(projectDir).buildDir(buildDir).outputDir(buildDir).debug(System.getProperty("debug"))
+                .debugHost(System.getProperty("debugHost")).debugPort(System.getProperty("debugPort"))
                 .suspend(System.getProperty("suspend"));
         if (System.getProperty(IO_QUARKUS_DEVMODE_ARGS) == null) {
-            builder.jvmArgs("-Dquarkus.console.basic=true")
-                    .jvmArgs("-Dio.quarkus.force-color-support=true");
+            builder.jvmArgs("-Dquarkus.console.basic=true").jvmArgs("-Dio.quarkus.force-color-support=true");
         }
         if (!getTests().get().isEmpty()) {
-            builder.jvmArgs("-Dquarkus-internal.test.specific-selection=gradle:"
-                    + String.join(",", getTests().get()));
+            builder.jvmArgs("-Dquarkus-internal.test.specific-selection=gradle:" + String.join(",", getTests().get()));
         }
 
         if (getJvmArguments().isPresent() && !getJvmArguments().get().isEmpty()) {
@@ -454,7 +443,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             }
         }
 
-        //  this is a minor hack to allow ApplicationConfig to be populated with defaults
+        // this is a minor hack to allow ApplicationConfig to be populated with defaults
         builder.applicationName(project.getName());
         builder.applicationVersion(project.getVersion().toString());
 
@@ -467,31 +456,27 @@ public abstract class QuarkusDev extends QuarkusTask {
         builder.jvmArgs("-Dgradle.project.path="
                 + getProject().getLayout().getProjectDirectory().getAsFile().getAbsolutePath());
 
-        analyticsService.sendAnalytics(
-                DEV_MODE,
-                appModel,
+        analyticsService.sendAnalytics(DEV_MODE, appModel,
                 Map.of(GRADLE_VERSION, getProject().getGradle().getGradleVersion()),
                 getProject().getLayout().getBuildDirectory().getAsFile().get());
 
         final Set<ArtifactKey> projectDependencies = new HashSet<>();
         for (ResolvedDependency localDep : DependenciesFilter.getReloadableModules(appModel)) {
-            addLocalProject(localDep, builder, projectDependencies, appModel.getAppArtifact().getWorkspaceModule().getId()
-                    .equals(localDep.getWorkspaceModule().getId()));
+            addLocalProject(localDep, builder, projectDependencies, appModel.getAppArtifact().getWorkspaceModule()
+                    .getId().equals(localDep.getWorkspaceModule().getId()));
         }
 
         addQuarkusDevModeDeps(builder, appModel);
 
-        //look for an application.properties
+        // look for an application.properties
         Set<Path> resourceDirs = new HashSet<>();
         for (SourceDir resourceDir : appModel.getApplicationModule().getMainSources().getResourceDirs()) {
             resourceDirs.add(resourceDir.getOutputDir());
         }
 
         final Collection<ArtifactKey> configuredParentFirst = ConfiguredClassLoading.builder()
-                .setApplicationModel(appModel)
-                .setApplicationRoot(PathsCollection.from(resourceDirs))
-                .setMode(QuarkusBootstrap.Mode.DEV)
-                .build().getParentFirstArtifacts();
+                .setApplicationModel(appModel).setApplicationRoot(PathsCollection.from(resourceDirs))
+                .setMode(QuarkusBootstrap.Mode.DEV).build().getParentFirstArtifacts();
 
         for (io.quarkus.maven.dependency.ResolvedDependency artifact : appModel.getDependencies()) {
             if (!projectDependencies.contains(artifact.getKey())) {
@@ -519,8 +504,7 @@ public abstract class QuarkusDev extends QuarkusTask {
         }
 
         if (shouldPropagateJavaCompilerArgs.get() && getCompilerArgs().isEmpty()) {
-            getJavaCompileTask()
-                    .map(compileTask -> compileTask.getOptions().getCompilerArgs())
+            getJavaCompileTask().map(compileTask -> compileTask.getOptions().getCompilerArgs())
                     .ifPresent(args -> builder.compilerOptions("java", args));
         } else {
             builder.compilerOptions("java", getCompilerArgs());
@@ -535,9 +519,10 @@ public abstract class QuarkusDev extends QuarkusTask {
         final ApplicationModel testAppModel = extension().getApplicationModel(LaunchMode.TEST);
         final Path serializedTestModel = ToolingUtils.serializeAppModel(testAppModel, this, true);
         serializedTestModel.toFile().deleteOnExit();
-        builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestModel.toAbsolutePath());
+        builder.jvmArgs(
+                "-D" + BootstrapConstants.SERIALIZED_TEST_APP_MODEL + "=" + serializedTestModel.toAbsolutePath());
 
-        //        extension().outputDirectory().mkdirs();
+        // extension().outputDirectory().mkdirs();
 
         if (args.isPresent() && !args.get().isEmpty()) {
             builder.applicationArgs(String.join(" ", args.get()));
@@ -555,12 +540,11 @@ public abstract class QuarkusDev extends QuarkusTask {
         var devModeDependencyConfiguration = getProject().getConfigurations()
                 .findByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
         if (devModeDependencyConfiguration == null) {
-            final Configuration platformConfig = getProject().getConfigurations().findByName(
-                    ToolingUtils.toPlatformConfigurationName(
+            final Configuration platformConfig = getProject().getConfigurations()
+                    .findByName(ToolingUtils.toPlatformConfigurationName(
                             ApplicationDeploymentClasspathBuilder.getFinalRuntimeConfigName(LaunchMode.DEVELOPMENT)));
             getProject().getConfigurations().register(
-                    ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION,
-                    configuration -> {
+                    ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION, configuration -> {
                         configuration.setCanBeConsumed(false);
                         configuration.extendsFrom(platformConfig);
                         configuration.getDependencies().add(getQuarkusGradleBootstrapResolver());
@@ -571,17 +555,17 @@ public abstract class QuarkusDev extends QuarkusTask {
                     .getByName(ApplicationDeploymentClasspathBuilder.QUARKUS_BOOTSTRAP_RESOLVER_CONFIGURATION);
         }
 
-        for (ResolvedArtifact appDep : devModeDependencyConfiguration.getResolvedConfiguration().getResolvedArtifacts()) {
+        for (ResolvedArtifact appDep : devModeDependencyConfiguration.getResolvedConfiguration()
+                .getResolvedArtifacts()) {
             ModuleVersionIdentifier artifactId = appDep.getModuleVersion().getId();
-            //we only use the launcher for launching from the IDE, we need to exclude it
-            if (!(artifactId.getGroup().equals("io.quarkus")
-                    && artifactId.getName().equals("quarkus-ide-launcher"))) {
+            // we only use the launcher for launching from the IDE, we need to exclude it
+            if (!(artifactId.getGroup().equals("io.quarkus") && artifactId.getName().equals("quarkus-ide-launcher"))) {
                 if (artifactId.getGroup().equals("io.quarkus")
                         && artifactId.getName().equals("quarkus-class-change-agent")) {
                     builder.jvmArgs("-javaagent:" + appDep.getFile().getAbsolutePath());
                 } else {
-                    builder.classpathEntry(ArtifactKey.of(appDep.getModuleVersion().getId().getGroup(), appDep.getName(),
-                            appDep.getClassifier(), appDep.getExtension()), appDep.getFile());
+                    builder.classpathEntry(ArtifactKey.of(appDep.getModuleVersion().getId().getGroup(),
+                            appDep.getName(), appDep.getClassifier(), appDep.getExtension()), appDep.getFile());
                 }
             }
         }
@@ -633,15 +617,15 @@ public abstract class QuarkusDev extends QuarkusTask {
             }
         }
         if (coreDeployment == null) {
-            throw new GradleException("Failed to locate io.quarkus:quarkus-core-deployment on the application build classpath");
+            throw new GradleException(
+                    "Failed to locate io.quarkus:quarkus-core-deployment on the application build classpath");
         }
-        return getProject().getDependencies()
-                .create(String.format("%s:%s:%s", coreDeployment.getGroupId(), coreDeployment.getArtifactId(),
-                        coreDeployment.getVersion()));
+        return getProject().getDependencies().create(String.format("%s:%s:%s", coreDeployment.getGroupId(),
+                coreDeployment.getArtifactId(), coreDeployment.getVersion()));
     }
 
-    private void addLocalProject(ResolvedDependency project, DevModeCommandLineBuilder builder, Set<ArtifactKey> addeDeps,
-            boolean root) {
+    private void addLocalProject(ResolvedDependency project, DevModeCommandLineBuilder builder,
+            Set<ArtifactKey> addeDeps, boolean root) {
         addeDeps.add(project.getKey());
 
         final ArtifactSources sources = project.getSources();
@@ -663,7 +647,8 @@ public abstract class QuarkusDev extends QuarkusTask {
             }
         }
         Path classesDir = classesDirs.isEmpty() ? null
-                : QuarkusGradleUtils.mergeClassesDirs(classesDirs, project.getWorkspaceModule().getBuildDir(), true, false);
+                : QuarkusGradleUtils.mergeClassesDirs(classesDirs, project.getWorkspaceModule().getBuildDir(), true,
+                        false);
         Path generatedSourcesPath = sources.getSourceDirs().isEmpty() ? null
                 : sources.getSourceDirs().iterator().next().getAptSourcesDir();
 
@@ -677,7 +662,8 @@ public abstract class QuarkusDev extends QuarkusTask {
             }
         }
 
-        if (sourcePaths.isEmpty() && (resourcesOutputDir == null || !Files.exists(resourcesOutputDir)) || classesDir == null) {
+        if (sourcePaths.isEmpty() && (resourcesOutputDir == null || !Files.exists(resourcesOutputDir))
+                || classesDir == null) {
             return;
         }
 
@@ -694,15 +680,12 @@ public abstract class QuarkusDev extends QuarkusTask {
         }
 
         DevModeContext.ModuleInfo.Builder moduleBuilder = new DevModeContext.ModuleInfo.Builder()
-                .setArtifactKey(project.getKey())
-                .setName(project.getArtifactId())
+                .setArtifactKey(project.getKey()).setName(project.getArtifactId())
                 .setProjectDirectory(project.getWorkspaceModule().getModuleDir().getAbsolutePath())
                 .setSourcePaths(PathList.from(sourcePaths))
                 .setGeneratedSourcesPath(generatedSourcesPath != null ? generatedSourcesPath.toString() : null)
-                .setClassesPath(classesDir.toString())
-                .setResourcePaths(PathList.from(resourcesSrcDirs))
-                .setResourcesOutputPath(resourcesOutputPath)
-                .setSourceParents(PathList.from(sourceParentPaths))
+                .setClassesPath(classesDir.toString()).setResourcePaths(PathList.from(resourcesSrcDirs))
+                .setResourcesOutputPath(resourcesOutputPath).setSourceParents(PathList.from(sourceParentPaths))
                 .setPreBuildOutputDir(project.getWorkspaceModule().getBuildDir().toPath().resolve("generated-sources")
                         .toAbsolutePath().toString())
                 .setTargetDir(project.getWorkspaceModule().getBuildDir().toString());
@@ -721,8 +704,8 @@ public abstract class QuarkusDev extends QuarkusTask {
                 }
             }
             Path testClassesDir = testClassesDirs.isEmpty() ? null
-                    : QuarkusGradleUtils.mergeClassesDirs(testClassesDirs, project.getWorkspaceModule().getBuildDir(), root,
-                            root);
+                    : QuarkusGradleUtils.mergeClassesDirs(testClassesDirs, project.getWorkspaceModule().getBuildDir(),
+                            root, root);
 
             final Set<Path> testResourcesSrcDirs = new LinkedHashSet<>();
             // resourcesSrcDir may exist but if it's empty the resources output dir won't be created
@@ -763,9 +746,7 @@ public abstract class QuarkusDev extends QuarkusTask {
     }
 
     private String getSourceEncoding() {
-        return getJavaCompileTask()
-                .map(javaCompile -> javaCompile.getOptions().getEncoding())
-                .orElse(null);
+        return getJavaCompileTask().map(javaCompile -> javaCompile.getOptions().getEncoding()).orElse(null);
     }
 
     private java.util.Optional<JavaCompile> getJavaCompileTask() {

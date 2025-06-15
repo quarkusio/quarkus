@@ -39,8 +39,8 @@ public final class GraalVM {
         private static final String VM_NAME = "(?<VM>(?:.*) VM) ";
 
         private static final String FIRST_LINE_PATTERN = "native-image " + VSTR_FORMAT + " .*$";
-        private static final String SECOND_LINE_PATTERN = RUNTIME_NAME
-                + VENDOR_VERS + " \\(" + JDK_DEBUG + "build " + BUILD_INFO + "\\)$";
+        private static final String SECOND_LINE_PATTERN = RUNTIME_NAME + VENDOR_VERS + " \\(" + JDK_DEBUG + "build "
+                + BUILD_INFO + "\\)$";
         private static final String THIRD_LINE_PATTERN = VM_NAME + VENDOR_VERS + " \\(" + JDK_DEBUG + "build .*\\)$";
         private static final Pattern FIRST_PATTERN = Pattern.compile(FIRST_LINE_PATTERN);
         private static final Pattern SECOND_PATTERN = Pattern.compile(SECOND_LINE_PATTERN);
@@ -86,8 +86,7 @@ public final class GraalVM {
                 if (versNum == null) {
                     return UNKNOWN_VERSION;
                 }
-                return new Version(String.join("\n", lines),
-                        versNum, v, dist);
+                return new Version(String.join("\n", lines), versNum, v, dist);
             } else {
                 return UNKNOWN_VERSION;
             }
@@ -171,46 +170,51 @@ public final class GraalVM {
         private static final Map<String, String> GRAAL_MAPPING = io.quarkus.runtime.graal.GraalVM.Version.GRAAL_MAPPING;
 
         /**
-         * JDK version used with native-image tool:
-         * e.g. JDK 17.0.1 is Feature version 17, Update version 1.
-         * * Feature: e.g. 11 as in JDK 11, JDK 17, JDK 18 etc.
-         * * Interim: 0 so far for the JDK versions we care about, not used here
-         * * Update: quarterly updates, e.g. 13 as in JDK 11.0.13.
-         * * Patch: emergency release, critical patch, not used here
+         * JDK version used with native-image tool: e.g. JDK 17.0.1 is Feature version 17, Update version 1. * Feature:
+         * e.g. 11 as in JDK 11, JDK 17, JDK 18 etc. * Interim: 0 so far for the JDK versions we care about, not used
+         * here * Update: quarterly updates, e.g. 13 as in JDK 11.0.13. * Patch: emergency release, critical patch, not
+         * used here
          */
-        private static final Pattern OLD_VERS_PATTERN = Pattern.compile(
-                "(GraalVM|native-image)( Version)? " + VersionParseHelper.VERS_FORMAT + "(?<distro>.*?)?" +
-                        "(\\(Java Version (?<javaversion>(?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)\\))?$");
+        private static final Pattern OLD_VERS_PATTERN = Pattern.compile("(GraalVM|native-image)( Version)? "
+                + VersionParseHelper.VERS_FORMAT + "(?<distro>.*?)?"
+                + "(\\(Java Version (?<javaversion>(?<jfeature>[0-9]+)(\\.(?<jinterim>[0-9]*)\\.(?<jupdate>[0-9]*))?.*)\\))?$");
 
         static final Version VERSION_21_3 = new Version("GraalVM 21.3", "21.3", Distribution.GRAALVM);
         static final Version VERSION_21_3_0 = new Version("GraalVM 21.3.0", "21.3.0", Distribution.GRAALVM);
-        public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17", Distribution.GRAALVM);
-        public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21", Distribution.GRAALVM);
-        public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22", Distribution.GRAALVM);
-        public static final Version VERSION_24_0_999 = new Version("GraalVM 24.0.999", "24.0.999", "22", Distribution.GRAALVM);
-        public static final Version VERSION_24_1_0 = new Version("GraalVM 24.1.0", "24.1.0", "23", Distribution.GRAALVM);
-        public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23", Distribution.GRAALVM);
-        public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24", Distribution.GRAALVM);
+        public static final Version VERSION_23_0_0 = new Version("GraalVM 23.0.0", "23.0.0", "17",
+                Distribution.GRAALVM);
+        public static final Version VERSION_23_1_0 = new Version("GraalVM 23.1.0", "23.1.0", "21",
+                Distribution.GRAALVM);
+        public static final Version VERSION_24_0_0 = new Version("GraalVM 24.0.0", "24.0.0", "22",
+                Distribution.GRAALVM);
+        public static final Version VERSION_24_0_999 = new Version("GraalVM 24.0.999", "24.0.999", "22",
+                Distribution.GRAALVM);
+        public static final Version VERSION_24_1_0 = new Version("GraalVM 24.1.0", "24.1.0", "23",
+                Distribution.GRAALVM);
+        public static final Version VERSION_24_1_999 = new Version("GraalVM 24.1.999", "24.1.999", "23",
+                Distribution.GRAALVM);
+        public static final Version VERSION_24_2_0 = new Version("GraalVM 24.2.0", "24.2.0", "24",
+                Distribution.GRAALVM);
 
         /**
-         * The minimum version of GraalVM supported by Quarkus.
-         * Versions prior to this are expected to cause major issues.
+         * The minimum version of GraalVM supported by Quarkus. Versions prior to this are expected to cause major
+         * issues.
          *
          * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.MINIMUM} instead.
          */
         @Deprecated
         public static final Version MINIMUM = VERSION_23_0_0;
         /**
-         * The current version of GraalVM supported by Quarkus.
-         * This version is the one actively being tested and is expected to give the best experience.
+         * The current version of GraalVM supported by Quarkus. This version is the one actively being tested and is
+         * expected to give the best experience.
          *
          * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.CURRENT} instead.
          */
         @Deprecated
         public static final Version CURRENT = VERSION_23_1_0;
         /**
-         * The minimum version of GraalVM officially supported by Quarkus.
-         * Versions prior to this are expected to work but are not given the same level of testing or priority.
+         * The minimum version of GraalVM officially supported by Quarkus. Versions prior to this are expected to work
+         * but are not given the same level of testing or priority.
          *
          * @deprecated Use {@link io.quarkus.runtime.graal.GraalVM.Version.MINIMUM_SUPPORTED} instead.
          */
@@ -271,8 +275,7 @@ public final class GraalVM {
         public static Version of(Stream<String> output) {
             String stringOutput = output.collect(Collectors.joining("\n"));
             List<String> lines = stringOutput.lines()
-                    .dropWhile(l -> !l.startsWith("GraalVM") && !l.startsWith("native-image"))
-                    .toList();
+                    .dropWhile(l -> !l.startsWith("GraalVM") && !l.startsWith("native-image")).toList();
 
             if (lines.size() == 3) {
                 // Attempt to parse the new 3-line version scheme first.
@@ -293,21 +296,16 @@ public final class GraalVM {
                         if (version.startsWith("19")) {
                             javaVersion = "11"; // Fallback to JDK 11 for GraalVM 19.x
                         } else {
-                            throw new IllegalArgumentException(
-                                    "Cannot parse version from output: \n" + stringOutput);
+                            throw new IllegalArgumentException("Cannot parse version from output: \n" + stringOutput);
                         }
                     }
 
-                    return new Version(
-                            line,
-                            version,
-                            Runtime.Version.parse(javaVersion),
+                    return new Version(line, version, Runtime.Version.parse(javaVersion),
                             isMandrel(distro) ? Distribution.MANDREL : Distribution.GRAALVM);
                 }
             }
 
-            throw new IllegalArgumentException(
-                    "Cannot parse version from output: \n" + stringOutput);
+            throw new IllegalArgumentException("Cannot parse version from output: \n" + stringOutput);
         }
 
         private static boolean isMandrel(String s) {

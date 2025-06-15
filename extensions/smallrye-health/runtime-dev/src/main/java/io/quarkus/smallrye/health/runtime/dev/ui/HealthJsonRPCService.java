@@ -26,9 +26,9 @@ public class HealthJsonRPCService {
 
     @PostConstruct
     void startPolling() {
-        Multi.createFrom().ticks().every(Duration.ofSeconds(3))
-                .onItem().transformToUniAndMerge(tick -> smallRyeHealthReporter.getHealthAsync())
-                .subscribe().with(smallRyeHealth -> {
+        Multi.createFrom().ticks().every(Duration.ofSeconds(3)).onItem()
+                .transformToUniAndMerge(tick -> smallRyeHealthReporter.getHealthAsync()).subscribe()
+                .with(smallRyeHealth -> {
                     String jsonStr = smallRyeHealth.getPayload().toString();
                     if (!Objects.equals(lastPayload.getAndSet(jsonStr), jsonStr)) {
                         if (smallRyeHealth != null) {
@@ -37,14 +37,10 @@ public class HealthJsonRPCService {
                         }
                     }
                 }, failure -> {
-                    JsonObject errorPayload = Json.createObjectBuilder()
-                            .add("status", "DOWN")
-                            .add("checks", Json.createArrayBuilder()
-                                    .add(Json.createObjectBuilder()
-                                            .add("name", "Smallrye Health stream")
-                                            .add("status", "DOWN")
-                                            .add("data", Json.createObjectBuilder()
-                                                    .add("reason", failure.getMessage()))))
+                    JsonObject errorPayload = Json.createObjectBuilder().add("status", "DOWN").add("checks", Json
+                            .createArrayBuilder()
+                            .add(Json.createObjectBuilder().add("name", "Smallrye Health stream").add("status", "DOWN")
+                                    .add("data", Json.createObjectBuilder().add("reason", failure.getMessage()))))
                             .build();
                     healthStream.onNext(new SmallRyeHealth(errorPayload));
                     statusStream.onNext(DOWN_ICON);

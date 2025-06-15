@@ -27,8 +27,8 @@ public interface ConfigAnnotationListener {
         return Optional.empty();
     }
 
-    default void onEnclosedMethod(DiscoveryRootElement discoveryRootElement, TypeElement clazz, ExecutableElement method,
-            ResolvedType type) {
+    default void onEnclosedMethod(DiscoveryRootElement discoveryRootElement, TypeElement clazz,
+            ExecutableElement method, ResolvedType type) {
     }
 
     default void onEnclosedField(DiscoveryRootElement discoveryRootElement, TypeElement clazz, VariableElement field,

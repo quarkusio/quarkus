@@ -24,9 +24,7 @@ class HttpClientOptionsConsumerTest {
     @Test
     void testNoProxy() {
         OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
-                createExporterConfig(false),
-                URI.create("http://localhost:4317"),
-                new NoopTlsConfigurationRegistry());
+                createExporterConfig(false), URI.create("http://localhost:4317"), new NoopTlsConfigurationRegistry());
 
         HttpClientOptions httpClientOptions = new HttpClientOptions();
         consumer.accept(httpClientOptions);
@@ -36,9 +34,7 @@ class HttpClientOptionsConsumerTest {
     @Test
     void testWithProxy() {
         OTelExporterRecorder.HttpClientOptionsConsumer consumer = new OTelExporterRecorder.HttpClientOptionsConsumer(
-                createExporterConfig(true),
-                URI.create("http://localhost:4317"),
-                new NoopTlsConfigurationRegistry());
+                createExporterConfig(true), URI.create("http://localhost:4317"), new NoopTlsConfigurationRegistry());
 
         HttpClientOptions httpClientOptions = new HttpClientOptions();
         consumer.accept(httpClientOptions);

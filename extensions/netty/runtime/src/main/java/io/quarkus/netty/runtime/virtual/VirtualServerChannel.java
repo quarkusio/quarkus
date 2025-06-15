@@ -31,11 +31,9 @@ import io.netty.channel.SingleThreadEventLoop;
 import io.netty.util.concurrent.SingleThreadEventExecutor;
 
 /**
- * A {@link ServerChannel} for the local transport which allows in VM communication.
- *
- * This is a bit different from a LocalServerChannel in regular Netty
- * as it does not require a client event loop and exposes the client inbound queue directly.
- *
+ * A {@link ServerChannel} for the local transport which allows in VM communication. This is a bit different from a
+ * LocalServerChannel in regular Netty as it does not require a client event loop and exposes the client inbound queue
+ * directly.
  */
 public class VirtualServerChannel extends AbstractServerChannel {
 
@@ -165,8 +163,8 @@ public class VirtualServerChannel extends AbstractServerChannel {
     }
 
     /**
-     * A factory method for {@link VirtualChannel}s. Users may override it
-     * to create custom instances of {@link VirtualChannel}s.
+     * A factory method for {@link VirtualChannel}s. Users may override it to create custom instances of
+     * {@link VirtualChannel}s.
      */
     protected VirtualChannel newLocalChannel(VirtualClientConnection peer) {
         return new VirtualChannel(this, peer);

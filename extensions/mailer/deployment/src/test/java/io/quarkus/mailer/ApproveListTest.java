@@ -17,12 +17,10 @@ public class ApproveListTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "quarkus.mailer.approved-recipients=.*@approved1.com,.*@approved2.com,.*@approved3.com\nquarkus.mailer.log-rejected-recipients=true"),
-                            "application.properties"))
-            .setLogRecordPredicate(record -> record.getLevel().equals(Level.WARNING))
-            .assertLogRecords(lrs -> {
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(
+                    "quarkus.mailer.approved-recipients=.*@approved1.com,.*@approved2.com,.*@approved3.com\nquarkus.mailer.log-rejected-recipients=true"),
+                    "application.properties"))
+            .setLogRecordPredicate(record -> record.getLevel().equals(Level.WARNING)).assertLogRecords(lrs -> {
                 assertTrue(lrs.stream().anyMatch(lr -> lr.getMessage().equals(
                         "Email 'A subject' was not sent to the following recipients as they were rejected by the configuration: [email1@rejected.com, email2@rejected.com, email3@rejected.com, email4@rejected.com, email5@rejected.com]")));
             });
@@ -35,8 +33,7 @@ public class ApproveListTest {
 
     @Test
     public void testApproveList() {
-        mailer.send(Mail.withText("email@approved1.com", "A subject", "")
-                .addTo("email1@rejected.com")
+        mailer.send(Mail.withText("email@approved1.com", "A subject", "").addTo("email1@rejected.com")
                 .addCc("email@approved2.com", "email2@rejected.com", "email3@rejected.com")
                 .addBcc("email@approved3.com", "email4@rejected.com", "email5@rejected.com"));
 

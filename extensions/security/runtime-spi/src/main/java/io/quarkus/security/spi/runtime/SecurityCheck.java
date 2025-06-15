@@ -20,7 +20,8 @@ public interface SecurityCheck {
 
     void apply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters);
 
-    default Uni<?> nonBlockingApply(SecurityIdentity identity, MethodDescription methodDescription, Object[] parameters) {
+    default Uni<?> nonBlockingApply(SecurityIdentity identity, MethodDescription methodDescription,
+            Object[] parameters) {
         try {
             apply(identity, methodDescription, parameters);
         } catch (Exception e) {
@@ -34,12 +35,11 @@ public interface SecurityCheck {
     }
 
     /**
-     * Security checks may be performed before the secured method is actually invoked.
-     * This happens to make sure they are run before serialization and fully asynchronous checks work as expected.
-     * However, if the security checks requires arguments of invoked method, it is possible to postpone this check
-     * to the moment when arguments are available.
-     *
-     * IMPORTANT: in order to avoid security risks, all requests with postponed security checks must be authenticated
+     * Security checks may be performed before the secured method is actually invoked. This happens to make sure they
+     * are run before serialization and fully asynchronous checks work as expected. However, if the security checks
+     * requires arguments of invoked method, it is possible to postpone this check to the moment when arguments are
+     * available. IMPORTANT: in order to avoid security risks, all requests with postponed security checks must be
+     * authenticated
      *
      * @return true if the security check needs method parameters to work correctly
      */

@@ -63,7 +63,8 @@ final class Substitutions {
         @Alias
         static ClassValue<Target_ConfigMappingInterface> cv = null;
 
-        // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
+        // ClassValue is substituted by a regular ConcurrentHashMap -
+        // java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
         @Substitute
         public static Target_ConfigMappingInterface getConfigurationInterface(Class<?> interfaceType) {
             Assert.checkNotNullParam("interfaceType", interfaceType);
@@ -86,7 +87,8 @@ final class Substitutions {
         @Alias
         static ClassValue<Target_ConfigMappingClass> cv = null;
 
-        // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
+        // ClassValue is substituted by a regular ConcurrentHashMap -
+        // java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
         @Substitute
         public static Target_ConfigMappingClass getConfigurationClass(Class<?> classType) {
             Assert.checkNotNullParam("classType", classType);
@@ -398,8 +400,7 @@ final class Substitutions {
                 }
 
                 @Override
-                public synchronized Object computeIfAbsent(
-                        final Object key,
+                public synchronized Object computeIfAbsent(final Object key,
                         final Function<? super Object, ?> mappingFunction) {
                     if (key instanceof String) {
                         initializeLazyValue((String) key);
@@ -408,8 +409,7 @@ final class Substitutions {
                 }
 
                 @Override
-                public synchronized Object computeIfPresent(
-                        final Object key,
+                public synchronized Object computeIfPresent(final Object key,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
                     if (key instanceof String) {
                         initializeLazyValue((String) key);
@@ -418,8 +418,7 @@ final class Substitutions {
                 }
 
                 @Override
-                public synchronized Object compute(
-                        final Object key,
+                public synchronized Object compute(final Object key,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
                     if (key instanceof String) {
                         initializeLazyValue((String) key);
@@ -428,9 +427,7 @@ final class Substitutions {
                 }
 
                 @Override
-                public synchronized Object merge(
-                        final Object key,
-                        final Object value,
+                public synchronized Object merge(final Object key, final Object value,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
                     if (key instanceof String) {
                         initializeLazyValue((String) key);
@@ -731,8 +728,7 @@ final class Substitutions {
                 }
 
                 @Override
-                public synchronized Object computeIfAbsent(
-                        final Object key,
+                public synchronized Object computeIfAbsent(final Object key,
                         final Function<? super Object, ?> mappingFunction) {
                     if (key instanceof String) {
                         ensurePropertyInitialized((String) key);
@@ -741,8 +737,7 @@ final class Substitutions {
                 }
 
                 @Override
-                public synchronized Object computeIfPresent(
-                        final Object key,
+                public synchronized Object computeIfPresent(final Object key,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
                     if (key instanceof String) {
                         ensurePropertyInitialized((String) key);
@@ -751,8 +746,7 @@ final class Substitutions {
                 }
 
                 @Override
-                public synchronized Object compute(
-                        final Object key,
+                public synchronized Object compute(final Object key,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
                     if (key instanceof String) {
                         ensurePropertyInitialized((String) key);
@@ -761,9 +755,7 @@ final class Substitutions {
                 }
 
                 @Override
-                public synchronized Object merge(
-                        final Object key,
-                        final Object value,
+                public synchronized Object merge(final Object key, final Object value,
                         final BiFunction<? super Object, ? super Object, ?> remappingFunction) {
                     if (key instanceof String) {
                         ensurePropertyInitialized((String) key);

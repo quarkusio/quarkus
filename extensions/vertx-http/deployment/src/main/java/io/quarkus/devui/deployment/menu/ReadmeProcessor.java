@@ -23,20 +23,15 @@ public class ReadmeProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createReadmePage(BuildProducer<InternalPageBuildItem> internalPageProducer) {
 
-        String readme = getContents("README.md")
-                .orElse(getContents("readme.md")
-                        .orElse(null));
+        String readme = getContents("README.md").orElse(getContents("readme.md").orElse(null));
 
         if (readme != null) {
             InternalPageBuildItem readmePage = new InternalPageBuildItem("Readme", 51);
 
             readmePage.addBuildTimeData("readme", readme);
 
-            readmePage.addPage(Page.webComponentPageBuilder()
-                    .namespace(NS)
-                    .title("Readme")
-                    .icon("font-awesome-brands:readme")
-                    .componentLink("qwc-readme.js"));
+            readmePage.addPage(Page.webComponentPageBuilder().namespace(NS).title("Readme")
+                    .icon("font-awesome-brands:readme").componentLink("qwc-readme.js"));
 
             internalPageProducer.produce(readmePage);
         }

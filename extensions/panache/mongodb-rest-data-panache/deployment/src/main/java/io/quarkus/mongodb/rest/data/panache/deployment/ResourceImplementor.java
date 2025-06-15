@@ -25,8 +25,8 @@ import io.quarkus.runtime.util.HashUtil;
 
 /**
  * {@link io.quarkus.rest.data.panache.RestDataResource} implementor that generates data access logic depending on which
- * sub-interfaces are used in the application.
- * The method implementation differs depending on a data access strategy (active record or repository).
+ * sub-interfaces are used in the application. The method implementation differs depending on a data access strategy
+ * (active record or repository).
  */
 class ResourceImplementor {
 
@@ -43,11 +43,8 @@ class ResourceImplementor {
         String resourceType = resourceInterface.name().toString();
         String className = resourceType + "Impl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
-        ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(className)
-                .interfaces(resourceType)
-                .build();
+        ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput).className(className)
+                .interfaces(resourceType).build();
 
         classCreator.addAnnotation(ApplicationScoped.class);
         implementList(classCreator, dataAccessImplementor);
@@ -69,7 +66,8 @@ class ResourceImplementor {
         ResultHandle sort = methodCreator.getMethodParam(1);
         ResultHandle query = methodCreator.getMethodParam(2);
         ResultHandle queryParams = methodCreator.getMethodParam(3);
-        ResultHandle hasQuery = methodCreator.invokeVirtualMethod(ofMethod(String.class, "isEmpty", boolean.class), query);
+        ResultHandle hasQuery = methodCreator.invokeVirtualMethod(ofMethod(String.class, "isEmpty", boolean.class),
+                query);
         BranchResult hasQueryBranch = methodCreator.ifTrue(hasQuery);
         implementListWithoutQuery(hasQueryBranch.trueBranch(), page, sort, dataAccessImplementor);
         implementListWithQuery(hasQueryBranch.falseBranch(), page, sort, query, queryParams, dataAccessImplementor);
@@ -84,7 +82,8 @@ class ResourceImplementor {
 
         BranchResult isEmptySortBranch = body.ifTrue(isEmptySort);
         isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
-        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
+        isEmptySortBranch.falseBranch()
+                .returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
     }
 
     private void implementListWithQuery(BytecodeCreator body, ResultHandle page, ResultHandle sort, ResultHandle query,
@@ -93,23 +92,24 @@ class ResourceImplementor {
         ResultHandle isEmptySort = body.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
 
         BranchResult isEmptySortBranch = body.ifTrue(isEmptySort);
-        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page, query,
-                queryParams));
-        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort,
-                query, queryParams));
+        isEmptySortBranch.trueBranch()
+                .returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page, query, queryParams));
+        isEmptySortBranch.falseBranch().returnValue(
+                dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort, query, queryParams));
     }
 
     private void implementListPageCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list", int.class,
-                Page.class, String.class, Map.class);
+        MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list",
+                int.class, Page.class, String.class, Map.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle query = methodCreator.getMethodParam(1);
         ResultHandle queryParams = methodCreator.getMethodParam(2);
-        ResultHandle hasQuery = methodCreator.invokeVirtualMethod(ofMethod(String.class, "isEmpty", boolean.class), query);
+        ResultHandle hasQuery = methodCreator.invokeVirtualMethod(ofMethod(String.class, "isEmpty", boolean.class),
+                query);
         BranchResult hasQueryBranch = methodCreator.ifTrue(hasQuery);
         hasQueryBranch.trueBranch().returnValue(dataAccessImplementor.pageCount(hasQueryBranch.trueBranch(), page));
-        hasQueryBranch.falseBranch().returnValue(dataAccessImplementor.pageCount(hasQueryBranch.falseBranch(), page, query,
-                queryParams));
+        hasQueryBranch.falseBranch()
+                .returnValue(dataAccessImplementor.pageCount(hasQueryBranch.falseBranch(), page, query, queryParams));
         methodCreator.close();
     }
 

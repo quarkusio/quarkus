@@ -35,7 +35,8 @@ public abstract class QuarkusListPlatforms extends QuarkusPlatformTask {
                 final StringBuilder buf = new StringBuilder();
                 buf.append(coords.getGroupId()).append(":")
                         .append(coords.getArtifactId().substring(0,
-                                coords.getArtifactId().length() - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()))
+                                coords.getArtifactId().length()
+                                        - Constants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX.length()))
                         .append("::pom:").append(coords.getVersion());
                 messageWriter().info(buf.toString());
             });

@@ -19,8 +19,7 @@ public class MethodLevelStringPermissionsAllowedTest extends AbstractMethodLevel
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     PermissionsAllowedNameOnlyBean nameOnlyBean;
@@ -137,12 +136,14 @@ public class MethodLevelStringPermissionsAllowedTest extends AbstractMethodLevel
             return Uni.createFrom().item(MULTIPLE_BEAN);
         }
 
-        @PermissionsAllowed({ "one:a", "two:b", "three:c", "one:b", "two:a", "three:a", READ_PERMISSION_BEAN, "read:meal" })
+        @PermissionsAllowed({ "one:a", "two:b", "three:c", "one:b", "two:a", "three:a", READ_PERMISSION_BEAN,
+                "read:meal" })
         public final String multipleActions() {
             return MULTIPLE_BEAN;
         }
 
-        @PermissionsAllowed({ "one:a", "two:b", "three:c", "one:b", "two:a", "three:a", READ_PERMISSION_BEAN, "read:meal" })
+        @PermissionsAllowed({ "one:a", "two:b", "three:c", "one:b", "two:a", "three:a", READ_PERMISSION_BEAN,
+                "read:meal" })
         public final Uni<String> multipleNonBlockingActions() {
             return Uni.createFrom().item(MULTIPLE_BEAN);
         }

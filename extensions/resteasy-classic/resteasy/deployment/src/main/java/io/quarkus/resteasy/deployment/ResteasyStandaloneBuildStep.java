@@ -57,19 +57,17 @@ public class ResteasyStandaloneBuildStep {
         final String deploymentRootPath;
 
         public ResteasyStandaloneBuildItem(String deploymentRootPath) {
-            this.deploymentRootPath = deploymentRootPath.startsWith("/") ? deploymentRootPath : "/" + deploymentRootPath;
+            this.deploymentRootPath = deploymentRootPath.startsWith("/") ? deploymentRootPath
+                    : "/" + deploymentRootPath;
         }
 
     }
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public void staticInit(ResteasyStandaloneRecorder recorder,
-            Capabilities capabilities,
-            ResteasyDeploymentBuildItem deployment,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            ResteasyInjectionReadyBuildItem resteasyInjectionReady,
-            HttpRootPathBuildItem httpRootPathBuildItem,
+    public void staticInit(ResteasyStandaloneRecorder recorder, Capabilities capabilities,
+            ResteasyDeploymentBuildItem deployment, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            ResteasyInjectionReadyBuildItem resteasyInjectionReady, HttpRootPathBuildItem httpRootPathBuildItem,
             BuildProducer<ResteasyStandaloneBuildItem> standalone) throws Exception {
         if (capabilities.isPresent(Capability.SERVLET)) {
             return;
@@ -85,33 +83,30 @@ public class ResteasyStandaloneBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void boot(ShutdownContextBuildItem shutdown,
-            ResteasyStandaloneRecorder recorder,
-            BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<RouteBuildItem> routes,
-            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer,
-            CoreVertxBuildItem vertx,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            ResteasyStandaloneBuildItem standalone,
+    public void boot(ShutdownContextBuildItem shutdown, ResteasyStandaloneRecorder recorder,
+            BuildProducer<FeatureBuildItem> feature, BuildProducer<RouteBuildItem> routes,
+            BuildProducer<FilterBuildItem> filterBuildItemBuildProducer, CoreVertxBuildItem vertx,
+            CombinedIndexBuildItem combinedIndexBuildItem, ResteasyStandaloneBuildItem standalone,
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
-            Optional<NonJaxRsClassBuildItem> nonJaxRsClassBuildItem,
-            ExecutorBuildItem executorBuildItem,
-            ResteasyVertxConfig resteasyVertxConfig,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+            Optional<NonJaxRsClassBuildItem> nonJaxRsClassBuildItem, ExecutorBuildItem executorBuildItem,
+            ResteasyVertxConfig resteasyVertxConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         if (standalone == null) {
             return;
         }
         feature.produce(new FeatureBuildItem(Feature.RESTEASY));
 
-        // Handler used for both the default and non-default deployment path (specified as application path or resteasyConfig.path)
-        // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before the resteasy one
+        // Handler used for both the default and non-default deployment path (specified as application path or
+        // resteasyConfig.path)
+        // Routes use the order VertxHttpRecorder.DEFAULT_ROUTE_ORDER + 1 to ensure the default route is called before
+        // the resteasy one
         Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths = Collections.emptyMap();
         if (nonJaxRsClassBuildItem.isPresent()) {
             nonJaxRsClassNameToMethodPaths = nonJaxRsClassBuildItem.get().nonJaxRsPaths;
         }
         Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(),
-                executorBuildItem.getExecutorProxy(), nonJaxRsClassNameToMethodPaths, resteasyVertxConfig, httpBuildTimeConfig);
+                executorBuildItem.getExecutorProxy(), nonJaxRsClassNameToMethodPaths, resteasyVertxConfig,
+                httpBuildTimeConfig);
 
         final boolean noCustomAuthCompletionExMapper;
         final boolean noCustomAuthFailureExMapper;
@@ -129,7 +124,8 @@ public class ResteasyStandaloneBuildStep {
             noCustomAuthFailureExMapper = false;
             noCustomAuthRedirectExMapper = false;
         }
-        // failure handler for auth failures that occurred before the handler defined right above started processing the request
+        // failure handler for auth failures that occurred before the handler defined right above started processing the
+        // request
         // we add the failure handler right before QuarkusErrorHandler
         // so that user can define failure handlers that precede exception mappers
         final Handler<RoutingContext> failureHandler = recorder.vertxFailureHandler(vertx.getVertx(),
@@ -164,7 +160,8 @@ public class ResteasyStandaloneBuildStep {
             }
             for (Type interfaceType : implementor.interfaceTypes()) {
                 if (EXCEPTION_MAPPER.equals(interfaceType.name())) {
-                    final String mapperExSignature = interfaceType.asParameterizedType().arguments().get(0).name().toString();
+                    final String mapperExSignature = interfaceType.asParameterizedType().arguments().get(0).name()
+                            .toString();
                     if (exSignatureStr.equals(mapperExSignature)) {
                         return false;
                     }

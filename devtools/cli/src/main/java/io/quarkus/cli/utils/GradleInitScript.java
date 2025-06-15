@@ -30,27 +30,28 @@ public class GradleInitScript {
      * @return The optional path.
      */
     public static Optional<String> getInitScript(Collection<String> args) {
-        return args.stream().filter(s -> s.contains(INIT_SCRIPT)).map(s -> s.substring(INIT_SCRIPT.length())).findFirst();
+        return args.stream().filter(s -> s.contains(INIT_SCRIPT)).map(s -> s.substring(INIT_SCRIPT.length()))
+                .findFirst();
     }
 
     /**
-     * Create an init script that adds the specidied extensions and populate the arguments
-     * that should be passed to the gradle command, so that it loads the generated init script.
-     * The command will append to the specified argument list: `--init-script=</path/to/temporary/initscript>`
+     * Create an init script that adds the specidied extensions and populate the arguments that should be passed to the
+     * gradle command, so that it loads the generated init script. The command will append to the specified argument
+     * list: `--init-script=</path/to/temporary/initscript>`
      *
-     * @param forcedExtensions The forcced extension to add to the init script
-     * @param args The argument list
+     * @param forcedExtensions
+     *        The forcced extension to add to the init script
+     * @param args
+     *        The argument list
      */
     public static void populateForExtensions(Collection<String> forcedExtensions, Collection<String> args) {
         Optional<String> existingInitScript = getInitScript(args);
-        List<String> existingGavs = existingInitScript
-                .map(s -> Path.of(s))
-                .map(p -> readInitScriptDependencies(p))
+        List<String> existingGavs = existingInitScript.map(s -> Path.of(s)).map(p -> readInitScriptDependencies(p))
                 .orElse(new ArrayList<String>());
 
-        Set<String> gavs = Stream.concat(existingGavs.stream(), forcedExtensions.stream()
-                .map(String::trim)
-                .map(e -> e + ":${quarkusPlatformVersion}"))
+        Set<String> gavs = Stream
+                .concat(existingGavs.stream(),
+                        forcedExtensions.stream().map(String::trim).map(e -> e + ":${quarkusPlatformVersion}"))
                 .collect(Collectors.toSet());
 
         existingInitScript.map(Path::of).ifPresentOrElse(s -> createInitScript(s, gavs), () -> {
@@ -66,8 +67,7 @@ public class GradleInitScript {
      */
     public static List<String> readInitScriptDependencies(Path path) {
         try {
-            return Arrays.stream(Files.readString(path).split(NEWLINE))
-                    .filter(l -> l.contains("implementation"))
+            return Arrays.stream(Files.readString(path).split(NEWLINE)).filter(l -> l.contains("implementation"))
                     .map(s -> s.replaceAll("^[  ]*implementation[  ]*", "").replaceAll("'", ""))
                     .collect(Collectors.toList());
         } catch (IOException e) {

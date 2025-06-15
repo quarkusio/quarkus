@@ -23,9 +23,8 @@ import io.vertx.core.buffer.Buffer;
  * <p>
  * This construct is not thread-safe and should not be used concurrently.
  * <p>
- * Connectors should not be reused. If you need to create multiple connections in a row you'll need to obtain a new connetor
- * instance programmatically using {@link Instance#get()}:
- * <code><pre>
+ * Connectors should not be reused. If you need to create multiple connections in a row you'll need to obtain a new
+ * connetor instance programmatically using {@link Instance#get()}: <code><pre>
  * import jakarta.enterprise.inject.Instance;
  *
  * &#64;Inject
@@ -58,6 +57,7 @@ public interface BasicWebSocketConnector {
      * Set the base URI.
      *
      * @param uri
+     *
      * @return self
      */
     BasicWebSocketConnector baseUri(URI uri);
@@ -66,6 +66,7 @@ public interface BasicWebSocketConnector {
      * Set the base URI.
      *
      * @param baseUri
+     *
      * @return self
      */
     default BasicWebSocketConnector baseUri(String baseUri) {
@@ -76,7 +77,9 @@ public interface BasicWebSocketConnector {
      * Set the name of the {@link TlsConfiguration}.
      *
      * @param tlsConfigurationName
+     *
      * @return self
+     *
      * @see io.quarkus.tls.TlsConfigurationRegistry#get(String)
      */
     BasicWebSocketConnector tlsConfigurationName(String tlsConfigurationName);
@@ -88,6 +91,7 @@ public interface BasicWebSocketConnector {
      * {@link #pathParam(String, String)} method must be used to pass path param values.
      *
      * @param path
+     *
      * @return self
      */
     BasicWebSocketConnector path(String path);
@@ -95,14 +99,16 @@ public interface BasicWebSocketConnector {
     /**
      * Set the path param.
      * <p>
-     * The value is encoded using {@link URLEncoder#encode(String, java.nio.charset.Charset)} before it's used to build the
-     * target URI.
+     * The value is encoded using {@link URLEncoder#encode(String, java.nio.charset.Charset)} before it's used to build
+     * the target URI.
      *
      * @param name
      * @param value
+     *
      * @return self
-     * @throws IllegalArgumentException If the path set by {@link #path(String)} does not contain a parameter with the given
-     *         name
+     *
+     * @throws IllegalArgumentException
+     *         If the path set by {@link #path(String)} does not contain a parameter with the given name
      */
     BasicWebSocketConnector pathParam(String name, String value);
 
@@ -111,7 +117,9 @@ public interface BasicWebSocketConnector {
      *
      * @param name
      * @param value
+     *
      * @return self
+     *
      * @see HandshakeRequest
      */
     BasicWebSocketConnector addHeader(String name, String value);
@@ -121,6 +129,7 @@ public interface BasicWebSocketConnector {
      *
      * @param name
      * @param value
+     *
      * @return self
      */
     BasicWebSocketConnector addSubprotocol(String value);
@@ -131,7 +140,9 @@ public interface BasicWebSocketConnector {
      * @param key
      * @param value
      * @param <VALUE>
+     *
      * @return self
+     *
      * @see UserData#put(TypedKey, Object)
      * @see WebSocketClientConnection#userData()
      */
@@ -143,6 +154,7 @@ public interface BasicWebSocketConnector {
      * By default, {@link ExecutionModel#BLOCKING} is used.
      *
      * @return self
+     *
      * @see #onTextMessage(BiConsumer)
      * @see #onBinaryMessage(BiConsumer)
      * @see #onPong(BiConsumer)
@@ -156,7 +168,9 @@ public interface BasicWebSocketConnector {
      * Set a callback to be invoked when a connection to the server is open.
      *
      * @param consumer
+     *
      * @return self
+     *
      * @see #executionModel(ExecutionModel)
      */
     BasicWebSocketConnector onOpen(Consumer<WebSocketClientConnection> consumer);
@@ -165,7 +179,9 @@ public interface BasicWebSocketConnector {
      * Set a callback to be invoked when a text message is received from the server.
      *
      * @param consumer
+     *
      * @return self
+     *
      * @see #executionModel(ExecutionModel)
      */
     BasicWebSocketConnector onTextMessage(BiConsumer<WebSocketClientConnection, String> consumer);
@@ -174,7 +190,9 @@ public interface BasicWebSocketConnector {
      * Set a callback to be invoked when a binary message is received from the server.
      *
      * @param consumer
+     *
      * @return self
+     *
      * @see #executionModel(ExecutionModel)
      */
     BasicWebSocketConnector onBinaryMessage(BiConsumer<WebSocketClientConnection, Buffer> consumer);
@@ -183,7 +201,9 @@ public interface BasicWebSocketConnector {
      * Set a callback to be invoked when a ping message is received from the server.
      *
      * @param consumer
+     *
      * @return self
+     *
      * @see #executionModel(ExecutionModel)
      */
     BasicWebSocketConnector onPing(BiConsumer<WebSocketClientConnection, Buffer> consumer);
@@ -192,7 +212,9 @@ public interface BasicWebSocketConnector {
      * Set a callback to be invoked when a pong message is received from the server.
      *
      * @param consumer
+     *
      * @return self
+     *
      * @see #executionModel(ExecutionModel)
      */
     BasicWebSocketConnector onPong(BiConsumer<WebSocketClientConnection, Buffer> consumer);
@@ -201,7 +223,9 @@ public interface BasicWebSocketConnector {
      * Set a callback to be invoked when a connection to the server is closed.
      *
      * @param consumer
+     *
      * @return self
+     *
      * @see #executionModel(ExecutionModel)
      */
     BasicWebSocketConnector onClose(BiConsumer<WebSocketClientConnection, CloseReason> consumer);
@@ -210,20 +234,20 @@ public interface BasicWebSocketConnector {
      * Set a callback to be invoked when an error occurs.
      *
      * @param consumer
+     *
      * @return self
+     *
      * @see #executionModel(ExecutionModel)
      */
     BasicWebSocketConnector onError(BiConsumer<WebSocketClientConnection, Throwable> consumer);
 
     /**
-     *
      * @return a new {@link Uni} with a {@link WebSocketClientConnection} item
      */
     @CheckReturnValue
     Uni<WebSocketClientConnection> connect();
 
     /**
-     *
      * @return the client connection
      */
     default WebSocketClientConnection connectAndAwait() {

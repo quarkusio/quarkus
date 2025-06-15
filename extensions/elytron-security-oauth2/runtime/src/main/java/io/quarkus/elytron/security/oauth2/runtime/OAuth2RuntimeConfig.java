@@ -15,20 +15,18 @@ import io.smallrye.config.ConfigMapping;
 public interface OAuth2RuntimeConfig {
 
     /**
-     * The OAuth2 client id used to validate the token.
-     * Mandatory if the extension is enabled.
+     * The OAuth2 client id used to validate the token. Mandatory if the extension is enabled.
      */
     Optional<String> clientId();
 
     /**
-     * The OAuth2 client secret used to validate the token.
-     * Mandatory if the extension is enabled.
+     * The OAuth2 client secret used to validate the token. Mandatory if the extension is enabled.
      */
     Optional<String> clientSecret();
 
     /**
-     * The OAuth2 introspection endpoint URL used to validate the token and gather the authentication claims.
-     * Mandatory if the extension is enabled.
+     * The OAuth2 introspection endpoint URL used to validate the token and gather the authentication claims. Mandatory
+     * if the extension is enabled.
      */
     Optional<String> introspectionUrl();
 
@@ -40,14 +38,12 @@ public interface OAuth2RuntimeConfig {
     Optional<String> caCertFile();
 
     /**
-     * Client connection timeout for token introspection.
-     * Infinite if not set.
+     * Client connection timeout for token introspection. Infinite if not set.
      */
     Optional<Duration> connectionTimeout();
 
     /**
-     * Client read timeout for token introspection.
-     * Infinite if not set.
+     * Client read timeout for token introspection. Infinite if not set.
      */
     Optional<Duration> readTimeout();
 }

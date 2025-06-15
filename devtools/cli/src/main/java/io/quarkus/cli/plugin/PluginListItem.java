@@ -58,7 +58,8 @@ public class PluginListItem {
 
     public String[] getFields(boolean withCommand) {
         return withCommand
-                ? new String[] { getSymbol(), getName(), getType(), getScope(), getLocation(), getDescription(), getCommand() }
+                ? new String[] { getSymbol(), getName(), getType(), getScope(), getLocation(), getDescription(),
+                        getCommand() }
                 : new String[] { getSymbol(), getName(), getType(), getScope(), getLocation(), getDescription() };
     }
 }

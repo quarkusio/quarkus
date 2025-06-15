@@ -27,7 +27,9 @@ public class XClaimArgs implements RedisCommandExtraArguments {
      * Set the idle time (last time it was delivered) of the message. If {@code IDLE} is not specified, an {@code IDLE}
      * of 0 is assumed, that is, the time count is reset because the message has now a new owner trying to process it.
      *
-     * @param idle the idle duration, must not be {@code null}
+     * @param idle
+     *        the idle duration, must not be {@code null}
+     *
      * @return the current {@code XClaimArgs}
      */
     public XClaimArgs idle(Duration idle) {
@@ -37,10 +39,12 @@ public class XClaimArgs implements RedisCommandExtraArguments {
 
     /**
      * This is the same as {@code IDLE} but instead of a relative amount of milliseconds, it sets the idle time to a
-     * specific Unix time (in milliseconds). This is useful in order to rewrite the {@code AOF} file
-     * generating {@code XCLAIM} commands.
+     * specific Unix time (in milliseconds). This is useful in order to rewrite the {@code AOF} file generating
+     * {@code XCLAIM} commands.
      *
-     * @param time the timestamp
+     * @param time
+     *        the timestamp
+     *
      * @return the current {@code XClaimArgs}
      */
     public XClaimArgs time(long time) {
@@ -49,12 +53,14 @@ public class XClaimArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the retry counter to the specified value. This counter is incremented every time a message is delivered again.
-     * Normally {@code XCLAIM} does not alter this counter, which is just served to clients when the {@code XPENDING}
-     * command is called: this way clients can detect anomalies, like messages that are never processed for some reason
-     * after a big number of delivery attempts.
+     * Set the retry counter to the specified value. This counter is incremented every time a message is delivered
+     * again. Normally {@code XCLAIM} does not alter this counter, which is just served to clients when the
+     * {@code XPENDING} command is called: this way clients can detect anomalies, like messages that are never processed
+     * for some reason after a big number of delivery attempts.
      *
-     * @param retryCount the retry count, must be positive
+     * @param retryCount
+     *        the retry count, must be positive
+     *
      * @return the current {@code XClaimArgs}
      */
     public XClaimArgs retryCount(int retryCount) {
@@ -63,9 +69,9 @@ public class XClaimArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Creates the pending message entry in the PEL even if certain specified IDs are not already in the PEL assigned
-     * to a different client.
-     * However, the message must exist in the stream, otherwise the IDs of non-existing messages are ignored.
+     * Creates the pending message entry in the PEL even if certain specified IDs are not already in the PEL assigned to
+     * a different client. However, the message must exist in the stream, otherwise the IDs of non-existing messages are
+     * ignored.
      *
      * @return the current {@code XClaimArgs}
      */
@@ -75,8 +81,8 @@ public class XClaimArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * In the returned structure, only set the IDs of messages successfully claimed, without returning the actual message.
-     * Using this option means the retry counter is not incremented.
+     * In the returned structure, only set the IDs of messages successfully claimed, without returning the actual
+     * message. Using this option means the retry counter is not incremented.
      *
      * @return the current {@code XClaimArgs}
      */
@@ -88,7 +94,9 @@ public class XClaimArgs implements RedisCommandExtraArguments {
     /**
      * Sets the last id of the message to claim.
      *
-     * @param lastId the last id, must not be {@code null}
+     * @param lastId
+     *        the last id, must not be {@code null}
+     *
      * @return the current {@code XClaimArgs}
      */
     public XClaimArgs lastId(String lastId) {

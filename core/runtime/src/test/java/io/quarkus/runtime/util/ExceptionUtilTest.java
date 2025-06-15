@@ -28,8 +28,7 @@ public class ExceptionUtilTest {
         final Throwable ex = generateException();
         final String rootCauseFirst = ExceptionUtil.rootCauseFirstStackTrace(ex);
         assertNotNull(rootCauseFirst, "Stacktrace was null");
-        assertTrue(rootCauseFirst.contains("Resulted in:"),
-                "Stacktrace doesn't contain the \"Resulted in:\" string");
+        assertTrue(rootCauseFirst.contains("Resulted in:"), "Stacktrace doesn't contain the \"Resulted in:\" string");
         assertFalse(rootCauseFirst.contains("Caused by:"), "Stacktrace contains the \"Caused by:\" string");
         final String[] lines = rootCauseFirst.split("\n");
         final String firstLine = lines[0];

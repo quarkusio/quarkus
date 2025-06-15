@@ -14,8 +14,7 @@ public class MessageBundleMethodReturnTypeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBundle.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyBundle.class))
             .setExpectedException(MessageBundleException.class);
 
     @Test

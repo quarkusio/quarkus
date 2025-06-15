@@ -43,9 +43,10 @@ class DefaultSchemaDiscoveryState {
     boolean isPulsarConnector(List<ConnectorManagedChannelBuildItem> channelsManagedByConnectors, boolean incoming,
             String channelName) {
         // First look in the channelsManagedByConnectors list
-        Optional<ConnectorManagedChannelBuildItem> match = channelsManagedByConnectors.stream().filter(cn -> cn
-                .getDirection() == (incoming ? ChannelDirection.INCOMING : ChannelDirection.OUTGOING)
-                && cn.getName().equalsIgnoreCase(channelName)).findFirst();
+        Optional<ConnectorManagedChannelBuildItem> match = channelsManagedByConnectors.stream()
+                .filter(cn -> cn.getDirection() == (incoming ? ChannelDirection.INCOMING : ChannelDirection.OUTGOING)
+                        && cn.getName().equalsIgnoreCase(channelName))
+                .findFirst();
         if (match.isPresent()) {
             return true;
         }
@@ -53,9 +54,7 @@ class DefaultSchemaDiscoveryState {
         String channelType = incoming ? "incoming" : "outgoing";
         return isPulsarConnector.computeIfAbsent(channelType + "|" + channelName, ignored -> {
             String connectorKey = getChannelPropertyKey(channelName, "connector", incoming);
-            String connector = getConfig()
-                    .getOptionalValue(connectorKey, String.class)
-                    .orElse("ignored");
+            String connector = getConfig().getOptionalValue(connectorKey, String.class).orElse("ignored");
             return PulsarConnector.CONNECTOR_NAME.equals(connector);
         });
     }
@@ -114,34 +113,25 @@ class DefaultSchemaDiscoveryState {
     }
 
     List<AnnotationInstance> findAnnotationsOnMethods(DotName annotation) {
-        return index.getAnnotations(annotation)
-                .stream()
-                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD)
-                .collect(Collectors.toList());
+        return index.getAnnotations(annotation).stream()
+                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD).collect(Collectors.toList());
     }
 
     List<AnnotationInstance> findRepeatableAnnotationsOnMethods(DotName annotation) {
-        return index.getAnnotationsWithRepeatable(annotation, index)
-                .stream()
-                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD)
-                .collect(Collectors.toList());
+        return index.getAnnotationsWithRepeatable(annotation, index).stream()
+                .filter(it -> it.target().kind() == AnnotationTarget.Kind.METHOD).collect(Collectors.toList());
     }
 
     List<AnnotationInstance> findAnnotationsOnInjectionPoints(DotName annotation) {
-        return index.getAnnotations(annotation)
-                .stream()
-                .filter(it -> it.target().kind() == AnnotationTarget.Kind.FIELD
-                        || it.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER)
-                .collect(Collectors.toList());
+        return index.getAnnotations(annotation).stream().filter(it -> it.target().kind() == AnnotationTarget.Kind.FIELD
+                || it.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER).collect(Collectors.toList());
     }
 
     List<AnnotationInstance> findProvidedSchemaWithIdentifier(String identifier) {
-        return index.getAnnotations(DotNames.IDENTIFIER)
-                .stream()
+        return index.getAnnotations(DotNames.IDENTIFIER).stream()
                 .filter(it -> it.target().kind() == AnnotationTarget.Kind.FIELD
                         || it.target().kind() == AnnotationTarget.Kind.METHOD)
-                .filter(a -> a.target().hasAnnotation(DotNames.PRODUCES))
-                .filter(a -> {
+                .filter(a -> a.target().hasAnnotation(DotNames.PRODUCES)).filter(a -> {
                     AnnotationTarget target = a.target();
                     if (target.kind() == AnnotationTarget.Kind.FIELD) {
                         return target.asField().type().name().equals(DotNames.PULSAR_SCHEMA);
@@ -150,16 +140,13 @@ class DefaultSchemaDiscoveryState {
                         return target.asMethod().returnType().name().equals(DotNames.PULSAR_SCHEMA);
                     }
                     return false;
-                })
-                .filter(a -> Objects.equals(identifier, a.value().asString()))
-                .collect(Collectors.toList());
+                }).filter(a -> Objects.equals(identifier, a.value().asString())).collect(Collectors.toList());
     }
 
     List<ClassInfo> findImplementedSchemaWithIdentifier(String identifier) {
-        return index.getAllKnownImplementors(DotNames.PULSAR_SCHEMA)
-                .stream()
-                .filter(t -> t.hasAnnotation(DotNames.IDENTIFIER) &&
-                        Objects.equals(t.annotation(DotNames.IDENTIFIER).value().asString(), identifier))
+        return index.getAllKnownImplementors(DotNames.PULSAR_SCHEMA).stream()
+                .filter(t -> t.hasAnnotation(DotNames.IDENTIFIER)
+                        && Objects.equals(t.annotation(DotNames.IDENTIFIER).value().asString(), identifier))
                 .collect(Collectors.toList());
     }
 }

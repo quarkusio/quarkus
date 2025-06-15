@@ -63,28 +63,25 @@ public class FlywayRecorder {
                 var dataSourceBean = AgroalDataSourceUtil.dataSourceInstance(dataSourceName).getHandle().getBean();
                 var dataSourceActive = dataSourceBean.checkActive();
                 if (!dataSourceActive.value()) {
-                    return ActiveResult.inactive(
-                            String.format(Locale.ROOT,
-                                    "Flyway for datasource '%s' was deactivated automatically because this datasource was deactivated.",
-                                    dataSourceName),
-                            dataSourceActive);
+                    return ActiveResult.inactive(String.format(Locale.ROOT,
+                            "Flyway for datasource '%s' was deactivated automatically because this datasource was deactivated.",
+                            dataSourceName), dataSourceActive);
                 }
 
                 // Note: When quarkus.flyway.active is set to false, Flyway beans are still available.
-                //       The property only controls automatic execution on startup.
+                // The property only controls automatic execution on startup.
                 // TODO should we change quarkus.flyway.active (see ^) to align on other extensions?
-                //   See https://github.com/quarkusio/quarkus/issues/42244.
-                //   We'd have something like quarkus.liquibase.startup.enabled controlling startup behavior,
-                //   and *if necessary* quarkus.liquibase.active controlling bean availability
-                //   (though IMO controlling that at the datasource level would be enough).
+                // See https://github.com/quarkusio/quarkus/issues/42244.
+                // We'd have something like quarkus.liquibase.startup.enabled controlling startup behavior,
+                // and *if necessary* quarkus.liquibase.active controlling bean availability
+                // (though IMO controlling that at the datasource level would be enough).
                 return ActiveResult.active();
             }
         };
     }
 
-    public Function<SyntheticCreationalContext<FlywayContainer>, FlywayContainer> flywayContainerFunction(String dataSourceName,
-            boolean hasMigrations,
-            boolean createPossible) {
+    public Function<SyntheticCreationalContext<FlywayContainer>, FlywayContainer> flywayContainerFunction(
+            String dataSourceName, boolean hasMigrations, boolean createPossible) {
         return new Function<>() {
             @Override
             public FlywayContainer apply(SyntheticCreationalContext<FlywayContainer> context) {
@@ -108,18 +105,16 @@ public class FlywayRecorder {
     }
 
     public void doStartActions(String dataSourceName) {
-        FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue()
-                .datasources().get(dataSourceName);
+        FlywayDataSourceRuntimeConfig flywayDataSourceRuntimeConfig = config.getValue().datasources()
+                .get(dataSourceName);
 
-        if (flywayDataSourceRuntimeConfig.active().isPresent()
-                && !flywayDataSourceRuntimeConfig.active().get()) {
+        if (flywayDataSourceRuntimeConfig.active().isPresent() && !flywayDataSourceRuntimeConfig.active().get()) {
             return;
         }
 
         InjectableInstance<FlywayContainer> flywayContainerInstance = Arc.container().select(FlywayContainer.class,
                 FlywayContainerUtil.getFlywayContainerQualifier(dataSourceName));
-        if (!flywayContainerInstance.isResolvable()
-                || !flywayContainerInstance.getHandle().getBean().isActive()) {
+        if (!flywayContainerInstance.isResolvable() || !flywayContainerInstance.getHandle().getBean().isActive()) {
             return;
         }
 

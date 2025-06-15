@@ -35,8 +35,7 @@ public class HibernateOrmDevJsonRpcService {
     public HibernateOrmDevJsonRpcService() {
         this.isDev = LaunchMode.current() == LaunchMode.DEVELOPMENT && !LaunchMode.isRemoteDev();
         this.allowedHost = ConfigProvider.getConfig()
-                .getOptionalValue("quarkus.datasource.dev-ui.allowed-db-host", String.class)
-                .orElse(null);
+                .getOptionalValue("quarkus.datasource.dev-ui.allowed-db-host", String.class).orElse(null);
     }
 
     public HibernateOrmDevInfo getInfo() {
@@ -56,22 +55,28 @@ public class HibernateOrmDevJsonRpcService {
     }
 
     private Optional<HibernateOrmDevInfo.PersistenceUnit> findPersistenceUnit(String persistenceUnitName) {
-        return getInfo().getPersistenceUnits().stream().filter(pu -> pu.getName().equals(persistenceUnitName)).findFirst();
+        return getInfo().getPersistenceUnits().stream().filter(pu -> pu.getName().equals(persistenceUnitName))
+                .findFirst();
     }
 
     /**
-     * Execute an arbitrary {@code hql} query in the given {@code persistence unit}. The query might be both a selection or a
-     * mutation statement. For selection queries, the result count is retrieved though a count query and the results, paginated
-     * based on pageNumber and pageSize are returned. For mutation statements, a custom message including the number of affected
-     * records is returned.
+     * Execute an arbitrary {@code hql} query in the given {@code persistence unit}. The query might be both a selection
+     * or a mutation statement. For selection queries, the result count is retrieved though a count query and the
+     * results, paginated based on pageNumber and pageSize are returned. For mutation statements, a custom message
+     * including the number of affected records is returned.
      * <p>
-     * This method handles result serialization (to JSON) internally, and returns a {@link JsonRpcMessage<String>} to avoid
-     * further processing by the {@link JsonRpcRouter}.
+     * This method handles result serialization (to JSON) internally, and returns a {@link JsonRpcMessage<String>} to
+     * avoid further processing by the {@link JsonRpcRouter}.
      *
-     * @param persistenceUnit The name of the persistence unit within which the query will be executed
-     * @param hql The Hibernate Query Language (HQL) statement to execute
-     * @param pageNumber The page number, used for selection query results pagination
-     * @param pageSize The page size, used for selection query results pagination
+     * @param persistenceUnit
+     *        The name of the persistence unit within which the query will be executed
+     * @param hql
+     *        The Hibernate Query Language (HQL) statement to execute
+     * @param pageNumber
+     *        The page number, used for selection query results pagination
+     * @param pageSize
+     *        The page size, used for selection query results pagination
+     *
      * @return a {@link JsonRpcMessage<String>} containing the resulting {@link DataSet} serialized to JSON.
      */
     public JsonRpcMessage<Object> executeHQL(String persistenceUnit, String hql, Integer pageNumber, Integer pageSize) {
@@ -88,7 +93,7 @@ public class HibernateOrmDevJsonRpcService {
             return errorDataSet("No such persistence unit: " + persistenceUnit);
         }
 
-        //noinspection resource
+        // noinspection resource
         SessionFactoryImplementor sf = pu.get().sessionFactory();
 
         // Check the connection for this persistence unit points to an allowed datasource
@@ -112,11 +117,7 @@ public class HibernateOrmDevJsonRpcService {
                     int updateCount = query.executeUpdate();
                     transaction.commit();
                     return new JsonRpcMessage<>(
-                            new DataSet(
-                                    null,
-                                    -1,
-                                    "Query executed correctly. Rows affected: " + updateCount,
-                                    null),
+                            new DataSet(null, -1, "Query executed correctly. Rows affected: " + updateCount, null),
                             MessageType.Response);
                 } else {
                     // selection query, execute count query and return paged results
@@ -192,8 +193,8 @@ public class HibernateOrmDevJsonRpcService {
 
             String host = uri.getHost();
 
-            return host != null && ((host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1")) ||
-                    (allowedHost != null && !allowedHost.isBlank() && host.equalsIgnoreCase(allowedHost)));
+            return host != null && ((host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1"))
+                    || (allowedHost != null && !allowedHost.isBlank() && host.equalsIgnoreCase(allowedHost)));
 
         } catch (URISyntaxException e) {
             Log.warn(e.getMessage());

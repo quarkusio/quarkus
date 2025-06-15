@@ -13,9 +13,9 @@ import org.eclipse.microprofile.config.spi.Converter;
 import io.smallrye.common.net.Inet;
 
 /**
- * A converter which converts a socket address in the form of {@code &lt;host-or-address&gt;[:&lt;port&gt;]} into
- * an instance of {@link InetSocketAddress}. If an address is given, then a resolved instance is returned, otherwise
- * an unresolved instance is returned.
+ * A converter which converts a socket address in the form of {@code &lt;host-or-address&gt;[:&lt;port&gt;]} into an
+ * instance of {@link InetSocketAddress}. If an address is given, then a resolved instance is returned, otherwise an
+ * unresolved instance is returned.
  */
 @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
 public class InetSocketAddressConverter implements Converter<InetSocketAddress>, Serializable {

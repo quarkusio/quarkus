@@ -26,24 +26,20 @@ import io.restassured.RestAssured;
 public class SubResourceRequestFilterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(RestResource.class, RestSubResource.class, SingleExecutionFilter.class,
-                            MiddleRestResource.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(RestResource.class, RestSubResource.class, SingleExecutionFilter.class,
+                    MiddleRestResource.class);
+            return war;
+        }
+    });
 
     @Test
     public void testSubResourceFilter() {
-        RestAssured.get("/sub-resource/Bob/Builder")
-                .then()
-                .header("single-filter", Matchers.equalTo("once"))
-                .body(Matchers.equalTo("Bob Builder"))
-                .statusCode(200);
+        RestAssured.get("/sub-resource/Bob/Builder").then().header("single-filter", Matchers.equalTo("once"))
+                .body(Matchers.equalTo("Bob Builder")).statusCode(200);
     }
 
     @Path("/")
@@ -76,7 +72,8 @@ public class SubResourceRequestFilterTest {
 
         @GET
         public Response hello(HttpHeaders headers, @RestPath String first, @RestPath String last) {
-            return Response.ok(first + " " + last).header("single-filter", headers.getHeaderString("single-filter")).build();
+            return Response.ok(first + " " + last).header("single-filter", headers.getHeaderString("single-filter"))
+                    .build();
         }
     }
 

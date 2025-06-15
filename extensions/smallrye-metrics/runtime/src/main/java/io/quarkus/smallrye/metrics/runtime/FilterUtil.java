@@ -33,25 +33,22 @@ final class FilterUtil {
 
     static void maybeCreateMetrics(Class<?> resourceClass, Method resourceMethod) {
         MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.BASE);
-        MetricID success = getMetricID(resourceClass, resourceMethod.getName(), resourceMethod.getParameterTypes(), true);
+        MetricID success = getMetricID(resourceClass, resourceMethod.getName(), resourceMethod.getParameterTypes(),
+                true);
         if (registry.getSimpleTimer(success) == null) {
-            Metadata successMetadata = Metadata.builder()
-                    .withName(success.getName())
-                    .withDescription(
-                            "The number of invocations and total response time of this RESTful " +
-                                    "resource method since the start of the server.")
-                    .withUnit(MetricUnits.NANOSECONDS)
-                    .build();
+            Metadata successMetadata = Metadata.builder().withName(success.getName())
+                    .withDescription("The number of invocations and total response time of this RESTful "
+                            + "resource method since the start of the server.")
+                    .withUnit(MetricUnits.NANOSECONDS).build();
             registry.simpleTimer(successMetadata, success.getTagsAsArray());
         }
-        MetricID failure = getMetricID(resourceClass, resourceMethod.getName(), resourceMethod.getParameterTypes(), false);
+        MetricID failure = getMetricID(resourceClass, resourceMethod.getName(), resourceMethod.getParameterTypes(),
+                false);
         if (registry.getCounter(failure) == null) {
-            Metadata failureMetadata = Metadata.builder()
-                    .withName(failure.getName())
+            Metadata failureMetadata = Metadata.builder().withName(failure.getName())
                     .withDisplayName("Total Unmapped Exceptions count")
-                    .withDescription(
-                            "The total number of unmapped exceptions that occurred from this RESTful resource " +
-                                    "method since the start of the server.")
+                    .withDescription("The total number of unmapped exceptions that occurred from this RESTful resource "
+                            + "method since the start of the server.")
                     .build();
             registry.counter(failureMetadata, failure.getTagsAsArray());
         }

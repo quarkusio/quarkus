@@ -140,7 +140,8 @@ public class ResteasyReactiveJacksonProcessor {
         try {
             Thread.currentThread().getContextClassLoader().loadClass(DEFAULT_MISMATCHED_INPUT_EXCEPTION);
         } catch (NoClassDefFoundError | ClassNotFoundException e) {
-            // the class is not available, likely due to quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/DefaultMismatchedInputException.class
+            // the class is not available, likely due to
+            // quarkus.class-loading.removed-resources."io.quarkus\:quarkus-rest-jackson"=io/quarkus/resteasy/reactive/jackson/runtime/mappers/DefaultMismatchedInputException.class
             return;
         }
 
@@ -156,17 +157,14 @@ public class ResteasyReactiveJacksonProcessor {
     @BuildStep
     AdditionalBeanBuildItem beans() {
         // make these beans to they can get instantiated with the Quarkus CDI configured ObjectMapper object
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(ServerJacksonMessageBodyReader.class.getName())
+        return AdditionalBeanBuildItem.builder().addBeanClass(ServerJacksonMessageBodyReader.class.getName())
                 .addBeanClass(FullyFeaturedServerJacksonMessageBodyReader.class)
                 .addBeanClass(BasicServerJacksonMessageBodyWriter.class)
                 // This will not be needed in most cases, but it will not be involved in serialization
                 // just because it's a bean.
                 // Whether it is used in RESTEasy Reactive is determined elsewhere
                 .addBeanClass(FullyFeaturedServerJacksonMessageBodyWriter.class)
-                .setDefaultScope(DotNames.APPLICATION_SCOPED)
-                .setUnremovable()
-                .build();
+                .setDefaultScope(DotNames.APPLICATION_SCOPED).setUnremovable().build();
     }
 
     @BuildStep
@@ -178,56 +176,30 @@ public class ResteasyReactiveJacksonProcessor {
         boolean hasObjectMapperContextResolver = contextResolversBuildItem.getContextResolvers().getResolvers()
                 .containsKey(ObjectMapper.class);
 
+        additionalReaders.produce(new MessageBodyReaderBuildItem.Builder(
+                getJacksonMessageBodyReader(hasObjectMapperContextResolver || specialJacksonFeaturesUsed),
+                Object.class.getName()).setMediaTypeStrings(HANDLED_MEDIA_TYPES).setBuiltin(true)
+                .setRuntimeType(RuntimeType.SERVER).build());
         additionalReaders
-                .produce(
-                        new MessageBodyReaderBuildItem.Builder(
-                                getJacksonMessageBodyReader(
-                                        hasObjectMapperContextResolver || specialJacksonFeaturesUsed),
-                                Object.class.getName())
-                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                .setBuiltin(true).setRuntimeType(RuntimeType.SERVER).build());
+                .produce(new MessageBodyReaderBuildItem.Builder(VertxJsonArrayMessageBodyReader.class.getName(),
+                        JsonArray.class.getName()).setMediaTypeStrings(HANDLED_MEDIA_TYPES).setBuiltin(true)
+                        .setRuntimeType(RuntimeType.SERVER).build());
         additionalReaders
-                .produce(
-                        new MessageBodyReaderBuildItem.Builder(VertxJsonArrayMessageBodyReader.class.getName(),
-                                JsonArray.class.getName())
-                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.SERVER)
-                                .build());
-        additionalReaders
-                .produce(
-                        new MessageBodyReaderBuildItem.Builder(VertxJsonObjectMessageBodyReader.class.getName(),
-                                JsonObject.class.getName())
-                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.SERVER)
-                                .build());
+                .produce(new MessageBodyReaderBuildItem.Builder(VertxJsonObjectMessageBodyReader.class.getName(),
+                        JsonObject.class.getName()).setMediaTypeStrings(HANDLED_MEDIA_TYPES).setBuiltin(true)
+                        .setRuntimeType(RuntimeType.SERVER).build());
+        additionalWriters.produce(new MessageBodyWriterBuildItem.Builder(
+                getJacksonMessageBodyWriter(hasObjectMapperContextResolver || specialJacksonFeaturesUsed),
+                Object.class.getName()).setMediaTypeStrings(HANDLED_MEDIA_TYPES).setBuiltin(true)
+                .setRuntimeType(RuntimeType.SERVER).build());
         additionalWriters
-                .produce(
-                        new MessageBodyWriterBuildItem.Builder(
-                                getJacksonMessageBodyWriter(
-                                        hasObjectMapperContextResolver || specialJacksonFeaturesUsed),
-                                Object.class.getName())
-                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.SERVER)
-                                .build());
+                .produce(new MessageBodyWriterBuildItem.Builder(VertxJsonArrayMessageBodyWriter.class.getName(),
+                        JsonArray.class.getName()).setMediaTypeStrings(HANDLED_MEDIA_TYPES).setBuiltin(true)
+                        .setRuntimeType(RuntimeType.SERVER).build());
         additionalWriters
-                .produce(
-                        new MessageBodyWriterBuildItem.Builder(VertxJsonArrayMessageBodyWriter.class.getName(),
-                                JsonArray.class.getName())
-                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.SERVER)
-                                .build());
-        additionalWriters
-                .produce(
-                        new MessageBodyWriterBuildItem.Builder(VertxJsonObjectMessageBodyWriter.class.getName(),
-                                JsonObject.class.getName())
-                                .setMediaTypeStrings(HANDLED_MEDIA_TYPES)
-                                .setBuiltin(true)
-                                .setRuntimeType(RuntimeType.SERVER)
-                                .build());
+                .produce(new MessageBodyWriterBuildItem.Builder(VertxJsonObjectMessageBodyWriter.class.getName(),
+                        JsonObject.class.getName()).setMediaTypeStrings(HANDLED_MEDIA_TYPES).setBuiltin(true)
+                        .setRuntimeType(RuntimeType.SERVER).build());
     }
 
     private String getJacksonMessageBodyWriter(boolean needsFullFeatureSet) {
@@ -298,10 +270,8 @@ public class ResteasyReactiveJacksonProcessor {
                                     "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
                         }
                     }
-                    reflectiveClassProducer.produce(
-                            ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
-                                    .reason(getClass().getName())
-                                    .build());
+                    reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
+                            .reason(getClass().getName()).build());
                     recorder.recordCustomSerialization(getTargetId(instance), biFunctionType.name().toString());
                 }
             }
@@ -325,10 +295,8 @@ public class ResteasyReactiveJacksonProcessor {
                                     "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
                         }
                     }
-                    reflectiveClassProducer.produce(
-                            ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
-                                    .reason(getClass().getName())
-                                    .build());
+                    reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
+                            .reason(getClass().getName()).build());
                     recorder.recordCustomDeserialization(getTargetId(instance), biFunctionType.name().toString());
                 }
             }
@@ -337,10 +305,8 @@ public class ResteasyReactiveJacksonProcessor {
         for (ResourceMethodCustomSerializationBuildItem bi : resourceMethodCustomSerializationBuildItems) {
             jacksonFeatures.add(JacksonFeatureBuildItem.Feature.CUSTOM_SERIALIZATION);
             String className = bi.getCustomSerializationProvider().getName();
-            reflectiveClassProducer.produce(
-                    ReflectiveClassBuildItem.builder(className)
-                            .reason(getClass().getName())
-                            .build());
+            reflectiveClassProducer
+                    .produce(ReflectiveClassBuildItem.builder(className).reason(getClass().getName()).build());
             recorder.recordCustomSerialization(getMethodId(bi.getMethodInfo(), bi.getDeclaringClassInfo()), className);
         }
 
@@ -354,8 +320,9 @@ public class ResteasyReactiveJacksonProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    public void resolveRolesAllowedConfigExpressions(BuildProducer<RolesAllowedConfigExpResolverBuildItem> resolverProducer,
-            Capabilities capabilities, ResteasyReactiveServerJacksonRecorder recorder, CombinedIndexBuildItem indexBuildItem,
+    public void resolveRolesAllowedConfigExpressions(
+            BuildProducer<RolesAllowedConfigExpResolverBuildItem> resolverProducer, Capabilities capabilities,
+            ResteasyReactiveServerJacksonRecorder recorder, CombinedIndexBuildItem indexBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
             BuildProducer<InitAndValidateRolesAllowedConfigExp> initAndValidateItemProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
@@ -367,10 +334,8 @@ public class ResteasyReactiveJacksonProcessor {
                             var storage = recorder.createConfigExpToAllowedRoles();
                             configValRecorder = recorder.recordRolesAllowedConfigExpression(storage);
                             syntheticBeanProducer.produce(SyntheticBeanBuildItem
-                                    .configure(RolesAllowedConfigExpStorage.class)
-                                    .scope(Singleton.class)
-                                    .supplier(recorder.createRolesAllowedConfigExpStorage(storage))
-                                    .unremovable()
+                                    .configure(RolesAllowedConfigExpStorage.class).scope(Singleton.class)
+                                    .supplier(recorder.createRolesAllowedConfigExpStorage(storage)).unremovable()
                                     .done());
                             initAndValidateItemProducer.produce(new InitAndValidateRolesAllowedConfigExp());
                         }
@@ -424,15 +389,13 @@ public class ResteasyReactiveJacksonProcessor {
         if (!serializedClasses.isEmpty()) {
             JacksonSerializerFactory factory = new JacksonSerializerFactory(generatedClassBuildItemBuildProducer,
                     index.getComputingIndex());
-            factory.create(serializedClasses.values())
-                    .forEach(recorder::recordGeneratedSerializer);
+            factory.create(serializedClasses.values()).forEach(recorder::recordGeneratedSerializer);
         }
 
         if (!deserializedClasses.isEmpty()) {
             JacksonDeserializerFactory factory = new JacksonDeserializerFactory(generatedClassBuildItemBuildProducer,
                     index.getComputingIndex());
-            factory.create(deserializedClasses.values())
-                    .forEach(recorder::recordGeneratedDeserializer);
+            factory.create(deserializedClasses.values()).forEach(recorder::recordGeneratedDeserializer);
         }
     }
 
@@ -443,8 +406,7 @@ public class ResteasyReactiveJacksonProcessor {
 
     @BuildStep
     public void handleFieldSecurity(ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntries,
-            JaxRsResourceIndexBuildItem index,
-            BuildProducer<ResourceMethodCustomSerializationBuildItem> producer) {
+            JaxRsResourceIndexBuildItem index, BuildProducer<ResourceMethodCustomSerializationBuildItem> producer) {
         IndexView indexView = index.getIndexView();
         boolean noSecureFieldDetected = indexView.getAnnotations(SECURE_FIELD).isEmpty();
         if (noSecureFieldDetected) {
@@ -502,15 +464,15 @@ public class ResteasyReactiveJacksonProcessor {
             }
 
             AtomicBoolean needToDeleteCache = new AtomicBoolean(false);
-            if (secureSerializationExplicitlyEnabled
-                    || hasSecureFields(indexView, effectiveReturnClassInfo, typeToHasSecureField, needToDeleteCache,
-                            typeParamIdentifierToParameterizedType)) {
+            if (secureSerializationExplicitlyEnabled || hasSecureFields(indexView, effectiveReturnClassInfo,
+                    typeToHasSecureField, needToDeleteCache, typeParamIdentifierToParameterizedType)) {
                 AnnotationInstance customSerializationAtClassAnnotation = methodInfo.declaringClass()
                         .declaredAnnotation(CUSTOM_SERIALIZATION);
                 AnnotationInstance customSerializationAtMethodAnnotation = methodInfo.annotation(CUSTOM_SERIALIZATION);
                 if (customSerializationAtMethodAnnotation != null || customSerializationAtClassAnnotation != null) {
-                    log.warn("Secure serialization will not be applied to method: '" + methodInfo.declaringClass().name() + "#"
-                            + methodInfo.name() + "' because the method or class are annotated with @CustomSerialization.");
+                    log.warn("Secure serialization will not be applied to method: '"
+                            + methodInfo.declaringClass().name() + "#" + methodInfo.name()
+                            + "' because the method or class are annotated with @CustomSerialization.");
                 } else {
                     result.add(new ResourceMethodCustomSerializationBuildItem(methodInfo, entry.getActualClassInfo(),
                             SecurityCustomSerialization.class));
@@ -538,21 +500,21 @@ public class ResteasyReactiveJacksonProcessor {
 
     private static Type getEffectiveType(Type type) {
         Type effectiveReturnType = type;
-        if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI)) {
+        if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE)
+                || effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI)
+                || effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE)
+                || effectiveReturnType.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE)
+                || effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_MULTI)
+                || effectiveReturnType.name().equals(ResteasyReactiveDotNames.MULTI)) {
             if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                 return null;
             }
 
             effectiveReturnType = type.asParameterizedType().arguments().get(0);
         }
-        if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
-                effectiveReturnType.name().equals(ResteasyReactiveDotNames.LIST)) {
+        if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET)
+                || effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION)
+                || effectiveReturnType.name().equals(ResteasyReactiveDotNames.LIST)) {
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(0);
         } else if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.MAP)) {
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(1);
@@ -563,8 +525,8 @@ public class ResteasyReactiveJacksonProcessor {
     private static Map<String, Boolean> getTypesWithSecureField() {
         // if any of following types is detected as an endpoint return type or a field of endpoint return type,
         // we always need to apply security serialization as any type can be represented with them
-        return Map.of(ResteasyReactiveDotNames.OBJECT.toString(), Boolean.TRUE, ResteasyReactiveDotNames.RESPONSE.toString(),
-                Boolean.TRUE);
+        return Map.of(ResteasyReactiveDotNames.OBJECT.toString(), Boolean.TRUE,
+                ResteasyReactiveDotNames.RESPONSE.toString(), Boolean.TRUE);
     }
 
     private static boolean hasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
@@ -607,7 +569,8 @@ public class ResteasyReactiveJacksonProcessor {
                 } else {
                     hasSecureFields = anyFieldHasSecureFields(indexView, currentClassInfo, typeToHasSecureField,
                             needToDeleteCache, typeParamIdentifierToParameterizedType)
-                            || anySubclassHasSecureFields(indexView, currentClassInfo, typeToHasSecureField, needToDeleteCache)
+                            || anySubclassHasSecureFields(indexView, currentClassInfo, typeToHasSecureField,
+                                    needToDeleteCache)
                             || anyParentClassHasSecureFields(indexView, currentClassInfo, typeToHasSecureField,
                                     needToDeleteCache);
                 }
@@ -637,28 +600,25 @@ public class ResteasyReactiveJacksonProcessor {
 
     private static boolean anySubclassHasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
             Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache) {
-        return indexView.getAllKnownSubclasses(currentClassInfo.name()).stream()
-                .anyMatch(subclass -> hasSecureFields(indexView, subclass, typeToHasSecureField, needToDeleteCache, null));
+        return indexView.getAllKnownSubclasses(currentClassInfo.name()).stream().anyMatch(
+                subclass -> hasSecureFields(indexView, subclass, typeToHasSecureField, needToDeleteCache, null));
     }
 
     private static boolean anyFieldHasSecureFields(IndexView indexView, ClassInfo currentClassInfo,
             Map<String, Boolean> typeToHasSecureField, AtomicBoolean needToDeleteCache,
             Map<String, Type> typeParamIdentifierToParameterizedType) {
-        return currentClassInfo
-                .fields()
-                .stream()
-                .filter(fieldInfo -> !fieldInfo.hasAnnotation(JSON_IGNORE))
-                .map(FieldInfo::type)
-                .map(fieldType -> {
+        return currentClassInfo.fields().stream().filter(fieldInfo -> !fieldInfo.hasAnnotation(JSON_IGNORE))
+                .map(FieldInfo::type).map(fieldType -> {
                     if (typeParamIdentifierToParameterizedType != null && fieldType.kind() == Type.Kind.TYPE_VARIABLE) {
-                        var typeVariable = typeParamIdentifierToParameterizedType.get(fieldType.asTypeVariable().identifier());
+                        var typeVariable = typeParamIdentifierToParameterizedType
+                                .get(fieldType.asTypeVariable().identifier());
                         if (typeVariable != null) {
                             return typeVariable;
                         }
                     }
                     return fieldType;
-                })
-                .anyMatch(fieldType -> fieldTypeHasSecureFields(fieldType, indexView, typeToHasSecureField, needToDeleteCache));
+                }).anyMatch(fieldType -> fieldTypeHasSecureFields(fieldType, indexView, typeToHasSecureField,
+                        needToDeleteCache));
     }
 
     private static boolean fieldTypeHasSecureFields(Type fieldType, IndexView indexView,
@@ -669,17 +629,15 @@ public class ResteasyReactiveJacksonProcessor {
                 return false;
             }
             final ClassInfo fieldClass = indexView.getClassByName(fieldType.name());
-            return fieldClass != null && hasSecureFields(indexView, fieldClass, typeToHasSecureField, needToDeleteCache, null);
+            return fieldClass != null
+                    && hasSecureFields(indexView, fieldClass, typeToHasSecureField, needToDeleteCache, null);
         }
         if (fieldType.kind() == Type.Kind.ARRAY) {
             return fieldTypeHasSecureFields(fieldType.asArrayType().constituent(), indexView, typeToHasSecureField,
                     needToDeleteCache);
         }
         if (fieldType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
-            return fieldType
-                    .asParameterizedType()
-                    .arguments()
-                    .stream()
+            return fieldType.asParameterizedType().arguments().stream()
                     .anyMatch(t -> fieldTypeHasSecureFields(t, indexView, typeToHasSecureField, needToDeleteCache));
         }
         return false;
@@ -695,8 +653,8 @@ public class ResteasyReactiveJacksonProcessor {
             return "request-body;" + getMethodId(target.asMethodParameter().method());
         }
 
-        throw new UnsupportedOperationException(String.format("The `%s` annotation can only "
-                + "be used in methods or classes.", instance.name()));
+        throw new UnsupportedOperationException(
+                String.format("The `%s` annotation can only " + "be used in methods or classes.", instance.name()));
     }
 
     private String getClassId(ClassInfo classInfo) {
@@ -717,8 +675,8 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     /**
-     * Purely marker build item so that we know at least one allowed role with configuration
-     * expressions has been detected.
+     * Purely marker build item so that we know at least one allowed role with configuration expressions has been
+     * detected.
      */
     public static final class InitAndValidateRolesAllowedConfigExp extends SimpleBuildItem {
         private InitAndValidateRolesAllowedConfigExp() {

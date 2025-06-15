@@ -21,14 +21,12 @@ import io.smallrye.common.annotation.NonBlocking;
 public class BothBlockingAndNonBlockingOnApplicationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, MyApplication.class);
-                }
-            }).setExpectedException(DeploymentException.class);
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, MyApplication.class);
+        }
+    }).setExpectedException(DeploymentException.class);
 
     @Test
     public void test() {

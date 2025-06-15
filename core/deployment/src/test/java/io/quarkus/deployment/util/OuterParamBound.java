@@ -7,8 +7,8 @@ public class OuterParamBound<W extends Number & Comparable<W>> {
         return null;
     }
 
-    public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T bbb(
-            U arg, W arg2, OuterParamBound<W> self) {
+    public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T bbb(U arg, W arg2,
+            OuterParamBound<W> self) {
         return null;
     }
 
@@ -27,8 +27,8 @@ public class OuterParamBound<W extends Number & Comparable<W>> {
     }
 
     public static class NestedParamBound<X extends Number & Comparable<X>> {
-        public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T eee(
-                List<?> arg, X arg2, NestedParamBound<X> self) throws V {
+        public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T eee(List<?> arg,
+                X arg2, NestedParamBound<X> self) throws V {
             return null;
         }
     }
@@ -48,14 +48,14 @@ public class OuterParamBound<W extends Number & Comparable<W>> {
     }
 
     public class InnerParamBound<X extends Number & Comparable<X>> {
-        public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T hhh(
-                List<?> arg, X arg2, W arg3, InnerParamBound<X> self) throws V {
+        public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T hhh(List<?> arg,
+                X arg2, W arg3, InnerParamBound<X> self) throws V {
             return null;
         }
 
         public class DoubleInner<Y extends CharSequence> {
-            public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T iii(
-                    List<?> arg, Y arg2, X arg3, W arg4, DoubleInner<Y> self) throws V {
+            public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T iii(List<?> arg,
+                    Y arg2, X arg3, W arg4, DoubleInner<Y> self) throws V {
                 return null;
             }
         }

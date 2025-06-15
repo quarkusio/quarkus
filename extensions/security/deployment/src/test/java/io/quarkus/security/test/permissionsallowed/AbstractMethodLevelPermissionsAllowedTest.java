@@ -43,8 +43,10 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
         assertFailureFor(getPermissionsAllowedNameOnlyBean().prohibitedNonBlocking(), ForbiddenException.class, ADMIN);
 
         // identity has no permission, annotation has one permission
-        assertFailureFor(() -> getPermissionsAllowedNameOnlyBean().prohibited(), UnauthorizedException.class, ANONYMOUS);
-        assertFailureFor(getPermissionsAllowedNameOnlyBean().prohibitedNonBlocking(), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> getPermissionsAllowedNameOnlyBean().prohibited(), UnauthorizedException.class,
+                ANONYMOUS);
+        assertFailureFor(getPermissionsAllowedNameOnlyBean().prohibitedNonBlocking(), UnauthorizedException.class,
+                ANONYMOUS);
 
         // identity has one permission, annotation has multiple permissions
         assertSuccess(() -> getPermissionsAllowedNameOnlyBean().multiple(), MULTIPLE_PERMISSION, USER);
@@ -57,13 +59,15 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
         // identity has multiple permissions, annotation has multiple permissions
         final var multiplePermissionsIdentity = new AuthData(Set.of(), false, MULTIPLE_PERMISSION,
                 permissions(READ_PERMISSION, "a", "b", "c", "d"));
-        assertSuccess(() -> getPermissionsAllowedNameOnlyBean().multiple(), MULTIPLE_PERMISSION, multiplePermissionsIdentity);
+        assertSuccess(() -> getPermissionsAllowedNameOnlyBean().multiple(), MULTIPLE_PERMISSION,
+                multiplePermissionsIdentity);
         assertSuccess(getPermissionsAllowedNameOnlyBean().multipleNonBlocking(), MULTIPLE_PERMISSION,
                 multiplePermissionsIdentity);
 
         // identity has multiple permissions, annotation has one permission
         assertSuccess(() -> getPermissionsAllowedNameOnlyBean().read(), READ_PERMISSION, multiplePermissionsIdentity);
-        assertSuccess(getPermissionsAllowedNameOnlyBean().readNonBlocking(), READ_PERMISSION, multiplePermissionsIdentity);
+        assertSuccess(getPermissionsAllowedNameOnlyBean().readNonBlocking(), READ_PERMISSION,
+                multiplePermissionsIdentity);
 
         // identity has multiple permissions, annotation has different permissions
         final var diffPermissionsIdentity = new AuthData(Set.of(), false, MULTIPLE_PERMISSION,
@@ -76,8 +80,10 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
 
     @Test
     public void shouldRestrictAccessToSpecificPermissionAndAction() {
-        final var admin = new AuthData(Collections.singleton("admin"), false, "admin", permission(WRITE_PERMISSION, "bean"));
-        final var user = new AuthData(Collections.singleton("user"), false, "user", permission(READ_PERMISSION, "bean"));
+        final var admin = new AuthData(Collections.singleton("admin"), false, "admin",
+                permission(WRITE_PERMISSION, "bean"));
+        final var user = new AuthData(Collections.singleton("user"), false, "user",
+                permission(READ_PERMISSION, "bean"));
 
         // identity has one permission and action, annotation has same permission and action
         assertSuccess(() -> getPermissionsAllowedNameAndActionsOnlyBean().write(), WRITE_PERMISSION_BEAN, admin);
@@ -92,27 +98,28 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
         // identity has one permission and action, annotation has same permission and different actions
         final var user1 = new AuthData(Collections.singleton("user"), false, "user",
                 permission(READ_PERMISSION, "diff1", "diff2"));
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multipleActions(), ForbiddenException.class,
-                user1);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlockingActions(), ForbiddenException.class,
-                user1);
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multipleActions(),
+                ForbiddenException.class, user1);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlockingActions(),
+                ForbiddenException.class, user1);
 
         // identity has one permission and action, annotation has different permission and action
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().prohibited(), ForbiddenException.class, admin);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().prohibitedNonBlocking(), ForbiddenException.class,
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().prohibited(), ForbiddenException.class,
                 admin);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().prohibitedNonBlocking(),
+                ForbiddenException.class, admin);
 
         // identity has no permission, annotation has one permission and action
         assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().prohibited(), UnauthorizedException.class,
                 ANONYMOUS);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().prohibitedNonBlocking(), UnauthorizedException.class,
-                ANONYMOUS);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().prohibitedNonBlocking(),
+                UnauthorizedException.class, ANONYMOUS);
 
         // identity has no permission, annotation has multiple permissions, each with one action
         assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multiple(), UnauthorizedException.class,
                 ANONYMOUS);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlocking(), UnauthorizedException.class,
-                ANONYMOUS);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlocking(),
+                UnauthorizedException.class, ANONYMOUS);
 
         // identity has one permission and action, annotation has multiple permissions, each with one action
         assertSuccess(() -> getPermissionsAllowedNameAndActionsOnlyBean().multiple(), MULTIPLE_BEAN, user);
@@ -121,32 +128,39 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
         // identity has one permission and action, annotation has multiple permissions, some with actions, some not
         // should succeed as identity has 'read:bean', while annotation requires 'read'
         assertSuccess(() -> getPermissionsAllowedNameAndActionsOnlyBean().combination(), MULTIPLE_BEAN, user);
-        assertSuccess(getPermissionsAllowedNameAndActionsOnlyBean().combinationNonBlockingActions(), MULTIPLE_BEAN, user);
+        assertSuccess(getPermissionsAllowedNameAndActionsOnlyBean().combinationNonBlockingActions(), MULTIPLE_BEAN,
+                user);
 
         // identity has one permission and action, annotation has multiple permissions, some with actions, some not
         // should fail as identity has 'read:bean', while annotation requires 'read:meal' or 'read:bread'
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().combination2(), ForbiddenException.class, user);
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().combination2(), ForbiddenException.class,
+                user);
         assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().combination2NonBlockingActions(),
                 ForbiddenException.class, user);
 
         // identity has one permission and action, annotation has different permissions, each with one action
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multiple(), ForbiddenException.class, admin);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlocking(), ForbiddenException.class, admin);
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multiple(), ForbiddenException.class,
+                admin);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlocking(), ForbiddenException.class,
+                admin);
 
         // identity has one permission and no action, annotation has different permissions, each with one action
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multiple(), ForbiddenException.class, USER);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlocking(), ForbiddenException.class, USER);
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multiple(), ForbiddenException.class,
+                USER);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlocking(), ForbiddenException.class,
+                USER);
 
         // identity has one permission and action, annotation has different permissions with multiple actions
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multipleActions(), ForbiddenException.class,
-                admin);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlockingActions(), ForbiddenException.class,
-                admin);
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multipleActions(),
+                ForbiddenException.class, admin);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlockingActions(),
+                ForbiddenException.class, admin);
 
         // identity has one permission and no action, annotation has different permissions with multiple actions
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multipleActions(), ForbiddenException.class, USER);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlockingActions(), ForbiddenException.class,
-                USER);
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().multipleActions(),
+                ForbiddenException.class, USER);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().multipleNonBlockingActions(),
+                ForbiddenException.class, USER);
 
         // identity has one permission and one action, annotation has different permissions with multiple actions
         // most notably, annotation has "read:bread", "read:meal" and identity has "read:bread" => success
@@ -161,10 +175,12 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
         // identity has one permission and action, annotation has multiple permissions, some with actions, some not
         // should fail as identity has 'read:bean', while all of "one", "two", "three:c", "three", "read:bread",
         // "read:meal" are required
-        final var user = new AuthData(Collections.singleton("user"), false, "user", permission(READ_PERMISSION, "bean"));
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().inclusive(), ForbiddenException.class, user);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().inclusiveNonBlocking(),
-                ForbiddenException.class, user);
+        final var user = new AuthData(Collections.singleton("user"), false, "user",
+                permission(READ_PERMISSION, "bean"));
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().inclusive(), ForbiddenException.class,
+                user);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().inclusiveNonBlocking(), ForbiddenException.class,
+                user);
 
         // should succeed as the identity has all required permissions and one more ('apple')
         var permissions = permissions("one", "two", "three", "apple");
@@ -181,9 +197,10 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
         permissions.addAll(permission("read", "bread"));
         permissions.addAll(permission("read", "meal"));
         final var user2 = new AuthData(Collections.singleton("user"), false, "user", permissions);
-        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().inclusive(), ForbiddenException.class, user2);
-        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().inclusiveNonBlocking(),
-                ForbiddenException.class, user2);
+        assertFailureFor(() -> getPermissionsAllowedNameAndActionsOnlyBean().inclusive(), ForbiddenException.class,
+                user2);
+        assertFailureFor(getPermissionsAllowedNameAndActionsOnlyBean().inclusiveNonBlocking(), ForbiddenException.class,
+                user2);
     }
 
     @Test
@@ -199,7 +216,8 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
 
         // identity has 2 permissions, annotation requires 2 different permissions
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().createOrUpdate(), ForbiddenException.class, user);
-        assertFailureFor(getMultiplePermissionsAllowedBean().createOrUpdateNonBlocking(), ForbiddenException.class, user);
+        assertFailureFor(getMultiplePermissionsAllowedBean().createOrUpdateNonBlocking(), ForbiddenException.class,
+                user);
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().getOne(), ForbiddenException.class, admin);
         assertFailureFor(getMultiplePermissionsAllowedBean().getOneNonBlocking(), ForbiddenException.class, admin);
 
@@ -210,13 +228,15 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
 
         // identity has 1 permissions, annotation requires 2 permissions, one of them is same as the identity possess
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().createOrUpdate(), ForbiddenException.class, update);
-        assertFailureFor(getMultiplePermissionsAllowedBean().createOrUpdateNonBlocking(), ForbiddenException.class, create);
+        assertFailureFor(getMultiplePermissionsAllowedBean().createOrUpdateNonBlocking(), ForbiddenException.class,
+                create);
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().getOne(), ForbiddenException.class, see);
         assertFailureFor(getMultiplePermissionsAllowedBean().getOneNonBlocking(), ForbiddenException.class, view);
 
         // identity has 1 permissions, annotation requires 2 different permissions
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().createOrUpdate(), ForbiddenException.class, see);
-        assertFailureFor(getMultiplePermissionsAllowedBean().createOrUpdateNonBlocking(), ForbiddenException.class, view);
+        assertFailureFor(getMultiplePermissionsAllowedBean().createOrUpdateNonBlocking(), ForbiddenException.class,
+                view);
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().getOne(), ForbiddenException.class, create);
         assertFailureFor(getMultiplePermissionsAllowedBean().getOneNonBlocking(), ForbiddenException.class, update);
 
@@ -242,29 +262,34 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
         final var operand1_4_6 = new AuthData(Collections.singleton("operand1_4_6"), false, "operand1_4_6",
                 permissions("operand1", "operand4", "operand6"));
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().predicate(), ForbiddenException.class, operand1_4_6);
-        assertFailureFor(getMultiplePermissionsAllowedBean().predicateNonBlocking(), ForbiddenException.class, operand1_4_6);
+        assertFailureFor(getMultiplePermissionsAllowedBean().predicateNonBlocking(), ForbiddenException.class,
+                operand1_4_6);
 
         // - identity has operand1 AND operand4 AND operand8 => missing operand6 or operand7 => failure
         final var operand1_4_8 = new AuthData(Collections.singleton("operand1_4_8"), false, "operand1_4_8",
                 permissions("operand1", "operand4", "operand8"));
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().predicate(), ForbiddenException.class, operand1_4_8);
-        assertFailureFor(getMultiplePermissionsAllowedBean().predicateNonBlocking(), ForbiddenException.class, operand1_4_8);
+        assertFailureFor(getMultiplePermissionsAllowedBean().predicateNonBlocking(), ForbiddenException.class,
+                operand1_4_8);
 
         // - identity has operand1 AND operand6 AND operand8 => missing operand4 or operand5 => failure
         final var operand1_6_8 = new AuthData(Collections.singleton("operand1_6_8"), false, "operand1_6_8",
                 permissions("operand1", "operand6", "operand8"));
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().predicate(), ForbiddenException.class, operand1_6_8);
-        assertFailureFor(getMultiplePermissionsAllowedBean().predicateNonBlocking(), ForbiddenException.class, operand1_6_8);
+        assertFailureFor(getMultiplePermissionsAllowedBean().predicateNonBlocking(), ForbiddenException.class,
+                operand1_6_8);
 
         // - identity has operand4 AND operand6 AND operand8 => missing operand1 or operand2 or operand3 => failure
         final var operand4_6_8 = new AuthData(Collections.singleton("operand4_6_8"), false, "operand4_6_8",
                 permissions("operand4", "operand6", "operand8"));
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().predicate(), ForbiddenException.class, operand4_6_8);
-        assertFailureFor(getMultiplePermissionsAllowedBean().predicateNonBlocking(), ForbiddenException.class, operand4_6_8);
+        assertFailureFor(getMultiplePermissionsAllowedBean().predicateNonBlocking(), ForbiddenException.class,
+                operand4_6_8);
 
         // - identity has all operands => success
         final var full_operands = new AuthData(Collections.singleton("full_operands"), false, "full_operands",
-                permissions("operand1", "operand2", "operand3", "operand4", "operand5", "operand6", "operand7", "operand8"));
+                permissions("operand1", "operand2", "operand3", "operand4", "operand5", "operand6", "operand7",
+                        "operand8"));
         assertSuccess(() -> getMultiplePermissionsAllowedBean().predicate(), PREDICATE, full_operands);
         assertSuccess(getMultiplePermissionsAllowedBean().predicateNonBlocking(), PREDICATE, full_operands);
     }
@@ -273,80 +298,80 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
     public void shouldRequireMultiplePermissionsWithActions() {
         // (permission1:action1 OR permission2:action2) AND (permission1:action2 OR permission2:action1)
         // - success
-        //   - permission1:action1, permission2:action2, permission1:action2, permission2:action1
+        // - permission1:action1, permission2:action2, permission1:action2, permission2:action1
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(1, 1, 2, 2, 1, 2, 2, 1));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(1, 1, 2, 2, 1, 2, 2, 1));
-        //   - permission1:action1, permission1:action2, permission2:action1
+        // - permission1:action1, permission1:action2, permission2:action1
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(1, 1, 1, 2, 2, 1));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(1, 1, 1, 2, 2, 1));
-        //   - permission2:action2, permission1:action2, permission2:action1
+        // - permission2:action2, permission1:action2, permission2:action1
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(2, 2, 1, 2, 2, 1));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(2, 2, 1, 2, 2, 1));
-        //   - permission1:action1, permission2:action2, permission1:action2
+        // - permission1:action1, permission2:action2, permission1:action2
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(1, 1, 2, 2, 1, 2));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(1, 1, 2, 2, 1, 2));
-        //   - permission1:action1, permission2:action2, permission2:action1
+        // - permission1:action1, permission2:action2, permission2:action1
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(1, 1, 2, 2, 2, 1));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(1, 1, 2, 2, 2, 1));
-        //   - permission2:action2, permission2:action1
+        // - permission2:action2, permission2:action1
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(2, 2, 2, 1));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(2, 2, 2, 1));
-        //   - permission2:action2, permission1:action2
+        // - permission2:action2, permission1:action2
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(2, 2, 1, 2));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(2, 2, 1, 2));
-        //   - permission1:action1, permission2:action1
+        // - permission1:action1, permission2:action1
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(1, 1, 2, 1));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(1, 1, 2, 1));
-        //   - permission1:action1, permission1:action2
+        // - permission1:action1, permission1:action2
         assertSuccess(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), PREDICATE,
                 withPermissionsAndActions(1, 1, 1, 2));
         assertSuccess(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), PREDICATE,
                 withPermissionsAndActions(1, 1, 1, 2));
         // - failure
-        //   - permission1:action1, permission2:action2
+        // - permission1:action1, permission2:action2
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1, 2, 2));
         assertFailureFor(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1, 2, 2));
-        //   - permission1:action2, permission2:action1
+        // - permission1:action2, permission2:action1
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), ForbiddenException.class,
                 withPermissionsAndActions(1, 2, 2, 1));
         assertFailureFor(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), ForbiddenException.class,
                 withPermissionsAndActions(1, 2, 2, 1));
-        //   - permission1:action2
+        // - permission1:action2
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), ForbiddenException.class,
                 withPermissionsAndActions(1, 2));
         assertFailureFor(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), ForbiddenException.class,
                 withPermissionsAndActions(1, 2));
-        //   - permission2:action1
+        // - permission2:action1
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), ForbiddenException.class,
                 withPermissionsAndActions(2, 1));
         assertFailureFor(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), ForbiddenException.class,
                 withPermissionsAndActions(2, 1));
-        //   - permission2, permission1, permission2
-        var permissionsOnlyIdentity = new AuthData(Collections.singleton("permissions_actions"), false, "permissions_actions",
-                permissions("permission2", "permission1", "permission2"));
+        // - permission2, permission1, permission2
+        var permissionsOnlyIdentity = new AuthData(Collections.singleton("permissions_actions"), false,
+                "permissions_actions", permissions("permission2", "permission1", "permission2"));
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), ForbiddenException.class,
                 permissionsOnlyIdentity);
         assertFailureFor(getMultiplePermissionsAllowedBean().actionsPredicateNonBlocking(), ForbiddenException.class,
                 permissionsOnlyIdentity);
-        //   - no matching permissions
+        // - no matching permissions
         var noMatchIdentity = new AuthData(Collections.singleton("permissions_actions"), false, "permissions_actions",
                 permissions("no_match"));
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().actionsPredicate(), ForbiddenException.class,
@@ -359,33 +384,33 @@ public abstract class AbstractMethodLevelPermissionsAllowedTest {
     public void inclusivePermissionChecksRepeatable() {
         // (permission1:action1 AND permission2:action2) AND (permission1:action2 AND permission2:action1)
         // - success
-        //   - permission1:action1, permission2:action2, permission1:action2, permission2:action1
+        // - permission1:action1, permission2:action2, permission1:action2, permission2:action1
         assertSuccess(() -> getMultiplePermissionsAllowedBean().inclusive(), new User("Sergey"),
                 withPermissionsAndActions(1, 1, 2, 2, 1, 2, 2, 1));
         assertSuccess(getMultiplePermissionsAllowedBean().inclusiveNonBlocking(), new User("Stuart"),
                 withPermissionsAndActions(1, 1, 2, 2, 1, 2, 2, 1));
         // - failure
-        //   - permission1:action1, permission2:action2, permission1:action2
+        // - permission1:action1, permission2:action2, permission1:action2
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().inclusive(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1, 2, 2, 1, 2));
         assertFailureFor(getMultiplePermissionsAllowedBean().inclusiveNonBlocking(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1, 2, 2, 1, 2));
-        //   - permission1:action1, permission2:action2, permission2:action1
+        // - permission1:action1, permission2:action2, permission2:action1
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().inclusive(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1, 2, 2, 2, 1));
         assertFailureFor(getMultiplePermissionsAllowedBean().inclusiveNonBlocking(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1, 2, 2, 2, 1));
-        //   - permission1:action1, permission2:action2
+        // - permission1:action1, permission2:action2
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().inclusive(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1, 2, 2));
         assertFailureFor(getMultiplePermissionsAllowedBean().inclusiveNonBlocking(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1, 2, 2));
-        //   - permission1:action1
+        // - permission1:action1
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().inclusive(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1));
         assertFailureFor(getMultiplePermissionsAllowedBean().inclusiveNonBlocking(), ForbiddenException.class,
                 withPermissionsAndActions(1, 1));
-        //   - no matching permission
+        // - no matching permission
         var noMatchIdentity = new AuthData(Collections.singleton("permissions_actions"), false, "permissions_actions",
                 permissions("no_match"));
         assertFailureFor(() -> getMultiplePermissionsAllowedBean().inclusive(), ForbiddenException.class,

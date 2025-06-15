@@ -40,8 +40,8 @@ public class SnappyRecorder {
         boolean hasNativeLib = hasResource(snappyNativeLibraryPath + "/" + snappyNativeLibraryName);
 
         if (!hasNativeLib) {
-            String errorMessage = String.format("no native library is found for os.name=%s and os.arch=%s", OSInfo.getOSName(),
-                    OSInfo.getArchName());
+            String errorMessage = String.format("no native library is found for os.name=%s and os.arch=%s",
+                    OSInfo.getOSName(), OSInfo.getArchName());
             throw new RuntimeException(errorMessage);
         }
 

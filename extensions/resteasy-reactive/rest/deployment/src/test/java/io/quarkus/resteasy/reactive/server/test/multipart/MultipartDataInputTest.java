@@ -33,28 +33,20 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultipartDataInputTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, Item.class, Result.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, Item.class, Result.class);
+        }
+    });
 
     private final File HTML_FILE = new File("./src/test/resources/test.html");
     private final File XML_FILE = new File("./src/test/resources/test.xml");
 
     @Test
     public void empty() {
-        Result result = given()
-                .contentType("multipart/form-data")
-                .accept("application/json")
-                .when()
-                .post("/test/0")
-                .then()
-                .statusCode(200)
-                .extract().body().as(Result.class);
+        Result result = given().contentType("multipart/form-data").accept("application/json").when().post("/test/0")
+                .then().statusCode(200).extract().body().as(Result.class);
 
         assertThat(result).satisfies(r -> {
             assertThat(r.count).isEqualTo(0);
@@ -65,16 +57,9 @@ public class MultipartDataInputTest {
     @Test
     public void multipleParts() {
         String status = "WORKING";
-        Result result = given()
-                .multiPart("status", status)
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .multiPart("xmlFile", XML_FILE, "text/xml")
-                .accept("application/json")
-                .when()
-                .post("/test/3")
-                .then()
-                .statusCode(200)
-                .extract().body().as(Result.class);
+        Result result = given().multiPart("status", status).multiPart("htmlFile", HTML_FILE, "text/html")
+                .multiPart("xmlFile", XML_FILE, "text/xml").accept("application/json").when().post("/test/3").then()
+                .statusCode(200).extract().body().as(Result.class);
 
         assertThat(result).satisfies(r -> {
 
@@ -115,13 +100,9 @@ public class MultipartDataInputTest {
             List<Item> items = new ArrayList<>();
             for (var entry : map.entrySet()) {
                 for (FormValue value : entry.getValue()) {
-                    items.add(new Item(
-                            entry.getKey(),
+                    items.add(new Item(entry.getKey(),
                             value.isFileItem() ? value.getFileItem().getFileSize() : value.getValue().length(),
-                            value.getCharset(),
-                            value.getFileName(),
-                            value.isFileItem(),
-                            value.getHeaders()));
+                            value.getCharset(), value.getFileName(), value.isFileItem(), value.getHeaders()));
                 }
 
             }

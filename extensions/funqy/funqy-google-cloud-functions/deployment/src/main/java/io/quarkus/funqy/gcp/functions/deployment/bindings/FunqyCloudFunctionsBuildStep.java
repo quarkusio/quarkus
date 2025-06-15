@@ -37,10 +37,9 @@ public class FunqyCloudFunctionsBuildStep {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void init(List<FunctionBuildItem> functions,
-            FunqyCloudFunctionsBindingRecorder recorder,
-            Optional<FunctionInitializedBuildItem> hasFunctions,
-            BeanContainerBuildItem beanContainer) throws Exception {
+    public void init(List<FunctionBuildItem> functions, FunqyCloudFunctionsBindingRecorder recorder,
+            Optional<FunctionInitializedBuildItem> hasFunctions, BeanContainerBuildItem beanContainer)
+            throws Exception {
         if (!hasFunctions.isPresent())
             return;
 

@@ -22,13 +22,11 @@ public final class SignatureMethodCreator {
     private static final Type RESPONSE_TYPE = Type.classType(Response.class);
 
     /**
-     * Creates a method using a signature (which allows declaring parameterized types like lists).
-     *
-     * For example, for the method: "List<String> list(List<String> sort, int size, int other, String uri)"
-     * It will use the following signature the generated the method:
-     * "(Ljava/util/List<Ljava/lang/String;>;IILjava/lang/String;)Ljava/util/List<Ljava/lang/String;>;".
-     *
-     * One useful utility to verify the method signatures is using "javap -v Test.class" where the Test java class is a compiled
+     * Creates a method using a signature (which allows declaring parameterized types like lists). For example, for the
+     * method: "List<String> list(List<String> sort, int size, int other, String uri)" It will use the following
+     * signature the generated the method:
+     * "(Ljava/util/List<Ljava/lang/String;>;IILjava/lang/String;)Ljava/util/List<Ljava/lang/String;>;". One useful
+     * utility to verify the method signatures is using "javap -v Test.class" where the Test java class is a compiled
      * version of the method you want to see the signature.
      */
     public static MethodCreator getMethodCreator(String methodName, ClassCreator classCreator, ReturnType returnType,

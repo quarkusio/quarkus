@@ -142,10 +142,8 @@ class RestClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setup(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            RestClientRecorder restClientRecorder) {
+    void setup(BuildProducer<FeatureBuildItem> feature, BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, RestClientRecorder restClientRecorder) {
 
         feature.produce(new FeatureBuildItem(Feature.RESTEASY_CLIENT));
 
@@ -153,17 +151,16 @@ class RestClientProcessor {
 
         additionalBeans.produce(new AdditionalBeanBuildItem(RestClient.class));
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DefaultResponseExceptionMapper.class.getName(),
-                AsyncInterceptorRxInvokerProvider.class.getName(),
-                ResteasyProviderFactoryImpl.class.getName(),
-                ProxyBuilderImpl.class.getName(),
-                ClientRequestFilter[].class.getName(),
-                ClientResponseFilter[].class.getName(),
-                jakarta.ws.rs.ext.ReaderInterceptor[].class.getName()).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(DefaultResponseExceptionMapper.class.getName(),
+                        AsyncInterceptorRxInvokerProvider.class.getName(), ResteasyProviderFactoryImpl.class.getName(),
+                        ProxyBuilderImpl.class.getName(), ClientRequestFilter[].class.getName(),
+                        ClientResponseFilter[].class.getName(), jakarta.ws.rs.ext.ReaderInterceptor[].class.getName())
+                .build());
 
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(ResteasyClientBuilder.class.getName(), NoopHostnameVerifier.class.getName())
-                        .methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(ResteasyClientBuilder.class.getName(), NoopHostnameVerifier.class.getName()).methods()
+                .build());
     }
 
     @BuildStep
@@ -189,25 +186,22 @@ class RestClientProcessor {
     }
 
     @BuildStep
-    void processInterfaces(
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            Capabilities capabilities,
-            Optional<MetricsCapabilityBuildItem> metricsCapability,
-            NativeConfig nativeConfig,
+    void processInterfaces(CombinedIndexBuildItem combinedIndexBuildItem,
+            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem, Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability, NativeConfig nativeConfig,
             List<RestClientPredicateProviderBuildItem> restClientProviders,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinition,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<RestClientBuildItem> restClient) {
+            BuildProducer<ServiceProviderBuildItem> serviceProvider, BuildProducer<RestClientBuildItem> restClient) {
 
         // According to the spec only rest client interfaces annotated with RegisterRestClient are registered as beans
         Map<DotName, ClassInfo> interfaces = new HashMap<>();
         Set<Type> returnTypes = new HashSet<>();
 
-        IndexView index = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(), combinedIndexBuildItem.getIndex());
+        IndexView index = CompositeIndex.create(beanArchiveIndexBuildItem.getIndex(),
+                combinedIndexBuildItem.getIndex());
 
         findInterfaces(index, interfaces, returnTypes, REGISTER_REST_CLIENT, classInfo -> true);
         // in there, we are overly cautious it could be an interface for a server class
@@ -224,27 +218,25 @@ class RestClientProcessor {
             String iName = entry.getKey().toString();
             // the native image proxy definitions have to be separate because
             // MP REST Client impl creates a JDK proxy that delegates to a resteasy JDK proxy
-            proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
-            proxyDefinition.produce(
-                    new NativeImageProxyDefinitionBuildItem(iName, RestClientProxy.class.getName(), Closeable.class.getName()));
+            proxyDefinition
+                    .produce(new NativeImageProxyDefinitionBuildItem(iName, ResteasyClientProxy.class.getName()));
+            proxyDefinition.produce(new NativeImageProxyDefinitionBuildItem(iName, RestClientProxy.class.getName(),
+                    Closeable.class.getName()));
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(iName).methods().build());
         }
 
         // Incoming headers
         // required for the non-arg constructor of DCHFImpl to be included in the native image
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(DefaultClientHeadersFactoryImpl.class.getName()).methods()
-                .build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(DefaultClientHeadersFactoryImpl.class.getName()).methods().build());
 
         // Register Interface return types for reflection
         for (Type returnType : returnTypes) {
-            reflectiveHierarchy
-                    .produce(ReflectiveHierarchyBuildItem
-                            .builder(returnType)
-                            .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
-                            .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                            .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                            .source(getClass().getSimpleName() + " > " + returnType.toString())
-                            .build());
+            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(returnType)
+                    .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
+                    .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
+                    .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
+                    .source(getClass().getSimpleName() + " > " + returnType.toString()).build());
         }
 
         final Config config = ConfigProvider.getConfig();
@@ -267,7 +259,8 @@ class RestClientProcessor {
             }
 
             ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(restClientName);
-            // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for now
+            // The spec is not clear whether we should add superinterfaces too - let's keep aligned with SmallRye for
+            // now
             configurator.addType(restClientName);
             configurator.addQualifier(REST_CLIENT);
             List<String> clientProviders = checkRestClientProviders(entry.getValue(), restClientProviders);
@@ -287,8 +280,7 @@ class RestClientProcessor {
                     restClientProvidersHandle = m.loadNull();
                 }
                 ResultHandle baseHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class,
-                                String.class,
+                        MethodDescriptor.ofConstructor(RestClientBase.class, Class.class, String.class, String.class,
                                 Class[].class),
                         interfaceHandle, baseUriHandle, configKeyHandle, restClientProvidersHandle);
                 ResultHandle ret = m.invokeVirtualMethod(
@@ -303,43 +295,38 @@ class RestClientProcessor {
     }
 
     @BuildStep
-    void generateRestClientConfigBuilder(
-            List<RestClientBuildItem> restClients,
+    void generateRestClientConfigBuilder(List<RestClientBuildItem> restClients,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
         List<RegisteredRestClient> registeredRestClients = restClients.stream()
-                .map(rc -> new RegisteredRestClient(
-                        rc.getClassInfo().name().toString(),
-                        rc.getClassInfo().simpleName(),
+                .map(rc -> new RegisteredRestClient(rc.getClassInfo().name().toString(), rc.getClassInfo().simpleName(),
                         rc.getConfigKey().orElse(null)))
                 .toList();
 
-        RestClientConfigUtils.generateRestClientConfigBuilder(registeredRestClients, generatedClass, staticInitConfigBuilder,
-                runTimeConfigBuilder);
+        RestClientConfigUtils.generateRestClientConfigBuilder(registeredRestClients, generatedClass,
+                staticInitConfigBuilder, runTimeConfigBuilder);
     }
 
     @BuildStep
-    void clientTracingFeature(Capabilities capabilities,
-            Optional<MetricsCapabilityBuildItem> metricsCapability, BuildProducer<ResteasyJaxrsProviderBuildItem> producer) {
+    void clientTracingFeature(Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
+            BuildProducer<ResteasyJaxrsProviderBuildItem> producer) {
         if (isRequired(capabilities, metricsCapability)) {
             producer.produce(new ResteasyJaxrsProviderBuildItem(PathFeatureHandler.class.getName()));
             producer.produce(new ResteasyJaxrsProviderBuildItem(PathTemplateInjectionFilter.class.getName()));
         }
     }
 
-    private boolean isRequired(Capabilities capabilities,
-            Optional<MetricsCapabilityBuildItem> metricsCapability) {
-        return (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
-                (metricsCapability.isPresent()
-                        && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
+    private boolean isRequired(Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability) {
+        return (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) || (metricsCapability.isPresent()
+                && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
     }
 
     private static List<String> checkRestClientProviders(ClassInfo classInfo,
             List<RestClientPredicateProviderBuildItem> restClientProviders) {
-        return restClientProviders.stream().filter(p -> p.appliesTo(classInfo))
-                .map(p -> p.getProviderClass()).collect(Collectors.toList());
+        return restClientProviders.stream().filter(p -> p.appliesTo(classInfo)).map(p -> p.getProviderClass())
+                .collect(Collectors.toList());
     }
 
     @BuildStep
@@ -371,8 +358,8 @@ class RestClientProcessor {
             }
         }
         if (!dotNames.isEmpty()) {
-            log.warnf("rest-client interfaces that contain default methods and are annotated with '@" + CLIENT_HEADER_PARAM
-                    + "' might not work properly in native mode. Offending interfaces are: "
+            log.warnf("rest-client interfaces that contain default methods and are annotated with '@"
+                    + CLIENT_HEADER_PARAM + "' might not work properly in native mode. Offending interfaces are: "
                     + dotNames.stream().map(d -> "'" + d.toString() + "'").collect(Collectors.joining(", ")));
         }
     }
@@ -447,15 +434,16 @@ class RestClientProcessor {
             if (builtinScope != null) { // override default @Dependent scope with user defined one.
                 scopeToUse = builtinScope.getInfo();
             } else if (capabilities.isPresent(Capability.SERVLET)) {
-                if (scope.equals(SESSION_SCOPED) || scope.toString().equalsIgnoreCase(SESSION_SCOPED.withoutPackagePrefix())) {
+                if (scope.equals(SESSION_SCOPED)
+                        || scope.toString().equalsIgnoreCase(SESSION_SCOPED.withoutPackagePrefix())) {
                     scopeToUse = new ScopeInfo(SESSION_SCOPED, true);
                 }
             }
 
             if (scopeToUse == null) {
                 log.warn(String.format(
-                        "Unsupported default scope %s provided for REST client %s. Defaulting to @Dependent.",
-                        scope, entry.getKey()));
+                        "Unsupported default scope %s provided for REST client %s. Defaulting to @Dependent.", scope,
+                        entry.getKey()));
             }
         } else {
             final Set<DotName> annotations = classInfo.annotationsMap().keySet();
@@ -487,8 +475,7 @@ class RestClientProcessor {
     void registerProviders(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             JaxrsProvidersToRegisterBuildItem jaxrsProvidersToRegisterBuildItem,
             List<IgnoreClientProviderBuildItem> ignoreClientProviderBuildItems,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            ResteasyInjectionReadyBuildItem injectorFactory,
+            CombinedIndexBuildItem combinedIndexBuildItem, ResteasyInjectionReadyBuildItem injectorFactory,
             RestClientRecorder restClientRecorder, Capabilities capabilities) {
 
         for (IgnoreClientProviderBuildItem item : ignoreClientProviderBuildItems) {
@@ -497,12 +484,13 @@ class RestClientProcessor {
         }
 
         restClientRecorder.initializeResteasyProviderFactory(injectorFactory.getInjectorFactory(),
-                jaxrsProvidersToRegisterBuildItem.useBuiltIn(),
-                jaxrsProvidersToRegisterBuildItem.getProviders(), jaxrsProvidersToRegisterBuildItem.getContributedProviders());
+                jaxrsProvidersToRegisterBuildItem.useBuiltIn(), jaxrsProvidersToRegisterBuildItem.getProviders(),
+                jaxrsProvidersToRegisterBuildItem.getContributedProviders());
 
         if (!capabilities.isPresent(Capability.RESTEASY) && !capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
             // ResteasyProviderFactory will use our implementation when accessing instance statically. That's not
-            // necessary when RESTEasy classic is present as then provider factory with correct provider classes is generated.
+            // necessary when RESTEasy classic is present as then provider factory with correct provider classes is
+            // generated.
             restClientRecorder.setResteasyProviderFactoryInstance();
         }
 
@@ -520,29 +508,25 @@ class RestClientProcessor {
         }
         for (AnnotationInstance annotationInstance : allInstances) {
             reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString())
-                            .build());
+                    .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString()).build());
         }
 
         // Register @RegisterClientHeaders for reflection
         for (AnnotationInstance annotationInstance : index.getAnnotations(REGISTER_CLIENT_HEADERS)) {
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString())
-                                .build());
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString()).build());
             }
         }
 
         // now retain all un-annotated implementations of ClientRequestFilter and ClientResponseFilter
         // in case they are programmatically registered by applications
         for (ClassInfo info : index.getAllKnownImplementors(CLIENT_REQUEST_FILTER)) {
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
         }
         for (ClassInfo info : index.getAllKnownImplementors(CLIENT_RESPONSE_FILTER)) {
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(info.name().toString()).build());
         }
     }
 
@@ -556,7 +540,8 @@ class RestClientProcessor {
         allInstances.addAll(index.getAnnotations(REGISTER_CLIENT_HEADERS));
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
         for (AnnotationInstance annotationInstance : allInstances) {
-            // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as beans
+            // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as
+            // beans
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
                 builder.addBeanClass(value.asClass().toString());
@@ -566,8 +551,9 @@ class RestClientProcessor {
     }
 
     @BuildStep
-    void unremovableInterceptors(List<RestClientBuildItem> restClientInterfaces, BeanArchiveIndexBuildItem beanArchiveIndex,
-            InterceptorResolverBuildItem interceptorResolver, BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+    void unremovableInterceptors(List<RestClientBuildItem> restClientInterfaces,
+            BeanArchiveIndexBuildItem beanArchiveIndex, InterceptorResolverBuildItem interceptorResolver,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
 
         if (restClientInterfaces.isEmpty()) {
             return;
@@ -600,9 +586,8 @@ class RestClientProcessor {
                     if (bindings.isEmpty()) {
                         continue;
                     }
-                    List<InterceptorInfo> interceptors = interceptorResolver.get().resolve(
-                            InterceptionType.AROUND_INVOKE,
-                            bindings);
+                    List<InterceptorInfo> interceptors = interceptorResolver.get()
+                            .resolve(InterceptionType.AROUND_INVOKE, bindings);
                     if (!interceptors.isEmpty()) {
                         interceptors.stream().map(InterceptorInfo::getBeanClass).map(Object::toString)
                                 .forEach(unremovableInterceptors::add);

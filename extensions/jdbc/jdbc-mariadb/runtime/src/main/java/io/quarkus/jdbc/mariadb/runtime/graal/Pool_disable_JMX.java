@@ -19,7 +19,7 @@ public final class Pool_disable_JMX {
 
     @Substitute
     private void unRegisterJmx() throws Exception {
-        //no-op
+        // no-op
     }
 
 }

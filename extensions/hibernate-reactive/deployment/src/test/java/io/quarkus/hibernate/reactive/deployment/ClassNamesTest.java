@@ -22,8 +22,7 @@ public class ClassNamesTest {
     @ParameterizedTest
     @MethodSource("provideConstantsToTest")
     void testClassNameRefersToExistingClass(DotName constant) {
-        assertThatCode(() -> getClass().getClassLoader().loadClass(constant.toString()))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> getClass().getClassLoader().loadClass(constant.toString())).doesNotThrowAnyException();
     }
 
     private static Set<DotName> provideConstantsToTest() {

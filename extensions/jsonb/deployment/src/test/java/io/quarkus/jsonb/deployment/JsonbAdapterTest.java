@@ -17,8 +17,7 @@ public class JsonbAdapterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Alpha.class, AlphaAdapter.class, Bravo.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Alpha.class, AlphaAdapter.class, Bravo.class));
 
     @Inject
     Jsonb jsonb;

@@ -7,17 +7,18 @@ import org.bson.conversions.Bson;
 import io.quarkus.panache.common.Parameters;
 
 /**
- * Interface representing an update query.
- *
- * Use one of its methods to perform the update query.
+ * Interface representing an update query. Use one of its methods to perform the update query.
  */
 public interface PanacheUpdate {
 
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        params optional sequence of indexed parameters
+     *
      * @return the number of entities updated.
      */
     public long where(String query, Object... params);
@@ -25,8 +26,11 @@ public interface PanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return the number of entities updated.
      */
     public long where(String query, Map<String, Object> params);
@@ -34,8 +38,11 @@ public interface PanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return the number of entities updated.
      */
     public long where(String query, Parameters params);
@@ -43,7 +50,9 @@ public interface PanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link org.bson.conversions.Bson} query
+     * @param query
+     *        a {@link org.bson.conversions.Bson} query
+     *
      * @return the number of entities updated.
      */
     public long where(Bson query);

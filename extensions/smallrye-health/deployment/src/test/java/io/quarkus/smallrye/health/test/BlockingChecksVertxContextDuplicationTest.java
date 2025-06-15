@@ -20,17 +20,14 @@ class BlockingChecksVertxContextDuplicationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ContextCaptureCheck1.class, ContextCaptureCheck2.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ContextCaptureCheck1.class, ContextCaptureCheck2.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     void testBlockingChecksPropagateVertxContext() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            RestAssured.when().get("/q/health").then()
-                    .body("status", is("UP"),
-                            "checks.size()", is(2));
+            RestAssured.when().get("/q/health").then().body("status", is("UP"), "checks.size()", is(2));
 
             Assertions.assertNotEquals(ContextCaptureCheck1.capturedContext, ContextCaptureCheck2.capturedContext,
                     "Expected different contexts to be propagated into different blocking health checks");

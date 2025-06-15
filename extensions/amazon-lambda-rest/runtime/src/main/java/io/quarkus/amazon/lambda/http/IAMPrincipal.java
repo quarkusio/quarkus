@@ -5,11 +5,8 @@ import java.security.Principal;
 import io.quarkus.amazon.lambda.http.model.ApiGatewayRequestIdentity;
 
 /**
- * Allocated when IAM is used to authenticate user
- *
- * Will only be allocated if requestContext.identity.user is set
- * in the http event sent by API Gateway
- *
+ * Allocated when IAM is used to authenticate user Will only be allocated if requestContext.identity.user is set in the
+ * http event sent by API Gateway
  */
 public class IAMPrincipal implements Principal {
     private String name;

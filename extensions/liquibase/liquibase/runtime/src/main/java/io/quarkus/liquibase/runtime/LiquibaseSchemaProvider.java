@@ -16,7 +16,7 @@ public class LiquibaseSchemaProvider implements DatabaseSchemaProvider {
                 LiquibaseFactory liquibaseFactory = LiquibaseFactoryUtil.getLiquibaseFactory(dbName).get();
                 doReset(liquibaseFactory);
             } catch (UnsatisfiedResolutionException e) {
-                //ignore, the DS is not configured
+                // ignore, the DS is not configured
             }
         } catch (Exception e) {
             throw new IllegalStateException("Error starting Liquibase", e);
@@ -26,12 +26,13 @@ public class LiquibaseSchemaProvider implements DatabaseSchemaProvider {
     @Override
     public void resetAllDatabases() {
         try {
-            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : LiquibaseFactoryUtil.getActiveLiquibaseFactories()) {
+            for (InstanceHandle<LiquibaseFactory> liquibaseFactoryHandle : LiquibaseFactoryUtil
+                    .getActiveLiquibaseFactories()) {
                 try {
                     LiquibaseFactory liquibaseFactory = liquibaseFactoryHandle.get();
                     doReset(liquibaseFactory);
                 } catch (UnsatisfiedResolutionException e) {
-                    //ignore, the DS is not configured
+                    // ignore, the DS is not configured
                 }
             }
         } catch (Exception e) {

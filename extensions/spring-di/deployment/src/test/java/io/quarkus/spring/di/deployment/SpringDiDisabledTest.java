@@ -15,10 +15,8 @@ public class SpringDiDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Bar.class))
-            .setExpectedException(DeploymentException.class)
-            .overrideConfigKey("quarkus.spring-di.enabled", "false");
+            .withApplicationRoot((jar) -> jar.addClasses(Foo.class, Bar.class))
+            .setExpectedException(DeploymentException.class).overrideConfigKey("quarkus.spring-di.enabled", "false");
 
     @Test
     void shouldNotBeCalled() {

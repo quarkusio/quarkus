@@ -94,6 +94,7 @@ public class VirtualClientConnection<T> {
      * Establish a virtual intra-JVM connection
      *
      * @param remoteAddress
+     *
      * @return
      */
     public static VirtualClientConnection connect(VirtualResponseHandler handler, VirtualAddress remoteAddress) {
@@ -105,6 +106,7 @@ public class VirtualClientConnection<T> {
      *
      * @param remoteAddress
      * @param clientAddress
+     *
      * @return
      */
     public static VirtualClientConnection connect(VirtualResponseHandler handler, VirtualAddress remoteAddress,

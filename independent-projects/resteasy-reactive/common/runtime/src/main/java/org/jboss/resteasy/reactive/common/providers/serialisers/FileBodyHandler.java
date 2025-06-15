@@ -30,14 +30,13 @@ public class FileBodyHandler implements MessageBodyReader<File>, MessageBodyWrit
     }
 
     @Override
-    public File readFrom(Class<File> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
+    public File readFrom(Class<File> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
         return doRead(httpHeaders, entityStream, Files.createTempFile(PREFIX, SUFFIX).toFile());
     }
 
-    public static File doRead(MultivaluedMap<String, String> httpHeaders, InputStream entityStream,
-            File file) throws IOException {
+    public static File doRead(MultivaluedMap<String, String> httpHeaders, InputStream entityStream, File file)
+            throws IOException {
         if (HeaderUtil.isContentLengthZero(httpHeaders)) {
             return file;
         }
@@ -53,10 +52,8 @@ public class FileBodyHandler implements MessageBodyReader<File>, MessageBodyWrit
         return File.class.isAssignableFrom(type);
     }
 
-    public void writeTo(File uploadFile, Class<?> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders,
-            OutputStream entityStream) throws IOException {
+    public void writeTo(File uploadFile, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException {
         httpHeaders.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(uploadFile.length()));
         doWrite(uploadFile, entityStream);
     }

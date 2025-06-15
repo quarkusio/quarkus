@@ -24,13 +24,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ClientInterceptorPriorityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
-            root -> root
-                    .addClasses(MutinyHelloService.class, MyFirstClientInterceptor.class,
-                            MySecondClientInterceptor.class, MyThirdClientInterceptor.class, Calls.class,
-                            GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
-                            MutinyGreeterGrpc.class,
-                            HelloRequestOrBuilder.class, HelloReplyOrBuilder.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withApplicationRoot(root -> root.addClasses(MutinyHelloService.class, MyFirstClientInterceptor.class,
+                    MySecondClientInterceptor.class, MyThirdClientInterceptor.class, Calls.class, GreeterGrpc.class,
+                    Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
+                    HelloRequestOrBuilder.class, HelloReplyOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @RegisterClientInterceptor(MyThirdClientInterceptor.class)
@@ -41,8 +39,7 @@ public class ClientInterceptorPriorityTest {
     public void testInterceptors() {
         Calls.LIST.clear();
 
-        HelloReply reply = client
-                .sayHello(HelloRequest.newBuilder().setName("neo").build());
+        HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("neo").build());
         assertThat(reply.getMessage()).isEqualTo("Hello neo");
 
         List<String> calls = Calls.LIST;

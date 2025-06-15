@@ -44,24 +44,20 @@ public class BuildWithExclusionsWorkspaceModuleTest extends BootstrapFromWorkspa
         install(acmeBom);
 
         final WorkspaceModule module = WorkspaceModule.builder()
-                .setModuleId(WorkspaceModuleId.of("org.acme", "acme-app", "1"))
-                .setModuleDir(mkdir("app-module"))
+                .setModuleId(WorkspaceModuleId.of("org.acme", "acme-app", "1")).setModuleDir(mkdir("app-module"))
                 .setBuildDir(mkdir("target"))
-                .addArtifactSources(ArtifactSources.main(
-                        SourceDir.of(mkdir("app-module/main/java"), mkdir("main/classes")),
-                        SourceDir.of(mkdir("app-module/main/resources"), mkdir("main/classes"))))
-                .addArtifactSources(ArtifactSources.test(
-                        SourceDir.of(mkdir("app-module/test/java"), mkdir("test/classes")),
-                        SourceDir.of(mkdir("app-module/test/resources"), mkdir("test/classes"))))
+                .addArtifactSources(
+                        ArtifactSources.main(SourceDir.of(mkdir("app-module/main/java"), mkdir("main/classes")),
+                                SourceDir.of(mkdir("app-module/main/resources"), mkdir("main/classes"))))
+                .addArtifactSources(
+                        ArtifactSources.test(SourceDir.of(mkdir("app-module/test/java"), mkdir("test/classes")),
+                                SourceDir.of(mkdir("app-module/test/resources"), mkdir("test/classes"))))
                 .addDependencyConstraint(
                         Dependency.pomImport(acmeBom.getGroupId(), acmeBom.getArtifactId(), acmeBom.getVersion()))
-                .addDependencyConstraint(
-                        DependencyBuilder.newInstance()
-                                .setGroupId(acmeExt.getRuntime().getGroupId())
-                                .setArtifactId(acmeExt.getRuntime().getArtifactId())
-                                .setVersion(acmeExt.getRuntime().getVersion())
-                                .addExclusion(TsArtifact.DEFAULT_GROUP_ID, "acme-lib-a")
-                                .build())
+                .addDependencyConstraint(DependencyBuilder.newInstance().setGroupId(acmeExt.getRuntime().getGroupId())
+                        .setArtifactId(acmeExt.getRuntime().getArtifactId())
+                        .setVersion(acmeExt.getRuntime().getVersion())
+                        .addExclusion(TsArtifact.DEFAULT_GROUP_ID, "acme-lib-a").build())
                 .addDependency(Dependency.of(acmeExt.getRuntime().getGroupId(), acmeExt.getRuntime().getArtifactId()))
                 .build();
 
@@ -76,12 +72,13 @@ public class BuildWithExclusionsWorkspaceModuleTest extends BootstrapFromWorkspa
         assertThat(appArtifact.getResolvedPaths().getSinglePath()).isEqualTo(workDir.resolve("main/classes"));
 
         // runtime classpath
-        assertThat(appModel.getDependencies().stream().filter(Dependency::isRuntimeCp).map(ArtifactCoords::getArtifactId)
-                .collect(Collectors.toList())).isEqualTo(List.of("acme-ext", "acme-lib-b"));
+        assertThat(appModel.getDependencies().stream().filter(Dependency::isRuntimeCp)
+                .map(ArtifactCoords::getArtifactId).collect(Collectors.toList()))
+                .isEqualTo(List.of("acme-ext", "acme-lib-b"));
 
         // deployment classpath
-        assertThat(appModel.getDependencies().stream().filter(Dependency::isDeploymentCp).map(ArtifactCoords::getArtifactId)
-                .collect(Collectors.toList()))
+        assertThat(appModel.getDependencies().stream().filter(Dependency::isDeploymentCp)
+                .map(ArtifactCoords::getArtifactId).collect(Collectors.toList()))
                 .isEqualTo(List.of("acme-ext", "acme-lib-b", "acme-ext-deployment"));
     }
 

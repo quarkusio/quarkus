@@ -25,16 +25,14 @@ public class PermissionCheckerMethodArgsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class,
-                            PermissionCheckerOnlySecurityIdentity.class,
-                            PermissionCheckerOneSecuredMethodArg.class, PermissionCheckerTwoSecuredMethodArgs.class,
-                            PermissionCheckerThreeSecuredMethodArgs.class,
-                            PermissionCheckerFourSecuredMethodArgs.class, AbstractNthMethodArgChecker.class,
-                            PermissionChecker1stMethodArg.class, PermissionChecker2ndMethodArg.class,
-                            PermissionChecker3rdMethodArg.class, PermissionChecker4thMethodArg.class,
-                            PermissionChecker5thMethodArg.class, PermissionChecker6thMethodArg.class,
-                            PermissionChecker7thMethodArg.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class,
+                    PermissionCheckerOnlySecurityIdentity.class, PermissionCheckerOneSecuredMethodArg.class,
+                    PermissionCheckerTwoSecuredMethodArgs.class, PermissionCheckerThreeSecuredMethodArgs.class,
+                    PermissionCheckerFourSecuredMethodArgs.class, AbstractNthMethodArgChecker.class,
+                    PermissionChecker1stMethodArg.class, PermissionChecker2ndMethodArg.class,
+                    PermissionChecker3rdMethodArg.class, PermissionChecker4thMethodArg.class,
+                    PermissionChecker5thMethodArg.class, PermissionChecker6thMethodArg.class,
+                    PermissionChecker7thMethodArg.class));
 
     @Inject
     MethodArgsBean bean;
@@ -70,10 +68,12 @@ public class PermissionCheckerMethodArgsTest {
 
         assertSuccess(() -> bean.threeSecuredMethodArguments_2(1, 2, "3"), "threeSecuredMethodArguments_2",
                 ADMIN_WITH_AUGMENTORS);
-        assertFailureFor(() -> bean.threeSecuredMethodArguments_2(1, 2, "3"), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertFailureFor(() -> bean.threeSecuredMethodArguments_2(1, 2, "3"), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
 
         // wrong value of 'two'
-        assertFailureFor(() -> bean.threeSecuredMethodArguments_2(1, 4, "3"), ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
+        assertFailureFor(() -> bean.threeSecuredMethodArguments_2(1, 4, "3"), ForbiddenException.class,
+                ADMIN_WITH_AUGMENTORS);
     }
 
     @Test
@@ -81,7 +81,8 @@ public class PermissionCheckerMethodArgsTest {
         assertSuccess(() -> bean.threeSecuredMethodArguments("1", "2", "3"), "threeSecuredMethodArguments",
                 ADMIN_WITH_AUGMENTORS);
         assertFailureFor(() -> bean.threeSecuredMethodArguments("1", "2", "3"), ForbiddenException.class, ADMIN);
-        assertFailureFor(() -> bean.threeSecuredMethodArguments("1", "2", "3"), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertFailureFor(() -> bean.threeSecuredMethodArguments("1", "2", "3"), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
 
         assertSuccess(() -> bean.fourSecuredMethodArguments_2("1", 2, "3", 4), "fourSecuredMethodArguments_2",
                 ADMIN_WITH_AUGMENTORS);
@@ -98,7 +99,8 @@ public class PermissionCheckerMethodArgsTest {
         assertSuccess(() -> bean.fourSecuredMethodArguments(1, 2, "3", "4"), "fourSecuredMethodArguments",
                 ADMIN_WITH_AUGMENTORS);
         assertFailureFor(() -> bean.fourSecuredMethodArguments(1, 2, "3", "4"), ForbiddenException.class, ADMIN);
-        assertFailureFor(() -> bean.fourSecuredMethodArguments(1, 2, "3", "4"), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertFailureFor(() -> bean.fourSecuredMethodArguments(1, 2, "3", "4"), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
 
         assertSuccess(() -> bean.fiveSecuredMethodArguments_2("1", 2, "3", 4, "5"), "fiveSecuredMethodArguments_2",
                 ADMIN_WITH_AUGMENTORS);
@@ -159,8 +161,8 @@ public class PermissionCheckerMethodArgsTest {
                 ADMIN_WITH_AUGMENTORS);
 
         // === all 7 arguments required by 7 different permissions
-        assertSuccess(() -> bean.sevenSecuredMethodArguments_2("1", 2, "3", 4, "5", 6, 7), "sevenSecuredMethodArguments_2",
-                ADMIN_WITH_AUGMENTORS);
+        assertSuccess(() -> bean.sevenSecuredMethodArguments_2("1", 2, "3", 4, "5", 6, 7),
+                "sevenSecuredMethodArguments_2", ADMIN_WITH_AUGMENTORS);
         assertFailureFor(() -> bean.sevenSecuredMethodArguments_2("1", 2, "3", 4, "5", 6, 7), ForbiddenException.class,
                 USER_WITH_AUGMENTORS);
         // 5th is wrong
@@ -186,40 +188,33 @@ public class PermissionCheckerMethodArgsTest {
     @Test
     public void testMultipleCheckersForOneSecMethod_inclusive() {
         // === all 7 arguments required by 7 different permissions inside single @PermissionsAllowed annotation instance
-        // another 2 permissions ("another-6th-arg", "another-7th-arg") are required by second @PermissionsAllowed instance
+        // another 2 permissions ("another-6th-arg", "another-7th-arg") are required by second @PermissionsAllowed
+        // instance
         // therefore user needs all 9 permissions
         assertSuccess(() -> bean.sevenSecuredMethodArguments_2_inclusive("1", 2, "3", 4, "5", 6, 7),
-                "sevenSecuredMethodArguments_2_inclusive",
-                ADMIN_WITH_AUGMENTORS);
+                "sevenSecuredMethodArguments_2_inclusive", ADMIN_WITH_AUGMENTORS);
         assertFailureFor(() -> bean.sevenSecuredMethodArguments_2_inclusive("1", 2, "3", 4, "5", 6, 7),
-                ForbiddenException.class,
-                USER_WITH_AUGMENTORS);
+                ForbiddenException.class, USER_WITH_AUGMENTORS);
         // 5th is wrong
         assertFailureFor(() -> bean.sevenSecuredMethodArguments_2_inclusive("1", 2, "3", 4, "5", 5, 7),
-                ForbiddenException.class,
-                ADMIN_WITH_AUGMENTORS);
+                ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
         // 6th is wrong
         assertFailureFor(() -> bean.sevenSecuredMethodArguments_2_inclusive("1", 2, "3", 4, "5", 6, 8),
-                ForbiddenException.class,
-                ADMIN_WITH_AUGMENTORS);
+                ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
         // permission checker "another-6th-arg" accepts either int or String, but never long
         // pass: 6th param is string
         assertSuccess(() -> bean.sevenSecuredMethodArguments_2_inclusive("1", 2, "3", 4, "5", "6", 7),
-                "sevenSecuredMethodArguments_2_inclusive",
-                ADMIN_WITH_AUGMENTORS);
+                "sevenSecuredMethodArguments_2_inclusive", ADMIN_WITH_AUGMENTORS);
         // fail: 6th param is long
         assertFailureFor(() -> bean.sevenSecuredMethodArguments_2_inclusive("1", 2, "3", 4, "5", 6L, 7),
-                ForbiddenException.class,
-                ADMIN_WITH_AUGMENTORS);
+                ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
         // permission checker "another-7th-arg" accepts either int or long, but never String
         // pass: 7th param is long
         assertSuccess(() -> bean.sevenSecuredMethodArguments_2_inclusive("1", 2, "3", 4, "5", 6, 7L),
-                "sevenSecuredMethodArguments_2_inclusive",
-                ADMIN_WITH_AUGMENTORS);
+                "sevenSecuredMethodArguments_2_inclusive", ADMIN_WITH_AUGMENTORS);
         // fail: 7th param is string
         assertFailureFor(() -> bean.sevenSecuredMethodArguments_2_inclusive("1", 2, "3", 4, "5", 6, "7"),
-                ForbiddenException.class,
-                ADMIN_WITH_AUGMENTORS);
+                ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
 
         // === all 6 arguments required by 6 different permissions inside one @PermissionsAllowed annotation instance
         assertSuccess(() -> bean.sixSecuredMethodArguments_2("1", 2, "3", 4, "5", 6), "sixSecuredMethodArguments_2",
@@ -308,11 +303,13 @@ public class PermissionCheckerMethodArgsTest {
         @PermissionsAllowed("4th-arg")
         @PermissionsAllowed("5th-arg")
         @PermissionsAllowed("6th-arg")
-        public String sixSecuredMethodArguments_2(String one, int two, String three, int four, String five, Object six) {
+        public String sixSecuredMethodArguments_2(String one, int two, String three, int four, String five,
+                Object six) {
             return "sixSecuredMethodArguments_2";
         }
 
-        @PermissionsAllowed(value = { "1st-arg", "2nd-arg", "3rd-arg", "4th-arg", "5th-arg", "6th-arg" }, inclusive = true)
+        @PermissionsAllowed(value = { "1st-arg", "2nd-arg", "3rd-arg", "4th-arg", "5th-arg",
+                "6th-arg" }, inclusive = true)
         public String sixSecuredMethodArguments_2_inclusive(String one, int two, String three, int four, String five,
                 Object six) {
             return "sixSecuredMethodArguments_2_inclusive";
@@ -332,8 +329,8 @@ public class PermissionCheckerMethodArgsTest {
         @PermissionsAllowed("5th-arg")
         @PermissionsAllowed("6th-arg")
         @PermissionsAllowed("7th-arg")
-        public String sevenSecuredMethodArguments_2(String one, int two, String three, int four, String five, Object six,
-                Object seven) {
+        public String sevenSecuredMethodArguments_2(String one, int two, String three, int four, String five,
+                Object six, Object seven) {
             return "sevenSecuredMethodArguments_2";
         }
 
@@ -341,8 +338,7 @@ public class PermissionCheckerMethodArgsTest {
         @PermissionsAllowed(value = { "1st-arg", "2nd-arg", "3rd-arg", "4th-arg", "5th-arg", "6th-arg",
                 "7th-arg" }, inclusive = true)
         public String sevenSecuredMethodArguments_2_inclusive(String one, int two, String three, int four, String five,
-                Object six,
-                Object seven) {
+                Object six, Object seven) {
             return "sevenSecuredMethodArguments_2_inclusive";
         }
     }

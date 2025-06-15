@@ -15,9 +15,7 @@ public class SmallRyeReactiveMessagingAmqpProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem build() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(AmqpClientConfigCustomizer.class)
-                .setUnremovable()
+        return AdditionalBeanBuildItem.builder().addBeanClass(AmqpClientConfigCustomizer.class).setUnremovable()
                 .build();
     }
 }

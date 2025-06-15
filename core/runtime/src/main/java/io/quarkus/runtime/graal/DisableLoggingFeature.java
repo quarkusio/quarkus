@@ -15,15 +15,12 @@ public class DisableLoggingFeature implements Feature {
     /**
      * Category to configure to WARNING
      */
-    private static final String[] WARN_CATEGORIES = {
-            "org.jboss.threads" };
+    private static final String[] WARN_CATEGORIES = { "org.jboss.threads" };
 
     /**
      * Category to configure to ERROR
      */
-    private static final String[] ERROR_CATEGORIES = {
-            "io.netty.resolver.dns.DnsServerAddressStreamProviders"
-    };
+    private static final String[] ERROR_CATEGORIES = { "io.netty.resolver.dns.DnsServerAddressStreamProviders" };
 
     private final Map<String, Level> categoryMap = new HashMap<>(WARN_CATEGORIES.length + ERROR_CATEGORIES.length);
 

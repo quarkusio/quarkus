@@ -32,8 +32,7 @@ public class ZonedDateTimeObjectMapperCustomizer implements ObjectMapperCustomiz
         customDateModule.addSerializer(ZonedDateTime.class, new ZonedDateTimeSerializer(
                 new DateTimeFormatterBuilder().appendInstant(0).toFormatter().withZone(ZoneId.of("Z"))));
         customDateModule.addDeserializer(ZonedDateTime.class, new ZonedDateTimeEuropeLondonDeserializer());
-        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-                .registerModule(customDateModule);
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS).registerModule(customDateModule);
     }
 
     public static class ZonedDateTimeEuropeLondonDeserializer extends JsonDeserializer<ZonedDateTime> {
@@ -41,8 +40,7 @@ public class ZonedDateTimeObjectMapperCustomizer implements ObjectMapperCustomiz
         @Override
         public ZonedDateTime deserialize(JsonParser p, DeserializationContext ctxt)
                 throws IOException, JsonProcessingException {
-            return ZonedDateTime.parse(p.getValueAsString())
-                    .withZoneSameInstant(ZoneId.of("Europe/London"));
+            return ZonedDateTime.parse(p.getValueAsString()).withZoneSameInstant(ZoneId.of("Europe/London"));
         }
     }
 }

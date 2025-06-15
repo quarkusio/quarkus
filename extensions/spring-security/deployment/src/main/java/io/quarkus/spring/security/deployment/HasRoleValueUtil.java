@@ -23,12 +23,9 @@ final class HasRoleValueUtil {
     private HasRoleValueUtil() {
     }
 
-    static Supplier<String[]> getHasRoleValueProducer(String hasRoleValue, MethodInfo methodInfo,
-            IndexView index,
-            Map<String, DotName> springBeansNameToDotName,
-            Map<String, ClassInfo> springBeansNameToClassInfo,
-            Set<String> beansReferencedInPreAuthorized,
-            SpringSecurityRecorder recorder) {
+    static Supplier<String[]> getHasRoleValueProducer(String hasRoleValue, MethodInfo methodInfo, IndexView index,
+            Map<String, DotName> springBeansNameToDotName, Map<String, ClassInfo> springBeansNameToClassInfo,
+            Set<String> beansReferencedInPreAuthorized, SpringSecurityRecorder recorder) {
         if (hasRoleValue.startsWith("'") && hasRoleValue.endsWith("'")) {
             return recorder.staticHasRole(hasRoleValue.replace("'", ""));
         } else if (hasRoleValue.startsWith("@")) {
@@ -43,7 +40,7 @@ final class HasRoleValueUtil {
 
             String fieldName = beanFieldMatcher.group(2);
             FieldInfo fieldInfo = beanClassInfo.field(fieldName);
-            //TODO: detect normal scoped beans and throw an exception, as it will read the field from the proxy
+            // TODO: detect normal scoped beans and throw an exception, as it will read the field from the proxy
             if ((fieldInfo == null) || !Modifier.isPublic(fieldInfo.flags())
                     || !DotNames.STRING.equals(fieldInfo.type().name())) {
                 throw new IllegalArgumentException("Bean named '" + beanName + "' found in expression '" + hasRoleValue

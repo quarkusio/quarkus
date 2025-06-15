@@ -11,11 +11,11 @@ import io.quarkus.kubernetes.client.runtime.KubernetesClientProducer;
 import io.quarkus.kubernetes.client.runtime.KubernetesSerializationProducer;
 
 /**
- * Allow the provision of beans that customize the default {@link ObjectMapper} used by the KubernetesClient to
- * perform kubernetes-specific serialization and deserialization operations.
+ * Allow the provision of beans that customize the default {@link ObjectMapper} used by the KubernetesClient to perform
+ * kubernetes-specific serialization and deserialization operations.
  * <p>
- * The resulting {@link ObjectMapper} is used to produce the default {@link KubernetesSerialization} bean, which is in turn
- * used to produce the default {@link io.fabric8.kubernetes.client.KubernetesClient} bean.
+ * The resulting {@link ObjectMapper} is used to produce the default {@link KubernetesSerialization} bean, which is in
+ * turn used to produce the default {@link io.fabric8.kubernetes.client.KubernetesClient} bean.
  * <p>
  * The following code snippet shows how to provide a KubernetesClientObjectMapperCustomizer:
  *

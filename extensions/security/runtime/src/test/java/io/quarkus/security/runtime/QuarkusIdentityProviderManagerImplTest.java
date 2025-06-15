@@ -28,10 +28,8 @@ class QuarkusIdentityProviderManagerImplTest {
                 .addProvider(new TestIdentityProviderSystemLastPriority())
                 .addProvider(new TestIdentityProviderUserLastPriority())
                 .addProvider(new TestIdentityProviderUserFirstPriority())
-                .addProvider(new TestIdentityProviderSystemFirstPriority())
-                .addProvider(new AnonymousIdentityProvider())
-                .setBlockingExecutor(Executors.newSingleThreadExecutor())
-                .build();
+                .addProvider(new TestIdentityProviderSystemFirstPriority()).addProvider(new AnonymousIdentityProvider())
+                .setBlockingExecutor(Executors.newSingleThreadExecutor()).build();
 
         SecurityIdentity identity = identityProviderManager.authenticateBlocking(new TestAuthenticationRequest());
 
@@ -44,8 +42,7 @@ class QuarkusIdentityProviderManagerImplTest {
         IdentityProviderManager identityProviderManager = QuarkusIdentityProviderManagerImpl.builder()
                 .addProvider(new TestIdentityProviderSystemFirstPriorityNoop())
                 .addProvider(new TestIdentityProviderSystemLastPriorityUser())
-                .addProvider(new AnonymousIdentityProvider())
-                .addSecurityIdentityAugmentor(augmentor)
+                .addProvider(new AnonymousIdentityProvider()).addSecurityIdentityAugmentor(augmentor)
                 .setBlockingExecutor(Executors.newSingleThreadExecutor()).build();
         SecurityIdentity identity = identityProviderManager.authenticateBlocking(new TestAuthenticationRequest());
         assertEquals(new QuarkusPrincipal("Bob"), identity.getPrincipal());
@@ -63,7 +60,8 @@ class QuarkusIdentityProviderManagerImplTest {
         }
 
         @Override
-        public Uni<SecurityIdentity> authenticate(TestAuthenticationRequest request, AuthenticationRequestContext context) {
+        public Uni<SecurityIdentity> authenticate(TestAuthenticationRequest request,
+                AuthenticationRequestContext context) {
             throw new AuthenticationFailedException(getClass().getSimpleName());
         }
     }
@@ -75,9 +73,9 @@ class QuarkusIdentityProviderManagerImplTest {
         }
 
         @Override
-        public Uni<SecurityIdentity> authenticate(TestAuthenticationRequest request, AuthenticationRequestContext context) {
-            SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                    .setPrincipal(new QuarkusPrincipal("Bob"))
+        public Uni<SecurityIdentity> authenticate(TestAuthenticationRequest request,
+                AuthenticationRequestContext context) {
+            SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("Bob"))
                     .build();
             return Uni.createFrom().item(identity);
         }
@@ -102,7 +100,8 @@ class QuarkusIdentityProviderManagerImplTest {
 
     static class TestIdentityProviderSystemFirstPriorityNoop extends TestIdentityProviderSystemLastPriority {
         @Override
-        public Uni<SecurityIdentity> authenticate(TestAuthenticationRequest request, AuthenticationRequestContext context) {
+        public Uni<SecurityIdentity> authenticate(TestAuthenticationRequest request,
+                AuthenticationRequestContext context) {
             return Uni.createFrom().nullItem();
         }
     }

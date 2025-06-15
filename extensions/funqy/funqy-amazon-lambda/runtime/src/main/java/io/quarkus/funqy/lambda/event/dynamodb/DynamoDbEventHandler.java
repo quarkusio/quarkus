@@ -40,9 +40,8 @@ public class DynamoDbEventHandler implements EventHandler<DynamodbEvent, Dynamod
         if (!amazonConfig.advancedEventHandling().dynamoDb().reportBatchItemFailures()) {
             return null;
         }
-        return StreamsEventResponse.builder().withBatchItemFailures(
-                failures.stream().map(id -> StreamsEventResponse.BatchItemFailure.builder()
-                        .withItemIdentifier(id).build()).toList())
+        return StreamsEventResponse.builder().withBatchItemFailures(failures.stream()
+                .map(id -> StreamsEventResponse.BatchItemFailure.builder().withItemIdentifier(id).build()).toList())
                 .build();
     }
 

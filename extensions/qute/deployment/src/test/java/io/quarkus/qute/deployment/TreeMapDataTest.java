@@ -17,9 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TreeMapDataTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("{map.get(1)}:{map.entrySet.iterator.next.value}"), "templates/map.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("{map.get(1)}:{map.entrySet.iterator.next.value}"), "templates/map.html"));
 
     @Inject
     Template map;

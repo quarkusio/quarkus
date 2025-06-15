@@ -29,17 +29,18 @@ import io.restassured.RestAssured;
 
 public class ProactiveAuthHttpPolicyCustomForbiddenExMapperTest {
 
-    private static final String PROPERTIES = "quarkus.http.auth.basic=true\n" +
-            "quarkus.http.auth.policy.user-policy.roles-allowed=user\n" +
-            "quarkus.http.auth.permission.roles.paths=/secured\n" +
-            "quarkus.http.auth.permission.roles.policy=user-policy";
+    private static final String PROPERTIES = "quarkus.http.auth.basic=true\n"
+            + "quarkus.http.auth.policy.user-policy.roles-allowed=user\n"
+            + "quarkus.http.auth.permission.roles.paths=/secured\n"
+            + "quarkus.http.auth.permission.roles.policy=user-policy";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, CustomForbiddenExceptionMapper.class)
+                    .addClasses(TestIdentityProvider.class, TestIdentityController.class,
+                            CustomForbiddenExceptionMapper.class)
                     .addAsResource(new StringAsset(PROPERTIES), "application.properties");
         }
     });
@@ -51,11 +52,7 @@ public class ProactiveAuthHttpPolicyCustomForbiddenExMapperTest {
 
     @Test
     public void testDeniedAccessAdminResource() {
-        RestAssured.given()
-                .auth().basic("a d m i n", "a d m i n")
-                .when().get("/secured")
-                .then()
-                .statusCode(403)
+        RestAssured.given().auth().basic("a d m i n", "a d m i n").when().get("/secured").then().statusCode(403)
                 .body(equalTo(CUSTOM_FORBIDDEN_EXCEPTION_MAPPER));
     }
 

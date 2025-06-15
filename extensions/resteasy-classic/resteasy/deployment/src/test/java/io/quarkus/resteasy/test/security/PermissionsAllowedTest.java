@@ -15,10 +15,9 @@ import io.restassured.response.ValidatableResponse;
 public class PermissionsAllowedTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
-                            StringPermissionsAllowedMetaAnnotation.class, CustomPermissionWithExtraArgs.class,
-                            CreateOrUpdate.class));
+            .withApplicationRoot((jar) -> jar.addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class,
+                    TestIdentityController.class, StringPermissionsAllowedMetaAnnotation.class,
+                    CustomPermissionWithExtraArgs.class, CreateOrUpdate.class));
 
     @BeforeAll
     public static void setupUsers() {
@@ -33,36 +32,30 @@ public class PermissionsAllowedTest {
     @Test
     public void testPermissionsAllowedMetaAnnotation_StringPermissions() {
         RestAssured.get("/permissions/string-meta-annotation").then().statusCode(401);
-        RestAssured.given().auth().basic("user", "user").get("/permissions/string-meta-annotation").then().statusCode(403);
-        RestAssured.given().auth().basic("admin", "admin").get("/permissions/string-meta-annotation").then().statusCode(200);
+        RestAssured.given().auth().basic("user", "user").get("/permissions/string-meta-annotation").then()
+                .statusCode(403);
+        RestAssured.given().auth().basic("admin", "admin").get("/permissions/string-meta-annotation").then()
+                .statusCode(200);
     }
 
     @Test
     public void testPermissionsAllowedMetaAnnotation_CustomPermissionsWithArgs() {
         // === explicitly marked method params && blocking endpoint
         // admin has permission with place 'Ostrava'
-        reqExplicitlyMarkedExtraArgs_MetaAnnotation("admin", "Ostrava")
-                .statusCode(200)
+        reqExplicitlyMarkedExtraArgs_MetaAnnotation("admin", "Ostrava").statusCode(200)
                 .body(Matchers.equalTo("so long Nelson 3 Ostrava"));
         // user has permission with place 'Prague'
-        reqExplicitlyMarkedExtraArgs_MetaAnnotation("user", "Prague")
-                .statusCode(200)
+        reqExplicitlyMarkedExtraArgs_MetaAnnotation("user", "Prague").statusCode(200)
                 .body(Matchers.equalTo("so long Nelson 3 Prague"));
         // user doesn't have permission with place 'Ostrava'
-        reqExplicitlyMarkedExtraArgs_MetaAnnotation("user", "Ostrava")
-                .statusCode(403);
+        reqExplicitlyMarkedExtraArgs_MetaAnnotation("user", "Ostrava").statusCode(403);
         // viewer has no permission
-        reqExplicitlyMarkedExtraArgs_MetaAnnotation("viewer", "Ostrava")
-                .statusCode(403);
+        reqExplicitlyMarkedExtraArgs_MetaAnnotation("viewer", "Ostrava").statusCode(403);
     }
 
     private static ValidatableResponse reqExplicitlyMarkedExtraArgs_MetaAnnotation(String user, String place) {
-        return RestAssured.given()
-                .auth().basic(user, user)
-                .pathParam("goodbye", "so long")
-                .header("toWhom", "Nelson")
-                .cookie("day", 3)
-                .body(place)
-                .post("/permissions/custom-perm-with-args-meta-annotation/{goodbye}").then();
+        return RestAssured.given().auth().basic(user, user).pathParam("goodbye", "so long").header("toWhom", "Nelson")
+                .cookie("day", 3).body(place).post("/permissions/custom-perm-with-args-meta-annotation/{goodbye}")
+                .then();
     }
 }

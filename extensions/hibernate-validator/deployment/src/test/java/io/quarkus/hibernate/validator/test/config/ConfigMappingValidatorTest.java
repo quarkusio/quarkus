@@ -18,8 +18,8 @@ import io.smallrye.config.ConfigMapping;
 
 public class ConfigMappingValidatorTest {
     @RegisterExtension
-    static final QuarkusUnitTest UNIT_TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
+    static final QuarkusUnitTest UNIT_TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new StringAsset("validator.server.host=localhost\n"), "application.properties"));
 
     @Inject

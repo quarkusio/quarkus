@@ -26,11 +26,9 @@ public class IdeProcessor {
 
     private static final Logger log = Logger.getLogger(IdeProcessor.class);
 
-    private final static Map<String, List<Ide>> IDE_MARKER_FILES = Map.of(
-            ".idea", Collections.singletonList(Ide.IDEA),
-            ".project", Arrays.asList(Ide.VSCODE, Ide.ECLIPSE),
-            "nbactions.xml", Collections.singletonList(Ide.NETBEANS),
-            "nb-configuration.xml", Collections.singletonList(Ide.NETBEANS));
+    private final static Map<String, List<Ide>> IDE_MARKER_FILES = Map.of(".idea", Collections.singletonList(Ide.IDEA),
+            ".project", Arrays.asList(Ide.VSCODE, Ide.ECLIPSE), "nbactions.xml",
+            Collections.singletonList(Ide.NETBEANS), "nb-configuration.xml", Collections.singletonList(Ide.NETBEANS));
     private static Map<Predicate<ProcessInfo>, Ide> IDE_PROCESSES = new HashMap<>();
     private final static Map<Ide, Function<ProcessInfo, String>> IDE_ARGUMENTS_EXEC_INDICATOR = new HashMap<>();
 
@@ -76,8 +74,7 @@ public class IdeProcessor {
 
     @BuildStep
     public EffectiveIdeBuildItem effectiveIde(LaunchModeBuildItem launchModeBuildItem, IdeConfig ideConfig,
-            IdeFileBuildItem ideFile,
-            IdeRunningProcessBuildItem ideRunningProcess) {
+            IdeFileBuildItem ideFile, IdeRunningProcessBuildItem ideRunningProcess) {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return null;
         }
@@ -200,7 +197,8 @@ public class IdeProcessor {
                 ProcessHandle.Info info = p.info();
                 Optional<String> command = info.command();
                 if (command.isPresent()) {
-                    result.add(new ProcessInfo(command.get(), info.commandLine().orElse(""), info.arguments().orElse(null)));
+                    result.add(new ProcessInfo(command.get(), info.commandLine().orElse(""),
+                            info.arguments().orElse(null)));
                 }
             });
             return result;

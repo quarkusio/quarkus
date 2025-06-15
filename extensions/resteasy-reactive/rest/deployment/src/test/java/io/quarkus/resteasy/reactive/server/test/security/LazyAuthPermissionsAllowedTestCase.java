@@ -10,14 +10,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class LazyAuthPermissionsAllowedTestCase extends AbstractPermissionsAllowedTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
-                            NonBlockingPermissionsAllowedResource.class, CustomPermission.class,
-                            PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class,
-                            StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class, PermissionCheckers.class,
-                            PermissionCheckersResource.class)
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
+                    NonBlockingPermissionsAllowedResource.class, CustomPermission.class,
+                    PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class,
+                    StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class, PermissionCheckers.class,
+                    PermissionCheckersResource.class)
+            .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n"), "application.properties"));
 
 }

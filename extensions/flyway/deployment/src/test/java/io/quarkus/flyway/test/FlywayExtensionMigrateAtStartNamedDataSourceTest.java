@@ -25,8 +25,7 @@ public class FlywayExtensionMigrateAtStartNamedDataSourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1.0.0__Quarkus.sql")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("migrate-at-start-config-named-datasource.properties", "application.properties"));
 
     @Test
@@ -35,9 +34,7 @@ public class FlywayExtensionMigrateAtStartNamedDataSourceTest {
         MigrationInfo migrationInfo = flywayUsers.info().current();
         assertNotNull(migrationInfo, "No Flyway migration was executed");
 
-        String currentVersion = migrationInfo
-                .getVersion()
-                .toString();
+        String currentVersion = migrationInfo.getVersion().toString();
         // Expected to be 1.0.0 as migration runs at start
         assertEquals("1.0.0", currentVersion);
     }

@@ -12,6 +12,6 @@ public class ReactiveDataSourceDotNames {
     public static final DotName INJECT_INSTANCE = DotName.createSimple(Instance.class);
 
     private ReactiveDataSourceDotNames() {
-        //Utility
+        // Utility
     }
 }

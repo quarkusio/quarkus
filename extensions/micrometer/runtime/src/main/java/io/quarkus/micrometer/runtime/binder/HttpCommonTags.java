@@ -19,7 +19,9 @@ public class HttpCommonTags {
     /**
      * Creates an {@code method} {@code Tag} derived from the given {@code HTTP method}.
      *
-     * @param method the HTTP method
+     * @param method
+     *        the HTTP method
+     *
      * @return the method tag
      */
     public static Tag method(String method) {
@@ -29,7 +31,9 @@ public class HttpCommonTags {
     /**
      * Creates a {@code status} tag based on the status of the given {@code response code}.
      *
-     * @param statusCode the HTTP response code
+     * @param statusCode
+     *        the HTTP response code
+     *
      * @return the status tag derived from the status of the response
      */
     public static Tag status(int statusCode) {
@@ -39,7 +43,9 @@ public class HttpCommonTags {
     /**
      * Creates an {@code outcome} {@code Tag} derived from the given {@code response code}.
      *
-     * @param statusCode the HTTP response code
+     * @param statusCode
+     *        the HTTP response code
+     *
      * @return the outcome tag
      */
     public static Tag outcome(int statusCode) {
@@ -47,16 +53,18 @@ public class HttpCommonTags {
     }
 
     /**
-     * Creates a {@code uri} tag based on the URI of the given {@code request}.
-     * Falling back to {@code REDIRECTION} for 3xx responses if there wasn't a matched path pattern, {@code NOT_FOUND}
-     * for 404 responses if there wasn't a matched path pattern, {@code root} for requests with no path info, and
-     * {@code UNKNOWN}
-     * for all other requests.
+     * Creates a {@code uri} tag based on the URI of the given {@code request}. Falling back to {@code REDIRECTION} for
+     * 3xx responses if there wasn't a matched path pattern, {@code NOT_FOUND} for 404 responses if there wasn't a
+     * matched path pattern, {@code root} for requests with no path info, and {@code UNKNOWN} for all other requests.
      *
-     * @param pathInfo request path
-     * @param initialPath initial path before request pattern matching took place. Pass in null if there is pattern matching
+     * @param pathInfo
+     *        request path
+     * @param initialPath
+     *        initial path before request pattern matching took place. Pass in null if there is pattern matching
      *        done in the caller.
-     * @param code status code of the response
+     * @param code
+     *        status code of the response
+     *
      * @return the uri tag derived from the request
      */
     public static Tag uri(String pathInfo, String initialPath, int code, boolean suppress4xxErrors) {
@@ -99,7 +107,8 @@ public class HttpCommonTags {
     }
 
     private static boolean isTemplatedPath(String pathInfo, String initialPath) {
-        // only include the path info if it has been matched to a template (initialPath != pathInfo) to avoid a metrics explosion with lots of entries
+        // only include the path info if it has been matched to a template (initialPath != pathInfo) to avoid a metrics
+        // explosion with lots of entries
         return initialPath != null && !Objects.equals(initialPath, pathInfo);
     }
 }

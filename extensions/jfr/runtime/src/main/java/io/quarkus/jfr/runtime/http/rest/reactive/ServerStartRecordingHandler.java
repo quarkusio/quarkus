@@ -14,8 +14,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.jfr.runtime.http.rest.RestStartEvent;
 
 /**
- * Kicks off the creation of a {@link RestStartEvent}.
- * This is done very early as to be able to capture events such as 405, 406, etc.
+ * Kicks off the creation of a {@link RestStartEvent}. This is done very early as to be able to capture events such as
+ * 405, 406, etc.
  */
 public class ServerStartRecordingHandler implements ServerRestHandler {
 
@@ -30,9 +30,7 @@ public class ServerStartRecordingHandler implements ServerRestHandler {
         }
         requestContext.requireCDIRequestScope();
         ReactiveServerRecorder recorder = Arc.container().instance(ReactiveServerRecorder.class).get();
-        recorder
-                .createStartEvent()
-                .createAndStartPeriodEvent();
+        recorder.createStartEvent().createAndStartPeriodEvent();
     }
 
     public static class Customizer implements HandlerChainCustomizer {

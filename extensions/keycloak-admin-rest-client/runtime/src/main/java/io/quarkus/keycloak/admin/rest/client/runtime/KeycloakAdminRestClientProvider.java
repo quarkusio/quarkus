@@ -66,13 +66,13 @@ public class KeycloakAdminRestClientProvider implements ResteasyClientProvider {
     private ClientBuilderImpl registerJacksonProviders(ClientBuilderImpl clientBuilder) {
         ArcContainer arcContainer = Arc.container();
         if (arcContainer == null) {
-            throw new IllegalStateException(this.getClass().getName() + " should only be used in a Quarkus application");
+            throw new IllegalStateException(
+                    this.getClass().getName() + " should only be used in a Quarkus application");
         } else {
             ObjectMapper newObjectMapper = newKeycloakAdminClientObjectMapper();
             clientBuilder = clientBuilder
                     .registerMessageBodyReader(new JacksonBasicMessageBodyReader(newObjectMapper), Object.class,
-                            HANDLED_MEDIA_TYPES, true,
-                            READER_PROVIDER_PRIORITY)
+                            HANDLED_MEDIA_TYPES, true, READER_PROVIDER_PRIORITY)
                     .registerMessageBodyWriter(new ClientJacksonMessageBodyWriter(newObjectMapper), Object.class,
                             HANDLED_MEDIA_TYPES, true, WRITER_PROVIDER_PRIORITY);
             InstanceHandle<ClientLogger> clientLogger = arcContainer.instance(ClientLogger.class);
@@ -86,9 +86,11 @@ public class KeycloakAdminRestClientProvider implements ResteasyClientProvider {
     // creates new ObjectMapper compatible with Keycloak Admin Client
     private ObjectMapper newKeycloakAdminClientObjectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
-        // Same like JSONSerialization class. Makes it possible to use admin-client against older versions of Keycloak server where the properties on representations might be different
+        // Same like JSONSerialization class. Makes it possible to use admin-client against older versions of Keycloak
+        // server where the properties on representations might be different
         objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        // The client must work with the newer versions of Keycloak server, which might contain the JSON fields not yet known by the client. So unknown fields will be ignored.
+        // The client must work with the newer versions of Keycloak server, which might contain the JSON fields not yet
+        // known by the client. So unknown fields will be ignored.
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return objectMapper;
     }

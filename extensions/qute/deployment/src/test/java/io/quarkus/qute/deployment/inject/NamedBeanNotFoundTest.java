@@ -13,8 +13,8 @@ public class NamedBeanNotFoundTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("{inject:bing.ping}"), "templates/bing.html"))
+            .withApplicationRoot(
+                    (jar) -> jar.addAsResource(new StringAsset("{inject:bing.ping}"), "templates/bing.html"))
             .setExpectedException(TemplateException.class);
 
     @Test

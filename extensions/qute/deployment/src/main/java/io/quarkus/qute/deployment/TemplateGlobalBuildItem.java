@@ -22,13 +22,12 @@ public final class TemplateGlobalBuildItem extends MultiBuildItem {
 
     public TemplateGlobalBuildItem(String name, AnnotationTarget target, Type matchType) {
         if (!Namespaces.isValidNamespace(name)) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Invalid global variable name found: %s\n\t- supplied by %s \n\t- a name may only consist of alphanumeric characters and underscores: ",
-                            name,
-                            target.kind() == Kind.FIELD
-                                    ? target.asField().declaringClass().name() + "." + target.asField().name()
-                                    : target.asMethod().declaringClass().name() + "." + target.asMethod().name() + "()"));
+            throw new IllegalArgumentException(String.format(
+                    "Invalid global variable name found: %s\n\t- supplied by %s \n\t- a name may only consist of alphanumeric characters and underscores: ",
+                    name,
+                    target.kind() == Kind.FIELD
+                            ? target.asField().declaringClass().name() + "." + target.asField().name()
+                            : target.asMethod().declaringClass().name() + "." + target.asMethod().name() + "()"));
         }
         this.name = name;
         this.target = target;
@@ -61,8 +60,7 @@ public final class TemplateGlobalBuildItem extends MultiBuildItem {
 
     @Override
     public String toString() {
-        return "Variable [" + name
-                + "] supplied by " + getDeclaringClass() + "."
+        return "Variable [" + name + "] supplied by " + getDeclaringClass() + "."
                 + (isField() ? target.asField().name() : target.asMethod().name() + "()");
     }
 

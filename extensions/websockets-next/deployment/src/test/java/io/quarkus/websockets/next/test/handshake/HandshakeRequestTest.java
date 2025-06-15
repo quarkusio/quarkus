@@ -22,10 +22,9 @@ import io.vertx.core.json.JsonObject;
 public class HandshakeRequestTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Head.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Head.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -60,12 +59,9 @@ public class HandshakeRequestTest {
         JsonObject process(String message) throws InterruptedException {
             JsonObject headers = new JsonObject();
             connection.handshakeRequest().headers().forEach((k, v) -> headers.put(k, v.get(0)));
-            return new JsonObject()
-                    .put("header", connection.handshakeRequest().header("X-Test"))
-                    .put("headers", headers)
-                    .put("scheme", connection.handshakeRequest().scheme())
-                    .put("host", connection.handshakeRequest().host())
-                    .put("port", connection.handshakeRequest().port())
+            return new JsonObject().put("header", connection.handshakeRequest().header("X-Test"))
+                    .put("headers", headers).put("scheme", connection.handshakeRequest().scheme())
+                    .put("host", connection.handshakeRequest().host()).put("port", connection.handshakeRequest().port())
                     .put("path", connection.handshakeRequest().path())
                     .put("query", connection.handshakeRequest().query());
         }

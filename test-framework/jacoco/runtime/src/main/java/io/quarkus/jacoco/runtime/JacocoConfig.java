@@ -25,15 +25,13 @@ public interface JacocoConfig {
     boolean enabled();
 
     /**
-     * The Jacoco data file.
-     * The path can be relative (to the module) or absolute.
+     * The Jacoco data file. The path can be relative (to the module) or absolute.
      */
     @ConfigDocDefault(TARGET_JACOCO_QUARKUS_EXEC)
     Optional<String> dataFile();
 
     /**
-     * Whether to reuse ({@code true}) or delete ({@code false}) the Jacoco
-     * data file on each run.
+     * Whether to reuse ({@code true}) or delete ({@code false}) the Jacoco data file on each run.
      */
     @WithDefault("false")
     boolean reuseDataFile();
@@ -68,35 +66,36 @@ public interface JacocoConfig {
     public String sourceEncoding();
 
     /**
-     * A list of class files to include in the report. May use wildcard
-     * characters (* and ?). When not specified everything will be included.
+     * A list of class files to include in the report. May use wildcard characters (* and ?). When not specified
+     * everything will be included.
      * <p>
      * For instance:
      * <ul>
      * <li><code>&#42;&#42;/fo/&#42;&#42;/&#42;</code> targets all classes under fo and sub packages</li>
      * <li><code>&#42;&#42;/bar/&#42;</code> targets all classes directly under bar</li>
-     * <li><code>&#42;&#42;/&#42;BAR&#42;.class</code> targets classes that contain BAR in their name regardless of path</li>
+     * <li><code>&#42;&#42;/&#42;BAR&#42;.class</code> targets classes that contain BAR in their name regardless of
+     * path</li>
      * </ul>
      */
     @WithDefault("**")
     public List<String> includes();
 
     /**
-     * A list of class files to exclude from the report. May use wildcard
-     * characters (* and ?). When not specified nothing will be excluded.
+     * A list of class files to exclude from the report. May use wildcard characters (* and ?). When not specified
+     * nothing will be excluded.
      * <p>
      * For instance:
      * <ul>
      * <li><code>&#42;&#42;/fo/&#42;&#42;/&#42;</code> targets all classes under fo and sub packages</li>
      * <li><code>&#42;&#42;/bar/&#42;</code> targets all classes directly under bar</li>
-     * <li><code>&#42;&#42;/&#42;BAR&#42;.class</code> targets classes that contain BAR in their name regardless of path</li>
+     * <li><code>&#42;&#42;/&#42;BAR&#42;.class</code> targets classes that contain BAR in their name regardless of
+     * path</li>
      * </ul>
      */
     public Optional<List<String>> excludes();
 
     /**
-     * The location of the report files.
-     * The path can be relative (to the module) or absolute.
+     * The location of the report files. The path can be relative (to the module) or absolute.
      */
     @ConfigDocDefault(TARGET_JACOCO_REPORT)
     public Optional<String> reportLocation();

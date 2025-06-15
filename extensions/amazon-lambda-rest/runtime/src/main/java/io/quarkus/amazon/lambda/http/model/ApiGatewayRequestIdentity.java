@@ -15,8 +15,8 @@ package io.quarkus.amazon.lambda.http.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Identity model for the API Gateway request context. This is used in the default AwsProxyRequest object. Contains
- * all of the properties declared in the $context.identity API Gateway object so could be re-used for other implementations
+ * Identity model for the API Gateway request context. This is used in the default AwsProxyRequest object. Contains all
+ * of the properties declared in the $context.identity API Gateway object so could be re-used for other implementations
  *
  * @see AwsProxyRequest
  * @see RequestReader
@@ -24,9 +24,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ApiGatewayRequestIdentity {
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Variables - Private
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     private String apiKey;
     private String apiKeyId;
@@ -42,9 +42,9 @@ public class ApiGatewayRequestIdentity {
     private String accountId;
     private String accessKey;
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Methods - Getter/Setter
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     public String getApiKey() {
         return apiKey;

@@ -14,8 +14,7 @@ public interface P12TrustStoreConfig {
     Path path();
 
     /**
-     * Password of the trust store.
-     * If not set, the password must be retrieved from the credential provider.
+     * Password of the trust store. If not set, the password must be retrieved from the credential provider.
      */
     Optional<String> password();
 

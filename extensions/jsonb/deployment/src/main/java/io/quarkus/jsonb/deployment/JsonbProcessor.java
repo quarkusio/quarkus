@@ -62,8 +62,7 @@ public class JsonbProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            CombinedIndexBuildItem combinedIndexBuildItem) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, CombinedIndexBuildItem combinedIndexBuildItem) {
 
         resourceBundle.produce(new NativeImageResourceBundleBuildItem("yasson-messages"));
 
@@ -90,27 +89,24 @@ public class JsonbProcessor {
 
         // register String constructors for reflection as they may not have been properly registered by default
         // see https://github.com/quarkusio/quarkus/issues/10873
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder("java.lang.String").build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.lang.String").build());
 
         // register `java.beans.ConstructorProperties` as it's accessed through `io.quarkus.jsonb.JsonbProducer.jsonb`
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(ConstructorProperties.class).build());
 
         // Necessary for Yasson versions using MethodHandles (2.0+)
-        reflectiveMethod.produce(new ReflectiveMethodBuildItem(
-                getClass().getName(),
-                "jdk.internal.misc.Unsafe", "putReference", Object.class,
-                long.class, Object.class));
+        reflectiveMethod.produce(new ReflectiveMethodBuildItem(getClass().getName(), "jdk.internal.misc.Unsafe",
+                "putReference", Object.class, long.class, Object.class));
     }
 
-    private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, AnnotationInstance instance) {
+    private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            AnnotationInstance instance) {
         AnnotationTarget annotationTarget = instance.target();
         if (FIELD.equals(annotationTarget.kind()) || METHOD.equals(annotationTarget.kind())) {
             AnnotationValue value = instance.value();
             if (value != null) {
                 // the Deserializers are constructed internally by JSON-B using a no-args constructor
-                reflectiveClass.produce(
-                        ReflectiveClassBuildItem.builder(value.asClass().toString()).build());
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(value.asClass().toString()).build());
             }
         }
     }
@@ -120,8 +116,8 @@ public class JsonbProcessor {
             BuildProducer<AutoAddScopeBuildItem> autoScopes) {
 
         // An adapter with an injection point but no scope is @Singleton
-        autoScopes.produce(AutoAddScopeBuildItem.builder().implementsInterface(JSONB_ADAPTER_NAME).requiresContainerServices()
-                .defaultScope(BuiltinScope.SINGLETON).build());
+        autoScopes.produce(AutoAddScopeBuildItem.builder().implementsInterface(JSONB_ADAPTER_NAME)
+                .requiresContainerServices().defaultScope(BuiltinScope.SINGLETON).build());
 
         // Make all adapters unremovable
         unremovableBeans.produce(new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
@@ -136,8 +132,7 @@ public class JsonbProcessor {
     // Generate a JsonbConfigCustomizer bean that registers each serializer / deserializer with JsonbConfig
     @BuildStep
     void generateCustomizer(BuildProducer<GeneratedBeanBuildItem> generatedBeans,
-            List<JsonbSerializerBuildItem> serializers,
-            List<JsonbDeserializerBuildItem> deserializers) {
+            List<JsonbSerializerBuildItem> serializers, List<JsonbDeserializerBuildItem> deserializers) {
 
         if (serializers.isEmpty()) {
             return;
@@ -159,24 +154,22 @@ public class JsonbProcessor {
 
         try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
                 .className("io.quarkus.jsonb.customizer.RegisterSerializersAndDeserializersCustomizer")
-                .interfaces(JsonbConfigCustomizer.class.getName())
-                .build()) {
+                .interfaces(JsonbConfigCustomizer.class.getName()).build()) {
             classCreator.addAnnotation(Singleton.class);
 
             try (MethodCreator customize = classCreator.getMethodCreator("customize", void.class, JsonbConfig.class)) {
                 ResultHandle jsonbConfig = customize.getMethodParam(0);
                 if (!customSerializerClasses.isEmpty()) {
-                    ResultHandle serializersArray = customize.newArray(JsonbSerializer.class, customSerializerClasses.size());
+                    ResultHandle serializersArray = customize.newArray(JsonbSerializer.class,
+                            customSerializerClasses.size());
                     int i = 0;
                     for (String customSerializerClass : customSerializerClasses) {
                         customize.writeArrayValue(serializersArray, i,
                                 customize.newInstance(MethodDescriptor.ofConstructor(customSerializerClass)));
                         i++;
                     }
-                    customize.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(JsonbConfig.class, "withSerializers", JsonbConfig.class,
-                                    JsonbSerializer[].class),
-                            jsonbConfig, serializersArray);
+                    customize.invokeVirtualMethod(MethodDescriptor.ofMethod(JsonbConfig.class, "withSerializers",
+                            JsonbConfig.class, JsonbSerializer[].class), jsonbConfig, serializersArray);
                 }
                 if (!customDeserializerClasses.isEmpty()) {
                     ResultHandle deserializersArray = customize.newArray(JsonbDeserializer.class,
@@ -187,10 +180,8 @@ public class JsonbProcessor {
                                 customize.newInstance(MethodDescriptor.ofConstructor(customDeserializerClass)));
                         i++;
                     }
-                    customize.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(JsonbConfig.class, "withDeserializers", JsonbConfig.class,
-                                    JsonbDeserializer[].class),
-                            jsonbConfig, deserializersArray);
+                    customize.invokeVirtualMethod(MethodDescriptor.ofMethod(JsonbConfig.class, "withDeserializers",
+                            JsonbConfig.class, JsonbDeserializer[].class), jsonbConfig, deserializersArray);
                 }
 
                 customize.returnValue(null);

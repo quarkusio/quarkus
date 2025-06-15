@@ -23,9 +23,7 @@ import io.smallrye.common.annotation.Identifier;
 public class CompositeSchedulerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Jobs.class))
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class))
             .overrideConfigKey("quarkus.scheduler.use-composite-scheduler", "true");
 
     @Constituent

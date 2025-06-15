@@ -20,19 +20,16 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class InvalidJsonFromServerTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(JsonObject.class, JsonClient.class, InvalidJsonEndpoint.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(JsonObject.class, JsonClient.class, InvalidJsonEndpoint.class));
 
     @RestClient
     JsonClient client;
 
     @Test
     public void test() {
-        assertThatThrownBy(() -> client.get())
-                .isInstanceOf(ClientWebApplicationException.class)
-                .hasMessageContaining("HTTP 200")
-                .cause()
+        assertThatThrownBy(() -> client.get()).isInstanceOf(ClientWebApplicationException.class)
+                .hasMessageContaining("HTTP 200").cause()
                 .hasMessageContaining("was expecting double-quote to start field name");
     }
 

@@ -31,8 +31,7 @@ public class OutboundSseEventImpl implements OutboundSseEvent {
     private boolean escape = false;
 
     OutboundSseEventImpl(final String name, final String id, final long reconnectDelay, final Class<?> type,
-            final Type genericType,
-            final MediaType mediaType, final Object data, final String comment) {
+            final Type genericType, final MediaType mediaType, final Object data, final String comment) {
         this.name = name;
         this.comment = comment;
         this.id = id;

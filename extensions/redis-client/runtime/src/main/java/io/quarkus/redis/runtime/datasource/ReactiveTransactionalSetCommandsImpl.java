@@ -10,8 +10,8 @@ public class ReactiveTransactionalSetCommandsImpl<K, V> extends AbstractTransact
 
     private final ReactiveSetCommandsImpl<K, V> reactive;
 
-    public ReactiveTransactionalSetCommandsImpl(ReactiveTransactionalRedisDataSource ds, ReactiveSetCommandsImpl<K, V> reactive,
-            TransactionHolder tx) {
+    public ReactiveTransactionalSetCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveSetCommandsImpl<K, V> reactive, TransactionHolder tx) {
         super(ds, tx);
         this.reactive = reactive;
     }

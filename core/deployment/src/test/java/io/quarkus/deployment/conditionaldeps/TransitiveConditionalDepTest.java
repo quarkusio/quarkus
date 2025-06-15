@@ -49,23 +49,12 @@ public class TransitiveConditionalDepTest extends BootstrapFromOriginalJarTestBa
         addToExpectedLib(extF.getRuntime());
         addToExpectedLib(extGConditional.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extC)
-                .addDependency(extD);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extC).addDependency(extD);
     }
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[] {
-                "ext-a",
-                "ext-b",
-                "ext-c",
-                "ext-d",
-                "ext-e-conditional",
-                "ext-f",
-                "ext-g-conditional"
-        };
+        return new String[] { "ext-a", "ext-b", "ext-c", "ext-d", "ext-e-conditional", "ext-f", "ext-g-conditional" };
     }
 }

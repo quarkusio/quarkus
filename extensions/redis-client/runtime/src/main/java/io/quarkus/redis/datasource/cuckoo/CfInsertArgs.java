@@ -12,11 +12,13 @@ public class CfInsertArgs implements RedisCommandExtraArguments {
     private boolean nocreate;
 
     /**
-     * Specifies the desired capacity of the new filter, if this filter does not exist yet. If the filter already exists,
-     * then this parameter is ignored. If the filter does not exist yet and this parameter is not specified, then the
-     * filter is created with the module-level default capacity which is 1024.
+     * Specifies the desired capacity of the new filter, if this filter does not exist yet. If the filter already
+     * exists, then this parameter is ignored. If the filter does not exist yet and this parameter is not specified,
+     * then the filter is created with the module-level default capacity which is 1024.
      *
-     * @param capacity the capacity
+     * @param capacity
+     *        the capacity
+     *
      * @return the current {@link CfInsertArgs}
      */
     public CfInsertArgs capacity(long capacity) {
@@ -25,8 +27,8 @@ public class CfInsertArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * If specified, prevents automatic filter creation if the filter does not exist. Instead, an error is returned
-     * if the filter does not already exist. This option is mutually exclusive with {@code CAPACITY}.
+     * If specified, prevents automatic filter creation if the filter does not exist. Instead, an error is returned if
+     * the filter does not already exist. This option is mutually exclusive with {@code CAPACITY}.
      *
      * @return the current {@link CfInsertArgs}
      */

@@ -30,12 +30,13 @@ public class MapReduceOptions {
 
     /**
      * Sets the collectionName for the output of the MapReduce
-     *
      * <p>
      * The default action is replace the collection if it exists, to change this use {@link #action}.
      * </p>
      *
-     * @param collectionName the name of the collection that you want the map-reduce operation to write its output.
+     * @param collectionName
+     *        the name of the collection that you want the map-reduce operation to write its output.
+     *
      * @return this
      */
     public MapReduceOptions collectionName(String collectionName) {
@@ -46,7 +47,9 @@ public class MapReduceOptions {
     /**
      * Sets the JavaScript function that follows the reduce method and modifies the output.
      *
-     * @param finalizeFunction the JavaScript function that follows the reduce method and modifies the output.
+     * @param finalizeFunction
+     *        the JavaScript function that follows the reduce method and modifies the output.
+     *
      * @return this
      */
     public MapReduceOptions finalizeFunction(String finalizeFunction) {
@@ -57,7 +60,9 @@ public class MapReduceOptions {
     /**
      * Sets the global variables that are accessible in the map, reduce and finalize functions.
      *
-     * @param scope the global variables that are accessible in the map, reduce and finalize functions.
+     * @param scope
+     *        the global variables that are accessible in the map, reduce and finalize functions.
+     *
      * @return this
      */
     public MapReduceOptions scope(Bson scope) {
@@ -68,7 +73,9 @@ public class MapReduceOptions {
     /**
      * Sets the sort criteria to apply to the query.
      *
-     * @param sort the sort criteria, which may be null.
+     * @param sort
+     *        the sort criteria, which may be null.
+     *
      * @return this
      */
     public MapReduceOptions sort(Bson sort) {
@@ -79,7 +86,9 @@ public class MapReduceOptions {
     /**
      * Sets the query filter to apply to the query.
      *
-     * @param filter the filter to apply to the query.
+     * @param filter
+     *        the filter to apply to the query.
+     *
      * @return this
      */
     public MapReduceOptions filter(Bson filter) {
@@ -90,7 +99,9 @@ public class MapReduceOptions {
     /**
      * Sets the limit to apply.
      *
-     * @param limit the limit, which may be null
+     * @param limit
+     *        the limit, which may be null
+     *
      * @return this
      */
     public MapReduceOptions limit(int limit) {
@@ -102,8 +113,10 @@ public class MapReduceOptions {
      * Sets the flag that specifies whether to convert intermediate data into BSON format between the execution of the
      * map and reduce functions. Defaults to false.
      *
-     * @param jsMode the flag that specifies whether to convert intermediate data into BSON format between the
-     *        execution of the map and reduce functions
+     * @param jsMode
+     *        the flag that specifies whether to convert intermediate data into BSON format between the execution of
+     *        the map and reduce functions
+     *
      * @return jsMode
      */
     public MapReduceOptions jsMode(boolean jsMode) {
@@ -114,7 +127,9 @@ public class MapReduceOptions {
     /**
      * Sets whether to include the timing information in the result information.
      *
-     * @param verbose whether to include the timing information in the result information.
+     * @param verbose
+     *        whether to include the timing information in the result information.
+     *
      * @return this
      */
     public MapReduceOptions verbose(boolean verbose) {
@@ -125,8 +140,11 @@ public class MapReduceOptions {
     /**
      * Sets the maximum execution time on the server for this operation.
      *
-     * @param maxTime the max time
-     * @param timeUnit the time unit, which may not be null
+     * @param maxTime
+     *        the max time
+     * @param timeUnit
+     *        the time unit, which may not be null
+     *
      * @return this
      */
     public MapReduceOptions maxTime(long maxTime, TimeUnit timeUnit) {
@@ -138,7 +156,9 @@ public class MapReduceOptions {
     /**
      * Specify the {@code MapReduceAction} to be used when writing to a collection.
      *
-     * @param action an {@link com.mongodb.client.model.MapReduceAction} to perform on the collection
+     * @param action
+     *        an {@link com.mongodb.client.model.MapReduceAction} to perform on the collection
+     *
      * @return this
      */
     public MapReduceOptions action(MapReduceAction action) {
@@ -149,7 +169,9 @@ public class MapReduceOptions {
     /**
      * Sets the name of the database to output into.
      *
-     * @param databaseName the name of the database to output into.
+     * @param databaseName
+     *        the name of the database to output into.
+     *
      * @return this
      */
     public MapReduceOptions databaseName(String databaseName) {
@@ -159,13 +181,14 @@ public class MapReduceOptions {
 
     /**
      * Sets the bypass document level validation flag.
-     *
      * <p>
      * Note: This only applies when an $out stage is specified
      * </p>
      * .
      *
-     * @param bypassDocumentValidation If true, allows the write to opt-out of document level validation.
+     * @param bypassDocumentValidation
+     *        If true, allows the write to opt-out of document level validation.
+     *
      * @return this
      */
     public MapReduceOptions bypassDocumentValidation(boolean bypassDocumentValidation) {
@@ -175,12 +198,13 @@ public class MapReduceOptions {
 
     /**
      * Sets the collation options
-     *
      * <p>
      * A null value represents the server default.
      * </p>
      *
-     * @param collation the collation options to use
+     * @param collation
+     *        the collation options to use
+     *
      * @return this
      */
     public MapReduceOptions collation(Collation collation) {

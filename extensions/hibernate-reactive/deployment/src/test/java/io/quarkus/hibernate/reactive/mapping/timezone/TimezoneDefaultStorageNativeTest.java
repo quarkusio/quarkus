@@ -11,9 +11,7 @@ public class TimezoneDefaultStorageNativeTest extends AbstractTimezoneDefaultSto
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EntityWithTimezones.class)
-                    .addClasses(SchemaUtil.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EntityWithTimezones.class).addClasses(SchemaUtil.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping.timezone.default-storage", "native")
             .assertException(t -> assertThat(t)

@@ -20,9 +20,7 @@ public class ExceptionInterceptor implements ServerInterceptor, Prioritized {
     ExceptionHandlerProvider provider;
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
-            ServerCall<ReqT, RespT> call,
-            Metadata headers,
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
         return provider.createHandler(next.startCall(call, headers), call, headers);
     }

@@ -79,8 +79,8 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         }
         if (httpBinderConfiguration.isServerEnabled()) {
             log.debugf("Create HttpServerMetrics with options %s and address %s", options, localAddress);
-            return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration, openTelemetryContextUnwrapper,
-                    options);
+            return new VertxHttpServerMetrics(Metrics.globalRegistry, httpBinderConfiguration,
+                    openTelemetryContextUnwrapper, options);
         }
         return null;
     }
@@ -99,8 +99,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
             String clientName = extractClientName(options.getMetricsName());
             if (clientName != null) {
                 return new VertxHttpClientMetrics(Metrics.globalRegistry, "http.client",
-                        Tags.of(Tag.of("clientName", clientName)),
-                        httpBinderConfiguration);
+                        Tags.of(Tag.of("clientName", clientName)), httpBinderConfiguration);
             } else {
                 return new VertxHttpClientMetrics(Metrics.globalRegistry, "http.client",
                         Tags.of(Tag.of("clientName", "<default>")), httpBinderConfiguration);
@@ -111,10 +110,9 @@ public class VertxMeterBinderAdapter extends MetricsOptions
 
     @Override
     public TCPMetrics<?> createNetServerMetrics(NetServerOptions options, SocketAddress localAddress) {
-        return new VertxTcpServerMetrics(Metrics.globalRegistry, "tcp", Tags.of(
-                Tag.of("port", Integer.toString(localAddress.port())),
-                Tag.of("host", options.getHost()),
-                Tag.of("address", VertxTcpServerMetrics.toString(localAddress))));
+        return new VertxTcpServerMetrics(Metrics.globalRegistry, "tcp",
+                Tags.of(Tag.of("port", Integer.toString(localAddress.port())), Tag.of("host", options.getHost()),
+                        Tag.of("address", VertxTcpServerMetrics.toString(localAddress))));
     }
 
     @Override
@@ -128,7 +126,8 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         if (clientName != null) {
             return new VertxTcpClientMetrics(Metrics.globalRegistry, prefix, Tags.of(Tag.of("clientName", clientName)));
         } else {
-            return new VertxTcpClientMetrics(Metrics.globalRegistry, prefix, Tags.of(Tag.of("clientName", "<default>")));
+            return new VertxTcpClientMetrics(Metrics.globalRegistry, prefix,
+                    Tags.of(Tag.of("clientName", "<default>")));
         }
     }
 
@@ -138,13 +137,11 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         String prefix = extractPrefix(namespace);
         String clientName = extractClientName(namespace);
         if (clientName != null) {
-            return new VertxClientMetrics(Metrics.globalRegistry, prefix, Tags.of(
-                    Tag.of("clientName", clientName),
-                    Tag.of("clientType", type)));
+            return new VertxClientMetrics(Metrics.globalRegistry, prefix,
+                    Tags.of(Tag.of("clientName", clientName), Tag.of("clientType", type)));
         } else {
-            return new VertxClientMetrics(Metrics.globalRegistry, prefix, Tags.of(
-                    Tags.of(Tag.of("clientName", "<default>"),
-                            Tag.of("clientType", type))));
+            return new VertxClientMetrics(Metrics.globalRegistry, prefix,
+                    Tags.of(Tags.of(Tag.of("clientName", "<default>"), Tag.of("clientType", type))));
         }
     }
 
@@ -164,14 +161,15 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     }
 
     /**
-     * Extract the prefix from the given metrics name.
-     * This method applies a convention to be able to extract the prefix and the client name from the string returned by
-     * {@link NetClientOptions#getMetricsName()}.
+     * Extract the prefix from the given metrics name. This method applies a convention to be able to extract the prefix
+     * and the client name from the string returned by {@link NetClientOptions#getMetricsName()}.
      * <p>
      * The convention is the following: {@code prefix|client name}. The choice of {@code |} has been done to avoid
      * separator commonly used in metrics name such as {@code _}, {@code .}, or {@code -}.
      *
-     * @param mn the metric name
+     * @param mn
+     *        the metric name
+     *
      * @return the prefix if the passed string follows the convention, the passed string if it does not.
      */
     private String extractPrefix(String mn) {
@@ -182,14 +180,15 @@ public class VertxMeterBinderAdapter extends MetricsOptions
     }
 
     /**
-     * Extract the client name from the given metrics name.
-     * This method applies a convention to be able to extract the client name and the client name from the string
-     * returned by {@link NetClientOptions#getMetricsName()}.
+     * Extract the client name from the given metrics name. This method applies a convention to be able to extract the
+     * client name and the client name from the string returned by {@link NetClientOptions#getMetricsName()}.
      * <p>
      * The convention is the following: {@code prefix|client name}. The choice of {@code |} has been done to avoid
      * separator commonly used in metrics name such as {@code _}, {@code .}, or {@code -}.
      *
-     * @param mn the metric name
+     * @param mn
+     *        the metric name
+     *
      * @return the client name if the passed string follows the convention, {@code null} otherwise.
      */
     private String extractClientName(String mn) {
@@ -204,8 +203,7 @@ public class VertxMeterBinderAdapter extends MetricsOptions
         return new ConnectionTracker() {
 
             private final Counter counter = Counter.builder("vertx.http.connections.rejected")
-                    .description("Number of rejected HTTP connections")
-                    .register(Metrics.globalRegistry);
+                    .description("Number of rejected HTTP connections").register(Metrics.globalRegistry);
 
             @Override
             public void onConnectionRejected() {
@@ -219,18 +217,14 @@ public class VertxMeterBinderAdapter extends MetricsOptions
                     public Number get() {
                         return current.get();
                     }
-                })
-                        .description("Current number of active HTTP connections")
-                        .register(Metrics.globalRegistry);
+                }).description("Current number of active HTTP connections").register(Metrics.globalRegistry);
 
                 Gauge.builder("vertx.http.connections.max", new Supplier<Number>() {
                     @Override
                     public Number get() {
                         return maxConnections;
                     }
-                })
-                        .description("Max number of HTTP connections")
-                        .register(Metrics.globalRegistry);
+                }).description("Max number of HTTP connections").register(Metrics.globalRegistry);
             }
         };
     }

@@ -20,8 +20,7 @@ public enum ExecutionMode {
      */
     RUNNING,
 
-    UNSET,
-    ;
+    UNSET,;
 
     public static ExecutionMode current() {
         return ExecutionModeManager.getExecutionMode();

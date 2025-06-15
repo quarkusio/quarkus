@@ -22,11 +22,9 @@ public class PathWithHttpRootTestCase {
         TestIdentityController.resetRoles().add("test", "test", "test");
     }
 
-    private static final String APP_PROPS = "" +
-            "# Add your application.properties here, if applicable.\n" +
-            "quarkus.http.root-path=/root\n" +
-            "quarkus.http.auth.permission.authenticated.paths=admin\n" +
-            "quarkus.http.auth.permission.authenticated.policy=authenticated\n";
+    private static final String APP_PROPS = "" + "# Add your application.properties here, if applicable.\n"
+            + "quarkus.http.root-path=/root\n" + "quarkus.http.auth.permission.authenticated.paths=admin\n"
+            + "quarkus.http.auth.permission.authenticated.policy=authenticated\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
@@ -41,24 +39,9 @@ public class PathWithHttpRootTestCase {
     @Test
     public void testAdminPath() {
 
-        RestAssured
-                .given()
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(401);
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(Matchers.equalTo("test:/root/admin"));
+        RestAssured.given().when().get("/admin").then().assertThat().statusCode(401);
+        RestAssured.given().auth().preemptive().basic("test", "test").when().get("/admin").then().assertThat()
+                .statusCode(200).body(Matchers.equalTo("test:/root/admin"));
 
     }
 

@@ -5,8 +5,7 @@ import java.util.function.BooleanSupplier;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 
 /**
- * Supplier that can be used to only run build steps
- * if the Flyway extension is enabled.
+ * Supplier that can be used to only run build steps if the Flyway extension is enabled.
  */
 public class FlywayEnabled implements BooleanSupplier {
 

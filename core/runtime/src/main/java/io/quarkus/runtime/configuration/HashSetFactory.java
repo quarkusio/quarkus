@@ -21,7 +21,9 @@ public final class HashSetFactory<T> implements IntFunction<HashSet<T>> {
      * resizing the collection when we populate the collection with all the initial elements. We use a calculation
      * similar to what is done in {@link java.util.HashMap#putAll(Map)}.
      *
-     * @param expectedSize the expected size of the collection
+     * @param expectedSize
+     *        the expected size of the collection
+     *
      * @return the initial capacity of the collection
      */
     private int getInitialCapacityFromExpectedSize(int expectedSize) {

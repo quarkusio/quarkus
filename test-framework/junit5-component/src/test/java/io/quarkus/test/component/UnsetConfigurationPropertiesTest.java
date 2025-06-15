@@ -15,8 +15,7 @@ public class UnsetConfigurationPropertiesTest {
 
     @RegisterExtension
     static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
-            .useDefaultConfigProperties()
-            .build();
+            .useDefaultConfigProperties().build();
 
     @Inject
     Component component;

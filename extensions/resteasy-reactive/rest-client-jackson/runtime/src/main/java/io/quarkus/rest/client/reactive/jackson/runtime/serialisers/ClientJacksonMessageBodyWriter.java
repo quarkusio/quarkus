@@ -40,14 +40,15 @@ public class ClientJacksonMessageBodyWriter implements ClientMessageBodyWriter<O
 
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter(mediaType, null));
     }
 
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream,
-            RestClientRequestContext context) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream, RestClientRequestContext context)
+            throws IOException, WebApplicationException {
         doLegacyWrite(o, annotations, httpHeaders, entityStream, getEffectiveWriter(mediaType, context));
     }
 

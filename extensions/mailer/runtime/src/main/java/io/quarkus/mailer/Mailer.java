@@ -12,7 +12,8 @@ public interface Mailer {
     /**
      * Sends the given mails.
      *
-     * @param mails the mails, must not be {@code null}.
+     * @param mails
+     *        the mails, must not be {@code null}.
      */
     void send(Mail... mails);
 

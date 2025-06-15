@@ -31,115 +31,88 @@ public class UnhandledExceptionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanRegisteringRouteThatThrowsException.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanRegisteringRouteThatThrowsException.class));
 
     @Test
     public void testNoAccept() {
-        given().get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(APPLICATION_JSON) // Default to JSON
+        given().get("/unhandled-exception").then().statusCode(500).contentType(APPLICATION_JSON) // Default to JSON
                 .body(jsonBodyMatcher());
     }
 
     @Test
     public void testAcceptUnsupported() {
-        given()
-                .accept(APPLICATION_OCTET_STREAM)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
+        given().accept(APPLICATION_OCTET_STREAM).get("/unhandled-exception").then().statusCode(500)
                 .contentType(APPLICATION_JSON) // Default to JSON
                 .body(jsonBodyMatcher());
     }
 
     @Test
     public void testAcceptApplicationJson() {
-        given()
-                .accept(APPLICATION_JSON)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(APPLICATION_JSON)
-                .body(jsonBodyMatcher());
+        given().accept(APPLICATION_JSON).get("/unhandled-exception").then().statusCode(500)
+                .contentType(APPLICATION_JSON).body(jsonBodyMatcher());
     }
 
     @Test
     public void testAcceptTextJson() {
-        given()
-                .accept(TEXT_JSON)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_JSON)
+        given().accept(TEXT_JSON).get("/unhandled-exception").then().statusCode(500).contentType(TEXT_JSON)
                 .body(jsonBodyMatcher());
     }
 
     @Test
     public void testAcceptTextHtml() {
-        given()
-                .accept(TEXT_HTML)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_HTML)
+        given().accept(TEXT_HTML).get("/unhandled-exception").then().statusCode(500).contentType(TEXT_HTML)
                 .body(htmlBodyMatcher());
     }
 
     @Test
     public void testAcceptTextXml() {
-        given()
-                .accept(TEXT_XML)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_HTML) // Not quite what they want, but better than nothing
+        given().accept(TEXT_XML).get("/unhandled-exception").then().statusCode(500).contentType(TEXT_HTML) // Not quite
+                // what they
+                // want, but
+                // better
+                // than
+                // nothing
                 .body(htmlBodyMatcher());
     }
 
     @Test
     public void testAcceptApplicationXml() {
-        given()
-                .accept(APPLICATION_XML)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_HTML) // Not quite what they want, but better than nothing
+        given().accept(APPLICATION_XML).get("/unhandled-exception").then().statusCode(500).contentType(TEXT_HTML) // Not
+                // quite
+                // what
+                // they
+                // want,
+                // but
+                // better
+                // than
+                // nothing
                 .body(htmlBodyMatcher());
     }
 
     @Test
     public void testAcceptXHtml() {
-        given()
-                .accept(APPLICATION_XHTML)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_HTML) // Not quite what they want, but better than nothing
+        given().accept(APPLICATION_XHTML).get("/unhandled-exception").then().statusCode(500).contentType(TEXT_HTML) // Not
+                // quite
+                // what
+                // they
+                // want,
+                // but
+                // better
+                // than
+                // nothing
                 .body(htmlBodyMatcher());
     }
 
     @Test
     public void testAcceptWildcard() {
-        given()
-                .accept("text/*")
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_JSON)
+        given().accept("text/*").get("/unhandled-exception").then().statusCode(500).contentType(TEXT_JSON)
                 .body(jsonBodyMatcher());
     }
 
     @Test
     public void testAcceptParameter() {
         // We don't support accept parameters: they will be ignored.
-        given()
-                .accept("text/html;q=0.8")
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_HTML)
+        given().accept("text/html;q=0.8").get("/unhandled-exception").then().statusCode(500).contentType(TEXT_HTML)
                 .body(htmlBodyMatcher());
     }
 
@@ -147,100 +120,51 @@ public class UnhandledExceptionTest {
     public void testMultipleAcceptHeaders() {
         RestAssuredConfig multipleAcceptHeadersConfig = RestAssured.config()
                 .headerConfig(headerConfig().mergeHeadersWithName("Accept"));
-        given()
-                .config(multipleAcceptHeadersConfig)
-                .accept(APPLICATION_JSON)
-                .accept(TEXT_HTML)
-                .accept(APPLICATION_OCTET_STREAM)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(APPLICATION_JSON)
-                .body(jsonBodyMatcher());
+        given().config(multipleAcceptHeadersConfig).accept(APPLICATION_JSON).accept(TEXT_HTML)
+                .accept(APPLICATION_OCTET_STREAM).get("/unhandled-exception").then().statusCode(500)
+                .contentType(APPLICATION_JSON).body(jsonBodyMatcher());
 
-        given()
-                .config(multipleAcceptHeadersConfig)
-                .accept(TEXT_HTML)
-                .accept(APPLICATION_JSON)
-                .accept(APPLICATION_OCTET_STREAM)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_HTML)
-                .body(htmlBodyMatcher());
+        given().config(multipleAcceptHeadersConfig).accept(TEXT_HTML).accept(APPLICATION_JSON)
+                .accept(APPLICATION_OCTET_STREAM).get("/unhandled-exception").then().statusCode(500)
+                .contentType(TEXT_HTML).body(htmlBodyMatcher());
 
-        given()
-                .config(multipleAcceptHeadersConfig)
-                .accept(APPLICATION_OCTET_STREAM)
-                .accept(TEXT_HTML)
-                .accept(APPLICATION_JSON)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
+        given().config(multipleAcceptHeadersConfig).accept(APPLICATION_OCTET_STREAM).accept(TEXT_HTML)
+                .accept(APPLICATION_JSON).get("/unhandled-exception").then().statusCode(500)
                 // Ideally we'd like TEXT_HTML here, but due to some strange behavior of
                 // io.vertx.ext.web.ParsedHeaderValues.findBestUserAcceptedIn,
                 // we get this.
-                .contentType(APPLICATION_JSON)
-                .body(jsonBodyMatcher());
+                .contentType(APPLICATION_JSON).body(jsonBodyMatcher());
 
-        given()
-                .config(multipleAcceptHeadersConfig)
-                .accept(APPLICATION_OCTET_STREAM)
-                .accept(APPLICATION_JSON)
-                .accept(TEXT_HTML)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(APPLICATION_JSON)
+        given().config(multipleAcceptHeadersConfig).accept(APPLICATION_OCTET_STREAM).accept(APPLICATION_JSON)
+                .accept(TEXT_HTML).get("/unhandled-exception").then().statusCode(500).contentType(APPLICATION_JSON)
                 .body(jsonBodyMatcher());
     }
 
     @Test
     public void testCompositeAcceptHeaders() {
-        given()
-                .accept(APPLICATION_JSON + ", " + TEXT_HTML + ", " + APPLICATION_OCTET_STREAM)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(APPLICATION_JSON)
+        given().accept(APPLICATION_JSON + ", " + TEXT_HTML + ", " + APPLICATION_OCTET_STREAM)
+                .get("/unhandled-exception").then().statusCode(500).contentType(APPLICATION_JSON)
                 .body(jsonBodyMatcher());
 
-        given()
-                .accept(TEXT_HTML + ", " + APPLICATION_JSON + ", " + APPLICATION_OCTET_STREAM)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_HTML)
-                .body(htmlBodyMatcher());
+        given().accept(TEXT_HTML + ", " + APPLICATION_JSON + ", " + APPLICATION_OCTET_STREAM)
+                .get("/unhandled-exception").then().statusCode(500).contentType(TEXT_HTML).body(htmlBodyMatcher());
 
-        given()
-                .accept(APPLICATION_OCTET_STREAM + ", " + TEXT_HTML + ", " + APPLICATION_JSON)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(TEXT_HTML)
-                .body(htmlBodyMatcher());
+        given().accept(APPLICATION_OCTET_STREAM + ", " + TEXT_HTML + ", " + APPLICATION_JSON)
+                .get("/unhandled-exception").then().statusCode(500).contentType(TEXT_HTML).body(htmlBodyMatcher());
 
-        given()
-                .accept(APPLICATION_OCTET_STREAM + ", " + APPLICATION_JSON + ", " + TEXT_HTML)
-                .get("/unhandled-exception")
-                .then()
-                .statusCode(500)
-                .contentType(APPLICATION_JSON)
+        given().accept(APPLICATION_OCTET_STREAM + ", " + APPLICATION_JSON + ", " + TEXT_HTML)
+                .get("/unhandled-exception").then().statusCode(500).contentType(APPLICATION_JSON)
                 .body(jsonBodyMatcher());
     }
 
     private Matcher<String> jsonBodyMatcher() {
-        return allOf(
-                containsString("\"details\":\"Error id"),
+        return allOf(containsString("\"details\":\"Error id"),
                 containsString("\"stack\":\"java.lang.RuntimeException: Simulated failure"),
                 containsString("at " + BeanRegisteringRouteThatThrowsException.class.getName() + "$1.handle"));
     }
 
     private Matcher<String> htmlBodyMatcher() {
-        return allOf(
-                containsString("<!doctype html>"),
-                containsString("<title>Internal Server Error"),
+        return allOf(containsString("<!doctype html>"), containsString("<title>Internal Server Error"),
                 containsString("java.lang.RuntimeException: Simulated failure"),
                 containsString(BeanRegisteringRouteThatThrowsException.class.getName() + "$1"),
                 containsString(".handle"));

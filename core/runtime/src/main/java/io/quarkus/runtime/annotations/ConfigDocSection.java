@@ -10,8 +10,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * A marker indicating that the configuration item {@link ConfigItem} should be generated as a section.
- * The section will be generated only if the configuration item type is annotated with {@link ConfigGroup}
+ * A marker indicating that the configuration item {@link ConfigItem} should be generated as a section. The section will
+ * be generated only if the configuration item type is annotated with {@link ConfigGroup}
  */
 @Documented
 @Retention(RUNTIME)
@@ -21,9 +21,8 @@ public @interface ConfigDocSection {
     /**
      * If we should generate a specific file for this section.
      * <p>
-     * We used to do it for all config groups before but it's counterproductive.
-     * The new annotation processor only generates a file for a config group
-     * if this is true.
+     * We used to do it for all config groups before but it's counterproductive. The new annotation processor only
+     * generates a file for a config group if this is true.
      */
     boolean generated() default false;
 }

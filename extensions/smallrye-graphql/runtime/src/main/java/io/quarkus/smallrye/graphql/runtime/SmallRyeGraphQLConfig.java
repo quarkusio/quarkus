@@ -17,15 +17,15 @@ import io.smallrye.graphql.spi.config.LogPayloadOption;
 public interface SmallRyeGraphQLConfig {
 
     /**
-     * The rootPath under which queries will be served. Default to graphql
-     * By default, this value will be resolved as a path relative to `${quarkus.http.root-path}`.
+     * The rootPath under which queries will be served. Default to graphql By default, this value will be resolved as a
+     * path relative to `${quarkus.http.root-path}`.
      */
     @WithDefault("graphql")
     String rootPath();
 
     /**
-     * Enable Apollo Federation. If this value is unspecified, then federation will be enabled
-     * automatically if any GraphQL Federation annotations are detected in the application.
+     * Enable Apollo Federation. If this value is unspecified, then federation will be enabled automatically if any
+     * GraphQL Federation annotations are detected in the application.
      */
     @WithName("federation.enabled")
     Optional<Boolean> federationEnabled();
@@ -74,22 +74,19 @@ public interface SmallRyeGraphQLConfig {
     Optional<Boolean> httpPostQueryParametersEnabled();
 
     /**
-     * Change the type naming strategy.
-     * All possible strategies are: default, merge-inner-class, full
+     * Change the type naming strategy. All possible strategies are: default, merge-inner-class, full
      */
     @WithDefault("Default")
     String autoNameStrategy();
 
     /**
-     * List of extension fields that should be included in the error response.
-     * By default, none will be included. Examples of valid values include
-     * [exception,classification,code,description,validationErrorType,queryPath]
+     * List of extension fields that should be included in the error response. By default, none will be included.
+     * Examples of valid values include [exception,classification,code,description,validationErrorType,queryPath]
      */
     Optional<List<String>> errorExtensionFields();
 
     /**
-     * The default error message that will be used for hidden exception messages.
-     * Defaults to "Server Error"
+     * The default error message that will be used for hidden exception messages. Defaults to "Server Error"
      */
     Optional<String> defaultErrorMessage();
 
@@ -140,8 +137,8 @@ public interface SmallRyeGraphQLConfig {
     Optional<List<String>> unwrapExceptions();
 
     /**
-     * Subprotocols that should be supported by the server for graphql-over-websocket use cases.
-     * Allowed subprotocols are "graphql-ws" and "graphql-transport-ws". By default, both are enabled.
+     * Subprotocols that should be supported by the server for graphql-over-websocket use cases. Allowed subprotocols
+     * are "graphql-ws" and "graphql-transport-ws". By default, both are enabled.
      */
     Optional<List<String>> websocketSubprotocols();
 
@@ -161,13 +158,14 @@ public interface SmallRyeGraphQLConfig {
     Optional<Boolean> parserCaptureSourceLocation();
 
     /**
-     * The maximum number of raw tokens the parser will accept, after which an exception will be thrown. Default to 15000
+     * The maximum number of raw tokens the parser will accept, after which an exception will be thrown. Default to
+     * 15000
      */
     OptionalInt parserMaxTokens();
 
     /**
-     * The maximum number of raw whitespace tokens the parser will accept, after which an exception will be thrown. Default to
-     * 200000
+     * The maximum number of raw whitespace tokens the parser will accept, after which an exception will be thrown.
+     * Default to 200000
      */
     OptionalInt parserMaxWhitespaceTokens();
 
@@ -188,8 +186,7 @@ public interface SmallRyeGraphQLConfig {
     SmallRyeGraphQLUIConfig ui();
 
     /**
-     * Additional scalars to register in the schema.
-     * These are taken from the `graphql-java-extended-scalars` library.
+     * Additional scalars to register in the schema. These are taken from the `graphql-java-extended-scalars` library.
      */
     Optional<List<ExtraScalar>> extraScalars();
 }

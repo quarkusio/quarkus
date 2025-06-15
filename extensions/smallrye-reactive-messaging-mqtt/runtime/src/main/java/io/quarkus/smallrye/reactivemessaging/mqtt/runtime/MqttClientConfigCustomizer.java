@@ -30,7 +30,8 @@ public class MqttClientConfigCustomizer implements ClientCustomizer<MqttClientSe
             Optional<TlsConfiguration> maybeTlsConfig = tlsRegistry.get(tlsConfig);
             if (maybeTlsConfig.isPresent()) {
                 TlsConfigUtils.configure(options, maybeTlsConfig.get());
-                log.debugf("Configured MqttClientSessionOptions for channel %s with TLS configuration %s", channel, tlsConfig);
+                log.debugf("Configured MqttClientSessionOptions for channel %s with TLS configuration %s", channel,
+                        tlsConfig);
             }
         }
         return options;

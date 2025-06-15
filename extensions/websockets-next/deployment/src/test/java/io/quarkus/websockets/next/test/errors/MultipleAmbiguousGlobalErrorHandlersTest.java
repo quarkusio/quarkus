@@ -15,11 +15,9 @@ import io.quarkus.websockets.next.WebSocketException;
 public class MultipleAmbiguousGlobalErrorHandlersTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(GlobalErrorHandlers.class);
-            })
-            .setExpectedException(WebSocketException.class);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(GlobalErrorHandlers.class);
+    }).setExpectedException(WebSocketException.class);
 
     @Test
     void testMultipleAmbiguousErrorHandlers() {

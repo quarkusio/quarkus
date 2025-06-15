@@ -25,50 +25,36 @@ import io.restassured.RestAssured;
 public class ImpliedReadBodyRequestFilterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class);
+        }
+    });
 
     @Test
     public void testMethodWithBody() {
-        RestAssured.with()
-                .formParam("name", "Quarkus")
-                .post("/hello")
-                .then().body(Matchers.equalTo("hello Quarkus!!!!!!!"));
+        RestAssured.with().formParam("name", "Quarkus").post("/hello").then()
+                .body(Matchers.equalTo("hello Quarkus!!!!!!!"));
     }
 
     @Test
     public void testMethodWithUndeclaredBody() {
-        RestAssured.with()
-                .formParam("name", "Quarkus")
-                .post("/hello/empty")
-                .then().body(Matchers.equalTo("hello !!!!!!!"));
+        RestAssured.with().formParam("name", "Quarkus").post("/hello/empty").then()
+                .body(Matchers.equalTo("hello !!!!!!!"));
     }
 
     @Test
     public void testMethodWithStringBody() {
         // make sure that a form-reading filter doesn't prevent non-form request bodies from being deserialised
-        RestAssured.with()
-                .formParam("name", "Quarkus")
-                .post("/hello/string")
-                .then().body(Matchers.equalTo("hello name=Quarkus!!!!!!!"));
-        RestAssured.with()
-                .body("Quarkus")
-                .post("/hello/string")
-                .then().body(Matchers.equalTo("hello Quarkus?"));
+        RestAssured.with().formParam("name", "Quarkus").post("/hello/string").then()
+                .body(Matchers.equalTo("hello name=Quarkus!!!!!!!"));
+        RestAssured.with().body("Quarkus").post("/hello/string").then().body(Matchers.equalTo("hello Quarkus?"));
     }
 
     @Test
     public void testMethodWithoutBody() {
-        RestAssured.with()
-                .queryParam("name", "Quarkus")
-                .get("/hello")
-                .then().body(Matchers.equalTo("hello Quarkus!"));
+        RestAssured.with().queryParam("name", "Quarkus").get("/hello").then().body(Matchers.equalTo("hello Quarkus!"));
     }
 
     @Path("hello")

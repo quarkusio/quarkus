@@ -124,6 +124,7 @@ public class FunqyLambdaBindingRecorder {
      *        {@link OutputStream} of the AWS SDK {@link com.amazonaws.services.lambda.runtime.RequestStreamHandler}
      * @param context
      *        AWS context information provided to the Lambda
+     *
      * @throws IOException
      *         Is thrown in case the (de)serialization fails
      */

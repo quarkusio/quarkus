@@ -13,7 +13,6 @@ import io.quarkus.arc.impl.Reflections;
 
 /**
  * Turn URI parameter map into an object
- *
  */
 public class QueryObjectMapper {
     Function<String, Object> extractor(Type type) {

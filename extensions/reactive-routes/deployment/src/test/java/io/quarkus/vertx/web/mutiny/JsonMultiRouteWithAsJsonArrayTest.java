@@ -25,35 +25,25 @@ public class JsonMultiRouteWithAsJsonArrayTest {
 
     @Test
     public void testMultiRoute() {
-        when().get("/hello").then().statusCode(200)
-                .body(is("[\"Hello world!\"]"))
-                .header("content-type", "application/json");
-        when().get("/hellos").then().statusCode(200)
-                .body(is("[\"hello\",\"world\",\"!\"]"))
-                .header("content-type", "application/json");
-        when().get("/no-hello").then().statusCode(200).body(is("[]"))
-                .header("content-type", "application/json");
+        when().get("/hello").then().statusCode(200).body(is("[\"Hello world!\"]")).header("content-type",
+                "application/json");
+        when().get("/hellos").then().statusCode(200).body(is("[\"hello\",\"world\",\"!\"]")).header("content-type",
+                "application/json");
+        when().get("/no-hello").then().statusCode(200).body(is("[]")).header("content-type", "application/json");
         // status already sent, but not the end of the array
-        when().get("/hello-and-fail").then().statusCode(200)
-                .body(containsString("[\"Hello\""))
+        when().get("/hello-and-fail").then().statusCode(200).body(containsString("[\"Hello\""))
                 .body(not(containsString("]")));
 
         when().get("/buffers").then().statusCode(500);
 
         when().get("/void").then().statusCode(200).body(is("[]"));
 
-        when().get("/people").then().statusCode(200)
-                .body("size()", is(3))
-                .body("[0].name", is("superman"))
-                .body("[1].name", is("batman"))
-                .body("[2].name", is("spiderman"))
+        when().get("/people").then().statusCode(200).body("size()", is(3)).body("[0].name", is("superman"))
+                .body("[1].name", is("batman")).body("[2].name", is("spiderman"))
                 .header("content-type", "application/json");
 
-        when().get("/people-content-type").then().statusCode(200)
-                .body("size()", is(3))
-                .body("[0].name", is("superman"))
-                .body("[1].name", is("batman"))
-                .body("[2].name", is("spiderman"))
+        when().get("/people-content-type").then().statusCode(200).body("size()", is(3)).body("[0].name", is("superman"))
+                .body("[1].name", is("batman")).body("[2].name", is("spiderman"))
                 .header("content-type", "application/json;charset=utf-8");
 
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
@@ -81,38 +71,32 @@ public class JsonMultiRouteWithAsJsonArrayTest {
 
         @Route(path = "hello-and-fail")
         Multi<String> helloAndFail() {
-            return ReactiveRoutes.asJsonArray(Multi.createBy().concatenating().streams(
-                    Multi.createFrom().item("Hello"),
+            return ReactiveRoutes.asJsonArray(Multi.createBy().concatenating().streams(Multi.createFrom().item("Hello"),
                     Multi.createFrom().failure(new IOException("boom"))));
         }
 
         @Route(path = "buffers")
         Multi<Buffer> buffers(RoutingContext context) {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom()
-                    .items(Buffer.buffer("Buffer"), Buffer.buffer(" Buffer"), Buffer.buffer(" Buffer.")));
+            return ReactiveRoutes.asJsonArray(Multi.createFrom().items(Buffer.buffer("Buffer"),
+                    Buffer.buffer(" Buffer"), Buffer.buffer(" Buffer.")));
         }
 
         @Route(path = "void")
         Multi<Void> multiVoid(RoutingContext context) {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().range(0, 200)
-                    .onItem().ignore());
+            return ReactiveRoutes.asJsonArray(Multi.createFrom().range(0, 200).onItem().ignore());
         }
 
         @Route(path = "/people")
         Multi<Person> people() {
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
-                    new Person("spiderman", 3)));
+            return ReactiveRoutes.asJsonArray(Multi.createFrom().items(new Person("superman", 1),
+                    new Person("batman", 2), new Person("spiderman", 3)));
         }
 
         @Route(path = "/people-content-type")
         Multi<Person> peopleWithContentType(RoutingContext context) {
             context.response().putHeader("content-type", "application/json;charset=utf-8");
-            return ReactiveRoutes.asJsonArray(Multi.createFrom().items(
-                    new Person("superman", 1),
-                    new Person("batman", 2),
-                    new Person("spiderman", 3)));
+            return ReactiveRoutes.asJsonArray(Multi.createFrom().items(new Person("superman", 1),
+                    new Person("batman", 2), new Person("spiderman", 3)));
         }
 
         @Route(path = "/failure")

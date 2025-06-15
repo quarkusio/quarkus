@@ -24,17 +24,21 @@ public final class ResponseImplementor {
 
     public ResultHandle ok(BytecodeCreator creator, ResultHandle entity) {
         ResultHandle builder = creator.invokeStaticMethod(
-                ofMethod(RestResponse.ResponseBuilder.class, "ok", RestResponse.ResponseBuilder.class, Object.class), entity);
-        return creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "build", RestResponse.class), builder);
+                ofMethod(RestResponse.ResponseBuilder.class, "ok", RestResponse.ResponseBuilder.class, Object.class),
+                entity);
+        return creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "build", RestResponse.class),
+                builder);
     }
 
     public ResultHandle ok(BytecodeCreator creator, ResultHandle entity, ResultHandle links) {
         ResultHandle builder = creator.invokeStaticMethod(
-                ofMethod(RestResponse.ResponseBuilder.class, "ok", RestResponse.ResponseBuilder.class, Object.class), entity);
+                ofMethod(RestResponse.ResponseBuilder.class, "ok", RestResponse.ResponseBuilder.class, Object.class),
+                entity);
         creator.invokeVirtualMethod(
                 ofMethod(RestResponse.ResponseBuilder.class, "links", RestResponse.ResponseBuilder.class, Link[].class),
                 builder, links);
-        return creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "build", RestResponse.class), builder);
+        return creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "build", RestResponse.class),
+                builder);
     }
 
     public ResultHandle created(BytecodeCreator creator, ResultHandle entity, ResourceProperties resourceProperties) {
@@ -51,15 +55,11 @@ public final class ResponseImplementor {
         ResultHandle instance = creator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                         Annotation[].class),
-                arcContainer,
-                creator.loadClassFromTCCL(ResteasyReactiveHalService.class),
-                creator.loadNull());
-        ResultHandle halService = creator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
-                instance);
+                arcContainer, creator.loadClassFromTCCL(ResteasyReactiveHalService.class), creator.loadNull());
+        ResultHandle halService = creator
+                .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instance);
         ResultHandle link = creator.invokeVirtualMethod(
-                ofMethod(HalService.class, "getSelfLink", String.class, Object.class), halService,
-                entity);
+                ofMethod(HalService.class, "getSelfLink", String.class, Object.class), halService, entity);
         creator.ifNull(link).trueBranch().throwException(RuntimeException.class, "Could not extract a new entity URL");
         return creator.invokeStaticMethod(ofMethod(URI.class, "create", URI.class, String.class), link);
     }
@@ -79,21 +79,21 @@ public final class ResponseImplementor {
 
     private ResultHandle doCreated(BytecodeCreator creator, ResultHandle entity, ResultHandle location) {
         ResultHandle builder = getResponseBuilder(creator, RestResponse.Status.CREATED.getStatusCode());
-        creator.invokeVirtualMethod(
-                ofMethod(RestResponse.ResponseBuilder.class, "entity", RestResponse.ResponseBuilder.class, Object.class),
-                builder, entity);
+        creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "entity",
+                RestResponse.ResponseBuilder.class, Object.class), builder, entity);
         if (location != null) {
-            creator.invokeVirtualMethod(
-                    ofMethod(RestResponse.ResponseBuilder.class, "location", RestResponse.ResponseBuilder.class, URI.class),
-                    builder, location);
+            creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "location",
+                    RestResponse.ResponseBuilder.class, URI.class), builder, location);
         }
 
-        return creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "build", RestResponse.class), builder);
+        return creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "build", RestResponse.class),
+                builder);
     }
 
     private ResultHandle status(BytecodeCreator creator, int status) {
         ResultHandle builder = getResponseBuilder(creator, status);
-        return creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "build", RestResponse.class), builder);
+        return creator.invokeVirtualMethod(ofMethod(RestResponse.ResponseBuilder.class, "build", RestResponse.class),
+                builder);
     }
 
     private ResultHandle getResponseBuilder(BytecodeCreator creator, int status) {

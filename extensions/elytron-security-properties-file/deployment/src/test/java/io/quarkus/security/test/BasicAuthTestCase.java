@@ -13,37 +13,29 @@ import io.restassured.RestAssured;
  * Tests of BASIC authentication mechanism
  */
 public class BasicAuthTestCase {
-    static Class[] testClasses = {
-            TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
-            ParametrizedPathsResource.class, SubjectExposingResource.class
-    };
+    static Class[] testClasses = { TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
+            ParametrizedPathsResource.class, SubjectExposingResource.class };
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application.properties")
-                    .addAsResource("test-users.properties")
-                    .addAsResource("test-roles.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addAsResource("application.properties")
+                    .addAsResource("test-users.properties").addAsResource("test-roles.properties"));
 
     // Basic @ServletSecurity tests
     @Test()
     public void testSecureAccessFailure() {
-        RestAssured.when().get("/secure-test").then()
-                .statusCode(401);
+        RestAssured.when().get("/secure-test").then().statusCode(401);
     }
 
     @Test()
     public void testSecureRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("jdoe", "p4ssw0rd")
-                .when().get("/secure-test").then()
+        RestAssured.given().auth().preemptive().basic("jdoe", "p4ssw0rd").when().get("/secure-test").then()
                 .statusCode(403);
     }
 
     @Test()
     public void testSecureAccessSuccess() {
-        RestAssured.given().auth().preemptive().basic("stuart", "test")
-                .when().get("/secure-test").then()
+        RestAssured.given().auth().preemptive().basic("stuart", "test").when().get("/secure-test").then()
                 .statusCode(200);
     }
 
@@ -53,8 +45,7 @@ public class BasicAuthTestCase {
     @Test
     public void testJaxrsGetFailure() {
         RestAssured.when().get("/jaxrs-secured/rolesClass").then()
-                .header("www-authenticate", containsStringIgnoringCase("basic"))
-                .statusCode(401);
+                .header("www-authenticate", containsStringIgnoringCase("basic")).statusCode(401);
     }
 
     /**
@@ -62,8 +53,7 @@ public class BasicAuthTestCase {
      */
     @Test
     public void testJaxrsGetRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("jdoe", "p4ssw0rd")
-                .when().get("/jaxrs-secured/rolesClass").then()
+        RestAssured.given().auth().preemptive().basic("jdoe", "p4ssw0rd").when().get("/jaxrs-secured/rolesClass").then()
                 .statusCode(403);
     }
 
@@ -72,8 +62,7 @@ public class BasicAuthTestCase {
      */
     @Test
     public void testJaxrsGetRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("scott", "jb0ss")
-                .when().get("/jaxrs-secured/rolesClass").then()
+        RestAssured.given().auth().preemptive().basic("scott", "jb0ss").when().get("/jaxrs-secured/rolesClass").then()
                 .statusCode(200);
     }
 
@@ -82,16 +71,14 @@ public class BasicAuthTestCase {
      */
     @Test
     public void testJaxrsPathAdminRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("scott", "jb0ss")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
-                .statusCode(200);
+        RestAssured.given().auth().preemptive().basic("scott", "jb0ss").when()
+                .get("/jaxrs-secured/parameterized-paths/my/banking/admin").then().statusCode(200);
     }
 
     @Test
     public void testJaxrsPathAdminRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("noadmin", "n0Adm1n")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
-                .statusCode(403);
+        RestAssured.given().auth().preemptive().basic("noadmin", "n0Adm1n").when()
+                .get("/jaxrs-secured/parameterized-paths/my/banking/admin").then().statusCode(403);
     }
 
     /**
@@ -99,9 +86,8 @@ public class BasicAuthTestCase {
      */
     @Test
     public void testJaxrsPathUserRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("stuart", "test")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/view").then()
-                .statusCode(200);
+        RestAssured.given().auth().preemptive().basic("stuart", "test").when()
+                .get("/jaxrs-secured/parameterized-paths/my/banking/view").then().statusCode(200);
     }
 
     /**
@@ -109,18 +95,14 @@ public class BasicAuthTestCase {
      */
     @Test
     public void testJaxrsUserRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("scott", "jb0ss")
-                .when().get("/jaxrs-secured/subject/secured").then()
-                .statusCode(200)
-                .body(equalTo("scott"));
+        RestAssured.given().auth().preemptive().basic("scott", "jb0ss").when().get("/jaxrs-secured/subject/secured")
+                .then().statusCode(200).body(equalTo("scott"));
     }
 
     @Test
     public void testJaxrsInjectedPrincipalSuccess() {
-        RestAssured.given().auth().preemptive().basic("scott", "jb0ss")
-                .when().get("/jaxrs-secured/subject/principalSecured").then()
-                .statusCode(200)
-                .body(equalTo("scott"));
+        RestAssured.given().auth().preemptive().basic("scott", "jb0ss").when()
+                .get("/jaxrs-secured/subject/principalSecured").then().statusCode(200).body(equalTo("scott"));
     }
 
     /**
@@ -128,9 +110,7 @@ public class BasicAuthTestCase {
      */
     @Test
     public void testJaxrsGetPermitAll() {
-        RestAssured.when().get("/jaxrs-secured/subject/unsecured").then()
-                .statusCode(200)
-                .body(equalTo("anonymous"));
+        RestAssured.when().get("/jaxrs-secured/subject/unsecured").then().statusCode(200).body(equalTo("anonymous"));
     }
 
     /**
@@ -138,8 +118,7 @@ public class BasicAuthTestCase {
      */
     @Test
     public void testJaxrsGetDenyAllWithoutAuth() {
-        RestAssured.when().get("/jaxrs-secured/subject/denied").then()
-                .statusCode(401);
+        RestAssured.when().get("/jaxrs-secured/subject/denied").then().statusCode(401);
     }
 
     /**
@@ -147,8 +126,7 @@ public class BasicAuthTestCase {
      */
     @Test
     public void testJaxrsGetDenyAllWithAuth() {
-        RestAssured.given().auth().preemptive().basic("scott", "jb0ss")
-                .when().get("/jaxrs-secured/subject/denied").then()
-                .statusCode(403);
+        RestAssured.given().auth().preemptive().basic("scott", "jb0ss").when().get("/jaxrs-secured/subject/denied")
+                .then().statusCode(403);
     }
 }

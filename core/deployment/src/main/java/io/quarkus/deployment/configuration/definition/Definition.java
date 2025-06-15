@@ -22,8 +22,8 @@ public abstract class Definition {
         if (e instanceof Member) {
             return new IllegalArgumentException(msg + " at " + e + " of " + ((Member) e).getEnclosingDefinition());
         } else if (e instanceof Parameter) {
-            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of "
-                    + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
+            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable()
+                    + " of " + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
         } else {
             return new IllegalArgumentException(msg + " at " + e);
         }

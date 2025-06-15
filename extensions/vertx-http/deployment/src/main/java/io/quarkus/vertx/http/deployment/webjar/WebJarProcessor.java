@@ -27,8 +27,7 @@ public class WebJarProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIfNot = IsNormal.class)
     WebJarResultsBuildItem processWebJarDevMode(WebJarRecorder recorder, List<WebJarBuildItem> webJars,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            ShutdownContextBuildItem shutdownContext,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, ShutdownContextBuildItem shutdownContext,
             ApplicationConfig applicationConfig) throws IOException {
 
         Map<GACT, WebJarResultsBuildItem.WebJarResult> results = new HashMap<>();
@@ -41,22 +40,19 @@ public class WebJarProcessor {
                     .resolve(buildFinalDestination(webJar.getArtifactKey(), webJar.getRoot()));
             ResolvedDependency dependency = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, webJar.getArtifactKey());
 
-            Path staticResourcesPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, applicationConfig, webJar,
-                    dependency, resourcesDirectory);
+            Path staticResourcesPath = WebJarUtil.copyResourcesForDevOrTest(curateOutcomeBuildItem, applicationConfig,
+                    webJar, dependency, resourcesDirectory);
 
             List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations = new ArrayList<>();
-            webRootConfigurations.add(
-                    new FileSystemStaticHandler.StaticWebRootConfiguration(staticResourcesPath.toAbsolutePath().toString(),
-                            ""));
+            webRootConfigurations.add(new FileSystemStaticHandler.StaticWebRootConfiguration(
+                    staticResourcesPath.toAbsolutePath().toString(), ""));
             for (Path resolvedPath : dependency.getResolvedPaths()) {
-                webRootConfigurations
-                        .add(new FileSystemStaticHandler.StaticWebRootConfiguration(resolvedPath.toString(),
-                                webJar.getRoot()));
+                webRootConfigurations.add(new FileSystemStaticHandler.StaticWebRootConfiguration(
+                        resolvedPath.toString(), webJar.getRoot()));
             }
 
-            results.put(webJar.getArtifactKey(),
-                    new WebJarResultsBuildItem.WebJarResult(dependency, staticResourcesPath.toAbsolutePath().toString(),
-                            webRootConfigurations));
+            results.put(webJar.getArtifactKey(), new WebJarResultsBuildItem.WebJarResult(dependency,
+                    staticResourcesPath.toAbsolutePath().toString(), webRootConfigurations));
         }
 
         return new WebJarResultsBuildItem(results);
@@ -64,8 +60,7 @@ public class WebJarProcessor {
 
     @BuildStep(onlyIf = IsNormal.class)
     WebJarResultsBuildItem processWebJarProdMode(List<WebJarBuildItem> webJars,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer,
             ApplicationConfig applicationConfig) {
 
@@ -75,23 +70,20 @@ public class WebJarProcessor {
 
             ResolvedDependency dependency = WebJarUtil.getAppArtifact(curateOutcomeBuildItem, webJar.getArtifactKey());
 
-            Map<String, byte[]> files = WebJarUtil.copyResourcesForProduction(
-                    curateOutcomeBuildItem, applicationConfig, webJar, dependency);
+            Map<String, byte[]> files = WebJarUtil.copyResourcesForProduction(curateOutcomeBuildItem, applicationConfig,
+                    webJar, dependency);
 
             String finalDestination = buildFinalDestination(webJar.getArtifactKey(), webJar.getRoot());
             for (Map.Entry<String, byte[]> file : files.entrySet()) {
                 String fileName = finalDestination + "/" + file.getKey();
                 byte[] fileContent = file.getValue();
 
-                generatedResources
-                        .produce(new GeneratedResourceBuildItem(fileName, fileContent));
+                generatedResources.produce(new GeneratedResourceBuildItem(fileName, fileContent));
                 nativeImageResourceBuildItemBuildProducer.produce(new NativeImageResourceBuildItem(fileName));
             }
 
             List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations = new ArrayList<>();
-            webRootConfigurations.add(
-                    new FileSystemStaticHandler.StaticWebRootConfiguration(finalDestination,
-                            ""));
+            webRootConfigurations.add(new FileSystemStaticHandler.StaticWebRootConfiguration(finalDestination, ""));
 
             results.put(webJar.getArtifactKey(),
                     new WebJarResultsBuildItem.WebJarResult(dependency, finalDestination, webRootConfigurations));

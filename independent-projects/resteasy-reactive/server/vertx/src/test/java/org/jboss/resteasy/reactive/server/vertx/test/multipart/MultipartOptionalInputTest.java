@@ -24,17 +24,14 @@ public class MultipartOptionalInputTest extends AbstractMultipartTest {
     private static final Path uploadDir = Paths.get("file-uploads");
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setDeleteUploadedFilesOnEnd(false)
-            .setUploadPath(uploadDir)
-            .setArchiveProducer(new Supplier<>() {
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setDeleteUploadedFilesOnEnd(false)
+            .setUploadPath(uploadDir).setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FormDataBase.class, OtherPackageFormDataBase.class, FormData.class, Status.class,
-                                    OtherFormData.class, FormDataSameFileName.class,
-                                    OtherFormDataBase.class,
-                                    MultipartResource.class, OtherMultipartResource.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(FormDataBase.class,
+                            OtherPackageFormDataBase.class, FormData.class, Status.class, OtherFormData.class,
+                            FormDataSameFileName.class, OtherFormDataBase.class, MultipartResource.class,
+                            OtherMultipartResource.class);
                 }
 
             });
@@ -53,17 +50,9 @@ public class MultipartOptionalInputTest extends AbstractMultipartTest {
 
     @Test
     public void testUploadWithSomeFilesMissing() {
-        RestAssured.given()
-                .multiPart("name", "Alice")
-                .multiPart("active", "true")
-                .multiPart("num", "25")
-                .multiPart("status", "WORKING")
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .accept("text/plain")
-                .when()
-                .post("/multipart/optional")
-                .then()
-                .statusCode(200)
+        RestAssured.given().multiPart("name", "Alice").multiPart("active", "true").multiPart("num", "25")
+                .multiPart("status", "WORKING").multiPart("htmlFile", HTML_FILE, "text/html").accept("text/plain")
+                .when().post("/multipart/optional").then().statusCode(200)
                 .body(equalTo("Alice - true - 25 - WORKING - true - false - false"));
 
         // ensure that the 1 uploaded file was created on disk

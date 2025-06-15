@@ -39,8 +39,8 @@ import io.vertx.mutiny.redis.client.Request;
 import io.vertx.mutiny.redis.client.Response;
 
 /**
- * This class is an internal Quarkus cache implementation using Redis.
- * Do not use it explicitly from your Quarkus application.
+ * This class is an internal Quarkus cache implementation using Redis. Do not use it explicitly from your Quarkus
+ * application.
  */
 public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
@@ -72,7 +72,8 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         }
     }
 
-    public RedisCacheImpl(RedisCacheInfo cacheInfo, Vertx vertx, Redis redis, Supplier<Boolean> blockingAllowedSupplier) {
+    public RedisCacheImpl(RedisCacheInfo cacheInfo, Vertx vertx, Redis redis,
+            Supplier<Boolean> blockingAllowedSupplier) {
         this.vertx = vertx;
         this.cacheInfo = cacheInfo;
         this.blockingAllowedSupplier = blockingAllowedSupplier;
@@ -91,8 +92,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     }
 
     private static boolean isRecomputableError(Throwable error) {
-        return error instanceof ConnectException
-                || error instanceof ConnectionPoolTooBusyException;
+        return error instanceof ConnectException || error instanceof ConnectionPoolTooBusyException;
     }
 
     @Override
@@ -148,12 +148,12 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         // WATCH K
         // val = deserialize(GET K)
         // if val == null
-        //   MULTI
-        //      SET K computation.apply(K)
-        //   EXEC
+        // MULTI
+        // SET K computation.apply(K)
+        // EXEC
         // else
-        //   UNWATCH K
-        //   return val
+        // UNWATCH K
+        // return val
         // Without:
         // val = deserialize(GET K)
         // if (val == null) => SET K computation.apply(K)
@@ -171,48 +171,47 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                     startingPoint = new GetFromConnectionSupplier<V>(connection, type, encodedKey, marshaller).get();
                 }
 
-                return startingPoint
-                        .chain(Unchecked.function(new UncheckedFunction<>() {
-                            @Override
-                            public Uni<V> apply(V cached) throws Exception {
-                                if (cached != null) {
-                                    // Unwatch if optimistic locking
-                                    if (cacheInfo.useOptimisticLocking) {
-                                        return connection.send(Request.cmd(Command.UNWATCH))
-                                                .replaceWith(cached);
-                                    }
-                                    return Uni.createFrom().item(new StaticSupplier<>(cached));
-                                } else {
-                                    Uni<V> uni = computeValue(key, valueLoader, isWorkerThread);
-
-                                    return uni.onItem().call(new Function<V, Uni<?>>() {
-                                        @Override
-                                        public Uni<?> apply(V value) {
-                                            if (value == null) {
-                                                throw new IllegalArgumentException("Cannot cache `null` value");
-                                            }
-                                            byte[] encodedValue = marshaller.encode(value);
-                                            Uni<V> result;
-                                            if (cacheInfo.useOptimisticLocking) {
-                                                result = multi(connection, set(connection, encodedKey, encodedValue))
-                                                        .replaceWith(value);
-                                            } else {
-                                                result = set(connection, encodedKey, encodedValue).replaceWith(value);
-                                            }
-                                            if (isWorkerThread) {
-                                                return result.runSubscriptionOn(
-                                                        MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
-                                            }
-                                            return result;
-                                        }
-                                    });
-                                }
+                return startingPoint.chain(Unchecked.function(new UncheckedFunction<>() {
+                    @Override
+                    public Uni<V> apply(V cached) throws Exception {
+                        if (cached != null) {
+                            // Unwatch if optimistic locking
+                            if (cacheInfo.useOptimisticLocking) {
+                                return connection.send(Request.cmd(Command.UNWATCH)).replaceWith(cached);
                             }
-                        }));
+                            return Uni.createFrom().item(new StaticSupplier<>(cached));
+                        } else {
+                            Uni<V> uni = computeValue(key, valueLoader, isWorkerThread);
+
+                            return uni.onItem().call(new Function<V, Uni<?>>() {
+                                @Override
+                                public Uni<?> apply(V value) {
+                                    if (value == null) {
+                                        throw new IllegalArgumentException("Cannot cache `null` value");
+                                    }
+                                    byte[] encodedValue = marshaller.encode(value);
+                                    Uni<V> result;
+                                    if (cacheInfo.useOptimisticLocking) {
+                                        result = multi(connection, set(connection, encodedKey, encodedValue))
+                                                .replaceWith(value);
+                                    } else {
+                                        result = set(connection, encodedKey, encodedValue).replaceWith(value);
+                                    }
+                                    if (isWorkerThread) {
+                                        return result.runSubscriptionOn(
+                                                MutinyHelper.blockingExecutor(vertx.getDelegate(), false));
+                                    }
+                                    return result;
+                                }
+                            });
+                        }
+                    }
+                }));
             }
         })
 
-                .onFailure(RedisCacheImpl::isRecomputableError).recoverWithUni(new Function<Throwable, Uni<? extends V>>() {
+                .onFailure(RedisCacheImpl::isRecomputableError)
+                .recoverWithUni(new Function<Throwable, Uni<? extends V>>() {
                     @Override
                     public Uni<? extends V> apply(Throwable e) {
                         log.warn("Unable to connect to Redis, recomputing cached value", e);
@@ -250,36 +249,30 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                     startingPoint = new GetFromConnectionSupplier<V>(connection, type, encodedKey, marshaller).get();
                 }
 
-                return startingPoint
-                        .chain(cached -> {
-                            if (cached != null) {
-                                // Unwatch if optimistic locking
-                                if (cacheInfo.useOptimisticLocking) {
-                                    return connection.send(Request.cmd(Command.UNWATCH))
-                                            .replaceWith(cached);
-                                }
-                                return Uni.createFrom().item(new StaticSupplier<>(cached));
+                return startingPoint.chain(cached -> {
+                    if (cached != null) {
+                        // Unwatch if optimistic locking
+                        if (cacheInfo.useOptimisticLocking) {
+                            return connection.send(Request.cmd(Command.UNWATCH)).replaceWith(cached);
+                        }
+                        return Uni.createFrom().item(new StaticSupplier<>(cached));
+                    } else {
+                        Uni<V> getter = valueLoader.apply(key);
+                        return getter.chain(value -> {
+                            byte[] encodedValue = marshaller.encode(value);
+                            if (cacheInfo.useOptimisticLocking) {
+                                return multi(connection, set(connection, encodedKey, encodedValue)).replaceWith(value);
                             } else {
-                                Uni<V> getter = valueLoader.apply(key);
-                                return getter
-                                        .chain(value -> {
-                                            byte[] encodedValue = marshaller.encode(value);
-                                            if (cacheInfo.useOptimisticLocking) {
-                                                return multi(connection, set(connection, encodedKey, encodedValue))
-                                                        .replaceWith(value);
-                                            } else {
-                                                return set(connection, encodedKey, encodedValue)
-                                                        .replaceWith(value);
-                                            }
-                                        });
+                                return set(connection, encodedKey, encodedValue).replaceWith(value);
                             }
                         });
-            }
-        })
-                .onFailure(RedisCacheImpl::isRecomputableError).recoverWithUni(e -> {
-                    log.warn("Unable to connect to Redis, recomputing cached value", e);
-                    return valueLoader.apply(key);
+                    }
                 });
+            }
+        }).onFailure(RedisCacheImpl::isRecomputableError).recoverWithUni(e -> {
+            log.warn("Unable to connect to Redis, recomputing cached value", e);
+            return valueLoader.apply(key);
+        });
     }
 
     @Override
@@ -301,10 +294,9 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
     private void enforceDefaultType(String methodName) {
         if (classOfValue == null) {
-            throw new UnsupportedOperationException("Cannot use `" + methodName + "` method without a default type configured. "
-                    + "Consider using the `" + methodName
-                    + "` method accepting the type or configure the default type for the cache "
-                    + getName());
+            throw new UnsupportedOperationException("Cannot use `" + methodName
+                    + "` method without a default type configured. " + "Consider using the `" + methodName
+                    + "` method accepting the type or configure the default type for the cache " + getName());
         }
     }
 
@@ -363,8 +355,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     @Override
     public Uni<Void> invalidate(Object key) {
         byte[] encodedKey = marshaller.encode(computeActualKey(encodeKey(key)));
-        return redis.send(Request.cmd(Command.DEL).arg(encodedKey))
-                .replaceWithVoid();
+        return redis.send(Request.cmd(Command.DEL).arg(encodedKey)).replaceWithVoid();
     }
 
     @Override
@@ -398,37 +389,34 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                     return Uni.createFrom().voidItem();
                 }
             }
-        })
-                .replaceWithVoid();
+        }).replaceWithVoid();
     }
 
     private void scanForKeys(String cursor, Set<String> result, UniEmitter<? super Set<String>> em) {
-        Request cmd = Request.cmd(Command.SCAN).arg(cursor)
-                .arg("MATCH").arg(getKeyPattern());
+        Request cmd = Request.cmd(Command.SCAN).arg(cursor).arg("MATCH").arg(getKeyPattern());
         if (cacheInfo.invalidationScanSize.isPresent()) {
             cmd.arg("COUNT").arg(cacheInfo.invalidationScanSize.getAsInt());
         }
-        redis.send(cmd)
-                .subscribe().with(new Consumer<Response>() {
-                    @Override
-                    public void accept(Response response) {
-                        String newCursor = response.get(0).toString();
-                        Response partResponse = response.get(1);
-                        if (partResponse != null) {
-                            result.addAll(marshaller.decodeAsList(partResponse, String.class));
-                        }
-                        if ("0".equals(newCursor)) {
-                            em.complete(result);
-                        } else {
-                            scanForKeys(newCursor, result, em);
-                        }
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        em.fail(throwable);
-                    }
-                });
+        redis.send(cmd).subscribe().with(new Consumer<Response>() {
+            @Override
+            public void accept(Response response) {
+                String newCursor = response.get(0).toString();
+                Response partResponse = response.get(1);
+                if (partResponse != null) {
+                    result.addAll(marshaller.decodeAsList(partResponse, String.class));
+                }
+                if ("0".equals(newCursor)) {
+                    em.complete(result);
+                } else {
+                    scanForKeys(newCursor, result, em);
+                }
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) {
+                em.fail(throwable);
+            }
+        });
     }
 
     // visible only for tests
@@ -458,29 +446,25 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     }
 
     private <X> Uni<X> withConnection(Function<RedisConnection, Uni<X>> function) {
-        return redis.connect()
-                .chain(new Function<RedisConnection, Uni<? extends X>>() {
-                    @Override
-                    public Uni<X> apply(RedisConnection con) {
-                        Uni<X> res;
-                        try {
-                            res = function.apply(con);
-                        } catch (Exception e) {
-                            res = Uni.createFrom().failure(new CacheException(e));
-                        }
-                        return res
-                                .onTermination().call(con::close);
-                    }
-                });
+        return redis.connect().chain(new Function<RedisConnection, Uni<? extends X>>() {
+            @Override
+            public Uni<X> apply(RedisConnection con) {
+                Uni<X> res;
+                try {
+                    res = function.apply(con);
+                } catch (Exception e) {
+                    res = Uni.createFrom().failure(new CacheException(e));
+                }
+                return res.onTermination().call(con::close);
+            }
+        });
     }
 
     private Uni<Void> watch(RedisConnection connection, byte[] keyToWatch) {
-        return connection.send(Request.cmd(Command.WATCH).arg(keyToWatch))
-                .replaceWithVoid();
+        return connection.send(Request.cmd(Command.WATCH).arg(keyToWatch)).replaceWithVoid();
     }
 
-    private <X> Uni<X> doGet(RedisConnection connection, byte[] encoded, Type clazz,
-            Marshaller marshaller) {
+    private <X> Uni<X> doGet(RedisConnection connection, byte[] encoded, Type clazz, Marshaller marshaller) {
         if (cacheInfo.expireAfterAccess.isPresent()) {
             Duration duration = cacheInfo.expireAfterAccess.get();
             return connection.send(Request.cmd(Command.GETEX).arg(encoded).arg("EX").arg(duration.toSeconds()))
@@ -491,13 +475,12 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                         }
                     });
         } else {
-            return connection.send(Request.cmd(Command.GET).arg(encoded))
-                    .map(new Function<Response, X>() {
-                        @Override
-                        public X apply(Response r) {
-                            return marshaller.decode(clazz, r);
-                        }
-                    });
+            return connection.send(Request.cmd(Command.GET).arg(encoded)).map(new Function<Response, X>() {
+                @Override
+                public X apply(Response r) {
+                    return marshaller.decode(clazz, r);
+                }
+            });
         }
     }
 
@@ -510,20 +493,16 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     }
 
     private Uni<Void> multi(RedisConnection connection, Uni<Void> operation) {
-        return connection.send(Request.cmd(Command.MULTI))
-                .chain(() -> operation)
-                .onFailure().call(() -> abort(connection))
-                .call(() -> exec(connection));
+        return connection.send(Request.cmd(Command.MULTI)).chain(() -> operation).onFailure()
+                .call(() -> abort(connection)).call(() -> exec(connection));
     }
 
     private Uni<Void> exec(RedisConnection connection) {
-        return connection.send(Request.cmd(Command.EXEC))
-                .replaceWithVoid();
+        return connection.send(Request.cmd(Command.EXEC)).replaceWithVoid();
     }
 
     private Uni<Void> abort(RedisConnection connection) {
-        return connection.send(Request.cmd(Command.DISCARD))
-                .replaceWithVoid();
+        return connection.send(Request.cmd(Command.DISCARD)).replaceWithVoid();
     }
 
     private static class StaticSupplier<V> implements Supplier<V> {
@@ -545,7 +524,8 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
         private final byte[] encodedKey;
         private final Marshaller marshaller;
 
-        public GetFromConnectionSupplier(RedisConnection connection, Type clazz, byte[] encodedKey, Marshaller marshaller) {
+        public GetFromConnectionSupplier(RedisConnection connection, Type clazz, byte[] encodedKey,
+                Marshaller marshaller) {
             this.connection = connection;
             this.clazz = clazz;
             this.encodedKey = encodedKey;

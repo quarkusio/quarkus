@@ -14,20 +14,12 @@ public class ParamET {
 
     @Test
     public void testHelloEndpoint() {
-        given()
-                .when().get("/hello")
-                .then()
-                .statusCode(200)
-                .body(is("hello"));
+        given().when().get("/hello").then().statusCode(200).body(is("hello"));
     }
 
     @ParameterizedTest
     @ValueSource(ints = { 1, 4, 11, 17 })
     void shouldValidateOddNumbers(int x) {
-        given()
-                .when().get("/odd/" + x)
-                .then()
-                .statusCode(200)
-                .body(is("true"));
+        given().when().get("/odd/" + x).then().statusCode(200).body(is("true"));
     }
 }

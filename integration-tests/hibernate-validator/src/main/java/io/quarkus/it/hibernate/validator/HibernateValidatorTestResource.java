@@ -52,8 +52,7 @@ import io.quarkus.it.hibernate.validator.xml.ValidationServiceBasedOnXmlConstrai
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/hibernate-validator/test")
-public class HibernateValidatorTestResource
-        extends HibernateValidatorTestResourceSuperclass
+public class HibernateValidatorTestResource extends HibernateValidatorTestResourceSuperclass
         implements HibernateValidatorTestResourceGenericInterface<Integer>, HibernateValidatorTestResourceInterface {
 
     @Inject
@@ -87,22 +86,14 @@ public class HibernateValidatorTestResource
         Map<String, List<String>> invalidCategorizedEmails = new HashMap<>();
         invalidCategorizedEmails.put("a", Collections.singletonList("b"));
 
-        result.append(formatViolations(validator.validate(new MyBean(
-                "Bill Jones",
-                "b",
-                Collections.singletonList("c"),
-                -4d,
-                invalidCategorizedEmails))));
+        result.append(formatViolations(validator.validate(
+                new MyBean("Bill Jones", "b", Collections.singletonList("c"), -4d, invalidCategorizedEmails))));
 
         Map<String, List<String>> validCategorizedEmails = new HashMap<>();
         validCategorizedEmails.put("Professional", Collections.singletonList("bill.jones@example.com"));
 
-        result.append(formatViolations(validator.validate(new MyBean(
-                "Bill Jones",
-                "bill.jones@example.com",
-                Collections.singletonList("biji@example.com"),
-                5d,
-                validCategorizedEmails))));
+        result.append(formatViolations(validator.validate(new MyBean("Bill Jones", "bill.jones@example.com",
+                Collections.singletonList("biji@example.com"), 5d, validCategorizedEmails))));
 
         return result.build();
     }
@@ -184,7 +175,8 @@ public class HibernateValidatorTestResource
     @Path("/rest-end-point-generic-method-validation/{id}")
     @Produces(MediaType.TEXT_PLAIN)
     @Override
-    public Integer testRestEndpointGenericMethodValidation(@Digits(integer = 5, fraction = 0) @PathParam("id") Integer id) {
+    public Integer testRestEndpointGenericMethodValidation(
+            @Digits(integer = 5, fraction = 0) @PathParam("id") Integer id) {
         return id;
     }
 
@@ -200,15 +192,17 @@ public class HibernateValidatorTestResource
     public String testInjection() {
         ResultBuilder result = new ResultBuilder();
 
-        result.append(formatViolations(validator.validate(new BeanWithInjectedConstraintValidatorConstraint(MyService.VALID))));
+        result.append(formatViolations(
+                validator.validate(new BeanWithInjectedConstraintValidatorConstraint(MyService.VALID))));
 
-        result.append(formatViolations(validator.validate(new BeanWithInjectedConstraintValidatorConstraint("Invalid value"))));
+        result.append(formatViolations(
+                validator.validate(new BeanWithInjectedConstraintValidatorConstraint("Invalid value"))));
 
         result.append(formatViolations(
                 validator.validate(new BeanWithInjectedRuntimeConstraintValidatorConstraint("any text is valid"))));
 
-        result.append(formatViolations(
-                validator.validate(new BeanWithInjectedRuntimeConstraintValidatorConstraint("numbers 12345 don't work"))));
+        result.append(formatViolations(validator
+                .validate(new BeanWithInjectedRuntimeConstraintValidatorConstraint("numbers 12345 don't work"))));
 
         return result.build();
     }
@@ -361,10 +355,8 @@ public class HibernateValidatorTestResource
             return "passed";
         }
 
-        return "failed: " + violations.stream()
-                .map(v -> v.getPropertyPath().toString() + " (" + v.getMessage() + ")")
-                .sorted()
-                .collect(Collectors.joining(", "));
+        return "failed: " + violations.stream().map(v -> v.getPropertyPath().toString() + " (" + v.getMessage() + ")")
+                .sorted().collect(Collectors.joining(", "));
     }
 
     public static class MyLocaleTestBean {

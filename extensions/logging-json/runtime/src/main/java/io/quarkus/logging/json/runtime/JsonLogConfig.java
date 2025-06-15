@@ -54,7 +54,8 @@ public interface JsonLogConfig {
     @ConfigGroup
     public interface JsonConfig {
         /**
-         * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
+         * Determine whether to enable the JSON console formatting extension, which disables "normal" console
+         * formatting.
          */
         @WithParentName
         @WithDefault("true")
@@ -62,13 +63,15 @@ public interface JsonLogConfig {
         boolean enable();
 
         /**
-         * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
+         * Determine whether to enable the JSON console formatting extension, which disables "normal" console
+         * formatting.
          */
         // TODO make it non-optional with default true as soon as we drop the other config
         Optional<Boolean> enabled();
 
         /**
-         * Enable "pretty printing" of the JSON record. Note that some JSON parsers will fail to read the pretty printed output.
+         * Enable "pretty printing" of the JSON record. Note that some JSON parsers will fail to read the pretty printed
+         * output.
          */
         @WithDefault("false")
         boolean prettyPrint();
@@ -144,9 +147,8 @@ public interface JsonLogConfig {
         public String value();
 
         /**
-         * Additional field type specification.
-         * Supported types: {@code string}, {@code int}, and {@code long}.
-         * String is the default if not specified.
+         * Additional field type specification. Supported types: {@code string}, {@code int}, and {@code long}. String
+         * is the default if not specified.
          */
         @WithDefault("string")
         public Type type();

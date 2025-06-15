@@ -55,11 +55,8 @@ public class DevUIBuildTimeStaticHandler implements Handler<RoutingContext> {
 
                 try {
                     byte[] content = Files.readAllBytes(Path.of(pathOnDisk));
-                    event.response()
-                            .setStatusCode(STATUS)
-                            .setStatusMessage(OK)
-                            .putHeader(CONTENT_TYPE, getMimeType(fileName))
-                            .end(Buffer.buffer(content));
+                    event.response().setStatusCode(STATUS).setStatusMessage(OK)
+                            .putHeader(CONTENT_TYPE, getMimeType(fileName)).end(Buffer.buffer(content));
                 } catch (IOException ex) {
                     event.next();
                 }

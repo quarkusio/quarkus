@@ -62,17 +62,16 @@ public class UniAsserterTest {
         testAsserterFailure(ua -> ua.assertFailedWith(() -> Uni.createFrom().failure(new IllegalStateException()),
                 NullPointerException.class), t -> AssertionError.class.isInstance(t));
 
-        // Note that assertFailedWith() is not tested at all because of the exception thrown from the previous assertEquals()
-        testAsserterFailure(ua -> ua.assertEquals(() -> Uni.createFrom().item("foo"), null)
-                .assertFailedWith(() -> Uni.createFrom().failure(new NullPointerException()),
-                        IllegalArgumentException.class),
+        // Note that assertFailedWith() is not tested at all because of the exception thrown from the previous
+        // assertEquals()
+        testAsserterFailure(
+                ua -> ua.assertEquals(() -> Uni.createFrom().item("foo"), null).assertFailedWith(
+                        () -> Uni.createFrom().failure(new NullPointerException()), IllegalArgumentException.class),
                 t -> AssertionError.class.isInstance(t));
 
         testAsserterFailure(ua -> ua.assertTrue(() -> {
             throw new IllegalArgumentException();
-        })
-                .assertFailedWith(() -> Uni.createFrom().failure(new NullPointerException()),
-                        IllegalArgumentException.class),
+        }).assertFailedWith(() -> Uni.createFrom().failure(new NullPointerException()), IllegalArgumentException.class),
                 t -> IllegalArgumentException.class.isInstance(t));
     }
 
@@ -116,63 +115,50 @@ public class UniAsserterTest {
 
     @Test
     public void testComplexAssert() {
-        testAsserter(ua -> ua
-                .assertThat(() -> Uni.createFrom().item("foo"), foo -> assertEquals("foo", foo))
+        testAsserter(ua -> ua.assertThat(() -> Uni.createFrom().item("foo"), foo -> assertEquals("foo", foo))
                 .assertEquals(() -> Uni.createFrom().item("foo"), "foo")
                 .assertNotEquals(() -> Uni.createFrom().item("foo"), "bar")
-                .assertTrue(() -> Uni.createFrom().item(true))
-                .assertNotNull(() -> Uni.createFrom().item("bar")));
+                .assertTrue(() -> Uni.createFrom().item(true)).assertNotNull(() -> Uni.createFrom().item("bar")));
     }
 
     @Test
     public void testData() {
-        testAsserter(ua -> ua
-                .assertEquals(() -> {
-                    ua.putData("foo", "baz");
-                    return Uni.createFrom().item("foo");
-                }, "foo")
-                .assertNotEquals(() -> {
-                    assertEquals("baz", ua.getData("foo"));
-                    return Uni.createFrom().item("foo");
-                }, "bar")
-                .assertNotNull(() -> {
-                    return Uni.createFrom().item(ua.getData("foo"));
-                }));
+        testAsserter(ua -> ua.assertEquals(() -> {
+            ua.putData("foo", "baz");
+            return Uni.createFrom().item("foo");
+        }, "foo").assertNotEquals(() -> {
+            assertEquals("baz", ua.getData("foo"));
+            return Uni.createFrom().item("foo");
+        }, "bar").assertNotNull(() -> {
+            return Uni.createFrom().item(ua.getData("foo"));
+        }));
 
-        testAsserter(ua -> ua
-                .assertEquals(() -> {
-                    ua.putData("foo", "baz");
-                    ua.putData("bar", true);
-                    return Uni.createFrom().item("foo");
-                }, "foo")
-                .assertNotEquals(() -> {
-                    assertEquals("baz", ua.getData("foo"));
-                    assertEquals(true, ua.getData("bar"));
-                    return Uni.createFrom().item("foo");
-                }, "bar")
-                .assertNotNull(() -> {
-                    return Uni.createFrom().item(ua.getData("foo"));
-                })
-                .assertTrue(() -> {
-                    return Uni.createFrom().item((Boolean) ua.getData("bar"));
-                }));
+        testAsserter(ua -> ua.assertEquals(() -> {
+            ua.putData("foo", "baz");
+            ua.putData("bar", true);
+            return Uni.createFrom().item("foo");
+        }, "foo").assertNotEquals(() -> {
+            assertEquals("baz", ua.getData("foo"));
+            assertEquals(true, ua.getData("bar"));
+            return Uni.createFrom().item("foo");
+        }, "bar").assertNotNull(() -> {
+            return Uni.createFrom().item(ua.getData("foo"));
+        }).assertTrue(() -> {
+            return Uni.createFrom().item((Boolean) ua.getData("bar"));
+        }));
 
-        testAsserter(ua -> ua
-                .assertEquals(() -> {
-                    ua.putData("bar", true);
-                    return Uni.createFrom().item("foo");
-                }, "foo")
-                .assertNotEquals(() -> {
-                    assertEquals(true, ua.getData("bar"));
-                    return Uni.createFrom().item("foo");
-                }, "bar")
-                .assertNotNull(() -> {
-                    ua.clearData();
-                    return Uni.createFrom().item(1);
-                })
-                .assertNull(() -> {
-                    return Uni.createFrom().item(ua.getData("bar"));
-                }));
+        testAsserter(ua -> ua.assertEquals(() -> {
+            ua.putData("bar", true);
+            return Uni.createFrom().item("foo");
+        }, "foo").assertNotEquals(() -> {
+            assertEquals(true, ua.getData("bar"));
+            return Uni.createFrom().item("foo");
+        }, "bar").assertNotNull(() -> {
+            ua.clearData();
+            return Uni.createFrom().item(1);
+        }).assertNull(() -> {
+            return Uni.createFrom().item(ua.getData("bar"));
+        }));
     }
 
     @Test

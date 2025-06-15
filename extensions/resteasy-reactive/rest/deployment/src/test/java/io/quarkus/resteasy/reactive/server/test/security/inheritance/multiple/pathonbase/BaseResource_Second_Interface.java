@@ -13,8 +13,7 @@ import jakarta.ws.rs.Path;
 
 import io.vertx.core.json.JsonObject;
 
-public interface BaseResource_Second_Interface
-        extends BaseResource_Third_Interface {
+public interface BaseResource_Second_Interface extends BaseResource_Third_Interface {
 
     @POST
     @Path(MULTIPLE_INHERITANCE + CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + SECOND_INTERFACE + INTERFACE_METHOD_WITH_PATH

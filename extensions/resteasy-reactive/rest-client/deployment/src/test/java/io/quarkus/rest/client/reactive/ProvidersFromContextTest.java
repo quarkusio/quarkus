@@ -32,11 +32,8 @@ public class ProvidersFromContextTest {
 
     @BeforeEach
     public void before() {
-        client = QuarkusRestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                .register(TestClientRequestFilter.class)
-                .register(MyContextResolver.class)
-                .build(Client.class);
+        client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).register(TestClientRequestFilter.class)
+                .register(MyContextResolver.class).build(Client.class);
     }
 
     @Test
@@ -93,7 +90,8 @@ public class ProvidersFromContextTest {
                 throw new RuntimeException("No writers were found");
             }
 
-            ContextResolver<Person> contextResolver = requestContext.getProviders().getContextResolver(Person.class, null);
+            ContextResolver<Person> contextResolver = requestContext.getProviders().getContextResolver(Person.class,
+                    null);
             if (contextResolver == null) {
                 throw new RuntimeException("Context resolver was not found");
             }

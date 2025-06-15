@@ -31,10 +31,9 @@ import io.vertx.core.buffer.Buffer;
 public class RuntimeErrorTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Echo.class, RequestBean.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Echo.class, RequestBean.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

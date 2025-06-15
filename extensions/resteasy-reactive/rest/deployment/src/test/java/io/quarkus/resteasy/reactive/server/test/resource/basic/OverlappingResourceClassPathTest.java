@@ -19,32 +19,23 @@ import io.quarkus.test.QuarkusUnitTest;
 
 class OverlappingResourceClassPathTest {
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class);
-                    war.addClasses(UsersResource.class);
-                    war.addClasses(UserResource.class);
-                    war.addClasses(GreetingResource.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class);
+            war.addClasses(UsersResource.class);
+            war.addClasses(UserResource.class);
+            war.addClasses(GreetingResource.class);
+            return war;
+        }
+    });
 
     @Test
     void basicTest() {
-        given()
-                .get("/users/userId")
-                .then()
-                .statusCode(200)
-                .body(equalTo("userId"));
+        given().get("/users/userId").then().statusCode(200).body(equalTo("userId"));
 
-        given()
-                .get("/users/userId/by-id")
-                .then()
-                .statusCode(200)
-                .body(equalTo("getByIdInUserResource-userId"));
+        given().get("/users/userId/by-id").then().statusCode(200).body(equalTo("getByIdInUserResource-userId"));
     }
 
     @Path("/users")

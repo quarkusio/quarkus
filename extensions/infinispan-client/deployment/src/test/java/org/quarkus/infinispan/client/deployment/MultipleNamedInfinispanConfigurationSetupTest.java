@@ -21,12 +21,9 @@ public class MultipleNamedInfinispanConfigurationSetupTest {
     RemoteCacheManager anotherRemoteCacheManager;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
-            .withConfigurationResource("multiple-cache-config-application.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("distributed-cache-config.xml")
-                    .addAsResource("local-cache-config.xml"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
+            .withConfigurationResource("multiple-cache-config-application.properties").withApplicationRoot(
+                    (jar) -> jar.addAsResource("distributed-cache-config.xml").addAsResource("local-cache-config.xml"));
 
     @Test
     public void infinispanMultipleConnectionsConfiguration() {

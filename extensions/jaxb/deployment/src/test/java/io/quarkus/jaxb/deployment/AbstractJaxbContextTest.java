@@ -52,7 +52,7 @@ public abstract class AbstractJaxbContextTest {
         io.quarkus.jaxb.deployment.two.Model model = new io.quarkus.jaxb.deployment.two.Model();
         model.setName2("name2");
         Assertions.assertThatExceptionOfType(JAXBException.class)
-                .isThrownBy(() -> marshaller.marshal(model, new StringWriter()))
-                .withMessage("class io.quarkus.jaxb.deployment.two.Model nor any of its super class is known to this context.");
+                .isThrownBy(() -> marshaller.marshal(model, new StringWriter())).withMessage(
+                        "class io.quarkus.jaxb.deployment.two.Model nor any of its super class is known to this context.");
     }
 }

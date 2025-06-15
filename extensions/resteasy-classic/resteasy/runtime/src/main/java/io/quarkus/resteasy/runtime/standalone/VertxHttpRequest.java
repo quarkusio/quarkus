@@ -46,6 +46,7 @@ import io.vertx.ext.web.RoutingContext;
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author Norman Maurer
  * @author Kristoffer Sjogren
+ *
  * @version $Revision: 1 $
  */
 public final class VertxHttpRequest extends BaseHttpRequest {
@@ -61,16 +62,9 @@ public final class VertxHttpRequest extends BaseHttpRequest {
     private final ManagedContext.ContextState requestContextState;
     private final Executor executor;
 
-    public VertxHttpRequest(Context context,
-            RoutingContext routingContext,
-            ResteasyHttpHeaders httpHeaders,
-            ResteasyUriInfo uri,
-            String httpMethod,
-            LazyHostSupplier remoteHost,
-            SynchronousDispatcher dispatcher,
-            VertxHttpResponse response,
-            ManagedContext requestContext,
-            Executor executor) {
+    public VertxHttpRequest(Context context, RoutingContext routingContext, ResteasyHttpHeaders httpHeaders,
+            ResteasyUriInfo uri, String httpMethod, LazyHostSupplier remoteHost, SynchronousDispatcher dispatcher,
+            VertxHttpResponse response, ManagedContext requestContext, Executor executor) {
         super(uri);
         this.executor = executor;
         this.context = context;
@@ -280,9 +274,8 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                 return ret;
             } else {
                 CompletableFuture<Void> ret = new CompletableFuture<>();
-                ret.completeExceptionally(
-                        new BlockingOperationNotAllowedException(
-                                "Cannot use blocking IO with interceptors when we're on the IO thread"));
+                ret.completeExceptionally(new BlockingOperationNotAllowedException(
+                        "Cannot use blocking IO with interceptors when we're on the IO thread"));
                 return ret;
             }
         }
@@ -368,7 +361,8 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                     done = true;
                     cancelled = true;
                     requestContext.activate(requestContextState);
-                    return internalResume(Response.status(Response.Status.SERVICE_UNAVAILABLE).build(), new FlushTask());
+                    return internalResume(Response.status(Response.Status.SERVICE_UNAVAILABLE).build(),
+                            new FlushTask());
                 }
             }
 
@@ -382,10 +376,8 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                     done = true;
                     cancelled = true;
                     requestContext.activate(requestContextState);
-                    return internalResume(
-                            Response.status(Response.Status.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, retryAfter)
-                                    .build(),
-                            new FlushTask());
+                    return internalResume(Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                            .header(HttpHeaders.RETRY_AFTER, retryAfter).build(), new FlushTask());
                 }
             }
 
@@ -408,10 +400,8 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                     cancelled = true;
                     requestContext.activate(requestContextState);
                     try {
-                        return internalResume(
-                                Response.status(Response.Status.SERVICE_UNAVAILABLE).header(HttpHeaders.RETRY_AFTER, retryAfter)
-                                        .build(),
-                                t -> vertxFlush());
+                        return internalResume(Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                                .header(HttpHeaders.RETRY_AFTER, retryAfter).build(), t -> vertxFlush());
                     } finally {
                         requestContext.terminate();
                     }

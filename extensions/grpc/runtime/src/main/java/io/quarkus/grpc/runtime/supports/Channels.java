@@ -140,8 +140,8 @@ public class Channels {
         }
 
         // Client-side interceptors
-        GrpcClientInterceptorContainer interceptorContainer = container
-                .instance(GrpcClientInterceptorContainer.class).get();
+        GrpcClientInterceptorContainer interceptorContainer = container.instance(GrpcClientInterceptorContainer.class)
+                .get();
         if (stork) {
             perClientInterceptors = new HashSet<>(perClientInterceptors);
             if (vertxGrpc) {
@@ -153,8 +153,7 @@ public class Channels {
 
         List<ChannelBuilderCustomizer<?>> channelBuilderCustomizers = container
                 .select(new TypeLiteral<ChannelBuilderCustomizer<?>>() {
-                }, Any.Literal.INSTANCE)
-                .stream()
+                }, Any.Literal.INSTANCE).stream()
                 .sorted(Comparator.<ChannelBuilderCustomizer<?>, Integer> comparing(ChannelBuilderCustomizer::priority))
                 .toList();
 
@@ -226,15 +225,15 @@ public class Channels {
                             .channelType(NioSocketChannel.class);
                 }
                 builder = ncBuilder
-                        // clients are intercepted using the IOThreadClientInterceptor interceptor which will decide on which
+                        // clients are intercepted using the IOThreadClientInterceptor interceptor which will decide on
+                        // which
                         // thread the messages should be processed.
                         .directExecutor() // will use I/O thread - must not be blocked.
                         .offloadExecutor(Infrastructure.getDefaultExecutor())
                         .defaultLoadBalancingPolicy(loadBalancingPolicy)
                         .flowControlWindow(config.flowControlWindow().orElse(DEFAULT_FLOW_CONTROL_WINDOW))
                         .keepAliveWithoutCalls(config.keepAliveWithoutCalls())
-                        .maxHedgedAttempts(config.maxHedgedAttempts())
-                        .maxRetryAttempts(config.maxRetryAttempts())
+                        .maxHedgedAttempts(config.maxHedgedAttempts()).maxRetryAttempts(config.maxRetryAttempts())
                         .maxInboundMetadataSize(config.maxInboundMetadataSize().orElse(DEFAULT_MAX_HEADER_LIST_SIZE))
                         .maxInboundMessageSize(config.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE))
                         .negotiationType(NegotiationType.valueOf(config.negotiationType().toUpperCase()));
@@ -297,8 +296,7 @@ public class Channels {
             options.setHttp2ClearTextUpgrade(false); // this fixes i30379
 
             // Start with almost empty options and default max msg size ...
-            GrpcClientOptions clientOptions = new GrpcClientOptions()
-                    .setTransportOptions(options)
+            GrpcClientOptions clientOptions = new GrpcClientOptions().setTransportOptions(options)
                     .setMaxMessageSize(config.maxInboundMessageSize().orElse(DEFAULT_MAX_MESSAGE_SIZE));
 
             for (ChannelBuilderCustomizer customizer : channelBuilderCustomizers) {
@@ -320,8 +318,9 @@ public class Channels {
                                 + config.tlsConfigurationName().get() + " for the gRPC client " + name + ".");
                     }
                     configuration = maybeConfiguration.get();
-                } else if (registry.getDefault().isPresent() && (registry.getDefault().get().getTrustStoreOptions() != null
-                        || registry.getDefault().get().isTrustAll())) {
+                } else if (registry.getDefault().isPresent()
+                        && (registry.getDefault().get().getTrustStoreOptions() != null
+                                || registry.getDefault().get().isTrustAll())) {
                     configuration = registry.getDefault().get();
                 }
 
@@ -370,15 +369,14 @@ public class Channels {
                 options.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
             }
 
-            // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with grpc.<name>.
+            // Use the convention defined by Quarkus Micrometer Vert.x metrics to create metrics prefixed with
+            // grpc.<name>.
             // See io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractPrefix and
             // io.quarkus.micrometer.runtime.binder.vertx.VertxMeterBinderAdapter.extractClientName
             options.setMetricsName("grpc|" + name);
 
             Vertx vertx = container.instance(Vertx.class).get();
-            io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(
-                    vertx,
-                    clientOptions);
+            io.vertx.grpc.client.GrpcClient client = io.vertx.grpc.client.GrpcClient.client(vertx, clientOptions);
 
             Channel channel;
             if (stork) {
@@ -401,8 +399,8 @@ public class Channels {
 
     private static GrpcClientConfiguration testConfig(GrpcServerConfiguration serverConfiguration) {
         if (serverConfiguration.ssl().certificate().isPresent() || serverConfiguration.ssl().keyStore().isPresent()) {
-            LOGGER.warn("gRPC client created without configuration and the gRPC server is configured for SSL. " +
-                    "Configuring SSL for such clients is not supported.");
+            LOGGER.warn("gRPC client created without configuration and the gRPC server is configured for SSL. "
+                    + "Configuring SSL for such clients is not supported.");
         }
 
         return new GrpcClientConfiguration() {
@@ -706,13 +704,14 @@ public class Channels {
 
     @SuppressWarnings("unchecked")
     public static Channel retrieveChannel(String name, Set<String> perClientInterceptors) {
-        ClientInterceptorStorage clientInterceptorStorage = Arc.container().instance(ClientInterceptorStorage.class).get();
+        ClientInterceptorStorage clientInterceptorStorage = Arc.container().instance(ClientInterceptorStorage.class)
+                .get();
         Annotation[] qualifiers = new Annotation[perClientInterceptors.size() + 1];
         int idx = 0;
         qualifiers[idx++] = GrpcClient.Literal.of(name);
         for (String interceptor : perClientInterceptors) {
-            qualifiers[idx++] = RegisterClientInterceptor.Literal
-                    .of((Class<? extends ClientInterceptor>) clientInterceptorStorage.getPerClientInterceptor(interceptor));
+            qualifiers[idx++] = RegisterClientInterceptor.Literal.of(
+                    (Class<? extends ClientInterceptor>) clientInterceptorStorage.getPerClientInterceptor(interceptor));
         }
         InstanceHandle<Channel> instance = Arc.container().instance(Channel.class, qualifiers);
         if (!instance.isAvailable()) {
@@ -724,7 +723,8 @@ public class Channels {
     public static class ChannelDestroyer implements BeanDestroyer<Channel> {
 
         @Override
-        public void destroy(Channel instance, CreationalContext<Channel> creationalContext, Map<String, Object> params) {
+        public void destroy(Channel instance, CreationalContext<Channel> creationalContext,
+                Map<String, Object> params) {
             if (instance instanceof ManagedChannel) {
                 ManagedChannel channel = (ManagedChannel) instance;
                 LOGGER.info("Shutting down gRPC channel " + channel);

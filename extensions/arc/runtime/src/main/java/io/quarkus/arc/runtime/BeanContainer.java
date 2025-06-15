@@ -8,19 +8,22 @@ import io.quarkus.arc.ManagedContext;
 /**
  * Represents a CDI bean container.
  * <p/>
- * Extensions using this API can also leverage arbitrary methods from running {@link io.quarkus.arc.ArcContainer}
- * which can be obtained by invoking a static method {@link io.quarkus.arc.Arc#container()}.
+ * Extensions using this API can also leverage arbitrary methods from running {@link io.quarkus.arc.ArcContainer} which
+ * can be obtained by invoking a static method {@link io.quarkus.arc.Arc#container()}.
  */
 public interface BeanContainer {
 
     /**
      * Resolves a bean instance for given bean type and qualifiers.
      * <p/>
-     * Performs standard CDI resolution meaning it either returns a bean instance or throws a corresponding exception
-     * if the dependency is either unsatisfied or ambiguous.
+     * Performs standard CDI resolution meaning it either returns a bean instance or throws a corresponding exception if
+     * the dependency is either unsatisfied or ambiguous.
      *
-     * @param beanType type of the bean
-     * @param beanQualifiers bean qualifiers
+     * @param beanType
+     *        type of the bean
+     * @param beanQualifiers
+     *        bean qualifiers
+     *
      * @return a bean instance; never {@code null}
      */
     <T> T beanInstance(Class<T> beanType, Annotation... beanQualifiers);
@@ -36,8 +39,11 @@ public interface BeanContainer {
      * <p/>
      * If you need custom factory behavior, take a look at {@link #beanInstanceFactory(Supplier, Class, Annotation...)}
      *
-     * @param type bean type
-     * @param qualifiers bean qualifiers
+     * @param type
+     *        bean type
+     * @param qualifiers
+     *        bean qualifiers
+     *
      * @return a bean instance factory, never {@code null}
      */
     <T> Factory<T> beanInstanceFactory(Class<T> type, Annotation... qualifiers);
@@ -50,13 +56,16 @@ public interface BeanContainer {
      * <p/>
      * If no matching bean is found, delegates all calls to the supplied factory fallback.
      *
-     * @param fallbackSupplier supplier to delegate to if there is no bean
-     * @param type bean type
-     * @param qualifiers bean qualifiers
+     * @param fallbackSupplier
+     *        supplier to delegate to if there is no bean
+     * @param type
+     *        bean type
+     * @param qualifiers
+     *        bean qualifiers
+     *
      * @return a bean instance factory, never {@code null}
      */
-    <T> Factory<T> beanInstanceFactory(Supplier<Factory<T>> fallbackSupplier, Class<T> type,
-            Annotation... qualifiers);
+    <T> Factory<T> beanInstanceFactory(Supplier<Factory<T>> fallbackSupplier, Class<T> type, Annotation... qualifiers);
 
     /**
      * <pre>
@@ -74,7 +83,9 @@ public interface BeanContainer {
      * </pre>
      *
      * @return the context for {@link jakarta.enterprise.context.RequestScoped}
-     * @throws IllegalStateException If the container is not running
+     *
+     * @throws IllegalStateException
+     *         If the container is not running
      */
     ManagedContext requestContext();
 
@@ -88,7 +99,6 @@ public interface BeanContainer {
         };
 
         /**
-         *
          * @return a bean instance or {@code null} if no matching bean is found
          */
         Instance<T> create();
@@ -97,7 +107,6 @@ public interface BeanContainer {
     interface Instance<T> extends AutoCloseable {
 
         /**
-         *
          * @return the underlying instance
          */
         T get();

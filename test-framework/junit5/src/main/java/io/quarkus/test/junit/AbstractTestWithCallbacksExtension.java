@@ -28,7 +28,8 @@ public abstract class AbstractTestWithCallbacksExtension {
         return beforeTestCallbacks == null || beforeTestCallbacks.isEmpty();
     }
 
-    protected void invokeBeforeTestExecutionCallbacks(QuarkusTestMethodContext quarkusTestMethodContext) throws Exception {
+    protected void invokeBeforeTestExecutionCallbacks(QuarkusTestMethodContext quarkusTestMethodContext)
+            throws Exception {
         invokeBeforeTestExecutionCallbacks(QuarkusTestMethodContext.class, quarkusTestMethodContext);
     }
 
@@ -40,7 +41,8 @@ public abstract class AbstractTestWithCallbacksExtension {
         return afterTestCallbacks == null || afterTestCallbacks.isEmpty();
     }
 
-    protected void invokeAfterTestExecutionCallbacks(QuarkusTestMethodContext quarkusTestMethodContext) throws Exception {
+    protected void invokeAfterTestExecutionCallbacks(QuarkusTestMethodContext quarkusTestMethodContext)
+            throws Exception {
         invokeAfterTestExecutionCallbacks(QuarkusTestMethodContext.class, quarkusTestMethodContext);
     }
 
@@ -118,8 +120,8 @@ public abstract class AbstractTestWithCallbacksExtension {
         for (Object quarkusTestBeforeClassCallback : quarkusTestBeforeClassLoader) {
             beforeClassCallbacks.add(quarkusTestBeforeClassCallback);
         }
-        ServiceLoader<?> quarkusTestAfterConstructLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestAfterConstructCallback.class.getName(), false, classLoader), classLoader);
+        ServiceLoader<?> quarkusTestAfterConstructLoader = ServiceLoader.load(
+                Class.forName(QuarkusTestAfterConstructCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestAfterConstructCallback : quarkusTestAfterConstructLoader) {
             afterConstructCallbacks.add(quarkusTestAfterConstructCallback);
         }
@@ -128,13 +130,13 @@ public abstract class AbstractTestWithCallbacksExtension {
         for (Object quarkusTestBeforeEachCallback : quarkusTestBeforeEachLoader) {
             beforeEachCallbacks.add(quarkusTestBeforeEachCallback);
         }
-        ServiceLoader<?> quarkusTestBeforeTestLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestBeforeTestExecutionCallback.class.getName(), false, classLoader), classLoader);
+        ServiceLoader<?> quarkusTestBeforeTestLoader = ServiceLoader.load(
+                Class.forName(QuarkusTestBeforeTestExecutionCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestBeforeTestCallback : quarkusTestBeforeTestLoader) {
             beforeTestCallbacks.add(quarkusTestBeforeTestCallback);
         }
-        ServiceLoader<?> quarkusTestAfterTestLoader = ServiceLoader
-                .load(Class.forName(QuarkusTestAfterTestExecutionCallback.class.getName(), false, classLoader), classLoader);
+        ServiceLoader<?> quarkusTestAfterTestLoader = ServiceLoader.load(
+                Class.forName(QuarkusTestAfterTestExecutionCallback.class.getName(), false, classLoader), classLoader);
         for (Object quarkusTestAfterTestCallback : quarkusTestAfterTestLoader) {
             afterTestCallbacks.add(quarkusTestAfterTestCallback);
         }
@@ -158,8 +160,7 @@ public abstract class AbstractTestWithCallbacksExtension {
 
         try {
             for (Object callback : callbacks) {
-                callback.getClass().getMethod(methodName, clazz)
-                        .invoke(callback, classInstance);
+                callback.getClass().getMethod(methodName, clazz).invoke(callback, classInstance);
             }
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof Exception) {
@@ -176,13 +177,14 @@ public abstract class AbstractTestWithCallbacksExtension {
         // In general, the testing type should be the test extension class, but ...
         Class type = this.getClass();
 
-        // We don't want to pick up the class of anonymous classes, since they're clearly supposed to 'be' the superclass.
+        // We don't want to pick up the class of anonymous classes, since they're clearly supposed to 'be' the
+        // superclass.
         // We want something like
-        //        @RegisterExtension
-        //        static QuarkusTestExtension TEST = new QuarkusTestExtension() {
-        //        @Override
-        //        // Whatever
-        //  };
+        // @RegisterExtension
+        // static QuarkusTestExtension TEST = new QuarkusTestExtension() {
+        // @Override
+        // // Whatever
+        // };
         // to count as a QuarkusTestExtension class
         if (type.isAnonymousClass()) {
             return type.getSuperclass();

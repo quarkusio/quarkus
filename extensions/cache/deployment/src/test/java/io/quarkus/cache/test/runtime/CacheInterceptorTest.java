@@ -71,13 +71,13 @@ public class CacheInterceptorTest {
     }
 
     private Object getCacheKey(Cache cache, List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
-        return TEST_CACHE_INTERCEPTOR.getCacheKey(cache, UndefinedCacheKeyGenerator.class, cacheKeyParameterPositions, null,
-                methodParameterValues);
+        return TEST_CACHE_INTERCEPTOR.getCacheKey(cache, UndefinedCacheKeyGenerator.class, cacheKeyParameterPositions,
+                null, methodParameterValues);
     }
 
     private Object getCacheKey(List<Short> cacheKeyParameterPositions, Object[] methodParameterValues) {
-        return TEST_CACHE_INTERCEPTOR.getCacheKey(null, UndefinedCacheKeyGenerator.class, cacheKeyParameterPositions, null,
-                methodParameterValues);
+        return TEST_CACHE_INTERCEPTOR.getCacheKey(null, UndefinedCacheKeyGenerator.class, cacheKeyParameterPositions,
+                null, methodParameterValues);
     }
 
     // This inner class changes the CacheInterceptor#getCacheKey method visibility to public.
@@ -85,7 +85,8 @@ public class CacheInterceptorTest {
         @Override
         public Object getCacheKey(Cache cache, Class<? extends CacheKeyGenerator> keyGeneratorClass,
                 List<Short> cacheKeyParameterPositions, Method method, Object[] methodParameterValues) {
-            return super.getCacheKey(cache, keyGeneratorClass, cacheKeyParameterPositions, method, methodParameterValues);
+            return super.getCacheKey(cache, keyGeneratorClass, cacheKeyParameterPositions, method,
+                    methodParameterValues);
         }
     }
 }

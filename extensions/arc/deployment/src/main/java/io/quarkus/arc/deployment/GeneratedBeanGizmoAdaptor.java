@@ -42,7 +42,8 @@ public class GeneratedBeanGizmoAdaptor implements ClassOutput {
                 source = sw.toString();
             }
         }
-        classOutput.produce(new GeneratedBeanBuildItem(className, bytes, source, applicationClassPredicate.test(className)));
+        classOutput.produce(
+                new GeneratedBeanBuildItem(className, bytes, source, applicationClassPredicate.test(className)));
     }
 
     @Override

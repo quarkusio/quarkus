@@ -17,7 +17,8 @@ public interface ClientContextResolver {
         ClientContextResolver selected = null;
         for (ClientContextResolver i : services) {
             if (selected != null) {
-                throw new RuntimeException("More than one ClientContextResolver implementation, " + selected + " and " + i);
+                throw new RuntimeException(
+                        "More than one ClientContextResolver implementation, " + selected + " and " + i);
             }
             selected = i;
         }

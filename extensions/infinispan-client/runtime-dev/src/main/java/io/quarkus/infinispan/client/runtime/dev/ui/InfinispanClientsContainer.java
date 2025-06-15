@@ -43,8 +43,8 @@ public class InfinispanClientsContainer {
             List<ServerConfiguration> servers = ih.get().getConfiguration().servers();
             if (!servers.isEmpty()) {
                 ServerConfiguration firstServer = servers.get(0);
-                infinispanClientInfos.add(
-                        new InfinispanClientInfo(identifier, firstServer.host() + ":" + firstServer.port()));
+                infinispanClientInfos
+                        .add(new InfinispanClientInfo(identifier, firstServer.host() + ":" + firstServer.port()));
             }
         }
         return infinispanClientInfos;

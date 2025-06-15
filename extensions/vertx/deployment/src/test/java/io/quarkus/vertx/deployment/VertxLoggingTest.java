@@ -15,8 +15,7 @@ public class VertxLoggingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanThatLog.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanThatLog.class));
 
     @Inject
     BeanThatLog bean;

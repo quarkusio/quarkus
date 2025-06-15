@@ -13,14 +13,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ParamDeclarationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Movie.class)
-                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
-                            + "{movie.mainCharacters.size}: {#for character in movie.mainCharacters}"
-                            + "{character}"
-                            + "{#if character_hasNext}, {/}"
-                            + "{/}"), "templates/movie.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(Movie.class)
+            .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
+                    + "{movie.mainCharacters.size}: {#for character in movie.mainCharacters}" + "{character}"
+                    + "{#if character_hasNext}, {/}" + "{/}"), "templates/movie.html"));
 
     @Inject
     Template movie;

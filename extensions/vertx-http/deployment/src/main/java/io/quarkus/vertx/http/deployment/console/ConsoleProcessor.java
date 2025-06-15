@@ -50,7 +50,8 @@ public class ConsoleProcessor {
 
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    void setupConsole(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np, LaunchModeBuildItem launchModeBuildItem) {
+    void setupConsole(HttpRootPathBuildItem rp, NonApplicationRootPathBuildItem np,
+            LaunchModeBuildItem launchModeBuildItem) {
         if (launchModeBuildItem.getDevModeType().orElse(null) != DevModeType.LOCAL) {
             return;
         }
@@ -60,11 +61,9 @@ public class ConsoleProcessor {
         Config c = ConfigProvider.getConfig();
         String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
         boolean isInsecureDisabled = c.getOptionalValue("quarkus.http.insecure-requests", String.class)
-                .map("disabled"::equals)
-                .orElse(false);
+                .map("disabled"::equals).orElse(false);
 
-        String port = isInsecureDisabled
-                ? c.getOptionalValue("quarkus.http.ssl-port", String.class).orElse("8443")
+        String port = isInsecureDisabled ? c.getOptionalValue("quarkus.http.ssl-port", String.class).orElse("8443")
                 : c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
 
         String protocol = isInsecureDisabled ? "https" : "http";
@@ -82,14 +81,10 @@ public class ConsoleProcessor {
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
         List<ConfigDescription> configDescriptions = new ArrayList<>();
         for (ConfigDescriptionBuildItem item : configDescriptionBuildItems) {
-            configDescriptions.add(
-                    new ConfigDescription(item.getPropertyName(),
-                            cleanUpAsciiDocIfNecessary(item.getDocs()),
-                            item.getDefaultValue(),
-                            isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()),
-                            item.getValueTypeName(),
-                            item.getAllowedValues(),
-                            item.getConfigPhase().name()));
+            configDescriptions.add(new ConfigDescription(item.getPropertyName(),
+                    cleanUpAsciiDocIfNecessary(item.getDocs()), item.getDefaultValue(),
+                    isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()), item.getValueTypeName(),
+                    item.getAllowedValues(), item.getConfigPhase().name()));
         }
 
         Set<String> devServicesConfig = new HashSet<>();
@@ -102,8 +97,8 @@ public class ConsoleProcessor {
 
     }
 
-    public static boolean isSetByDevServices(Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
-            String propertyName) {
+    public static boolean isSetByDevServices(
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig, String propertyName) {
         if (devServicesLauncherConfig.isPresent()) {
             return devServicesLauncherConfig.get().getConfig().containsKey(propertyName);
         }
@@ -117,11 +112,9 @@ public class ConsoleProcessor {
         // TODO #26199 Ideally we'd use a proper AsciiDoc renderer, but for now we'll just clean it up a bit.
         return docs.replace("@asciidoclet", "")
                 // Avoid problems with links.
-                .replace("<<", "&lt;&lt;")
-                .replace(">>", "&gt;&gt;")
+                .replace("<<", "&lt;&lt;").replace(">>", "&gt;&gt;")
                 // Try to render line breaks... kind of.
-                .replace("\n\n", "<p>")
-                .replace("\n", "<br>");
+                .replace("\n\n", "<p>").replace("\n", "<br>");
     }
 
     @GroupCommandDefinition(name = "config", description = "Config Editing Commands")
@@ -142,7 +135,8 @@ public class ConsoleProcessor {
         }
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult execute(CommandInvocation commandInvocation)
+                throws CommandException, InterruptedException {
             commandInvocation.getShell().writeln(commandInvocation.getHelpInfo());
             return CommandResult.SUCCESS;
         }
@@ -161,7 +155,8 @@ public class ConsoleProcessor {
         }
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult execute(CommandInvocation commandInvocation)
+                throws CommandException, InterruptedException {
             int pos = command.indexOf('=');
             String key = command.substring(0, pos);
             String value = command.substring(pos + 1);
@@ -186,7 +181,7 @@ public class ConsoleProcessor {
                     if (i.getDescription() == null) {
                         continue;
                     }
-                    //we have found the entry for the selected key
+                    // we have found the entry for the selected key
                     if (configKey != null && configKey.equals(i.getName())) {
                         if (i.getAllowedValues() != null && !i.getAllowedValues().isEmpty()) {
                             for (String val : i.getAllowedValues()) {
@@ -204,7 +199,7 @@ public class ConsoleProcessor {
                     if (i.getName().equals(soFar)) {
                         possible.add(soFar + "=");
                     } else if (i.getName().startsWith(soFar)) {
-                        //we just want to complete the next segment
+                        // we just want to complete the next segment
                         int pos = i.getName().indexOf('.', soFar.length() + 1);
                         if (pos == -1) {
                             possible.add(i.getName() + "=");
@@ -224,7 +219,7 @@ public class ConsoleProcessor {
 
         @Override
         public void validate(SetConfigCommand command) throws CommandValidatorException {
-            //-1 because the last char can't be equals
+            // -1 because the last char can't be equals
             for (int i = 0; i < command.command.length() - 1; ++i) {
                 if (command.command.charAt(i) == '=') {
                     return;

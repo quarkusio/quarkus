@@ -70,8 +70,8 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
         if (dynamicConfigResolver == null) {
             return Uni.createFrom().item(getStaticPolicyEnforcer(tenantConfig.tenantId().get()));
         } else {
-            return getDynamicPolicyEnforcer(routingContext, tenantConfig)
-                    .onItem().ifNull().continueWith(new Supplier<PolicyEnforcer>() {
+            return getDynamicPolicyEnforcer(routingContext, tenantConfig).onItem().ifNull()
+                    .continueWith(new Supplier<PolicyEnforcer>() {
                         @Override
                         public PolicyEnforcer get() {
                             return getStaticPolicyEnforcer(tenantConfig.tenantId().get());
@@ -86,8 +86,7 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
     }
 
     PolicyEnforcer getStaticPolicyEnforcer(String tenantId) {
-        return tenantId != null && namedPolicyEnforcers.containsKey(tenantId)
-                ? namedPolicyEnforcers.get(tenantId)
+        return tenantId != null && namedPolicyEnforcers.containsKey(tenantId) ? namedPolicyEnforcers.get(tenantId)
                 : defaultPolicyEnforcer;
     }
 
@@ -96,8 +95,8 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
     }
 
     private Uni<PolicyEnforcer> getDynamicPolicyEnforcer(RoutingContext routingContext, OidcTenantConfig config) {
-        return dynamicConfigResolver.resolve(routingContext, config, requestContext)
-                .onItem().ifNotNull().transform(new Function<KeycloakPolicyEnforcerTenantConfig, PolicyEnforcer>() {
+        return dynamicConfigResolver.resolve(routingContext, config, requestContext).onItem().ifNotNull()
+                .transform(new Function<KeycloakPolicyEnforcerTenantConfig, PolicyEnforcer>() {
                     @Override
                     public PolicyEnforcer apply(KeycloakPolicyEnforcerTenantConfig tenant) {
                         return createPolicyEnforcer(config, tenant, tlsSupport.forConfig(config.tls()));
@@ -114,8 +113,8 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
         Map<String, PolicyEnforcer> policyEnforcerTenants = new HashMap<>();
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants().entrySet()) {
             var oidcTenantConfig = getOidcTenantConfig(tenantConfigBean, tenant.getKey());
-            policyEnforcerTenants.put(tenant.getKey(),
-                    createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsSupport.forConfig(oidcTenantConfig.tls())));
+            policyEnforcerTenants.put(tenant.getKey(), createPolicyEnforcer(oidcTenantConfig, tenant.getValue(),
+                    tlsSupport.forConfig(oidcTenantConfig.tls())));
         }
         return Map.copyOf(policyEnforcerTenants);
     }

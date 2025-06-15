@@ -88,7 +88,8 @@ public class DefaultMediaTypeResource {
     @Path("postMultiMediaTypeConsumer")
     @Consumes({ "any/media-type" })
     @POST
-    public Response postMultiMediaTypeConsumerAnyContentType(@HeaderParam(HttpHeaders.CONTENT_TYPE) String contentType) {
+    public Response postMultiMediaTypeConsumerAnyContentType(
+            @HeaderParam(HttpHeaders.CONTENT_TYPE) String contentType) {
         return Response.ok(contentType).build();
     }
 }

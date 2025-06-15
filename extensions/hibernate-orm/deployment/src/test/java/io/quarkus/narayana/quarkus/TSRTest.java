@@ -27,15 +27,13 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 /**
- * Test that interposed synchronizations are called in the correct order
- * See {@code AgroalOrderedLastSynchronizationList} for the implementation
+ * Test that interposed synchronizations are called in the correct order See
+ * {@code AgroalOrderedLastSynchronizationList} for the implementation
  */
 public class TSRTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Fruit.class, FruitResource.class)
-                    .addAsResource("application-tsr.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Fruit.class, FruitResource.class).addAsResource("application-tsr.properties"));
 
     @Inject
     TransactionSynchronizationRegistry tsr;
@@ -60,16 +58,11 @@ public class TSRTest {
     }
 
     @Test
-    public void test() throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    public void test() throws SystemException, NotSupportedException, HeuristicRollbackException,
+            HeuristicMixedException, RollbackException {
         tm.begin();
 
-        RestAssured.given()
-                .when()
-                .body("{\"name\" : \"Pear\"}")
-                .contentType("application/json")
-                .post("/fruits")
-                .then()
+        RestAssured.given().when().body("{\"name\" : \"Pear\"}").contentType("application/json").post("/fruits").then()
                 .statusCode(201);
 
         // register a synchronization that registers more synchronizations during the beforeCompletion callback
@@ -97,13 +90,11 @@ public class TSRTest {
         tm.commit();
 
         /*
-         * Check that the two normal synchronizations added by this test were invoked.
-         * The actual list is maintained by {@code AgroalOrderedLastSynchronizationList}
-         * and it will also include interposed synchronizations added by hibernate
-         * and Agroal as a result of calling the above hibernate query.
-         * If you want to verify that the order is correct then run the test under
-         * the control of a debugger and look at the order of the list maintained
-         * by the AgroalOrderedLastSynchronizationList class.
+         * Check that the two normal synchronizations added by this test were invoked. The actual list is maintained by
+         * {@code AgroalOrderedLastSynchronizationList} and it will also include interposed synchronizations added by
+         * hibernate and Agroal as a result of calling the above hibernate query. If you want to verify that the order
+         * is correct then run the test under the control of a debugger and look at the order of the list maintained by
+         * the AgroalOrderedLastSynchronizationList class.
          */
         Assertions.assertEquals(2, synchronizationCallbacks.size());
         Assertions.assertEquals(SYNCH_TYPES.OTHER.name(), synchronizationCallbacks.get(0));
@@ -111,21 +102,16 @@ public class TSRTest {
     }
 
     @Test
-    public void testException()
-            throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    public void testException() throws SystemException, NotSupportedException, HeuristicRollbackException,
+            HeuristicMixedException, RollbackException {
         final String MESSAGE = "testException from synchronization";
         final NormalSynchronization normalSynchronization = new NormalSynchronization();
 
         tm.begin();
 
-        RestAssured.given()
-                .when()
-                .body("{\"name\" : \"Orange\"}") // use a different fruit from the other tests in this suite
-                .contentType("application/json")
-                .post("/fruits")
-                .then()
-                .statusCode(201);
+        RestAssured.given().when().body("{\"name\" : \"Orange\"}") // use a different fruit from the other tests in this
+                // suite
+                .contentType("application/json").post("/fruits").then().statusCode(201);
 
         // register a synchronization that registers more synchronizations during the beforeCompletion callback
         tsr.registerInterposedSynchronization(new Synchronization() {
@@ -164,13 +150,11 @@ public class TSRTest {
                     "the synchronization registered before the exception should have ran");
 
             /*
-             * Check that the two normal synchronizations added by this test were invoked.
-             * The actual list is maintained by {@code AgroalOrderedLastSynchronizationList}
-             * and it will also include interposed synchronizations added by hibernate
-             * and Agroal as a result of calling the above hibernate query.
-             * If you want to verify that the order is correct then run the test under
-             * the control of a debugger and look at the order of the list maintained
-             * by the AgroalOrderedLastSynchronizationList class.
+             * Check that the two normal synchronizations added by this test were invoked. The actual list is maintained
+             * by {@code AgroalOrderedLastSynchronizationList} and it will also include interposed synchronizations
+             * added by hibernate and Agroal as a result of calling the above hibernate query. If you want to verify
+             * that the order is correct then run the test under the control of a debugger and look at the order of the
+             * list maintained by the AgroalOrderedLastSynchronizationList class.
              */
             Assertions.assertEquals(2, synchronizationCallbacks.size());
             Assertions.assertEquals(SYNCH_TYPES.OTHER.name(), synchronizationCallbacks.get(0));

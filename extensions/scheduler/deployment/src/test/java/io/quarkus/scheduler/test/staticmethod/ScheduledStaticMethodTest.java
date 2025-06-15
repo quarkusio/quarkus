@@ -19,8 +19,7 @@ public class ScheduledStaticMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class, AbstractJobs.class, InterfaceJobs.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Jobs.class, AbstractJobs.class, InterfaceJobs.class));
 
     @Inject
     Scheduler scheduler;

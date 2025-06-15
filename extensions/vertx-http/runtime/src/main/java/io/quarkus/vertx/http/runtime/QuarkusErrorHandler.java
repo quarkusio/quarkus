@@ -45,8 +45,8 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private static final String HEADING = "500 - Internal Server Error";
 
     /**
-     * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one
-     * and then use a counter.
+     * we don't want to generate a new UUID each time as it is slowish. Instead, we just generate one based one and then
+     * use a counter.
      */
 
     private static final AtomicLong ERROR_COUNT = new AtomicLong();
@@ -58,16 +58,12 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
     private final List<String> knowClasses;
     private final String srcMainJava;
 
-    public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
-            Optional<PayloadHint> contentTypeDefault) {
+    public QuarkusErrorHandler(boolean showStack, boolean decorateStack, Optional<PayloadHint> contentTypeDefault) {
         this(showStack, decorateStack, contentTypeDefault, null, List.of(), List.of());
     }
 
-    public QuarkusErrorHandler(boolean showStack, boolean decorateStack,
-            Optional<PayloadHint> contentTypeDefault,
-            String srcMainJava,
-            List<String> knowClasses,
-            List<ErrorPageAction> actions) {
+    public QuarkusErrorHandler(boolean showStack, boolean decorateStack, Optional<PayloadHint> contentTypeDefault,
+            String srcMainJava, List<String> knowClasses, List<ErrorPageAction> actions) {
         this.showStack = showStack;
         this.decorateStack = decorateStack;
         this.contentTypeDefault = contentTypeDefault;
@@ -85,7 +81,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 event.response().end();
                 return;
             }
-            //this can happen if there is no auth mechanisms
+            // this can happen if there is no auth mechanisms
             if (exception instanceof UnauthorizedException) {
                 HttpAuthenticator authenticator = event.get(HttpAuthenticator.class.getName());
                 if (authenticator != null) {
@@ -112,19 +108,19 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
 
             if (exception instanceof AuthenticationException) {
                 if (event.response().getStatusCode() == HttpResponseStatus.OK.code()) {
-                    //set 401 if status wasn't set upstream
+                    // set 401 if status wasn't set upstream
                     event.response().setStatusCode(HttpResponseStatus.UNAUTHORIZED.code());
                 }
 
-                //when proactive security is enabled and this wasn't handled elsewhere, we expect event to
-                //end here as failing event makes it possible to customize response, however when proactive security is
-                //disabled, this should be handled elsewhere and if we get to this point bad things have happened,
-                //so it is better to send a response than to hang
+                // when proactive security is enabled and this wasn't handled elsewhere, we expect event to
+                // end here as failing event makes it possible to customize response, however when proactive security is
+                // disabled, this should be handled elsewhere and if we get to this point bad things have happened,
+                // so it is better to send a response than to hang
 
                 if ((exception instanceof AuthenticationCompletionException
-                        || (exception instanceof AuthenticationFailedException && event.response().getStatusCode() == 401))
-                        && exception.getMessage() != null
-                        && LaunchMode.isDev()) {
+                        || (exception instanceof AuthenticationFailedException
+                                && event.response().getStatusCode() == 401))
+                        && exception.getMessage() != null && LaunchMode.isDev()) {
                     event.response().end(exception.getMessage());
                 } else {
                     event.response().end();
@@ -139,9 +135,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 return;
             }
         } catch (IllegalStateException e) {
-            //ignore this if the response is already started
+            // ignore this if the response is already started
             if (!event.response().ended()) {
-                //could be that just the head is committed
+                // could be that just the head is committed
                 event.response().end();
             }
             return;
@@ -177,9 +173,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         } else {
             log.errorf(exception, "HTTP Request to %s failed, error id: %s", event.request().uri(), uuid);
         }
-        //we have logged the error
-        //now let's see if we can actually send a response
-        //if not we just return
+        // we have logged the error
+        // now let's see if we can actually send a response
+        // if not we just return
         if (event.response().ended()) {
             return;
         } else if (event.response().headWritten()) {
@@ -270,7 +266,8 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         }
     }
 
-    private void jsonResponse(RoutingContext event, String contentType, String details, String stack, Throwable throwable) {
+    private void jsonResponse(RoutingContext event, String contentType, String details, String stack,
+            Throwable throwable) {
         event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, contentType + "; charset=utf-8");
         String escapedDetails = escapeJsonString(details);
         String escapedStack = escapeJsonString(stack);
@@ -279,24 +276,20 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
             decoratedString = DecorateStackUtil.getDecoratedString(throwable, srcMainJava, knowClasses);
         }
 
-        StringBuilder jsonPayload = new StringBuilder("{\"details\":\"")
-                .append(escapedDetails);
+        StringBuilder jsonPayload = new StringBuilder("{\"details\":\"").append(escapedDetails);
 
         if (decoratedString != null) {
-            jsonPayload = jsonPayload.append("\",\"decorate\":\"")
-                    .append(escapeJsonString(decoratedString));
+            jsonPayload = jsonPayload.append("\",\"decorate\":\"").append(escapeJsonString(decoratedString));
         }
 
-        jsonPayload = jsonPayload.append("\",\"stack\":\"")
-                .append(escapedStack)
-                .append("\"}");
+        jsonPayload = jsonPayload.append("\",\"stack\":\"").append(escapedStack).append("\"}");
         writeResponse(event, jsonPayload.toString());
     }
 
     private void htmlResponse(RoutingContext event, String details, Throwable exception) {
         event.response().headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=utf-8");
-        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder(showStack, "Internal Server Error", details, details,
-                this.actions);
+        final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder(showStack, "Internal Server Error", details,
+                details, this.actions);
 
         if (decorateStack && exception != null) {
             htmlBuilder.decorate(exception, this.srcMainJava, this.knowClasses);
@@ -386,12 +379,9 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         private static final String TEXT_XML = "text/xml";
 
         // WARNING: The order matters for wildcards: if text/json is before text/html, then text/* will match text/json.
-        private static final List<MIMEHeader> BASE_HEADERS = List.of(
-                createParsableMIMEValue(APPLICATION_JSON),
-                createParsableMIMEValue(TEXT_JSON),
-                createParsableMIMEValue(TEXT_HTML),
-                createParsableMIMEValue(APPLICATION_XHTML),
-                createParsableMIMEValue(APPLICATION_XML),
+        private static final List<MIMEHeader> BASE_HEADERS = List.of(createParsableMIMEValue(APPLICATION_JSON),
+                createParsableMIMEValue(TEXT_JSON), createParsableMIMEValue(TEXT_HTML),
+                createParsableMIMEValue(APPLICATION_XHTML), createParsableMIMEValue(APPLICATION_XML),
                 createParsableMIMEValue(TEXT_XML));
 
         private static final Collection<MIMEHeader> SUPPORTED = createSupported();

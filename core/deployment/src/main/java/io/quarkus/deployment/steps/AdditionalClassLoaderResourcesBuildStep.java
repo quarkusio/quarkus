@@ -41,7 +41,8 @@ public class AdditionalClassLoaderResourcesBuildStep {
             cl.reset(collected, Collections.emptyMap());
             // produce the AdditionalIndexedClassesBuildItem so this build step
             // is actually invoked and allow to directly index all the classes
-            producer.produce(new AdditionalIndexedClassesBuildItem(additionalClassesToIndex.stream().toArray(String[]::new)));
+            producer.produce(
+                    new AdditionalIndexedClassesBuildItem(additionalClassesToIndex.stream().toArray(String[]::new)));
         }
     }
 }

@@ -33,8 +33,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Regression test for RESTEasy issues about special resources
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Special Resource Test")
@@ -43,17 +46,15 @@ public class SpecialResourceTest {
     static Client client;
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(SpecialResourceStreamResource.class, SpecialResourceApiResource.class,
-                            PortProviderUtil.class,
-                            SpecialResourceDeleteResource.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(SpecialResourceStreamResource.class, SpecialResourceApiResource.class,
+                    PortProviderUtil.class, SpecialResourceDeleteResource.class);
+            return war;
+        }
+    });
 
     @BeforeAll
     public static void init() {
@@ -72,6 +73,7 @@ public class SpecialResourceTest {
 
     /**
      * @tpTestDetails Regression test for RESTEASY-631
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -85,19 +87,22 @@ public class SpecialResourceTest {
 
     /**
      * @tpTestDetails Regression test for RESTEASY-534
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
     @DisplayName("Test 534")
     public void test534() throws Exception {
         WebTarget base = client.target(generateURL("/inputstream/test/json"));
-        Response response = base.request().post(Entity.entity("hello world".getBytes(), MediaType.APPLICATION_OCTET_STREAM));
+        Response response = base.request()
+                .post(Entity.entity("hello world".getBytes(), MediaType.APPLICATION_OCTET_STREAM));
         Assertions.assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
         response.close();
     }
 
     /**
      * @tpTestDetails Regression test for RESTEASY-624
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -111,6 +116,7 @@ public class SpecialResourceTest {
 
     /**
      * @tpTestDetails Regression test for RESTEASY-583
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -120,10 +126,11 @@ public class SpecialResourceTest {
         HttpPut method = new HttpPut(generateURL("/api"));
         HttpResponse response = null;
         try {
-            method.setEntity(
-                    new StringEntity("hello", ContentType.create("vnd.net.juniper.space.target-management.targets+xml")));
+            method.setEntity(new StringEntity("hello",
+                    ContentType.create("vnd.net.juniper.space.target-management.targets+xml")));
             response = client.execute(method);
-            Assertions.assertEquals(response.getStatusLine().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
+            Assertions.assertEquals(response.getStatusLine().getStatusCode(),
+                    Response.Status.BAD_REQUEST.getStatusCode());
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {

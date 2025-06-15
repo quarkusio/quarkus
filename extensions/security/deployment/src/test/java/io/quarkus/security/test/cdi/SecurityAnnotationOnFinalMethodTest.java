@@ -21,10 +21,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SecurityAnnotationOnFinalMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithSecuredFinalMethod.class, IdentityMock.class,
-                            AuthData.class, SecurityTestUtils.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(BeanWithSecuredFinalMethod.class, IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     BeanWithSecuredFinalMethod bean;

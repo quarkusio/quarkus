@@ -8,8 +8,8 @@ import io.vertx.core.http.HttpServerOptions;
  * This interface is composed of three methods allowing the customization of the different servers: HTTP, HTTPS and
  * domain socket.
  * <p>
- * The passed {@link HttpServerOptions} must be customized in the body of the implementation. The default implementations
- * are no-op.
+ * The passed {@link HttpServerOptions} must be customized in the body of the implementation. The default
+ * implementations are no-op.
  */
 public interface HttpServerOptionsCustomizer {
 

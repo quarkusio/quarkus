@@ -12,8 +12,8 @@ import io.smallrye.config.ConfigMapping;
 public interface InfinispanCachesBuildTimeConfig {
 
     /**
-     * The name of the named Infinispan client to be used for communicating with Infinispan.
-     * If not set, use the default Infinispan client.
+     * The name of the named Infinispan client to be used for communicating with Infinispan. If not set, use the default
+     * Infinispan client.
      */
     Optional<String> clientName();
 }

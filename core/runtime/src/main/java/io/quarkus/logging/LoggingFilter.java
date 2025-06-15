@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Makes the filter class known to Quarkus by the specified name.
- * The filter can then be configured for a handler (like the logging handler using {@code quarkus.log.console.filter}).
+ * Makes the filter class known to Quarkus by the specified name. The filter can then be configured for a handler (like
+ * the logging handler using {@code quarkus.log.console.filter}).
  */
 
 @Retention(RetentionPolicy.RUNTIME)

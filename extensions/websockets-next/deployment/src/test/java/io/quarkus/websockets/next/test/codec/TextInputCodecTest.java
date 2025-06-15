@@ -22,10 +22,9 @@ import io.vertx.core.json.JsonObject;
 public class TextInputCodecTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(FindInputCodec.class, FindInputCodec.MyInputCodec.class, AbstractFind.class, Item.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(FindInputCodec.class, FindInputCodec.MyInputCodec.class, AbstractFind.class, Item.class);
+    });
 
     @TestHTTPResource("find-input-codec")
     URI itemCodecUri;
@@ -42,24 +41,21 @@ public class TextInputCodecTest {
         assertCodec(itemCodecUri, items.encode(), "Item [count=2]");
     }
 
-    public void assertCodec(URI testUri, String payload, String expected)
-            throws Exception {
+    public void assertCodec(URI testUri, String payload, String expected) throws Exception {
         WebSocketClient client = vertx.createWebSocketClient();
         try {
             LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-            client
-                    .connect(testUri.getPort(), testUri.getHost(), testUri.getPath())
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            WebSocket ws = r.result();
-                            ws.textMessageHandler(msg -> {
-                                message.add(msg);
-                            });
-                            ws.writeTextMessage(payload);
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
+            client.connect(testUri.getPort(), testUri.getHost(), testUri.getPath()).onComplete(r -> {
+                if (r.succeeded()) {
+                    WebSocket ws = r.result();
+                    ws.textMessageHandler(msg -> {
+                        message.add(msg);
                     });
+                    ws.writeTextMessage(payload);
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             assertEquals(expected, message.poll(10, TimeUnit.SECONDS));
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get();

@@ -6,9 +6,10 @@ import java.io.ObjectInputStream;
 
 class DBDelegateUtils {
     /**
-     * A method to deserialize a marshalled object in an input stream.
-     * This implementation uses {@link QuarkusObjectInputStream} instead of {@link ObjectInputStream} to workaround
-     * a {@link ClassNotFoundException} issue observed in Test & Dev mode when `resolveClass(ObjectStreamClass)` is called.
+     * A method to deserialize a marshalled object in an input stream. This implementation uses
+     * {@link QuarkusObjectInputStream} instead of {@link ObjectInputStream} to workaround a
+     * {@link ClassNotFoundException} issue observed in Test & Dev mode when `resolveClass(ObjectStreamClass)` is
+     * called.
      */
     static Object getObjectFromInput(InputStream binaryInput) throws ClassNotFoundException, IOException {
         if (binaryInput == null || binaryInput.available() == 0) {

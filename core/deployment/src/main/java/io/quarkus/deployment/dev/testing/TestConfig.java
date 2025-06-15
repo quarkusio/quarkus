@@ -17,8 +17,8 @@ import io.smallrye.config.WithParentName;
 /**
  * Testing
  * <p>
- * This is used currently only to suppress warnings about unknown properties
- * when the user supplies something like: -Dquarkus.test.profile=someProfile or -Dquarkus.test.native-image-profile=someProfile
+ * This is used currently only to suppress warnings about unknown properties when the user supplies something like:
+ * -Dquarkus.test.profile=someProfile or -Dquarkus.test.native-image-profile=someProfile
  * <p>
  * TODO refactor code to actually use these values
  */
@@ -29,14 +29,13 @@ public interface TestConfig {
     /**
      * If continuous testing is enabled.
      * <p>
-     * The default value is 'paused', which will allow you to start testing
-     * from the console or the Dev UI, but will not run tests on startup.
+     * The default value is 'paused', which will allow you to start testing from the console or the Dev UI, but will not
+     * run tests on startup.
      * <p>
-     * If this is set to 'enabled' then testing will start as soon as the
-     * application has started.
+     * If this is set to 'enabled' then testing will start as soon as the application has started.
      * <p>
-     * If this is 'disabled' then continuous testing is not enabled, and can't
-     * be enabled without restarting the application.
+     * If this is 'disabled' then continuous testing is not enabled, and can't be enabled without restarting the
+     * application.
      */
     @WithDefault("paused")
     Mode continuousTesting();
@@ -51,8 +50,8 @@ public interface TestConfig {
      * The FQCN of the JUnit <code>ClassOrderer</code> to use. If the class cannot be found, it fallbacks to JUnit
      * default behaviour which does not set a <code>ClassOrderer</code> at all.
      *
-     * @see <a href=https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes>JUnit Class
-     *      Order<a/>
+     * @see <a href=https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order-classes>JUnit
+     *      Class Order<a/>
      */
     @WithDefault("io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer")
     Optional<String> classOrderer();
@@ -60,7 +59,8 @@ public interface TestConfig {
     /**
      * Tags that should be included for continuous testing. This supports JUnit Tag Expressions.
      *
-     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
+     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag
+     *      Expressions</a>
      */
     Optional<List<String>> includeTags();
 
@@ -73,20 +73,21 @@ public interface TestConfig {
      * <p>
      * This supports JUnit Tag Expressions.
      *
-     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag Expressions</a>
+     * @see <a href="https://junit.org/junit5/docs/current/user-guide/#running-tests-tag-expressions">JUnit Tag
+     *      Expressions</a>
      */
     @WithDefault("slow")
     Optional<List<String>> excludeTags();
 
     /**
-     * Tests that should be included for continuous testing. This is a regular expression and
-     * is matched against the test class name (not the file name).
+     * Tests that should be included for continuous testing. This is a regular expression and is matched against the
+     * test class name (not the file name).
      */
     Optional<String> includePattern();
 
     /**
-     * Tests that should be excluded with continuous testing. This is a regular expression and
-     * is matched against the test class name (not the file name).
+     * Tests that should be excluded with continuous testing. This is a regular expression and is matched against the
+     * test class name (not the file name).
      * <p>
      * This is ignored if include-pattern has been set.
      */
@@ -106,8 +107,7 @@ public interface TestConfig {
     Optional<List<String>> excludeEngines();
 
     /**
-     * Disable the testing status/prompt message at the bottom of the console
-     * and log these messages to STDOUT instead.
+     * Disable the testing status/prompt message at the bottom of the console and log these messages to STDOUT instead.
      * <p>
      * Use this option if your terminal does not support ANSI escape sequences.
      * <p>
@@ -147,12 +147,11 @@ public interface TestConfig {
     /**
      * Changes tests to use the 'flat' ClassPath used in Quarkus 1.x versions.
      * <p>
-     * This means all Quarkus and test classes are loaded in the same ClassLoader,
-     * however it means you cannot use continuous testing.
+     * This means all Quarkus and test classes are loaded in the same ClassLoader, however it means you cannot use
+     * continuous testing.
      * <p>
-     * Note that if you find this necessary for your application then you
-     * may also have problems running in development mode, which cannot use
-     * a flat class path.
+     * Note that if you find this necessary for your application then you may also have problems running in development
+     * mode, which cannot use a flat class path.
      */
     @WithDefault("false")
     boolean flatClassPath();
@@ -174,10 +173,11 @@ public interface TestConfig {
     Container container();
 
     /**
-     * Additional launch parameters to be used when Quarkus launches the produced artifact for {@code @QuarkusIntegrationTest}
-     * When the artifact is a {@code jar}, this string is passed right after the {@code java} command.
-     * When the artifact is a {@code container}, this string is passed right after the {@code docker run} command.
-     * When the artifact is a {@code native binary}, this string is passed right after the native binary name.
+     * Additional launch parameters to be used when Quarkus launches the produced artifact for
+     * {@code @QuarkusIntegrationTest} When the artifact is a {@code jar}, this string is passed right after the
+     * {@code java} command. When the artifact is a {@code container}, this string is passed right after the
+     * {@code docker run} command. When the artifact is a {@code native binary}, this string is passed right after the
+     * native binary name.
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> argLine();
 
@@ -188,8 +188,7 @@ public interface TestConfig {
     Map<String, String> env();
 
     /**
-     * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the
-     * application to launch
+     * Used in {@code @QuarkusIntegrationTest} to determine how long the test will wait for the application to launch
      */
     @WithDefault("PT1M")
     Duration waitTime();
@@ -207,17 +206,15 @@ public interface TestConfig {
     /**
      * The type of test to run, this can be either:
      * <p>
-     * quarkus-test: Only runs {@code @QuarkusTest} annotated test classes
-     * unit: Only runs classes that are not annotated with {@code @QuarkusTest}
-     * all: Runs both, running the unit tests first
-     *
+     * quarkus-test: Only runs {@code @QuarkusTest} annotated test classes unit: Only runs classes that are not
+     * annotated with {@code @QuarkusTest} all: Runs both, running the unit tests first
      */
     @WithDefault("all")
     TestType type();
 
     /**
-     * If this is true then only the tests from the main application module will be run (i.e. the module that is currently
-     * running mvn quarkus:dev).
+     * If this is true then only the tests from the main application module will be run (i.e. the module that is
+     * currently running mvn quarkus:dev).
      * <p>
      * If this is false then tests from all dependency modules will be run as well.
      */
@@ -225,30 +222,30 @@ public interface TestConfig {
     boolean onlyTestApplicationModule();
 
     /**
-     * Modules that should be included for continuous testing. This is a regular expression and
-     * is matched against the module groupId:artifactId.
+     * Modules that should be included for continuous testing. This is a regular expression and is matched against the
+     * module groupId:artifactId.
      */
     Optional<String> includeModulePattern();
 
     /**
-     * Modules that should be excluded for continuous testing. This is a regular expression and
-     * is matched against the module groupId:artifactId.
+     * Modules that should be excluded for continuous testing. This is a regular expression and is matched against the
+     * module groupId:artifactId.
      * <p>
      * This is ignored if include-module-pattern has been set.
      */
     Optional<String> excludeModulePattern();
 
     /**
-     * If the test callbacks should be invoked for the integration tests (tests annotated with {@code @QuarkusIntegrationTest}).
+     * If the test callbacks should be invoked for the integration tests (tests annotated with
+     * {@code @QuarkusIntegrationTest}).
      */
     @WithDefault("false")
     boolean enableCallbacksForIntegrationTests();
 
     /**
-     * Used to override the artifact type against which a {@code @QuarkusIntegrationTest} or {@code @QuarkusMainIntegrationTest}
-     * run.
-     * For example, if the application's artifact is a container build from a jar, this property could be used to test the jar
-     * instead of the container.
+     * Used to override the artifact type against which a {@code @QuarkusIntegrationTest} or
+     * {@code @QuarkusMainIntegrationTest} run. For example, if the application's artifact is a container build from a
+     * jar, this property could be used to test the jar instead of the container.
      * <p>
      * Allowed values are: jar, native
      */
@@ -256,26 +253,26 @@ public interface TestConfig {
 
     interface Profile {
         /**
-         * A comma separated list of profiles (dev, test, prod or custom profiles) to use when testing using @QuarkusTest
+         * A comma separated list of profiles (dev, test, prod or custom profiles) to use when testing
+         * using @QuarkusTest
          */
         @WithParentName
         @WithDefault("test")
         List<String> profile();
 
         /**
-         * The tags this profile is associated with.
-         * When the {@code quarkus.test.profile.tags} System property is set (its value is a comma separated list of strings)
-         * then Quarkus will only execute tests that are annotated with a {@code @TestProfile} that has at least one of the
-         * supplied (via the aforementioned system property) tags.
+         * The tags this profile is associated with. When the {@code quarkus.test.profile.tags} System property is set
+         * (its value is a comma separated list of strings) then Quarkus will only execute tests that are annotated with
+         * a {@code @TestProfile} that has at least one of the supplied (via the aforementioned system property) tags.
          */
         Optional<List<@WithConverter(TrimmedStringConverter.class) String>> tags();
     }
 
     interface Container {
         /**
-         * Controls the container network to be used when @QuarkusIntegration needs to launch the application in a container.
-         * This setting only applies if Quarkus does not need to use a shared network - which is the case if DevServices are
-         * used when running the test.
+         * Controls the container network to be used when @QuarkusIntegration needs to launch the application in a
+         * container. This setting only applies if Quarkus does not need to use a shared network - which is the case if
+         * DevServices are used when running the test.
          */
         Optional<String> network();
 

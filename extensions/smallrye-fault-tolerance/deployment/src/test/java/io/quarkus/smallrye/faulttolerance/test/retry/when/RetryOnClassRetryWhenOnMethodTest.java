@@ -13,8 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RetryOnClassRetryWhenOnMethodTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RetryOnClassRetryWhenOnMethodService.class))
+            .withApplicationRoot((jar) -> jar.addClasses(RetryOnClassRetryWhenOnMethodService.class))
             .assertException(e -> {
                 assertEquals(DefinitionException.class, e.getClass());
                 assertTrue(e.getMessage().contains("@RetryWhen present"));

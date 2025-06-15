@@ -21,8 +21,8 @@ public class ClientErrorHandler implements ClientRestHandler {
     public void handle(RestClientRequestContext requestContext) throws Exception {
         if (requestContext.getThrowable() != null) {
             if (loggingScope != LoggingScope.NONE) {
-                log.debugf(requestContext.getThrowable(), "Failure: %s %s, Error[%s]",
-                        requestContext.getHttpMethod(), requestContext.getUri(), requestContext.getThrowable().getMessage());
+                log.debugf(requestContext.getThrowable(), "Failure: %s %s, Error[%s]", requestContext.getHttpMethod(),
+                        requestContext.getUri(), requestContext.getThrowable().getMessage());
             }
             requestContext.getResult().completeExceptionally(requestContext.getThrowable());
         }

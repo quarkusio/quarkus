@@ -35,10 +35,9 @@ public class MultipartResource {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
-        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - " + formData.getStatus()
-                + " - "
-                + Files.exists(formData.getHtmlPart().filePath()) + " - " + Files.exists(formData.xmlPart) + " - "
-                + formData.txtFile.exists();
+        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - "
+                + formData.getStatus() + " - " + Files.exists(formData.getHtmlPart().filePath()) + " - "
+                + Files.exists(formData.xmlPart) + " - " + formData.txtFile.exists();
     }
 
     @POST
@@ -48,10 +47,9 @@ public class MultipartResource {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
-        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - " + formData.getStatus()
-                + " - "
-                + formData.getHtmlPart().contentType() + " - " + Files.exists(formData.xmlPart) + " - "
-                + formData.txtFile.exists();
+        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - "
+                + formData.getStatus() + " - " + formData.getHtmlPart().contentType() + " - "
+                + Files.exists(formData.xmlPart) + " - " + formData.txtFile.exists();
     }
 
     @POST
@@ -61,21 +59,15 @@ public class MultipartResource {
     @NonBlocking
     public String simple(
             // don't set a part type, use the default
-            @RestForm String name,
-            @RestForm @PartType(MediaType.TEXT_PLAIN) Status status,
-            @RestForm("htmlFile") FileUpload htmlPart,
-            @RestForm("xmlFile") java.nio.file.Path xmlPart,
-            @RestForm File txtFile,
-            @RestForm @PartType(MediaType.TEXT_PLAIN) boolean active,
-            @RestForm @PartType(MediaType.TEXT_PLAIN) int num,
-            Integer times) {
+            @RestForm String name, @RestForm @PartType(MediaType.TEXT_PLAIN) Status status,
+            @RestForm("htmlFile") FileUpload htmlPart, @RestForm("xmlFile") java.nio.file.Path xmlPart,
+            @RestForm File txtFile, @RestForm @PartType(MediaType.TEXT_PLAIN) boolean active,
+            @RestForm @PartType(MediaType.TEXT_PLAIN) int num, Integer times) {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
-        return name + " - " + active + " - " + times * num + " - " + status
-                + " - "
-                + Files.exists(htmlPart.filePath()) + " - " + Files.exists(xmlPart) + " - "
-                + txtFile.exists();
+        return name + " - " + active + " - " + times * num + " - " + status + " - " + Files.exists(htmlPart.filePath())
+                + " - " + Files.exists(xmlPart) + " - " + txtFile.exists();
     }
 
     @POST
@@ -93,8 +85,7 @@ public class MultipartResource {
                 .header("xml-size", Files.readAllBytes(formData.xmlPart).length)
                 .header("xml-path", formData.xmlPart.toAbsolutePath().toString())
                 .header("txt-size", Files.readAllBytes(formData.txtFile.toPath()).length)
-                .header("txt-path", formData.txtFile.toPath().toAbsolutePath().toString())
-                .build();
+                .header("txt-path", formData.txtFile.toPath().toAbsolutePath().toString()).build();
     }
 
     @POST
@@ -114,14 +105,12 @@ public class MultipartResource {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Path("/param/same-name")
     public String sameName(@RestForm @PartType(MediaType.TEXT_PLAIN) Status status,
-            @RestForm("htmlFile") List<File> htmlFiles,
-            @RestForm("txtFile") List<FileUpload> txtFiles,
+            @RestForm("htmlFile") List<File> htmlFiles, @RestForm("txtFile") List<FileUpload> txtFiles,
             @RestForm("xmlFile") List<java.nio.file.Path> xmlFiles) {
         if (!BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should have dispatched");
         }
-        return status + " - " + htmlFiles.size() + " - " + txtFiles.size() + " - "
-                + xmlFiles.size();
+        return status + " - " + htmlFiles.size() + " - " + txtFiles.size() + " - " + xmlFiles.size();
     }
 
     @POST

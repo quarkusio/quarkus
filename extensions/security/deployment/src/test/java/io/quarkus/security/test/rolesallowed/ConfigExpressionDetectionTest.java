@@ -37,7 +37,8 @@ public class ConfigExpressionDetectionTest {
         }
         var index = indexer.complete();
         VALID_VALUES = new HashMap<>();
-        for (MethodInfo methodInfo : index.getClassByName(DotName.createSimple(ValidValues.class.getName())).methods()) {
+        for (MethodInfo methodInfo : index.getClassByName(DotName.createSimple(ValidValues.class.getName()))
+                .methods()) {
             var annotation = methodInfo.annotation(DotNames.ROLES_ALLOWED);
             if (annotation != null) {
                 VALID_VALUES.put(methodInfo.name(), annotation.value().asStringArray());

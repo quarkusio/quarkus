@@ -21,8 +21,8 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
-})
+        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM,
+                Format.PKCS12 }) })
 public class PemTrustStoreFromClassPathTest {
 
     private static final String configuration = """
@@ -30,10 +30,9 @@ public class PemTrustStoreFromClassPathTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new File("target/certs/test-formats-ca.crt"), "/certs/ca.pem")
-                    .add(new StringAsset(configuration), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addAsResource(new File("target/certs/test-formats-ca.crt"), "/certs/ca.pem")
+            .add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;

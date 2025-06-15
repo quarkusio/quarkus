@@ -29,10 +29,9 @@ import io.vertx.core.buffer.Buffer;
 public class SignatureTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(MethodReturningString.class, UniWs.class, MultiWs.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(MethodReturningString.class, UniWs.class, MultiWs.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -41,10 +40,7 @@ public class SignatureTest {
     URI uri;
 
     private static Stream<Arguments> methods() {
-        return Stream.of(
-                Arguments.of("string", 1),
-                Arguments.of("uni", 2),
-                Arguments.of("multi", 3));
+        return Stream.of(Arguments.of("string", 1), Arguments.of("uni", 2), Arguments.of("multi", 3));
     }
 
     @ParameterizedTest(name = "{index} Checking the reception of message for method returning {0}")

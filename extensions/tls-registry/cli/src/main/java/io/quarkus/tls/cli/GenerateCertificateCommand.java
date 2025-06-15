@@ -72,7 +72,8 @@ public class GenerateCertificateCommand implements Callable<Integer> {
         LOGGER.log(INFO, "\uD83D\uDD0E Looking for the Quarkus Dev CA certificate...");
 
         if (!CA_FILE.exists() || !PK_FILE.exists() || selfSigned) {
-            LOGGER.log(INFO, "\uD83C\uDFB2 Quarkus Dev CA certificate not found. Generating a self-signed certificate...");
+            LOGGER.log(INFO,
+                    "\uD83C\uDFB2 Quarkus Dev CA certificate not found. Generating a self-signed certificate...");
             generateSelfSignedCertificate();
             return 0;
         }
@@ -93,12 +94,8 @@ public class GenerateCertificateCommand implements Callable<Integer> {
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
-        new CertificateGenerator(directory, renew).generate(new CertificateRequest()
-                .withName(name)
-                .withCN(cn)
-                .withPassword(password)
-                .withDuration(Duration.ofDays(365))
-                .withFormat(Format.PKCS12));
+        new CertificateGenerator(directory, renew).generate(new CertificateRequest().withName(name).withCN(cn)
+                .withPassword(password).withDuration(Duration.ofDays(365)).withFormat(Format.PKCS12));
         LOGGER.log(INFO, "✅ Self-signed certificate generated successfully and exported into `{0}-keystore.p12`", name);
         printConfig(directory.resolve(name + "-keystore.p12"), password);
 
@@ -143,24 +140,18 @@ public class GenerateCertificateCommand implements Callable<Integer> {
                 JcaPEMKeyConverter converter = new JcaPEMKeyConverter();
                 return converter.getPrivateKey(((PrivateKeyInfo) obj));
             } else {
-                throw new IllegalStateException(
-                        "The file " + Constants.PK_FILE.getAbsolutePath() + " does not contain a private key "
-                                + obj.getClass().getName());
+                throw new IllegalStateException("The file " + Constants.PK_FILE.getAbsolutePath()
+                        + " does not contain a private key " + obj.getClass().getName());
             }
         }
     }
 
-    private void createSignedCertificate(X509Certificate issuerCert,
-            PrivateKey issuerPrivateKey) throws Exception {
+    private void createSignedCertificate(X509Certificate issuerCert, PrivateKey issuerPrivateKey) throws Exception {
         if (!Files.exists(directory)) {
             Files.createDirectories(directory);
         }
-        new CertificateGenerator(directory, renew).generate(new CertificateRequest()
-                .withName(name)
-                .withCN(cn)
-                .withPassword(password)
-                .withDuration(Duration.ofDays(365))
-                .withFormat(Format.PKCS12)
+        new CertificateGenerator(directory, renew).generate(new CertificateRequest().withName(name).withCN(cn)
+                .withPassword(password).withDuration(Duration.ofDays(365)).withFormat(Format.PKCS12)
                 .signedWith(issuerCert, issuerPrivateKey));
 
     }

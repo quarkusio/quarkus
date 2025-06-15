@@ -68,7 +68,8 @@ public abstract class WebSocketConnectionBase implements Connection {
 
     @Override
     public Uni<Void> sendText(String message) {
-        Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeTextMessage(message).toCompletionStage());
+        Uni<Void> uni = Uni.createFrom()
+                .completionStage(() -> webSocket().writeTextMessage(message).toCompletionStage());
         if (sendingInterceptor != null) {
             uni = uni.invoke(() -> sendingInterceptor.onSend(message));
         }
@@ -79,7 +80,8 @@ public abstract class WebSocketConnectionBase implements Connection {
 
     @Override
     public Uni<Void> sendBinary(Buffer message) {
-        Uni<Void> uni = Uni.createFrom().completionStage(() -> webSocket().writeBinaryMessage(message).toCompletionStage());
+        Uni<Void> uni = Uni.createFrom()
+                .completionStage(() -> webSocket().writeBinaryMessage(message).toCompletionStage());
         if (sendingInterceptor != null) {
             uni = uni.invoke(() -> sendingInterceptor.onSend(message));
         }
@@ -130,8 +132,8 @@ public abstract class WebSocketConnectionBase implements Connection {
             LOG.warnf("Connection already closed: %s", this);
             return Uni.createFrom().voidItem();
         }
-        return Uni.createFrom()
-                .completionStage(() -> webSocket().close((short) reason.getCode(), reason.getMessage()).toCompletionStage());
+        return Uni.createFrom().completionStage(
+                () -> webSocket().close((short) reason.getCode(), reason.getMessage()).toCompletionStage());
     }
 
     @Override

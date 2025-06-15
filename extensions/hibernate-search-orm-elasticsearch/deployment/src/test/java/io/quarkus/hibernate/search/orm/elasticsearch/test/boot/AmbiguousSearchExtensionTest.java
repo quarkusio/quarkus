@@ -21,15 +21,10 @@ public class AmbiguousSearchExtensionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(SearchFailureHandler.class)
-                    .addClass(AnotherSearchFailureHandler.class)
-                    .addAsResource("application.properties"))
-            .assertException(throwable -> assertThat(throwable)
-                    .hasNoSuppressedExceptions()
-                    .rootCause()
-                    .hasMessageContainingAll(
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addClass(SearchFailureHandler.class)
+                    .addClass(AnotherSearchFailureHandler.class).addAsResource("application.properties"))
+            .assertException(
+                    throwable -> assertThat(throwable).hasNoSuppressedExceptions().rootCause().hasMessageContainingAll(
                             "Multiple instances of FailureHandler were found for Hibernate Search in persistence unit <default>.",
                             "At most one instance can be assigned to each persistence unit. Instances found:",
                             "io.quarkus.hibernate.search.orm.elasticsearch.test.boot.AmbiguousSearchExtensionTest.SearchFailureHandler",

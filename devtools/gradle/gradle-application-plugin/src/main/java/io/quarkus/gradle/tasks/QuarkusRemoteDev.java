@@ -11,10 +11,8 @@ public abstract class QuarkusRemoteDev extends QuarkusDev {
 
     @Inject
     public QuarkusRemoteDev(Configuration quarkusDevConfiguration, QuarkusPluginExtension extension) {
-        super(
-                "Remote development mode: enables hot deployment on remote JVM with background compilation",
-                quarkusDevConfiguration,
-                extension);
+        super("Remote development mode: enables hot deployment on remote JVM with background compilation",
+                quarkusDevConfiguration, extension);
     }
 
     protected void modifyDevModeContext(DevModeCommandLineBuilder builder) {

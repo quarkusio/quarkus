@@ -28,10 +28,9 @@ public class SubWebSocketTest {
     URI echoUri;
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Sub.class, SubSub.class, SubSubSub.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Sub.class, SubSub.class, SubSubSub.class);
+    });
 
     @Test
     public void testSub() throws Exception {
@@ -52,19 +51,17 @@ public class SubWebSocketTest {
         WebSocketClient client = vertx.createWebSocketClient();
         try {
             LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-            client
-                    .connect(testUri.getPort(), testUri.getHost(), testUri.getPath() + path)
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            WebSocket ws = r.result();
-                            ws.textMessageHandler(msg -> {
-                                message.add(msg);
-                            });
-                            ws.writeTextMessage(payload);
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
+            client.connect(testUri.getPort(), testUri.getHost(), testUri.getPath() + path).onComplete(r -> {
+                if (r.succeeded()) {
+                    WebSocket ws = r.result();
+                    ws.textMessageHandler(msg -> {
+                        message.add(msg);
                     });
+                    ws.writeTextMessage(payload);
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             assertEquals(expected, message.poll(10, TimeUnit.SECONDS));
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get();

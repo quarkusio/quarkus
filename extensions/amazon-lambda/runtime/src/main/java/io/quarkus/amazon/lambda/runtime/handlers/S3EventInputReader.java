@@ -86,10 +86,9 @@ public class S3EventInputReader implements LambdaInputReader<S3Event> {
                 }
                 s3Entity = new S3EventNotification.S3Entity(configurationId, bucket, obj, schemaVersion);
             }
-            S3EventNotification.S3EventNotificationRecord r = new S3EventNotification.S3EventNotificationRecord(awsRegion,
-                    eventName, eventSource, eventTime,
-                    eventVersion, requestParameters,
-                    responseElements, s3Entity, userId);
+            S3EventNotification.S3EventNotificationRecord r = new S3EventNotification.S3EventNotificationRecord(
+                    awsRegion, eventName, eventSource, eventTime, eventVersion, requestParameters, responseElements,
+                    s3Entity, userId);
             list.add(r);
         }
         return new S3Event(list);

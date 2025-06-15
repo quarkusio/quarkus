@@ -54,11 +54,13 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
     }
 
     public ApplyHttpGetActionPortDecorator(String deployment, String container, Integer port, String probeKind) {
-        this(deployment, container, null, port, probeKind, port != null && (port == 443 || port == 8443) ? "HTTPS" : "HTTP"); // this is the original convention coming from dekorate
+        this(deployment, container, null, port, probeKind,
+                port != null && (port == 443 || port == 8443) ? "HTTPS" : "HTTP"); // this is the original convention
+                                                                                                                                      // coming from dekorate
     }
 
-    public ApplyHttpGetActionPortDecorator(String deployment, String container, String portName, Integer port, String probeKind,
-            String scheme) {
+    public ApplyHttpGetActionPortDecorator(String deployment, String container, String portName, Integer port,
+            String probeKind, String scheme) {
         this.deployment = deployment;
         this.container = container;
         this.portName = portName;
@@ -69,29 +71,24 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
 
     @Override
     public void visit(List<Map.Entry<String, Object>> path, HTTPGetActionFluent<?> action) {
-        boolean inMatchingProbe = probeKind == ANY || path.stream().map(e -> e.getKey()).anyMatch(i -> i.equals(probeKind));
+        boolean inMatchingProbe = probeKind == ANY
+                || path.stream().map(e -> e.getKey()).anyMatch(i -> i.equals(probeKind));
         if (!inMatchingProbe) {
             return;
         }
 
-        boolean inMatchingContainer = container == ANY || path.stream()
-                .map(e -> e.getValue())
-                .filter(v -> v instanceof ContainerBuilder)
-                .map(v -> (ContainerBuilder) v)
+        boolean inMatchingContainer = container == ANY || path.stream().map(e -> e.getValue())
+                .filter(v -> v instanceof ContainerBuilder).map(v -> (ContainerBuilder) v)
                 .anyMatch(c -> c.getName() != null && c.getName().equals(container));
 
         if (!inMatchingContainer) {
             return;
         }
 
-        boolean inMatchingResource = deployment == ANY || path.stream()
-                .map(e -> e.getValue())
-                .filter(v -> v instanceof Builder)
-                .map(v -> (Builder) v)
-                .map(b -> getMetadata(b))
-                .filter(m -> m.isPresent())
-                .map(Optional::get)
-                .anyMatch(m -> m.getName() != null && m.getName().equals(deployment));
+        boolean inMatchingResource = deployment == ANY
+                || path.stream().map(e -> e.getValue()).filter(v -> v instanceof Builder).map(v -> (Builder) v)
+                        .map(b -> getMetadata(b)).filter(m -> m.isPresent()).map(Optional::get)
+                        .anyMatch(m -> m.getName() != null && m.getName().equals(deployment));
 
         if (!inMatchingResource) {
             return;
@@ -118,14 +115,15 @@ public class ApplyHttpGetActionPortDecorator extends Decorator<HTTPGetActionFlue
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class, AbstractAddProbeDecorator.class };
+        return new Class[] { ResourceProvidingDecorator.class, AddSidecarDecorator.class,
+                AbstractAddProbeDecorator.class };
     }
 
     @Override
     public List<ConfigReference> getConfigReferences() {
         if (portName != null && probeKind != null) {
-            return List.of(buildConfigReference(joinProperties("ports." + portName),
-                    "httpGet.port", port, "The http port to use for the probe."));
+            return List.of(buildConfigReference(joinProperties("ports." + portName), "httpGet.port", port,
+                    "The http port to use for the probe."));
         }
 
         return Collections.emptyList();

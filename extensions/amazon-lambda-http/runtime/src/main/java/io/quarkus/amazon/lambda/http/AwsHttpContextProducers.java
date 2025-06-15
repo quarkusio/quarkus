@@ -35,7 +35,8 @@ public class AwsHttpContextProducers {
     @RequestScoped
     @Produces
     public APIGatewayV2HTTPEvent.RequestContext getHttpRequestContext() {
-        return (APIGatewayV2HTTPEvent.RequestContext) getContextObjects().get(APIGatewayV2HTTPEvent.RequestContext.class);
+        return (APIGatewayV2HTTPEvent.RequestContext) getContextObjects()
+                .get(APIGatewayV2HTTPEvent.RequestContext.class);
     }
 
     @Inject

@@ -128,16 +128,15 @@ public class SmallRyeContextPropagationRecorder {
         }
 
         // do what config we can here, but we need the runtime executor service to finish
-        builder = (SmallRyeContextManager.Builder) ContextManagerProvider.instance()
-                .getContextManagerBuilder();
+        builder = (SmallRyeContextManager.Builder) ContextManagerProvider.instance().getContextManagerBuilder();
         builder.withThreadContextProviders(discoveredProviders.toArray(new ThreadContextProvider[0]));
         builder.withContextManagerExtensions(discoveredExtensions.toArray(new ContextManagerExtension[0]));
 
         // During boot, if anyone is using CP, they will get no propagation and an error if they try to use
         // the executor. This is (so far) only for spring-cloud-config-client which uses Vert.x via Mutiny
         // to load config before we're ready for runtime init
-        SmallRyeContextManager.Builder noContextBuilder = (SmallRyeContextManager.Builder) ContextManagerProvider.instance()
-                .getContextManagerBuilder();
+        SmallRyeContextManager.Builder noContextBuilder = (SmallRyeContextManager.Builder) ContextManagerProvider
+                .instance().getContextManagerBuilder();
         noContextBuilder.withThreadContextProviders(new ThreadContextProvider[0]);
         noContextBuilder.withContextManagerExtensions(new ContextManagerExtension[0]);
         noContextBuilder.withDefaultExecutorService(NOPE_EXECUTOR_SERVICE);
@@ -154,14 +153,14 @@ public class SmallRyeContextPropagationRecorder {
         SmallRyeContextManager contextManager = builder.build();
 
         contextManagerProvider.registerContextManager(contextManager, Thread.currentThread().getContextClassLoader());
-        //needs to be late, as running threads can re-create an implicit one
+        // needs to be late, as running threads can re-create an implicit one
         shutdownContext.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
                 contextManagerProvider.releaseContextManager(contextManager);
             }
         });
-        //Avoid leaking the classloader:
+        // Avoid leaking the classloader:
         SmallRyeContextPropagationRecorder.builder = null;
     }
 
@@ -174,19 +173,22 @@ public class SmallRyeContextPropagationRecorder {
                         "no-ip") {
                     @Override
                     public void shutdown() {
-                        throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
+                        throw new IllegalStateException(
+                                "This executor is managed by the container and cannot be shut down.");
                     }
 
                     @Override
                     public List<Runnable> shutdownNow() {
-                        throw new IllegalStateException("This executor is managed by the container and cannot be shut down.");
+                        throw new IllegalStateException(
+                                "This executor is managed by the container and cannot be shut down.");
                     }
                 };
             }
         };
     }
 
-    public Supplier<Object> initializeConfiguredThreadContext(String[] cleared, String[] propagated, String[] unchanged) {
+    public Supplier<Object> initializeConfiguredThreadContext(String[] cleared, String[] propagated,
+            String[] unchanged) {
         return new Supplier<Object>() {
             @Override
             public Object get() {
@@ -200,8 +202,8 @@ public class SmallRyeContextPropagationRecorder {
         return new Supplier<Object>() {
             @Override
             public Object get() {
-                return ManagedExecutor.builder().propagated(propagated).cleared(cleared).maxAsync(maxAsync).maxQueued(maxQueued)
-                        .build();
+                return ManagedExecutor.builder().propagated(propagated).cleared(cleared).maxAsync(maxAsync)
+                        .maxQueued(maxQueued).build();
             }
         };
     }

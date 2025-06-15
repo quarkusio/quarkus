@@ -13,7 +13,6 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
  * Maps from the Quarkus {@link TenantResolver} to the Hibernate {@link CurrentTenantIdentifierResolver} model.
  *
  * @author Michael Schnell
- *
  */
 // TODO support other tenant ID types than String; see https://github.com/quarkusio/quarkus/issues/36831
 public final class HibernateCurrentTenantIdentifierResolver implements CurrentTenantIdentifierResolver<String> {
@@ -65,8 +64,8 @@ public final class HibernateCurrentTenantIdentifierResolver implements CurrentTe
     }
 
     private static TenantResolver tenantResolver(String persistenceUnitName) {
-        InjectableInstance<TenantResolver> instance = PersistenceUnitUtil.legacySingleExtensionInstanceForPersistenceUnit(
-                TenantResolver.class, persistenceUnitName);
+        InjectableInstance<TenantResolver> instance = PersistenceUnitUtil
+                .legacySingleExtensionInstanceForPersistenceUnit(TenantResolver.class, persistenceUnitName);
         if (instance.isUnsatisfied()) {
             throw new IllegalStateException(String.format(Locale.ROOT,
                     "No instance of %1$s was found for persistence unit %2$s. "

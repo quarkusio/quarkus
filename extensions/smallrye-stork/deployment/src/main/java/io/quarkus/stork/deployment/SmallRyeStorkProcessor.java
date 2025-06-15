@@ -48,36 +48,31 @@ public class SmallRyeStorkProcessor {
 
     @BuildStep
     UnremovableBeanBuildItem unremoveableBeans() {
-        return UnremovableBeanBuildItem.beanTypes(
-                DotName.createSimple(ServiceDiscoveryProvider.class),
-                DotName.createSimple(ServiceDiscoveryLoader.class),
-                DotName.createSimple(LoadBalancerProvider.class),
-                DotName.createSimple(LoadBalancerLoader.class),
-                DotName.createSimple(ServiceRegistrarProvider.class),
+        return UnremovableBeanBuildItem.beanTypes(DotName.createSimple(ServiceDiscoveryProvider.class),
+                DotName.createSimple(ServiceDiscoveryLoader.class), DotName.createSimple(LoadBalancerProvider.class),
+                DotName.createSimple(LoadBalancerLoader.class), DotName.createSimple(ServiceRegistrarProvider.class),
                 DotName.createSimple(ServiceRegistrarLoader.class));
     }
 
     /**
-     * This build step is the fix for <a href="https://github.com/quarkusio/quarkus/issues/24444">#24444</a>.
-     * Because Stork itself cannot depend on Quarkus, and we do not want to have extensions for all the service
-     * discovery and load-balancer providers, we work around the issue by detecting when the kubernetes service
-     * discovery is used and if the kubernetes extension is used.
+     * This build step is the fix for <a href="https://github.com/quarkusio/quarkus/issues/24444">#24444</a>. Because
+     * Stork itself cannot depend on Quarkus, and we do not want to have extensions for all the service discovery and
+     * load-balancer providers, we work around the issue by detecting when the kubernetes service discovery is used and
+     * if the kubernetes extension is used.
      */
     @BuildStep
     @Produce(AlwaysBuildItem.class)
-    void checkThatTheKubernetesExtensionIsUsedWhenKubernetesServiceDiscoveryInOnTheClasspath(Capabilities capabilities) {
+    void checkThatTheKubernetesExtensionIsUsedWhenKubernetesServiceDiscoveryInOnTheClasspath(
+            Capabilities capabilities) {
         if (QuarkusClassLoader.isClassPresentAtRuntime(KUBERNETES_SERVICE_DISCOVERY_PROVIDER)) {
             if (!capabilities.isPresent(Capability.KUBERNETES_CLIENT)) {
                 LOGGER.warn(
                         "The application is using the Stork Kubernetes Service Discovery provider but does not depend on the `quarkus-kubernetes-client` extension. "
-                                +
-                                "It is highly recommended to use the `io.quarkus:quarkus-kubernetes-client` extension with the Kubernetes service discovery. \n"
-                                +
-                                "To add this extension:" +
-                                "\n - with the quarkus CLI, run: `quarkus ext add io.quarkus:quarkus-kubernetes-client`" +
-                                "\n - with Apache Maven, run: `./mvnw quarkus:add-extension -Dextensions=\"io.quarkus:quarkus-kubernetes-client\"`"
-                                +
-                                "\n - or just add the `io.quarkus:quarkus-kubernetes-client` dependency to the project");
+                                + "It is highly recommended to use the `io.quarkus:quarkus-kubernetes-client` extension with the Kubernetes service discovery. \n"
+                                + "To add this extension:"
+                                + "\n - with the quarkus CLI, run: `quarkus ext add io.quarkus:quarkus-kubernetes-client`"
+                                + "\n - with Apache Maven, run: `./mvnw quarkus:add-extension -Dextensions=\"io.quarkus:quarkus-kubernetes-client\"`"
+                                + "\n - or just add the `io.quarkus:quarkus-kubernetes-client` dependency to the project");
             }
         }
     }
@@ -93,7 +88,8 @@ public class SmallRyeStorkProcessor {
     }
 
     private static final class AlwaysBuildItem extends EmptyBuildItem {
-        // Just here to be sure we run the `checkThatTheKubernetesExtensionIsUsedWhenKubernetesServiceDiscoveryInOnTheClasspath` build step.
+        // Just here to be sure we run the
+        // `checkThatTheKubernetesExtensionIsUsedWhenKubernetesServiceDiscoveryInOnTheClasspath` build step.
     }
 
 }

@@ -26,16 +26,15 @@ public interface OidcBuildTimeConfig {
     DevUiConfig devui();
 
     /**
-     * Enable the registration of the Default TokenIntrospection and UserInfo Cache implementation bean.
-     * Note: This only enables the default implementation. It requires configuration to be activated.
-     * See {@link OidcConfig#tokenCache}.
+     * Enable the registration of the Default TokenIntrospection and UserInfo Cache implementation bean. Note: This only
+     * enables the default implementation. It requires configuration to be activated. See {@link OidcConfig#tokenCache}.
      */
     @WithDefault("true")
     boolean defaultTokenCacheEnabled();
 
     /**
-     * Whether the OIDC extension should automatically register a health check for OIDC tenants
-     * when a Health Check capability is present.
+     * Whether the OIDC extension should automatically register a health check for OIDC tenants when a Health Check
+     * capability is present.
      */
     @WithName("health.enabled")
     @WithDefault("false")

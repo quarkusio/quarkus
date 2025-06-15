@@ -44,8 +44,8 @@ public final class MessageBundleBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Merge candidates are localized files used as a supplementary source of message templates
-     * not specified by localized interfaces.
+     * Merge candidates are localized files used as a supplementary source of message templates not specified by
+     * localized interfaces.
      *
      * @return locale -> localized file {@link Path}
      */

@@ -92,14 +92,15 @@ public class DefaultSchemaConfigTest {
             }
 
             @Override
-            boolean isPulsarConnector(List<ConnectorManagedChannelBuildItem> list, boolean incoming, String channelName) {
+            boolean isPulsarConnector(List<ConnectorManagedChannelBuildItem> list, boolean incoming,
+                    String channelName) {
                 return true;
             }
         };
         RecorderContext rcMock = Mockito.mock(RecorderContext.class);
         Mockito.when(rcMock.classProxy(Mockito.anyString())).thenAnswer(a -> Class.forName(a.getArgument(0)));
-        SyntheticBeanBuilder syntheticBean = new SyntheticBeanBuilder(syntheticBeans::add,
-                new SchemaProviderRecorder(), rcMock) {
+        SyntheticBeanBuilder syntheticBean = new SyntheticBeanBuilder(syntheticBeans::add, new SchemaProviderRecorder(),
+                rcMock) {
             @Override
             void produceSyntheticBeanSchema(BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItem,
                     RuntimeValue<?> runtimeValue, String schemaId, Type type) {
@@ -120,13 +121,11 @@ public class DefaultSchemaConfigTest {
         };
 
         try {
-            new PulsarSchemaDiscoveryProcessor().discoverDefaultSerdeConfig(discovery,
-                    Collections.emptyList(),
+            new PulsarSchemaDiscoveryProcessor().discoverDefaultSerdeConfig(discovery, Collections.emptyList(),
                     configs::add, syntheticBean);
 
-            assertThat(configs)
-                    .extracting(RunTimeConfigurationDefaultBuildItem::getKey, RunTimeConfigurationDefaultBuildItem::getValue)
-                    .containsExactlyInAnyOrder(expectations);
+            assertThat(configs).extracting(RunTimeConfigurationDefaultBuildItem::getKey,
+                    RunTimeConfigurationDefaultBuildItem::getValue).containsExactlyInAnyOrder(expectations);
 
             assertThat(syntheticBean.alreadyGeneratedSchema).containsExactlyInAnyOrderEntriesOf(generatedSchemas);
         } finally {
@@ -1449,7 +1448,8 @@ public class DefaultSchemaConfigTest {
 
         @Incoming("channel30")
         @Outgoing("channel31")
-        Publisher<OutgoingMessage<java.nio.ByteBuffer>> method26(org.apache.pulsar.client.api.Message<java.util.UUID> msg) {
+        Publisher<OutgoingMessage<java.nio.ByteBuffer>> method26(
+                org.apache.pulsar.client.api.Message<java.util.UUID> msg) {
             return null;
         }
 
@@ -1503,7 +1503,8 @@ public class DefaultSchemaConfigTest {
 
         @Incoming("channel62")
         @Outgoing("channel63")
-        Multi<OutgoingMessage<java.nio.ByteBuffer>> method42(Multi<org.apache.pulsar.client.api.Message<java.util.UUID>> msg) {
+        Multi<OutgoingMessage<java.nio.ByteBuffer>> method42(
+                Multi<org.apache.pulsar.client.api.Message<java.util.UUID>> msg) {
             return null;
         }
     }
@@ -1800,17 +1801,13 @@ public class DefaultSchemaConfigTest {
         };
         // @formatter:on
 
-        doTest(new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("test", Map.of(
-                        "mp.messaging.connector.smallrye-pulsar.schema", "foo.Baz")) {
-                })
-                .build(), expectations1, Map.of(), ConnectorConfigNotOverriden.class);
+        doTest(new SmallRyeConfigBuilder().withSources(
+                new MapBackedConfigSource("test", Map.of("mp.messaging.connector.smallrye-pulsar.schema", "foo.Baz")) {
+                }).build(), expectations1, Map.of(), ConnectorConfigNotOverriden.class);
 
-        doTest(new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("test", Map.of(
-                        "mp.messaging.connector.smallrye-pulsar.schema", "foo.Baz")) {
-                })
-                .build(), expectations2, Map.of(), ConnectorConfigNotOverriden.class);
+        doTest(new SmallRyeConfigBuilder().withSources(
+                new MapBackedConfigSource("test", Map.of("mp.messaging.connector.smallrye-pulsar.schema", "foo.Baz")) {
+                }).build(), expectations2, Map.of(), ConnectorConfigNotOverriden.class);
     }
 
     private static class ConnectorConfigNotOverriden {
@@ -1894,7 +1891,8 @@ public class DefaultSchemaConfigTest {
 
         doTest(expectations3, generatedSchemas3, CustomSerdeImplementation.class, CustomDto.class);
 
-        doTest(expectations4, generatedSchemas4, CustomSerdeImplementation.class, CustomDto.class, CustomInterface.class);
+        doTest(expectations4, generatedSchemas4, CustomSerdeImplementation.class, CustomDto.class,
+                CustomInterface.class);
     }
 
     private static class CustomDto {

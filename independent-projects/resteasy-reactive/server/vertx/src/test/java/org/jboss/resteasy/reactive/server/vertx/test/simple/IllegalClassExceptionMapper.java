@@ -45,7 +45,8 @@ public class IllegalClassExceptionMapper implements ExceptionMapper<Incompatible
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (method.equals(name)) {
                 System.err.println("Match for method " + name + " " + descriptor);
@@ -68,7 +69,8 @@ public class IllegalClassExceptionMapper implements ExceptionMapper<Incompatible
             System.err.println("IncompatibleClassChangeError for: " + classname + " dumping its bytecode:");
             dumpClass(classname, null);
             StackTraceElement stackTraceElement = exception.getStackTrace()[0];
-            System.err.println("The call that triggered the error is at: " + stackTraceElement + " so dumping its bytecode:");
+            System.err.println(
+                    "The call that triggered the error is at: " + stackTraceElement + " so dumping its bytecode:");
             dumpClass(stackTraceElement.getClassName(), stackTraceElement.getMethodName());
         }
         StringWriter writer = new StringWriter();

@@ -22,17 +22,16 @@ public interface KafkaBuildTimeConfig {
     /**
      * Whether to enable Snappy in native mode.
      * <p>
-     * Note that Snappy requires GraalVM 21+ and embeds a native library in the native executable.
-     * This library is unpacked and loaded when the application starts.
+     * Note that Snappy requires GraalVM 21+ and embeds a native library in the native executable. This library is
+     * unpacked and loaded when the application starts.
      */
     @WithName("snappy.enabled")
     @WithDefault("false")
     boolean snappyEnabled();
 
     /**
-     * Whether to load the Snappy native library from the shared classloader.
-     * This setting is only used in tests if the tests are using different profiles, which would lead to
-     * unsatisfied link errors when loading Snappy.
+     * Whether to load the Snappy native library from the shared classloader. This setting is only used in tests if the
+     * tests are using different profiles, which would lead to unsatisfied link errors when loading Snappy.
      */
     @WithName("snappy.load-from-shared-classloader")
     @WithDefault("false")

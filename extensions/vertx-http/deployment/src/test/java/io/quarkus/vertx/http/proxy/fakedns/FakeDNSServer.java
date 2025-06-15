@@ -126,50 +126,43 @@ public final class FakeDNSServer extends DnsServer {
 
     public FakeDNSServer testResolveMX(final int prio, final String mxRecord) {
         return store(questionRecord -> Collections.singleton(mx("vertx.io", 100)
-                .set(DnsAttribute.MX_PREFERENCE, String.valueOf(prio))
-                .set(DnsAttribute.DOMAIN_NAME, mxRecord)));
+                .set(DnsAttribute.MX_PREFERENCE, String.valueOf(prio)).set(DnsAttribute.DOMAIN_NAME, mxRecord)));
     }
 
     public FakeDNSServer testResolveTXT(final String txt) {
-        return store(questionRecord -> Collections.singleton(txt("vertx.io", 100)
-                .set(DnsAttribute.CHARACTER_STRING, txt)));
+        return store(
+                questionRecord -> Collections.singleton(txt("vertx.io", 100).set(DnsAttribute.CHARACTER_STRING, txt)));
     }
 
     public FakeDNSServer testResolveNS(final String ns) {
-        return store(questionRecord -> Collections.singleton(ns("vertx.io", 100)
-                .set(DnsAttribute.DOMAIN_NAME, ns)));
+        return store(questionRecord -> Collections.singleton(ns("vertx.io", 100).set(DnsAttribute.DOMAIN_NAME, ns)));
     }
 
     public FakeDNSServer testResolveCNAME(final String cname) {
-        return store(questionRecord -> Collections.singleton(cname("vertx.io", 100)
-                .set(DnsAttribute.DOMAIN_NAME, cname)));
+        return store(
+                questionRecord -> Collections.singleton(cname("vertx.io", 100).set(DnsAttribute.DOMAIN_NAME, cname)));
     }
 
     public FakeDNSServer testResolvePTR(final String ptr) {
-        return store(questionRecord -> Collections.singleton(ptr("vertx.io", 100)
-                .set(DnsAttribute.DOMAIN_NAME, ptr)));
+        return store(questionRecord -> Collections.singleton(ptr("vertx.io", 100).set(DnsAttribute.DOMAIN_NAME, ptr)));
     }
 
     public FakeDNSServer testResolveSRV(String name, int priority, int weight, int port, String target) {
-        return store(questionRecord -> Collections.singleton(srv(name, 100)
-                .set(DnsAttribute.SERVICE_PRIORITY, priority)
-                .set(DnsAttribute.SERVICE_WEIGHT, weight)
-                .set(DnsAttribute.SERVICE_PORT, port)
-                .set(DnsAttribute.DOMAIN_NAME, target)));
+        return store(questionRecord -> Collections.singleton(
+                srv(name, 100).set(DnsAttribute.SERVICE_PRIORITY, priority).set(DnsAttribute.SERVICE_WEIGHT, weight)
+                        .set(DnsAttribute.SERVICE_PORT, port).set(DnsAttribute.DOMAIN_NAME, target)));
     }
 
     public FakeDNSServer testResolveDNAME(final String dname) {
-        return store(questionRecord -> Collections.singleton(dname("vertx.io", 100)
-                .set(DnsAttribute.DOMAIN_NAME, dname)));
+        return store(
+                questionRecord -> Collections.singleton(dname("vertx.io", 100).set(DnsAttribute.DOMAIN_NAME, dname)));
     }
 
-    public FakeDNSServer testResolveSRV2(final int priority, final int weight, final int basePort, final String target) {
-        return store(questionRecord -> IntStream
-                .range(0, 2)
-                .mapToObj(i -> srv(target, 100)
-                        .set(DnsAttribute.SERVICE_PRIORITY, priority)
-                        .set(DnsAttribute.SERVICE_WEIGHT, weight)
-                        .set(DnsAttribute.SERVICE_PORT, basePort + i)
+    public FakeDNSServer testResolveSRV2(final int priority, final int weight, final int basePort,
+            final String target) {
+        return store(questionRecord -> IntStream.range(0, 2)
+                .mapToObj(i -> srv(target, 100).set(DnsAttribute.SERVICE_PRIORITY, priority)
+                        .set(DnsAttribute.SERVICE_WEIGHT, weight).set(DnsAttribute.SERVICE_PORT, basePort + i)
                         .set(DnsAttribute.DOMAIN_NAME, "svc" + i + ".vertx.io."))
                 .collect(Collectors.toSet()));
     }
@@ -288,8 +281,7 @@ public final class FakeDNSServer extends DnsServer {
     }
 
     public FakeDNSServer testReverseLookup(final String ptr) {
-        return store(questionRecord -> Collections.singleton(ptr(ptr, 100)
-                .set(DnsAttribute.DOMAIN_NAME, "vertx.io")));
+        return store(questionRecord -> Collections.singleton(ptr(ptr, 100).set(DnsAttribute.DOMAIN_NAME, "vertx.io")));
     }
 
     public FakeDNSServer testResolveASameServer(final String ipAddress) {
@@ -298,7 +290,8 @@ public final class FakeDNSServer extends DnsServer {
 
     public FakeDNSServer testLookup4CNAME(final String cname, final String ip) {
         return store(questionRecord -> {
-            // use LinkedHashSet since the order of the result records has to be preserved to make sure the unit test fails
+            // use LinkedHashSet since the order of the result records has to be preserved to make sure the unit test
+            // fails
             Set<ResourceRecord> set = new LinkedHashSet<>();
             ResourceRecordModifier rm = new ResourceRecordModifier();
             set.add(cname("vertx.io", 100).set(DnsAttribute.DOMAIN_NAME, cname));
@@ -322,9 +315,11 @@ public final class FakeDNSServer extends DnsServer {
             public void sessionCreated(IoSession session) {
                 // Use our own codec to support AAAA testing
                 if (session.getTransportMetadata().isConnectionless()) {
-                    session.getFilterChain().addFirst("codec", new ProtocolCodecFilter(new TestDnsProtocolUdpCodecFactory()));
+                    session.getFilterChain().addFirst("codec",
+                            new ProtocolCodecFilter(new TestDnsProtocolUdpCodecFactory()));
                 } else {
-                    session.getFilterChain().addFirst("codec", new ProtocolCodecFilter(new TestDnsProtocolTcpCodecFactory()));
+                    session.getFilterChain().addFirst("codec",
+                            new ProtocolCodecFilter(new TestDnsProtocolTcpCodecFactory()));
                 }
             }
 
@@ -425,7 +420,8 @@ public final class FakeDNSServer extends DnsServer {
     private void encode(DnsMessage dnsMessage, IoBuffer buf) {
 
         // Hack
-        if (dnsMessage.getAnswerRecords().size() == 1 && dnsMessage.getAnswerRecords().get(0) instanceof VertxResourceRecord) {
+        if (dnsMessage.getAnswerRecords().size() == 1
+                && dnsMessage.getAnswerRecords().get(0) instanceof VertxResourceRecord) {
             VertxResourceRecord vrr = (VertxResourceRecord) dnsMessage.getAnswerRecords().get(0);
 
             DnsMessageModifier modifier = new DnsMessageModifier();

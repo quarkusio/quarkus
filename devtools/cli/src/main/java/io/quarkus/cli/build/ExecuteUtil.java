@@ -44,11 +44,8 @@ public class ExecuteUtil {
         int exit = SOFTWARE;
         if (output.isCliTest()) {
             // We have to capture IO differently in tests..
-            Process process = new ProcessBuilder()
-                    .command(args)
-                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
-                    .directory(parentDir)
-                    .start();
+            Process process = new ProcessBuilder().command(args).redirectInput(ProcessBuilder.Redirect.INHERIT)
+                    .directory(parentDir).start();
 
             // Drain the output/errors streams
             ExecutorService service = Executors.newFixedThreadPool(2);
@@ -65,11 +62,7 @@ public class ExecuteUtil {
 
             exit = process.exitValue();
         } else {
-            Process process = new ProcessBuilder()
-                    .command(args)
-                    .inheritIO()
-                    .directory(parentDir)
-                    .start();
+            Process process = new ProcessBuilder().command(args).inheritIO().directory(parentDir).start();
             exit = process.waitFor();
         }
 

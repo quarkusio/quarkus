@@ -17,10 +17,7 @@ public class ResteasyMultipartProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem filter() {
-        return new AdditionalBeanBuildItem.Builder()
-                .addBeanClass(MultipartInputPartConfigContainerRequestFilter.class)
-                .setUnremovable()
-                .setDefaultScope(DotNames.SINGLETON)
-                .build();
+        return new AdditionalBeanBuildItem.Builder().addBeanClass(MultipartInputPartConfigContainerRequestFilter.class)
+                .setUnremovable().setDefaultScope(DotNames.SINGLETON).build();
     }
 }

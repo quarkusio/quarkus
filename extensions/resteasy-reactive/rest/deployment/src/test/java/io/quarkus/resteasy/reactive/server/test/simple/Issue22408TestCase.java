@@ -20,19 +20,16 @@ import io.restassured.RestAssured;
 public class Issue22408TestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(MyFilters.class, MyResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(MyFilters.class, MyResource.class);
+        }
+    });
 
     @Test
     public void simpleTest() {
-        RestAssured.get("/")
-                .then().statusCode(204);
+        RestAssured.get("/").then().statusCode(204);
     }
 
     public static class MyFilters {

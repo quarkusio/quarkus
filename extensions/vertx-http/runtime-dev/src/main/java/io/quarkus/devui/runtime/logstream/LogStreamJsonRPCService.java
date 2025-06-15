@@ -18,7 +18,8 @@ import io.vertx.core.json.JsonObject;
  * This makes the log file available via json RPC
  */
 public class LogStreamJsonRPCService {
-    private static final org.jboss.logging.Logger LOG = org.jboss.logging.Logger.getLogger(LogStreamJsonRPCService.class);
+    private static final org.jboss.logging.Logger LOG = org.jboss.logging.Logger
+            .getLogger(LogStreamJsonRPCService.class);
 
     @NonBlocking
     public String ping() {
@@ -57,10 +58,8 @@ public class LogStreamJsonRPCService {
         LogContext logContext = LogContext.getLogContext();
         if (loggerName != null && !loggerName.isEmpty()) {
             Logger logger = logContext.getLogger(loggerName);
-            return JsonObject.of(
-                    "name", loggerName,
-                    "effectiveLevel", getEffectiveLogLevel(logger),
-                    "configuredLevel", getConfiguredLogLevel(logger));
+            return JsonObject.of("name", loggerName, "effectiveLevel", getEffectiveLogLevel(logger), "configuredLevel",
+                    getConfiguredLogLevel(logger));
         }
         return null;
     }

@@ -43,8 +43,10 @@ public class SqsEventHandler implements EventHandler<SQSEvent, SQSMessage, SQSBa
         if (!amazonConfig.advancedEventHandling().sqs().reportBatchItemFailures()) {
             return null;
         }
-        return SQSBatchResponse.builder().withBatchItemFailures(
-                failures.stream().map(id -> BatchItemFailure.builder().withItemIdentifier(id).build()).toList()).build();
+        return SQSBatchResponse.builder()
+                .withBatchItemFailures(
+                        failures.stream().map(id -> BatchItemFailure.builder().withItemIdentifier(id).build()).toList())
+                .build();
     }
 
     @Override

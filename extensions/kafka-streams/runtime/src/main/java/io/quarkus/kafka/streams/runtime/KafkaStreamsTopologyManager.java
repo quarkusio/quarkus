@@ -44,13 +44,12 @@ public class KafkaStreamsTopologyManager {
             } else {
                 this.sourceTopics = runtimeConfig.topics().orElse(Collections.emptyList());
                 this.sourcePatterns = runtimeConfig.topicPatterns().orElse(Collections.emptyList()).stream()
-                        .map(Pattern::compile)
-                        .toList();
+                        .map(Pattern::compile).toList();
             }
             if (sourceTopics.isEmpty() && sourcePatterns.isEmpty()) {
                 throw new IllegalArgumentException(
-                        "No topics or topic patterns specified; cannot wait for topics to be created, " +
-                                "in order to disable topics creation check set `quarkus.kafka-streams.topics-check-timeout=0`");
+                        "No topics or topic patterns specified; cannot wait for topics to be created, "
+                                + "in order to disable topics creation check set `quarkus.kafka-streams.topics-check-timeout=0`");
             }
         } else {
             LOGGER.infof("Kafka Streams will not wait for topics to be created");
@@ -124,10 +123,8 @@ public class KafkaStreamsTopologyManager {
             Set<String> existingTopics = topics.names().get(topicsTimeout.toMillis(), TimeUnit.MILLISECONDS);
 
             missing.removeAll(existingTopics);
-            missing.addAll(sourcePatterns.stream()
-                    .filter(p -> existingTopics.stream().noneMatch(p.asPredicate()))
-                    .map(Pattern::pattern)
-                    .toList());
+            missing.addAll(sourcePatterns.stream().filter(p -> existingTopics.stream().noneMatch(p.asPredicate()))
+                    .map(Pattern::pattern).toList());
         } catch (ExecutionException | TimeoutException e) {
             LOGGER.error("Failed to get topic names from broker", e);
         }
@@ -144,7 +141,8 @@ public class KafkaStreamsTopologyManager {
 
                 if (existingTopics.containsAll(sourceTopics)
                         && sourcePatterns.stream().allMatch(p -> existingTopics.stream().anyMatch(p.asPredicate()))) {
-                    LOGGER.debugf("All expected topics %s and topics matching patterns %s ", sourceTopics, sourcePatterns);
+                    LOGGER.debugf("All expected topics %s and topics matching patterns %s ", sourceTopics,
+                            sourcePatterns);
                     return;
                 } else {
                     Set<String> missingTopics = new HashSet<>(sourceTopics);

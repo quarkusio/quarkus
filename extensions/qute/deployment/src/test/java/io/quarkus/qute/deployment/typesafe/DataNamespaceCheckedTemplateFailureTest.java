@@ -15,10 +15,9 @@ public class DataNamespaceCheckedTemplateFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Templates.class, Item.class, OtherItem.class)
-                    .addAsResource(new StringAsset("Hello {data:item.unknownProperty}!"),
-                            "templates/DataNamespaceCheckedTemplateFailureTest/greetings.txt"))
+            .withApplicationRoot((jar) -> jar.addClasses(Templates.class, Item.class, OtherItem.class).addAsResource(
+                    new StringAsset("Hello {data:item.unknownProperty}!"),
+                    "templates/DataNamespaceCheckedTemplateFailureTest/greetings.txt"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

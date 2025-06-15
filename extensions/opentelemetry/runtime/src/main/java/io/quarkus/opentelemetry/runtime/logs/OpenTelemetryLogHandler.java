@@ -45,7 +45,8 @@ public class OpenTelemetryLogHandler extends ExtHandler {
 
         final Config config = ConfigProvider.getConfig();
         this.logFileEnabled = config.getOptionalValue("quarkus.log.file.enable", Boolean.class).orElse(false);
-        this.logFilePath = this.logFileEnabled ? config.getOptionalValue("quarkus.log.file.path", String.class).orElse(null)
+        this.logFilePath = this.logFileEnabled
+                ? config.getOptionalValue("quarkus.log.file.path", String.class).orElse(null)
                 : null;
     }
 
@@ -54,15 +55,11 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         if (openTelemetry == null) {
             return; // might happen at shutdown
         }
-        final LogRecordBuilder logRecordBuilder = openTelemetry.getLogsBridge()
-                .loggerBuilder(INSTRUMENTATION_NAME)
-                .build().logRecordBuilder()
-                .setTimestamp(Instant.now())
-                .setObservedTimestamp(record.getInstant());
+        final LogRecordBuilder logRecordBuilder = openTelemetry.getLogsBridge().loggerBuilder(INSTRUMENTATION_NAME)
+                .build().logRecordBuilder().setTimestamp(Instant.now()).setObservedTimestamp(record.getInstant());
 
         if (record.getLevel() != null) {
-            logRecordBuilder.setSeverity(mapSeverity(record.getLevel()))
-                    .setSeverityText(record.getLevel().getName());
+            logRecordBuilder.setSeverity(mapSeverity(record.getLevel())).setSeverityText(record.getLevel().getName());
         }
 
         if (record.getMessage() != null) {
@@ -91,9 +88,7 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         if (mdcCopy != null) {
             mdcCopy.forEach((k, v) -> {
                 // ignore duplicated span data already in the MDC
-                if (!k.equalsIgnoreCase("spanid") &&
-                        !k.equalsIgnoreCase("traceid") &&
-                        !k.equalsIgnoreCase("sampled")) {
+                if (!k.equalsIgnoreCase("spanid") && !k.equalsIgnoreCase("traceid") && !k.equalsIgnoreCase("sampled")) {
                     attributes.put(AttributeKey.stringKey(k), v);
                 }
             });
@@ -102,13 +97,13 @@ public class OpenTelemetryLogHandler extends ExtHandler {
         if (record.getThrown() != null) {
             // render as a standard out string
             // TODO make bytes configurable
-            try (StringWriter sw = new StringWriter(1024); PrintWriter pw = new PrintWriter(sw)) {
+            try (StringWriter sw = new StringWriter(1024);
+                    PrintWriter pw = new PrintWriter(sw)) {
                 record.getThrown().printStackTrace(pw);
                 sw.flush();
                 attributes.put(EXCEPTION_STACKTRACE, sw.toString());
             } catch (Throwable t) {
-                attributes.put(EXCEPTION_STACKTRACE,
-                        "Unable to get the stacktrace of the exception");
+                attributes.put(EXCEPTION_STACKTRACE, "Unable to get the stacktrace of the exception");
             }
             attributes.put(EXCEPTION_TYPE, record.getThrown().getClass().getName());
             attributes.put(EXCEPTION_MESSAGE, record.getThrown().getMessage());

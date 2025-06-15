@@ -55,9 +55,8 @@ public class MultipartResponseTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    (jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class, TestJacksonBasicMessageBodyWriter.class,
-                            PathFileDownload.class));
+            .withApplicationRoot((jar) -> jar.addClasses(TestJacksonBasicMessageBodyReader.class,
+                    TestJacksonBasicMessageBodyWriter.class, PathFileDownload.class));
 
     @Test
     void shouldParseMultipartResponse() {
@@ -88,7 +87,8 @@ public class MultipartResponseTest {
     }
 
     @Test
-    void shouldParseCompletionStageMultipartResponse() throws ExecutionException, InterruptedException, TimeoutException {
+    void shouldParseCompletionStageMultipartResponse()
+            throws ExecutionException, InterruptedException, TimeoutException {
         Client client = createClient();
         MultipartData data = client.csGetFile().toCompletableFuture().get(10, TimeUnit.SECONDS);
         assertThat(data.file).exists();
@@ -166,12 +166,10 @@ public class MultipartResponseTest {
 
     @Test
     void shouldParseMultipartResponseWithClientBuilderApi() {
-        jakarta.ws.rs.client.Client client = ClientBuilder.newBuilder().register(new TestJacksonBasicMessageBodyReader())
-                .build();
-        MultipartDataForClientBuilder data = client.target(baseUri)
-                .path("/give-me-file")
-                .request(MediaType.MULTIPART_FORM_DATA)
-                .get(MultipartDataForClientBuilder.class);
+        jakarta.ws.rs.client.Client client = ClientBuilder.newBuilder()
+                .register(new TestJacksonBasicMessageBodyReader()).build();
+        MultipartDataForClientBuilder data = client.target(baseUri).path("/give-me-file")
+                .request(MediaType.MULTIPART_FORM_DATA).get(MultipartDataForClientBuilder.class);
         assertThat(data.file).exists();
         assertThat(data.name).isEqualTo("foo");
         assertThat(data.panda.weight).isEqualTo("huge");
@@ -263,8 +261,8 @@ public class MultipartResponseTest {
                     out.write(WOO_HOO_WOO_HOO_HOO.getBytes(StandardCharsets.UTF_8));
                 }
             }
-            return new MultipartData("foo", file, new Panda("huge", "medium", "happy"),
-                    1984, new int[] { 2008, 2011, 2014 });
+            return new MultipartData("foo", file, new Panda("huge", "medium", "happy"), 1984,
+                    new int[] { 2008, 2011, 2014 });
         }
 
         @GET

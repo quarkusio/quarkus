@@ -33,18 +33,14 @@ public class SecurityRealmsTestCase {
     public void testLegacyPropertiesSecurityRealm() throws IOException {
         InputStream usersStream = SecurityRealmsTestCase.class.getResourceAsStream("/test-users.properties");
         InputStream rolesStream = SecurityRealmsTestCase.class.getResourceAsStream("/test-roles.properties");
-        LegacyPropertiesSecurityRealm realm = LegacyPropertiesSecurityRealm.builder()
-                .setPlainText(true)
-                .setDefaultRealm("default")
-                .setUsersStream(usersStream)
-                .setGroupsStream(rolesStream)
+        LegacyPropertiesSecurityRealm realm = LegacyPropertiesSecurityRealm.builder().setPlainText(true)
+                .setDefaultRealm("default").setUsersStream(usersStream).setGroupsStream(rolesStream)
                 .setProviders(new Supplier<Provider[]>() {
                     @Override
                     public Provider[] get() {
                         return new Provider[] { new WildFlyElytronPasswordProvider() };
                     }
-                })
-                .build();
+                }).build();
         RealmIdentity scott = realm.getRealmIdentity(new NamePrincipal("scott"));
         PasswordCredential pass = scott.getCredential(PasswordCredential.class);
         ClearPassword clear = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, "jb0ss".toCharArray());

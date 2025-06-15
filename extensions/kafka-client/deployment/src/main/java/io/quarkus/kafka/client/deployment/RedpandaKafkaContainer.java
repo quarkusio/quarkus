@@ -15,8 +15,7 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.Labels;
 
 /**
- * Container configuring and starting the Redpanda broker.
- * See <a href=
+ * Container configuring and starting the Redpanda broker. See <a href=
  * "https://docs.redpanda.com/current/get-started/quick-start/">https://docs.redpanda.com/current/get-started/quick-start/</a>
  */
 final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContainer> {
@@ -46,8 +45,7 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
         withCreateContainerCmdModifier(cmd -> {
             cmd.withEntrypoint("sh");
         });
-        withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; sleep 0.1; " +
-                STARTER_SCRIPT);
+        withCommand("-c", "while [ ! -f " + STARTER_SCRIPT + " ]; do sleep 0.1; done; sleep 0.1; " + STARTER_SCRIPT);
         waitingFor(Wait.forLogMessage(".*Started Kafka API server.*", 1));
         this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redpanda");
     }
@@ -68,10 +66,8 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
             command += "--set redpanda.enable_transactions=true ";
         }
 
-        //noinspection OctalInteger
-        copyFileToContainer(
-                Transferable.of(command.getBytes(StandardCharsets.UTF_8), 0777),
-                STARTER_SCRIPT);
+        // noinspection OctalInteger
+        copyFileToContainer(Transferable.of(command.getBytes(StandardCharsets.UTF_8), 0777), STARTER_SCRIPT);
     }
 
     private String getKafkaAddresses() {

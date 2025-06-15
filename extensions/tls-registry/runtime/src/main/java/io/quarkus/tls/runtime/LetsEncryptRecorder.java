@@ -43,12 +43,13 @@ public class LetsEncryptRecorder {
     /**
      * Represents an ACME HTTP_01 Challenge.
      * <p>
-     * Instances are generally created from JSON objects containing the `challenge-resource` (the token) and `challenge-content`
-     * fields.
-     * If the token or the challenge is null, the challenge is considered invalid.
+     * Instances are generally created from JSON objects containing the `challenge-resource` (the token) and
+     * `challenge-content` fields. If the token or the challenge is null, the challenge is considered invalid.
      *
-     * @param token the token - part of the URL to verify the challenge
-     * @param challenge the challenge to be served
+     * @param token
+     *        the token - part of the URL to verify the challenge
+     * @param challenge
+     *        the challenge to be served
      */
     private record AcmeChallenge(String token, String challenge) {
         boolean matches(String t) {
@@ -70,13 +71,12 @@ public class LetsEncryptRecorder {
     }
 
     /**
-     * Returns a handler that serves the Let's Encrypt challenge.
-     * The route only accept `GET` request.
-     * If a challenge has not been set, it returns a 404 status code.
-     * If a challenge has been set, it returns the challenge content if the token matches, otherwise it returns a 404 status
-     * code.
+     * Returns a handler that serves the Let's Encrypt challenge. The route only accept `GET` request. If a challenge
+     * has not been set, it returns a 404 status code. If a challenge has been set, it returns the challenge content if
+     * the token matches, otherwise it returns a 404 status code.
      *
-     * @return the handler that serves the Let's Encrypt challenge, returns a 404 status code if the challenge is not set.
+     * @return the handler that serves the Let's Encrypt challenge, returns a 404 status code if the challenge is not
+     *         set.
      */
     public Handler<RoutingContext> challengeHandler() {
         return new Handler<RoutingContext>() {
@@ -112,10 +112,11 @@ public class LetsEncryptRecorder {
     /**
      * Cleans up the ACME Challenge.
      * <p>
-     * If the challenge has not been set or has already being cleared, it returns a 404 status code.
-     * Otherwise, it clears the challenge and returns a 204 status code.
+     * If the challenge has not been set or has already being cleared, it returns a 404 status code. Otherwise, it
+     * clears the challenge and returns a 204 status code.
      *
-     * @param rc the routing context
+     * @param rc
+     *        the routing context
      */
     public void cleanupChallenge(RoutingContext rc) {
         if (acmeChallenge.getAndSet(null) == null) {
@@ -132,11 +133,12 @@ public class LetsEncryptRecorder {
      * `challenge-resource` and `challenge-content` fields.
      * </p>
      * <p>
-     * Returns a 204 status code if the challenge has been set.
-     * Returns a 400 status code if the challenge is already set or the challenge is invalid.
+     * Returns a 204 status code if the challenge has been set. Returns a 400 status code if the challenge is already
+     * set or the challenge is invalid.
      * </p>
      *
-     * @param rc the routing context
+     * @param rc
+     *        the routing context
      */
     private void setupChallenge(RoutingContext rc) {
         AcmeChallenge challenge;
@@ -161,18 +163,18 @@ public class LetsEncryptRecorder {
     /**
      * Checks if the application is configured correctly to serve the Let's Encrypt challenge.
      * <p>
-     * It verifies that the application is configured to use HTTPS (either using the default configuration) or using
-     * the TLS configuration with the name indicated with the `key` query parameter.
+     * It verifies that the application is configured to use HTTPS (either using the default configuration) or using the
+     * TLS configuration with the name indicated with the `key` query parameter.
      * </p>
      * <p>
-     * Returns a 204 status code if the application is ready to serve the challenge (but the challenge is not yet configured),
-     * and if the application is configured properly.
-     * Returns a 200 status code if the challenge is already set, the response body contains the ACME challenge JSON
-     * representation (containing the `challenge-resource` and `challenge-content` fields).
-     * Returns a 503 status code if the application is not configured properly.
+     * Returns a 204 status code if the application is ready to serve the challenge (but the challenge is not yet
+     * configured), and if the application is configured properly. Returns a 200 status code if the challenge is already
+     * set, the response body contains the ACME challenge JSON representation (containing the `challenge-resource` and
+     * `challenge-content` fields). Returns a 503 status code if the application is not configured properly.
      * </p>
      *
-     * @param rc the routing context
+     * @param rc
+     *        the routing context
      */
     public void ready(RoutingContext rc) {
         String key = rc.request().getParam("key");

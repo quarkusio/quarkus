@@ -19,9 +19,8 @@
 package io.quarkus.vertx.http.runtime.filters.accesslog;
 
 /**
- * Interface that is used by the access log handler to send data to the log file manager.
- *
- * Implementations of this interface must be thread safe.
+ * Interface that is used by the access log handler to send data to the log file manager. Implementations of this
+ * interface must be thread safe.
  *
  * @author Stuart Douglas
  */

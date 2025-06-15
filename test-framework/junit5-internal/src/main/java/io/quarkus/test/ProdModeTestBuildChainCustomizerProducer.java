@@ -24,8 +24,7 @@ public class ProdModeTestBuildChainCustomizerProducer
             copiedTestContext.remove(QuarkusProdModeTest.BUILD_CONTEXT_BUILD_STEP_ENTRIES);
             Map<String, Object> entryContext = entry.getValue();
             String buildStepClassName = entry.getKey();
-            result.add(new ProdModeTestBuildChainBuilderConsumer(
-                    buildStepClassName,
+            result.add(new ProdModeTestBuildChainBuilderConsumer(buildStepClassName,
                     (List<String>) entryContext.get(QuarkusProdModeTest.BUILD_CONTEXT_BUILD_STEP_ENTRY_PRODUCES),
                     (List<String>) entryContext.get(QuarkusProdModeTest.BUILD_CONTEXT_BUILD_STEP_ENTRY_CONSUMES),
                     copiedTestContext));

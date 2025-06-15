@@ -39,7 +39,8 @@ public class ExtensionDescriptorTaskTest {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
-        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        File extensionPropertiesFile = new File(testProjectDir,
+                "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
 
         Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
@@ -79,11 +80,13 @@ public class ExtensionDescriptorTaskTest {
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
-        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        File extensionPropertiesFile = new File(testProjectDir,
+                "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
 
         Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
-        assertThat(extensionProperty).containsEntry("deployment-artifact", "custom.group:custom-deployment-artifact:0.1.0");
+        assertThat(extensionProperty).containsEntry("deployment-artifact",
+                "custom.group:custom-deployment-artifact:0.1.0");
     }
 
     @Test
@@ -93,7 +96,8 @@ public class ExtensionDescriptorTaskTest {
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
-        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        File extensionPropertiesFile = new File(testProjectDir,
+                "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
 
         Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
@@ -110,26 +114,28 @@ public class ExtensionDescriptorTaskTest {
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
-        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        File extensionPropertiesFile = new File(testProjectDir,
+                "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
 
         Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
         assertThat(extensionProperty).containsEntry("deployment-artifact", "org.acme:test-deployment:1.0.0");
-        assertThat(extensionProperty).containsEntry("parent-first-artifacts", "org.acme:ext-a:0.1.0,org.acme:ext-b:0.1.0");
+        assertThat(extensionProperty).containsEntry("parent-first-artifacts",
+                "org.acme:ext-a:0.1.0,org.acme:ext-b:0.1.0");
     }
 
     @Test
     public void shouldContainsRemoveResources() throws IOException {
         String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
-                "removedResources { \n" +
-                        "artifact('org.acme:acme-resources').resource('META-INF/a') \n" +
-                        "artifact('org.acme:acme-resources-two').resource('META-INF/b').resource('META-INF/c') \n" +
-                        "}\n");
+                "removedResources { \n" + "artifact('org.acme:acme-resources').resource('META-INF/a') \n"
+                        + "artifact('org.acme:acme-resources-two').resource('META-INF/b').resource('META-INF/c') \n"
+                        + "}\n");
 
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
-        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        File extensionPropertiesFile = new File(testProjectDir,
+                "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
 
         Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
@@ -144,8 +150,7 @@ public class ExtensionDescriptorTaskTest {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
         File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
         metaInfDir.mkdirs();
-        String description = "name: extension-name\n" +
-                "description: this is a sample extension\n";
+        String description = "name: extension-name\n" + "description: this is a sample extension\n";
         TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), description);
 
         TestUtils.runExtensionDescriptorTask(testProjectDir);
@@ -162,37 +167,33 @@ public class ExtensionDescriptorTaskTest {
     @Test
     public void shouldGenerateDescriptorWithCapabilities() throws IOException {
         String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
-                "capabilities { \n" +
-                        "   provides 'org.acme:ext-a:0.1.0' \n" +
-                        "   provides 'org.acme:ext-b:0.1.0' onlyIf(['org.acme:ext-b:0.1.0']) onlyIfNot(['org.acme:ext-c:0.1.0']) \n"
-                        +
-                        "   requires 'sunshine' onlyIf(['org.acme:ext-b:0.1.0']) \n" +
-                        "}\n");
+                "capabilities { \n" + "   provides 'org.acme:ext-a:0.1.0' \n"
+                        + "   provides 'org.acme:ext-b:0.1.0' onlyIf(['org.acme:ext-b:0.1.0']) onlyIfNot(['org.acme:ext-c:0.1.0']) \n"
+                        + "   requires 'sunshine' onlyIf(['org.acme:ext-b:0.1.0']) \n" + "}\n");
 
         TestUtils.writeFile(buildFile, buildFileContent);
         TestUtils.runExtensionDescriptorTask(testProjectDir);
 
-        File extensionPropertiesFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.properties");
+        File extensionPropertiesFile = new File(testProjectDir,
+                "build/resources/main/META-INF/quarkus-extension.properties");
         assertThat(extensionPropertiesFile).exists();
 
         Properties extensionProperty = TestUtils.readPropertyFile(extensionPropertiesFile.toPath());
         assertThat(extensionProperty).containsEntry("provides-capabilities",
                 "org.acme:ext-a:0.1.0,org.acme:ext-b:0.1.0?org.acme:ext-b:0.1.0?!org.acme:ext-c:0.1.0");
-        assertThat(extensionProperty).containsEntry("requires-capabilities",
-                "sunshine?org.acme:ext-b:0.1.0");
+        assertThat(extensionProperty).containsEntry("requires-capabilities", "sunshine?org.acme:ext-b:0.1.0");
     }
 
     /*
-     * This test will fail if run in an IDE without extra config - it needs an environment variable, and
-     * that is increasingly hard to do on Java 17+; see https://github.com/junit-pioneer/junit-pioneer/issues/509
+     * This test will fail if run in an IDE without extra config - it needs an environment variable, and that is
+     * increasingly hard to do on Java 17+; see https://github.com/junit-pioneer/junit-pioneer/issues/509
      */
     @Test
     public void shouldGenerateScmInformation() throws IOException {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
         File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
         metaInfDir.mkdirs();
-        String description = "name: extension-name\n" +
-                "description: this is a sample extension\n";
+        String description = "name: extension-name\n" + "description: this is a sample extension\n";
         TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), description);
 
         TestUtils.runExtensionDescriptorTask(testProjectDir);

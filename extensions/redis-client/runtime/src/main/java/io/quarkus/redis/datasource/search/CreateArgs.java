@@ -49,8 +49,7 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Enable indexing JSON documents.
-     * To index JSON, you must have the RedisJSON module installed.
+     * Enable indexing JSON documents. To index JSON, you must have the RedisJSON module installed.
      *
      * @return the current {@code CreateArgs}
      */
@@ -60,10 +59,12 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Tells the index which keys it should index. You can add several prefixes to index.
-     * Because the argument is optional, the default is * (all keys).
+     * Tells the index which keys it should index. You can add several prefixes to index. Because the argument is
+     * optional, the default is * (all keys).
      *
-     * @param prefixes the prefix of the keys
+     * @param prefixes
+     *        the prefix of the keys
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs prefixes(String... prefixes) {
@@ -72,11 +73,13 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Sets a filter expression with the full RediSearch aggregation expression language.
-     * It is possible to use @__key to access the key that was just added/changed.
-     * A field can be used to set field name by passing 'FILTER @indexName=="myindexname"'.
+     * Sets a filter expression with the full RediSearch aggregation expression language. It is possible to use @__key
+     * to access the key that was just added/changed. A field can be used to set field name by passing
+     * 'FILTER @indexName=="myindexname"'.
      *
-     * @param filter the filter
+     * @param filter
+     *        the filter
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs filter(String filter) {
@@ -87,7 +90,9 @@ public class CreateArgs implements RedisCommandExtraArguments {
     /**
      * If set, indicates the default language for documents in the index. Default to English.
      *
-     * @param language the language
+     * @param language
+     *        the language
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs language(String language) {
@@ -96,11 +101,12 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set a document attribute used as the document language.
-     * A stemmer is used for the supplied language during indexing. If an unsupported language is sent, the command
-     * returns an error.
+     * Set a document attribute used as the document language. A stemmer is used for the supplied language during
+     * indexing. If an unsupported language is sent, the command returns an error.
      *
-     * @param languageField the language field
+     * @param languageField
+     *        the language field
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs languageField(String languageField) {
@@ -111,7 +117,9 @@ public class CreateArgs implements RedisCommandExtraArguments {
     /**
      * Set the default score for documents in the index. Default score is 1.0.
      *
-     * @param score the score
+     * @param score
+     *        the score
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs score(double score) {
@@ -121,10 +129,12 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Sets the document attribute that you use as the document rank based on the user ranking.
-     * Ranking must be between 0.0 and 1.0. If not set, the default score is 1.
+     * Sets the document attribute that you use as the document rank based on the user ranking. Ranking must be between
+     * 0.0 and 1.0. If not set, the default score is 1.
      *
-     * @param field the field
+     * @param field
+     *        the field
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs scoreField(String field) {
@@ -133,10 +143,12 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Sets the document attribute that you use as a binary safe payload string to the document that can be evaluated
-     * at query time by a custom scoring function or retrieved to the client.
+     * Sets the document attribute that you use as a binary safe payload string to the document that can be evaluated at
+     * query time by a custom scoring function or retrieved to the client.
      *
-     * @param field the field
+     * @param field
+     *        the field
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs payloadField(String field) {
@@ -157,8 +169,8 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Sets to not store term offsets for documents.
-     * It saves memory, but does not allow exact searches or highlighting. It implies {@code NOHL}.
+     * Sets to not store term offsets for documents. It saves memory, but does not allow exact searches or highlighting.
+     * It implies {@code NOHL}.
      *
      * @return the current {@code CreateArgs}
      */
@@ -168,15 +180,17 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Creates a lightweight temporary index that expires after a specified period of inactivity.
-     * The internal idle timer is reset whenever the index is searched or added to. Because such indexes are lightweight,
-     * you can create thousands of such indexes without negative performance implications and, therefore, you should
-     * consider using {@code SKIPINITIALSCAN} to avoid costly scanning.
+     * Creates a lightweight temporary index that expires after a specified period of inactivity. The internal idle
+     * timer is reset whenever the index is searched or added to. Because such indexes are lightweight, you can create
+     * thousands of such indexes without negative performance implications and, therefore, you should consider using
+     * {@code SKIPINITIALSCAN} to avoid costly scanning.
      * <p>
      * When dropped, a temporary index does not delete the hashes as they may have been indexed in several indexes.
      * Adding the {@code DD} flag deletes the hashes as well.
      *
-     * @param duration the duration
+     * @param duration
+     *        the duration
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs temporary(Duration duration) {
@@ -185,8 +199,8 @@ public class CreateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Conserves storage space and memory by disabling highlighting support. If set, the corresponding byte offsets
-     * for term positions are not stored. {@code NOHL} is also implied by {@code NOOFFSETS}.
+     * Conserves storage space and memory by disabling highlighting support. If set, the corresponding byte offsets for
+     * term positions are not stored. {@code NOHL} is also implied by {@code NOOFFSETS}.
      *
      * @return the current {@code CreateArgs}
      */
@@ -220,7 +234,9 @@ public class CreateArgs implements RedisCommandExtraArguments {
     /**
      * Sets the index with a custom stop word list, to be ignored during indexing and search time.
      *
-     * @param words the stop word list
+     * @param words
+     *        the stop word list
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs stopWords(String... words) {
@@ -241,10 +257,15 @@ public class CreateArgs implements RedisCommandExtraArguments {
     /**
      * Adds a field to the schema.
      *
-     * @param field the field
-     * @param alias the alias, can be {@code null}
-     * @param type the field type
-     * @param options the additional options
+     * @param field
+     *        the field
+     * @param alias
+     *        the alias, can be {@code null}
+     * @param type
+     *        the field type
+     * @param options
+     *        the additional options
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs indexedField(String field, String alias, FieldType type, FieldOptions options) {
@@ -255,9 +276,13 @@ public class CreateArgs implements RedisCommandExtraArguments {
     /**
      * Adds a field to the schema.
      *
-     * @param field the field
-     * @param type the field type
-     * @param options the additional options
+     * @param field
+     *        the field
+     * @param type
+     *        the field type
+     * @param options
+     *        the additional options
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs indexedField(String field, FieldType type, FieldOptions options) {
@@ -267,8 +292,11 @@ public class CreateArgs implements RedisCommandExtraArguments {
     /**
      * Adds a field to the schema.
      *
-     * @param field the field
-     * @param type the field type
+     * @param field
+     *        the field
+     * @param type
+     *        the field type
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs indexedField(String field, FieldType type) {
@@ -278,9 +306,13 @@ public class CreateArgs implements RedisCommandExtraArguments {
     /**
      * Adds a field to the schema.
      *
-     * @param field the field
-     * @param alias the alias, can be {@code null}
-     * @param type the field type
+     * @param field
+     *        the field
+     * @param alias
+     *        the alias, can be {@code null}
+     * @param type
+     *        the field type
+     *
      * @return the current {@code CreateArgs}
      */
     public CreateArgs indexedField(String field, String alias, FieldType type) {

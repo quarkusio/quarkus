@@ -12,8 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Assures, that Flyway can also be used without any configuration,
- * provided, that at least a datasource is configured.
+ * Assures, that Flyway can also be used without any configuration, provided, that at least a datasource is configured.
  */
 public class FlywayExtensionConfigDefaultDataSourceWithoutFlywayTest {
 
@@ -25,9 +24,8 @@ public class FlywayExtensionConfigDefaultDataSourceWithoutFlywayTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(FlywayExtensionConfigFixture.class)
-                    .addAsResource("config-for-default-datasource-without-flyway.properties", "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(FlywayExtensionConfigFixture.class).addAsResource(
+                    "config-for-default-datasource-without-flyway.properties", "application.properties"));
 
     @Test
     @DisplayName("Reads predefined default flyway configuration for default datasource correctly")

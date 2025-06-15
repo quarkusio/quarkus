@@ -33,21 +33,18 @@ public class LogStreamProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
-        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(LogStreamBroadcaster.class)
-                .setUnremovable().build());
+        additionalBeanProducer.produce(
+                AdditionalBeanBuildItem.builder().addBeanClass(LogStreamBroadcaster.class).setUnremovable().build());
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
     public void handler(BuildProducer<StreamingLogHandlerBuildItem> streamingLogHandlerBuildItem,
-            LogBuildTimeConfig logBuildTimeConfig,
-            LoggingDecorateBuildItem loggingDecorateBuildItem,
+            LogBuildTimeConfig logBuildTimeConfig, LoggingDecorateBuildItem loggingDecorateBuildItem,
             LogStreamRecorder recorder) {
         RuntimeValue<Optional<MutinyLogHandler>> mutinyLogHandler = recorder.mutinyLogHandler(
-                logBuildTimeConfig.decorateStacktraces(),
-                loggingDecorateBuildItem.getSrcMainJava().toString(),
+                logBuildTimeConfig.decorateStacktraces(), loggingDecorateBuildItem.getSrcMainJava().toString(),
                 loggingDecorateBuildItem.getKnowClasses());
         streamingLogHandlerBuildItem.produce(new StreamingLogHandlerBuildItem((RuntimeValue) mutinyLogHandler));
     }

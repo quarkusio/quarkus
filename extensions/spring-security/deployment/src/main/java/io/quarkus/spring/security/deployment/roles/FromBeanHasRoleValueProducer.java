@@ -23,13 +23,12 @@ public class FromBeanHasRoleValueProducer implements HasRoleValueProducer {
 
     @Override
     public ResultHandle apply(BytecodeCreator creator) {
-        ResultHandle arcContainer = creator
-                .invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
+        ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
-                ofMethod(ArcContainer.class, "instance", InstanceHandle.class, String.class),
-                arcContainer, creator.load(beanName));
-        ResultHandle bean = creator
-                .invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+                ofMethod(ArcContainer.class, "instance", InstanceHandle.class, String.class), arcContainer,
+                creator.load(beanName));
+        ResultHandle bean = creator.invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class),
+                instanceHandle);
         return creator.readInstanceField(FieldDescriptor.of(fieldInfo), bean);
     }
 }

@@ -18,8 +18,8 @@ import io.smallrye.certs.junit5.Certificates;
  * Verify that is trust all is set, trust store is not set.
  */
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
-})
+        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM,
+                Format.PKCS12 }) })
 public class TrustAllWithTrustStoreTest {
 
     private static final String configuration = """
@@ -30,8 +30,7 @@ public class TrustAllWithTrustStoreTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"))
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> Assertions.assertThat(t).hasMessageContaining("trust-all", "trust-store"));
 
     @Test

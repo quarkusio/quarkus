@@ -51,7 +51,8 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         Class<?> implementationClass = beanHandle.getBean().getImplementationClass();
         Object mock;
         boolean isNew;
-        // Note that beanHandle.get() returns a client proxy for normal scoped beans; i.e. the contextual instance is not created
+        // Note that beanHandle.get() returns a client proxy for normal scoped beans; i.e. the contextual instance is
+        // not created
         Optional<Object> currentMock = MockitoMocksTracker.currentMock(testInstance, beanHandle.get());
         if (currentMock.isPresent()) {
             mock = currentMock.get();
@@ -77,7 +78,8 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    static InstanceHandle<?> getBeanHandle(Object testInstance, Field field, Class<? extends Annotation> annotationType) {
+    static InstanceHandle<?> getBeanHandle(Object testInstance, Field field,
+            Class<? extends Annotation> annotationType) {
         Type fieldType = field.getGenericType();
         ArcContainer container = Arc.container();
         BeanManager beanManager = container.beanManager();
@@ -85,18 +87,15 @@ public class CreateMockitoMocksCallback implements QuarkusTestAfterConstructCall
 
         InstanceHandle<?> handle = container.instance(fieldType, qualifiers);
         if (!handle.isAvailable()) {
-            throw new IllegalStateException(
-                    "Invalid use of " + annotationType.getTypeName() + " - could not resolve the bean of type: "
-                            + fieldType.getTypeName() + ". Offending field is " + field.getName() + " of test class "
-                            + testInstance.getClass());
+            throw new IllegalStateException("Invalid use of " + annotationType.getTypeName()
+                    + " - could not resolve the bean of type: " + fieldType.getTypeName() + ". Offending field is "
+                    + field.getName() + " of test class " + testInstance.getClass());
         }
         if (!beanManager.isNormalScope(handle.getBean().getScope())) {
-            throw new IllegalStateException(
-                    "Invalid use of " + annotationType.getTypeName()
-                            + " - the injected bean does not declare a CDI normal scope but: "
-                            + handle.getBean().getScope().getName()
-                            + ". Offending field is " + field.getName() + " of test class "
-                            + testInstance.getClass());
+            throw new IllegalStateException("Invalid use of " + annotationType.getTypeName()
+                    + " - the injected bean does not declare a CDI normal scope but: "
+                    + handle.getBean().getScope().getName() + ". Offending field is " + field.getName()
+                    + " of test class " + testInstance.getClass());
         }
         return handle;
     }

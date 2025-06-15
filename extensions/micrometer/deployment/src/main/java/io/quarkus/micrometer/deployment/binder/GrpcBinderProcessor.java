@@ -10,9 +10,8 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 /**
- * Add support for gRPC Client and Server metrics. Note that
- * various bits of support may not be present at deploy time. Avoid referencing
- * classes that in turn import optional dependencies.
+ * Add support for gRPC Client and Server metrics. Note that various bits of support may not be present at deploy time.
+ * Avoid referencing classes that in turn import optional dependencies.
  */
 public class GrpcBinderProcessor {
 

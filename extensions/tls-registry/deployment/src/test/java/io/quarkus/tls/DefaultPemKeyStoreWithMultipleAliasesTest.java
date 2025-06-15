@@ -25,10 +25,7 @@ import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-alias-pem", formats = { Format.PEM }, aliases = {
-                @Alias(name = "alias1", subjectAlternativeNames = "dns:acme.org"),
-                @Alias(name = "alias2")
-        })
-})
+                @Alias(name = "alias1", subjectAlternativeNames = "dns:acme.org"), @Alias(name = "alias2") }) })
 public class DefaultPemKeyStoreWithMultipleAliasesTest {
 
     private static final String configuration = """
@@ -44,8 +41,7 @@ public class DefaultPemKeyStoreWithMultipleAliasesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;

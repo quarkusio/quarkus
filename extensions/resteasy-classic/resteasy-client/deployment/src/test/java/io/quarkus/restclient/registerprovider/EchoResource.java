@@ -81,14 +81,13 @@ public class EchoResource {
         // this should not end up in the client filter context
         ResteasyContext.pushContext(String.class, "callClient SERVER CONTEXT");
         // call the client
-        return client.asyncCalledFromClient(req)
-                .thenApply(ret -> {
-                    // make sure the filter got the same request context as we have
-                    Assertions.assertEquals(req, methodsCollector.getRequestBeanFromFilter());
-                    // should not have passed from the client context to here
-                    Assertions.assertNull(ResteasyContext.getContextData(Long.class));
-                    return ret;
-                });
+        return client.asyncCalledFromClient(req).thenApply(ret -> {
+            // make sure the filter got the same request context as we have
+            Assertions.assertEquals(req, methodsCollector.getRequestBeanFromFilter());
+            // should not have passed from the client context to here
+            Assertions.assertNull(ResteasyContext.getContextData(Long.class));
+            return ret;
+        });
     }
 
     @Path("async/called-from-client")

@@ -22,9 +22,9 @@ public class ApplicationScopedCustomValueExtractorTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(TestBean.class, Container.class, ApplicationScopedContainerValueExtractor.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestBean.class, Container.class,
+                    ApplicationScopedContainerValueExtractor.class));
 
     @Test
     public void testApplicationScopedCustomValueExtractor() {

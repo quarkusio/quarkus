@@ -11,22 +11,18 @@ import io.restassured.RestAssured;
 public class Oauth2ImplicitSecurityWithConfigTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(
-                            new StringAsset("quarkus.smallrye-openapi.security-scheme=oauth2Implicit\n"
-                                    + "quarkus.smallrye-openapi.security-scheme-name=OAuth2CompanyAuthentication\n"
-                                    + "quarkus.smallrye-openapi.security-scheme-description=OAuth2 Authentication"),
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class).addAsResource(
+                    new StringAsset("quarkus.smallrye-openapi.security-scheme=oauth2Implicit\n"
+                            + "quarkus.smallrye-openapi.security-scheme-name=OAuth2CompanyAuthentication\n"
+                            + "quarkus.smallrye-openapi.security-scheme-description=OAuth2 Authentication"),
 
-                            "application.properties"));
+                    "application.properties"));
 
     @Test
     public void testOAuth2Authentication() {
-        RestAssured.given().header("Accept", "application/json")
-                .when().get("/q/openapi")
-                .then().body("components.securitySchemes.OAuth2CompanyAuthentication", Matchers.hasEntry("type", "oauth2"))
-                .and()
-                .body("components.securitySchemes.OAuth2CompanyAuthentication",
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then()
+                .body("components.securitySchemes.OAuth2CompanyAuthentication", Matchers.hasEntry("type", "oauth2"))
+                .and().body("components.securitySchemes.OAuth2CompanyAuthentication",
                         Matchers.hasEntry("description", "OAuth2 Authentication"));
     }
 }

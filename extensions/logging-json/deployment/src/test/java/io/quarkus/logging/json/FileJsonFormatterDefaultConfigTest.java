@@ -50,8 +50,7 @@ public class FileJsonFormatterDefaultConfigTest {
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 
         Handler handler = Arrays.stream(delayedHandler.getHandlers())
-                .filter(h -> (h instanceof SizeRotatingFileHandler))
-                .findFirst().orElse(null);
+                .filter(h -> (h instanceof SizeRotatingFileHandler)).findFirst().orElse(null);
         assertThat(handler).isNotNull();
         assertThat(handler.getLevel()).isEqualTo(Level.WARNING);
 

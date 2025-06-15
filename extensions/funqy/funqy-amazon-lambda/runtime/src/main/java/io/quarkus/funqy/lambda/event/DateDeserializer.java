@@ -8,8 +8,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
 /**
- * AWS uses double values. E.g. 1719318377.0
- * Therefore, a dedicated deserializer is needed
+ * AWS uses double values. E.g. 1719318377.0 Therefore, a dedicated deserializer is needed
  */
 public class DateDeserializer extends JsonDeserializer<Date> {
 

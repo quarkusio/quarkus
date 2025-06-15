@@ -51,9 +51,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
     final class SimpleLogRecordProcessorCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private SimpleLogRecordProcessorBiFunction biFunction;
 
-        public SimpleLogRecordProcessorCustomizer(
-                OTelBuildConfig oTelBuildConfig,
-                Instance<LogRecordExporter> ilre) {
+        public SimpleLogRecordProcessorCustomizer(OTelBuildConfig oTelBuildConfig, Instance<LogRecordExporter> ilre) {
             if (oTelBuildConfig.simple() && ilre.isResolvable()) {
                 LogRecordProcessor lrp = SimpleLogRecordProcessor.create(ilre.get());
                 this.biFunction = new SimpleLogRecordProcessorBiFunction(lrp);
@@ -97,10 +95,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final Instance<DelayedAttributes> delayedAttributes;
         private final List<Resource> resources;
 
-        public ResourceCustomizer(ApplicationConfig appConfig,
-                OTelBuildConfig oTelBuildConfig,
-                OTelRuntimeConfig oTelRuntimeConfig,
-                @Any Instance<DelayedAttributes> delayedAttributes,
+        public ResourceCustomizer(ApplicationConfig appConfig, OTelBuildConfig oTelBuildConfig,
+                OTelRuntimeConfig oTelRuntimeConfig, @Any Instance<DelayedAttributes> delayedAttributes,
                 @All List<Resource> resources) {
             this.appConfig = appConfig;
             this.oTelBuildConfig = oTelBuildConfig;
@@ -114,29 +110,24 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
             builder.addResourceCustomizer(new BiFunction<>() {
                 @Override
                 public Resource apply(Resource existingResource, ConfigProperties configProperties) {
-                    Resource consolidatedResource = existingResource.merge(
-                            Resource.create(delayedAttributes.get()));
+                    Resource consolidatedResource = existingResource.merge(Resource.create(delayedAttributes.get()));
 
                     // if user explicitly set 'otel.service.name', make sure we don't override it with defaults
                     // inside resource customizer
-                    String serviceName = oTelRuntimeConfig
-                            .serviceName()
-                            .filter(new Predicate<String>() {
-                                @Override
-                                public boolean test(String sn) {
-                                    return !sn.equals(appConfig.name().orElse("unset"));
-                                }
-                            })
-                            .orElse(null);
+                    String serviceName = oTelRuntimeConfig.serviceName().filter(new Predicate<String>() {
+                        @Override
+                        public boolean test(String sn) {
+                            return !sn.equals(appConfig.name().orElse("unset"));
+                        }
+                    }).orElse(null);
 
                     String hostname = getHostname();
 
                     // Merge resource instances with env attributes
-                    Resource resource = resources.stream()
-                            .reduce(Resource.empty(), Resource::merge)
+                    Resource resource = resources.stream().reduce(Resource.empty(), Resource::merge)
                             .merge(TracerUtil.mapResourceAttributes(
-                                    oTelRuntimeConfig.resourceAttributes().orElse(emptyList()),
-                                    serviceName, // from properties
+                                    oTelRuntimeConfig.resourceAttributes().orElse(emptyList()), serviceName, // from
+                                    // properties
                                     hostname));
                     return consolidatedResource.merge(resource);
                 }
@@ -150,8 +141,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final OTelRuntimeConfig oTelRuntimeConfig;
         private final List<Sampler> sampler;
 
-        public SamplerCustomizer(OTelBuildConfig oTelBuildConfig,
-                OTelRuntimeConfig oTelRuntimeConfig,
+        public SamplerCustomizer(OTelBuildConfig oTelBuildConfig, OTelRuntimeConfig oTelRuntimeConfig,
                 @All List<Sampler> sampler) {
             this.oTelBuildConfig = oTelBuildConfig;
             this.oTelRuntimeConfig = oTelRuntimeConfig;
@@ -164,23 +154,22 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                 @Override
                 public Sampler apply(Sampler existingSampler, ConfigProperties configProperties) {
                     if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
-                        final Sampler effectiveSampler = sampler.stream().findFirst()
-                                .map(Sampler.class::cast)// use CDI if it exists
+                        final Sampler effectiveSampler = sampler.stream().findFirst().map(Sampler.class::cast)// use CDI
+                                // if it
+                                // exists
                                 .orElse(existingSampler);
 
-                        //collect default filtering targets (Needed for all samplers)
+                        // collect default filtering targets (Needed for all samplers)
                         Set<String> dropTargets = new HashSet<>();
-                        if (oTelRuntimeConfig.traces().suppressNonApplicationUris()) {//default is true
+                        if (oTelRuntimeConfig.traces().suppressNonApplicationUris()) {// default is true
                             dropTargets.addAll(TracerRecorder.dropNonApplicationUriTargets);
                         }
                         if (!oTelRuntimeConfig.traces().includeStaticResources()) {// default is false
                             dropTargets.addAll(TracerRecorder.dropStaticResourceTargets);
                         }
                         if (oTelRuntimeConfig.traces().suppressApplicationUris().isPresent()) {
-                            dropTargets.addAll(oTelRuntimeConfig.traces().suppressApplicationUris().get()
-                                    .stream().filter(Predicate.not(String::isEmpty))
-                                    .map(addSlashIfNecessary())
-                                    .toList());
+                            dropTargets.addAll(oTelRuntimeConfig.traces().suppressApplicationUris().get().stream()
+                                    .filter(Predicate.not(String::isEmpty)).map(addSlashIfNecessary()).toList());
                         }
 
                         // make sure dropped targets are not sampled
@@ -217,8 +206,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final List<IdGenerator> idGenerator;
         private final List<SpanProcessor> spanProcessors;
 
-        public TracerProviderCustomizer(OTelBuildConfig oTelBuildConfig,
-                @All List<IdGenerator> idGenerator,
+        public TracerProviderCustomizer(OTelBuildConfig oTelBuildConfig, @All List<IdGenerator> idGenerator,
                 @All List<SpanProcessor> spanProcessors) {
             this.oTelBuildConfig = oTelBuildConfig;
             this.idGenerator = idGenerator;
@@ -227,24 +215,22 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
         @Override
         public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
-            builder.addTracerProviderCustomizer(
-                    new BiFunction<>() {
-                        @Override
-                        public SdkTracerProviderBuilder apply(SdkTracerProviderBuilder tracerProviderBuilder,
-                                ConfigProperties configProperties) {
-                            if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
-                                idGenerator.stream().findFirst().ifPresent(tracerProviderBuilder::setIdGenerator); // from cdi
-                                spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
-                                    @Override
-                                    public boolean test(SpanProcessor sp) {
-                                        return !(sp instanceof RemoveableLateBoundSpanProcessor);
-                                    }
-                                })
-                                        .forEach(tracerProviderBuilder::addSpanProcessor);
+            builder.addTracerProviderCustomizer(new BiFunction<>() {
+                @Override
+                public SdkTracerProviderBuilder apply(SdkTracerProviderBuilder tracerProviderBuilder,
+                        ConfigProperties configProperties) {
+                    if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
+                        idGenerator.stream().findFirst().ifPresent(tracerProviderBuilder::setIdGenerator); // from cdi
+                        spanProcessors.stream().filter(new Predicate<SpanProcessor>() {
+                            @Override
+                            public boolean test(SpanProcessor sp) {
+                                return !(sp instanceof RemoveableLateBoundSpanProcessor);
                             }
-                            return tracerProviderBuilder;
-                        }
-                    });
+                        }).forEach(tracerProviderBuilder::addSpanProcessor);
+                    }
+                    return tracerProviderBuilder;
+                }
+            });
         }
     }
 
@@ -253,8 +239,7 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final Instance<Clock> clock;
 
-        public MetricProviderCustomizer(OTelBuildConfig oTelBuildConfig,
-                final Instance<Clock> clock) {
+        public MetricProviderCustomizer(OTelBuildConfig oTelBuildConfig, final Instance<Clock> clock) {
             this.oTelBuildConfig = oTelBuildConfig;
             this.clock = clock;
         }
@@ -276,14 +261,11 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             } else {
                                 // disable batch exporter metrics if metrics disabled
                                 // In the future we can inject scopes here.
-                                Set<String> dropInstrumentationScopes = Set.of(
-                                        "io.opentelemetry.sdk.trace",
+                                Set<String> dropInstrumentationScopes = Set.of("io.opentelemetry.sdk.trace",
                                         "io.opentelemetry.sdk.logs");
                                 for (String target : dropInstrumentationScopes) {
-                                    SdkMeterProviderUtil.addMeterConfiguratorCondition(
-                                            meterProviderBuilder,
-                                            nameEquals(target),
-                                            MeterConfig.disabled());
+                                    SdkMeterProviderUtil.addMeterConfiguratorCondition(meterProviderBuilder,
+                                            nameEquals(target), MeterConfig.disabled());
                                 }
                             }
                             return meterProviderBuilder;
@@ -304,24 +286,23 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         @Override
         public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
             for (TextMapPropagatorCustomizer customizer : customizers) {
-                builder.addPropagatorCustomizer(
-                        new BiFunction<>() {
+                builder.addPropagatorCustomizer(new BiFunction<>() {
+                    @Override
+                    public TextMapPropagator apply(TextMapPropagator textMapPropagator,
+                            ConfigProperties configProperties) {
+                        return customizer.customize(new TextMapPropagatorCustomizer.Context() {
                             @Override
-                            public TextMapPropagator apply(TextMapPropagator textMapPropagator,
-                                    ConfigProperties configProperties) {
-                                return customizer.customize(new TextMapPropagatorCustomizer.Context() {
-                                    @Override
-                                    public TextMapPropagator propagator() {
-                                        return textMapPropagator;
-                                    }
+                            public TextMapPropagator propagator() {
+                                return textMapPropagator;
+                            }
 
-                                    @Override
-                                    public ConfigProperties otelConfigProperties() {
-                                        return configProperties;
-                                    }
-                                });
+                            @Override
+                            public ConfigProperties otelConfigProperties() {
+                                return configProperties;
                             }
                         });
+                    }
+                });
             }
         }
     }

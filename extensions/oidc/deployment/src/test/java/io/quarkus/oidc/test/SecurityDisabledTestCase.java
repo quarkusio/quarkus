@@ -14,15 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class SecurityDisabledTestCase {
 
-    private static Class<?>[] testClasses = {
-            UnprotectedResource.class
-    };
+    private static Class<?>[] testClasses = { UnprotectedResource.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-security-disabled.properties", "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("application-security-disabled.properties", "application.properties"));
 
     @Test
     public void testAccessUnprotectedResource() throws IOException, InterruptedException {

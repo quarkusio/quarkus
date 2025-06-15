@@ -18,8 +18,7 @@ public class DefaultFileDefaultBundleNameTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Messages.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Messages.class)
                     .addAsResource(new StringAsset("goodbye=Mej se!\nfarewell=Sbohem!"), "messages/msg.properties"))
             .overrideConfigKey("quarkus.default-locale", "cs");
 

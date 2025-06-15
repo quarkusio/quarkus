@@ -9,9 +9,9 @@ import java.util.Collection;
 
 /**
  * <p>
- * Indicates that this field or property should be used as a source of roles for security.
- * Supports the {@link String} type, or a {@code Collection<String>} or a {@link Collection} of
- * entities with a field or getter annotated with {@link RolesValue}.
+ * Indicates that this field or property should be used as a source of roles for security. Supports the {@link String}
+ * type, or a {@code Collection<String>} or a {@link Collection} of entities with a field or getter annotated with
+ * {@link RolesValue}.
  * </p>
  * <p>
  * Each role element is considered a comma-separated list of roles.

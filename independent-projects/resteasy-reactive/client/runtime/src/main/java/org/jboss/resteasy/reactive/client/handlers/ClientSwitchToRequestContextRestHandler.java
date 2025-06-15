@@ -12,8 +12,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 
 /**
- * This handler ensures that the context to use is the same as the client request context, which is important to keep the
- * request context in sync when updating the response.
+ * This handler ensures that the context to use is the same as the client request context, which is important to keep
+ * the request context in sync when updating the response.
  */
 public class ClientSwitchToRequestContextRestHandler implements ClientRestHandler {
     @Override

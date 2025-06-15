@@ -17,20 +17,18 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MessageBundleEnumTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Messages.class, MyEnum.class, UnderscoredEnum.class, AnotherUnderscoredEnum.class)
-                    .addAsResource("messages/enu.properties")
-                    .addAsResource("messages/enu_cs.properties")
-                    .addAsResource(new StringAsset(
-                            "{enu:myEnum(MyEnum:ON)}::{enu:myEnum(MyEnum:OFF)}::{enu:myEnum(MyEnum:UNDEFINED)}::"
-                                    + "{enu:shortEnum(MyEnum:ON)}::{enu:shortEnum(MyEnum:OFF)}::{enu:shortEnum(MyEnum:UNDEFINED)}::"
-                                    + "{enu:foo(MyEnum:ON)}::{enu:foo(MyEnum:OFF)}::{enu:foo(MyEnum:UNDEFINED)}::"
-                                    + "{enu:locFileOverride(MyEnum:ON)}::{enu:locFileOverride(MyEnum:OFF)}::{enu:locFileOverride(MyEnum:UNDEFINED)}"),
-                            "templates/foo.html")
-                    .addAsResource(new StringAsset(
-                            "{enu:underscored(UnderscoredEnum:A_B)}::{enu:underscored(UnderscoredEnum:FOO_BAR_BAZ)}::{enu:underscored_foo(AnotherUnderscoredEnum:NEXT_B)}::{enu:underscored$foo(AnotherUnderscoredEnum:NEXT_B)}::{enu:uncommon(UncommonEnum:NEXT$B)}"),
-                            "templates/bar.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Messages.class, MyEnum.class, UnderscoredEnum.class, AnotherUnderscoredEnum.class)
+            .addAsResource("messages/enu.properties").addAsResource("messages/enu_cs.properties")
+            .addAsResource(new StringAsset(
+                    "{enu:myEnum(MyEnum:ON)}::{enu:myEnum(MyEnum:OFF)}::{enu:myEnum(MyEnum:UNDEFINED)}::"
+                            + "{enu:shortEnum(MyEnum:ON)}::{enu:shortEnum(MyEnum:OFF)}::{enu:shortEnum(MyEnum:UNDEFINED)}::"
+                            + "{enu:foo(MyEnum:ON)}::{enu:foo(MyEnum:OFF)}::{enu:foo(MyEnum:UNDEFINED)}::"
+                            + "{enu:locFileOverride(MyEnum:ON)}::{enu:locFileOverride(MyEnum:OFF)}::{enu:locFileOverride(MyEnum:UNDEFINED)}"),
+                    "templates/foo.html")
+            .addAsResource(new StringAsset(
+                    "{enu:underscored(UnderscoredEnum:A_B)}::{enu:underscored(UnderscoredEnum:FOO_BAR_BAZ)}::{enu:underscored_foo(AnotherUnderscoredEnum:NEXT_B)}::{enu:underscored$foo(AnotherUnderscoredEnum:NEXT_B)}::{enu:uncommon(UncommonEnum:NEXT$B)}"),
+                    "templates/bar.html"));
 
     @Inject
     Template foo;
@@ -67,27 +65,23 @@ public class MessageBundleEnumTest {
 
         // Replaced with:
         // @Message("{#when myEnum}"
-        //  + "{#is ON}{enu:myEnum_ON}"
-        //  + "{#is OFF}{enu:myEnum_OFF}"
-        //  + "{#is UNDEFINED}{enu:myEnum_UNDEFINED}"
-        //  + "{/when}")
+        // + "{#is ON}{enu:myEnum_ON}"
+        // + "{#is OFF}{enu:myEnum_OFF}"
+        // + "{#is UNDEFINED}{enu:myEnum_UNDEFINED}"
+        // + "{/when}")
         @Message
         String myEnum(MyEnum myEnum);
 
         // Replaced with:
         // @Message("{#when myEnum}"
-        //  + "{#is ON}{enu:shortEnum_ON}"
-        //  + "{#is OFF}{enu:shortEnum_OFF}"
-        //  + "{#is UNDEFINED}{enu:shortEnum_UNDEFINED}"
-        //  + "{/when}")
+        // + "{#is ON}{enu:shortEnum_ON}"
+        // + "{#is OFF}{enu:shortEnum_OFF}"
+        // + "{#is UNDEFINED}{enu:shortEnum_UNDEFINED}"
+        // + "{/when}")
         @Message
         String shortEnum(MyEnum myEnum);
 
-        @Message("{#when myEnum}"
-                + "{#is ON}+"
-                + "{#is OFF}-"
-                + "{#else}_"
-                + "{/when}")
+        @Message("{#when myEnum}" + "{#is ON}+" + "{#is OFF}-" + "{#else}_" + "{/when}")
         String foo(MyEnum myEnum);
 
         @Message

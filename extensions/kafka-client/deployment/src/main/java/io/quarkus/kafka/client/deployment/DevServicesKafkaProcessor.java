@@ -59,28 +59,27 @@ public class DevServicesKafkaProcessor {
     private static final String KAFKA_BOOTSTRAP_SERVERS = "kafka.bootstrap.servers";
 
     /**
-     * Label to add to shared Dev Service for Kafka running in containers.
-     * This allows other applications to discover the running service and use it instead of starting a new instance.
+     * Label to add to shared Dev Service for Kafka running in containers. This allows other applications to discover
+     * the running service and use it instead of starting a new instance.
      */
     static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kafka";
     static final int KAFKA_PORT = 9092;
 
-    private static final ContainerLocator kafkaContainerLocator = locateContainerWithLabels(KAFKA_PORT, DEV_SERVICE_LABEL);
+    private static final ContainerLocator kafkaContainerLocator = locateContainerWithLabels(KAFKA_PORT,
+            DEV_SERVICE_LABEL);
 
     static volatile RunningDevService devService;
     static volatile KafkaDevServiceCfg cfg;
     static volatile boolean first = true;
 
     @BuildStep
-    public DevServicesResultBuildItem startKafkaDevService(
-            DockerStatusBuildItem dockerStatusBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            LaunchModeBuildItem launchMode,
+    public DevServicesResultBuildItem startKafkaDevService(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, LaunchModeBuildItem launchMode,
             KafkaBuildTimeConfig kafkaClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem, DevServicesConfig devServicesConfig) {
+            CuratedApplicationShutdownBuildItem closeBuildItem, LoggingSetupBuildItem loggingSetupBuildItem,
+            DevServicesConfig devServicesConfig) {
 
         KafkaDevServiceCfg configuration = getConfiguration(kafkaClientBuildTimeConfig);
 
@@ -94,12 +93,11 @@ public class DevServicesKafkaProcessor {
         }
 
         StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode.isTest() ? "(test) " : "") + "Kafka Dev Services Starting:",
-                consoleInstalledBuildItem, loggingSetupBuildItem);
+                (launchMode.isTest() ? "(test) " : "") + "Kafka Dev Services Starting:", consoleInstalledBuildItem,
+                loggingSetupBuildItem);
         try {
             devService = startKafka(dockerStatusBuildItem, composeProjectBuildItem, configuration, launchMode,
-                    !devServicesSharedNetworkBuildItem.isEmpty(),
-                    devServicesConfig.timeout());
+                    !devServicesSharedNetworkBuildItem.isEmpty(), devServicesConfig.timeout());
             if (devService == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -155,24 +153,20 @@ public class DevServicesKafkaProcessor {
         try (AdminClient adminClient = KafkaAdminClient.create(props)) {
             long adminClientTimeout = configuration.topicPartitionsTimeout.toMillis();
             // get current partitions for topics asked to be created
-            Set<String> currentTopics = adminClient.listTopics().names()
-                    .get(adminClientTimeout, TimeUnit.MILLISECONDS);
+            Set<String> currentTopics = adminClient.listTopics().names().get(adminClientTimeout, TimeUnit.MILLISECONDS);
             Map<String, TopicDescription> partitions = adminClient.describeTopics(currentTopics).allTopicNames()
                     .get(adminClientTimeout, TimeUnit.MILLISECONDS);
             // find new topics to create
-            List<NewTopic> newTopics = topicPartitions.entrySet().stream()
-                    .filter(e -> {
-                        TopicDescription topicDescription = partitions.get(e.getKey());
-                        if (topicDescription == null) {
-                            return true;
-                        } else {
-                            log.warnf("Topic '%s' already exists with %s partition(s)", e.getKey(),
-                                    topicDescription.partitions().size());
-                            return false;
-                        }
-                    })
-                    .map(e -> new NewTopic(e.getKey(), e.getValue(), (short) 1))
-                    .collect(Collectors.toList());
+            List<NewTopic> newTopics = topicPartitions.entrySet().stream().filter(e -> {
+                TopicDescription topicDescription = partitions.get(e.getKey());
+                if (topicDescription == null) {
+                    return true;
+                } else {
+                    log.warnf("Topic '%s' already exists with %s partition(s)", e.getKey(),
+                            topicDescription.partitions().size());
+                    return false;
+                }
+            }).map(e -> new NewTopic(e.getKey(), e.getValue(), (short) 1)).collect(Collectors.toList());
             // create new topics
             CreateTopicsResult topics = adminClient.createTopics(newTopics);
             topics.all().get(adminClientTimeout, TimeUnit.MILLISECONDS);
@@ -180,7 +174,8 @@ public class DevServicesKafkaProcessor {
             HashMap<String, Integer> newTopicPartitions = new HashMap<>();
             partitions.forEach((key, value) -> newTopicPartitions.put(key, value.partitions().size()));
             newTopics.forEach(t -> newTopicPartitions.put(t.name(), t.numPartitions()));
-            log.infof("Dev Services for Kafka broker contains following topics with partitions: %s", newTopicPartitions);
+            log.infof("Dev Services for Kafka broker contains following topics with partitions: %s",
+                    newTopicPartitions);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             log.errorf(e, "Failed to create topics: %s", topicPartitions);
         }
@@ -199,8 +194,7 @@ public class DevServicesKafkaProcessor {
     }
 
     private RunningDevService startKafka(DockerStatusBuildItem dockerStatusBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            KafkaDevServiceCfg config,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, KafkaDevServiceCfg config,
             LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
@@ -234,21 +228,16 @@ public class DevServicesKafkaProcessor {
                             DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("redpandadata/redpanda"),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
-                            composeProjectBuildItem.getDefaultNetworkId(),
-                            useSharedNetwork, config.redpanda);
+                            composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, config.redpanda);
                     timeout.ifPresent(redpanda::withStartupTimeout);
                     redpanda.withEnv(config.containerEnv);
                     redpanda.start();
 
-                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
-                            redpanda.getContainerId(),
-                            redpanda::close,
-                            KAFKA_BOOTSTRAP_SERVERS, redpanda.getBootstrapServers());
+                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(), redpanda.getContainerId(),
+                            redpanda::close, KAFKA_BOOTSTRAP_SERVERS, redpanda.getBootstrapServers());
                 case STRIMZI:
-                    StrimziKafkaContainer strimzi = new StrimziKafkaContainer(config.imageName)
-                            .withBrokerId(1)
-                            .withKraft()
-                            .waitForRunning();
+                    StrimziKafkaContainer strimzi = new StrimziKafkaContainer(config.imageName).withBrokerId(1)
+                            .withKraft().waitForRunning();
                     String hostName = ConfigureUtil.configureNetwork(strimzi,
                             composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, "kafka");
                     if (useSharedNetwork) {
@@ -265,36 +254,29 @@ public class DevServicesKafkaProcessor {
                     strimzi.withEnv(config.containerEnv);
 
                     strimzi.start();
-                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
-                            strimzi.getContainerId(),
-                            strimzi::close,
-                            KAFKA_BOOTSTRAP_SERVERS, strimzi.getBootstrapServers());
+                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(), strimzi.getContainerId(),
+                            strimzi::close, KAFKA_BOOTSTRAP_SERVERS, strimzi.getBootstrapServers());
                 case KAFKA_NATIVE:
                     KafkaNativeContainer kafkaNative = new KafkaNativeContainer(DockerImageName.parse(config.imageName),
                             config.fixedExposedPort,
                             launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
-                            composeProjectBuildItem.getDefaultNetworkId(),
-                            useSharedNetwork);
+                            composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork);
                     timeout.ifPresent(kafkaNative::withStartupTimeout);
                     kafkaNative.withEnv(config.containerEnv);
                     kafkaNative.start();
 
-                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(),
-                            kafkaNative.getContainerId(),
-                            kafkaNative::close,
-                            KAFKA_BOOTSTRAP_SERVERS, kafkaNative.getBootstrapServers());
+                    return new RunningDevService(Feature.KAFKA_CLIENT.getName(), kafkaNative.getContainerId(),
+                            kafkaNative::close, KAFKA_BOOTSTRAP_SERVERS, kafkaNative.getBootstrapServers());
             }
             return null;
         };
 
         return kafkaContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(config.imageName, "kafka", "strimzi", "redpanda"),
-                        KAFKA_PORT, launchMode.getLaunchMode(), useSharedNetwork))
-                .map(containerAddress -> new RunningDevService(Feature.KAFKA_CLIENT.getName(),
-                        containerAddress.getId(),
-                        null,
-                        KAFKA_BOOTSTRAP_SERVERS, containerAddress.getUrl()))
+                        List.of(config.imageName, "kafka", "strimzi", "redpanda"), KAFKA_PORT,
+                        launchMode.getLaunchMode(), useSharedNetwork))
+                .map(containerAddress -> new RunningDevService(Feature.KAFKA_CLIENT.getName(), containerAddress.getId(),
+                        null, KAFKA_BOOTSTRAP_SERVERS, containerAddress.getUrl()))
                 .orElseGet(defaultKafkaBrokerSupplier);
     }
 
@@ -359,8 +341,7 @@ public class DevServicesKafkaProcessor {
                 return false;
             }
             KafkaDevServiceCfg that = (KafkaDevServiceCfg) o;
-            return devServicesEnabled == that.devServicesEnabled
-                    && Objects.equals(provider, that.provider)
+            return devServicesEnabled == that.devServicesEnabled && Objects.equals(provider, that.provider)
                     && Objects.equals(imageName, that.imageName)
                     && Objects.equals(fixedExposedPort, that.fixedExposedPort)
                     && Objects.equals(containerEnv, that.containerEnv);

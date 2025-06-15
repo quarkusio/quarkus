@@ -11,10 +11,8 @@ import io.smallrye.config.ConfigMapping;
 public interface FunqyConfig {
 
     /**
-     * The function to export. If there is more than one function
-     * defined for this deployment, then you must set this variable.
-     * If there is only a single function, you do not have to set this config item.
-     *
+     * The function to export. If there is more than one function defined for this deployment, then you must set this
+     * variable. If there is only a single function, you do not have to set this config item.
      */
     Optional<String> export();
 }

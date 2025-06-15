@@ -35,7 +35,8 @@ public enum AttributeType {
         /**
          * Returns a Set of String values, parsed from the given value.
          *
-         * @param value a comma separated list of values
+         * @param value
+         *        a comma separated list of values
          */
         @Override
         Object convert(String value) {

@@ -101,20 +101,15 @@ public class CodeSizeEvaluator extends MethodVisitor implements Opcodes {
     }
 
     @Override
-    public void visitFieldInsn(
-            final int opcode, final String owner, final String name, final String descriptor) {
+    public void visitFieldInsn(final int opcode, final String owner, final String name, final String descriptor) {
         minSize += 3;
         maxSize += 3;
         super.visitFieldInsn(opcode, owner, name, descriptor);
     }
 
     @Override
-    public void visitMethodInsn(
-            final int opcodeAndSource,
-            final String owner,
-            final String name,
-            final String descriptor,
-            final boolean isInterface) {
+    public void visitMethodInsn(final int opcodeAndSource, final String owner, final String name,
+            final String descriptor, final boolean isInterface) {
         if (api < Opcodes.ASM5 && (opcodeAndSource & Opcodes.SOURCE_DEPRECATED) == 0) {
             // Redirect the call to the deprecated version of this method.
             super.visitMethodInsn(opcodeAndSource, owner, name, descriptor, isInterface);
@@ -133,10 +128,7 @@ public class CodeSizeEvaluator extends MethodVisitor implements Opcodes {
     }
 
     @Override
-    public void visitInvokeDynamicInsn(
-            final String name,
-            final String descriptor,
-            final Handle bootstrapMethodHandle,
+    public void visitInvokeDynamicInsn(final String name, final String descriptor, final Handle bootstrapMethodHandle,
             final Object... bootstrapMethodArguments) {
         minSize += 5;
         maxSize += 5;
@@ -156,8 +148,7 @@ public class CodeSizeEvaluator extends MethodVisitor implements Opcodes {
 
     @Override
     public void visitLdcInsn(final Object value) {
-        if (value instanceof Long
-                || value instanceof Double
+        if (value instanceof Long || value instanceof Double
                 || (value instanceof ConstantDynamic && ((ConstantDynamic) value).getSize() == 2)) {
             minSize += 3;
             maxSize += 3;
@@ -181,8 +172,7 @@ public class CodeSizeEvaluator extends MethodVisitor implements Opcodes {
     }
 
     @Override
-    public void visitTableSwitchInsn(
-            final int min, final int max, final Label dflt, final Label... labels) {
+    public void visitTableSwitchInsn(final int min, final int max, final Label dflt, final Label... labels) {
         minSize += 13 + labels.length * 4;
         maxSize += 16 + labels.length * 4;
         super.visitTableSwitchInsn(min, max, dflt, labels);

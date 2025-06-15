@@ -9,8 +9,8 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
 
 /**
- * Test resource that starts a Google Cloud Function invoker at the beginning of the test and stops it at the end.
- * It must be configured with the {@link WithFunction} annotation.
+ * Test resource that starts a Google Cloud Function invoker at the beginning of the test and stops it at the end. It
+ * must be configured with the {@link WithFunction} annotation.
  */
 public class CloudFunctionTestResource implements QuarkusTestResourceConfigurableLifecycleManager<WithFunction> {
 
@@ -27,7 +27,8 @@ public class CloudFunctionTestResource implements QuarkusTestResourceConfigurabl
 
     @Override
     public Map<String, String> start() {
-        return "".equals(functionName) ? Collections.emptyMap() : Map.of(functionType.getFunctionProperty(), functionName);
+        return "".equals(functionName) ? Collections.emptyMap()
+                : Map.of(functionType.getFunctionProperty(), functionName);
     }
 
     @Override
@@ -35,7 +36,8 @@ public class CloudFunctionTestResource implements QuarkusTestResourceConfigurabl
         if (started.compareAndSet(false, true)) {
             // This is a hack, we cannot start the invoker in the start() method as Quarkus is not yet initialized,
             // so we start it here as this method is called later (the same for reading the test port).
-            int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class).orElse(8081);
+            int port = ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-port", Integer.class)
+                    .orElse(8081);
             this.invoker = new CloudFunctionsInvoker(functionType, port);
             try {
                 this.invoker.start();

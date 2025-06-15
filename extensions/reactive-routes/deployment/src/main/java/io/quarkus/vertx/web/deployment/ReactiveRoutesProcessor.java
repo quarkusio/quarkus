@@ -147,50 +147,41 @@ class ReactiveRoutesProcessor {
 
     @BuildStep
     void unremovableBeans(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        unremovableBeans
-                .produce(UnremovableBeanBuildItem.beanClassAnnotation(DotNames.ROUTE));
-        unremovableBeans
-                .produce(UnremovableBeanBuildItem.beanClassAnnotation(DotNames.ROUTES));
-        unremovableBeans
-                .produce(UnremovableBeanBuildItem
-                        .beanClassAnnotation(DotNames.ROUTE_FILTER));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(DotNames.ROUTE));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(DotNames.ROUTES));
+        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassAnnotation(DotNames.ROUTE_FILTER));
     }
 
     @BuildStep
-    void validateBeanDeployment(
-            BeanArchiveIndexBuildItem beanArchive,
-            ValidationPhaseBuildItem validationPhase,
+    void validateBeanDeployment(BeanArchiveIndexBuildItem beanArchive, ValidationPhaseBuildItem validationPhase,
             TransformedAnnotationsBuildItem transformedAnnotations,
             BuildProducer<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
             BuildProducer<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
-            BuildProducer<ValidationErrorBuildItem> errors,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+            BuildProducer<ValidationErrorBuildItem> errors, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
 
         // Collect all business methods annotated with @Route and @RouteFilter
         AnnotationStore annotationStore = validationPhase.getContext().get(BuildExtension.Key.ANNOTATION_STORE);
         for (BeanInfo bean : validationPhase.getContext().beans().classBeans()) {
             // NOTE: inherited business methods are not taken into account
             ClassInfo beanClass = bean.getTarget().get().asClass();
-            AnnotationInstance routeBaseAnnotation = beanClass
-                    .declaredAnnotation(DotNames.ROUTE_BASE);
+            AnnotationInstance routeBaseAnnotation = beanClass.declaredAnnotation(DotNames.ROUTE_BASE);
             for (MethodInfo method : beanClass.methods()) {
                 if (method.isSynthetic() || Modifier.isStatic(method.flags()) || method.name().equals("<init>")) {
                     continue;
                 }
 
                 List<AnnotationInstance> routes = new LinkedList<>();
-                AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method,
-                        DotNames.ROUTE);
+                AnnotationInstance routeAnnotation = annotationStore.getAnnotation(method, DotNames.ROUTE);
                 if (routeAnnotation != null) {
                     validateRouteMethod(bean, method, transformedAnnotations, beanArchive.getIndex(), routeAnnotation);
                     routes.add(routeAnnotation);
                 }
                 if (routes.isEmpty()) {
-                    AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method,
-                            DotNames.ROUTES);
+                    AnnotationInstance routesAnnotation = annotationStore.getAnnotation(method, DotNames.ROUTES);
                     if (routesAnnotation != null) {
                         for (AnnotationInstance annotation : routesAnnotation.value().asNestedArray()) {
-                            validateRouteMethod(bean, method, transformedAnnotations, beanArchive.getIndex(), annotation);
+                            validateRouteMethod(bean, method, transformedAnnotations, beanArchive.getIndex(),
+                                    annotation);
                             routes.add(annotation);
                         }
                     }
@@ -205,27 +196,29 @@ class ReactiveRoutesProcessor {
                     }
                     if (annotationStore.hasAnnotation(method, DotNames.UNCOMPRESSED)) {
                         if (compression == HttpCompression.ON) {
-                            errors.produce(new ValidationErrorBuildItem(new IllegalStateException(
-                                    String.format(
-                                            "@Compressed and @Uncompressed cannot be both declared on business method %s declared on %s",
-                                            method, bean))));
+                            errors.produce(new ValidationErrorBuildItem(new IllegalStateException(String.format(
+                                    "@Compressed and @Uncompressed cannot be both declared on business method %s declared on %s",
+                                    method, bean))));
                         } else {
                             compression = HttpCompression.OFF;
                         }
                     }
 
                     // Authenticate user if the proactive authentication is disabled and the route is secured with
-                    // an RBAC annotation that requires authentication as io.quarkus.security.runtime.interceptor.SecurityConstrainer
+                    // an RBAC annotation that requires authentication as
+                    // io.quarkus.security.runtime.interceptor.SecurityConstrainer
                     // access the SecurityIdentity in a synchronous manner
                     final boolean blocking = annotationStore.hasAnnotation(method, DotNames.BLOCKING);
                     final boolean alwaysAuthenticateRoute;
                     if (!httpBuildTimeConfig.auth().proactive() && !blocking) {
                         final DotName returnTypeName = method.returnType().name();
-                        // method either returns 'something' in a synchronous manner or void (in which case we can't tell)
+                        // method either returns 'something' in a synchronous manner or void (in which case we can't
+                        // tell)
                         final boolean possiblySynchronousResponse = !returnTypeName.equals(DotNames.UNI)
-                                && !returnTypeName.equals(DotNames.MULTI) && !returnTypeName.equals(DotNames.COMPLETION_STAGE);
-                        final boolean hasRbacAnnotationThatRequiresAuth = annotationStore.hasAnnotation(method, ROLES_ALLOWED)
-                                || annotationStore.hasAnnotation(method, AUTHENTICATED)
+                                && !returnTypeName.equals(DotNames.MULTI)
+                                && !returnTypeName.equals(DotNames.COMPLETION_STAGE);
+                        final boolean hasRbacAnnotationThatRequiresAuth = annotationStore.hasAnnotation(method,
+                                ROLES_ALLOWED) || annotationStore.hasAnnotation(method, AUTHENTICATED)
                                 || annotationStore.hasAnnotation(method, PERMISSIONS_ALLOWED)
                                 || annotationStore.hasAnnotation(method, DENY_ALL);
                         alwaysAuthenticateRoute = possiblySynchronousResponse && hasRbacAnnotationThatRequiresAuth;
@@ -233,19 +226,16 @@ class ReactiveRoutesProcessor {
                         alwaysAuthenticateRoute = false;
                     }
 
-                    routeHandlerBusinessMethods
-                            .produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes, routeBaseAnnotation,
-                                    blocking, compression, alwaysAuthenticateRoute));
+                    routeHandlerBusinessMethods.produce(new AnnotatedRouteHandlerBuildItem(bean, method, routes,
+                            routeBaseAnnotation, blocking, compression, alwaysAuthenticateRoute));
                 }
                 //
-                AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method,
-                        DotNames.ROUTE_FILTER);
+                AnnotationInstance filterAnnotation = annotationStore.getAnnotation(method, DotNames.ROUTE_FILTER);
                 if (filterAnnotation != null) {
                     if (!routes.isEmpty()) {
-                        errors.produce(new ValidationErrorBuildItem(new IllegalStateException(
-                                String.format(
-                                        "@Route and @RouteFilter cannot be declared on business method %s declared on %s",
-                                        method, bean))));
+                        errors.produce(new ValidationErrorBuildItem(new IllegalStateException(String.format(
+                                "@Route and @RouteFilter cannot be declared on business method %s declared on %s",
+                                method, bean))));
                     } else {
                         validateRouteFilterMethod(bean, method);
                         routeFilterBusinessMethods
@@ -262,7 +252,8 @@ class ReactiveRoutesProcessor {
     public void replaceDefaultAuthFailureHandler(VertxWebRecorder recorder, Capabilities capabilities,
             BuildProducer<FilterBuildItem> filterBuildItemBuildProducer) {
         if (capabilities.isMissing(Capability.RESTEASY_REACTIVE)) {
-            // replace default auth failure handler added by vertx-http so that route failure handlers can customize response
+            // replace default auth failure handler added by vertx-http so that route failure handlers can customize
+            // response
             filterBuildItemBuildProducer
                     .produce(new FilterBuildItem(recorder.addAuthFailureHandler(), FilterBuildItem.AUTHENTICATION - 1));
         }
@@ -270,24 +261,18 @@ class ReactiveRoutesProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void addAdditionalRoutes(
-            VertxWebRecorder recorder,
+    void addAdditionalRoutes(VertxWebRecorder recorder,
             List<AnnotatedRouteHandlerBuildItem> routeHandlerBusinessMethods,
             List<AnnotatedRouteFilterBuildItem> routeFilterBusinessMethods,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             io.quarkus.vertx.http.deployment.BodyHandlerBuildItem bodyHandler,
-            BuildProducer<RouteBuildItem> routeProducer,
-            BuildProducer<FilterBuildItem> filterProducer,
-            List<RequireBodyHandlerBuildItem> bodyHandlerRequired,
-            BeanArchiveIndexBuildItem beanArchive,
-            TransformedAnnotationsBuildItem transformedAnnotations,
-            ShutdownContextBuildItem shutdown,
-            LaunchModeBuildItem launchMode,
-            BuildProducer<RouteDescriptionBuildItem> descriptions,
-            Capabilities capabilities,
-            Optional<BeanValidationAnnotationsBuildItem> beanValidationAnnotations,
+            BuildProducer<RouteBuildItem> routeProducer, BuildProducer<FilterBuildItem> filterProducer,
+            List<RequireBodyHandlerBuildItem> bodyHandlerRequired, BeanArchiveIndexBuildItem beanArchive,
+            TransformedAnnotationsBuildItem transformedAnnotations, ShutdownContextBuildItem shutdown,
+            LaunchModeBuildItem launchMode, BuildProducer<RouteDescriptionBuildItem> descriptions,
+            Capabilities capabilities, Optional<BeanValidationAnnotationsBuildItem> beanValidationAnnotations,
             List<ApplicationClassPredicateBuildItem> predicates) {
 
         Predicate<String> appClassPredicate = new Predicate<String>() {
@@ -352,8 +337,7 @@ class ReactiveRoutesProcessor {
                 AnnotationValue typeValue = route.value(VALUE_TYPE);
                 Route.HandlerType routeHandlerType = typeValue == null ? Route.HandlerType.NORMAL
                         : Route.HandlerType.from(typeValue.asEnum());
-                String[] methods = Arrays.stream(methodsValue.asStringArray())
-                        .map(String::toUpperCase)
+                String[] methods = Arrays.stream(methodsValue.asStringArray()).map(String::toUpperCase)
                         .toArray(String[]::new);
                 int order = orderValue.asInt();
 
@@ -436,8 +420,7 @@ class ReactiveRoutesProcessor {
                             businessMethod.getBean(), businessMethod.getMethod(), classOutput, transformedAnnotations,
                             routeString, reflectiveHierarchy, produces.length > 0 ? produces[0] : null,
                             validatorAvailable, index);
-                    reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(handlerClass).build());
+                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(handlerClass).build());
                     routeHandler = recorder.createHandler(handlerClass);
                     routeHandlers.put(routeString, routeHandler);
                 }
@@ -458,25 +441,20 @@ class ReactiveRoutesProcessor {
                 Function<Router, io.vertx.ext.web.Route> routeFunction = recorder.createRouteFunction(matcher,
                         bodyHandler.getHandler(), businessMethod.shouldAlwaysAuthenticateRoute());
 
-                //TODO This needs to be refactored to use routeFunction() taking a Consumer<Route> instead
-                RouteBuildItem.Builder builder = RouteBuildItem.builder()
-                        .routeFunction(routeFunction)
-                        .handlerType(handlerType)
-                        .handler(routeHandler);
+                // TODO This needs to be refactored to use routeFunction() taking a Consumer<Route> instead
+                RouteBuildItem.Builder builder = RouteBuildItem.builder().routeFunction(routeFunction)
+                        .handlerType(handlerType).handler(routeHandler);
                 routeProducer.produce(builder.build());
 
                 if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
                     if (methods.length == 0) {
                         // No explicit method declared - match all methods
-                        methods = Arrays.stream(HttpMethod.values())
-                                .map(Enum::name)
-                                .toArray(String[]::new);
+                        methods = Arrays.stream(HttpMethod.values()).map(Enum::name).toArray(String[]::new);
                     }
                     descriptions.produce(new RouteDescriptionBuildItem(
                             businessMethod.getMethod().declaringClass().name().withoutPackagePrefix() + "#"
                                     + businessMethod.getMethod().name() + "()",
-                            regex != null ? regex : path,
-                            String.join(", ", methods), produces, consumes));
+                            regex != null ? regex : path, String.join(", ", methods), produces, consumes));
                 }
             }
         }
@@ -500,11 +478,8 @@ class ReactiveRoutesProcessor {
     @BuildStep
     AutoAddScopeBuildItem autoAddScope() {
         return AutoAddScopeBuildItem.builder()
-                .containsAnnotations(DotNames.ROUTE,
-                        DotNames.ROUTES,
-                        DotNames.ROUTE_FILTER)
-                .defaultScope(BuiltinScope.SINGLETON)
-                .reason("Found route handler business methods").build();
+                .containsAnnotations(DotNames.ROUTE, DotNames.ROUTES, DotNames.ROUTE_FILTER)
+                .defaultScope(BuiltinScope.SINGLETON).reason("Found route handler business methods").build();
     }
 
     private void validateRouteFilterMethod(BeanInfo bean, MethodInfo method) {
@@ -513,8 +488,7 @@ class ReactiveRoutesProcessor {
                     String.format("Route filter method must return void [method: %s, bean: %s]", method, bean));
         }
         List<Type> params = method.parameterTypes();
-        if (params.size() != 1 || !params.get(0).name()
-                .equals(DotNames.ROUTING_CONTEXT)) {
+        if (params.size() != 1 || !params.get(0).name().equals(DotNames.ROUTING_CONTEXT)) {
             throw new IllegalStateException(String.format(
                     "Route filter method must accept exactly one parameter of type %s: %s [method: %s, bean: %s]",
                     DotNames.ROUTING_CONTEXT, params, method, bean));
@@ -522,7 +496,8 @@ class ReactiveRoutesProcessor {
     }
 
     private void validateRouteMethod(BeanInfo bean, MethodInfo method,
-            TransformedAnnotationsBuildItem transformedAnnotations, IndexView index, AnnotationInstance routeAnnotation) {
+            TransformedAnnotationsBuildItem transformedAnnotations, IndexView index,
+            AnnotationInstance routeAnnotation) {
         List<Type> params = method.parameterTypes();
         if (params.isEmpty()) {
             if (method.returnType().kind() == Kind.VOID && params.isEmpty()) {
@@ -537,38 +512,31 @@ class ReactiveRoutesProcessor {
 
             DotName returnTypeName = method.returnType().name();
 
-            if ((returnTypeName.equals(DotNames.UNI)
-                    || returnTypeName.equals(DotNames.MULTI)
-                    || returnTypeName.equals(DotNames.COMPLETION_STAGE))
-                    && method.returnType().kind() == Kind.CLASS) {
-                throw new IllegalStateException(
-                        String.format(
-                                "Route business method returning a Uni/Multi/CompletionStage must have a generic parameter [method: %s, bean: %s]",
-                                method, bean));
+            if ((returnTypeName.equals(DotNames.UNI) || returnTypeName.equals(DotNames.MULTI)
+                    || returnTypeName.equals(DotNames.COMPLETION_STAGE)) && method.returnType().kind() == Kind.CLASS) {
+                throw new IllegalStateException(String.format(
+                        "Route business method returning a Uni/Multi/CompletionStage must have a generic parameter [method: %s, bean: %s]",
+                        method, bean));
             }
             boolean canEndResponse = false;
             int idx = 0;
             int failureParams = 0;
             for (Type paramType : params) {
-                Set<AnnotationInstance> paramAnnotations = Annotations
-                        .getParameterAnnotations(transformedAnnotations, method,
-                                idx);
+                Set<AnnotationInstance> paramAnnotations = Annotations.getParameterAnnotations(transformedAnnotations,
+                        method, idx);
                 List<ParameterInjector> injectors = getMatchingInjectors(paramType, paramAnnotations, index);
                 if (injectors.isEmpty()) {
                     throw new IllegalStateException(String.format(
                             "No parameter injector found for parameter %s of route method %s declared on %s", idx,
-                            method,
-                            bean));
+                            method, bean));
                 }
                 if (injectors.size() > 1) {
                     throw new IllegalStateException(String.format(
                             "Multiple parameter injectors found for parameter %s of route method %s declared on %s",
-                            idx,
-                            method, bean));
+                            idx, method, bean));
                 }
                 ParameterInjector injector = injectors.get(0);
-                if (injector.getTargetHandlerType() != null
-                        && !injector.getTargetHandlerType().equals(handlerType)) {
+                if (injector.getTargetHandlerType() != null && !injector.getTargetHandlerType().equals(handlerType)) {
                     throw new IllegalStateException(String.format(
                             "HandlerType.%s is not legal for parameter %s of route method %s declared on %s",
                             injector.getTargetHandlerType(), idx, method, bean));
@@ -656,26 +624,19 @@ class ReactiveRoutesProcessor {
     }
 
     void implementConstructor(BeanInfo bean, ClassCreator invokerCreator, FieldCreator beanField,
-            FieldCreator contextField,
-            FieldCreator containerField, FieldCreator validatorField) {
+            FieldCreator contextField, FieldCreator containerField, FieldCreator validatorField) {
         MethodCreator constructor = invokerCreator.getMethodCreator("<init>", void.class);
         // Invoke super()
         constructor.invokeSpecialMethod(Methods.ROUTE_HANDLER_CONSTRUCTOR, constructor.getThis());
 
-        ResultHandle containerHandle = constructor
-                .invokeStaticMethod(Methods.ARC_CONTAINER);
-        ResultHandle beanHandle = constructor.invokeInterfaceMethod(
-                Methods.ARC_CONTAINER_BEAN,
-                containerHandle, constructor.load(bean.getIdentifier()));
+        ResultHandle containerHandle = constructor.invokeStaticMethod(Methods.ARC_CONTAINER);
+        ResultHandle beanHandle = constructor.invokeInterfaceMethod(Methods.ARC_CONTAINER_BEAN, containerHandle,
+                constructor.load(bean.getIdentifier()));
         constructor.writeInstanceField(beanField.getFieldDescriptor(), constructor.getThis(), beanHandle);
         if (contextField != null) {
             constructor.writeInstanceField(contextField.getFieldDescriptor(), constructor.getThis(),
-                    constructor.invokeInterfaceMethod(
-                            Methods.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
-                            containerHandle, constructor
-                                    .invokeInterfaceMethod(
-                                            Methods.BEAN_GET_SCOPE,
-                                            beanHandle)));
+                    constructor.invokeInterfaceMethod(Methods.ARC_CONTAINER_GET_ACTIVE_CONTEXT, containerHandle,
+                            constructor.invokeInterfaceMethod(Methods.BEAN_GET_SCOPE, beanHandle)));
         } else {
             constructor.writeInstanceField(containerField.getFieldDescriptor(), constructor.getThis(), containerHandle);
         }
@@ -700,12 +661,10 @@ class ReactiveRoutesProcessor {
 
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
             // Always create a new dependent instance
-            invoke.assign(creationalContextHandle,
-                    invoke.newInstance(MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                            beanHandle));
-            invoke.assign(beanInstanceHandle, invoke.invokeInterfaceMethod(
-                    Methods.INJECTABLE_REF_PROVIDER_GET, beanHandle,
-                    creationalContextHandle));
+            invoke.assign(creationalContextHandle, invoke.newInstance(
+                    MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), beanHandle));
+            invoke.assign(beanInstanceHandle, invoke.invokeInterfaceMethod(Methods.INJECTABLE_REF_PROVIDER_GET,
+                    beanHandle, creationalContextHandle));
         } else {
             ResultHandle contextInvokeHandle;
             if (contextField != null) {
@@ -713,19 +672,14 @@ class ReactiveRoutesProcessor {
             } else {
                 ResultHandle containerInvokeHandle = invoke.readInstanceField(containerField.getFieldDescriptor(),
                         invoke.getThis());
-                contextInvokeHandle = invoke.invokeInterfaceMethod(
-                        Methods.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
-                        containerInvokeHandle, invoke
-                                .invokeInterfaceMethod(
-                                        Methods.BEAN_GET_SCOPE,
-                                        beanHandle));
+                contextInvokeHandle = invoke.invokeInterfaceMethod(Methods.ARC_CONTAINER_GET_ACTIVE_CONTEXT,
+                        containerInvokeHandle, invoke.invokeInterfaceMethod(Methods.BEAN_GET_SCOPE, beanHandle));
                 invoke.ifNull(contextInvokeHandle).trueBranch().throwException(ContextNotActiveException.class,
                         "Context not active: " + bean.getScope().getDotName());
             }
             // First try to obtain the bean via Context.get(bean)
             invoke.assign(beanInstanceHandle,
-                    invoke.invokeInterfaceMethod(Methods.CONTEXT_GET_IF_PRESENT, contextInvokeHandle,
-                            beanHandle));
+                    invoke.invokeInterfaceMethod(Methods.CONTEXT_GET_IF_PRESENT, contextInvokeHandle, beanHandle));
             // If not present, try Context.get(bean,creationalContext)
             BytecodeCreator doesNotExist = invoke.ifNull(beanInstanceHandle).trueBranch();
             doesNotExist.assign(beanInstanceHandle,
@@ -743,18 +697,17 @@ class ReactiveRoutesProcessor {
 
         int idx = 0;
         for (Type paramType : parameters) {
-            Set<AnnotationInstance> paramAnnotations = Annotations
-                    .getParameterAnnotations(transformedAnnotations, method, idx);
+            Set<AnnotationInstance> paramAnnotations = Annotations.getParameterAnnotations(transformedAnnotations,
+                    method, idx);
             // At this point we can be sure that a matching injector is available
-            paramHandles[idx] = getMatchingInjectors(paramType, paramAnnotations, index).get(0)
-                    .getResultHandle(method, paramType,
-                            paramAnnotations, routingContext, invoke, idx, reflectiveHierarchy);
+            paramHandles[idx] = getMatchingInjectors(paramType, paramAnnotations, index).get(0).getResultHandle(method,
+                    paramType, paramAnnotations, routingContext, invoke, idx, reflectiveHierarchy);
             parameterTypes[idx] = paramType.name().toString();
             idx++;
         }
 
-        MethodDescriptor methodDescriptor = MethodDescriptor
-                .ofMethod(bean.getImplClazz().name().toString(), method.name(), returnType, parameterTypes);
+        MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(bean.getImplClazz().name().toString(),
+                method.name(), returnType, parameterTypes);
 
         // If no content-type header is set then try to use the most acceptable content type
         // the business method can override this manually if required
@@ -805,9 +758,8 @@ class ReactiveRoutesProcessor {
             CatchBlockCreator caught = block.addCatch(Methods.VALIDATION_CONSTRAINT_VIOLATION_EXCEPTION);
             boolean forceJsonEncoding = !descriptor.isPayloadString() && !descriptor.isPayloadTypeBuffer()
                     && !descriptor.isPayloadMutinyBuffer();
-            caught.invokeStaticMethod(
-                    Methods.VALIDATION_HANDLE_VIOLATION_EXCEPTION,
-                    caught.getCaughtException(), invoke.getMethodParam(0), invoke.load(forceJsonEncoding));
+            caught.invokeStaticMethod(Methods.VALIDATION_HANDLE_VIOLATION_EXCEPTION, caught.getCaughtException(),
+                    invoke.getMethodParam(0), invoke.load(forceJsonEncoding));
             caught.returnValue(caught.loadNull());
         }
 
@@ -819,13 +771,15 @@ class ReactiveRoutesProcessor {
             // If the method returned null, we fail
             // If the provided item is null and the method does not return a Uni<Void>, we fail
             // If the provided item is null, and the method return a Uni<Void>, we reply with a 204 - NO CONTENT
-            // If the provided item is not null, if it's a string or buffer, the response.end method is used to write the response
-            // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the response
-            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, routingContext, end, validatorField);
+            // If the provided item is not null, if it's a string or buffer, the response.end method is used to write
+            // the response
+            // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the
+            // response
+            FunctionCreator successCallback = getUniOnItemCallback(descriptor, invoke, routingContext, end,
+                    validatorField);
             ResultHandle failureCallback = getUniOnFailureCallback(invoke, routingContext);
             ResultHandle sub = invoke.invokeInterfaceMethod(Methods.UNI_SUBSCRIBE, res);
-            invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(),
-                    failureCallback);
+            invoke.invokeVirtualMethod(Methods.UNI_SUBSCRIBE_WITH, sub, successCallback.getInstance(), failureCallback);
             registerForReflection(descriptor.getPayloadType(), reflectiveHierarchy);
 
         } else if (descriptor.isReturningMulti()) {
@@ -873,9 +827,12 @@ class ReactiveRoutesProcessor {
             // The method returns a CompletionStage - we write the provided item in the HTTP response
             // If the method returned null, we fail
             // If the provided item is null and the method does not return a CompletionStage<Void>, we fail
-            // If the provided item is null, and the method return a CompletionStage<Void>, we reply with a 204 - NO CONTENT
-            // If the provided item is not null, if it's a string or buffer, the response.end method is used to write the response
-            // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the response
+            // If the provided item is null, and the method return a CompletionStage<Void>, we reply with a 204 - NO
+            // CONTENT
+            // If the provided item is not null, if it's a string or buffer, the response.end method is used to write
+            // the response
+            // If the provided item is not null, and it's an object, the item is mapped to JSON and written into the
+            // response
             ResultHandle consumer = getWhenCompleteCallback(descriptor, invoke, routingContext, end, validatorField)
                     .getInstance();
             invoke.invokeInterfaceMethod(Methods.CS_WHEN_COMPLETE, res, consumer);
@@ -897,8 +854,8 @@ class ReactiveRoutesProcessor {
 
         // Destroy dependent instance afterwards
         if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
-            invoke.invokeInterfaceMethod(Methods.INJECTABLE_BEAN_DESTROY, beanHandle,
-                    beanInstanceHandle, creationalContextHandle);
+            invoke.invokeInterfaceMethod(Methods.INJECTABLE_BEAN_DESTROY, beanHandle, beanInstanceHandle,
+                    creationalContextHandle);
         }
         invoke.returnValue(null);
     }
@@ -926,21 +883,18 @@ class ReactiveRoutesProcessor {
         return false;
     }
 
-    private static final List<DotName> TYPES_IGNORED_FOR_REFLECTION = Arrays
-            .asList(io.quarkus.arc.processor.DotNames.STRING,
-                    DotNames.BUFFER, DotNames.JSON_ARRAY, DotNames.JSON_OBJECT);
+    private static final List<DotName> TYPES_IGNORED_FOR_REFLECTION = Arrays.asList(
+            io.quarkus.arc.processor.DotNames.STRING, DotNames.BUFFER, DotNames.JSON_ARRAY, DotNames.JSON_OBJECT);
 
     private static void registerForReflection(Type contentType,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
         if (TYPES_IGNORED_FOR_REFLECTION.contains(contentType.name())) {
             return;
         }
-        reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                .builder(contentType)
+        reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(contentType)
                 .ignoreTypePredicate(ReflectiveHierarchyBuildItem.DefaultIgnoreTypePredicate.INSTANCE
                         .or(TYPES_IGNORED_FOR_REFLECTION::contains))
-                .source(ReactiveRoutesProcessor.class.getSimpleName() + " > " + contentType)
-                .build());
+                .source(ReactiveRoutesProcessor.class.getSimpleName() + " > " + contentType).build());
     }
 
     private void handleRegularMulti(HandlerDescriptor descriptor, BytecodeCreator writer, ResultHandle rc,
@@ -952,7 +906,8 @@ class ReactiveRoutesProcessor {
         // If the provided item is null we fail
         // If the multi is empty, and the method return a Multi<Void>, we reply with a 204 - NO CONTENT
         // If the produce item is a string or buffer, the response.write method is used to write the response
-        // If the produce item is an object, the item is mapped to JSON and written into the response. The response is a JSON array.
+        // If the produce item is an object, the item is mapped to JSON and written into the response. The response is a
+        // JSON array.
 
         if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
@@ -975,8 +930,10 @@ class ReactiveRoutesProcessor {
         // If the method returned null, we fail
         // If the provided item is null we fail
         // If the multi is empty, and the method return a Multi<Void>, we reply with a 204 - NO CONTENT (as regular)
-        // If the produced item is a string or buffer, the response.write method is used to write the events in the response
-        // If the produced item is an object, the item is mapped to JSON and included in the `data` section of the event.
+        // If the produced item is a string or buffer, the response.write method is used to write the events in the
+        // response
+        // If the produced item is an object, the item is mapped to JSON and included in the `data` section of the
+        // event.
 
         if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
@@ -999,8 +956,10 @@ class ReactiveRoutesProcessor {
         // If the method returned null, we fail
         // If the provided item is null we fail
         // If the multi is empty, and the method return a Multi<Void>, we reply with a 204 - NO CONTENT (as regular)
-        // If the produced item is a string or buffer, the response.write method is used to write the events in the response
-        // If the produced item is an object, the item is mapped to JSON and included in the `data` section of the event.
+        // If the produced item is a string or buffer, the response.write method is used to write the events in the
+        // response
+        // If the produced item is an object, the item is mapped to JSON and included in the `data` section of the
+        // event.
 
         if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
             writer.invokeStaticMethod(Methods.MULTI_SUBSCRIBE_VOID, res, rc);
@@ -1022,7 +981,8 @@ class ReactiveRoutesProcessor {
         // If the provided item is null we fail
         // If the multi is empty, we send an empty JSON array
         // If the produced item is a string, the response.write method is used to write the events in the response
-        // If the produced item is an object, the item is mapped to JSON and included in the `data` section of the event.
+        // If the produced item is an object, the item is mapped to JSON and included in the `data` section of the
+        // event.
         // If the produced item is a buffer, we fail
 
         if (Methods.isNoContent(descriptor)) { // Multi<Void> - so return a 204.
@@ -1085,11 +1045,17 @@ class ReactiveRoutesProcessor {
      * <p>
      * This last version also set the {@code content-type} header to {@code application/json }if not set.
      *
-     * @param descriptor the method descriptor
-     * @param invoke the main bytecode writer
-     * @param rc the reference to the routing context variable
-     * @param end the end method to use
-     * @param validatorField the validator field if validation is enabled
+     * @param descriptor
+     *        the method descriptor
+     * @param invoke
+     *        the main bytecode writer
+     * @param rc
+     *        the reference to the routing context variable
+     * @param end
+     *        the end method to use
+     * @param validatorField
+     *        the validator field if validation is enabled
+     *
      * @return the function creator
      */
     private FunctionCreator getUniOnItemCallback(HandlerDescriptor descriptor, MethodCreator invoke, ResultHandle rc,
@@ -1150,7 +1116,8 @@ class ReactiveRoutesProcessor {
             itemNotNull.invokeInterfaceMethod(end, response, content);
 
             BytecodeCreator itemNull = itemNullCheck.trueBranch();
-            ResultHandle npe = itemNull.newInstance(MethodDescriptor.ofConstructor(NullPointerException.class, String.class),
+            ResultHandle npe = itemNull.newInstance(
+                    MethodDescriptor.ofConstructor(NullPointerException.class, String.class),
                     itemNull.load("Null is not a valid return value for @Route method with return type: "
                             + descriptor.getReturnType()));
             itemNull.invokeInterfaceMethod(Methods.FAIL, rc, npe);
@@ -1177,8 +1144,8 @@ class ReactiveRoutesProcessor {
         // Encode to Json
         Methods.setContentTypeToJson(response, writer);
         // Validate res if needed
-        if (descriptor.isProducedResponseValidated()
-                && (descriptor.isReturningUni() || descriptor.isReturningMulti() || descriptor.isReturningCompletionStage())) {
+        if (descriptor.isProducedResponseValidated() && (descriptor.isReturningUni() || descriptor.isReturningMulti()
+                || descriptor.isReturningCompletionStage())) {
             return Methods.validateProducedItem(response, writer, res, validatorField, owner);
         } else {
             return writer.invokeStaticMethod(Methods.JSON_ENCODE, res);
@@ -1206,8 +1173,7 @@ class ReactiveRoutesProcessor {
         }
         // First we need to group matchers that could potentially match the same request
         Set<LinkedHashSet<RouteMatcher>> groups = new HashSet<>();
-        for (Iterator<Entry<RouteMatcher, MethodInfo>> iterator = matchers.entrySet().iterator(); iterator
-                .hasNext();) {
+        for (Iterator<Entry<RouteMatcher, MethodInfo>> iterator = matchers.entrySet().iterator(); iterator.hasNext();) {
             Entry<RouteMatcher, MethodInfo> entry = iterator.next();
             LinkedHashSet<RouteMatcher> group = new LinkedHashSet<>();
             group.add(entry.getKey());
@@ -1243,10 +1209,9 @@ class ReactiveRoutesProcessor {
                     conflictingRoutes.append("\n\t- ").append(method.declaringClass().name().toString()).append("#")
                             .append(method.name()).append("()");
                 }
-                LOGGER.warnf(
-                        "Route %s#%s() can match the same request and has the same order [%s] as:%s",
-                        firstMethod.declaringClass().name(),
-                        firstMethod.name(), firstMatcher.getOrder(), conflictingRoutes);
+                LOGGER.warnf("Route %s#%s() can match the same request and has the same order [%s] as:%s",
+                        firstMethod.declaringClass().name(), firstMethod.name(), firstMatcher.getOrder(),
+                        conflictingRoutes);
             }
         }
         if (conflictExists) {
@@ -1267,18 +1232,18 @@ class ReactiveRoutesProcessor {
             }
         }
         // methods not matching
-        if (m1.getMethods().length > 0 && m2.getMethods().length > 0 && !Arrays
-                .equals(m1.getMethods(), m2.getMethods())) {
+        if (m1.getMethods().length > 0 && m2.getMethods().length > 0
+                && !Arrays.equals(m1.getMethods(), m2.getMethods())) {
             return false;
         }
         // produces not matching
-        if (m1.getProduces().length > 0 && m2.getProduces().length > 0 && !Arrays
-                .equals(m1.getProduces(), m2.getProduces())) {
+        if (m1.getProduces().length > 0 && m2.getProduces().length > 0
+                && !Arrays.equals(m1.getProduces(), m2.getProduces())) {
             return false;
         }
         // consumes not matching
-        if (m1.getConsumes().length > 0 && m2.getConsumes().length > 0 && !Arrays
-                .equals(m1.getConsumes(), m2.getConsumes())) {
+        if (m1.getConsumes().length > 0 && m2.getConsumes().length > 0
+                && !Arrays.equals(m1.getConsumes(), m2.getConsumes())) {
             return false;
         }
         return true;
@@ -1298,16 +1263,15 @@ class ReactiveRoutesProcessor {
     static List<ParameterInjector> initParamInjectors() {
         List<ParameterInjector> injectors = new ArrayList<>();
 
-        injectors.add(
-                ParameterInjector.builder().canEndResponse().matchType(DotNames.ROUTING_CONTEXT)
-                        .resultHandleProvider(new ResultHandleProvider() {
-                            @Override
-                            public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
-                                    ResultHandle routingContext, MethodCreator invoke, int position,
-                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                                return routingContext;
-                            }
-                        }).build());
+        injectors.add(ParameterInjector.builder().canEndResponse().matchType(DotNames.ROUTING_CONTEXT)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return routingContext;
+                    }
+                }).build());
 
         injectors.add(ParameterInjector.builder().canEndResponse().matchType(DotNames.ROUTING_EXCHANGE)
                 .resultHandleProvider(new ResultHandleProvider() {
@@ -1315,10 +1279,9 @@ class ReactiveRoutesProcessor {
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
                             ResultHandle routingContext, MethodCreator invoke, int position,
                             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                        return invoke
-                                .newInstance(
-                                        MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
-                                        routingContext);
+                        return invoke.newInstance(
+                                MethodDescriptor.ofConstructor(RoutingExchangeImpl.class, RoutingContext.class),
+                                routingContext);
                     }
                 }).build());
 
@@ -1328,9 +1291,7 @@ class ReactiveRoutesProcessor {
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
                             ResultHandle routingContext, MethodCreator invoke, int position,
                             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                        return invoke
-                                .invokeInterfaceMethod(Methods.REQUEST,
-                                        routingContext);
+                        return invoke.invokeInterfaceMethod(Methods.REQUEST, routingContext);
                     }
                 }).build());
 
@@ -1340,9 +1301,7 @@ class ReactiveRoutesProcessor {
                     public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
                             ResultHandle routingContext, MethodCreator invoke, int position,
                             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                        return invoke
-                                .invokeInterfaceMethod(Methods.RESPONSE,
-                                        routingContext);
+                        return invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext);
                     }
                 }).build());
 
@@ -1353,44 +1312,35 @@ class ReactiveRoutesProcessor {
                             ResultHandle routingContext, MethodCreator invoke, int position,
                             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         return invoke.newInstance(
-                                MethodDescriptor
-                                        .ofConstructor(io.vertx.mutiny.core.http.HttpServerRequest.class,
-                                                HttpServerRequest.class),
-                                invoke
-                                        .invokeInterfaceMethod(Methods.REQUEST,
-                                                routingContext));
+                                MethodDescriptor.ofConstructor(io.vertx.mutiny.core.http.HttpServerRequest.class,
+                                        HttpServerRequest.class),
+                                invoke.invokeInterfaceMethod(Methods.REQUEST, routingContext));
                     }
                 }).build());
 
-        injectors
-                .add(ParameterInjector.builder().canEndResponse().matchType(DotNames.MUTINY_HTTP_SERVER_RESPONSE)
-                        .resultHandleProvider(new ResultHandleProvider() {
-                            @Override
-                            public ResultHandle get(MethodInfo method, Type paramType,
-                                    Set<AnnotationInstance> annotations,
-                                    ResultHandle routingContext, MethodCreator invoke, int position,
-                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                                return invoke.newInstance(
-                                        MethodDescriptor
-                                                .ofConstructor(io.vertx.mutiny.core.http.HttpServerResponse.class,
-                                                        HttpServerResponse.class),
-                                        invoke
-                                                .invokeInterfaceMethod(Methods.RESPONSE,
-                                                        routingContext));
-                            }
-                        }).build());
+        injectors.add(ParameterInjector.builder().canEndResponse().matchType(DotNames.MUTINY_HTTP_SERVER_RESPONSE)
+                .resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        return invoke.newInstance(
+                                MethodDescriptor.ofConstructor(io.vertx.mutiny.core.http.HttpServerResponse.class,
+                                        HttpServerResponse.class),
+                                invoke.invokeInterfaceMethod(Methods.RESPONSE, routingContext));
+                    }
+                }).build());
 
         injectors.add(ParameterInjector.builder().matchPrimitiveWrappers()
                 .matchType(io.quarkus.arc.processor.DotNames.STRING)
                 .matchOptionalOf(io.quarkus.arc.processor.DotNames.STRING)
-                .matchListOf(io.quarkus.arc.processor.DotNames.STRING)
-                .requireAnnotations(DotNames.PARAM)
+                .matchListOf(io.quarkus.arc.processor.DotNames.STRING).requireAnnotations(DotNames.PARAM)
                 .resultHandleProvider(
                         new ParamAndHeaderProvider(DotNames.PARAM, Methods.REQUEST_PARAMS, Methods.REQUEST_GET_PARAM))
                 .validate(new ParamValidator() {
                     @Override
-                    public void validate(BeanInfo bean, MethodInfo method, AnnotationInstance routeAnnotation, Type paramType,
-                            Set<AnnotationInstance> paramAnnotations) {
+                    public void validate(BeanInfo bean, MethodInfo method, AnnotationInstance routeAnnotation,
+                            Type paramType, Set<AnnotationInstance> paramAnnotations) {
                         AnnotationInstance paramAnnotation = Annotations.find(paramAnnotations, DotNames.PARAM);
                         AnnotationValue paramNameValue = paramAnnotation.value();
                         if (paramNameValue != null && !paramNameValue.asString().equals(Param.ELEMENT_NAME)) {
@@ -1400,83 +1350,68 @@ class ReactiveRoutesProcessor {
                             if (regexValue == null && pathValue != null) {
                                 String path = pathValue.asString();
                                 // Validate the name if used as a path parameter
-                                if (path.contains(":" + paramName) && !PATH_PARAM_PATTERN.matcher(paramName).matches()) {
+                                if (path.contains(":" + paramName)
+                                        && !PATH_PARAM_PATTERN.matcher(paramName).matches()) {
                                     // TODO This requirement should be relaxed in vertx 4.0.3+
                                     // https://github.com/vert-x3/vertx-web/pull/1881
                                     throw new IllegalStateException(String.format(
                                             "A path param name must only contain word characters (a-zA-Z_0-9): %s [route method %s declared on %s]",
-                                            paramName,
-                                            method, bean.getBeanClass()));
+                                            paramName, method, bean.getBeanClass()));
                                 }
                             }
                         }
                     }
-                })
-                .build());
+                }).build());
 
-        injectors.add(ParameterInjector.builder().matchPrimitiveWrappers()
-                .matchType(io.quarkus.arc.processor.DotNames.STRING)
-                .matchOptionalOf(io.quarkus.arc.processor.DotNames.STRING)
-                .matchListOf(io.quarkus.arc.processor.DotNames.STRING)
-                .requireAnnotations(DotNames.HEADER)
-                .resultHandleProvider(
-                        new ParamAndHeaderProvider(DotNames.HEADER, Methods.REQUEST_HEADERS, Methods.REQUEST_GET_HEADER))
-                .build());
+        injectors.add(
+                ParameterInjector.builder().matchPrimitiveWrappers().matchType(io.quarkus.arc.processor.DotNames.STRING)
+                        .matchOptionalOf(io.quarkus.arc.processor.DotNames.STRING)
+                        .matchListOf(io.quarkus.arc.processor.DotNames.STRING).requireAnnotations(DotNames.HEADER)
+                        .resultHandleProvider(new ParamAndHeaderProvider(DotNames.HEADER, Methods.REQUEST_HEADERS,
+                                Methods.REQUEST_GET_HEADER))
+                        .build());
 
-        injectors
-                .add(ParameterInjector.builder()
-                        .matchType(io.quarkus.arc.processor.DotNames.STRING)
-                        .matchType(DotNames.BUFFER)
-                        .matchType(DotNames.JSON_OBJECT)
-                        .matchType(DotNames.JSON_ARRAY)
-                        .requireAnnotations(DotNames.BODY)
-                        .resultHandleProvider(new ResultHandleProvider() {
-                            @Override
-                            public ResultHandle get(MethodInfo method, Type paramType,
-                                    Set<AnnotationInstance> annotations,
-                                    ResultHandle routingContext, MethodCreator invoke, int position,
-                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                                if (paramType.name().equals(io.quarkus.arc.processor.DotNames.STRING)) {
-                                    return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_STRING, routingContext);
-                                } else if (paramType.name().equals(DotNames.BUFFER)) {
-                                    return invoke.invokeInterfaceMethod(Methods.GET_BODY, routingContext);
-                                } else if (paramType.name().equals(DotNames.JSON_OBJECT)) {
-                                    return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON, routingContext);
-                                } else if (paramType.name().equals(DotNames.JSON_ARRAY)) {
-                                    return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON_ARRAY, routingContext);
-                                }
-                                // This should never happen
-                                throw new IllegalArgumentException("Unsupported param type: " + paramType);
-                            }
-                        }).build());
+        injectors.add(ParameterInjector.builder().matchType(io.quarkus.arc.processor.DotNames.STRING)
+                .matchType(DotNames.BUFFER).matchType(DotNames.JSON_OBJECT).matchType(DotNames.JSON_ARRAY)
+                .requireAnnotations(DotNames.BODY).resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        if (paramType.name().equals(io.quarkus.arc.processor.DotNames.STRING)) {
+                            return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_STRING, routingContext);
+                        } else if (paramType.name().equals(DotNames.BUFFER)) {
+                            return invoke.invokeInterfaceMethod(Methods.GET_BODY, routingContext);
+                        } else if (paramType.name().equals(DotNames.JSON_OBJECT)) {
+                            return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON, routingContext);
+                        } else if (paramType.name().equals(DotNames.JSON_ARRAY)) {
+                            return invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON_ARRAY, routingContext);
+                        }
+                        // This should never happen
+                        throw new IllegalArgumentException("Unsupported param type: " + paramType);
+                    }
+                }).build());
 
-        injectors
-                .add(ParameterInjector.builder()
-                        .skipType(io.quarkus.arc.processor.DotNames.STRING)
-                        .skipType(DotNames.BUFFER)
-                        .skipType(DotNames.JSON_OBJECT)
-                        .skipType(DotNames.JSON_ARRAY)
-                        .requireAnnotations(DotNames.BODY)
-                        .resultHandleProvider(new ResultHandleProvider() {
-                            @Override
-                            public ResultHandle get(MethodInfo method, Type paramType,
-                                    Set<AnnotationInstance> annotations,
-                                    ResultHandle routingContext, MethodCreator invoke, int position,
-                                    BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-                                registerForReflection(paramType, reflectiveHierarchy);
-                                AssignableResultHandle ret = invoke.createVariable(Object.class);
-                                ResultHandle bodyAsJson = invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON,
-                                        routingContext);
-                                BranchResult bodyIfNotNull = invoke.ifNotNull(bodyAsJson);
-                                BytecodeCreator bodyNotNull = bodyIfNotNull.trueBranch();
-                                bodyNotNull.assign(ret, bodyNotNull.invokeVirtualMethod(Methods.JSON_OBJECT_MAP_TO,
-                                        bodyAsJson,
-                                        bodyNotNull.loadClassFromTCCL(paramType.name().toString())));
-                                BytecodeCreator bodyNull = bodyIfNotNull.falseBranch();
-                                bodyNull.assign(ret, bodyNull.loadNull());
-                                return ret;
-                            }
-                        }).build());
+        injectors.add(ParameterInjector.builder().skipType(io.quarkus.arc.processor.DotNames.STRING)
+                .skipType(DotNames.BUFFER).skipType(DotNames.JSON_OBJECT).skipType(DotNames.JSON_ARRAY)
+                .requireAnnotations(DotNames.BODY).resultHandleProvider(new ResultHandleProvider() {
+                    @Override
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
+                            ResultHandle routingContext, MethodCreator invoke, int position,
+                            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
+                        registerForReflection(paramType, reflectiveHierarchy);
+                        AssignableResultHandle ret = invoke.createVariable(Object.class);
+                        ResultHandle bodyAsJson = invoke.invokeInterfaceMethod(Methods.GET_BODY_AS_JSON,
+                                routingContext);
+                        BranchResult bodyIfNotNull = invoke.ifNotNull(bodyAsJson);
+                        BytecodeCreator bodyNotNull = bodyIfNotNull.trueBranch();
+                        bodyNotNull.assign(ret, bodyNotNull.invokeVirtualMethod(Methods.JSON_OBJECT_MAP_TO, bodyAsJson,
+                                bodyNotNull.loadClassFromTCCL(paramType.name().toString())));
+                        BytecodeCreator bodyNull = bodyIfNotNull.falseBranch();
+                        bodyNull.assign(ret, bodyNull.loadNull());
+                        return ret;
+                    }
+                }).build());
 
         // Add injector for failures
         injectors.add(ParameterInjector.builder().targetHandlerType(Route.HandlerType.FAILURE)
@@ -1487,8 +1422,7 @@ class ReactiveRoutesProcessor {
                     }
                 }).resultHandleProvider(new ResultHandleProvider() {
                     @Override
-                    public ResultHandle get(MethodInfo method, Type paramType,
-                            Set<AnnotationInstance> annotations,
+                    public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
                             ResultHandle routingContext, MethodCreator invoke, int position,
                             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
                         return invoke.invokeInterfaceMethod(Methods.FAILURE, routingContext);
@@ -1499,10 +1433,9 @@ class ReactiveRoutesProcessor {
     }
 
     private static IllegalStateException parameterNameNotAvailable(int position, MethodInfo method) {
-        return new IllegalStateException(
-                "Unable to determine the name of the parameter at position " + position + " in method "
-                        + method.declaringClass().name() + "#" + method.name()
-                        + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or specify the appropriate annotation value");
+        return new IllegalStateException("Unable to determine the name of the parameter at position " + position
+                + " in method " + method.declaringClass().name() + "#" + method.name()
+                + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or specify the appropriate annotation value");
 
     }
 
@@ -1523,8 +1456,7 @@ class ReactiveRoutesProcessor {
         public ResultHandle get(MethodInfo method, Type paramType, Set<AnnotationInstance> annotations,
                 ResultHandle routingContext, MethodCreator invoke, int position,
                 BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy) {
-            AnnotationValue paramAnnotationValue = Annotations
-                    .find(annotations, annotationName).value();
+            AnnotationValue paramAnnotationValue = Annotations.find(annotations, annotationName).value();
             String paramName = paramAnnotationValue != null ? paramAnnotationValue.asString() : null;
             if (paramName == null || paramName.equals(Param.ELEMENT_NAME)) {
                 paramName = method.parameterName(position);
@@ -1536,13 +1468,12 @@ class ReactiveRoutesProcessor {
             if (paramType.name().equals(DotNames.LIST)) {
                 Type wrappedType = paramType.asParameterizedType().arguments().get(0);
                 // List<String> params = routingContext.request().params().getAll(paramName)
-                invoke.assign(paramHandle, invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
-                        invoke.invokeInterfaceMethod(multiMapAccessor, invoke
-                                .invokeInterfaceMethod(Methods.REQUEST,
-                                        routingContext)),
-                        invoke.load(paramName)));
-                if (!wrappedType.name()
-                        .equals(io.quarkus.arc.processor.DotNames.STRING)) {
+                invoke.assign(paramHandle,
+                        invoke.invokeInterfaceMethod(Methods.MULTIMAP_GET_ALL,
+                                invoke.invokeInterfaceMethod(multiMapAccessor,
+                                        invoke.invokeInterfaceMethod(Methods.REQUEST, routingContext)),
+                                invoke.load(paramName)));
+                if (!wrappedType.name().equals(io.quarkus.arc.processor.DotNames.STRING)) {
                     // Iterate over the list and convert wrapped values
                     ResultHandle results = invoke.newInstance(
                             MethodDescriptor.ofConstructor(ArrayList.class, int.class),
@@ -1563,19 +1494,14 @@ class ReactiveRoutesProcessor {
                 }
             } else {
                 // Object param = routingContext.request().getParam(paramName)
-                invoke.assign(paramHandle, invoke.invokeInterfaceMethod(valueAccessor, invoke
-                        .invokeInterfaceMethod(Methods.REQUEST,
-                                routingContext),
-                        invoke.load(paramName)));
+                invoke.assign(paramHandle, invoke.invokeInterfaceMethod(valueAccessor,
+                        invoke.invokeInterfaceMethod(Methods.REQUEST, routingContext), invoke.load(paramName)));
                 if (paramType.name().equals(io.quarkus.arc.processor.DotNames.OPTIONAL)) {
                     Type wrappedType = paramType.asParameterizedType().arguments().get(0);
-                    if (!wrappedType.name()
-                            .equals(io.quarkus.arc.processor.DotNames.STRING)) {
-                        convertPrimitiveAndSet(paramHandle, wrappedType, invoke, method,
-                                position);
+                    if (!wrappedType.name().equals(io.quarkus.arc.processor.DotNames.STRING)) {
+                        convertPrimitiveAndSet(paramHandle, wrappedType, invoke, method, position);
                     }
-                    invoke.assign(paramHandle,
-                            invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle));
+                    invoke.assign(paramHandle, invoke.invokeStaticMethod(Methods.OPTIONAL_OF_NULLABLE, paramHandle));
                 } else {
                     if (!paramType.name().equals(io.quarkus.arc.processor.DotNames.STRING)) {
                         convertPrimitiveAndSet(paramHandle, paramType, invoke, method, position);
@@ -1619,9 +1545,9 @@ class ReactiveRoutesProcessor {
                                 if (skipType.kind() == Kind.CLASS && skipType.name().equals(paramType.name())) {
                                     return false;
                                 }
-                                if (skipType.kind() == Kind.PARAMETERIZED_TYPE && skipType.name().equals(paramType.name())
-                                        && skipType.asParameterizedType().arguments()
-                                                .equals(paramType.asParameterizedType().arguments())) {
+                                if (skipType.kind() == Kind.PARAMETERIZED_TYPE
+                                        && skipType.name().equals(paramType.name()) && skipType.asParameterizedType()
+                                                .arguments().equals(paramType.asParameterizedType().arguments())) {
                                     return false;
                                 }
                             }
@@ -1637,9 +1563,9 @@ class ReactiveRoutesProcessor {
                                     matches = true;
                                     break;
                                 }
-                                if (matchType.kind() == Kind.PARAMETERIZED_TYPE && matchType.name().equals(paramType.name())
-                                        && matchType.asParameterizedType().arguments()
-                                                .equals(paramType.asParameterizedType().arguments())) {
+                                if (matchType.kind() == Kind.PARAMETERIZED_TYPE
+                                        && matchType.name().equals(paramType.name()) && matchType.asParameterizedType()
+                                                .arguments().equals(paramType.asParameterizedType().arguments())) {
                                     matches = true;
                                     break;
                                 }
@@ -1739,8 +1665,7 @@ class ReactiveRoutesProcessor {
             }
 
             Builder matchListOf(Type type) {
-                return matchType(ParameterizedType.create(DotNames.LIST,
-                        new Type[] { type }, null));
+                return matchType(ParameterizedType.create(DotNames.LIST, new Type[] { type }, null));
             }
 
             Builder skipType(DotName className) {
@@ -1797,11 +1722,11 @@ class ReactiveRoutesProcessor {
             MethodInfo method, int position) {
         // For example:
         // if(param != null) {
-        //    try {
-        //       param = Long.valueOf(param);
-        //    } catch(Throwable e) {
-        //       ...
-        //    }
+        // try {
+        // param = Long.valueOf(param);
+        // } catch(Throwable e) {
+        // ...
+        // }
         // }
         BytecodeCreator notNull = invoke.ifNotNull(paramHandle).trueBranch();
         TryBlock tryBlock = notNull.tryBlock();
@@ -1811,30 +1736,23 @@ class ReactiveRoutesProcessor {
                 catchBlock.getCaughtException());
 
         if (paramType.name().equals(io.quarkus.arc.processor.DotNames.INTEGER)) {
-            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.INTEGER_VALUE_OF,
-                    paramHandle));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.INTEGER_VALUE_OF, paramHandle));
         } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.LONG)) {
-            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.LONG_VALUE_OF,
-                    paramHandle));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.LONG_VALUE_OF, paramHandle));
         } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.BOOLEAN)) {
-            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.BOOLEAN_VALUE_OF,
-                    paramHandle));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.BOOLEAN_VALUE_OF, paramHandle));
         } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.CHARACTER)) {
-            ResultHandle firstChar = tryBlock.invokeVirtualMethod(Methods.STRING_CHAR_AT, paramHandle, tryBlock.load(0));
-            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.CHARACTER_VALUE_OF,
-                    firstChar));
+            ResultHandle firstChar = tryBlock.invokeVirtualMethod(Methods.STRING_CHAR_AT, paramHandle,
+                    tryBlock.load(0));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.CHARACTER_VALUE_OF, firstChar));
         } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.FLOAT)) {
-            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.FLOAT_VALUE_OF,
-                    paramHandle));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.FLOAT_VALUE_OF, paramHandle));
         } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.DOUBLE)) {
-            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.DOUBLE_VALUE_OF,
-                    paramHandle));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.DOUBLE_VALUE_OF, paramHandle));
         } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.BYTE)) {
-            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.BYTE_VALUE_OF,
-                    paramHandle));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.BYTE_VALUE_OF, paramHandle));
         } else if (paramType.name().equals(io.quarkus.arc.processor.DotNames.SHORT)) {
-            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.SHORT_VALUE_OF,
-                    paramHandle));
+            tryBlock.assign(paramHandle, tryBlock.invokeStaticMethod(Methods.SHORT_VALUE_OF, paramHandle));
         } else {
             throw new IllegalArgumentException("Unsupported param type: " + paramType);
         }

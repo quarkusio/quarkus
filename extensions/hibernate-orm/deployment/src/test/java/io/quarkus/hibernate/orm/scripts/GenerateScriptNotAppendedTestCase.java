@@ -18,14 +18,14 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class GenerateScriptNotAppendedTestCase {
 
     @RegisterExtension
-    static QuarkusDevModeTest runner = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-generate-script.properties", "application.properties")
+    static QuarkusDevModeTest runner = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addAsResource("application-generate-script.properties", "application.properties")
                     .addClasses(MyEntity.class));
 
     @RepeatedTest(2)
     public void verifyScriptIsOverwritten() throws Exception {
-        String script = Files.readString(Path.of(GenerateScriptNotAppendedTestCase.class.getResource("/create.sql").toURI()));
+        String script = Files
+                .readString(Path.of(GenerateScriptNotAppendedTestCase.class.getResource("/create.sql").toURI()));
         assertEquals(1, Pattern.compile("create table MyEntity").matcher(script).results().count());
     }
 

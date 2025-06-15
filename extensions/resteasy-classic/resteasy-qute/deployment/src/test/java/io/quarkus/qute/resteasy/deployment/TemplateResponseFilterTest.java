@@ -15,11 +15,8 @@ public class TemplateResponseFilterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class)
-                    .addClass(Templates.class)
-                    .addAsResource("templates/toplevel.txt")
-                    .addAsResource("templates/HelloResource/hello.txt")
+            .withApplicationRoot((jar) -> jar.addClass(HelloResource.class).addClass(Templates.class)
+                    .addAsResource("templates/toplevel.txt").addAsResource("templates/HelloResource/hello.txt")
                     .addAsResource("templates/HelloResource/typedTemplate.txt")
                     .addAsResource("templates/HelloResource/typedTemplate.html")
                     .addAsResource("templates/HelloResource/typedTemplatePrimitives.txt")

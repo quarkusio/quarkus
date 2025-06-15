@@ -37,7 +37,8 @@ public class FormMapTest {
         String response = client.call(Map.of("foo", "bar", "k1", "v1", "k2", "v2"), new Holder(Collections.emptyMap()));
         assertThat(response).isEqualTo("foo=bar-k1=v1-k2=v2");
 
-        String response2 = client.call(Collections.emptyMap(), new Holder(Map.of("foo", List.of("bar"), "k1", List.of("v1"))));
+        String response2 = client.call(Collections.emptyMap(),
+                new Holder(Map.of("foo", List.of("bar"), "k1", List.of("v1"))));
         assertThat(response2).isEqualTo("foo=bar-k1=v1");
 
         String response3 = client.call(Map.of("foo", "bar"), new Holder(Map.of("k", List.of("v1", "v2"))));

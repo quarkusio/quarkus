@@ -15,11 +15,10 @@ import io.smallrye.config.WithDefault;
 public interface KeycloakAdminClientConfig {
 
     /**
-     * Keycloak server URL, for example, `https://host:port`.
-     * When the Keycloak Dev Services is started and this property is not configured,
-     * Quarkus points the 'quarkus.keycloak.admin-client.server-url' configuration property to started Keycloak container.
-     * In other cases, when this property is not set then the Keycloak Admin Client injection will fail - use
-     * {@linkplain org.keycloak.admin.client.KeycloakBuilder} to create the client instead.
+     * Keycloak server URL, for example, `https://host:port`. When the Keycloak Dev Services is started and this
+     * property is not configured, Quarkus points the 'quarkus.keycloak.admin-client.server-url' configuration property
+     * to started Keycloak container. In other cases, when this property is not set then the Keycloak Admin Client
+     * injection will fail - use {@linkplain org.keycloak.admin.client.KeycloakBuilder} to create the client instead.
      */
     Optional<String> serverUrl();
 
@@ -75,8 +74,8 @@ public interface KeycloakAdminClientConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured, but
+     * no TLS configuration is found with that name then an error will be thrown.
      * <p>
      * The default TLS configuration is <strong>not</strong> used by default.
      */

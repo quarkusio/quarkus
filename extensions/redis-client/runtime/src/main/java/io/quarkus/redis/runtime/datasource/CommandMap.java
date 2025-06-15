@@ -323,10 +323,12 @@ class CommandMap {
         KNOWN_COMMANDS.put("sync", io.vertx.redis.client.Command.SYNC);
         KNOWN_COMMANDS.put("time", io.vertx.redis.client.Command.TIME);
         KNOWN_COMMANDS.put("timeseries.clusterset", io.vertx.redis.client.Command.TIMESERIES_CLUSTERSET);
-        KNOWN_COMMANDS.put("timeseries.clustersetfromshard", io.vertx.redis.client.Command.TIMESERIES_CLUSTERSETFROMSHARD);
+        KNOWN_COMMANDS.put("timeseries.clustersetfromshard",
+                io.vertx.redis.client.Command.TIMESERIES_CLUSTERSETFROMSHARD);
         KNOWN_COMMANDS.put("timeseries.hello", io.vertx.redis.client.Command.TIMESERIES_HELLO);
         KNOWN_COMMANDS.put("timeseries.infocluster", io.vertx.redis.client.Command.TIMESERIES_INFOCLUSTER);
-        KNOWN_COMMANDS.put("timeseries.innercommunication", io.vertx.redis.client.Command.TIMESERIES_INNERCOMMUNICATION);
+        KNOWN_COMMANDS.put("timeseries.innercommunication",
+                io.vertx.redis.client.Command.TIMESERIES_INNERCOMMUNICATION);
         KNOWN_COMMANDS.put("timeseries.networktest", io.vertx.redis.client.Command.TIMESERIES_NETWORKTEST);
         KNOWN_COMMANDS.put("timeseries.refreshcluster", io.vertx.redis.client.Command.TIMESERIES_REFRESHCLUSTER);
         KNOWN_COMMANDS.put("topk.add", io.vertx.redis.client.Command.TOPK_ADD);

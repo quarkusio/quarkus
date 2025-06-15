@@ -13,8 +13,7 @@ class RecordInPanacheTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-test.properties", "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource("application-test.properties", "application.properties")
                     .addClasses(Person.class, PersonName.class, Status.class));
 
     @Test

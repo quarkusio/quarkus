@@ -21,13 +21,8 @@ public class MSSQLDatasourceServiceConfigurator implements DatasourceServiceConf
         String effectivePassword = containerConfig.getPassword().orElse(DEFAULT_DATABASE_PASSWORD);
         String jdbcUrl = getJdbcUrl(containerAddress, null);
         String reactiveUrl = getReactiveUrl(jdbcUrl);
-        return new RunningDevServicesDatasource(
-                containerAddress.getId(),
-                jdbcUrl,
-                reactiveUrl,
-                effectiveUsername,
-                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword),
-                null);
+        return new RunningDevServicesDatasource(containerAddress.getId(), jdbcUrl, reactiveUrl, effectiveUsername,
+                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword), null);
     }
 
     @Override
@@ -42,9 +37,7 @@ public class MSSQLDatasourceServiceConfigurator implements DatasourceServiceConf
 
     @Override
     public String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {
-        return String.format("jdbc:%s://%s:%d%s",
-                getJdbcPrefix(),
-                containerAddress.getHost(),
+        return String.format("jdbc:%s://%s:%d%s", getJdbcPrefix(), containerAddress.getHost(),
                 containerAddress.getPort(),
                 getParameters(containerAddress.getRunningContainer().containerInfo().labels()));
     }

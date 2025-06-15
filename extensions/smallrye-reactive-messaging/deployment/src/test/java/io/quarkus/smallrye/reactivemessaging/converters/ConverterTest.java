@@ -24,9 +24,8 @@ import io.smallrye.reactive.messaging.MessageConverter;
 public class ConverterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Person.class, MyAppUsingConverter.class, MyPersonConverter.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Person.class, MyAppUsingConverter.class, MyPersonConverter.class));
 
     @Inject
     MyAppUsingConverter app;
@@ -39,8 +38,7 @@ public class ConverterTest {
             public String apply(Person p) {
                 return p.name;
             }
-        }).collect(Collectors.toList()))
-                .containsExactly("john", "paul", "ringo", "george");
+        }).collect(Collectors.toList())).containsExactly("john", "paul", "ringo", "george");
     }
 
     public static class Person {

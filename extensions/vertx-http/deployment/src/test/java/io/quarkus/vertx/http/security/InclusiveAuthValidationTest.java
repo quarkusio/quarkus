@@ -46,9 +46,9 @@ public class InclusiveAuthValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TopPriorityAuthMechanism.class, StartupObserver.class)
-                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class)
+            .withApplicationRoot((jar) -> jar.addClasses(TopPriorityAuthMechanism.class, StartupObserver.class)
+                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class,
+                            TestIdentityController.class)
                     .addAsResource(new StringAsset(configuration), "application.properties")
                     .addAsResource(new File("target/certs/mtls-test-keystore.jks"), "server-keystore.jks")
                     .addAsResource(new File("target/certs/mtls-test-server-truststore.jks"), "server-truststore.jks"))
@@ -73,7 +73,8 @@ public class InclusiveAuthValidationTest {
     public static class TopPriorityAuthMechanism implements HttpAuthenticationMechanism {
 
         @Override
-        public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             return Uni.createFrom().nullItem();
         }
 

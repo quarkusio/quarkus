@@ -15,8 +15,8 @@ public class QuarkusGradleDevToolsTestBase extends QuarkusGradleWrapperTestBase 
 
     @BeforeAll
     static void enableDevToolsTestConfig() {
-        RegistryClientTestHelper.enableRegistryClientTestConfig(Paths.get("").normalize().toAbsolutePath().resolve("build"),
-                devToolsProps);
+        RegistryClientTestHelper.enableRegistryClientTestConfig(
+                Paths.get("").normalize().toAbsolutePath().resolve("build"), devToolsProps);
         for (Map.Entry<?, ?> prop : devToolsProps.entrySet()) {
             System.setProperty(prop.getKey().toString(), prop.getValue().toString());
         }

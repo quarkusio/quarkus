@@ -26,8 +26,7 @@ public class TlsClientEndpointMissingTlsConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ServerEndpoint.class, ClientEndpoint.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ServerEndpoint.class, ClientEndpoint.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "keystore.jks")
                     .addAsResource(new File("target/certs/ssl-test-truststore.jks"), "truststore.jks"))
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "keystore.jks")
@@ -42,10 +41,8 @@ public class TlsClientEndpointMissingTlsConfigurationTest {
 
     @Test
     void testClient() {
-        assertThrows(IllegalStateException.class, () -> connector
-                .baseUri(uri)
-                .pathParam("name", "Lu=")
-                .connectAndAwait());
+        assertThrows(IllegalStateException.class,
+                () -> connector.baseUri(uri).pathParam("name", "Lu=").connectAndAwait());
     }
 
     @WebSocket(path = "/endpoint/{name}")

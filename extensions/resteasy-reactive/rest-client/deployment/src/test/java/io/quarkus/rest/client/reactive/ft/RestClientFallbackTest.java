@@ -22,8 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RestClientFallbackTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestEndpoint.class, Client.class, MyFallback.class)
+            .withApplicationRoot((jar) -> jar.addClasses(TestEndpoint.class, Client.class, MyFallback.class)
                     .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties"));
 
     @Inject

@@ -16,8 +16,7 @@ public class TemplateEnumInvalidTargetTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Transactions.class));
+            .withApplicationRoot(root -> root.addClasses(Transactions.class));
 
     @Inject
     Engine engine;
@@ -25,8 +24,7 @@ public class TemplateEnumInvalidTargetTest {
     @Test
     public void testTemplateEnum() {
         assertThatExceptionOfType(TemplateException.class)
-                .isThrownBy(() -> engine.parse("{Transactions:VAL}", null, "bar").render())
-                .withMessage(
+                .isThrownBy(() -> engine.parse("{Transactions:VAL}", null, "bar").render()).withMessage(
                         "Rendering error in template [bar] line 1: No namespace resolver found for [Transactions] in expression {Transactions:VAL}");
 
     }

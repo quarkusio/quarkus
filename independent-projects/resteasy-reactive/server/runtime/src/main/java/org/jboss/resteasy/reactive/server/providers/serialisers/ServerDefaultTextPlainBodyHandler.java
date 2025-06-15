@@ -16,7 +16,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 @Consumes("text/plain")
-public class ServerDefaultTextPlainBodyHandler extends DefaultTextPlainBodyHandler implements ServerMessageBodyReader<Object> {
+public class ServerDefaultTextPlainBodyHandler extends DefaultTextPlainBodyHandler
+        implements ServerMessageBodyReader<Object> {
 
     @Override
     protected void validateInput(String input) throws ProcessingException {

@@ -24,10 +24,8 @@ public class BlockingFromTransactionalTest {
     private static final String NON_BLOCKING = "nonblocking";
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addPackage(BlockingTestServiceGrpc.class.getPackage())
-                            .addClasses(BlockingTestService.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addPackage(BlockingTestServiceGrpc.class.getPackage()).addClasses(BlockingTestService.class));
 
     @GrpcClient
     BlockingTestService client;

@@ -33,34 +33,32 @@ public final class EventConsumerBusinessMethodItem extends MultiBuildItem {
     }
 
     /**
-     * Returns the {@link io.quarkus.vertx.ConsumeEvent} annotation declared
-     * on this event consumer method.
+     * Returns the {@link io.quarkus.vertx.ConsumeEvent} annotation declared on this event consumer method.
      */
     public AnnotationInstance getConsumeEvent() {
         return consumeEvent;
     }
 
     /**
-     * Returns whether this event consumer method declares
-     * the {@link io.smallrye.common.annotation.Blocking} annotation.
+     * Returns whether this event consumer method declares the {@link io.smallrye.common.annotation.Blocking}
+     * annotation.
      */
     public boolean isBlockingAnnotation() {
         return blockingAnnotation;
     }
 
     /**
-     * Returns whether this event consumer method declares
-     * the {@link io.smallrye.common.annotation.RunOnVirtualThread} annotation.
+     * Returns whether this event consumer method declares the {@link io.smallrye.common.annotation.RunOnVirtualThread}
+     * annotation.
      */
     public boolean isRunOnVirtualThreadAnnotation() {
         return runOnVirtualThreadAnnotation;
     }
 
     /**
-     * Returns whether this event consumer method declares 2 parameters,
-     * where the first is the event headers and the second is the event body.
-     * In this case, the {@link io.quarkus.vertx.runtime.EventConsumerInvoker}
-     * has to split the headers and body parameters explicitly.
+     * Returns whether this event consumer method declares 2 parameters, where the first is the event headers and the
+     * second is the event body. In this case, the {@link io.quarkus.vertx.runtime.EventConsumerInvoker} has to split
+     * the headers and body parameters explicitly.
      */
     public boolean isSplitHeadersBodyParams() {
         return splitHeadersBodyParams;

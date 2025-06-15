@@ -11,9 +11,8 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * Marker annotation to select the Mailer.
- *
- * For example, if the Mailer is configured like so in {@code application.properties}:
+ * Marker annotation to select the Mailer. For example, if the Mailer is configured like so in
+ * {@code application.properties}:
  *
  * <pre>
  * quarkus.mailer.client1.host = smtp.example.com

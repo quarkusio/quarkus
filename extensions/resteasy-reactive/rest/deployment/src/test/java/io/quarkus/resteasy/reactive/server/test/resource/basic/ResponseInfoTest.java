@@ -22,7 +22,9 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resource
+ *
  * @tpChapter Integration tests
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Response Info Test")
@@ -41,17 +43,16 @@ public class ResponseInfoTest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, ResponseInfoTest.class);
-                    // Use of PortProviderUtil in the deployment
-                    war.addClasses(ResponseInfoResource.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class, ResponseInfoTest.class);
+            // Use of PortProviderUtil in the deployment
+            war.addClasses(ResponseInfoResource.class);
+            return war;
+        }
+    });
 
     private void basicTest(String path) {
         WebTarget base = client.target(PortProviderUtil.generateURL(path, ResponseInfoTest.class.getSimpleName()));
@@ -62,6 +63,7 @@ public class ResponseInfoTest {
 
     /**
      * @tpTestDetails Check URI location from HTTP headers from response prepared in resource
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

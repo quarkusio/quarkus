@@ -18,8 +18,7 @@ public class AddSelectorToDeploymentDecorator extends NamedResourceDecorator<Dep
     @Override
     public void andThenVisit(DeploymentSpecFluent<?> spec, ObjectMeta meta) {
         if (!spec.hasSelector()) {
-            spec.withNewSelector()
-                    .endSelector();
+            spec.withNewSelector().endSelector();
         }
     }
 

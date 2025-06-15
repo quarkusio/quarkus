@@ -25,10 +25,10 @@ import io.netty.util.internal.StringUtil;
 
 final class VirtualChannelRegistry {
 
-    private static final ConcurrentMap<VirtualAddress, Channel> boundChannels = PlatformDependent.newConcurrentHashMap();
+    private static final ConcurrentMap<VirtualAddress, Channel> boundChannels = PlatformDependent
+            .newConcurrentHashMap();
 
-    static VirtualAddress register(
-            Channel channel, VirtualAddress oldLocalAddress, SocketAddress localAddress) {
+    static VirtualAddress register(Channel channel, VirtualAddress oldLocalAddress, SocketAddress localAddress) {
         if (oldLocalAddress != null) {
             throw new ChannelException("already bound");
         }

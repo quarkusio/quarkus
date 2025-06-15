@@ -4,9 +4,8 @@ import io.quarkus.annotation.processor.documentation.config.model.ConfigPhase;
 import io.quarkus.annotation.processor.documentation.config.model.Extension;
 
 /**
- * At this stage, each {@code @ConfigRoot} annotation leads to a separate DiscoveryConfigRoot.
- * So you basically get one DiscoveryConfigRoot per phase.
- * The config roots will get merged when we resolve the final model.
+ * At this stage, each {@code @ConfigRoot} annotation leads to a separate DiscoveryConfigRoot. So you basically get one
+ * DiscoveryConfigRoot per phase. The config roots will get merged when we resolve the final model.
  */
 public final class DiscoveryConfigRoot extends DiscoveryRootElement {
 
@@ -15,9 +14,8 @@ public final class DiscoveryConfigRoot extends DiscoveryRootElement {
     private final ConfigPhase phase;
     private final String overriddenDocFileName;
 
-    public DiscoveryConfigRoot(Extension extension, String prefix, String overriddenDocPrefix,
-            String binaryName, String qualifiedName,
-            ConfigPhase configPhase, String overriddenDocFileName, boolean configMapping) {
+    public DiscoveryConfigRoot(Extension extension, String prefix, String overriddenDocPrefix, String binaryName,
+            String qualifiedName, ConfigPhase configPhase, String overriddenDocFileName, boolean configMapping) {
         super(extension, binaryName, qualifiedName, configMapping);
 
         this.prefix = prefix;

@@ -25,7 +25,8 @@ public class KubernetesDeploy {
      * @return {@code true} if {@code quarkus.kubernetes.deploy=true} AND the target Kubernetes API server is reachable,
      *         {@code false} otherwise
      *
-     * @throws RuntimeException if there was an error while communicating with the Kubernetes API server
+     * @throws RuntimeException
+     *         if there was an error while communicating with the Kubernetes API server
      */
     public boolean check(KubernetesClientBuildItem clientBuilder) {
         Result result = doCheck(clientBuilder);
@@ -57,12 +58,13 @@ public class KubernetesDeploy {
 
         String masterURL = clientBuilder.getConfig().getMasterUrl();
         try (KubernetesClient client = clientBuilder.buildClient()) {
-            //Let's check if we can connect.
+            // Let's check if we can connect.
             VersionInfo version = client.getVersion();
             if (version == null) {
                 return Result.exceptional(new RuntimeException(
                         "Although a Kubernetes deployment was requested, it however cannot take place because the version of the API Server at '"
-                                + masterURL + "' could not be determined. Please ensure that a valid token is being used."));
+                                + masterURL
+                                + "' could not be determined. Please ensure that a valid token is being used."));
             }
 
             log.debugf("Kubernetes API Server at '" + masterURL + "' successfully contacted.");

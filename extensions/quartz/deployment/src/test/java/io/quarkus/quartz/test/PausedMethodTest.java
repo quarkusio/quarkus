@@ -23,8 +23,7 @@ public class PausedMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PausedMethodTest.Jobs.class));
+            .withApplicationRoot((jar) -> jar.addClasses(PausedMethodTest.Jobs.class));
 
     private static final String IDENTITY = "myScheduled";
 
@@ -46,7 +45,8 @@ public class PausedMethodTest {
             LATCH.countDown();
         }
 
-        void pause(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE - 1) StartupEvent event, Scheduler scheduler) {
+        void pause(@Observes @Priority(Interceptor.Priority.PLATFORM_BEFORE - 1) StartupEvent event,
+                Scheduler scheduler) {
             // Pause the job before the scheduler starts
             scheduler.pause(IDENTITY);
         }

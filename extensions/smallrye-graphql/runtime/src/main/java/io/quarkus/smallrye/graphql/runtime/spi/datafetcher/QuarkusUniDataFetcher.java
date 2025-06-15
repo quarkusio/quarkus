@@ -39,13 +39,11 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
         }
     }
 
-    private Uni<?> handleUserMethodCallNonBlocking(final Object[] transformedArguments)
-            throws Exception {
+    private Uni<?> handleUserMethodCallNonBlocking(final Object[] transformedArguments) throws Exception {
         return (Uni<?>) operationInvoker.invoke(transformedArguments);
     }
 
-    private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments, Context vc)
-            throws Exception {
+    private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments, Context vc) throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
         final Promise<T> result = Promise.promise();
@@ -63,13 +61,11 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
     }
 
     @SuppressWarnings("unchecked")
-    protected Uni<List<T>> handleUserBatchLoadNonBlocking(final Object[] arguments)
-            throws Exception {
+    protected Uni<List<T>> handleUserBatchLoadNonBlocking(final Object[] arguments) throws Exception {
         return ((Uni<List<T>>) operationInvoker.invoke(arguments));
     }
 
-    private Uni<List<T>> handleUserBatchLoadBlocking(Object[] arguments, Context vc)
-            throws Exception {
+    private Uni<List<T>> handleUserBatchLoadBlocking(Object[] arguments, Context vc) throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
         final Promise<List<T>> result = Promise.promise();

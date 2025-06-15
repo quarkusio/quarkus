@@ -74,13 +74,11 @@ public class ProgrammaticCircuitBreakerTest {
         // another-hello 1. closed -> open
         assertThat(anotherHelloStateChanges).hasValue(1);
 
-        await().atMost(HelloService.DELAY * 2, TimeUnit.MILLISECONDS)
-                .ignoreException(CircuitBreakerOpenException.class)
+        await().atMost(HelloService.DELAY * 2, TimeUnit.MILLISECONDS).ignoreException(CircuitBreakerOpenException.class)
                 .untilAsserted(() -> {
                     assertThat(helloService.hello(null)).isEqualTo(HelloService.OK);
                 });
-        await().atMost(HelloService.DELAY * 2, TimeUnit.MILLISECONDS)
-                .ignoreException(CircuitBreakerOpenException.class)
+        await().atMost(HelloService.DELAY * 2, TimeUnit.MILLISECONDS).ignoreException(CircuitBreakerOpenException.class)
                 .untilAsserted(() -> {
                     assertThatThrownBy(helloService::anotherHello).isExactlyInstanceOf(RuntimeException.class);
                 });

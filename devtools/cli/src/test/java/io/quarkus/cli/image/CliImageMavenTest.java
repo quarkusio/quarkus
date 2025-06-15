@@ -56,8 +56,8 @@ public class CliImageMavenTest {
         // 2 image build --dry-run
         result = CliDriver.execute(project, "image", "build", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
-        result = CliDriver.execute(project, "image", "build", "--group=mygroup", "--name=myname", "--tag=1.0", "--native",
-                "--dry-run");
+        result = CliDriver.execute(project, "image", "build", "--group=mygroup", "--name=myname", "--tag=1.0",
+                "--native", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.group=mygroup"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.name=myname"));

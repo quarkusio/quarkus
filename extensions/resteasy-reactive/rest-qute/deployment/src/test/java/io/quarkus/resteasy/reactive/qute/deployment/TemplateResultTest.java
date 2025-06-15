@@ -15,11 +15,8 @@ public class TemplateResultTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class)
-                    .addClass(Templates.class)
-                    .addAsResource("templates/toplevel.txt")
-                    .addAsResource("templates/HelloResource/hello.txt")
+            .withApplicationRoot((jar) -> jar.addClass(HelloResource.class).addClass(Templates.class)
+                    .addAsResource("templates/toplevel.txt").addAsResource("templates/HelloResource/hello.txt")
                     .addAsResource("templates/HelloResource/typedTemplate.txt")
                     .addAsResource("templates/HelloResource/typedTemplate.html")
                     .addAsResource("templates/HelloResource/typedTemplatePrimitives.txt")
@@ -40,7 +37,8 @@ public class TemplateResultTest {
         when().get("/hello/native/typed-template-primitives").then()
                 .body(Matchers.is("Byte: 0 Short: 1 Int: 2 Long: 3 Char: a Boolean: true Float: 4.0 Double: 5.0"));
         when().get("/hello/native/toplevel?name=Joe").then().body(Matchers.is("Salut Joe!"));
-        when().get("/hello/status-and-headers").then().statusCode(201).header("foo", "bar").body(Matchers.is("Hello world!"));
+        when().get("/hello/status-and-headers").then().statusCode(201).header("foo", "bar")
+                .body(Matchers.is("Hello world!"));
         when().get("/hello/rest-response").then().statusCode(202).body(Matchers.is("Hello world!"));
         when().get("/hello/response").then().statusCode(203).body(Matchers.is("Hello world!"));
     }

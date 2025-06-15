@@ -33,17 +33,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultipleStubsInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyConsumer.class,
-                            MutinyGreeterGrpc.class, GreeterGrpc.class,
-                            MutinyGreeterGrpc.MutinyGreeterStub.class,
-                            HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class,
-                            MutinyFarewellGrpc.class, FarewellGrpc.class,
-                            MutinyFarewellGrpc.MutinyFarewellStub.class,
-                            GoodbyeService.class, GoodbyeRequest.class, GoodbyeReply.class,
-                            GoodbyeReplyOrBuilder.class, GoodbyeRequestOrBuilder.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyConsumer.class,
+                    MutinyGreeterGrpc.class, GreeterGrpc.class, MutinyGreeterGrpc.MutinyGreeterStub.class,
+                    HelloService.class, HelloRequest.class, HelloReply.class, HelloReplyOrBuilder.class,
+                    HelloRequestOrBuilder.class, MutinyFarewellGrpc.class, FarewellGrpc.class,
+                    MutinyFarewellGrpc.MutinyFarewellStub.class, GoodbyeService.class, GoodbyeRequest.class,
+                    GoodbyeReply.class, GoodbyeReplyOrBuilder.class, GoodbyeRequestOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject
@@ -85,8 +81,7 @@ public class MultipleStubsInjectionTest {
         Channel channel;
 
         public String invokeMutinyGreeter(String s) {
-            return mutinyGreeter.sayHello(HelloRequest.newBuilder().setName(s).build())
-                    .map(HelloReply::getMessage)
+            return mutinyGreeter.sayHello(HelloRequest.newBuilder().setName(s).build()).map(HelloReply::getMessage)
                     .await().atMost(Duration.ofSeconds(5));
         }
 
@@ -96,8 +91,7 @@ public class MultipleStubsInjectionTest {
 
         public String invokeMutinyFarewell(String s) {
             return mutinyFarewell.sayGoodbye(GoodbyeRequest.newBuilder().setName(s).build())
-                    .map(GoodbyeReply::getMessage)
-                    .await().atMost(Duration.ofSeconds(5));
+                    .map(GoodbyeReply::getMessage).await().atMost(Duration.ofSeconds(5));
         }
 
         public String invokeBlockingFarewell(String s) {

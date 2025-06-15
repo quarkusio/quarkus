@@ -14,19 +14,13 @@ public class DevUIRemoteCorsTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .setBuildSystemProperty("quarkus.http.host", "0.0.0.0")
-            .withEmptyApplication();
+            .setBuildSystemProperty("quarkus.http.host", "0.0.0.0").withEmptyApplication();
 
     @Test
     public void test() throws UnknownHostException {
         String methods = "GET,POST";
-        RestAssured.given()
-                .header("Origin", "http://evilsite.com")
-                .header("Access-Control-Request-Method", methods)
-                .when()
-                .options("q/dev-ui/configuration-form-editor").then()
-                .statusCode(403)
-                .body(emptyOrNullString());
+        RestAssured.given().header("Origin", "http://evilsite.com").header("Access-Control-Request-Method", methods)
+                .when().options("q/dev-ui/configuration-form-editor").then().statusCode(403).body(emptyOrNullString());
     }
 
 }

@@ -37,21 +37,18 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
             Method ccm = clazz.getMethod("getClearCallbacksRunner");
             Runnable clearCallbacks = (Runnable) ccm.invoke(state);
 
-            // This is a bit icky; we could avoid the hardcoding if we would reflectively do a class forName and assume the correct constructor exists, but I'm not sure that's much better
-            if (clazz
-                    .getName()
-                    .equals(QuarkusTestExtension.ExtensionState.class.getName())) {
-                QuarkusTestExtensionState answer = new QuarkusTestExtension.ExtensionState(trm, resource, clearCallbacks,
+            // This is a bit icky; we could avoid the hardcoding if we would reflectively do a class forName and assume
+            // the correct constructor exists, but I'm not sure that's much better
+            if (clazz.getName().equals(QuarkusTestExtension.ExtensionState.class.getName())) {
+                QuarkusTestExtensionState answer = new QuarkusTestExtension.ExtensionState(trm, resource,
+                        clearCallbacks, shutdownHook);
+                return answer;
+            } else if (clazz.getName().equals(QuarkusTestExtensionState.class.getName())) {
+                QuarkusTestExtensionState answer = new QuarkusTestExtensionState(trm, resource, clearCallbacks,
                         shutdownHook);
                 return answer;
-            } else if (clazz
-                    .getName()
-                    .equals(QuarkusTestExtensionState.class.getName())) {
-                QuarkusTestExtensionState answer = new QuarkusTestExtensionState(trm, resource, clearCallbacks, shutdownHook);
-                return answer;
             } else {
-                throw new UnsupportedOperationException(
-                        "Not implemented. Cannot clone a state subclass of " + clazz);
+                throw new UnsupportedOperationException("Not implemented. Cannot clone a state subclass of " + clazz);
             }
 
         } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
@@ -93,8 +90,7 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
                 }
             }
         }, "Quarkus Test Cleanup Shutdown task");
-        Runtime.getRuntime()
-                .addShutdownHook(shutdownHook);
+        Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
     public QuarkusTestExtensionState(Closeable testResourceManager, Closeable resource, Runnable clearCallbacks,
@@ -119,7 +115,7 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
             try {
                 Runtime.getRuntime().removeShutdownHook(shutdownHook);
             } catch (Throwable t) {
-                //won't work if we are already shutting down
+                // won't work if we are already shutting down
             } finally {
                 // To make sure it doesn't get cloned
                 shutdownHook = null;
@@ -134,8 +130,7 @@ public class QuarkusTestExtensionState implements ExtensionContext.Store.Closeab
                 ((TestResourceManager) testResourceManager).setTestErrorCause(testErrorCause);
             } else {
                 testResourceManager.getClass().getClassLoader().loadClass(TestResourceManager.class.getName())
-                        .getMethod("setTestErrorCause", Throwable.class)
-                        .invoke(testResourceManager, testErrorCause);
+                        .getMethod("setTestErrorCause", Throwable.class).invoke(testResourceManager, testErrorCause);
 
             }
 

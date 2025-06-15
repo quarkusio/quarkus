@@ -12,8 +12,7 @@ public class BlockingTransactionalHyperLogLogCommandsImpl<K, V> extends Abstract
     private final ReactiveTransactionalHyperLogLogCommands<K, V> reactive;
 
     public BlockingTransactionalHyperLogLogCommandsImpl(TransactionalRedisDataSource ds,
-            ReactiveTransactionalHyperLogLogCommands<K, V> reactive,
-            Duration timeout) {
+            ReactiveTransactionalHyperLogLogCommands<K, V> reactive, Duration timeout) {
         super(ds, timeout);
         this.reactive = reactive;
     }

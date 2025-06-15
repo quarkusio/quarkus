@@ -7,8 +7,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * Register a JDBC driver for the Agroal extension.
  * <p>
- * It allows to resolve automatically the driver from the kind, thus users don't have to set the driver anymore, except if they
- * want to use a specific one.
+ * It allows to resolve automatically the driver from the kind, thus users don't have to set the driver anymore, except
+ * if they want to use a specific one.
  */
 public final class JdbcDriverBuildItem extends MultiBuildItem {
 

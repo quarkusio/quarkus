@@ -31,8 +31,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         notNullOrEmpty(fields, "fields");
         doesNotContainNull(fields, "fields");
 
-        RedisCommand cmd = RedisCommand.of(Command.HDEL)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.HDEL).put(marshaller.encode(key));
         for (F field : fields) {
             cmd.put(marshaller.encode(field));
         }
@@ -54,15 +53,15 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
     Uni<Response> _hincrby(K key, F field, long amount) {
         nonNull(key, "key");
         nonNull(field, "field");
-        return execute(RedisCommand.of(Command.HINCRBY).put(marshaller.encode(key))
-                .put(marshaller.encode(field)).put(amount));
+        return execute(
+                RedisCommand.of(Command.HINCRBY).put(marshaller.encode(key)).put(marshaller.encode(field)).put(amount));
     }
 
     Uni<Response> _hincrbyfloat(K key, F field, double amount) {
         nonNull(key, "key");
         nonNull(field, "field");
-        return execute(RedisCommand.of(Command.HINCRBYFLOAT).put(marshaller.encode(key))
-                .put(marshaller.encode(field)).put(amount));
+        return execute(RedisCommand.of(Command.HINCRBYFLOAT).put(marshaller.encode(key)).put(marshaller.encode(field))
+                .put(amount));
     }
 
     Uni<Response> _hgetall(K key) {
@@ -132,9 +131,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(field, "field");
         nonNull(value, "value");
-        return execute(RedisCommand.of(Command.HSET)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(field))
+        return execute(RedisCommand.of(Command.HSET).put(marshaller.encode(key)).put(marshaller.encode(field))
                 .put(marshaller.encode(value)));
     }
 
@@ -147,9 +144,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         RedisCommand cmd = RedisCommand.of(Command.HSET);
         cmd.put(marshaller.encode(key));
         for (Map.Entry<F, V> entry : map.entrySet()) {
-            cmd
-                    .put(marshaller.encode(entry.getKey()))
-                    .put(marshaller.encode(entry.getValue()));
+            cmd.put(marshaller.encode(entry.getKey())).put(marshaller.encode(entry.getValue()));
         }
         return execute(cmd);
     }
@@ -157,17 +152,14 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
     Uni<Response> _hsetnx(K key, F field, V value) {
         nonNull(key, "key");
         nonNull(field, "field");
-        return execute(RedisCommand.of(Command.HSETNX)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(field))
+        return execute(RedisCommand.of(Command.HSETNX).put(marshaller.encode(key)).put(marshaller.encode(field))
                 .put(marshaller.encode(value)));
     }
 
     Uni<Response> _hstrlen(K key, F field) {
         nonNull(key, "key");
         nonNull(field, "field");
-        return execute(RedisCommand.of(Command.HSTRLEN).put(marshaller.encode(key))
-                .put(marshaller.encode(field)));
+        return execute(RedisCommand.of(Command.HSTRLEN).put(marshaller.encode(key)).put(marshaller.encode(field)));
     }
 
     Uni<Response> _hvals(K key) {
@@ -205,8 +197,7 @@ class AbstractHashCommands<K, F, V> extends AbstractRedisCommands {
         }
         Map<F, V> map = new HashMap<>();
         for (Response nested : r) {
-            map.put(marshaller.decode(typeOfField, nested.get(0)),
-                    marshaller.decode(typeOfValue, nested.get(1)));
+            map.put(marshaller.decode(typeOfField, nested.get(0)), marshaller.decode(typeOfValue, nested.get(1)));
         }
         return map;
     }

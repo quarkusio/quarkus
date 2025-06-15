@@ -61,29 +61,27 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         try {
             return doReadFrom(type, genericType, mediaType, entityStream);
         } catch (MismatchedInputException | InvalidDefinitionException e) {
             /*
              * To extract additional details when running in dev mode or test mode, Quarkus previously offered the
-             * DefaultMismatchedInputException(Mapper). That mapper provides additional details about bad input,
-             * beyond Jackson's default, when running in Dev or Test mode. To preserve that behavior, we rethrow
-             * MismatchedInputExceptions we encounter.
-             *
-             * An InvalidDefinitionException is thrown when there is a problem with the way a type is
-             * set up/annotated for consumption by the Jackson API. We don't wrap it in a WebApplicationException
-             * (as a Server Error), since unhandled exceptions will end up as a 500 anyway. In addition, this
-             * allows built-in features like the NativeInvalidDefinitionExceptionMapper to be registered and
-             * communicate potential Jackson integration issues, and potential solutions for resolving them.
+             * DefaultMismatchedInputException(Mapper). That mapper provides additional details about bad input, beyond
+             * Jackson's default, when running in Dev or Test mode. To preserve that behavior, we rethrow
+             * MismatchedInputExceptions we encounter. An InvalidDefinitionException is thrown when there is a problem
+             * with the way a type is set up/annotated for consumption by the Jackson API. We don't wrap it in a
+             * WebApplicationException (as a Server Error), since unhandled exceptions will end up as a 500 anyway. In
+             * addition, this allows built-in features like the NativeInvalidDefinitionExceptionMapper to be registered
+             * and communicate potential Jackson integration issues, and potential solutions for resolving them.
              */
             throw e;
         } catch (StreamReadException | DatabindException e) {
             /*
-             * As JSON is evaluated, it can be invalid due to one of two reasons:
-             * 1) Malformed JSON. Un-parsable JSON results in a StreamReadException
-             * 2) Valid JSON that violates some binding constraint, i.e., a required property, mismatched data types, etc.
-             * Violations of these types are captured via a DatabindException.
+             * As JSON is evaluated, it can be invalid due to one of two reasons: 1) Malformed JSON. Un-parsable JSON
+             * results in a StreamReadException 2) Valid JSON that violates some binding constraint, i.e., a required
+             * property, mismatched data types, etc. Violations of these types are captured via a DatabindException.
              */
             throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         }
@@ -95,7 +93,8 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
     }
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return isReadable(mediaType, type);
     }
 
@@ -105,8 +104,8 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
         return readFrom(type, genericType, null, mediaType, null, context.getInputStream());
     }
 
-    private Object doReadFrom(Class<Object> type, Type genericType, MediaType responseMediaType, InputStream entityStream)
-            throws IOException {
+    private Object doReadFrom(Class<Object> type, Type genericType, MediaType responseMediaType,
+            InputStream entityStream) throws IOException {
         if (StreamUtil.isEmpty(entityStream)) {
             return null;
         }
@@ -134,11 +133,12 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
         var customDeserializationValue = ResteasyReactiveServerJacksonRecorder.customDeserializationForMethod(methodId);
         if (customDeserializationValue != null) {
             return perMethodReader.computeIfAbsent(methodId,
-                    new FullyFeaturedServerJacksonMessageBodyReader.MethodObjectReaderFunction(customDeserializationValue, type,
-                            mapper));
+                    new FullyFeaturedServerJacksonMessageBodyReader.MethodObjectReaderFunction(
+                            customDeserializationValue, type, mapper));
         }
 
-        // Otherwise, check `@CustomDeserialization` annotated in class. In this case, we use the effective type for caching up
+        // Otherwise, check `@CustomDeserialization` annotated in class. In this case, we use the effective type for
+        // caching up
         // the object.
         customDeserializationValue = ResteasyReactiveServerJacksonRecorder
                 .customDeserializationForClass(resourceInfo.getResourceClass());
@@ -149,8 +149,8 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
             }
 
             return perTypeReader.computeIfAbsent(effectiveType.getTypeName(),
-                    new FullyFeaturedServerJacksonMessageBodyReader.MethodObjectReaderFunction(customDeserializationValue, type,
-                            mapper));
+                    new FullyFeaturedServerJacksonMessageBodyReader.MethodObjectReaderFunction(
+                            customDeserializationValue, type, mapper));
         }
 
         return null;
@@ -174,7 +174,8 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
         if (context != null) {
             ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
             if (resourceInfo != null) {
-                ObjectReader readerFromAnnotation = getObjectReaderFromAnnotations(resourceInfo, genericType, effectiveMapper);
+                ObjectReader readerFromAnnotation = getObjectReaderFromAnnotations(resourceInfo, genericType,
+                        effectiveMapper);
                 if (readerFromAnnotation != null) {
                     effectiveReader = readerFromAnnotation;
                 }
@@ -222,8 +223,8 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
         private final Type genericType;
         private final ObjectMapper originalMapper;
 
-        public MethodObjectReaderFunction(Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> clazz, Type genericType,
-                ObjectMapper originalMapper) {
+        public MethodObjectReaderFunction(Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> clazz,
+                Type genericType, ObjectMapper originalMapper) {
             this.clazz = clazz;
             this.genericType = genericType;
             this.originalMapper = originalMapper;
@@ -232,7 +233,8 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
         @Override
         public ObjectReader apply(String methodId) {
             try {
-                BiFunction<ObjectMapper, Type, ObjectReader> biFunctionInstance = clazz.getDeclaredConstructor().newInstance();
+                BiFunction<ObjectMapper, Type, ObjectReader> biFunctionInstance = clazz.getDeclaredConstructor()
+                        .newInstance();
                 ObjectReader objectReader = biFunctionInstance.apply(originalMapper, genericType);
                 setNecessaryJsonFactoryConfig(objectReader.getFactory());
                 return objectReader;

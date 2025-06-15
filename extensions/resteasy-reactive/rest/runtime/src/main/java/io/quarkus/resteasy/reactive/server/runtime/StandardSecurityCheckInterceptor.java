@@ -22,10 +22,10 @@ import io.quarkus.security.spi.runtime.AuthorizationController;
 import io.quarkus.security.spi.runtime.MethodDescription;
 
 /**
- * Security checks for RBAC annotations on endpoints are done by
- * the {@link io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler},
- * this interceptor propagates the information to the SecurityHandler to prevent repeated checks. The {@link DenyAll}
- * security check is performed just once.
+ * Security checks for RBAC annotations on endpoints are done by the
+ * {@link io.quarkus.resteasy.reactive.server.runtime.security.EagerSecurityHandler}, this interceptor propagates the
+ * information to the SecurityHandler to prevent repeated checks. The {@link DenyAll} security check is performed just
+ * once.
  */
 public abstract class StandardSecurityCheckInterceptor {
 
@@ -45,7 +45,8 @@ public abstract class StandardSecurityCheckInterceptor {
     }
 
     private boolean alreadyDoneByEagerSecurityHandler(Object methodWithFinishedChecks, Method method) {
-        // compare methods: EagerSecurityHandler only intercept endpoints, we still want SecurityHandler run for CDI beans
+        // compare methods: EagerSecurityHandler only intercept endpoints, we still want SecurityHandler run for CDI
+        // beans
         return methodWithFinishedChecks != null && MethodDescription.ofMethod(method).equals(methodWithFinishedChecks);
     }
 

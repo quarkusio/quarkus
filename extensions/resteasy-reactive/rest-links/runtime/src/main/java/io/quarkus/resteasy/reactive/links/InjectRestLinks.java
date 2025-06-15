@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Inject web links into the response HTTP headers with the "Link" header field.
- * Only the response of the REST methods annotated with {@link RestLink} will include the "Link" headers.
+ * Inject web links into the response HTTP headers with the "Link" header field. Only the response of the REST methods
+ * annotated with {@link RestLink} will include the "Link" headers.
  * <p>
  * The InjectRestLinks annotation can be used at either class or method levels.
  * <p>

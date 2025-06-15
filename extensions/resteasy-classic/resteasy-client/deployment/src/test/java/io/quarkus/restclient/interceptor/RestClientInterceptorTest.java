@@ -30,9 +30,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class RestClientInterceptorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RestClientInterceptorTest.class, Client.class, Foo.class, FooInterceptor.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(RestClientInterceptorTest.class, Client.class, Foo.class, FooInterceptor.class));
 
     @TestHTTPResource
     URL url;

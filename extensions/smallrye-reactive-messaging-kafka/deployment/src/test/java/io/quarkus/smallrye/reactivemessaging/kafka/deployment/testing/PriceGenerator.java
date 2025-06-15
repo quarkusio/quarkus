@@ -9,12 +9,12 @@ package io.quarkus.smallrye.reactivemessaging.kafka.deployment.testing;
 //
 //@ApplicationScoped
 public class PriceGenerator {
-    //        private final Random random = new Random();
+    // private final Random random = new Random();
     //
-    //        @Outgoing("generated-price")
-    //        public Multi<Integer> generate() {
-    //            return Multi.createFrom().ticks().every(Duration.ofMillis(10))
-    //                    .onOverflow().drop()
-    //                    .map(tick -> this.random.nextInt(100));
-    //        }
+    // @Outgoing("generated-price")
+    // public Multi<Integer> generate() {
+    // return Multi.createFrom().ticks().every(Duration.ofMillis(10))
+    // .onOverflow().drop()
+    // .map(tick -> this.random.nextInt(100));
+    // }
 }

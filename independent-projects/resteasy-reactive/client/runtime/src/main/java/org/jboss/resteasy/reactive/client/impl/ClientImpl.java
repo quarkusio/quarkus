@@ -104,11 +104,9 @@ public class ClientImpl implements Client {
     private final String userAgent;
 
     public ClientImpl(HttpClientOptions options, ConfigurationImpl configuration, ClientContext clientContext,
-            HostnameVerifier hostnameVerifier,
-            SSLContext sslContext, boolean followRedirects,
-            MultiQueryParamMode multiQueryParamMode,
-            LoggingScope loggingScope,
-            ClientLogger clientLogger, String userAgent) {
+            HostnameVerifier hostnameVerifier, SSLContext sslContext, boolean followRedirects,
+            MultiQueryParamMode multiQueryParamMode, LoggingScope loggingScope, ClientLogger clientLogger,
+            String userAgent) {
         this.userAgent = userAgent;
         configuration = configuration != null ? configuration : new ConfigurationImpl(RuntimeType.CLIENT);
         this.configuration = configuration;
@@ -214,10 +212,8 @@ public class ClientImpl implements Client {
         }
 
         handlerChain = new HandlerChain(isCaptureStacktrace(configuration), options.getMaxChunkSize(),
-                options.getMaxChunkSize(),
-                followRedirects,
-                loggingScope,
-                clientContext.getMultipartResponsesData(), clientLogger);
+                options.getMaxChunkSize(), followRedirects, loggingScope, clientContext.getMultipartResponsesData(),
+                clientLogger);
     }
 
     public HttpClient getVertxHttpClient() {
@@ -278,7 +274,8 @@ public class ClientImpl implements Client {
         if (uriBuilder instanceof UriBuilderImpl && multiQueryParamMode != null) {
             ((UriBuilderImpl) uriBuilder).multiQueryParamMode(multiQueryParamMode);
         }
-        return new WebTargetImpl(this, httpClient, uriBuilder, new ConfigurationImpl(configuration), handlerChain, null);
+        return new WebTargetImpl(this, httpClient, uriBuilder, new ConfigurationImpl(configuration), handlerChain,
+                null);
     }
 
     @Override
@@ -384,9 +381,9 @@ public class ClientImpl implements Client {
     }
 
     /**
-     * The point of this class is to not obtain a Vertx reference unless it's absolutely necessary.
-     * We do this in order to avoid needing a Vertx object unless an proper client request is made.
-     * This saves us the need from needing to close the Vertx object.
+     * The point of this class is to not obtain a Vertx reference unless it's absolutely necessary. We do this in order
+     * to avoid needing a Vertx object unless an proper client request is made. This saves us the need from needing to
+     * close the Vertx object.
      */
     private static class LazyVertx implements Vertx {
         private final Supplier<Vertx> supplier;
@@ -586,8 +583,7 @@ public class ClientImpl implements Client {
             return Vertx.vertx(options);
         }
 
-        public static void clusteredVertx(VertxOptions options,
-                Handler<AsyncResult<Vertx>> resultHandler) {
+        public static void clusteredVertx(VertxOptions options, Handler<AsyncResult<Vertx>> resultHandler) {
             Vertx.clusteredVertx(options, resultHandler);
         }
 
@@ -638,8 +634,7 @@ public class ClientImpl implements Client {
         }
 
         @Override
-        public void deployVerticle(String name,
-                Handler<AsyncResult<String>> completionHandler) {
+        public void deployVerticle(String name, Handler<AsyncResult<String>> completionHandler) {
             getDelegate().deployVerticle(name, completionHandler);
         }
 
@@ -660,8 +655,7 @@ public class ClientImpl implements Client {
         }
 
         @Override
-        public void undeploy(String deploymentID,
-                Handler<AsyncResult<Void>> completionHandler) {
+        public void undeploy(String deploymentID, Handler<AsyncResult<Void>> completionHandler) {
             getDelegate().undeploy(deploymentID, completionHandler);
         }
 
@@ -782,8 +776,7 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public void request(RequestOptions options,
-                    Handler<AsyncResult<HttpClientRequest>> handler) {
+            public void request(RequestOptions options, Handler<AsyncResult<HttpClientRequest>> handler) {
                 getDelegate().request(options, handler);
             }
 
@@ -815,8 +808,7 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public void request(HttpMethod method, String requestURI,
-                    Handler<AsyncResult<HttpClientRequest>> handler) {
+            public void request(HttpMethod method, String requestURI, Handler<AsyncResult<HttpClientRequest>> handler) {
                 getDelegate().request(method, requestURI, handler);
             }
 
@@ -826,8 +818,7 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public void webSocket(int port, String host, String requestURI,
-                    Handler<AsyncResult<WebSocket>> handler) {
+            public void webSocket(int port, String host, String requestURI, Handler<AsyncResult<WebSocket>> handler) {
                 getDelegate().webSocket(port, host, requestURI, handler);
             }
 
@@ -837,8 +828,7 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public void webSocket(String host, String requestURI,
-                    Handler<AsyncResult<WebSocket>> handler) {
+            public void webSocket(String host, String requestURI, Handler<AsyncResult<WebSocket>> handler) {
                 getDelegate().webSocket(host, requestURI, handler);
             }
 
@@ -848,8 +838,7 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public void webSocket(String requestURI,
-                    Handler<AsyncResult<WebSocket>> handler) {
+            public void webSocket(String requestURI, Handler<AsyncResult<WebSocket>> handler) {
                 getDelegate().webSocket(requestURI, handler);
             }
 
@@ -859,8 +848,7 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public void webSocket(WebSocketConnectOptions options,
-                    Handler<AsyncResult<WebSocket>> handler) {
+            public void webSocket(WebSocketConnectOptions options, Handler<AsyncResult<WebSocket>> handler) {
                 getDelegate().webSocket(options, handler);
             }
 
@@ -870,8 +858,7 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public void webSocketAbs(String url, MultiMap headers, WebsocketVersion version,
-                    List<String> subProtocols,
+            public void webSocketAbs(String url, MultiMap headers, WebsocketVersion version, List<String> subProtocols,
                     Handler<AsyncResult<WebSocket>> handler) {
                 getDelegate().webSocketAbs(url, headers, version, subProtocols, handler);
             }
@@ -908,8 +895,7 @@ public class ClientImpl implements Client {
             }
 
             @Override
-            public HttpClient redirectHandler(
-                    Function<HttpClientResponse, Future<RequestOptions>> handler) {
+            public HttpClient redirectHandler(Function<HttpClientResponse, Future<RequestOptions>> handler) {
                 return getDelegate().redirectHandler(handler);
             }
 

@@ -15,8 +15,8 @@ public class KafkaConsumerGroup {
     public KafkaConsumerGroup() {
     }
 
-    public KafkaConsumerGroup(String name, String state, String coordinatorHost, int coordinatorId, String protocol, long lag,
-            Collection<KafkaConsumerGroupMember> members) {
+    public KafkaConsumerGroup(String name, String state, String coordinatorHost, int coordinatorId, String protocol,
+            long lag, Collection<KafkaConsumerGroupMember> members) {
         this.name = name;
         this.state = state;
         this.coordinatorHost = coordinatorHost;

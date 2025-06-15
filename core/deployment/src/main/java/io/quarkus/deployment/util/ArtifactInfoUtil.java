@@ -27,6 +27,7 @@ public final class ArtifactInfoUtil {
      * The way this works is by depending on the pom.properties file that should be present in the deployment jar
      *
      * @return the result, or throws
+     *
      * @deprecated use {@link #groupIdAndArtifactId(Class, CurateOutcomeBuildItem)}
      */
     @Deprecated
@@ -39,8 +40,11 @@ public final class ArtifactInfoUtil {
      * <p>
      * The way this works is by depending on the pom.properties file that should be present in the deployment jar
      *
-     * @param clazz the caller clazz. (must not be {@code null})
-     * @param curateOutcomeBuildItem the application model that gets searched for the caller clazz. optional
+     * @param clazz
+     *        the caller clazz. (must not be {@code null})
+     * @param curateOutcomeBuildItem
+     *        the application model that gets searched for the caller clazz. optional
+     *
      * @return the result, or throws
      */
     public static Map.Entry<String, String> groupIdAndArtifactId(Class<?> clazz,
@@ -78,8 +82,9 @@ public final class ArtifactInfoUtil {
                         Thread.currentThread().getContextClassLoader())) {
                     Entry<String, String> ret = groupIdAndArtifactId(fs);
                     if (ret == null) {
-                        throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains "
-                                + clazz.getName() + " because the jar doesn't contain the necessary metadata");
+                        throw new RuntimeException(
+                                "Unable to determine groupId and artifactId of the jar that contains " + clazz.getName()
+                                        + " because the jar doesn't contain the necessary metadata");
                     }
                     return ret;
                 }
@@ -88,7 +93,8 @@ public final class ArtifactInfoUtil {
                 // This can happen if you run an example app in dev mode
                 // and this app is part of a multi-module project which also declares the extension
                 // Just try to locate the pom.properties file in the target/maven-archiver directory
-                // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is overridden
+                // Note that this hack will not work if addMavenDescriptor=false or if the pomPropertiesFile is
+                // overridden
                 Path location = Paths.get(codeLocation.toURI());
                 while (!isDeploymentTargetClasses(location) && location.getParent() != null) {
                     location = location.getParent();
@@ -111,8 +117,8 @@ public final class ArtifactInfoUtil {
                 return new AbstractMap.SimpleEntry<>("unspecified", "unspecified");
             }
         } catch (IOException | URISyntaxException e) {
-            throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains " + clazz.getName(),
-                    e);
+            throw new RuntimeException(
+                    "Unable to determine groupId and artifactId of the jar that contains " + clazz.getName(), e);
         }
     }
 
@@ -143,11 +149,10 @@ public final class ArtifactInfoUtil {
         return groupIdAndArtifactId(metaInfPath);
     }
 
-    public static AbstractMap.SimpleEntry<String, String> groupIdAndArtifactId(Path pomPropertiesContainer) throws IOException {
-        Optional<Path> pomProperties = Files.walk(pomPropertiesContainer)
-                .filter(Files::isRegularFile)
-                .filter(p -> p.toString().endsWith("pom.properties"))
-                .findFirst();
+    public static AbstractMap.SimpleEntry<String, String> groupIdAndArtifactId(Path pomPropertiesContainer)
+            throws IOException {
+        Optional<Path> pomProperties = Files.walk(pomPropertiesContainer).filter(Files::isRegularFile)
+                .filter(p -> p.toString().endsWith("pom.properties")).findFirst();
         if (pomProperties.isPresent()) {
             Properties props = new Properties();
             props.load(Files.newInputStream(pomProperties.get()));

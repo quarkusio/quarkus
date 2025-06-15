@@ -17,8 +17,7 @@ public class InfinispanDefaultMinimalConfigurationTest {
     RemoteCacheManager remoteCacheManager;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .withConfigurationResource("minimal-application.properties");
 
     @Test

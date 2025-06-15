@@ -14,8 +14,7 @@ public interface P12KeyStoreConfig {
     Path path();
 
     /**
-     * Password of the key store.
-     * When not set, the password must be retrieved from the credential provider.
+     * Password of the key store. When not set, the password must be retrieved from the credential provider.
      */
     Optional<String> password();
 
@@ -25,8 +24,7 @@ public interface P12KeyStoreConfig {
     Optional<String> alias();
 
     /**
-     * Password of the alias in the key store.
-     * If not set, the password will be retrieved from the credential provider.
+     * Password of the alias in the key store. If not set, the password will be retrieved from the credential provider.
      */
     Optional<String> aliasPassword();
 

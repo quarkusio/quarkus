@@ -21,13 +21,13 @@ public class AddExtensionToSingleModuleProjectTest extends QuarkusGradleDevTools
 
         final Path build = projectDir.toPath().resolve("build.gradle");
         assertThat(build).exists();
-        assertThat(new String(Files.readAllBytes(build)))
-                .contains("implementation 'io.quarkus:quarkus-openshift'")
+        assertThat(new String(Files.readAllBytes(build))).contains("implementation 'io.quarkus:quarkus-openshift'")
                 .doesNotContain("implementation enforcedPlatform('io.quarkus:quarkus-bom:")
                 .doesNotContain("implementation 'io.quarkus:quarkus-bom:");
 
         runGradleWrapper(projectDir, ":removeExtension", "--extensions=openshift");
-        assertThat(new String(Files.readAllBytes(build))).doesNotContain("implementation 'io.quarkus:quarkus-openshift'");
+        assertThat(new String(Files.readAllBytes(build)))
+                .doesNotContain("implementation 'io.quarkus:quarkus-openshift'");
 
     }
 
@@ -41,11 +41,13 @@ public class AddExtensionToSingleModuleProjectTest extends QuarkusGradleDevTools
 
         final Path build = projectDir.toPath().resolve("build.gradle");
         assertThat(build).exists();
-        assertThat(new String(Files.readAllBytes(build))).doesNotContain("implementation 'io.quarkus:quarkus-hibernate-orm'");
+        assertThat(new String(Files.readAllBytes(build)))
+                .doesNotContain("implementation 'io.quarkus:quarkus-hibernate-orm'");
 
         runGradleWrapper(projectDir, ":removeExtension", "--extensions=hibernate-orm");
 
-        assertThat(new String(Files.readAllBytes(build))).doesNotContain("implementation 'io.quarkus:quarkus-hibernate-orm'");
+        assertThat(new String(Files.readAllBytes(build)))
+                .doesNotContain("implementation 'io.quarkus:quarkus-hibernate-orm'");
 
     }
 

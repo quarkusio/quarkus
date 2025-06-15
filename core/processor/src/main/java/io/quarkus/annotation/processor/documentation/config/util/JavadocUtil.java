@@ -69,17 +69,11 @@ public final class JavadocUtil {
             format = JavadocFormat.JAVADOC;
         }
 
-        Optional<String> since = javadoc.getBlockTags().stream()
-                .filter(t -> t.getType() == Type.SINCE)
-                .map(JavadocBlockTag::getContent)
-                .map(JavadocDescription::toText)
-                .findFirst();
+        Optional<String> since = javadoc.getBlockTags().stream().filter(t -> t.getType() == Type.SINCE)
+                .map(JavadocBlockTag::getContent).map(JavadocDescription::toText).findFirst();
 
-        Optional<String> deprecated = javadoc.getBlockTags().stream()
-                .filter(t -> t.getType() == Type.DEPRECATED)
-                .map(JavadocBlockTag::getContent)
-                .map(JavadocDescription::toText)
-                .findFirst();
+        Optional<String> deprecated = javadoc.getBlockTags().stream().filter(t -> t.getType() == Type.DEPRECATED)
+                .map(JavadocBlockTag::getContent).map(JavadocDescription::toText).findFirst();
 
         if (description != null && description.isBlank()) {
             description = null;
@@ -98,11 +92,8 @@ public final class JavadocUtil {
         javadocComment = START_OF_LINE.matcher(javadocComment).replaceAll("* ");
         Javadoc javadoc = StaticJavaParser.parseJavadoc(javadocComment);
 
-        Optional<String> deprecated = javadoc.getBlockTags().stream()
-                .filter(t -> t.getType() == Type.DEPRECATED)
-                .map(JavadocBlockTag::getContent)
-                .map(JavadocDescription::toText)
-                .findFirst();
+        Optional<String> deprecated = javadoc.getBlockTags().stream().filter(t -> t.getType() == Type.DEPRECATED)
+                .map(JavadocBlockTag::getContent).map(JavadocDescription::toText).findFirst();
 
         String description;
         JavadocFormat format;
@@ -152,8 +143,7 @@ public final class JavadocUtil {
         title = title.replaceAll("^([^\\w])+", "");
 
         return new ParsedJavadocSection(title == null || title.isBlank() ? null : title,
-                details == null || details.isBlank() ? null : details, format,
-                deprecated.orElse(null));
+                details == null || details.isBlank() ? null : details, format, deprecated.orElse(null));
     }
 
     /**
@@ -161,9 +151,9 @@ public final class JavadocUtil {
      */
     public static String getJavadocSiteLink(String binaryName) {
         if (binaryName.equals(Level.class.getName())) {
-            //hack, we don't want to link to the JUL version, but the jboss logging version
-            //this seems like a one off use case so for now it is just hacked in here
-            //if there are other use cases we should do something more generic
+            // hack, we don't want to link to the JUL version, but the jboss logging version
+            // this seems like a one off use case so for now it is just hacked in here
+            // if there are other use cases we should do something more generic
             return LOG_LEVEL_REDIRECT_URL;
         }
         Matcher packageMatcher = PACKAGE_PATTERN.matcher(binaryName);

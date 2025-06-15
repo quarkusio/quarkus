@@ -50,7 +50,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
         Config config = new Config(extensionModule, useConfigMapping, debug);
 
         if (!useConfigMapping) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, "Extension module " + extensionModule.artifactId()
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, "Extension module "
+                    + extensionModule.artifactId()
                     + " config implementation is deprecated. Please migrate to use @ConfigMapping: https://quarkus.io/guides/writing-extensions#configuration");
         }
 
@@ -88,8 +89,8 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
     }
 
     @Override
-    public Iterable<? extends Completion> getCompletions(Element element, AnnotationMirror annotation, ExecutableElement member,
-            String userText) {
+    public Iterable<? extends Completion> getCompletions(Element element, AnnotationMirror annotation,
+            ExecutableElement member, String userText) {
         return Collections.emptySet();
     }
 

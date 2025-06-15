@@ -12,7 +12,8 @@ import org.junit.platform.commons.util.AnnotationUtils;
 
 class Redis6OrHigherCondition implements ExecutionCondition {
 
-    private static final ConditionEvaluationResult ENABLED_BY_DEFAULT = enabled("@RequiresRedis6OrHigher is not present");
+    private static final ConditionEvaluationResult ENABLED_BY_DEFAULT = enabled(
+            "@RequiresRedis6OrHigher is not present");
 
     @Override
     public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {

@@ -41,8 +41,7 @@ public class ManagementWithJksWithAliasTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(configuration), "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(configuration), "application.properties")
                     .addAsResource(new File("target/certs/ssl-management-interface-alias-test-keystore.jks"),
                             "server-keystore.jks")
                     .addClasses(MyObserver.class))
@@ -55,17 +54,12 @@ public class ManagementWithJksWithAliasTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        NonApplicationRootPathBuildItem buildItem = context.consume(NonApplicationRootPathBuildItem.class);
-                        context.produce(buildItem.routeBuilder()
-                                .management()
-                                .route("my-route")
-                                .handler(new MyHandler())
-                                .blockingRoute()
-                                .build());
+                        NonApplicationRootPathBuildItem buildItem = context
+                                .consume(NonApplicationRootPathBuildItem.class);
+                        context.produce(buildItem.routeBuilder().management().route("my-route").handler(new MyHandler())
+                                .blockingRoute().build());
                     }
-                }).produces(RouteBuildItem.class)
-                        .consumes(NonApplicationRootPathBuildItem.class)
-                        .build();
+                }).produces(RouteBuildItem.class).consumes(NonApplicationRootPathBuildItem.class).build();
             }
         };
     }
@@ -84,15 +78,14 @@ public class ManagementWithJksWithAliasTest {
     public void testSslWithJks() {
         RestAssured.given()
                 .trustStore(new File("target/certs/ssl-management-interface-alias-test-truststore.jks"), "secret")
-                .get("https://localhost:9001/management/my-route")
-                .then().statusCode(200).body(Matchers.equalTo("ssl"));
+                .get("https://localhost:9001/management/my-route").then().statusCode(200).body(Matchers.equalTo("ssl"));
     }
 
     @Singleton
     static class MyObserver {
 
         void test(@Observes String event) {
-            //Do Nothing
+            // Do Nothing
         }
 
     }

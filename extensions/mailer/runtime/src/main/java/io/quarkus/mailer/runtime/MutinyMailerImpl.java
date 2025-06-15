@@ -57,9 +57,9 @@ public class MutinyMailerImpl implements ReactiveMailer {
     private final boolean logInvalidRecipients;
     private final Event<SentMail> sentEmailEvent;
 
-    MutinyMailerImpl(Vertx vertx, MailClient client, MockMailboxImpl mockMailbox,
-            String from, String bounceAddress, boolean mock, List<Pattern> approvedRecipients,
-            boolean logRejectedRecipients, boolean logInvalidRecipients, Event<SentMail> sentEmailEvent) {
+    MutinyMailerImpl(Vertx vertx, MailClient client, MockMailboxImpl mockMailbox, String from, String bounceAddress,
+            boolean mock, List<Pattern> approvedRecipients, boolean logRejectedRecipients, boolean logInvalidRecipients,
+            Event<SentMail> sentEmailEvent) {
         this.vertx = vertx;
         this.client = client;
         this.mockMailbox = mockMailbox;
@@ -78,20 +78,18 @@ public class MutinyMailerImpl implements ReactiveMailer {
             throw new IllegalArgumentException("The `mails` parameter must not be `null`");
         }
 
-        List<Uni<Void>> unis = stream(mails)
-                .map(new Function<Mail, Uni<Void>>() {
-                    @Override
-                    public Uni<Void> apply(Mail mail) {
-                        return MutinyMailerImpl.this.toMailMessage(mail)
-                                .chain(new Function<MailMessage, Uni<? extends Void>>() {
-                                    @Override
-                                    public Uni<? extends Void> apply(MailMessage mailMessage) {
-                                        return send(mail, mailMessage);
-                                    }
-                                });
-                    }
-                })
-                .collect(Collectors.toList());
+        List<Uni<Void>> unis = stream(mails).map(new Function<Mail, Uni<Void>>() {
+            @Override
+            public Uni<Void> apply(Mail mail) {
+                return MutinyMailerImpl.this.toMailMessage(mail)
+                        .chain(new Function<MailMessage, Uni<? extends Void>>() {
+                            @Override
+                            public Uni<? extends Void> apply(MailMessage mailMessage) {
+                                return send(mail, mailMessage);
+                            }
+                        });
+            }
+        }).collect(Collectors.toList());
 
         return Uni.combine().all().unis(unis).discardItems();
     }
@@ -103,7 +101,8 @@ public class MutinyMailerImpl implements ReactiveMailer {
             Recipients bcc = filterApprovedRecipients(message.getBcc());
 
             if (to.approved.isEmpty() && cc.approved.isEmpty() && bcc.approved.isEmpty()) {
-                logRejectedRecipients("Email '%s' was not sent because all recipients were rejected by the configuration: %s",
+                logRejectedRecipients(
+                        "Email '%s' was not sent because all recipients were rejected by the configuration: %s",
                         message.getSubject(), to.rejected, cc.rejected, bcc.rejected);
                 return Uni.createFrom().voidItem();
             }
@@ -130,23 +129,18 @@ public class MutinyMailerImpl implements ReactiveMailer {
 
         if (mock) {
             LOGGER.infof("Sending email %s from %s to %s (cc: %s, bcc: %s), text body: \n%s\nhtml body: \n%s",
-                    message.getSubject(), message.getFrom(), message.getTo(),
-                    message.getCc(), message.getBcc(),
+                    message.getSubject(), message.getFrom(), message.getTo(), message.getCc(), message.getBcc(),
                     message.getText() == null ? "<empty>" : message.getText(),
                     message.getHtml() == null ? "<empty>" : message.getHtml());
-            return mockMailbox.send(mail, message)
-                    .invoke(() -> fire(mail, message));
+            return mockMailbox.send(mail, message).invoke(() -> fire(mail, message));
         } else {
-            return client.sendMail(message)
-                    .invoke(() -> fire(mail, message))
-                    .replaceWithVoid();
+            return client.sendMail(message).invoke(() -> fire(mail, message)).replaceWithVoid();
         }
     }
 
     private Map<String, List<String>> copy(MultiMap headers) {
-        return headers.entries().stream()
-                .collect(
-                        Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
+        return headers.entries().stream().collect(
+                Collectors.groupingBy(Map.Entry::getKey, Collectors.mapping(Map.Entry::getValue, Collectors.toList())));
     }
 
     private List<SentMail.SentAttachment> copy(List<Attachment> attachments) {
@@ -159,12 +153,10 @@ public class MutinyMailerImpl implements ReactiveMailer {
 
     private void fire(Mail mail, MailMessage message) {
         if (sentEmailEvent != null) {
-            SentMail sentMail = new SentMail(message.getFrom(),
-                    Collections.unmodifiableList(message.getTo()), Collections.unmodifiableList(message.getCc()),
-                    Collections.unmodifiableList(message.getBcc()),
-                    mail.getReplyTo(), message.getBounceAddress(),
-                    message.getSubject(), message.getText(), message.getHtml(),
-                    copy(message.getHeaders()), copy(mail.getAttachments()));
+            SentMail sentMail = new SentMail(message.getFrom(), Collections.unmodifiableList(message.getTo()),
+                    Collections.unmodifiableList(message.getCc()), Collections.unmodifiableList(message.getBcc()),
+                    mail.getReplyTo(), message.getBounceAddress(), message.getSubject(), message.getText(),
+                    message.getHtml(), copy(message.getHeaders()), copy(mail.getAttachments()));
             sentEmailEvent.fire(sentMail);
         }
     }
@@ -206,11 +198,9 @@ public class MutinyMailerImpl implements ReactiveMailer {
         List<MailAttachment> inline = new CopyOnWriteArrayList<>();
         for (Attachment attachment : mail.getAttachments()) {
             if (attachment.isInlineAttachment()) {
-                stages.add(
-                        toMailAttachment(attachment).onItem().invoke(inline::add));
+                stages.add(toMailAttachment(attachment).onItem().invoke(inline::add));
             } else {
-                stages.add(
-                        toMailAttachment(attachment).onItem().invoke(attachments::add));
+                stages.add(toMailAttachment(attachment).onItem().invoke(attachments::add));
             }
         }
 
@@ -274,8 +264,7 @@ public class MutinyMailerImpl implements ReactiveMailer {
             throw new IllegalArgumentException("An attachment must contain either a file or a raw data");
         }
 
-        return getAttachmentStream(vertx, attachment)
-                .onItem().transform(attach::setData);
+        return getAttachmentStream(vertx, attachment).onItem().transform(attach::setData);
     }
 
     private Recipients filterApprovedRecipients(List<String> emails) {
@@ -323,15 +312,11 @@ public class MutinyMailerImpl implements ReactiveMailer {
         if (attachment.getFile() != null) {
             Uni<AsyncFile> open = vertx.fileSystem().open(attachment.getFile().getAbsolutePath(),
                     new OpenOptions().setRead(true).setCreate(false));
-            return open
-                    .flatMap(af -> af.toMulti()
-                            .map(io.vertx.mutiny.core.buffer.Buffer::getDelegate)
-                            .onTermination().call((r, f) -> af.close())
-                            .collect().in(Buffer::buffer, Buffer::appendBuffer));
+            return open.flatMap(af -> af.toMulti().map(io.vertx.mutiny.core.buffer.Buffer::getDelegate).onTermination()
+                    .call((r, f) -> af.close()).collect().in(Buffer::buffer, Buffer::appendBuffer));
         } else if (attachment.getData() != null) {
             Publisher<Byte> data = attachment.getData();
-            return Multi.createFrom().publisher(data)
-                    .collect().in(Buffer::buffer, Buffer::appendByte);
+            return Multi.createFrom().publisher(data).collect().in(Buffer::buffer, Buffer::appendByte);
         } else {
             return Uni.createFrom().failure(new IllegalArgumentException("Attachment has no data"));
         }

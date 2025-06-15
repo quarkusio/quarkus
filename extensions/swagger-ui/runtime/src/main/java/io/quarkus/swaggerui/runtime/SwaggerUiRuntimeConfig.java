@@ -10,8 +10,8 @@ import io.smallrye.config.WithDefault;
 public interface SwaggerUiRuntimeConfig {
 
     /**
-     * If Swagger UI is included, it should be enabled/disabled. By default, Swagger UI is enabled if it is included (see
-     * {@code always-include}).
+     * If Swagger UI is included, it should be enabled/disabled. By default, Swagger UI is enabled if it is included
+     * (see {@code always-include}).
      */
     @WithDefault("true")
     boolean enable();

@@ -57,7 +57,8 @@ public class MultipartEncoderModeTest {
     static class MultipartEncoderModeCheck implements ClientRequestFilter {
         @Override
         public void filter(ClientRequestContext requestContext) throws IOException {
-            Object mode = requestContext.getConfiguration().getProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE);
+            Object mode = requestContext.getConfiguration()
+                    .getProperty(QuarkusRestClientProperties.MULTIPART_ENCODER_MODE);
             if (mode == null) {
                 requestContext.abortWith(Response.serverError().entity("encoderMode is null").build());
                 return;

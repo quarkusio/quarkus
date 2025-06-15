@@ -19,13 +19,18 @@ public final class BuildSystemTargetBuildItem extends SimpleBuildItem {
     /**
      * @deprecated in favor of {@link #BuildSystemTargetBuildItem(Path, String, String, boolean, Properties)}
      *
-     * @param outputDirectory build output directory
-     * @param baseName base runner name
-     * @param rebuild indicates whether the application is being re-built
-     * @param buildSystemProps build system properties
+     * @param outputDirectory
+     *        build output directory
+     * @param baseName
+     *        base runner name
+     * @param rebuild
+     *        indicates whether the application is being re-built
+     * @param buildSystemProps
+     *        build system properties
      */
     @Deprecated(forRemoval = true)
-    public BuildSystemTargetBuildItem(Path outputDirectory, String baseName, boolean rebuild, Properties buildSystemProps) {
+    public BuildSystemTargetBuildItem(Path outputDirectory, String baseName, boolean rebuild,
+            Properties buildSystemProps) {
         this(outputDirectory, baseName, baseName, rebuild, buildSystemProps);
     }
 

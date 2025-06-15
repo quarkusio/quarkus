@@ -3,9 +3,9 @@ package io.quarkus.funqy.lambda.model.kinesis;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 
 /**
- * For some reason AWS decided to flatten the model in EventBridge pipes for Kinesis. So there is no additional
- * property called kinesis. We use the Record model and add the missing properties. Sadly I could not find a
- * dedicated model for Kinesis in Pipes. So it is a combination of
+ * For some reason AWS decided to flatten the model in EventBridge pipes for Kinesis. So there is no additional property
+ * called kinesis. We use the Record model and add the missing properties. Sadly I could not find a dedicated model for
+ * Kinesis in Pipes. So it is a combination of
  * {@link com.amazonaws.services.lambda.runtime.events.KinesisEvent.KinesisEventRecord} and {@link KinesisEvent.Record}
  */
 public class PipesKinesisEvent extends KinesisEvent.Record {

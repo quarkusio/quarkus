@@ -27,8 +27,8 @@ public class CliPluginsBase extends BaseBuildCommand {
             if (projectRoot == null || !projectRoot.toFile().exists()) {
                 return Optional.empty();
             }
-            return Optional.of(
-                    registryClient.createQuarkusProject(projectRoot, targetQuarkusVersion, getRunner().getBuildTool(), output));
+            return Optional.of(registryClient.createQuarkusProject(projectRoot, targetQuarkusVersion,
+                    getRunner().getBuildTool(), output));
         } catch (Exception e) {
             return Optional.empty();
         }
@@ -39,7 +39,6 @@ public class CliPluginsBase extends BaseBuildCommand {
     }
 
     public Predicate<Plugin> pluginFilter() {
-        return p -> type.map(t -> t == p.getType()).orElse(true) &&
-                !(catalogOptions.user && p.isInProjectCatalog());
+        return p -> type.map(t -> t == p.getType()).orElse(true) && !(catalogOptions.user && p.isInProjectCatalog());
     }
 }

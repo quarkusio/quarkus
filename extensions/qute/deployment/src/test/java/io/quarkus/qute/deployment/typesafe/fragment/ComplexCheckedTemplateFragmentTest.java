@@ -16,18 +16,11 @@ public class ComplexCheckedTemplateFragmentTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Templates.class, Item.class)
-                    .addAsResource(new StringAsset(
-                            "{#let foo=items}"
-                                    + "{#fragment item_a}"
-                                    + "{#let size=foo.size}"
-                                    + "{#fragment id='item_b'}"
-                                    + "{foo.first.name}::{size}"
-                                    + "{/fragment}"
-                                    + "{/let}"
-                                    + "{/fragment}"
-                                    + "{/let}"),
+            .withApplicationRoot(
+                    root -> root.addClasses(Templates.class, Item.class).addAsResource(
+                            new StringAsset("{#let foo=items}" + "{#fragment item_a}" + "{#let size=foo.size}"
+                                    + "{#fragment id='item_b'}" + "{foo.first.name}::{size}" + "{/fragment}" + "{/let}"
+                                    + "{/fragment}" + "{/let}"),
                             "templates/ComplexCheckedTemplateFragmentTest/items.html"));
 
     @Test

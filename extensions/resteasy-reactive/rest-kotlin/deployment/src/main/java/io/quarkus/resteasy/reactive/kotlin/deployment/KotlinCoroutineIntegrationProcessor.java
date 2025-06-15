@@ -45,8 +45,7 @@ public class KotlinCoroutineIntegrationProcessor {
     @BuildStep
     void produceCoroutineScope(BuildProducer<AdditionalBeanBuildItem> buildItemBuildProducer) {
         buildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClasses(
-                        "org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineInvocationHandlerFactory",
+                .addBeanClasses("org.jboss.resteasy.reactive.server.runtime.kotlin.CoroutineInvocationHandlerFactory",
                         "org.jboss.resteasy.reactive.server.runtime.kotlin.ApplicationCoroutineScope")
                 .setUnremovable().build());
     }
@@ -58,18 +57,20 @@ public class KotlinCoroutineIntegrationProcessor {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                if (methodContext.containsKey(NAME)) { //method is suspendable, we need to handle the invocation differently
+                if (methodContext.containsKey(NAME)) { // method is suspendable, we need to handle the invocation
+                                                       // differently
 
                     ensureNotBlocking(method);
 
                     EndpointInvokerFactory recorder = (EndpointInvokerFactory) methodContext
                             .get(EndpointInvokerFactory.class.getName());
                     CoroutineMethodProcessor processor = new CoroutineMethodProcessor(createCoroutineInvoker(
-                            method.declaringClass(), method,
-                            (BuildProducer<GeneratedClassBuildItem>) methodContext.get(GeneratedClassBuildItem.class.getName()),
+                            method.declaringClass(), method, (BuildProducer<GeneratedClassBuildItem>) methodContext
+                                    .get(GeneratedClassBuildItem.class.getName()),
                             recorder));
                     if (methodContext.containsKey(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY)) {
-                        Type methodReturnType = (Type) methodContext.get(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY);
+                        Type methodReturnType = (Type) methodContext
+                                .get(EndpointIndexer.METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY);
                         if (methodReturnType != null) {
                             if (methodReturnType.name().equals(FLOW)) {
                                 return List.of(processor, flowCustomizer());
@@ -90,9 +91,9 @@ public class KotlinCoroutineIntegrationProcessor {
             }
 
             @Override
-            public ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,
-                    boolean field, Map<String, Object> methodContext) {
-                //look for methods that take a Continuation, these are suspendable and need to be handled differently
+            public ParameterExtractor handleCustomParameter(Type paramType,
+                    Map<DotName, AnnotationInstance> annotations, boolean field, Map<String, Object> methodContext) {
+                // look for methods that take a Continuation, these are suspendable and need to be handled differently
                 if (paramType.name().equals(CONTINUATION)) {
                     methodContext.put(NAME, true);
                     if (paramType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
@@ -122,32 +123,32 @@ public class KotlinCoroutineIntegrationProcessor {
 
     /**
      * This method generates the same invocation code as for the standard invoker but also passes along the implicit
-     * {@code Continuation} argument provided by kotlinc and the coroutines library.
-     *
-     * See: io.quarkus.resteasy.reactive.server.deployment.QuarkusInvokerFactory#create(ResourceMethod, ClassInfo, MethodInfo)
+     * {@code Continuation} argument provided by kotlinc and the coroutines library. See:
+     * io.quarkus.resteasy.reactive.server.deployment.QuarkusInvokerFactory#create(ResourceMethod, ClassInfo,
+     * MethodInfo)
      */
-    private Supplier<EndpointInvoker> createCoroutineInvoker(ClassInfo currentClassInfo,
-            MethodInfo info, BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+    private Supplier<EndpointInvoker> createCoroutineInvoker(ClassInfo currentClassInfo, MethodInfo info,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             EndpointInvokerFactory factory) {
         StringBuilder sigBuilder = new StringBuilder();
-        sigBuilder.append(info.name())
-                .append(info.returnType());
+        sigBuilder.append(info.name()).append(info.returnType());
         for (Type t : info.parameterTypes()) {
             sigBuilder.append(t);
         }
         String baseName = currentClassInfo.name() + "$quarkuscoroutineinvoker$" + info.name() + "_"
                 + HashUtil.sha1(sigBuilder.toString());
-        //this is very similar to the existing impl, except it passes through a continuation as an additional argument
+        // this is very similar to the existing impl, except it passes through a continuation as an additional argument
         try (ClassCreator classCreator = new ClassCreator(
                 new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
                 Object.class.getName(), CoroutineEndpointInvoker.class.getName())) {
 
-            try (MethodCreator mc = classCreator.getMethodCreator("invoke", Object.class, Object.class, Object[].class)) {
+            try (MethodCreator mc = classCreator.getMethodCreator("invoke", Object.class, Object.class,
+                    Object[].class)) {
                 mc.throwException(IllegalStateException.class, "Incorrect invoker used for Kotlin suspendable method");
             }
 
-            try (MethodCreator mc = classCreator.getMethodCreator("invokeCoroutine", Object.class, Object.class, Object[].class,
-                    CONTINUATION.toString())) {
+            try (MethodCreator mc = classCreator.getMethodCreator("invokeCoroutine", Object.class, Object.class,
+                    Object[].class, CONTINUATION.toString())) {
                 ResultHandle[] args = new ResultHandle[info.parametersCount()];
                 ResultHandle array = mc.getMethodParam(1);
                 for (int i = 0; i < info.parametersCount() - 1; ++i) {
@@ -192,8 +193,7 @@ public class KotlinCoroutineIntegrationProcessor {
     }
 
     private static HandlerChainCustomizer flowCustomizer() {
-        return new FixedHandlersChainCustomizer(
-                List.of(new FlowToPublisherHandler(), new PublisherResponseHandler()),
+        return new FixedHandlersChainCustomizer(List.of(new FlowToPublisherHandler(), new PublisherResponseHandler()),
                 HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE);
     }
 }

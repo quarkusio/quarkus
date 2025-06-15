@@ -5,9 +5,9 @@ import java.lang.reflect.Method;
 import jakarta.ws.rs.container.ResourceInfo;
 
 /**
- * Type that can be injected into places where ResourceInfo can.
- * The idea is that this can be used when a piece of code does not need access to the entire resource method
- * (which entails a reflective lookup call), where the resource class, method name and parameter types will suffice
+ * Type that can be injected into places where ResourceInfo can. The idea is that this can be used when a piece of code
+ * does not need access to the entire resource method (which entails a reflective lookup call), where the resource
+ * class, method name and parameter types will suffice
  */
 public interface SimpleResourceInfo {
 

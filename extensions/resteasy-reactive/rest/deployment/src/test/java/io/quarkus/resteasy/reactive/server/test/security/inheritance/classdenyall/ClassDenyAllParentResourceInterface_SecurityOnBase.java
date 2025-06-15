@@ -19,11 +19,14 @@ public interface ClassDenyAllParentResourceInterface_SecurityOnBase {
     String classPathOnParentResource_ImplOnBase_InterfaceMethodWithPath_ClassDenyAll(JsonObject array);
 
     @POST
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
-    String classPathOnParentResource_ImplOnBase_InterfaceMethodWithPath_ClassDenyAllMethodRolesAllowed(JsonObject array);
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
+    String classPathOnParentResource_ImplOnBase_InterfaceMethodWithPath_ClassDenyAllMethodRolesAllowed(
+            JsonObject array);
 
     @POST
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
     String classPathOnParentResource_ImplOnBase_InterfaceMethodWithPath_ClassDenyAllMethodPermitAll(JsonObject array);
 
 }

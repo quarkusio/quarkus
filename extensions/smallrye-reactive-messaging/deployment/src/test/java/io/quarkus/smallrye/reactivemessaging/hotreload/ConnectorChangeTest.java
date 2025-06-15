@@ -16,14 +16,11 @@ import io.vertx.core.json.JsonArray;
 public class ConnectorChangeTest {
 
     @RegisterExtension
-    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SomeConnector.class, SomeProcessor.class)
-                            .addAsResource(new StringAsset(
-                                    "mp.messaging.incoming.my-source.connector=quarkus-test-connector\n"
-                                            + "mp.messaging.outgoing.my-sink.connector=quarkus-test-connector\n"),
-                                    "application.properties"));
+    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(SomeConnector.class, SomeProcessor.class).addAsResource(
+                    new StringAsset("mp.messaging.incoming.my-source.connector=quarkus-test-connector\n"
+                            + "mp.messaging.outgoing.my-sink.connector=quarkus-test-connector\n"),
+                    "application.properties"));
 
     @Test
     public void testUpdatingConnector() {

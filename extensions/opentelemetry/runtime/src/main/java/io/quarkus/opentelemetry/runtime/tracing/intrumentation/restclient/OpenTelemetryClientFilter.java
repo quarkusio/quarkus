@@ -48,10 +48,9 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     private static final String URL_PATH_TEMPLATE_KEY = "UrlPathTemplate";
 
     /**
-     * Property stored in the Client Request context to retrieve the captured Vert.x context.
-     * This context is captured and stored by the Reactive REST Client.
-     *
-     * We use this property to avoid having to depend on the Reactive REST Client explicitly.
+     * Property stored in the Client Request context to retrieve the captured Vert.x context. This context is captured
+     * and stored by the Reactive REST Client. We use this property to avoid having to depend on the Reactive REST
+     * Client explicitly.
      */
     private static final String VERTX_CONTEXT_PROPERTY = "__context";
 
@@ -61,26 +60,20 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     // In Reactive Rest Client this is the constructor called. In the classic is the next one with injection.
     public OpenTelemetryClientFilter() {
         this(GlobalOpenTelemetry.get(),
-                ConfigProvider.getConfig()
-                        .unwrap(SmallRyeConfig.class)
-                        .getConfigMapping(OTelRuntimeConfig.class));
+                ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(OTelRuntimeConfig.class));
     }
 
     @Inject
     public OpenTelemetryClientFilter(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         ClientAttributesExtractor clientAttributesExtractor = new ClientAttributesExtractor();
 
-        InstrumenterBuilder<ClientRequestContext, ClientResponseContext> builder = Instrumenter.builder(
-                openTelemetry,
-                INSTRUMENTATION_NAME,
-                HttpSpanNameExtractor.create(clientAttributesExtractor));
+        InstrumenterBuilder<ClientRequestContext, ClientResponseContext> builder = Instrumenter.builder(openTelemetry,
+                INSTRUMENTATION_NAME, HttpSpanNameExtractor.create(clientAttributesExtractor));
 
         builder.setEnabled(!runtimeConfig.sdkDisabled());
 
-        this.instrumenter = builder
-                .setSpanStatusExtractor(HttpSpanStatusExtractor.create(clientAttributesExtractor))
-                .addAttributesExtractor(HttpClientAttributesExtractor.create(
-                        clientAttributesExtractor))
+        this.instrumenter = builder.setSpanStatusExtractor(HttpSpanStatusExtractor.create(clientAttributesExtractor))
+                .addAttributesExtractor(HttpClientAttributesExtractor.create(clientAttributesExtractor))
                 .buildClientInstrumenter(new ClientRequestContextTextMapSetter());
     }
 
@@ -130,8 +123,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         try {
             String pathTemplate = (String) request.getProperty(URL_PATH_TEMPLATE_KEY);
             if (pathTemplate != null && !pathTemplate.isEmpty()) {
-                Span.fromContext(spanContext)
-                        .updateName(request.getMethod() + " " + pathTemplate);
+                Span.fromContext(spanContext).updateName(request.getMethod() + " " + pathTemplate);
             }
             instrumenter.end(spanContext, request, response, null);
         } finally {
@@ -207,8 +199,8 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
         }
 
         @Override
-        public List<String> getHttpResponseHeader(final ClientRequestContext request, final ClientResponseContext response,
-                final String name) {
+        public List<String> getHttpResponseHeader(final ClientRequestContext request,
+                final ClientResponseContext response, final String name) {
             return response.getHeaders().getOrDefault(name, emptyList());
         }
     }

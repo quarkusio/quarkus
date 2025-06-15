@@ -54,7 +54,8 @@ public class DecorateStackUtil {
         int lineNumber = stackTraceElement.getLineNumber();
 
         if (lineNumber > 0) {
-            // Convert the class name to a relative path: io.quarkiverse.chappie.sample.ChappieSimulateResource -> io/quarkiverse/chappie/sample/ChappieSimulateResource.java
+            // Convert the class name to a relative path: io.quarkiverse.chappie.sample.ChappieSimulateResource ->
+            // io/quarkiverse/chappie/sample/ChappieSimulateResource.java
             String fullJavaFileName = getFullPath(stackTraceElement.getClassName(), stackTraceElement.getFileName());
             Path affectedPath = findAffectedPath(fullJavaFileName, workspacePaths);
             return getDecoratedString(stackTraceElement, affectedPath, lineNumber);
@@ -66,7 +67,8 @@ public class DecorateStackUtil {
         try {
             List<String> contextLines = DecorateStackUtil.getRelatedLinesInSource(f, lineNumber, 2);
             if (contextLines != null) {
-                String header = "Exception in " + stackTraceElement.getFileName() + ":" + stackTraceElement.getLineNumber();
+                String header = "Exception in " + stackTraceElement.getFileName() + ":"
+                        + stackTraceElement.getLineNumber();
                 return header + "\n" + String.join("\n", contextLines);
             }
         } catch (IOException e) {
@@ -77,11 +79,10 @@ public class DecorateStackUtil {
 
     public static Path findAffectedPath(String name, List<Path> workspacePaths) {
         // Search the workspace paths for a match that ends with the fullJavaFileName
-        return workspacePaths.stream()
-                .filter(path -> path.toString().endsWith(convertNameToRelativePath(name)))
-                .sorted(Comparator.comparingInt(path -> path.toString().contains("src/main/java") ? 0 : 1)) // Prioritize src/main/java
-                .findFirst()
-                .orElse(null);
+        return workspacePaths.stream().filter(path -> path.toString().endsWith(convertNameToRelativePath(name)))
+                .sorted(Comparator.comparingInt(path -> path.toString().contains("src/main/java") ? 0 : 1)) // Prioritize
+                // src/main/java
+                .findFirst().orElse(null);
     }
 
     private static String convertNameToRelativePath(String name) {
@@ -98,7 +99,8 @@ public class DecorateStackUtil {
         return name.contains("/") && name.endsWith(".java");
     }
 
-    private static List<String> getRelatedLinesInSource(Path filePath, int lineNumber, int contextRange) throws IOException {
+    private static List<String> getRelatedLinesInSource(Path filePath, int lineNumber, int contextRange)
+            throws IOException {
         if (Files.exists(filePath)) {
             List<String> resultLines = new ArrayList<>();
             Deque<String> contextQueue = new ArrayDeque<>(2 * contextRange + 1);

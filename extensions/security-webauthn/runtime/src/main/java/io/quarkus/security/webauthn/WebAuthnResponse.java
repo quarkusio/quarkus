@@ -6,8 +6,8 @@ import jakarta.ws.rs.FormParam;
 import io.vertx.core.json.JsonObject;
 
 /**
- * JAX-RS structure suitable for use as a {@link BeanParam} for a POST response
- * containing all the common required fields for a form-based login and registration.
+ * JAX-RS structure suitable for use as a {@link BeanParam} for a POST response containing all the common required
+ * fields for a form-based login and registration.
  *
  * @see WebAuthnLoginResponse
  * @see WebAuthnRegisterResponse
@@ -45,11 +45,8 @@ public abstract class WebAuthnResponse {
         if (webAuthnResponseClientDataJSON != null)
             response.put("clientDataJSON", webAuthnResponseClientDataJSON);
         toJsonObject(response);
-        return new JsonObject()
-                .put("id", webAuthnId)
-                .put("rawId", webAuthnRawId)
-                .put("response", response)
-                .put("type", webAuthnType);
+        return new JsonObject().put("id", webAuthnId).put("rawId", webAuthnRawId).put("response", response).put("type",
+                webAuthnType);
     }
 
     protected abstract void toJsonObject(JsonObject response);
@@ -69,9 +66,7 @@ public abstract class WebAuthnResponse {
      * @return true if this can be passed to the login/register endpoints
      */
     public boolean isValid() {
-        return notEmpty(webAuthnId)
-                && notEmpty(webAuthnRawId)
-                && notEmpty(webAuthnType)
+        return notEmpty(webAuthnId) && notEmpty(webAuthnRawId) && notEmpty(webAuthnType)
                 && webAuthnType.equals("public-key");
     }
 

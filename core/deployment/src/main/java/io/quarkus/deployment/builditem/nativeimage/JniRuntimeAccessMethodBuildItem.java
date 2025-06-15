@@ -9,8 +9,7 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * JNI access registration fine-grained to single methods
- * for a given class.
+ * JNI access registration fine-grained to single methods for a given class.
  */
 public final class JniRuntimeAccessMethodBuildItem extends MultiBuildItem {
 
@@ -80,9 +79,8 @@ public final class JniRuntimeAccessMethodBuildItem extends MultiBuildItem {
         if (o == null || getClass() != o.getClass())
             return false;
         JniRuntimeAccessMethodBuildItem that = (JniRuntimeAccessMethodBuildItem) o;
-        return Objects.equals(declaringClass, that.declaringClass) &&
-                Objects.equals(name, that.name) &&
-                Arrays.equals(params, that.params);
+        return Objects.equals(declaringClass, that.declaringClass) && Objects.equals(name, that.name)
+                && Arrays.equals(params, that.params);
     }
 
     @Override

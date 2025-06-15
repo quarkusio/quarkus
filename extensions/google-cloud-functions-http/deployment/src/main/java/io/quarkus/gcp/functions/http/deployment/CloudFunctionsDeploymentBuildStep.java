@@ -16,15 +16,15 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 
 public class CloudFunctionsDeploymentBuildStep {
     /**
-     * Creates a target/deployment dir and copy the uber jar in it.
-     * This facilitates the usage of the 'gcloud' command.
+     * Creates a target/deployment dir and copy the uber jar in it. This facilitates the usage of the 'gcloud' command.
      */
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public ArtifactResultBuildItem functionDeployment(OutputTargetBuildItem target, JarBuildItem jar)
             throws BuildException, IOException {
         if (!jar.isUberJar()) {
-            throw new BuildException("Google Cloud Function deployment need to use a uberjar, " +
-                    "please set 'quarkus.package.jar.type=uber-jar' inside your application.properties",
+            throw new BuildException(
+                    "Google Cloud Function deployment need to use a uberjar, "
+                            + "please set 'quarkus.package.jar.type=uber-jar' inside your application.properties",
                     List.of());
         }
 

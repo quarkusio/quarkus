@@ -14,13 +14,8 @@ import io.vertx.ext.web.RoutingContext;
 public class ResourceNotFoundRecorder {
 
     public Handler<RoutingContext> registerNotFoundHandler(RuntimeValue<Router> httpRouter,
-            RuntimeValue<Router> mainRouter,
-            RuntimeValue<Router> managementRouter,
-            BeanContainer beanContainer,
-            String baseUrl,
-            String httpRoot,
-            List<RouteDescription> endpointRoutes,
-            Set<String> staticRoots,
+            RuntimeValue<Router> mainRouter, RuntimeValue<Router> managementRouter, BeanContainer beanContainer,
+            String baseUrl, String httpRoot, List<RouteDescription> endpointRoutes, Set<String> staticRoots,
             List<AdditionalRouteDescription> additionalEndpoints) {
 
         ResourceNotFoundData resourceNotFoundData = beanContainer.beanInstance(ResourceNotFoundData.class);

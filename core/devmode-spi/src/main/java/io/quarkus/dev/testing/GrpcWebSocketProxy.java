@@ -15,8 +15,7 @@ public class GrpcWebSocketProxy {
 
     private static final Map<Integer, Consumer<Runnable>> webSocketConnections = new ConcurrentHashMap<>();
 
-    public static Integer addWebSocket(Consumer<String> responseConsumer,
-            Consumer<Runnable> closeHandler) {
+    public static Integer addWebSocket(Consumer<String> responseConsumer, Consumer<Runnable> closeHandler) {
         if (webSocketListener != null) {
             int id = connectionIdSeq.getAndIncrement();
             webSocketListener.onOpen(id, responseConsumer);

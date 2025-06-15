@@ -16,21 +16,19 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class UnitTestTypeTestCase {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class)
-                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.type=unit")),
-                                    "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, UnitET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, UnitService.class).add(
+                    new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.type=unit")),
+                    "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleET.class, UnitET.class);
+        }
+    });
 
     @Test
     public void testUnitMode() throws InterruptedException {

@@ -20,10 +20,9 @@ import io.vertx.core.buffer.Buffer;
 public class ByteArrayBinaryMessageTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpont.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpont.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

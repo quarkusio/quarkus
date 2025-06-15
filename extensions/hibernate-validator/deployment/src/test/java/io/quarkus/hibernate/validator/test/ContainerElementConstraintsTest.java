@@ -24,8 +24,8 @@ public class ContainerElementConstraintsTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class).addClasses(TestBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestBean.class));
 
     @Test
     public void testContainerElementConstraint() {
@@ -60,7 +60,8 @@ public class ContainerElementConstraintsTest {
         List<String> invalidList = Collections.singletonList("");
 
         assertThat(validatorFactory.getValidator().forExecutables().validateConstructorParameters(
-                ConstructorParameterTestBean.class.getConstructor(List.class), new Object[] { invalidList })).hasSize(1);
+                ConstructorParameterTestBean.class.getConstructor(List.class), new Object[] { invalidList }))
+                .hasSize(1);
     }
 
     static class TestBean {

@@ -10,8 +10,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 class ResourceRegistrationUtils {
 
     static void registerResourcesForProperties(Config config,
-            BuildProducer<NativeImageResourceBuildItem> resourceBuildItem,
-            Pattern... patterns) {
+            BuildProducer<NativeImageResourceBuildItem> resourceBuildItem, Pattern... patterns) {
         for (String propertyName : config.getPropertyNames()) {
             for (Pattern pattern : patterns) {
                 if (pattern.matcher(propertyName).matches()) {

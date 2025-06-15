@@ -35,8 +35,11 @@ import io.restassured.RestAssured;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Tests for java.net.URI class
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Uri Info Test")
@@ -76,6 +79,7 @@ public class UriInfoTest {
 
     /**
      * @tpTestDetails Check uri from resource on server. Simple resource is used.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -90,6 +94,7 @@ public class UriInfoTest {
 
     /**
      * @tpTestDetails Check uri from resource on server. Resource is set as singleton to RESTEasy.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -101,6 +106,7 @@ public class UriInfoTest {
 
     /**
      * @tpTestDetails Check uri from resource on server. Test complex parameter.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -113,6 +119,7 @@ public class UriInfoTest {
 
     /**
      * @tpTestDetails Check uri from resource on server. Test space character in URI.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -124,6 +131,7 @@ public class UriInfoTest {
 
     /**
      * @tpTestDetails Check uri from resource on server. Test space character in URI attribute.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -135,6 +143,7 @@ public class UriInfoTest {
 
     /**
      * @tpTestDetails Check uri from resource on server. Test return value from resource - same URI address.
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -145,8 +154,8 @@ public class UriInfoTest {
         String result;
         result = target.path("a/b/c").queryParam("to", "a/d/e").request().get(String.class);
         Assertions.assertEquals("../../d/e", result);
-        result = target.path("a/b/c").queryParam("to", UriBuilder.fromUri(uri).path("a/d/e").build().toString()).request()
-                .get(String.class);
+        result = target.path("a/b/c").queryParam("to", UriBuilder.fromUri(uri).path("a/d/e").build().toString())
+                .request().get(String.class);
         Assertions.assertEquals(result, "../../d/e");
         result = target.path("a/b/c").queryParam("to", "http://foobar/a/d/e").request().get(String.class);
         Assertions.assertEquals(result, "http://foobar/a/d/e");
@@ -171,6 +180,7 @@ public class UriInfoTest {
 
     /**
      * @tpTestDetails Test that UriInfo.getQueryParameters() returns an immutable map. Test's logic is in end-point.
+     *
      * @tpSince RESTEasy 3.0.17
      */
     @Test
@@ -188,10 +198,8 @@ public class UriInfoTest {
     }
 
     private void doTestGetAbsolutePath(String path, String expectedDummyHeader) {
-        String absolutePathHeader = RestAssured.get(path)
-                .then()
-                .statusCode(200)
-                .header("dummy", expectedDummyHeader).extract().header("absolutePath");
+        String absolutePathHeader = RestAssured.get(path).then().statusCode(200).header("dummy", expectedDummyHeader)
+                .extract().header("absolutePath");
         org.assertj.core.api.Assertions.assertThat(absolutePathHeader).endsWith("/absolutePath");
     }
 }

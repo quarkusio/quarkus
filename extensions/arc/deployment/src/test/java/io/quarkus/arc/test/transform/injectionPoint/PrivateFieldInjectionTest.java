@@ -20,21 +20,20 @@ import io.quarkus.arc.test.transform.injectionPoint.diffPackage.SomeBean;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Tests that a private field can be injected into even though there is no reflection fallback.
- * By default, transformation is used and private fields gets changed to package private.
- * If this option gets turned off, the reflection fallback kicks in.
+ * Tests that a private field can be injected into even though there is no reflection fallback. By default,
+ * transformation is used and private fields gets changed to package private. If this option gets turned off, the
+ * reflection fallback kicks in.
  */
 public class PrivateFieldInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Head.class, CombineHarvester.class, FooExtended.class, Foo.class, SomeBean.class, Bar.class,
-                            Simple.class, SomeInterceptor.class, InterceptedDecoratedBean.class, SomeDecorator.class,
-                            DecoratedBean.class, DummyBean.class)
-                    // this should be on by default but the test states it explicitly to make it clear
-                    .addAsResource(new StringAsset("quarkus.arc.transform-private-injected-fields=true"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Head.class, CombineHarvester.class, FooExtended.class, Foo.class, SomeBean.class, Bar.class,
+                    Simple.class, SomeInterceptor.class, InterceptedDecoratedBean.class, SomeDecorator.class,
+                    DecoratedBean.class, DummyBean.class)
+            // this should be on by default but the test states it explicitly to make it clear
+            .addAsResource(new StringAsset("quarkus.arc.transform-private-injected-fields=true"),
+                    "application.properties"));
 
     @Test
     public void beanPrivateFieldInjection() {

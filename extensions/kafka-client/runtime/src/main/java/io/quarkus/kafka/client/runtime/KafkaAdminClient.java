@@ -62,11 +62,9 @@ public class KafkaAdminClient {
     }
 
     public Collection<ConsumerGroupDescription> getConsumerGroups() throws InterruptedException, ExecutionException {
-        var consumerGroupIds = client.listConsumerGroups().all().get().stream()
-                .map(ConsumerGroupListing::groupId)
+        var consumerGroupIds = client.listConsumerGroups().all().get().stream().map(ConsumerGroupListing::groupId)
                 .collect(Collectors.toList());
-        return client.describeConsumerGroups(consumerGroupIds).all().get()
-                .values();
+        return client.describeConsumerGroups(consumerGroupIds).all().get().values();
     }
 
     public boolean deleteTopic(final String name) {
@@ -97,8 +95,6 @@ public class KafkaAdminClient {
 
     public Map<String, TopicDescription> describeTopics(final Collection<String> topicNames)
             throws InterruptedException, ExecutionException {
-        return client.describeTopics(topicNames)
-                .allTopicNames()
-                .get();
+        return client.describeTopics(topicNames).allTopicNames().get();
     }
 }

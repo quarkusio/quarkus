@@ -25,9 +25,8 @@ public class KotlinProcessor {
     }
 
     /*
-     * Register the Kotlin Jackson module if that has been added to the classpath
-     * Producing the BuildItem is entirely safe since if quarkus-jackson is not on the classpath
-     * the BuildItem will just be ignored
+     * Register the Kotlin Jackson module if that has been added to the classpath Producing the BuildItem is entirely
+     * safe since if quarkus-jackson is not on the classpath the BuildItem will just be ignored
      */
     @BuildStep
     void registerKotlinJacksonModule(BuildProducer<ClassPathJacksonModuleBuildItem> classPathJacksonModules) {
@@ -39,8 +38,8 @@ public class KotlinProcessor {
     }
 
     /**
-     * Kotlin data classes that have multiple constructors need to have their final fields writable,
-     * otherwise creating an instance of them with default values fails in native mode.
+     * Kotlin data classes that have multiple constructors need to have their final fields writable, otherwise creating
+     * an instance of them with default values fails in native mode.
      */
     @BuildStep
     ReflectiveClassFinalFieldsWritablePredicateBuildItem dataClassPredicate() {
@@ -55,29 +54,23 @@ public class KotlinProcessor {
             BuildProducer<NativeImageResourcePatternsBuildItem> nativeResourcePatterns,
             BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> reflectiveHierarchyIgnoreWarning) {
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.reflect.jvm.internal.ReflectionFactoryImpl")
-                .build());
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder("kotlin.reflect.jvm.internal.ReflectionFactoryImpl").build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion").methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion[]").constructors(false).build());
         reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder("kotlin.KotlinVersion").methods().fields().build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion[]").constructors(false)
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion").constructors(false)
-                .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion[]").constructors(false)
-                .build());
+                ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion").constructors(false).build());
         reflectiveClass.produce(
-                ReflectiveClassBuildItem
-                        .builder("kotlin.collections.EmptyList", "kotlin.collections.EmptyMap", "kotlin.collections.EmptySet")
-                        .build());
-
-        nativeResourcePatterns.produce(builder().includePatterns(
-                "META-INF/.*.kotlin_module$",
-                "META-INF/services/kotlin.reflect.*",
-                ".*.kotlin_builtins")
+                ReflectiveClassBuildItem.builder("kotlin.KotlinVersion$Companion[]").constructors(false).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("kotlin.collections.EmptyList", "kotlin.collections.EmptyMap", "kotlin.collections.EmptySet")
                 .build());
 
-        reflectiveHierarchyIgnoreWarning.produce(
-                new ReflectiveHierarchyIgnoreWarningBuildItem(DotName.createSimple("kotlinx.serialization.KSerializer")));
+        nativeResourcePatterns.produce(builder().includePatterns("META-INF/.*.kotlin_module$",
+                "META-INF/services/kotlin.reflect.*", ".*.kotlin_builtins").build());
+
+        reflectiveHierarchyIgnoreWarning.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
+                DotName.createSimple("kotlinx.serialization.KSerializer")));
         reflectiveHierarchyIgnoreWarning.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
                 DotName.createSimple("kotlinx.serialization.descriptors.SerialDescriptor")));
     }

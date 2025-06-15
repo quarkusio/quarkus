@@ -17,8 +17,7 @@ public class TracerRouter {
 
     public void register(@Observes StartupEvent ev) {
         router.get("/tracer").handler(rc -> {
-            tracer.spanBuilder("io.quarkus.vertx.opentelemetry").startSpan()
-                    .setAttribute("test.message", "hello!")
+            tracer.spanBuilder("io.quarkus.vertx.opentelemetry").startSpan().setAttribute("test.message", "hello!")
                     .end();
             rc.response().end("Hello Tracer!");
         });

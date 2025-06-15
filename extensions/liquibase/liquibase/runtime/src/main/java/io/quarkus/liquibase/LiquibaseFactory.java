@@ -43,27 +43,23 @@ public class LiquibaseFactory {
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
         var rootAccessor = new CompositeResourceAccessor();
-        return ImageMode.current().isNativeImage()
-                ? nativeImageResourceAccessor(rootAccessor)
+        return ImageMode.current().isNativeImage() ? nativeImageResourceAccessor(rootAccessor)
                 : defaultResourceAccessor(rootAccessor);
     }
 
     private ResourceAccessor defaultResourceAccessor(CompositeResourceAccessor rootAccessor)
             throws FileNotFoundException {
 
-        rootAccessor.addResourceAccessor(
-                new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
+        rootAccessor
+                .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
         if (!config.changeLog.startsWith("filesystem:") && config.searchPath.isEmpty()) {
             return rootAccessor;
         }
 
         if (config.searchPath.isEmpty()) {
-            return rootAccessor.addResourceAccessor(
-                    new DirectoryResourceAccessor(
-                            Paths.get(StringUtil
-                                    .changePrefix(config.changeLog, "filesystem:", ""))
-                                    .getParent()));
+            return rootAccessor.addResourceAccessor(new DirectoryResourceAccessor(
+                    Paths.get(StringUtil.changePrefix(config.changeLog, "filesystem:", "")).getParent()));
         }
 
         for (String searchPath : config.searchPath.get()) {
@@ -78,8 +74,7 @@ public class LiquibaseFactory {
 
     private String parseChangeLog(String changeLog) {
         if (changeLog.startsWith("filesystem:") && config.searchPath.isEmpty()) {
-            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", ""))
-                    .getFileName().toString();
+            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
         }
 
         if (changeLog.startsWith("filesystem:")) {
@@ -103,11 +98,11 @@ public class LiquibaseFactory {
                 AgroalDataSource agroalDataSource = dataSource.unwrap(AgroalDataSource.class);
                 String jdbcUrl = agroalDataSource.getConfiguration().connectionPoolConfiguration()
                         .connectionFactoryConfiguration().jdbcUrl();
-                Connection connection = DriverManager.getConnection(jdbcUrl, config.username.get(), config.password.get());
+                Connection connection = DriverManager.getConnection(jdbcUrl, config.username.get(),
+                        config.password.get());
 
                 database = DatabaseFactory.getInstance()
-                        .findCorrectDatabaseImplementation(
-                                new JdbcConnection(connection));
+                        .findCorrectDatabaseImplementation(new JdbcConnection(connection));
 
             } else {
                 database = DatabaseFactory.getInstance()

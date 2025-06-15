@@ -84,9 +84,9 @@ public final class RunTimeConfigurationGenerator {
             "createRunTimeConfig", void.class);
     public static final MethodDescriptor C_ENSURE_INITIALIZED = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
             "ensureInitialized", void.class);
-    public static final MethodDescriptor REINIT = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "reinit",
+    public static final MethodDescriptor REINIT = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "reinit", void.class);
+    public static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig",
             void.class);
-    public static final MethodDescriptor C_READ_CONFIG = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "readConfig", void.class);
 
     static final FieldDescriptor C_UNKNOWN = FieldDescriptor.of(CONFIG_CLASS_NAME, "unknown", Set.class);
     static final FieldDescriptor C_UNKNOWN_RUNTIME = FieldDescriptor.of(CONFIG_CLASS_NAME, "unknownRuntime", Set.class);
@@ -99,7 +99,8 @@ public final class RunTimeConfigurationGenerator {
             Set.class);
     static final MethodDescriptor CD_MISSING_VALUE = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "missingValue",
             void.class, String.class, NoSuchElementException.class);
-    static final MethodDescriptor CD_RESET_ERROR = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "resetError", void.class);
+    static final MethodDescriptor CD_RESET_ERROR = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "resetError",
+            void.class);
     static final MethodDescriptor CD_REPORT_UNKNOWN = MethodDescriptor.ofMethod(ConfigDiagnostic.class, "reportUnknown",
             void.class, Set.class);
     static final MethodDescriptor CD_REPORT_UNKNOWN_RUNTIME = MethodDescriptor.ofMethod(ConfigDiagnostic.class,
@@ -125,8 +126,8 @@ public final class RunTimeConfigurationGenerator {
             IntFunction.class);
     static final MethodDescriptor CU_SET_FACTORY = MethodDescriptor.ofMethod(ConfigUtils.class, "setFactory",
             IntFunction.class);
-    static final MethodDescriptor CU_SORTED_SET_FACTORY = MethodDescriptor.ofMethod(ConfigUtils.class, "sortedSetFactory",
-            IntFunction.class);
+    static final MethodDescriptor CU_SORTED_SET_FACTORY = MethodDescriptor.ofMethod(ConfigUtils.class,
+            "sortedSetFactory", IntFunction.class);
     static final MethodDescriptor ITRA_ITERATOR = MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class);
 
     static final MethodDescriptor ITR_HAS_NEXT = MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class);
@@ -139,22 +140,25 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor NI_GET_ALL_PREVIOUS_SEGMENTS = MethodDescriptor.ofMethod(NameIterator.class,
             "getAllPreviousSegments", String.class);
     static final MethodDescriptor NI_GET_NAME = MethodDescriptor.ofMethod(NameIterator.class, "getName", String.class);
-    static final MethodDescriptor NI_GET_PREVIOUS_SEGMENT = MethodDescriptor.ofMethod(NameIterator.class, "getPreviousSegment",
-            String.class);
+    static final MethodDescriptor NI_GET_PREVIOUS_SEGMENT = MethodDescriptor.ofMethod(NameIterator.class,
+            "getPreviousSegment", String.class);
     static final MethodDescriptor NI_HAS_NEXT = MethodDescriptor.ofMethod(NameIterator.class, "hasNext", boolean.class);
     static final MethodDescriptor NI_NEW_STRING = MethodDescriptor.ofConstructor(NameIterator.class, String.class);
     static final MethodDescriptor NI_NEXT_EQUALS = MethodDescriptor.ofMethod(NameIterator.class, "nextSegmentEquals",
             boolean.class, String.class);
     static final MethodDescriptor NI_NEXT = MethodDescriptor.ofMethod(NameIterator.class, "next", void.class);
     static final MethodDescriptor NI_PREVIOUS = MethodDescriptor.ofMethod(NameIterator.class, "previous", void.class);
-    static final MethodDescriptor NI_GO_TO_START = MethodDescriptor.ofMethod(NameIterator.class, "goToStart", void.class);
+    static final MethodDescriptor NI_GO_TO_START = MethodDescriptor.ofMethod(NameIterator.class, "goToStart",
+            void.class);
 
     static final MethodDescriptor OBJ_TO_STRING = MethodDescriptor.ofMethod(Object.class, "toString", String.class);
 
     static final MethodDescriptor OPT_EMPTY = MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class);
     static final MethodDescriptor OPT_GET = MethodDescriptor.ofMethod(Optional.class, "get", Object.class);
-    static final MethodDescriptor OPT_IS_PRESENT = MethodDescriptor.ofMethod(Optional.class, "isPresent", boolean.class);
-    static final MethodDescriptor OPT_OF = MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class);
+    static final MethodDescriptor OPT_IS_PRESENT = MethodDescriptor.ofMethod(Optional.class, "isPresent",
+            boolean.class);
+    static final MethodDescriptor OPT_OF = MethodDescriptor.ofMethod(Optional.class, "of", Optional.class,
+            Object.class);
 
     static final MethodDescriptor SB_NEW = MethodDescriptor.ofConstructor(StringBuilder.class);
     static final MethodDescriptor SB_NEW_STR = MethodDescriptor.ofConstructor(StringBuilder.class, String.class);
@@ -162,8 +166,7 @@ public final class RunTimeConfigurationGenerator {
             StringBuilder.class, String.class);
     static final MethodDescriptor SB_APPEND_CHAR = MethodDescriptor.ofMethod(StringBuilder.class, "append",
             StringBuilder.class, char.class);
-    static final MethodDescriptor SB_LENGTH = MethodDescriptor.ofMethod(StringBuilder.class, "length",
-            int.class);
+    static final MethodDescriptor SB_LENGTH = MethodDescriptor.ofMethod(StringBuilder.class, "length", int.class);
     static final MethodDescriptor SB_SET_LENGTH = MethodDescriptor.ofMethod(StringBuilder.class, "setLength",
             void.class, int.class);
 
@@ -172,8 +175,8 @@ public final class RunTimeConfigurationGenerator {
 
     static final MethodDescriptor SRC_GET_CONVERTER = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConverter",
             Converter.class, Class.class);
-    static final MethodDescriptor SRC_GET_PROPERTY_NAMES = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getPropertyNames",
-            Iterable.class);
+    static final MethodDescriptor SRC_GET_PROPERTY_NAMES = MethodDescriptor.ofMethod(SmallRyeConfig.class,
+            "getPropertyNames", Iterable.class);
     static final MethodDescriptor SRC_GET_VALUE = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValue",
             Object.class, String.class, Converter.class);
 
@@ -185,12 +188,12 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor SRCB_BUILD = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class, "build",
             SmallRyeConfig.class);
 
-    static final MethodDescriptor PU_IS_MAPPED = MethodDescriptor.ofMethod(PropertiesUtil.class, "isMapped", boolean.class,
-            NameIterator.class, String.class);
+    static final MethodDescriptor PU_IS_MAPPED = MethodDescriptor.ofMethod(PropertiesUtil.class, "isMapped",
+            boolean.class, NameIterator.class, String.class);
     static final MethodDescriptor PU_IS_PROPERTY_QUARKUS_COMPOUND_NAME = MethodDescriptor.ofMethod(PropertiesUtil.class,
             "isPropertyQuarkusCompoundName", boolean.class, NameIterator.class);
-    static final MethodDescriptor PU_IS_PROPERTY_IN_ROOTS = MethodDescriptor.ofMethod(PropertiesUtil.class, "isPropertyInRoots",
-            boolean.class, String.class, Set.class);
+    static final MethodDescriptor PU_IS_PROPERTY_IN_ROOTS = MethodDescriptor.ofMethod(PropertiesUtil.class,
+            "isPropertyInRoots", boolean.class, String.class, Set.class);
 
     static final MethodDescriptor HS_NEW = MethodDescriptor.ofConstructor(HashSet.class);
     static final MethodDescriptor HS_NEW_SIZED = MethodDescriptor.ofConstructor(HashSet.class, int.class);
@@ -199,10 +202,10 @@ public final class RunTimeConfigurationGenerator {
     // todo: more space-efficient sorted map impl
     static final MethodDescriptor TM_NEW = MethodDescriptor.ofConstructor(TreeMap.class);
 
-    static final MethodDescriptor EMPTY_PARSER = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "emptyParseKey", void.class,
-            SmallRyeConfig.class, NameIterator.class);
-    static final MethodDescriptor RT_EMPTY_PARSER = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "rtEmptyParseKey", void.class,
-            SmallRyeConfig.class, NameIterator.class);
+    static final MethodDescriptor EMPTY_PARSER = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "emptyParseKey",
+            void.class, SmallRyeConfig.class, NameIterator.class);
+    static final MethodDescriptor RT_EMPTY_PARSER = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "rtEmptyParseKey",
+            void.class, SmallRyeConfig.class, NameIterator.class);
 
     private RunTimeConfigurationGenerator() {
     }
@@ -228,10 +231,9 @@ public final class RunTimeConfigurationGenerator {
         final Map<FieldDescriptor, Class<?>> convertersToRegister = new HashMap<>();
         final List<Class<?>> additionalTypes;
         /**
-         * Regular converters organized by type. Each converter is stored in a separate field. Some are used
-         * only at build time, some only at run time, and some at both times.
-         * Producing a native image will automatically delete the converters which are not used at run time from the
-         * final image.
+         * Regular converters organized by type. Each converter is stored in a separate field. Some are used only at
+         * build time, some only at run time, and some at both times. Producing a native image will automatically delete
+         * the converters which are not used at run time from the final image.
          */
         final Map<ConverterType, FieldDescriptor> convertersByType = new HashMap<>();
         /**
@@ -287,7 +289,8 @@ public final class RunTimeConfigurationGenerator {
             // static config builder
             clinit.invokeStaticMethod(SRCB_WITH_CUSTOMIZER, buildTimeBuilder, clinit.load(CONFIG_STATIC_NAME));
 
-            clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder), SmallRyeConfig.class);
+            clinitConfig = clinit.checkCast(clinit.invokeVirtualMethod(SRCB_BUILD, buildTimeBuilder),
+                    SmallRyeConfig.class);
 
             // block for converter setup
             converterSetup = clinit.createScope();
@@ -335,8 +338,8 @@ public final class RunTimeConfigurationGenerator {
             final ConfigPatternMap<Container> runTimeIgnored = ConfigPatternMap.merge(buildTimePatternMap,
                     buildTimeRunTimePatternMap, combinator);
 
-            final MethodDescriptor siParserBody = generateParserBody(buildTimeRunTimePatternMap, buildTimeRunTimeIgnored,
-                    new StringBuilder("siParseKey"), false, Type.BUILD_TIME);
+            final MethodDescriptor siParserBody = generateParserBody(buildTimeRunTimePatternMap,
+                    buildTimeRunTimeIgnored, new StringBuilder("siParseKey"), false, Type.BUILD_TIME);
             final MethodDescriptor rtParserBody = generateParserBody(runTimePatternMap, runTimeIgnored,
                     new StringBuilder("rtParseKey"), false, Type.RUNTIME);
 
@@ -351,7 +354,8 @@ public final class RunTimeConfigurationGenerator {
                     // it's an unknown
                     final ResultHandle clazzHandle = converterSetup.loadClassFromTCCL(additionalType);
                     fd = FieldDescriptor.of(cc.getClassName(), "conv$" + converterIndex++, Converter.class);
-                    ResultHandle converter = converterSetup.invokeVirtualMethod(SRC_GET_CONVERTER, clinitConfig, clazzHandle);
+                    ResultHandle converter = converterSetup.invokeVirtualMethod(SRC_GET_CONVERTER, clinitConfig,
+                            clazzHandle);
                     cc.getFieldCreator(fd).setModifiers(Opcodes.ACC_STATIC | Opcodes.ACC_FINAL);
                     converterSetup.writeStaticField(fd, converter);
                     convertersByType.put(type, fd);
@@ -363,8 +367,9 @@ public final class RunTimeConfigurationGenerator {
                 for (Map.Entry<FieldDescriptor, Class<?>> entry : convertersToRegister.entrySet()) {
                     final FieldDescriptor descriptor = entry.getKey();
                     final Class<?> type = entry.getValue();
-                    readConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, runTimeBuilder, readConfig.loadClassFromTCCL(type),
-                            readConfig.load(100), readConfig.readStaticField(descriptor));
+                    readConfig.invokeVirtualMethod(SRCB_WITH_CONVERTER, runTimeBuilder,
+                            readConfig.loadClassFromTCCL(type), readConfig.load(100),
+                            readConfig.readStaticField(descriptor));
                 }
             }
 
@@ -391,16 +396,15 @@ public final class RunTimeConfigurationGenerator {
 
                 MethodDescriptor accessorCtor = null;
                 if (!Modifier.isPublic(configurationClass.getModifiers())) {
-                    accessorCtor = accessorFinder
-                            .getConstructorFor(MethodDescriptor.ofConstructor(configurationClass));
+                    accessorCtor = accessorFinder.getConstructorFor(MethodDescriptor.ofConstructor(configurationClass));
                 }
 
                 // specific actions based on config phase
                 if (root.getConfigPhase() == BUILD_AND_RUN_TIME_FIXED) {
-                    // config root field is volatile in dev mode, final otherwise; we initialize it from clinit, and readConfig in dev mode
-                    cc.getFieldCreator(rootFieldDescriptor)
-                            .setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC
-                                    | (liveReloadPossible ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
+                    // config root field is volatile in dev mode, final otherwise; we initialize it from clinit, and
+                    // readConfig in dev mode
+                    cc.getFieldCreator(rootFieldDescriptor).setModifiers(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC
+                            | (liveReloadPossible ? Opcodes.ACC_VOLATILE : Opcodes.ACC_FINAL));
 
                     // construct instance in <clinit>
                     ResultHandle instance;
@@ -439,7 +443,8 @@ public final class RunTimeConfigurationGenerator {
 
                     // assign instance to field
                     readConfig.writeStaticField(rootFieldDescriptor, instance);
-                    readConfig.invokeVirtualMethod(SB_APPEND_STRING, readConfigNameBuilder, readConfig.load(root.getName()));
+                    readConfig.invokeVirtualMethod(SB_APPEND_STRING, readConfigNameBuilder,
+                            readConfig.load(root.getName()));
                     readConfig.invokeStaticMethod(initGroup, runTimeConfig, readConfigNameBuilder, instance);
                     readConfig.invokeVirtualMethod(SB_SET_LENGTH, readConfigNameBuilder, rcOldLen);
                 } else {
@@ -449,7 +454,8 @@ public final class RunTimeConfigurationGenerator {
             }
 
             // generate sweep for clinit
-            configSweepLoop(siParserBody, clinit, clinitConfig, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED), Type.BUILD_TIME);
+            configSweepLoop(siParserBody, clinit, clinitConfig, getRegisteredRoots(BUILD_AND_RUN_TIME_FIXED),
+                    Type.BUILD_TIME);
             clinit.invokeStaticMethod(CD_REPORT_UNKNOWN, clinit.readStaticField(C_UNKNOWN));
 
             if (liveReloadPossible) {
@@ -476,28 +482,27 @@ public final class RunTimeConfigurationGenerator {
             }
 
             // wrap it up
-            final BytecodeCreator isError = readConfig.ifNonZero(readConfig.invokeStaticMethod(CD_IS_ERROR)).trueBranch();
-            ResultHandle niceErrorMessage = isError
-                    .invokeStaticMethod(
-                            MethodDescriptor.ofMethod(ConfigDiagnostic.class, "getNiceErrorMessage", String.class));
+            final BytecodeCreator isError = readConfig.ifNonZero(readConfig.invokeStaticMethod(CD_IS_ERROR))
+                    .trueBranch();
+            ResultHandle niceErrorMessage = isError.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(ConfigDiagnostic.class, "getNiceErrorMessage", String.class));
             ResultHandle errorKeys = isError.invokeStaticMethod(CD_GET_ERROR_KEYS);
             isError.invokeStaticMethod(CD_RESET_ERROR);
 
             // throw the proper exception
             final ResultHandle finalErrorMessageBuilder = isError.newInstance(SB_NEW);
-            isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, isError
-                    .load("One or more configuration errors have prevented the application from starting. The errors are:\n"));
+            isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, isError.load(
+                    "One or more configuration errors have prevented the application from starting. The errors are:\n"));
             isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, niceErrorMessage);
             final ResultHandle finalErrorMessage = isError.invokeVirtualMethod(OBJ_TO_STRING, finalErrorMessageBuilder);
-            final ResultHandle configurationException = isError
-                    .newInstance(MethodDescriptor.ofConstructor(ConfigurationException.class, String.class, Set.class),
-                            finalErrorMessage, errorKeys);
+            final ResultHandle configurationException = isError.newInstance(
+                    MethodDescriptor.ofConstructor(ConfigurationException.class, String.class, Set.class),
+                    finalErrorMessage, errorKeys);
             final ResultHandle emptyStackTraceElement = isError.newArray(StackTraceElement.class, 0);
-            // empty out the stack trace in order to not make the configuration errors more visible (the stack trace contains generated classes anyway that don't provide any value)
-            isError.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(ConfigurationException.class, "setStackTrace", void.class,
-                            StackTraceElement[].class),
-                    configurationException, emptyStackTraceElement);
+            // empty out the stack trace in order to not make the configuration errors more visible (the stack trace
+            // contains generated classes anyway that don't provide any value)
+            isError.invokeVirtualMethod(MethodDescriptor.ofMethod(ConfigurationException.class, "setStackTrace",
+                    void.class, StackTraceElement[].class), configurationException, emptyStackTraceElement);
             isError.throwException(configurationException);
 
             readConfig.returnValue(null);
@@ -519,9 +524,10 @@ public final class RunTimeConfigurationGenerator {
             }
 
             try (BytecodeCreator sweepLoop = method.createScope()) {
-                try (BytecodeCreator hasNext = sweepLoop.ifNonZero(sweepLoop.invokeInterfaceMethod(ITR_HAS_NEXT, iterator))
-                        .trueBranch()) {
-                    ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator), String.class);
+                try (BytecodeCreator hasNext = sweepLoop
+                        .ifNonZero(sweepLoop.invokeInterfaceMethod(ITR_HAS_NEXT, iterator)).trueBranch()) {
+                    ResultHandle key = hasNext.checkCast(hasNext.invokeInterfaceMethod(ITR_NEXT, iterator),
+                            String.class);
 
                     // NameIterator keyIter = new NameIterator(key);
                     ResultHandle keyIter = hasNext.newInstance(NI_NEW_STRING, key);
@@ -549,7 +555,8 @@ public final class RunTimeConfigurationGenerator {
                             .continueScope(sweepLoop);
 
                     // if (! keyIter.hasNext()) continue sweepLoop;
-                    hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch().continueScope(sweepLoop);
+                    hasNext.ifNonZero(hasNext.invokeVirtualMethod(NI_HAS_NEXT, keyIter)).falseBranch()
+                            .continueScope(sweepLoop);
                     // parse(config, keyIter);
                     hasNext.invokeStaticMethod(parserBody, config, keyIter);
                     // continue sweepLoop;
@@ -588,8 +595,9 @@ public final class RunTimeConfigurationGenerator {
             if (methodDescriptor != null) {
                 return methodDescriptor;
             }
-            methodDescriptor = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME, "initGroup$" + clazz.getName().replace('.', '$'),
-                    void.class, SmallRyeConfig.class, StringBuilder.class, Object.class);
+            methodDescriptor = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
+                    "initGroup$" + clazz.getName().replace('.', '$'), void.class, SmallRyeConfig.class,
+                    StringBuilder.class, Object.class);
             final MethodCreator bc = cc.getMethodCreator(methodDescriptor).setModifiers(Opcodes.ACC_STATIC);
             final ResultHandle config = bc.getMethodParam(0);
             // on entry, nameBuilder is our name
@@ -621,7 +629,8 @@ public final class RunTimeConfigurationGenerator {
                             tryBlock.invokeStaticMethod(setter, instance, val);
                         }
                         try (CatchBlockCreator catchBadValue = tryBlock.addCatch(IllegalArgumentException.class)) {
-                            catchBadValue.invokeStaticMethod(CD_INVALID_VALUE, name, catchBadValue.getCaughtException());
+                            catchBadValue.invokeStaticMethod(CD_INVALID_VALUE, name,
+                                    catchBadValue.getCaughtException());
                         }
                         try (CatchBlockCreator catchNoValue = tryBlock.addCatch(NoSuchElementException.class)) {
                             catchNoValue.invokeStaticMethod(CD_MISSING_VALUE, name, catchNoValue.getCaughtException());
@@ -642,11 +651,11 @@ public final class RunTimeConfigurationGenerator {
 
                         final ResultHandle nestedInstance;
                         if (Modifier.isPublic(groupDefinition.getConfigurationClass().getModifiers())) {
-                            nestedInstance = bc
-                                    .newInstance(MethodDescriptor.ofConstructor(groupDefinition.getConfigurationClass()));
+                            nestedInstance = bc.newInstance(
+                                    MethodDescriptor.ofConstructor(groupDefinition.getConfigurationClass()));
                         } else {
-                            final MethodDescriptor ctor = accessorFinder
-                                    .getConstructorFor(MethodDescriptor.ofConstructor(groupDefinition.getConfigurationClass()));
+                            final MethodDescriptor ctor = accessorFinder.getConstructorFor(
+                                    MethodDescriptor.ofConstructor(groupDefinition.getConfigurationClass()));
                             nestedInstance = bc.invokeStaticMethod(ctor);
                         }
 
@@ -707,8 +716,8 @@ public final class RunTimeConfigurationGenerator {
             final Object ignoreMatched = ignoredMap == null ? null : ignoredMap.getMatched();
 
             if (matched == null && ignoreMatched != null) {
-                //if this method is an ignored leaf node then we can avoid generating a method
-                //this reduces the number of generated methods by close too 50%
+                // if this method is an ignored leaf node then we can avoid generating a method
+                // this reduces the number of generated methods by close too 50%
                 if (keyMap == null || !keyMap.childNames().iterator().hasNext()) {
                     final Iterable<String> names = ignoredMap.childNames();
                     boolean needsCode = false;
@@ -717,7 +726,8 @@ public final class RunTimeConfigurationGenerator {
                             needsCode = true;
                             break;
                         } else {
-                            final ConfigPatternMap<Container> keyChildMap = keyMap == null ? null : keyMap.getChild(name);
+                            final ConfigPatternMap<Container> keyChildMap = keyMap == null ? null
+                                    : keyMap.getChild(name);
                             if (keyChildMap == null) {
                                 needsCode = true;
                                 break;
@@ -730,8 +740,8 @@ public final class RunTimeConfigurationGenerator {
                 }
             }
 
-            try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class,
-                    SmallRyeConfig.class, NameIterator.class)) {
+            try (MethodCreator body = cc.getMethodCreator(methodName.toString(), void.class, SmallRyeConfig.class,
+                    NameIterator.class)) {
                 body.setModifiers(Opcodes.ACC_PRIVATE | Opcodes.ACC_STATIC);
                 final ResultHandle config = body.getMethodParam(0);
                 final ResultHandle keyIter = body.getMethodParam(1);
@@ -757,7 +767,8 @@ public final class RunTimeConfigurationGenerator {
                             assert matched instanceof MapContainer;
                             MapContainer mapContainer = (MapContainer) matched;
                             // map leafs are always dynamic
-                            final ResultHandle lastSeg = matchedBody.invokeVirtualMethod(NI_GET_PREVIOUS_SEGMENT, keyIter);
+                            final ResultHandle lastSeg = matchedBody.invokeVirtualMethod(NI_GET_PREVIOUS_SEGMENT,
+                                    keyIter);
                             matchedBody.invokeVirtualMethod(NI_PREVIOUS, keyIter);
                             final ResultHandle mapHandle = matchedBody
                                     .invokeStaticMethod(generateGetEnclosing(mapContainer, type), keyIter, config);
@@ -766,7 +777,8 @@ public final class RunTimeConfigurationGenerator {
                             final FieldDescriptor fd = getOrCreateConverterInstance(field);
                             final ResultHandle key = matchedBody.invokeVirtualMethod(NI_GET_NAME, keyIter);
                             final ResultHandle converter = matchedBody.readStaticField(fd);
-                            final ResultHandle value = matchedBody.invokeVirtualMethod(SRC_GET_VALUE, config, key, converter);
+                            final ResultHandle value = matchedBody.invokeVirtualMethod(SRC_GET_VALUE, config, key,
+                                    converter);
                             matchedBody.invokeInterfaceMethod(MAP_PUT, mapHandle, lastSeg, value);
                         }
                     } else if (ignoreMatched == null) {
@@ -799,11 +811,9 @@ public final class RunTimeConfigurationGenerator {
                                 // (generated recursive)
                                 final int length = methodName.length();
                                 methodName.append(':').append(name);
-                                nameMatched.invokeStaticMethod(
-                                        generateParserBody(keyMap.getChild(name),
-                                                ignoredMap == null ? null : ignoredMap.getChild(name), methodName, dynamic,
-                                                type),
-                                        config, keyIter);
+                                nameMatched.invokeStaticMethod(generateParserBody(keyMap.getChild(name),
+                                        ignoredMap == null ? null : ignoredMap.getChild(name), methodName, dynamic,
+                                        type), config, keyIter);
                                 methodName.setLength(length);
                                 // return;
                                 nameMatched.returnValue(null);
@@ -819,7 +829,8 @@ public final class RunTimeConfigurationGenerator {
                         if (name.equals(ConfigPatternMap.WILD_CARD)) {
                             hasWildCard = true;
                         } else {
-                            final ConfigPatternMap<Container> keyChildMap = keyMap == null ? null : keyMap.getChild(name);
+                            final ConfigPatternMap<Container> keyChildMap = keyMap == null ? null
+                                    : keyMap.getChild(name);
                             if (keyChildMap != null) {
                                 // we already did this one
                                 continue;
@@ -858,8 +869,7 @@ public final class RunTimeConfigurationGenerator {
                         matchedBody.invokeStaticMethod(
                                 generateParserBody(keyMap == null ? null : keyMap.getChild(ConfigPatternMap.WILD_CARD),
                                         ignoredMap == null ? null : ignoredMap.getChild(ConfigPatternMap.WILD_CARD),
-                                        methodName,
-                                        true, type),
+                                        methodName, true, type),
                                 config, keyIter);
                         methodName.setLength(length);
                         // return;
@@ -883,8 +893,8 @@ public final class RunTimeConfigurationGenerator {
                 return md;
             }
             md = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
-                    type.methodPrefix + "GetEnclosing:" + matchNode.getCombinedName(), Object.class,
-                    NameIterator.class, SmallRyeConfig.class);
+                    type.methodPrefix + "GetEnclosing:" + matchNode.getCombinedName(), Object.class, NameIterator.class,
+                    SmallRyeConfig.class);
             try (MethodCreator mc = cc.getMethodCreator(md)) {
                 mc.setModifiers(Opcodes.ACC_STATIC);
                 final ResultHandle keyIter = mc.getMethodParam(0);
@@ -895,7 +905,8 @@ public final class RunTimeConfigurationGenerator {
                     // it's a root
                     final RootDefinition definition = (RootDefinition) member.getEnclosingDefinition();
                     FieldDescriptor fieldDescriptor = configRootsByType.get(definition.getConfigurationClass());
-                    assert fieldDescriptor != null : "Field descriptor defined for " + definition.getConfigurationClass();
+                    assert fieldDescriptor != null
+                            : "Field descriptor defined for " + definition.getConfigurationClass();
                     mc.returnValue(mc.readStaticField(fieldDescriptor));
                 } else if (parent instanceof FieldContainer) {
                     // get the parent
@@ -925,19 +936,19 @@ public final class RunTimeConfigurationGenerator {
                         // it doesn't exist, recreate it
                         final ResultHandle instance;
                         if (Modifier.isPublic(member.getEnclosingDefinition().getConfigurationClass().getModifiers())) {
-                            instance = falseBranch.newInstance(
-                                    MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
+                            instance = falseBranch.newInstance(MethodDescriptor
+                                    .ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
                         } else {
-                            final MethodDescriptor ctor = accessorFinder.getConstructorFor(
-                                    MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
+                            final MethodDescriptor ctor = accessorFinder.getConstructorFor(MethodDescriptor
+                                    .ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
                             instance = falseBranch.invokeStaticMethod(ctor);
                         }
 
                         final ResultHandle precedingKey = falseBranch.invokeVirtualMethod(NI_GET_ALL_PREVIOUS_SEGMENTS,
                                 keyIter);
                         final ResultHandle nameBuilder = falseBranch.newInstance(SB_NEW_STR, precedingKey);
-                        falseBranch.invokeStaticMethod(generateInitGroup(member.getEnclosingDefinition()), config, nameBuilder,
-                                instance);
+                        falseBranch.invokeStaticMethod(generateInitGroup(member.getEnclosingDefinition()), config,
+                                nameBuilder, instance);
                         final ResultHandle val = falseBranch.invokeStaticMethod(OPT_OF, instance);
                         if (isFieldEligibleForDirectAccess(member)) {
                             falseBranch.writeInstanceField(member.getDescriptor(), instance, val);
@@ -968,17 +979,18 @@ public final class RunTimeConfigurationGenerator {
                     // add the map key and initialize the enclosed item
                     final ResultHandle instance;
                     if (Modifier.isPublic(member.getEnclosingDefinition().getConfigurationClass().getModifiers())) {
-                        instance = mc.newInstance(
-                                MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
+                        instance = mc.newInstance(MethodDescriptor
+                                .ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
                     } else {
-                        final MethodDescriptor ctor = accessorFinder.getConstructorFor(
-                                MethodDescriptor.ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
+                        final MethodDescriptor ctor = accessorFinder.getConstructorFor(MethodDescriptor
+                                .ofConstructor(member.getEnclosingDefinition().getConfigurationClass()));
                         instance = mc.invokeStaticMethod(ctor);
                     }
 
                     final ResultHandle precedingKey = mc.invokeVirtualMethod(NI_GET_ALL_PREVIOUS_SEGMENTS, keyIter);
                     final ResultHandle nameBuilder = mc.newInstance(SB_NEW_STR, precedingKey);
-                    mc.invokeStaticMethod(generateInitGroup(member.getEnclosingDefinition()), config, nameBuilder, instance);
+                    mc.invokeStaticMethod(generateInitGroup(member.getEnclosingDefinition()), config, nameBuilder,
+                            instance);
                     mc.invokeInterfaceMethod(MAP_PUT, map, key, instance);
                     mc.returnValue(instance);
                 }
@@ -994,8 +1006,8 @@ public final class RunTimeConfigurationGenerator {
                 return md;
             }
             md = MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
-                    type.methodPrefix + "GetEnclosing:" + matchNode.getCombinedName(), Object.class,
-                    NameIterator.class, SmallRyeConfig.class);
+                    type.methodPrefix + "GetEnclosing:" + matchNode.getCombinedName(), Object.class, NameIterator.class,
+                    SmallRyeConfig.class);
             try (MethodCreator mc = cc.getMethodCreator(md)) {
                 mc.setModifiers(Opcodes.ACC_STATIC);
                 final ResultHandle keyIter = mc.getMethodParam(0);
@@ -1137,27 +1149,17 @@ public final class RunTimeConfigurationGenerator {
                         .get(getOrCreateConverterInstance(field, minMaxValidated.getNestedType()));
                 if (min != null) {
                     if (max != null) {
-                        converter = converterSetup.invokeStaticMethod(
-                                CONVS_RANGE_VALUE_STRING_CONVERTER,
-                                nestedConv,
-                                converterSetup.load(min),
-                                converterSetup.load(minInclusive),
-                                converterSetup.load(max),
+                        converter = converterSetup.invokeStaticMethod(CONVS_RANGE_VALUE_STRING_CONVERTER, nestedConv,
+                                converterSetup.load(min), converterSetup.load(minInclusive), converterSetup.load(max),
                                 converterSetup.load(maxInclusive));
                     } else {
-                        converter = converterSetup.invokeStaticMethod(
-                                CONVS_MINIMUM_VALUE_STRING_CONVERTER,
-                                nestedConv,
-                                converterSetup.load(min),
-                                converterSetup.load(minInclusive));
+                        converter = converterSetup.invokeStaticMethod(CONVS_MINIMUM_VALUE_STRING_CONVERTER, nestedConv,
+                                converterSetup.load(min), converterSetup.load(minInclusive));
                     }
                 } else {
                     assert min == null && max != null;
-                    converter = converterSetup.invokeStaticMethod(
-                            CONVS_MAXIMUM_VALUE_STRING_CONVERTER,
-                            nestedConv,
-                            converterSetup.load(max),
-                            converterSetup.load(maxInclusive));
+                    converter = converterSetup.invokeStaticMethod(CONVS_MAXIMUM_VALUE_STRING_CONVERTER, nestedConv,
+                            converterSetup.load(max), converterSetup.load(maxInclusive));
                 }
             } else if (type instanceof OptionalOf) {
                 OptionalOf optionalOf = (OptionalOf) type;
@@ -1229,16 +1231,16 @@ public final class RunTimeConfigurationGenerator {
 
                 for (String childName : childNames) {
                     ConfigPatternMap<Boolean> child = names.getChild(childName);
-                    BranchResult nextEquals = hasNextTrue
-                            .ifTrue(hasNextTrue.invokeStaticMethod(PU_IS_MAPPED, nameIterator, hasNextTrue.load(childName)));
+                    BranchResult nextEquals = hasNextTrue.ifTrue(
+                            hasNextTrue.invokeStaticMethod(PU_IS_MAPPED, nameIterator, hasNextTrue.load(childName)));
                     try (BytecodeCreator nextEqualsTrue = nextEquals.trueBranch()) {
                         childName = childName.replace("[*]", "-collection");
                         String childMethodName = methodName + "$" + skewer(childName, '_');
                         if (child.getMatched() == null) {
                             generateIsMapped(childMethodName, child);
                             nextEqualsTrue.invokeVirtualMethod(NI_NEXT, nameIterator);
-                            nextEqualsTrue
-                                    .returnValue(nextEqualsTrue.invokeStaticMethod(MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
+                            nextEqualsTrue.returnValue(
+                                    nextEqualsTrue.invokeStaticMethod(MethodDescriptor.ofMethod(CONFIG_CLASS_NAME,
                                             childMethodName, boolean.class, NameIterator.class), nameIterator));
                         } else {
                             nextEqualsTrue.returnBoolean(true);
@@ -1345,10 +1347,8 @@ public final class RunTimeConfigurationGenerator {
     }
 
     /**
-     * A field is eligible for direct access if the following conditions are met
-     * 1) the field is public
-     * 2) the enclosing class is public
-     * 3) the class type of the field is public
+     * A field is eligible for direct access if the following conditions are met 1) the field is public 2) the enclosing
+     * class is public 3) the class type of the field is public
      */
     private static boolean isFieldEligibleForDirectAccess(ClassDefinition.ClassMember classMember) {
         return Modifier.isPublic(classMember.getField().getModifiers())

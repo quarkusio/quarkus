@@ -13,10 +13,11 @@ public class VertxMetricsTags {
     private static final Logger log = Logger.getLogger(VertxMetricsTags.class);
 
     /**
-     * Creates a {@code method} tag based on the {@link HttpServerRequest#method()}
-     * method of the given {@code request}.
+     * Creates a {@code method} tag based on the {@link HttpServerRequest#method()} method of the given {@code request}.
      *
-     * @param method the request method
+     * @param method
+     *        the request method
+     *
      * @return the method tag whose value is a capitalized method (e.g. GET).
      */
     public static Tag method(HttpMethod method) {
@@ -26,7 +27,9 @@ public class VertxMetricsTags {
     /**
      * Creates an {@code outcome} {@code Tag} derived from the given {@code response}.
      *
-     * @param response the response
+     * @param response
+     *        the response
+     *
      * @return the outcome tag
      */
     public static Tag outcome(HttpResponse response) {

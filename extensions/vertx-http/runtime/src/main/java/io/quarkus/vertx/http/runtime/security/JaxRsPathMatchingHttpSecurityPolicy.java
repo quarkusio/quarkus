@@ -20,10 +20,9 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Decorates {@link AbstractPathMatchingHttpSecurityPolicy} path matching capabilities
- * with support for policies selected with {@link io.quarkus.vertx.http.security.AuthorizationPolicy}.
- * Decorator may only run after HTTP requests have been matched with the endpoint class method.
- * Extensions can make this class bean if they need it.
+ * Decorates {@link AbstractPathMatchingHttpSecurityPolicy} path matching capabilities with support for policies
+ * selected with {@link io.quarkus.vertx.http.security.AuthorizationPolicy}. Decorator may only run after HTTP requests
+ * have been matched with the endpoint class method. Extensions can make this class bean if they need it.
  */
 public class JaxRsPathMatchingHttpSecurityPolicy {
 
@@ -74,7 +73,9 @@ public class JaxRsPathMatchingHttpSecurityPolicy {
     }
 
     /**
-     * @param securedMethodDesc method description
+     * @param securedMethodDesc
+     *        method description
+     *
      * @return true if method is secured with {@link io.quarkus.vertx.http.security.AuthorizationPolicy}
      */
     public boolean requiresAuthorizationPolicy(MethodDescription securedMethodDesc) {
@@ -89,8 +90,8 @@ public class JaxRsPathMatchingHttpSecurityPolicy {
     }
 
     /**
-     * Applies {@link HttpSecurityPolicy} matched by path-matching rules
-     * or by {@link io.quarkus.vertx.http.security.AuthorizationPolicy}.
+     * Applies {@link HttpSecurityPolicy} matched by path-matching rules or by
+     * {@link io.quarkus.vertx.http.security.AuthorizationPolicy}.
      */
     public Uni<CheckResult> checkPermission(RoutingContext routingContext, Uni<SecurityIdentity> identity,
             MethodDescription description) {

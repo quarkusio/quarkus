@@ -3,8 +3,8 @@ package io.quarkus.resteasy.reactive.spi;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Represents a JAX-RS resource that is generated.
- * Meant to be used by extension that generate JAX-RS resources as part of their build time processing
+ * Represents a JAX-RS resource that is generated. Meant to be used by extension that generate JAX-RS resources as part
+ * of their build time processing
  */
 public final class GeneratedJaxRsResourceBuildItem extends MultiBuildItem {
 

@@ -34,8 +34,8 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 /**
- * This is the Response class for user-created responses. The client response
- * object has more deserialising powers in @{link {@link io.quarkus.rest.server.runtime.client.QuarkusRestClientResponse}.
+ * This is the Response class for user-created responses. The client response object has more deserialising powers
+ * in @{link {@link io.quarkus.rest.server.runtime.client.QuarkusRestClientResponse}.
  */
 @SuppressWarnings({ "JavadocReference", "ForLoopReplaceableByForEach" })
 public class RestResponseImpl<T> extends RestResponse<T> {

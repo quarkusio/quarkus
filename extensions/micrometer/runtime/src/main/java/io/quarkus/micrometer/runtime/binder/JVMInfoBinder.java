@@ -8,12 +8,10 @@ public class JVMInfoBinder implements MeterBinder {
 
     @Override
     public void bindTo(MeterRegistry registry) {
-        Counter.builder("jvm.info")
-                .description("JVM version info")
-                .tags("version", System.getProperty("java.runtime.version", "unknown"),
-                        "vendor", System.getProperty("java.vm.vendor", "unknown"),
-                        "runtime", System.getProperty("java.runtime.name", "unknown"))
-                .register(registry)
-                .increment();
+        Counter.builder("jvm.info").description("JVM version info")
+                .tags("version", System.getProperty("java.runtime.version", "unknown"), "vendor",
+                        System.getProperty("java.vm.vendor", "unknown"), "runtime",
+                        System.getProperty("java.runtime.name", "unknown"))
+                .register(registry).increment();
     }
 }

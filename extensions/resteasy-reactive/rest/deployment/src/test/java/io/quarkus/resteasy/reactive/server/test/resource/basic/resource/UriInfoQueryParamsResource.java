@@ -34,42 +34,42 @@ public class UriInfoQueryParamsResource {
             params.put(param, Collections.singletonList(param));
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.add(param, param);
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.addAll(param, Collections.singletonList(param));
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.addAll(param, param);
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.addFirst(param, param);
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.putSingle(param, param);
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
@@ -91,49 +91,49 @@ public class UriInfoQueryParamsResource {
             });
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.keySet().add(param);
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.clear();
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.putAll(params);
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.remove(key);
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.remove(null);
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
         try {
             params.values().add(Collections.singletonList(param));
             Assertions.fail("mutable UriInfo");
         } catch (UnsupportedOperationException uoe) {
-            //OK
+            // OK
         }
 
     }

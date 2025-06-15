@@ -61,7 +61,8 @@ class BlockingServerInterceptorTest {
         final Context context = Context.current().withValue(USERNAME, "my-user");
         Context previous = context.attach();
         try {
-            final ServerCall.Listener listener = blockingServerInterceptor.interceptCall(serverCall, null, serverCallHandler);
+            final ServerCall.Listener listener = blockingServerInterceptor.interceptCall(serverCall, null,
+                    serverCallHandler);
             serverCallHandler.awaitSetup();
 
             // simulate GRPC call

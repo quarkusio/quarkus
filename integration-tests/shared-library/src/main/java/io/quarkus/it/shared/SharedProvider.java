@@ -36,9 +36,10 @@ public class SharedProvider implements MessageBodyReader<Shared>, MessageBodyWri
     }
 
     @Override
-    public void writeTo(Shared shared, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+    public void writeTo(Shared shared, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
-        entityStream.write(String.format("{\"message\": \"canned+%s\"}", shared.getMessage()).getBytes(StandardCharsets.UTF_8));
+        entityStream.write(
+                String.format("{\"message\": \"canned+%s\"}", shared.getMessage()).getBytes(StandardCharsets.UTF_8));
     }
 }

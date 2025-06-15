@@ -6,8 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Represents a Web link to be incorporated into the HTTP response.
- * Only the response of methods or classes annotated with {@link InjectRestLinks} will include the "Link" headers.
+ * Represents a Web link to be incorporated into the HTTP response. Only the response of methods or classes annotated
+ * with {@link InjectRestLinks} will include the "Link" headers.
  * <p>
  * The RestLink annotation can be used at method level.
  * <p>
@@ -40,8 +40,8 @@ public @interface RestLink {
     String type() default "";
 
     /**
-     * Declares a link for the given type of resources.
-     * If not set, it will default to the returning type of the annotated method.
+     * Declares a link for the given type of resources. If not set, it will default to the returning type of the
+     * annotated method.
      *
      * @return the type of returning method.
      */

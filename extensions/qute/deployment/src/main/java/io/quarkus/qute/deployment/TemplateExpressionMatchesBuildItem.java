@@ -11,7 +11,8 @@ final class TemplateExpressionMatchesBuildItem extends MultiBuildItem {
 
     private final Map<Integer, MatchResult> generatedIdsToMatches;
 
-    public TemplateExpressionMatchesBuildItem(String templateGeneratedId, Map<Integer, MatchResult> generatedIdsToMatches) {
+    public TemplateExpressionMatchesBuildItem(String templateGeneratedId,
+            Map<Integer, MatchResult> generatedIdsToMatches) {
         this.templateGeneratedId = templateGeneratedId;
         this.generatedIdsToMatches = generatedIdsToMatches;
     }

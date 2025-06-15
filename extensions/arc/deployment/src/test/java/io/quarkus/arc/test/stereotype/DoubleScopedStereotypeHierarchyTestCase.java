@@ -17,9 +17,8 @@ public class DoubleScopedStereotypeHierarchyTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SessionStereotype.class, RequestStereotype.class, AnotherStereotype.class,
-                            DoubleScopedStereotypeBean.class))
+            .withApplicationRoot((jar) -> jar.addClasses(SessionStereotype.class, RequestStereotype.class,
+                    AnotherStereotype.class, DoubleScopedStereotypeBean.class))
             .setExpectedException(DeploymentException.class);
 
     @Inject

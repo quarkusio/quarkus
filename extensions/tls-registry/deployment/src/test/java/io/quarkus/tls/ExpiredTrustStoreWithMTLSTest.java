@@ -28,8 +28,8 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "expired-mtls", password = "password", formats = { Format.PKCS12 }, duration = -5, client = true)
-})
+        @Certificate(name = "expired-mtls", password = "password", formats = {
+                Format.PKCS12 }, duration = -5, client = true) })
 public class ExpiredTrustStoreWithMTLSTest {
 
     private static final String configuration = """
@@ -56,8 +56,7 @@ public class ExpiredTrustStoreWithMTLSTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;
@@ -79,17 +78,15 @@ public class ExpiredTrustStoreWithMTLSTest {
         TlsConfiguration cf = certificates.get("warn").orElseThrow();
         assertThat(cf.getTrustStoreOptions()).isNotNull();
 
-        WebClient client = WebClient.create(vertx, new WebClientOptions()
-                .setSsl(true)
-                .setKeyCertOptions(cf.getKeyStoreOptions())
-                .setTrustOptions(cf.getTrustStoreOptions()));
+        WebClient client = WebClient.create(vertx, new WebClientOptions().setSsl(true)
+                .setKeyCertOptions(cf.getKeyStoreOptions()).setTrustOptions(cf.getTrustStoreOptions()));
 
-        server = vertx.createHttpServer(new HttpServerOptions()
-                .setSsl(true)
-                .setClientAuth(ClientAuth.REQUIRED)
-                .setTrustOptions(certificates.getDefault().orElseThrow().getTrustStoreOptions())
-                .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
-                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture().join();
+        server = vertx
+                .createHttpServer(new HttpServerOptions().setSsl(true).setClientAuth(ClientAuth.REQUIRED)
+                        .setTrustOptions(certificates.getDefault().orElseThrow().getTrustStoreOptions())
+                        .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
+                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture()
+                .join();
 
         CountDownLatch latch = new CountDownLatch(1);
         client.get(8081, "localhost", "/").send(ar -> {
@@ -106,19 +103,18 @@ public class ExpiredTrustStoreWithMTLSTest {
         TlsConfiguration cf = certificates.get("reject").orElseThrow();
         assertThat(cf.getTrustStoreOptions()).isNotNull();
 
-        WebClient client = WebClient.create(vertx, new WebClientOptions()
-                .setSsl(true)
-                .setKeyCertOptions(cf.getKeyStoreOptions())
-                .setTrustOptions(cf.getTrustStoreOptions()));
+        WebClient client = WebClient.create(vertx, new WebClientOptions().setSsl(true)
+                .setKeyCertOptions(cf.getKeyStoreOptions()).setTrustOptions(cf.getTrustStoreOptions()));
 
-        server = vertx.createHttpServer(new HttpServerOptions()
-                .setSsl(true)
-                .setClientAuth(ClientAuth.REQUIRED)
-                .setTrustOptions(certificates.getDefault().orElseThrow().getTrustStoreOptions())
-                .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
-                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture().join();
+        server = vertx
+                .createHttpServer(new HttpServerOptions().setSsl(true).setClientAuth(ClientAuth.REQUIRED)
+                        .setTrustOptions(certificates.getDefault().orElseThrow().getTrustStoreOptions())
+                        .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
+                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture()
+                .join();
 
-        assertThatThrownBy(() -> client.get(8081, "localhost", "/")
-                .send().toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
+        assertThatThrownBy(
+                () -> client.get(8081, "localhost", "/").send().toCompletionStage().toCompletableFuture().join())
+                .hasCauseInstanceOf(SSLHandshakeException.class);
     }
 }

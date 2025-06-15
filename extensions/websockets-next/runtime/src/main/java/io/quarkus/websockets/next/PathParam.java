@@ -9,8 +9,8 @@ import java.lang.annotation.Target;
  * Identifies an endpoint callback method parameter that should be injected with a value returned from
  * {@link WebSocketConnection#pathParam(String)}.
  * <p>
- * The parameter type must be {@link String} and the name must be defined in the relevant endpoint path, otherwise
- * the build fails.
+ * The parameter type must be {@link String} and the name must be defined in the relevant endpoint path, otherwise the
+ * build fails.
  *
  * @see WebSocketConnection#pathParam(String)
  * @see WebSocket

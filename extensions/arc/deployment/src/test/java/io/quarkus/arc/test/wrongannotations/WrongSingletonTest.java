@@ -21,8 +21,8 @@ public class WrongSingletonTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(EjbSingleton.class, GuiceProducers.class, JavaxSingleton.class))
+            .withApplicationRoot(
+                    root -> root.addClasses(EjbSingleton.class, GuiceProducers.class, JavaxSingleton.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertTrue(rootCause.getMessage().contains("jakarta.ejb.Singleton"), t.toString());

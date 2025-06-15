@@ -18,8 +18,7 @@ public class PackageLevelAnnotationWithExplicitPackagePropertyTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionTestUtils.class)
+            .withApplicationRoot((jar) -> jar.addClass(TransactionTestUtils.class)
                     .addPackage(PackageLevelAnnotationWithExplicitPackagePropertyTest.class.getPackage()))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.packages", "io.quarkus.hibernate.orm.packages");
@@ -39,8 +38,7 @@ public class PackageLevelAnnotationWithExplicitPackagePropertyTest {
         });
 
         inTransaction(() -> {
-            final List<ParentEntity> list = entityManager.createNamedQuery("test", ParentEntity.class)
-                    .getResultList();
+            final List<ParentEntity> list = entityManager.createNamedQuery("test", ParentEntity.class).getResultList();
             assertThat(list.size()).isEqualTo(1);
         });
     }

@@ -4,7 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The local server name
- *
  */
 public class LocalServerNameAttribute implements ExchangeAttribute {
 

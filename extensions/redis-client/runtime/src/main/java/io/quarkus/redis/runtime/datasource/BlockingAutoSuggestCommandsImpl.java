@@ -13,7 +13,8 @@ public class BlockingAutoSuggestCommandsImpl<K> extends AbstractRedisCommandGrou
 
     private final ReactiveAutoSuggestCommands<K> reactive;
 
-    public BlockingAutoSuggestCommandsImpl(RedisDataSource ds, ReactiveAutoSuggestCommands<K> reactive, Duration timeout) {
+    public BlockingAutoSuggestCommandsImpl(RedisDataSource ds, ReactiveAutoSuggestCommands<K> reactive,
+            Duration timeout) {
         super(ds, timeout);
         this.reactive = reactive;
     }

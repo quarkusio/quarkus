@@ -12,23 +12,17 @@ import io.smallrye.jwt.build.Jwt;
 public class SignSecretKeyUnitTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultGroupsEndpoint.class)
-                    .addAsResource("secretKey.jwk")
+            .withApplicationRoot((jar) -> jar.addClass(DefaultGroupsEndpoint.class).addAsResource("secretKey.jwk")
                     .addAsResource("applicationSignSecretKey.properties", "application.properties"));
 
     /**
-     * Validate a request with MP-JWT without a 'groups' claim is successful
-     * due to the default value being provided in the configuration
-     *
+     * Validate a request with MP-JWT without a 'groups' claim is successful due to the default value being provided in
+     * the configuration
      */
     @Test
     public void echoGroups() {
         String token = Jwt.upn("upn").groups("User").sign();
-        RestAssured.given().auth()
-                .oauth2(token)
-                .get("/endp/echo")
-                .then().assertThat().statusCode(200)
+        RestAssured.given().auth().oauth2(token).get("/endp/echo").then().assertThat().statusCode(200)
                 .body(equalTo("User"));
     }
 }

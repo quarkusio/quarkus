@@ -16,9 +16,8 @@ import io.vertx.core.http.ClientAuth;
 public interface GrpcServerConfiguration {
 
     /**
-     * Do we use separate HTTP server to serve gRPC requests.
-     * Set this to false if you want to use new Vert.x gRPC support,
-     * which uses existing Vert.x HTTP server.
+     * Do we use separate HTTP server to serve gRPC requests. Set this to false if you want to use new Vert.x gRPC
+     * support, which uses existing Vert.x HTTP server.
      */
     @WithDefault("true")
     boolean useSeparateServer();
@@ -60,8 +59,9 @@ public interface GrpcServerConfiguration {
     /**
      * The max inbound message size in bytes.
      * <p>
-     * When using a single server (using {@code quarkus.grpc.server.use-separate-server=false}), the default value is 256KB.
-     * When using a separate server (using {@code quarkus.grpc.server.use-separate-server=true}), the default value is 4MB.
+     * When using a single server (using {@code quarkus.grpc.server.use-separate-server=false}), the default value is
+     * 256KB. When using a separate server (using {@code quarkus.grpc.server.use-separate-server=true}), the default
+     * value is 4MB.
      */
     OptionalInt maxInboundMessageSize();
 
@@ -76,8 +76,7 @@ public interface GrpcServerConfiguration {
     SslServerConfig ssl();
 
     /**
-     * Disables SSL, and uses plain text instead.
-     * If disabled, configure the ssl configuration.
+     * Disables SSL, and uses plain text instead. If disabled, configure the ssl configuration.
      */
     @WithDefault("true")
     boolean plainText();
@@ -102,17 +101,15 @@ public interface GrpcServerConfiguration {
     GrpcTransportSecurity transportSecurity();
 
     /**
-     * Enables the gRPC Reflection Service.
-     * By default, the reflection service is only exposed in `dev` mode.
-     * This setting allows overriding this choice and enable the reflection service every time.
+     * Enables the gRPC Reflection Service. By default, the reflection service is only exposed in `dev` mode. This
+     * setting allows overriding this choice and enable the reflection service every time.
      */
     @WithDefault("false")
     boolean enableReflectionService();
 
     /**
-     * Number of gRPC server verticle instances.
-     * This is useful for scaling easily across multiple cores.
-     * The number should not exceed the amount of event loops.
+     * Number of gRPC server verticle instances. This is useful for scaling easily across multiple cores. The number
+     * should not exceed the amount of event loops.
      */
     @WithDefault("1")
     int instances();
@@ -143,14 +140,14 @@ public interface GrpcServerConfiguration {
         Optional<Path> key();
 
         /**
-         * An optional keystore that holds the certificate information instead of specifying separate files.
-         * The keystore can be either on classpath or an external file.
+         * An optional keystore that holds the certificate information instead of specifying separate files. The
+         * keystore can be either on classpath or an external file.
          */
         Optional<Path> keyStore();
 
         /**
-         * An optional parameter to specify the type of the keystore file. If not given, the type is automatically detected
-         * based on the file name.
+         * An optional parameter to specify the type of the keystore file. If not given, the type is automatically
+         * detected based on the file name.
          */
         Optional<String> keyStoreType();
 
@@ -177,8 +174,8 @@ public interface GrpcServerConfiguration {
         Optional<Path> trustStore();
 
         /**
-         * An optional parameter to specify type of the trust store file. If not given, the type is automatically detected
-         * based on the file name.
+         * An optional parameter to specify type of the trust store file. If not given, the type is automatically
+         * detected based on the file name.
          */
         Optional<String> trustStoreType();
 
@@ -195,19 +192,17 @@ public interface GrpcServerConfiguration {
         /**
          * Sets the ordered list of enabled SSL/TLS protocols.
          * <p>
-         * If not set, it defaults to {@code "TLSv1.3, TLSv1.2"}.
-         * The following list of protocols are supported: {@code TLSv1, TLSv1.1, TLSv1.2, TLSv1.3}.
-         * To only enable {@code TLSv1.3}, set the value to {@code to "TLSv1.3"}.
+         * If not set, it defaults to {@code "TLSv1.3, TLSv1.2"}. The following list of protocols are supported:
+         * {@code TLSv1, TLSv1.1, TLSv1.2, TLSv1.3}. To only enable {@code TLSv1.3}, set the value to
+         * {@code to "TLSv1.3"}.
          * <p>
-         * Note that setting an empty list, and enabling SSL/TLS is invalid.
-         * You must at least have one protocol.
+         * Note that setting an empty list, and enabling SSL/TLS is invalid. You must at least have one protocol.
          */
         @WithDefault("TLSv1.3,TLSv1.2")
         Set<String> protocols();
 
         /**
-         * Configures the engine to require/request client authentication.
-         * NONE, REQUEST, REQUIRED
+         * Configures the engine to require/request client authentication. NONE, REQUEST, REQUIRED
          */
         @WithDefault("NONE")
         ClientAuth clientAuth();
@@ -217,23 +212,23 @@ public interface GrpcServerConfiguration {
     public interface GrpcServerNettyConfig {
 
         /**
-         * Sets a custom keep-alive duration. This configures the time before sending a `keepalive` ping
-         * when there is no read activity.
+         * Sets a custom keep-alive duration. This configures the time before sending a `keepalive` ping when there is
+         * no read activity.
          */
         Optional<Duration> keepAliveTime();
 
         /**
-         * Sets a custom permit-keep-alive duration. This configures the most aggressive keep-alive time clients
-         * are permitted to configure.
-         * The server will try to detect clients exceeding this rate and when detected will forcefully close the connection.
+         * Sets a custom permit-keep-alive duration. This configures the most aggressive keep-alive time clients are
+         * permitted to configure. The server will try to detect clients exceeding this rate and when detected will
+         * forcefully close the connection.
          *
          * @see #permitKeepAliveWithoutCalls
          */
         Optional<Duration> permitKeepAliveTime();
 
         /**
-         * Sets whether to allow clients to send keep-alive HTTP/2 PINGs even if
-         * there are no outstanding RPCs on the connection.
+         * Sets whether to allow clients to send keep-alive HTTP/2 PINGs even if there are no outstanding RPCs on the
+         * connection.
          */
         Optional<Boolean> permitKeepAliveWithoutCalls();
 
@@ -254,8 +249,7 @@ public interface GrpcServerConfiguration {
     }
 
     /**
-     * XDS config
-     * * <a href="https://github.com/grpc/grpc-java/tree/master/examples/example-xds">XDS usage</a>
+     * XDS config * <a href="https://github.com/grpc/grpc-java/tree/master/examples/example-xds">XDS usage</a>
      */
     @ConfigGroup
     interface Xds extends Enabled {

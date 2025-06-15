@@ -22,11 +22,12 @@ public class LazySecurityTest extends SecurityTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n" +
-                            "quarkus.http.auth.permission.secured.paths=/end\n" +
-                            "quarkus.http.auth.permission.secured.policy=authenticated\n"), "application.properties")
-                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class));
+            .withApplicationRoot(root -> root.addAsResource(
+                    new StringAsset(
+                            "quarkus.http.auth.proactive=false\n" + "quarkus.http.auth.permission.secured.paths=/end\n"
+                                    + "quarkus.http.auth.permission.secured.policy=authenticated\n"),
+                    "application.properties").addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class,
+                            TestIdentityController.class));
 
     @Authenticated
     @WebSocket(path = "/end")

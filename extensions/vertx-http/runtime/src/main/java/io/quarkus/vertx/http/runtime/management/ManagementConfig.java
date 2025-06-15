@@ -18,8 +18,7 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
 /**
- * Configures the management interface.
- * Note that the management interface must be enabled using the
+ * Configures the management interface. Note that the management interface must be enabled using the
  * {@link ManagementInterfaceBuildTimeConfig#enabled} build-time property.
  */
 @ConfigMapping(prefix = "quarkus.management")
@@ -47,13 +46,11 @@ public interface ManagementConfig {
      * <p>
      * In dev/test mode this defaults to localhost, in prod mode this defaults to 0.0.0.0
      * <p>
-     * Defaulting to 0.0.0.0 makes it easier to deploy Quarkus to container, however it
-     * is not suitable for dev/test mode as other people on the network can connect to your
-     * development machine.
+     * Defaulting to 0.0.0.0 makes it easier to deploy Quarkus to container, however it is not suitable for dev/test
+     * mode as other people on the network can connect to your development machine.
      * <p>
-     * As an exception, when running in Windows Subsystem for Linux (WSL), the HTTP host
-     * defaults to 0.0.0.0 even in dev/test mode since using localhost makes the application
-     * inaccessible.
+     * As an exception, when running in Windows Subsystem for Linux (WSL), the HTTP host defaults to 0.0.0.0 even in
+     * dev/test mode since using localhost makes the application inaccessible.
      */
     String host();
 
@@ -71,17 +68,18 @@ public interface ManagementConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
-     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used. If a
+     * name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured, but no
+     * TLS configuration is found with that name then an error will be thrown.
      * <p>
-     * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then, `quarkus.management.ssl` will be used.
+     * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then, `quarkus.management.ssl` will
+     * be used.
      */
     Optional<String> tlsConfigurationName();
 
     /**
-     * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE`
-     * response when the request expects it (with the `Expect: 100-Continue` header).
+     * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE` response when the request expects it
+     * (with the `Expect: 100-Continue` header).
      */
     @WithName("handle-100-continue-automatically")
     @WithDefault("false")
@@ -104,7 +102,8 @@ public interface ManagementConfig {
     BodyConfig body();
 
     /**
-     * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
+     * The accept backlog, this is how many connections can be waiting to be accepted before connections start being
+     * rejected
      */
     @WithDefault("-1")
     int acceptBacklog();

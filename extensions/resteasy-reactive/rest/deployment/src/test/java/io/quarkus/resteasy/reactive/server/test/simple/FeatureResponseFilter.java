@@ -17,7 +17,8 @@ public class FeatureResponseFilter implements ContainerResponseFilter {
     }
 
     @Override
-    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
+    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+            throws IOException {
         responseContext.getHeaders().add(headerName, headerValue);
     }
 }

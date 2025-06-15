@@ -22,11 +22,13 @@ public final class ArtifactResourceResolver {
     /**
      * Creates a {@code ArtifactResourceResolver} for the given artifact
      *
-     * @param dependencies the resolved dependencies of the build
-     * @param artifactCoordinates the coordinates of the artifact containing the resources
+     * @param dependencies
+     *        the resolved dependencies of the build
+     * @param artifactCoordinates
+     *        the coordinates of the artifact containing the resources
      */
-    public static ArtifactResourceResolver of(
-            Collection<ResolvedDependency> dependencies, ArtifactCoords artifactCoordinates) {
+    public static ArtifactResourceResolver of(Collection<ResolvedDependency> dependencies,
+            ArtifactCoords artifactCoordinates) {
 
         return new ArtifactResourceResolver(dependencies, List.of(artifactCoordinates));
     }
@@ -34,45 +36,41 @@ public final class ArtifactResourceResolver {
     /**
      * Creates a {@code ArtifactResourceResolver} for the given artifact
      *
-     * @param dependencies the resolved dependencies of the build
-     * @param artifactCoordinatesCollection a coordinates {@link Collection} for the artifacts containing the resources
+     * @param dependencies
+     *        the resolved dependencies of the build
+     * @param artifactCoordinatesCollection
+     *        a coordinates {@link Collection} for the artifacts containing the resources
      */
-    public static ArtifactResourceResolver of(
-            Collection<ResolvedDependency> dependencies, Collection<ArtifactCoords> artifactCoordinatesCollection) {
+    public static ArtifactResourceResolver of(Collection<ResolvedDependency> dependencies,
+            Collection<ArtifactCoords> artifactCoordinatesCollection) {
 
         return new ArtifactResourceResolver(dependencies, artifactCoordinatesCollection);
     }
 
-    private ArtifactResourceResolver(
-            Collection<ResolvedDependency> dependencies, Collection<ArtifactCoords> artifactCoordinates) {
+    private ArtifactResourceResolver(Collection<ResolvedDependency> dependencies,
+            Collection<ArtifactCoords> artifactCoordinates) {
 
         var patterns = ArtifactCoordsPattern.toPatterns(artifactCoordinates);
-        artifacts = patterns.stream()
-                .map(p -> findArtifact(dependencies, p))
-                .collect(Collectors.toSet());
+        artifacts = patterns.stream().map(p -> findArtifact(dependencies, p)).collect(Collectors.toSet());
     }
 
-    private static ResolvedDependency findArtifact(
-            Collection<ResolvedDependency> dependencies, ArtifactCoordsPattern pattern) {
+    private static ResolvedDependency findArtifact(Collection<ResolvedDependency> dependencies,
+            ArtifactCoordsPattern pattern) {
 
-        return dependencies.stream()
-                .filter(pattern::matches)
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "%s artifact not found".formatted(pattern.toString())));
+        return dependencies.stream().filter(pattern::matches).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("%s artifact not found".formatted(pattern.toString())));
     }
 
     /**
      * Extracts a {@link Collection} of resource paths with the given filter
      *
-     * @param pathFilter the filter for the resources in glob syntax (see {@link GlobUtil})
+     * @param pathFilter
+     *        the filter for the resources in glob syntax (see {@link GlobUtil})
+     *
      * @return a collection of the found resource paths
      */
     public Collection<Path> resourcePathList(PathFilter pathFilter) {
-        return artifacts.stream()
-                .map(a -> pathsForArtifact(a, pathFilter))
-                .flatMap(Collection::stream)
-                .toList();
+        return artifacts.stream().map(a -> pathsForArtifact(a, pathFilter)).flatMap(Collection::stream).toList();
     }
 
     private Collection<Path> pathsForArtifact(ResolvedDependency artifact, PathFilter pathFilter) {
@@ -90,12 +88,12 @@ public final class ArtifactResourceResolver {
     /**
      * Extracts a {@link List} of resource paths as strings with the given filter
      *
-     * @param pathFilter the filter for the resources in glob syntax (see {@link GlobUtil})
+     * @param pathFilter
+     *        the filter for the resources in glob syntax (see {@link GlobUtil})
+     *
      * @return a list of the found resource paths as strings
      */
     public List<String> resourceList(PathFilter pathFilter) {
-        return resourcePathList(pathFilter).stream()
-                .map(Path::toString)
-                .toList();
+        return resourcePathList(pathFilter).stream().map(Path::toString).toList();
     }
 }

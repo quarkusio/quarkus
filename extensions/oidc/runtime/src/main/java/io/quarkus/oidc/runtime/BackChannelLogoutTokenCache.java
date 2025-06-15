@@ -10,7 +10,8 @@ public class BackChannelLogoutTokenCache {
     final MemoryCache<TokenVerificationResult> cache;
 
     public BackChannelLogoutTokenCache(OidcTenantConfig oidcTenantConfig, Vertx vertx) {
-        cache = new MemoryCache<TokenVerificationResult>(vertx, oidcTenantConfig.logout().backchannel().cleanUpTimerInterval(),
+        cache = new MemoryCache<TokenVerificationResult>(vertx,
+                oidcTenantConfig.logout().backchannel().cleanUpTimerInterval(),
                 oidcTenantConfig.logout().backchannel().tokenCacheTimeToLive(),
                 oidcTenantConfig.logout().backchannel().tokenCacheSize());
     }

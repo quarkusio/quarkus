@@ -63,8 +63,7 @@ public class RedisCacheWithOptimisticLockingTest {
         // Verified by: same object reference between STEPS 1 and 2 results.
         String value2 = simpleCachedService.cachedMethod(KEY_1);
         assertEquals(value1, value2);
-        assertEquals(allKeysAtStart.size() + 1,
-                TestUtil.allRedisKeys(redisDataSource).size());
+        assertEquals(allKeysAtStart.size() + 1, TestUtil.allRedisKeys(redisDataSource).size());
 
         // STEP 3
         // Action: same call as STEP 2 with a new key.
@@ -101,8 +100,7 @@ public class RedisCacheWithOptimisticLockingTest {
         // Verified by: same object reference between STEPS 3 and 6 results.
         String value6 = simpleCachedService.cachedMethod(KEY_2);
         assertEquals(value3, value6);
-        assertEquals(allKeysAtStart.size() + 2,
-                TestUtil.allRedisKeys(redisDataSource).size());
+        assertEquals(allKeysAtStart.size() + 2, TestUtil.allRedisKeys(redisDataSource).size());
 
         // STEP 7
         // Action: add 100 cached keys, to make sure the SCAN command in next step requires multiple iterations

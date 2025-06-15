@@ -34,8 +34,7 @@ public class AbstractImageMojo extends BuildMojo {
     protected void doExecute() throws MojoExecutionException {
         if (dryRun) {
             getLog().info("Container image configuration:");
-            systemProperties.entrySet().stream()
-                    .filter(e -> e.getKey().contains("quarkus.container-image"))
+            systemProperties.entrySet().stream().filter(e -> e.getKey().contains("quarkus.container-image"))
                     .forEach(e -> getLog().info(" - " + e.getKey() + ": " + e.getValue()));
         } else {
             super.doExecute();

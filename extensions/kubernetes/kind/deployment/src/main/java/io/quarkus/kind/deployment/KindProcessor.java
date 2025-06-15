@@ -63,14 +63,12 @@ public class KindProcessor {
     public void checkKind(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
             BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
-        deploymentTargets.produce(
-                new KubernetesDeploymentTargetBuildItem(KIND, DEPLOYMENT, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
-                        KIND_PRIORITY, true, config.deployStrategy()));
+        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KIND, DEPLOYMENT, DEPLOYMENT_GROUP,
+                DEPLOYMENT_VERSION, KIND_PRIORITY, true, config.deployStrategy()));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        resourceMeta.produce(
-                new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION, DEPLOYMENT,
-                        name));
+        resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, DEPLOYMENT_GROUP, DEPLOYMENT_VERSION,
+                DEPLOYMENT, name));
     }
 
     @BuildStep
@@ -98,38 +96,30 @@ public class KindProcessor {
     }
 
     @BuildStep
-    public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
+    public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(
+            ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+            List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, KIND,
-                config, serviceAccountsFromExtensions,
+        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, KIND, config, serviceAccountsFromExtensions,
                 decorators);
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
-            OutputTargetBuildItem outputTarget,
-            KubernetesConfig config,
-            PackageConfig packageConfig,
+            OutputTargetBuildItem outputTarget, KubernetesConfig config, PackageConfig packageConfig,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
-            List<KubernetesNamespaceBuildItem> namespaces,
-            List<KubernetesInitContainerBuildItem> initContainers,
-            List<KubernetesJobBuildItem> jobs,
-            List<KubernetesAnnotationBuildItem> annotations,
-            List<KubernetesLabelBuildItem> labels,
-            List<KubernetesEnvBuildItem> envs,
-            Optional<BaseImageInfoBuildItem> baseImage,
-            Optional<ContainerImageInfoBuildItem> image,
-            Optional<KubernetesCommandBuildItem> command,
-            List<KubernetesPortBuildItem> ports,
+            List<KubernetesNamespaceBuildItem> namespaces, List<KubernetesInitContainerBuildItem> initContainers,
+            List<KubernetesJobBuildItem> jobs, List<KubernetesAnnotationBuildItem> annotations,
+            List<KubernetesLabelBuildItem> labels, List<KubernetesEnvBuildItem> envs,
+            Optional<BaseImageInfoBuildItem> baseImage, Optional<ContainerImageInfoBuildItem> image,
+            Optional<KubernetesCommandBuildItem> command, List<KubernetesPortBuildItem> ports,
             Optional<KubernetesProbePortNameBuildItem> portName,
             Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
-            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
-            List<KubernetesRoleBuildItem> roles,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath, List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
@@ -137,10 +127,8 @@ public class KindProcessor {
             Optional<CustomProjectRootBuildItem> customProjectRoot) {
 
         return DevClusterHelper.createDecorators(KIND, KUBERNETES, applicationInfo, outputTarget, config, packageConfig,
-                metricsConfiguration, kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations, labels,
-                envs,
-                baseImage, image, command, ports, portName,
-                livenessPath, readinessPath, startupPath,
+                metricsConfiguration, kubernetesClientConfiguration, namespaces, initContainers, jobs, annotations,
+                labels, envs, baseImage, image, command, ports, portName, livenessPath, readinessPath, startupPath,
                 roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings, customProjectRoot);
     }
 
@@ -148,30 +136,26 @@ public class KindProcessor {
     public void postBuild(ContainerImageInfoBuildItem image,
             @SuppressWarnings("unused") List<ContainerImageBuilderBuildItem> builders,
             @SuppressWarnings("unused") BuildProducer<ArtifactResultBuildItem> artifactResults) {
-        //We used to only perform the action below when using known builders that play nicely with kind (e.g. docker)
-        //However, this excluded users that are just using external tools for building including the cli (e.g. quarkus image build docker).
-        //So, we now always perform this step
+        // We used to only perform the action below when using known builders that play nicely with kind (e.g. docker)
+        // However, this excluded users that are just using external tools for building including the cli (e.g. quarkus
+        // image build docker).
+        // So, we now always perform this step
         ExecUtil.exec("kind", "load", "docker-image", image.getImage());
     }
 
     @BuildStep
-    void externalizeInitTasks(
-            ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config,
-            ContainerImageInfoBuildItem image,
-            List<InitTaskBuildItem> initTasks,
-            BuildProducer<KubernetesJobBuildItem> jobs,
-            BuildProducer<KubernetesInitContainerBuildItem> initContainers,
-            BuildProducer<KubernetesEnvBuildItem> env,
-            BuildProducer<KubernetesRoleBuildItem> roles,
+    void externalizeInitTasks(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+            ContainerImageInfoBuildItem image, List<InitTaskBuildItem> initTasks,
+            BuildProducer<KubernetesJobBuildItem> jobs, BuildProducer<KubernetesInitContainerBuildItem> initContainers,
+            BuildProducer<KubernetesEnvBuildItem> env, BuildProducer<KubernetesRoleBuildItem> roles,
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
 
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         if (config.externalizeInit()) {
-            InitTaskProcessor.process(KIND, name, image, initTasks, config.initTaskDefaults(), config.initTasks(),
-                    jobs, initContainers, env, roles, roleBindings, serviceAccount, decorators);
+            InitTaskProcessor.process(KIND, name, image, initTasks, config.initTaskDefaults(), config.initTasks(), jobs,
+                    initContainers, env, roles, roleBindings, serviceAccount, decorators);
         }
     }
 }

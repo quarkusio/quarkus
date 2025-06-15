@@ -30,21 +30,18 @@ public class JfrProcessor {
     }
 
     @BuildStep
-    void registerRequestIdProducer(Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void registerRequestIdProducer(Capabilities capabilities, BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItem) {
 
         if (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
 
-            additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(OTelIdProducer.class)
-                    .build());
+            additionalBeans.produce(
+                    AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(OTelIdProducer.class).build());
 
         } else {
 
-            additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(QuarkusIdProducer.class)
-                    .build());
+            additionalBeans.produce(
+                    AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(QuarkusIdProducer.class).build());
 
             runtimeInitializedClassBuildItem
                     .produce(new RuntimeInitializedClassBuildItem(QuarkusIdProducer.class.getCanonicalName()));
@@ -60,11 +57,9 @@ public class JfrProcessor {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(ReactiveServerRecorderProducer.class)
-                    .build());
+                    .addBeanClasses(ReactiveServerRecorderProducer.class).build());
 
-            filterBeans
-                    .produce(new CustomContainerRequestFilterBuildItem(ReactiveServerFilters.class.getName()));
+            filterBeans.produce(new CustomContainerRequestFilterBuildItem(ReactiveServerFilters.class.getName()));
 
             globalHandlerCustomizerProducer
                     .produce(new GlobalHandlerCustomizerBuildItem(new ServerStartRecordingHandler.Customizer()));
@@ -78,8 +73,7 @@ public class JfrProcessor {
         if (capabilities.isPresent(Capability.RESTEASY)) {
 
             additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                    .addBeanClasses(ClassicServerRecorderProducer.class)
-                    .build());
+                    .addBeanClasses(ClassicServerRecorderProducer.class).build());
 
             resteasyJaxrsProviderBuildItemBuildProducer
                     .produce(new ResteasyJaxrsProviderBuildItem(ClassicServerFilter.class.getName()));

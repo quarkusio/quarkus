@@ -18,19 +18,17 @@ public class TemplateEnumIgnoredTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(TransactionType.class));
+            .withApplicationRoot(root -> root.addClasses(TransactionType.class));
 
     @Inject
     Engine engine;
 
     @Test
     public void testTemplateData() {
-        assertEquals("FOO",
-                engine.parse("{io_quarkus_qute_deployment_enums_TemplateEnumIgnoredTest_TransactionType:FOO}").render());
+        assertEquals("FOO", engine
+                .parse("{io_quarkus_qute_deployment_enums_TemplateEnumIgnoredTest_TransactionType:FOO}").render());
         assertThatExceptionOfType(TemplateException.class)
-                .isThrownBy(() -> engine.parse("{TransactionType:FOO}", null, "bar").render())
-                .withMessage(
+                .isThrownBy(() -> engine.parse("{TransactionType:FOO}", null, "bar").render()).withMessage(
                         "Rendering error in template [bar] line 1: No namespace resolver found for [TransactionType] in expression {TransactionType:FOO}");
 
     }

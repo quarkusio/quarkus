@@ -22,9 +22,9 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
 
     private final Consumer<WebSocketClientConnection> cleanup;
 
-    WebSocketClientConnectionImpl(String clientId, WebSocket webSocket, Codecs codecs,
-            Map<String, String> pathParams, URI serverEndpointUri, Map<String, List<String>> headers,
-            TrafficLogger trafficLogger, Map<String, Object> userData, SendingInterceptor sendingInterceptor,
+    WebSocketClientConnectionImpl(String clientId, WebSocket webSocket, Codecs codecs, Map<String, String> pathParams,
+            URI serverEndpointUri, Map<String, List<String>> headers, TrafficLogger trafficLogger,
+            Map<String, Object> userData, SendingInterceptor sendingInterceptor,
             Consumer<WebSocketClientConnection> cleanup) {
         super(Map.copyOf(pathParams), codecs, new ClientHandshakeRequestImpl(serverEndpointUri, headers), trafficLogger,
                 new UserDataImpl(userData), sendingInterceptor);

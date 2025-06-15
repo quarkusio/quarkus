@@ -19,12 +19,8 @@ public class ConfigureInstanceIdTest {
     Scheduler quartzScheduler;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.quartz.instance-id=myInstanceId"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("quarkus.quartz.instance-id=myInstanceId"), "application.properties"));
 
     @Test
     public void testSchedulerStarted() throws SchedulerException {

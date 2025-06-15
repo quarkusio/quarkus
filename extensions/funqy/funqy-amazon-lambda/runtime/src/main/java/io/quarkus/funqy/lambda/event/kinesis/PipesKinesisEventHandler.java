@@ -46,8 +46,10 @@ public class PipesKinesisEventHandler
         if (!amazonConfig.advancedEventHandling().kinesis().reportBatchItemFailures()) {
             return null;
         }
-        return StreamsEventResponse.builder().withBatchItemFailures(
-                failures.stream().map(id -> BatchItemFailure.builder().withItemIdentifier(id).build()).toList()).build();
+        return StreamsEventResponse.builder()
+                .withBatchItemFailures(
+                        failures.stream().map(id -> BatchItemFailure.builder().withItemIdentifier(id).build()).toList())
+                .build();
     }
 
     @Override

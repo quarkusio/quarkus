@@ -16,8 +16,7 @@ public class ApplicationPathTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, HelloApp.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, HelloApp.class));
 
     @Test
     public void testResources() {

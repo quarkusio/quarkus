@@ -17,7 +17,8 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 public class GlobalDevServicesConfig {
 
     /**
-     * Global flag that can be used to disable all Dev Services. If this is set to false then Dev Services will not be used.
+     * Global flag that can be used to disable all Dev Services. If this is set to false then Dev Services will not be
+     * used.
      */
     @ConfigItem(defaultValue = "true", generateDocumentation = false)
     boolean enabled;

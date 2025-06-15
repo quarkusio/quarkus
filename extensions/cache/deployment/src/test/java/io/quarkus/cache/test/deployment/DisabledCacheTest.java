@@ -15,9 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DisabledCacheTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.cache.enabled=false"), "application.properties")
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.cache.enabled=false"), "application.properties")
                     .addClass(CachedService.class));
 
     private static final String KEY = "key";

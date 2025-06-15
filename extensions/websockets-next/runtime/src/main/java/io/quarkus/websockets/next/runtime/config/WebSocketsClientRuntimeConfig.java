@@ -66,8 +66,8 @@ public interface WebSocketsClientRuntimeConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured, but
+     * no TLS configuration is found with that name then an error will be thrown.
      * <p>
      * The default TLS configuration is <strong>not</strong> used by default.
      */

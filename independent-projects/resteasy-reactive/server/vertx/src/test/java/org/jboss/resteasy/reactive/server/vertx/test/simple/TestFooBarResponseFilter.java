@@ -16,7 +16,8 @@ import jakarta.ws.rs.ext.Provider;
 public class TestFooBarResponseFilter implements ContainerResponseFilter {
 
     @Override
-    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
+    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+            throws IOException {
         String previousFilterHeaderValue = (String) responseContext.getHeaders().getFirst("filter-response");
         responseContext.getHeaders().putSingle("filter-response", previousFilterHeaderValue + "-foobar");
     }

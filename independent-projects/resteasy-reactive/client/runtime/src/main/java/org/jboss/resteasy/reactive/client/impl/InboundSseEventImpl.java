@@ -127,9 +127,8 @@ public class InboundSseEventImpl implements InboundSseEvent {
     public <T> T readData(GenericType<T> type, MediaType mediaType) {
         InputStream in = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
         try {
-            return (T) ClientSerialisers.invokeClientReader(null, type.getRawType(), type.getType(),
-                    mediaType, null, null, new QuarkusMultivaluedHashMap<>(),
-                    serialisers, in, interceptors, configuration);
+            return (T) ClientSerialisers.invokeClientReader(null, type.getRawType(), type.getType(), mediaType, null,
+                    null, new QuarkusMultivaluedHashMap<>(), serialisers, in, interceptors, configuration);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -137,13 +136,8 @@ public class InboundSseEventImpl implements InboundSseEvent {
 
     @Override
     public String toString() {
-        return "InboundSseEvent[data: " + data
-                + ", name: " + name
-                + ", id: " + id
-                + ", comment: " + comment
-                + ", mediaType: " + mediaType
-                + ", reconnectDelay: " + reconnectDelay
-                + "]";
+        return "InboundSseEvent[data: " + data + ", name: " + name + ", id: " + id + ", comment: " + comment
+                + ", mediaType: " + mediaType + ", reconnectDelay: " + reconnectDelay + "]";
     }
 
     @Override
@@ -164,11 +158,8 @@ public class InboundSseEventImpl implements InboundSseEvent {
         if (obj instanceof InboundSseEventImpl == false)
             return false;
         InboundSseEventImpl other = (InboundSseEventImpl) obj;
-        return Objects.equals(getComment(), other.getComment())
-                && Objects.equals(getMediaType(), other.getMediaType())
-                && Objects.equals(getId(), other.getId())
-                && Objects.equals(getName(), other.getName())
-                && getReconnectDelay() == other.getReconnectDelay()
-                && Objects.equals(readData(), other.readData());
+        return Objects.equals(getComment(), other.getComment()) && Objects.equals(getMediaType(), other.getMediaType())
+                && Objects.equals(getId(), other.getId()) && Objects.equals(getName(), other.getName())
+                && getReconnectDelay() == other.getReconnectDelay() && Objects.equals(readData(), other.readData());
     }
 }

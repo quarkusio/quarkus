@@ -32,7 +32,8 @@ public class Openshift extends BaseImageSubCommand implements Callable<Integer> 
     private static final String BUILD_STRATEGY = "build-strategy";
     private static final String BUILD_TIMEOUT = "build-timeout";
 
-    @CommandLine.Option(order = 7, names = { "--build-strategy" }, description = "The build strategy to use (docker or s2i).")
+    @CommandLine.Option(order = 7, names = {
+            "--build-strategy" }, description = "The build strategy to use (docker or s2i).")
     public Optional<String> buildStrategy;
 
     @CommandLine.Option(order = 8, names = { "--base-image" }, description = "The base image to use.")
@@ -49,7 +50,8 @@ public class Openshift extends BaseImageSubCommand implements Callable<Integer> 
             "--artifact-directory" }, description = "The directory where the jar/native binary is added during the assemble phase.")
     public String artifactDirectory;
 
-    @CommandLine.Option(order = 12, names = { "--artifact-filename" }, description = "The filename of the jar/native binary.")
+    @CommandLine.Option(order = 12, names = {
+            "--artifact-filename" }, description = "The filename of the jar/native binary.")
     public String artifactFilename;
 
     @CommandLine.Option(order = 13, names = { "--build-timeout" }, description = "The build timeout.")
@@ -61,29 +63,32 @@ public class Openshift extends BaseImageSubCommand implements Callable<Integer> 
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, OPENSHIFT);
         properties.put(OPENSHIFT_CONFIG_PREFIX + BUILD_STRATEGY, buildStrategy.orElse("docker"));
 
-        baseImage.ifPresent(d -> properties
-                .put(OPENSHIFT_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? BASE_NATIVE_IMAGE : BASE_JVM_IMAGE),
-                        d));
+        baseImage.ifPresent(d -> properties.put(
+                OPENSHIFT_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? BASE_NATIVE_IMAGE : BASE_JVM_IMAGE),
+                d));
 
         if (!arguments.isEmpty()) {
             String joinedArgs = arguments.stream().collect(Collectors.joining(","));
-            properties.put(OPENSHIFT_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_ARGUMENTS : JVM_ARGUMENTS),
-                    joinedArgs);
+            properties.put(OPENSHIFT_CONFIG_PREFIX
+                    + (context.getBuildOptions().buildNative ? NATIVE_ARGUMENTS : JVM_ARGUMENTS), joinedArgs);
         }
 
         if (dockerfile != null && !dockerfile.isEmpty()) {
-            properties.put(
-                    OPENSHIFT_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_DOCKERFILE : JVM_DOCKERFILE),
-                    dockerfile);
+            properties.put(OPENSHIFT_CONFIG_PREFIX
+                    + (context.getBuildOptions().buildNative ? NATIVE_DOCKERFILE : JVM_DOCKERFILE), dockerfile);
         }
 
         if (artifactDirectory != null && !artifactDirectory.isEmpty()) {
-            properties.put(OPENSHIFT_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_DIRECTORY : JAR_DIRECTORY),
+            properties.put(
+                    OPENSHIFT_CONFIG_PREFIX
+                            + (context.getBuildOptions().buildNative ? NATIVE_DIRECTORY : JAR_DIRECTORY),
                     artifactDirectory);
         }
 
         if (artifactFilename != null && !artifactFilename.isEmpty()) {
-            properties.put(OPENSHIFT_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? NATIVE_FILE_NAME : JAR_FILE_NAME),
+            properties.put(
+                    OPENSHIFT_CONFIG_PREFIX
+                            + (context.getBuildOptions().buildNative ? NATIVE_FILE_NAME : JAR_FILE_NAME),
                     artifactFilename);
         }
 

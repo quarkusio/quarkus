@@ -32,17 +32,13 @@ public class DbVersionInvalidTest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.datasource.db-version", "999.999")
-            .assertException(throwable -> assertThat(throwable)
-                    .rootCause()
-                    .hasMessageContainingAll(
+            .overrideConfigKey("quarkus.datasource.db-version", "999.999").assertException(
+                    throwable -> assertThat(throwable).rootCause().hasMessageContainingAll(
                             "Persistence unit '<default>' was configured to run with a database version"
-                                    + " of at least '" + CONFIGURED_DB_VERSION_REPORTED + "', but the actual version is '"
-                                    + ACTUAL_H2_VERSION + "'",
+                                    + " of at least '" + CONFIGURED_DB_VERSION_REPORTED
+                                    + "', but the actual version is '" + ACTUAL_H2_VERSION + "'",
                             "Consider upgrading your database",
                             "Alternatively, rebuild your application with 'quarkus.datasource.db-version="
                                     + ACTUAL_H2_VERSION + "'",

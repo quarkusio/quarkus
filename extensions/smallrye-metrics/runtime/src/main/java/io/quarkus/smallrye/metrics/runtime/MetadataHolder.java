@@ -5,8 +5,8 @@ import org.eclipse.microprofile.metrics.MetadataBuilder;
 import org.eclipse.microprofile.metrics.MetricType;
 
 /**
- * DefaultMetadata from MP Metrics API does not have a public default constructor, so we use this custom wrapper
- * for passing metric metadata from processor to recorder and reconstructing the original Metadata instance in runtime code.
+ * DefaultMetadata from MP Metrics API does not have a public default constructor, so we use this custom wrapper for
+ * passing metric metadata from processor to recorder and reconstructing the original Metadata instance in runtime code.
  */
 public class MetadataHolder {
 
@@ -71,17 +71,14 @@ public class MetadataHolder {
     }
 
     public Metadata toMetadata() {
-        final MetadataBuilder builder = Metadata.builder()
-                .withName(name);
+        final MetadataBuilder builder = Metadata.builder().withName(name);
         if (description != null) {
             builder.withDescription(description);
         }
         if (displayName != null) {
             builder.withDisplayName(displayName);
         }
-        return builder.withType(metricType)
-                .withUnit(unit)
-                .build();
+        return builder.withType(metricType).withUnit(unit).build();
     }
 
 }

@@ -20,11 +20,9 @@ public class UnlessBuildPropertyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Producer.class, AnotherProducer.class,
-                            GreetingBean.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class))
-            .overrideConfigKey("some.prop1", "v1")
-            .overrideConfigKey("some.prop2", "v2");
+            .withApplicationRoot((jar) -> jar.addClasses(Producer.class, AnotherProducer.class, GreetingBean.class,
+                    PingBean.class, PongBean.class, FooBean.class, BarBean.class))
+            .overrideConfigKey("some.prop1", "v1").overrideConfigKey("some.prop2", "v2");
 
     @Inject
     GreetingBean bean;
@@ -98,7 +96,12 @@ public class UnlessBuildPropertyTest {
     static class Producer {
 
         @Produces
-        @UnlessBuildProperty(name = "some.prop2", stringValue = "v2", enableIfMissing = true) // won't be enabled because the property values match - enableIfMissing has no effect when the property does exist
+        @UnlessBuildProperty(name = "some.prop2", stringValue = "v2", enableIfMissing = true) // won't be enabled
+                                                                                                        // because the property
+                                                                                                        // values match -
+                                                                                                        // enableIfMissing has no
+                                                                                                        // effect when the
+                                                                                                        // property does exist
         PingBean nonMatchingPingBean;
 
         public Producer() {
@@ -127,7 +130,8 @@ public class UnlessBuildPropertyTest {
         }
 
         @Produces
-        @UnlessBuildProperty(name = "some.prop2", stringValue = "v2") // won't be enabled because the property values match
+        @UnlessBuildProperty(name = "some.prop2", stringValue = "v2") // won't be enabled because the property values
+                                                                                // match
         GreetingBean nonMatchingValueGreetingBean(BarBean barBean) {
             return new GreetingBean() {
 

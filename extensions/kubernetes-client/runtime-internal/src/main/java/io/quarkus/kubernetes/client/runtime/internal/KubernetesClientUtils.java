@@ -22,8 +22,7 @@ public class KubernetesClientUtils {
                 .orElse(false);
         Config base = Config.autoConfigure(null);
         boolean trustAll = buildConfig.trustCerts().isPresent() ? buildConfig.trustCerts().get() : globalTrustAll;
-        return new ConfigBuilder()
-                .withTrustCerts(trustAll)
+        return new ConfigBuilder().withTrustCerts(trustAll)
                 .withWatchReconnectInterval(
                         millisAsInt(buildConfig.watchReconnectInterval()).orElse(base.getWatchReconnectInterval()))
                 .withWatchReconnectLimit(buildConfig.watchReconnectLimit().orElse(base.getWatchReconnectLimit()))
@@ -50,7 +49,8 @@ public class KubernetesClientUtils {
                 .withHttp2Disable(base.isHttp2Disable())
                 .withRequestRetryBackoffInterval(millisAsInt(buildConfig.requestRetryBackoffInterval())
                         .orElse(base.getRequestRetryBackoffInterval()))
-                .withRequestRetryBackoffLimit(buildConfig.requestRetryBackoffLimit().orElse(base.getRequestRetryBackoffLimit()))
+                .withRequestRetryBackoffLimit(
+                        buildConfig.requestRetryBackoffLimit().orElse(base.getRequestRetryBackoffLimit()))
                 .build();
     }
 
@@ -67,42 +67,47 @@ public class KubernetesClientUtils {
         org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
         Config base = Config.autoConfigure(null);
         return new KubernetesClientBuilder().withConfig(new ConfigBuilder()
-                .withTrustCerts(config.getOptionalValue(PREFIX + "trust-certs", Boolean.class).orElse(base.isTrustCerts()))
+                .withTrustCerts(
+                        config.getOptionalValue(PREFIX + "trust-certs", Boolean.class).orElse(base.isTrustCerts()))
                 .withWatchReconnectLimit(config.getOptionalValue(PREFIX + "watch-reconnect-limit", Integer.class)
                         .orElse(base.getWatchReconnectLimit()))
-                .withWatchReconnectInterval((int) config.getOptionalValue(PREFIX + "watch-reconnect-interval", Duration.class)
-                        .orElse(Duration.ofMillis(base.getWatchReconnectInterval())).toMillis())
+                .withWatchReconnectInterval(
+                        (int) config.getOptionalValue(PREFIX + "watch-reconnect-interval", Duration.class)
+                                .orElse(Duration.ofMillis(base.getWatchReconnectInterval())).toMillis())
                 .withConnectionTimeout((int) config.getOptionalValue(PREFIX + "connection-timeout", Duration.class)
                         .orElse(Duration.ofMillis(base.getConnectionTimeout())).toMillis())
                 .withRequestTimeout((int) config.getOptionalValue(PREFIX + "request-timeout", Duration.class)
                         .orElse(Duration.ofMillis(base.getRequestTimeout())).toMillis())
                 .withMasterUrl(config.getOptionalValue(PREFIX + "api-server-url", String.class)
-                        .or(() -> config.getOptionalValue(PREFIX + "master-url", String.class)).orElse(base.getMasterUrl()))
+                        .or(() -> config.getOptionalValue(PREFIX + "master-url", String.class))
+                        .orElse(base.getMasterUrl()))
                 .withNamespace(config.getOptionalValue(PREFIX + "namespace", String.class).orElse(base.getNamespace()))
                 .withUsername(config.getOptionalValue(PREFIX + "username", String.class).orElse(base.getUsername()))
                 .withPassword(config.getOptionalValue(PREFIX + "password", String.class).orElse(base.getPassword()))
-                .withCaCertFile(config.getOptionalValue(PREFIX + "ca-cert-file", String.class).orElse(base.getCaCertFile()))
-                .withCaCertData(config.getOptionalValue(PREFIX + "ca-cert-data", String.class).orElse(base.getCaCertData()))
-                .withClientCertFile(
-                        config.getOptionalValue(PREFIX + "client-cert-file", String.class).orElse(base.getClientCertFile()))
-                .withClientCertData(
-                        config.getOptionalValue(PREFIX + "client-cert-data", String.class).orElse(base.getClientCertData()))
-                .withClientKeyFile(
-                        config.getOptionalValue(PREFIX + "client-key-file", String.class).orElse(base.getClientKeyFile()))
-                .withClientKeyData(
-                        config.getOptionalValue(PREFIX + "client-key-data", String.class).orElse(base.getClientKeyData()))
+                .withCaCertFile(
+                        config.getOptionalValue(PREFIX + "ca-cert-file", String.class).orElse(base.getCaCertFile()))
+                .withCaCertData(
+                        config.getOptionalValue(PREFIX + "ca-cert-data", String.class).orElse(base.getCaCertData()))
+                .withClientCertFile(config.getOptionalValue(PREFIX + "client-cert-file", String.class)
+                        .orElse(base.getClientCertFile()))
+                .withClientCertData(config.getOptionalValue(PREFIX + "client-cert-data", String.class)
+                        .orElse(base.getClientCertData()))
+                .withClientKeyFile(config.getOptionalValue(PREFIX + "client-key-file", String.class)
+                        .orElse(base.getClientKeyFile()))
+                .withClientKeyData(config.getOptionalValue(PREFIX + "client-key-data", String.class)
+                        .orElse(base.getClientKeyData()))
                 .withClientKeyPassphrase(config.getOptionalValue(PREFIX + "client-key-passphrase", String.class)
                         .orElse(base.getClientKeyPassphrase()))
-                .withClientKeyAlgo(
-                        config.getOptionalValue(PREFIX + "client-key-algo", String.class).orElse(base.getClientKeyAlgo()))
+                .withClientKeyAlgo(config.getOptionalValue(PREFIX + "client-key-algo", String.class)
+                        .orElse(base.getClientKeyAlgo()))
                 .withHttpProxy(config.getOptionalValue(PREFIX + "http-proxy", String.class).orElse(base.getHttpProxy()))
-                .withHttpsProxy(config.getOptionalValue(PREFIX + "https-proxy", String.class).orElse(base.getHttpsProxy()))
-                .withProxyUsername(
-                        config.getOptionalValue(PREFIX + "proxy-username", String.class).orElse(base.getProxyUsername()))
-                .withProxyPassword(
-                        config.getOptionalValue(PREFIX + "proxy-password", String.class).orElse(base.getProxyPassword()))
+                .withHttpsProxy(
+                        config.getOptionalValue(PREFIX + "https-proxy", String.class).orElse(base.getHttpsProxy()))
+                .withProxyUsername(config.getOptionalValue(PREFIX + "proxy-username", String.class)
+                        .orElse(base.getProxyUsername()))
+                .withProxyPassword(config.getOptionalValue(PREFIX + "proxy-password", String.class)
+                        .orElse(base.getProxyPassword()))
                 .withNoProxy(config.getOptionalValue(PREFIX + "no-proxy", String[].class).orElse(base.getNoProxy()))
-                .build())
-                .build();
+                .build()).build();
     }
 }

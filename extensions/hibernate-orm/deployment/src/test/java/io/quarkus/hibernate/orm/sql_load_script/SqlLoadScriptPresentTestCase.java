@@ -11,8 +11,7 @@ import io.restassured.RestAssured;
 public class SqlLoadScriptPresentTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
                     .addAsResource("application-other-load-script-test.properties", "application.properties")
                     .addAsResource("load-script-test.sql"));
 

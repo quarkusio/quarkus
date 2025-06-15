@@ -19,22 +19,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class QueryFieldRequestScopeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(Resource.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClasses(Resource.class));
 
     @Test
     public void test() {
-        when()
-                .get("/test?foo=f&bar=b")
-                .then()
-                .statusCode(200)
-                .body(is("foo: f, bar: b"));
+        when().get("/test?foo=f&bar=b").then().statusCode(200).body(is("foo: f, bar: b"));
 
-        when()
-                .get("/test")
-                .then()
-                .statusCode(200)
-                .body(is("foo: null, bar: null"));
+        when().get("/test").then().statusCode(200).body(is("foo: null, bar: null"));
     }
 
     @Path("/test")

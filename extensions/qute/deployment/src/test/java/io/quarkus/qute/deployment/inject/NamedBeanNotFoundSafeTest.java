@@ -14,9 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NamedBeanNotFoundSafeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("{cdi:ping.val??}"), "templates/ping.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addAsResource(new StringAsset("{cdi:ping.val??}"), "templates/ping.html"));
 
     @Inject
     Template ping;

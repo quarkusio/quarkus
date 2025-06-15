@@ -49,11 +49,12 @@ public class PermissionsAllowedResource {
         return greeting;
     }
 
-    @PermissionsAllowed(value = "farewell", permission = CustomPermissionWithExtraArgs.class, params = { "goodbye", "toWhom",
-            "day", "place" })
+    @PermissionsAllowed(value = "farewell", permission = CustomPermissionWithExtraArgs.class, params = { "goodbye",
+            "toWhom", "day", "place" })
     @Path("/custom-perm-with-args/{goodbye}")
     @POST
-    public String farewell(@RestPath String goodbye, @RestHeader("toWhom") String toWhom, @RestCookie int day, String place) {
+    public String farewell(@RestPath String goodbye, @RestHeader("toWhom") String toWhom, @RestCookie int day,
+            String place) {
         String farewell = String.join(" ", new String[] { goodbye, toWhom, Integer.toString(day), place });
         return farewell;
     }
@@ -61,8 +62,8 @@ public class PermissionsAllowedResource {
     @CreateOrUpdate
     @Path("/custom-perm-with-args-meta-annotation/{goodbye}")
     @POST
-    public String farewellMetaAnnotation(@RestPath String goodbye, @RestHeader("toWhom") String toWhom, @RestCookie int day,
-            String place) {
+    public String farewellMetaAnnotation(@RestPath String goodbye, @RestHeader("toWhom") String toWhom,
+            @RestCookie int day, String place) {
         String farewell = String.join(" ", new String[] { goodbye, toWhom, Integer.toString(day), place });
         return farewell;
     }

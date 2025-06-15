@@ -24,13 +24,15 @@ import io.vertx.core.file.AsyncFile;
 public class ServerVertxAsyncFileMessageBodyWriter implements ServerMessageBodyWriter<AsyncFile> {
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         // allow for subtypes, such as AsyncFileImpl
         return AsyncFile.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(AsyncFile file, Type genericType, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(AsyncFile file, Type genericType, ServerRequestContext context)
+            throws WebApplicationException {
         ResteasyReactiveRequestContext ctx = ((ResteasyReactiveRequestContext) context);
         ctx.suspend();
         ServerHttpResponse response = context.serverResponse();
@@ -76,8 +78,9 @@ public class ServerVertxAsyncFileMessageBodyWriter implements ServerMessageBodyW
     }
 
     @Override
-    public void writeTo(AsyncFile asyncFile, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(AsyncFile asyncFile, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         throw new UnsupportedOperationException("not supported");
     }
 

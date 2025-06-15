@@ -12,10 +12,8 @@ import org.graalvm.nativeimage.hosted.Feature;
  */
 public class DisableLoggingFeature implements Feature {
 
-    private static final String[] CATEGORIES = {
-            "org.hibernate.envers.boot.internal.EnversServiceImpl",
-            "org.hibernate.envers.configuration.internal.metadata.AuditMetadataGenerator"
-    };
+    private static final String[] CATEGORIES = { "org.hibernate.envers.boot.internal.EnversServiceImpl",
+            "org.hibernate.envers.configuration.internal.metadata.AuditMetadataGenerator" };
 
     private final Map<String, Level> categoryMap = new HashMap<>(CATEGORIES.length);
 

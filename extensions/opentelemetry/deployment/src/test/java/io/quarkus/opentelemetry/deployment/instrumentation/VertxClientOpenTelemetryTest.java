@@ -47,16 +47,14 @@ import io.vertx.ext.web.client.WebClient;
 
 public class VertxClientOpenTelemetryTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(TestSpanExporter.class.getPackage())
-                    .addClasses(SemconvResolver.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
-                    .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addPackage(TestSpanExporter.class.getPackage()).addClasses(SemconvResolver.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties");
 
     @Inject
@@ -73,11 +71,8 @@ public class VertxClientOpenTelemetryTest {
 
     @Test
     void client() throws Exception {
-        HttpResponse<Buffer> response = WebClient.create(vertx)
-                .get(uri.getPort(), uri.getHost(), "/hello")
-                .send()
-                .toCompletionStage().toCompletableFuture()
-                .get();
+        HttpResponse<Buffer> response = WebClient.create(vertx).get(uri.getPort(), uri.getHost(), "/hello").send()
+                .toCompletionStage().toCompletableFuture().get();
 
         assertEquals(HTTP_OK, response.statusCode());
 
@@ -106,11 +101,8 @@ public class VertxClientOpenTelemetryTest {
 
     @Test
     void path() throws Exception {
-        HttpResponse<Buffer> response = WebClient.create(vertx)
-                .get(uri.getPort(), uri.getHost(), "/hello/naruto")
-                .send()
-                .toCompletionStage().toCompletableFuture()
-                .get();
+        HttpResponse<Buffer> response = WebClient.create(vertx).get(uri.getPort(), uri.getHost(), "/hello/naruto")
+                .send().toCompletionStage().toCompletableFuture().get();
 
         assertEquals(HTTP_OK, response.statusCode());
 
@@ -140,11 +132,8 @@ public class VertxClientOpenTelemetryTest {
 
     @Test
     void query() throws Exception {
-        HttpResponse<Buffer> response = WebClient.create(vertx)
-                .get(uri.getPort(), uri.getHost(), "/hello?name=foo")
-                .send()
-                .toCompletionStage().toCompletableFuture()
-                .get();
+        HttpResponse<Buffer> response = WebClient.create(vertx).get(uri.getPort(), uri.getHost(), "/hello?name=foo")
+                .send().toCompletionStage().toCompletableFuture().get();
 
         assertEquals(HTTP_OK, response.statusCode());
 
@@ -174,13 +163,9 @@ public class VertxClientOpenTelemetryTest {
 
     @Test
     void multiple() throws Exception {
-        HttpResponse<Buffer> response = WebClient.create(vertx)
-                .get(uri.getPort(), uri.getHost(), "/multiple")
-                .putHeader("host", uri.getHost())
-                .putHeader("port", uri.getPort() + "")
-                .send()
-                .toCompletionStage().toCompletableFuture()
-                .get();
+        HttpResponse<Buffer> response = WebClient.create(vertx).get(uri.getPort(), uri.getHost(), "/multiple")
+                .putHeader("host", uri.getHost()).putHeader("port", uri.getPort() + "").send().toCompletionStage()
+                .toCompletableFuture().get();
 
         assertEquals(HTTP_OK, response.statusCode());
 

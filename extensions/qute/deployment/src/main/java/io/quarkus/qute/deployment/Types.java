@@ -62,8 +62,7 @@ public final class Types {
                 Map<TypeVariable, Type> resolved = Collections.emptyMap();
                 if (Kind.PARAMETERIZED_TYPE.equals(classInfo.superClassType().kind())) {
                     resolved = buildResolvedMap(classInfo.superClassType().asParameterizedType().arguments(),
-                            superClassInfo.typeParameters(),
-                            resolvedTypeParameters, index);
+                            superClassInfo.typeParameters(), resolvedTypeParameters, index);
                 }
                 types.addAll(getTypeClosure(superClassInfo, resolved, index));
             }
@@ -72,11 +71,11 @@ public final class Types {
     }
 
     static <T extends Type> Map<TypeVariable, Type> buildResolvedMap(List<T> resolvedArguments,
-            List<TypeVariable> typeVariables,
-            Map<TypeVariable, Type> resolvedTypeParameters, IndexView index) {
+            List<TypeVariable> typeVariables, Map<TypeVariable, Type> resolvedTypeParameters, IndexView index) {
         Map<TypeVariable, Type> resolvedMap = new HashMap<>();
         for (int i = 0; i < resolvedArguments.size(); i++) {
-            resolvedMap.put(typeVariables.get(i), resolveTypeParam(resolvedArguments.get(i), resolvedTypeParameters, index));
+            resolvedMap.put(typeVariables.get(i),
+                    resolveTypeParam(resolvedArguments.get(i), resolvedTypeParameters, index));
         }
         return resolvedMap;
     }
@@ -99,7 +98,8 @@ public final class Types {
             ClassInfo classInfo = index.getClassByName(parameterizedType.name());
             if (classInfo == null && !parameterizedType.name().toString().contains(".")) {
                 // If not indexed and no package then try the java.lang prefix
-                classInfo = index.getClassByName(DotName.createSimple(JAVA_LANG_PREFIX + parameterizedType.name().toString()));
+                classInfo = index
+                        .getClassByName(DotName.createSimple(JAVA_LANG_PREFIX + parameterizedType.name().toString()));
             }
             if (classInfo != null) {
                 List<TypeVariable> typeParameters = classInfo.typeParameters();

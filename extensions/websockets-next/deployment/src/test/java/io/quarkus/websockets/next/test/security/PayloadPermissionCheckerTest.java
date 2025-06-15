@@ -35,8 +35,8 @@ public class PayloadPermissionCheckerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
                             AdminEndpoint.class, InclusiveEndpoint.class, MetaAnnotationEndpoint.class,
                             StringEndpointReadPermissionMetaAnnotation.class, ProductEndpoint.class))
             .overrideConfigKey("quarkus.websockets-next.server.unhandled-failure-strategy", "close");
@@ -58,7 +58,8 @@ public class PayloadPermissionCheckerTest {
 
     @BeforeEach
     public void prepareUsers() {
-        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("almighty", "almighty").add("user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("almighty", "almighty").add("user",
+                "user");
     }
 
     @Test
@@ -240,7 +241,8 @@ public class PayloadPermissionCheckerTest {
         @PermissionChecker("perm2")
         Uni<Boolean> hasPerm2(SecurityIdentity securityIdentity) {
             String principalName = securityIdentity.getPrincipal().getName();
-            return Uni.createFrom().item(Boolean.valueOf(principalName.equals("user") || principalName.equals("almighty")));
+            return Uni.createFrom()
+                    .item(Boolean.valueOf(principalName.equals("user") || principalName.equals("almighty")));
         }
 
     }

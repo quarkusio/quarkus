@@ -19,8 +19,7 @@ public class BouncyCastleJsseEndpoint {
     @GET
     @Path("listProviders")
     public String listProviders() {
-        return "Identity: " + identity.getPrincipal().getName()
-                + ", providers:" + Arrays.asList(Security.getProviders()).stream()
-                        .map(p -> p.getName()).collect(Collectors.joining(","));
+        return "Identity: " + identity.getPrincipal().getName() + ", providers:" + Arrays
+                .asList(Security.getProviders()).stream().map(p -> p.getName()).collect(Collectors.joining(","));
     }
 }

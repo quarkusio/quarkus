@@ -28,8 +28,8 @@ public interface PemKeyCertConfig {
     /**
      * The order of the key/cert files, based on the names in the `keyCerts` map.
      * <p>
-     * By default, Quarkus sorts the key using a lexicographical order.
-     * This property allows you to specify the order of the key/cert files.
+     * By default, Quarkus sorts the key using a lexicographical order. This property allows you to specify the order of
+     * the key/cert files.
      */
     Optional<List<String>> order();
 
@@ -44,8 +44,8 @@ public interface PemKeyCertConfig {
         if (order().isPresent()) {
             // Check the size of the order list. It must match the size of the keyCerts map.
             if (order().get().size() != keyCerts().size()) {
-                throw new IllegalArgumentException("The size of the `order` list (" + order().get().size() + ") must " +
-                        "match the size of the `keyCerts` map (" + keyCerts().size() + ")");
+                throw new IllegalArgumentException("The size of the `order` list (" + order().get().size() + ") must "
+                        + "match the size of the `keyCerts` map (" + keyCerts().size() + ")");
             }
 
             // We use the order specified by the user.

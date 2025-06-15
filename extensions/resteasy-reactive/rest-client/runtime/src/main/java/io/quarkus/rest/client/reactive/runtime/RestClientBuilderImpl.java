@@ -279,9 +279,9 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
     @Override
     public RestClientBuilderImpl executorService(ExecutorService executor) {
-        throw new IllegalArgumentException("Specifying executor service is not supported. " +
-                "The underlying call is non-blocking, " +
-                "there is no reason to offload the call to a separate thread pool.");
+        throw new IllegalArgumentException(
+                "Specifying executor service is not supported. " + "The underlying call is non-blocking, "
+                        + "there is no reason to offload the call to a separate thread pool.");
     }
 
     @Override
@@ -386,7 +386,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
                 || ParamConverterProvider.class.isAssignableFrom(componentClass)) {
             try {
                 registerMpSpecificProvider(componentClass.getDeclaredConstructor().newInstance());
-            } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+            } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                    | NoSuchMethodException e) {
                 throw new IllegalArgumentException("Failed to instantiate provider " + componentClass
                         + ". Does it have a public no-arg constructor?", e);
             }
@@ -449,7 +450,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         exceptionMappers.sort(Comparator.comparingInt(ResponseExceptionMapper::getPriority));
         redirectHandlers.sort(Comparator.comparingInt(RedirectHandler::getPriority));
         clientBuilder.register(new MicroProfileRestClientResponseFilter(exceptionMappers));
-        clientBuilder.followRedirects(followRedirects != null ? followRedirects : restClients.followRedirects().orElse(false));
+        clientBuilder.followRedirects(
+                followRedirects != null ? followRedirects : restClients.followRedirects().orElse(false));
 
         RestClientsConfig.RestClientLoggingConfig configRootLogging = restClients.logging();
 
@@ -457,8 +459,10 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         LoggingScope effectiveLoggingScope = LoggingScope.NONE;
         Integer effectiveLoggingBodyLimit = defaultLoggingBodyLimit;
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_SCOPE)) {
-            effectiveLoggingScope = (LoggingScope) getConfiguration().getProperty(QuarkusRestClientProperties.LOGGING_SCOPE);
-        } else if (loggingScope != null) { //scope, specified programmatically, takes precedence over global configuration
+            effectiveLoggingScope = (LoggingScope) getConfiguration()
+                    .getProperty(QuarkusRestClientProperties.LOGGING_SCOPE);
+        } else if (loggingScope != null) { // scope, specified programmatically, takes precedence over global
+                                           // configuration
             effectiveLoggingScope = loggingScope;
         } else if (configRootLogging != null) {
             effectiveLoggingScope = configRootLogging.scope().map(LoggingScope::forName).orElse(LoggingScope.NONE);
@@ -466,7 +470,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.LOGGING_BODY_LIMIT)) {
             effectiveLoggingBodyLimit = (Integer) getConfiguration()
                     .getProperty(QuarkusRestClientProperties.LOGGING_BODY_LIMIT);
-        } else if (loggingBodyLimit != null) { //bodyLimit, specified programmatically, takes precedence over global configuration
+        } else if (loggingBodyLimit != null) { // bodyLimit, specified programmatically, takes precedence over global
+                                               // configuration
             effectiveLoggingBodyLimit = loggingBodyLimit;
         } else if (configRootLogging != null) {
             effectiveLoggingBodyLimit = configRootLogging.bodyLimit();
@@ -487,8 +492,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
 
         Boolean effectiveTrustAll = trustAll;
         if (effectiveTrustAll == null) {
-            effectiveTrustAll = ConfigProvider.getConfig().getOptionalValue(TLS_TRUST_ALL, Boolean.class)
-                    .orElse(false);
+            effectiveTrustAll = ConfigProvider.getConfig().getOptionalValue(TLS_TRUST_ALL, Boolean.class).orElse(false);
         }
 
         clientBuilder.trustAll(effectiveTrustAll);
@@ -505,7 +509,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
         if (effectiveDisableDefaultMapper == null) {
             var configOpt = ConfigProvider.getConfig().getOptionalValue(DEFAULT_MAPPER_DISABLED, Boolean.class);
             if (configOpt.isEmpty()) {
-                // need to support the legacy way where the user does .property("microprofile.rest.client.disable.default.mapper", true)
+                // need to support the legacy way where the user does
+                // .property("microprofile.rest.client.disable.default.mapper", true)
                 var defaultMapperDisabledFromProperty = getConfiguration().getProperty(DEFAULT_MAPPER_DISABLED);
                 if (defaultMapperDisabledFromProperty instanceof Boolean b) {
                     effectiveDisableDefaultMapper = b;
@@ -551,7 +556,8 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             }
         }
         if (effectiveEnableCompression == null) {
-            var maybeGlobalEnableCompression = ConfigProvider.getConfig().getOptionalValue(ENABLE_COMPRESSION, Boolean.class);
+            var maybeGlobalEnableCompression = ConfigProvider.getConfig().getOptionalValue(ENABLE_COMPRESSION,
+                    Boolean.class);
             if (maybeGlobalEnableCompression.isPresent()) {
                 effectiveEnableCompression = maybeGlobalEnableCompression.get();
             }

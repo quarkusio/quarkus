@@ -17,8 +17,7 @@ public class OptimizeContextsDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SimpleBean.class))
+            .withApplicationRoot(root -> root.addClasses(SimpleBean.class))
             .overrideConfigKey("quarkus.arc.optimize-contexts", "false");
 
     @Inject
@@ -28,8 +27,8 @@ public class OptimizeContextsDisabledTest {
     public void testContexts() {
         assertTrue(bean.ping());
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
-            assertTrue(componentsProvider.getComponents(Arc.container().getCurrentContextFactory()).getContextInstances()
-                    .isEmpty());
+            assertTrue(componentsProvider.getComponents(Arc.container().getCurrentContextFactory())
+                    .getContextInstances().isEmpty());
         }
     }
 

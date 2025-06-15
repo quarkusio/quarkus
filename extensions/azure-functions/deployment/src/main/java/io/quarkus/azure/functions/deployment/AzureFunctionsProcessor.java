@@ -79,18 +79,16 @@ public class AzureFunctionsProcessor {
 
     @BuildStep(onlyIf = IsNormal.class, onlyIfNot = NativeBuild.class)
     public ArtifactResultBuildItem packageFunctions(List<AzureFunctionBuildItem> functions,
-            OutputTargetBuildItem target,
-            AzureFunctionsConfig functionsConfig,
-            PackageConfig packageConfig,
-            AzureFunctionsAppNameBuildItem appName,
-            JarBuildItem jar) throws Exception {
+            OutputTargetBuildItem target, AzureFunctionsConfig functionsConfig, PackageConfig packageConfig,
+            AzureFunctionsAppNameBuildItem appName, JarBuildItem jar) throws Exception {
         if (functions == null || functions.isEmpty()) {
             log.warn("No azure functions exist in deployment");
             return null;
         }
         if (packageConfig.jar().type() != PackageConfig.JarConfig.JarType.LEGACY_JAR) {
-            throw new BuildException("Azure Function deployment need to use a legacy JAR, " +
-                    "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
+            throw new BuildException(
+                    "Azure Function deployment need to use a legacy JAR, "
+                            + "please set 'quarkus.package.jar.type=legacy-jar' inside your application.properties",
                     List.of());
         }
         AnnotationHandler handler = new AnnotationHandlerImpl();
@@ -98,7 +96,8 @@ public class AzureFunctionsProcessor {
         for (AzureFunctionBuildItem item : functions)
             methods.add(item.getMethod());
         final Map<String, FunctionConfiguration> configMap = handler.generateConfigurations(methods);
-        final String scriptFilePath = String.format("../%s.jar", target.getBaseName() + packageConfig.computedRunnerSuffix());
+        final String scriptFilePath = String.format("../%s.jar",
+                target.getBaseName() + packageConfig.computedRunnerSuffix());
         configMap.values().forEach(config -> config.setScriptFile(scriptFilePath));
         configMap.values().forEach(FunctionConfiguration::validate);
 
@@ -119,8 +118,7 @@ public class AzureFunctionsProcessor {
     }
 
     protected void writeFunctionJsonFiles(final ObjectWriter objectWriter,
-            final Map<String, FunctionConfiguration> configMap,
-            Path functionStagingDir) throws IOException {
+            final Map<String, FunctionConfiguration> configMap, Path functionStagingDir) throws IOException {
         if (!configMap.isEmpty()) {
             String functionDir = functionStagingDir.toString();
             for (final Map.Entry<String, FunctionConfiguration> config : configMap.entrySet()) {
@@ -130,15 +128,13 @@ public class AzureFunctionsProcessor {
     }
 
     protected void writeFunctionJsonFile(final ObjectWriter objectWriter, final String functionName,
-            final FunctionConfiguration config,
-            final String functionStagingDir) throws IOException {
-        final File functionJsonFile = Paths.get(functionStagingDir,
-                functionName, FUNCTION_JSON).toFile();
+            final FunctionConfiguration config, final String functionStagingDir) throws IOException {
+        final File functionJsonFile = Paths.get(functionStagingDir, functionName, FUNCTION_JSON).toFile();
         writeObjectToFile(objectWriter, config, functionJsonFile);
     }
 
-    private static final String DEFAULT_HOST_JSON = "{\"version\":\"2.0\",\"extensionBundle\":" +
-            "{\"id\":\"Microsoft.Azure.Functions.ExtensionBundle\",\"version\":\"[3.*, 4.0.0)\"}}\n";
+    private static final String DEFAULT_HOST_JSON = "{\"version\":\"2.0\",\"extensionBundle\":"
+            + "{\"id\":\"Microsoft.Azure.Functions.ExtensionBundle\",\"version\":\"[3.*, 4.0.0)\"}}\n";
 
     protected void copyHostJson(Path rootPath, Path functionStagingDir) throws IOException {
         final File sourceHostJsonFile = rootPath.resolve(HOST_JSON).toFile();
@@ -146,17 +142,17 @@ public class AzureFunctionsProcessor {
         copyFilesWithDefaultContent(sourceHostJsonFile, destHostJsonFile, DEFAULT_HOST_JSON);
     }
 
-    private static final String DEFAULT_LOCAL_SETTINGS_JSON = "{ \"IsEncrypted\": false, \"Values\": " +
-            "{ \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
+    private static final String DEFAULT_LOCAL_SETTINGS_JSON = "{ \"IsEncrypted\": false, \"Values\": "
+            + "{ \"FUNCTIONS_WORKER_RUNTIME\": \"java\" } }";
 
     protected void copyLocalSettingsJson(Path rootPath, Path functionStagingDir) throws IOException {
         final File sourceLocalSettingsJsonFile = rootPath.resolve(LOCAL_SETTINGS_JSON).toFile();
         final File destLocalSettingsJsonFile = functionStagingDir.resolve(LOCAL_SETTINGS_JSON).toFile();
-        copyFilesWithDefaultContent(sourceLocalSettingsJsonFile, destLocalSettingsJsonFile, DEFAULT_LOCAL_SETTINGS_JSON);
+        copyFilesWithDefaultContent(sourceLocalSettingsJsonFile, destLocalSettingsJsonFile,
+                DEFAULT_LOCAL_SETTINGS_JSON);
     }
 
-    private static void copyFilesWithDefaultContent(File source, File dest, String defaultContent)
-            throws IOException {
+    private static void copyFilesWithDefaultContent(File source, File dest, String defaultContent) throws IOException {
         if (source != null && source.exists()) {
             FileUtils.copyFile(source, dest);
         } else {
@@ -192,17 +188,15 @@ public class AzureFunctionsProcessor {
     }
 
     protected ObjectWriter getObjectWriter() {
-        final DefaultPrettyPrinter.Indenter indenter = DefaultIndenter.SYSTEM_LINEFEED_INSTANCE.withLinefeed(StringUtils.LF);
+        final DefaultPrettyPrinter.Indenter indenter = DefaultIndenter.SYSTEM_LINEFEED_INSTANCE
+                .withLinefeed(StringUtils.LF);
         final PrettyPrinter prettyPrinter = new DefaultPrettyPrinter().withObjectIndenter(indenter);
-        return new ObjectMapper()
-                .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .writer(prettyPrinter);
+        return new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+                .setSerializationInclusion(JsonInclude.Include.NON_NULL).writer(prettyPrinter);
     }
 
     @BuildStep
-    public void findFunctions(CombinedIndexBuildItem combined,
-            BuildProducer<AzureFunctionBuildItem> functions) {
+    public void findFunctions(CombinedIndexBuildItem combined, BuildProducer<AzureFunctionBuildItem> functions) {
         IndexView index = combined.getIndex();
         Collection<AnnotationInstance> anns = index.getAnnotations(AzureFunctionsDotNames.FUNCTION_NAME);
         anns.forEach(annotationInstance -> {
@@ -234,27 +228,24 @@ public class AzureFunctionsProcessor {
 
     @BuildStep
     public void registerArc(BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            List<AzureFunctionBuildItem> functions) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, List<AzureFunctionBuildItem> functions) {
         if (functions == null || functions.isEmpty())
             return;
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
-                .setDefaultScope(BuiltinScope.REQUEST.getName())
-                .setUnremovable();
+                .setDefaultScope(BuiltinScope.REQUEST.getName()).setUnremovable();
         Set<Class> classes = functions.stream().map(item -> item.getDeclaring()).collect(Collectors.toSet());
         for (Class funcClass : classes) {
             if (Modifier.isInterface(funcClass.getModifiers()) || Modifier.isAbstract(funcClass.getModifiers()))
                 continue;
             if (isScoped(funcClass)) {
-                //log.info("Add unremovable: " + funcClass.name().toString());
+                // log.info("Add unremovable: " + funcClass.name().toString());
                 // It has a built-in scope - just mark it as unremovable
-                unremovableBeans
-                        .produce(new UnremovableBeanBuildItem(
-                                new UnremovableBeanBuildItem.BeanClassNameExclusion(funcClass.getName())));
+                unremovableBeans.produce(new UnremovableBeanBuildItem(
+                        new UnremovableBeanBuildItem.BeanClassNameExclusion(funcClass.getName())));
             } else {
                 // No built-in scope found - add as additional bean
-                //log.info("Add default: " + funcClass.name().toString());
+                // log.info("Add default: " + funcClass.name().toString());
                 builder.addBeanClass(funcClass.getName());
             }
         }

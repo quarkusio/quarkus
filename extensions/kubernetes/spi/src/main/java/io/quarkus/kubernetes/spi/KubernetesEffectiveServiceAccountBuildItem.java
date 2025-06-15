@@ -1,9 +1,8 @@
 package io.quarkus.kubernetes.spi;
 
 /**
- * This build item is produced once the effective service account used for the generated resources is computed. Useful for
- * downstream
- * extensions that need to know this information to wait until it is made available.
+ * This build item is produced once the effective service account used for the generated resources is computed. Useful
+ * for downstream extensions that need to know this information to wait until it is made available.
  */
 public final class KubernetesEffectiveServiceAccountBuildItem extends BaseTargetable {
     private final String serviceAccountName;
@@ -41,8 +40,8 @@ public final class KubernetesEffectiveServiceAccountBuildItem extends BaseTarget
     }
 
     /**
-     * Determines whether the service account name is automatically derived from the application name as opposed to explicitly
-     * set by the user
+     * Determines whether the service account name is automatically derived from the application name as opposed to
+     * explicitly set by the user
      *
      * @return {@code true} if the service account is automatically derived from the application name, {@code false} if
      *         explicitly set by the user

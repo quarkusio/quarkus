@@ -19,11 +19,8 @@ public class MissingRestControllerTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NonAnnotatedController.class, ProperController.class))
-            .setApplicationName("missing-rest-controller")
-            .setApplicationVersion("0.1-SNAPSHOT")
-            .setLogRecordPredicate(
+            .withApplicationRoot((jar) -> jar.addClasses(NonAnnotatedController.class, ProperController.class))
+            .setApplicationName("missing-rest-controller").setApplicationVersion("0.1-SNAPSHOT").setLogRecordPredicate(
                     r -> "io.quarkus.spring.web.resteasy.classic.deployment.SpringWebResteasyClassicProcessor"
                             .equals(r.getLoggerName()));
 
@@ -35,10 +32,8 @@ public class MissingRestControllerTest {
         List<LogRecord> buildLogRecords = prodModeTestResults.getRetainedBuildLogRecords();
         assertThat(buildLogRecords).isNotEmpty();
         assertThat(buildLogRecords).singleElement().satisfies(r -> {
-            assertThat(r.getMessage())
-                    .contains("a mapping annotation but the class itself")
-                    .contains(NonAnnotatedController.class.getName())
-                    .doesNotContain(ProperController.class.getName());
+            assertThat(r.getMessage()).contains("a mapping annotation but the class itself")
+                    .contains(NonAnnotatedController.class.getName()).doesNotContain(ProperController.class.getName());
         });
     }
 

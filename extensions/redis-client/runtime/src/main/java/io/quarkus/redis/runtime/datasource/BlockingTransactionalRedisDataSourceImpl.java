@@ -70,7 +70,8 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
 
     @Override
     public <K, V> TransactionalSortedSetCommands<K, V> sortedSet(Class<K> redisKeyType, Class<V> valueType) {
-        return new BlockingTransactionalSortedSetCommandsImpl<>(this, reactive.sortedSet(redisKeyType, valueType), timeout);
+        return new BlockingTransactionalSortedSetCommandsImpl<>(this, reactive.sortedSet(redisKeyType, valueType),
+                timeout);
     }
 
     @Override
@@ -102,8 +103,8 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
     @Override
     public <K, F, V> TransactionalStreamCommands<K, F, V> stream(Class<K> redisKeyType, Class<F> typeOfField,
             Class<V> typeOfValue) {
-        return new BlockingTransactionalStreamCommandsImpl<>(this, reactive.stream(redisKeyType, typeOfField, typeOfValue),
-                timeout);
+        return new BlockingTransactionalStreamCommandsImpl<>(this,
+                reactive.stream(redisKeyType, typeOfField, typeOfValue), timeout);
     }
 
     @Override
@@ -123,7 +124,8 @@ public class BlockingTransactionalRedisDataSourceImpl implements TransactionalRe
 
     @Override
     public <K, V> TransactionalCountMinCommands<K, V> countmin(Class<K> redisKeyType, Class<V> valueType) {
-        return new BlockingTransactionalCountMinCommandsImpl<>(this, reactive.countmin(redisKeyType, valueType), timeout);
+        return new BlockingTransactionalCountMinCommandsImpl<>(this, reactive.countmin(redisKeyType, valueType),
+                timeout);
     }
 
     @Override

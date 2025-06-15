@@ -25,11 +25,11 @@ public class HttpBuildTimeConfig {
     public String rootPath;
 
     /**
-     * If enabled then the response body is compressed if the {@code Content-Type} header is set and the value is a compressed
-     * media type as configured via {@link #compressMediaTypes}.
+     * If enabled then the response body is compressed if the {@code Content-Type} header is set and the value is a
+     * compressed media type as configured via {@link #compressMediaTypes}.
      * <p>
-     * Note that the RESTEasy Reactive and Reactive Routes extensions also make it possible to enable/disable compression
-     * declaratively using the annotations {@link io.quarkus.vertx.http.Compressed} and
+     * Note that the RESTEasy Reactive and Reactive Routes extensions also make it possible to enable/disable
+     * compression declaratively using the annotations {@link io.quarkus.vertx.http.Compressed} and
      * {@link io.quarkus.vertx.http.Uncompressed}.
      */
     @ConfigItem(generateDocumentation = false)

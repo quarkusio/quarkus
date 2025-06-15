@@ -36,9 +36,7 @@ public class WebSocketServerDevUIProcessor {
 
         pageBuildItem.addBuildTimeData("endpoints", createEndpointsJson(endpoints, generatedEndpoints));
 
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("Server Endpoints")
-                .icon("font-awesome-solid:plug")
+        pageBuildItem.addPage(Page.webComponentPageBuilder().title("Server Endpoints").icon("font-awesome-solid:plug")
                 .componentLink("qwc-wsn-endpoints.js")
                 .staticLabel(String.valueOf(endpoints.stream().filter(WebSocketEndpointBuildItem::isServer).count())));
 
@@ -54,14 +52,12 @@ public class WebSocketServerDevUIProcessor {
             List<GeneratedEndpointBuildItem> generatedEndpoints) {
         List<Map<String, Object>> json = new ArrayList<>();
         for (WebSocketEndpointBuildItem endpoint : endpoints.stream().filter(WebSocketEndpointBuildItem::isServer)
-                .sorted(Comparator.comparing(e -> e.path))
-                .collect(Collectors.toList())) {
+                .sorted(Comparator.comparing(e -> e.path)).collect(Collectors.toList())) {
             Map<String, Object> endpointJson = new HashMap<>();
             String clazz = endpoint.bean.getImplClazz().name().toString();
             endpointJson.put("clazz", clazz);
-            endpointJson.put("generatedClazz",
-                    generatedEndpoints.stream().filter(ge -> ge.endpointClassName.equals(clazz)).findFirst()
-                            .orElseThrow().generatedClassName);
+            endpointJson.put("generatedClazz", generatedEndpoints.stream()
+                    .filter(ge -> ge.endpointClassName.equals(clazz)).findFirst().orElseThrow().generatedClassName);
             endpointJson.put("path", WebSocketProcessor.getOriginalPath(endpoint.path));
             endpointJson.put("executionMode", endpoint.inboundProcessingMode.toString());
             List<Map<String, Object>> callbacks = new ArrayList<>();
@@ -82,7 +78,8 @@ public class WebSocketServerDevUIProcessor {
 
     private void addCallback(Callback callback, List<Map<String, Object>> callbacks) {
         if (callback != null) {
-            callbacks.add(Map.of("annotation", callback.annotation.toString(), "method", methodToString(callback.method)));
+            callbacks.add(
+                    Map.of("annotation", callback.annotation.toString(), "method", methodToString(callback.method)));
         }
     }
 

@@ -11,10 +11,9 @@ public class LazyAuthPermissionCheckerRestMultiTest extends AbstractPermissionCh
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("""
-                            quarkus.http.auth.proactive=false
-                            """), "application.properties")
-                    .addClasses(TestResource.class, TestIdentityController.class, TestIdentityProvider.class));
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("""
+                    quarkus.http.auth.proactive=false
+                    """), "application.properties").addClasses(TestResource.class, TestIdentityController.class,
+                    TestIdentityProvider.class));
 
 }

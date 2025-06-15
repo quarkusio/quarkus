@@ -18,9 +18,9 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
 /**
- * Parser definition for form encoded data. This handler takes effect for any request that has a mime type
- * of application/x-www-form-urlencoded. The handler attaches a {@link FormDataParser} to the chain
- * that can parse the underlying form data asynchronously.
+ * Parser definition for form encoded data. This handler takes effect for any request that has a mime type of
+ * application/x-www-form-urlencoded. The handler attaches a {@link FormDataParser} to the chain that can parse the
+ * underlying form data asynchronously.
  *
  * @author Stuart Douglas
  */
@@ -30,7 +30,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
 
     public static final String APPLICATION_X_WWW_FORM_URLENCODED = "application/x-www-form-urlencoded";
     private String defaultCharset = StandardCharsets.UTF_8.displayName();;
-    private boolean forceCreation = false; //if the parser should be created even if the correct headers are missing
+    private boolean forceCreation = false; // if the parser should be created even if the correct headers are missing
     private int maxParams = 1000;
     private long maxAttributeSize = 2048;
 
@@ -101,15 +101,15 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         private String name = null;
         private String charset;
 
-        //0= parsing name
-        //1=parsing name, decode required
-        //2=parsing value
-        //3=parsing value, decode required
-        //4=finished
+        // 0= parsing name
+        // 1=parsing name, decode required
+        // 2=parsing value
+        // 3=parsing value, decode required
+        // 4=finished
         private int state = 0;
 
-        private FormEncodedDataParser(final String charset, final ResteasyReactiveRequestContext exchange, int maxParams,
-                long maxAttributeSize) {
+        private FormEncodedDataParser(final String charset, final ResteasyReactiveRequestContext exchange,
+                int maxParams, long maxAttributeSize) {
             this.exchange = exchange;
             this.charset = charset;
             this.data = new FormData(maxParams);
@@ -181,7 +181,8 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
                             if (builder.length() > maxAttributeSize) {
                                 throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
                             }
-                            addPair(name, decodeParameterValue(name, builder.toString(), charset, true, new StringBuilder()));
+                            addPair(name,
+                                    decodeParameterValue(name, builder.toString(), charset, true, new StringBuilder()));
                             builder.setLength(0);
                             state = 0;
                         } else {
@@ -197,7 +198,7 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
         }
 
         private void addPair(String name, String value) {
-            //if there was exception during decoding ignore the parameter [UNDERTOW-1554]
+            // if there was exception during decoding ignore the parameter [UNDERTOW-1554]
             if (name != null && value != null) {
                 data.add(name, value);
             }
@@ -208,7 +209,8 @@ public class FormEncodedDataDefinition implements FormParserFactory.ParserDefini
             return URLUtils.decode(value, Charset.forName(charset), decodeSlash, stringBuilder);
         }
 
-        private String decodeParameterName(String name, String charset, boolean decodeSlash, StringBuilder stringBuilder) {
+        private String decodeParameterName(String name, String charset, boolean decodeSlash,
+                StringBuilder stringBuilder) {
             return URLUtils.decode(name, Charset.forName(charset), decodeSlash, stringBuilder);
         }
 

@@ -19,8 +19,7 @@ public class BlockingWithoutOutgoingOnIncomingErrorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithBlocking.class))
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithBlocking.class))
             .setExpectedException(DeploymentException.class);
 
     @Test

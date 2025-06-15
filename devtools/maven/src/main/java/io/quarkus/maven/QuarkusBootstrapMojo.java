@@ -54,6 +54,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * The current repository/network configuration of Maven.
      *
      * @parameter default-value="${repositorySystemSession}"
+     *
      * @readonly
      */
     @Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
@@ -63,6 +64,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * The project's remote repositories to use for the resolution of artifacts and their dependencies.
      *
      * @parameter default-value="${project.remoteProjectRepositories}"
+     *
      * @readonly
      */
     @Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true, required = true)
@@ -93,10 +95,8 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     private List<ManifestSection> manifestSections = new ArrayList<>();
 
     /**
-     * When building an uber-jar, this array specifies entries that should
-     * be excluded from the final jar. The entries are relative to the root of
-     * the file. An example of this configuration could be:
-     * <code><pre>
+     * When building an uber-jar, this array specifies entries that should be excluded from the final jar. The entries
+     * are relative to the root of the file. An example of this configuration could be: <code><pre>
      * &#x3C;configuration&#x3E;
      *   &#x3C;uberJar&#x3E;true&#x3C;/uberJar&#x3E;
      *   &#x3C;ignoredEntries&#x3E;
@@ -112,8 +112,8 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     private String[] ignoredEntries;
 
     /**
-     * Coordinates of the Maven artifact containing the original Java application to build the native image for.
-     * If not provided, the current project is assumed to be the original Java application.
+     * Coordinates of the Maven artifact containing the original Java application to build the native image for. If not
+     * provided, the current project is assumed to be the original Java application.
      * <p>
      * The coordinates are expected to be expressed in the following format:
      * <p>
@@ -123,12 +123,10 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * <p>
      * If the type is missing, the artifact is assumed to be of type JAR.
      * <p>
-     * If the version is missing, the artifact is going to be looked up among the project dependencies using the provided
-     * coordinates.
-     *
+     * If the version is missing, the artifact is going to be looked up among the project dependencies using the
+     * provided coordinates.
      * <p>
      * However, if the expression consists of only three parts, it is assumed to be groupId:artifactId:version.
-     *
      * <p>
      * If the expression consists of only four parts, it is assumed to be groupId:artifactId:classifier:type.
      */
@@ -148,12 +146,12 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     MojoExecution mojoExecution;
 
     /**
-     * Application bootstrap provider ID. This parameter is not supposed to be configured by the user.
-     * To be able to re-use an application bootstrapped in one phase in a later phase, there needs to be a way
-     * to identify the correct instance of the bootstrapped application (in case there are more than one) in each Mojo.
-     * A bootstrap ID serves this purpose. This parameter is set in {@link DevMojo} invoking {@code generate-code}
-     * and {@code generate-code-tests} goals. If this parameter is not configured, a Mojo execution ID will be used
-     * as the bootstrap ID.
+     * Application bootstrap provider ID. This parameter is not supposed to be configured by the user. To be able to
+     * re-use an application bootstrapped in one phase in a later phase, there needs to be a way to identify the correct
+     * instance of the bootstrapped application (in case there are more than one) in each Mojo. A bootstrap ID serves
+     * this purpose. This parameter is set in {@link DevMojo} invoking {@code generate-code} and
+     * {@code generate-code-tests} goals. If this parameter is not configured, a Mojo execution ID will be used as the
+     * bootstrap ID.
      */
     @Parameter(required = false)
     String bootstrapId;
@@ -165,8 +163,8 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     Boolean closeBootstrappedApp;
 
     /**
-     * POM files from the workspace that should be reloaded from the disk instead of taken from the Maven reactor.
-     * This parameter is not supposed to be configured by a user.
+     * POM files from the workspace that should be reloaded from the disk instead of taken from the Maven reactor. This
+     * parameter is not supposed to be configured by a user.
      */
     @Parameter(property = "reloadPoms")
     Set<File> reloadPoms = Set.of();
@@ -183,7 +181,8 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         } finally {
             if (closeBootstrappedApp != null) {
                 // This trick is for dev mode from which we invoke other goals using the invoker API,
-                // in which case the session listener won't be enabled and the app bootstrapped in generate-code will be closed immediately
+                // in which case the session listener won't be enabled and the app bootstrapped in generate-code will be
+                // closed immediately
                 // causing DevMojo to bootstrap a new instance
                 if (closeBootstrappedApp) {
                     bootstrapProvider.bootstrapper(this).close();
@@ -209,16 +208,21 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      * This callback allows to evaluate whether this mojo should be executed, skipped or fail.
      *
      * @return false if the execution of the mojo should be skipped, true if the mojo should be executed
-     * @throws MojoExecutionException in case of a failure
-     * @throws MojoFailureException in case of a failure
+     *
+     * @throws MojoExecutionException
+     *         in case of a failure
+     * @throws MojoFailureException
+     *         in case of a failure
      */
     protected abstract boolean beforeExecute() throws MojoExecutionException, MojoFailureException;
 
     /**
      * Main mojo execution code
      *
-     * @throws MojoExecutionException in case of a failure
-     * @throws MojoFailureException in case of a failure
+     * @throws MojoExecutionException
+     *         in case of a failure
+     * @throws MojoFailureException
+     *         in case of a failure
      */
     protected abstract void doExecute() throws MojoExecutionException, MojoFailureException;
 
@@ -227,10 +231,12 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     }
 
     /**
-     * Allows implementations to provide extra dependencies that should be enforced on the application.
-     * Originally requested by Camel K.
+     * Allows implementations to provide extra dependencies that should be enforced on the application. Originally
+     * requested by Camel K.
      *
-     * @param mode launch mode the application is being bootstrapped in
+     * @param mode
+     *        launch mode the application is being bootstrapped in
+     *
      * @return list of extra dependencies that should be enforced on the application
      */
     protected List<Dependency> forcedDependencies(LaunchMode mode) {
@@ -312,8 +318,8 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     }
 
     /**
-     * Workspace ID associated with a given bootstrap mojo.
-     * If the returned value is {@code 0}, a workspace was not associated with the bootstrap mojo.
+     * Workspace ID associated with a given bootstrap mojo. If the returned value is {@code 0}, a workspace was not
+     * associated with the bootstrap mojo.
      *
      * @return workspace ID associated with a given bootstrap mojo
      */
@@ -321,8 +327,8 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         return bootstrapProvider.getWorkspaceId(this);
     }
 
-    protected CuratedApplication bootstrapApplication(LaunchMode mode, Consumer<QuarkusBootstrap.Builder> builderCustomizer)
-            throws MojoExecutionException {
+    protected CuratedApplication bootstrapApplication(LaunchMode mode,
+            Consumer<QuarkusBootstrap.Builder> builderCustomizer) throws MojoExecutionException {
         return bootstrapProvider.bootstrapApplication(this, mode, builderCustomizer);
     }
 
@@ -353,12 +359,14 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
 
     static boolean isNativeProfileEnabled(MavenProject mavenProject) {
         // gotcha: mavenProject.getActiveProfiles() does not always contain all active profiles (sic!),
-        //         but getInjectedProfileIds() does (which has to be "flattened" first)
-        Stream<String> activeProfileIds = mavenProject.getInjectedProfileIds().values().stream().flatMap(List<String>::stream);
+        // but getInjectedProfileIds() does (which has to be "flattened" first)
+        Stream<String> activeProfileIds = mavenProject.getInjectedProfileIds().values().stream()
+                .flatMap(List<String>::stream);
         if (activeProfileIds.anyMatch(NATIVE_PROFILE_NAME::equalsIgnoreCase)) {
             return true;
         }
         // recurse into parent (if available)
-        return Optional.ofNullable(mavenProject.getParent()).map(QuarkusBootstrapMojo::isNativeProfileEnabled).orElse(false);
+        return Optional.ofNullable(mavenProject.getParent()).map(QuarkusBootstrapMojo::isNativeProfileEnabled)
+                .orElse(false);
     }
 }

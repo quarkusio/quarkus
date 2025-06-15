@@ -31,8 +31,9 @@ final class Target_org_wildfly_security_password_interfaces_MaskedPassword {
         byte[] maskedPasswordBytesClone = new byte[maskedPasswordBytes.length];
         System.arraycopy(maskedPasswordBytes, 0, maskedPasswordBytesClone, 0, maskedPasswordBytes.length);
 
-        return (MaskedPassword) (Object) new Target_org_wildfly_security_password_interfaces_RawMaskedPassword(algorithm,
-                initialKeyMaterialClone, iterationCount, saltClone, maskedPasswordBytesClone, initializationVector);
+        return (MaskedPassword) (Object) new Target_org_wildfly_security_password_interfaces_RawMaskedPassword(
+                algorithm, initialKeyMaterialClone, iterationCount, saltClone, maskedPasswordBytesClone,
+                initializationVector);
     }
 
 }

@@ -26,10 +26,8 @@ public class DependencyAddedInProfileTest extends BootstrapFromOriginalJarTestBa
         final TsArtifact extB_100_rt = extB_100.getRuntime();
         addToExpectedLib(extB_100_rt);
 
-        final TsArtifact appJar = TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extA_100);
+        final TsArtifact appJar = TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extA_100);
 
         final Profile profile = new Profile();
         profile.setId("extra");

@@ -53,10 +53,9 @@ public class FunqyKnativeEventsBuildStep {
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public void staticInit(KnativeEventsBindingRecorder binding,
-            List<FunctionBuildItem> functions,
-            Optional<FunctionInitializedBuildItem> hasFunctions,
-            BeanContainerBuildItem beanContainer // make sure bc is initialized
+    public void staticInit(KnativeEventsBindingRecorder binding, List<FunctionBuildItem> functions,
+            Optional<FunctionInitializedBuildItem> hasFunctions, BeanContainerBuildItem beanContainer // make sure bc is
+                                                                                                                                                                                                      // initialized
     ) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
@@ -65,18 +64,11 @@ public class FunqyKnativeEventsBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void boot(ShutdownContextBuildItem shutdown,
-            FunqyConfig funqyConfig,
-            FunqyKnativeEventsConfig eventsConfig,
-            KnativeEventsBindingRecorder binding,
-            Optional<FunctionInitializedBuildItem> hasFunctions,
-            List<FunctionBuildItem> functions,
-            BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<RouteBuildItem> routes,
-            CoreVertxBuildItem vertx,
-            BeanContainerBuildItem beanContainer,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            ExecutorBuildItem executorBuildItem) throws Exception {
+    public void boot(ShutdownContextBuildItem shutdown, FunqyConfig funqyConfig, FunqyKnativeEventsConfig eventsConfig,
+            KnativeEventsBindingRecorder binding, Optional<FunctionInitializedBuildItem> hasFunctions,
+            List<FunctionBuildItem> functions, BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<RouteBuildItem> routes, CoreVertxBuildItem vertx, BeanContainerBuildItem beanContainer,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, ExecutorBuildItem executorBuildItem) throws Exception {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
 
@@ -89,10 +81,8 @@ public class FunqyKnativeEventsBuildStep {
             rootPath += "/";
         }
 
-        Handler<RoutingContext> handler = binding.start(rootPath, funqyConfig, eventsConfig, vertx.getVertx(),
-                shutdown,
-                beanContainer.getValue(),
-                executorBuildItem.getExecutorProxy());
+        Handler<RoutingContext> handler = binding.start(rootPath, funqyConfig, eventsConfig, vertx.getVertx(), shutdown,
+                beanContainer.getValue(), executorBuildItem.getExecutorProxy());
 
         routes.produce(RouteBuildItem.builder().route("/").handler(handler).build());
 

@@ -20,8 +20,7 @@ public class CustomSectionHelperFailureTest {
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof TemplateException) {
-                    assertTrue(rootCause.getMessage().contains(
-                            "mandatory section parameters not declared"));
+                    assertTrue(rootCause.getMessage().contains("mandatory section parameters not declared"));
                 } else {
                     fail(t);
                 }

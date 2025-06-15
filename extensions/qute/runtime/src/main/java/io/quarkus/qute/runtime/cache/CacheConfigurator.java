@@ -22,7 +22,8 @@ public class CacheConfigurator {
         builder.addSectionHelper(new CacheSectionHelper.Factory(new CacheSectionHelper.Cache() {
 
             @Override
-            public CompletionStage<ResultNode> getValue(String key, Function<String, CompletionStage<ResultNode>> loader) {
+            public CompletionStage<ResultNode> getValue(String key,
+                    Function<String, CompletionStage<ResultNode>> loader) {
                 return cache.<String, ResultNode> getAsync(key, k -> Uni.createFrom().completionStage(loader.apply(k)))
                         .subscribeAsCompletionStage();
             }

@@ -20,13 +20,13 @@ class MongoClientProcessorTest {
 
     @SuppressWarnings("unchecked")
     @ParameterizedTest
-    @CsvSource({
-            "true, true, true", // Metrics enabled and Micrometer supported
+    @CsvSource({ "true, true, true", // Metrics enabled and Micrometer supported
             "true, false, false", // Metrics enabled but Micrometer not supported
             "false, true, false", // Metrics disabled and Micrometer supported
             "false, false, false" // Metrics disabled and Micrometer not supported
     })
-    void testIncludeMongoCommandMetricListener(boolean metricsEnabled, boolean micrometerSupported, boolean expectedResult) {
+    void testIncludeMongoCommandMetricListener(boolean metricsEnabled, boolean micrometerSupported,
+            boolean expectedResult) {
         MongoClientBuildTimeConfig config = config(metricsEnabled);
         Optional<MetricsCapabilityBuildItem> capability = capability(metricsEnabled, micrometerSupported);
 
@@ -43,9 +43,11 @@ class MongoClientProcessorTest {
         }
     }
 
-    private static Optional<MetricsCapabilityBuildItem> capability(boolean metricsEnabled, boolean micrometerSupported) {
+    private static Optional<MetricsCapabilityBuildItem> capability(boolean metricsEnabled,
+            boolean micrometerSupported) {
         MetricsCapabilityBuildItem capability = metricsEnabled
-                ? new MetricsCapabilityBuildItem(factory -> MetricsFactory.MICROMETER.equals(factory) && micrometerSupported)
+                ? new MetricsCapabilityBuildItem(
+                        factory -> MetricsFactory.MICROMETER.equals(factory) && micrometerSupported)
                 : null;
         return Optional.ofNullable(capability);
     }
@@ -75,8 +77,8 @@ class MongoClientProcessorTest {
             @Override
             public DevServicesBuildTimeConfig devservices() {
                 return new SmallRyeConfigBuilder().addDiscoveredConverters()
-                        .withMapping(DevServicesBuildTimeConfig.class)
-                        .build().getConfigMapping(DevServicesBuildTimeConfig.class);
+                        .withMapping(DevServicesBuildTimeConfig.class).build()
+                        .getConfigMapping(DevServicesBuildTimeConfig.class);
             }
         };
     }

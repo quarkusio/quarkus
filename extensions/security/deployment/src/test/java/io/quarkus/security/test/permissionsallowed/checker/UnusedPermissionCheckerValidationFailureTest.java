@@ -17,17 +17,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnusedPermissionCheckerValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .assertException(t -> {
-                var exceptionMessage = t.getMessage();
-                assertEquals(RuntimeException.class, t.getClass(), exceptionMessage);
-                assertTrue(
-                        t.getMessage().contains(
-                                "Found @PermissionChecker annotation instance that authorize the 'checker' permission"),
-                        exceptionMessage);
-                assertTrue(t.getMessage().contains("no @PermissionsAllowed annotation instance requires this permission"),
-                        exceptionMessage);
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().assertException(t -> {
+        var exceptionMessage = t.getMessage();
+        assertEquals(RuntimeException.class, t.getClass(), exceptionMessage);
+        assertTrue(
+                t.getMessage().contains(
+                        "Found @PermissionChecker annotation instance that authorize the 'checker' permission"),
+                exceptionMessage);
+        assertTrue(t.getMessage().contains("no @PermissionsAllowed annotation instance requires this permission"),
+                exceptionMessage);
+    });
 
     @Test
     public void test() {

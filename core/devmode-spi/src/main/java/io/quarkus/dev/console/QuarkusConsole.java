@@ -20,29 +20,26 @@ public abstract class QuarkusConsole {
 
     public static final String FORCE_COLOR_SUPPORT = "io.quarkus.force-color-support";
 
-    public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+    public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH)
+            .contains("windows");
     public static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
     public static final boolean IS_LINUX = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("linux");
 
     /**
-     * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled,
-     * used by <a href="https://cmder.net/">cmder</a>
+     * <a href="https://conemu.github.io">ConEmu</a> ANSI X3.64 support enabled, used by
+     * <a href="https://cmder.net/">cmder</a>
      */
     public static final boolean IS_CON_EMU_ANSI = IS_WINDOWS && "ON".equals(System.getenv("ConEmuANSI"));
 
     /**
-     * These tests are same as used in jansi
-     * Source: https://github.com/fusesource/jansi/commit/bb3d538315c44f799d34fd3426f6c91c8e8dfc55
+     * These tests are same as used in jansi Source:
+     * https://github.com/fusesource/jansi/commit/bb3d538315c44f799d34fd3426f6c91c8e8dfc55
      */
-    public static final boolean IS_CYGWIN = IS_WINDOWS
-            && System.getenv("PWD") != null
-            && System.getenv("PWD").startsWith("/")
-            && !"cygwin".equals(System.getenv("TERM"));
+    public static final boolean IS_CYGWIN = IS_WINDOWS && System.getenv("PWD") != null
+            && System.getenv("PWD").startsWith("/") && !"cygwin".equals(System.getenv("TERM"));
 
-    public static final boolean IS_MINGW_XTERM = IS_WINDOWS
-            && System.getenv("MSYSTEM") != null
-            && System.getenv("MSYSTEM").startsWith("MINGW")
-            && "xterm".equals(System.getenv("TERM"));
+    public static final boolean IS_MINGW_XTERM = IS_WINDOWS && System.getenv("MSYSTEM") != null
+            && System.getenv("MSYSTEM").startsWith("MINGW") && "xterm".equals(System.getenv("TERM"));
     protected volatile Consumer<int[]> inputHandler;
 
     public static volatile QuarkusConsole INSTANCE = new BasicConsole(hasColorSupport(), false, System.out::print);
@@ -70,8 +67,8 @@ public abstract class QuarkusConsole {
         }
         redirectsInstalled = true;
 
-        //force console init
-        //otherwise you can get a stack overflow as it sees the redirected output
+        // force console init
+        // otherwise you can get a stack overflow as it sees the redirected output
         QuarkusConsole.INSTANCE.isInputSupported();
         REDIRECT_OUT = new RedirectPrintStream(false);
         REDIRECT_ERR = new RedirectPrintStream(true);
@@ -116,7 +113,7 @@ public abstract class QuarkusConsole {
     public static boolean hasColorSupport() {
         checkAndSetJdkConsole();
         if (Boolean.getBoolean(FORCE_COLOR_SUPPORT)) {
-            return true; //assume the IDE run window has color support
+            return true; // assume the IDE run window has color support
         }
         if (IS_WINDOWS) {
             // On Windows without a known good emulator
@@ -160,7 +157,7 @@ public abstract class QuarkusConsole {
     public abstract void write(boolean errorStream, byte[] buf, int off, int len);
 
     public void exitCliMode() {
-        //noop for the non-aesh console
+        // noop for the non-aesh console
     }
 
     /**
@@ -197,7 +194,7 @@ public abstract class QuarkusConsole {
         boolean ok = true;
         for (var i : outputFilters) {
             if (!i.test(s, errorStream)) {
-                //no early exit as filters can also record output
+                // no early exit as filters can also record output
                 ok = false;
             }
         }

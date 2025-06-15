@@ -19,31 +19,22 @@ import io.restassured.RestAssured;
 public class CacheOnClassAndMethodsTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(ResourceWithCache.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(ResourceWithCache.class);
+        }
+    });
 
     @Test
     public void testWith() {
-        RestAssured.get("/test/with")
-                .then()
-                .statusCode(200)
-                .body(equalTo("with"))
-                .header("Cache-Control", "no-store");
+        RestAssured.get("/test/with").then().statusCode(200).body(equalTo("with")).header("Cache-Control", "no-store");
     }
 
     @Test
     public void testWithout() {
-        RestAssured.get("/test/without")
-                .then()
-                .statusCode(200)
-                .body(equalTo("without"))
-                .header("Cache-Control", "no-cache, no-transform, proxy-revalidate, s-maxage=100");
+        RestAssured.get("/test/without").then().statusCode(200).body(equalTo("without")).header("Cache-Control",
+                "no-cache, no-transform, proxy-revalidate, s-maxage=100");
     }
 
     @Path("test")

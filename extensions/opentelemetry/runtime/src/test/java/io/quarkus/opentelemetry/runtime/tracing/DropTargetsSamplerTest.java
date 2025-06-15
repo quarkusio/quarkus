@@ -67,8 +67,7 @@ class DropTargetsSamplerTest {
     }
 
     private static SamplingResult getShouldSample(DropTargetsSampler sut, String target) {
-        return sut.shouldSample(null, null, null, SpanKind.SERVER,
-                Attributes.of(URL_PATH, target), null);
+        return sut.shouldSample(null, null, null, SpanKind.SERVER, Attributes.of(URL_PATH, target), null);
     }
 
     private static final class CountingSampler implements Sampler {

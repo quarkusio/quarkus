@@ -31,13 +31,13 @@ import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.source.yaml.YamlConfigSourceLoader;
 
 /**
- * Helper that bundles the various sources of config options for the Gradle plugin: system environment, system properties,
- * quarkus build properties (on the Quarkus extension), Gradle project properties, application properties and "forced/task"
- * properties (on the Gradle task).
- *
+ * Helper that bundles the various sources of config options for the Gradle plugin: system environment, system
+ * properties, quarkus build properties (on the Quarkus extension), Gradle project properties, application properties
+ * and "forced/task" properties (on the Gradle task).
  * <p>
  * Eventually used to construct a map with the <em>effective</em> config options from all the sources above and expose
- * the Quarkus config objects like {@link PackageConfig}, {@link ClassLoadingConfig} and the underlying {@link SmallRyeConfig}.
+ * the Quarkus config objects like {@link PackageConfig}, {@link ClassLoadingConfig} and the underlying
+ * {@link SmallRyeConfig}.
  */
 public final class EffectiveConfig {
     private final SmallRyeConfig config;
@@ -66,24 +66,21 @@ public final class EffectiveConfig {
             platformPropertiesConfigSource = new PropertiesConfigSource(
                     Map.of("platform.quarkus.native.builder-image", "<<ignored>>"), "platformProperties", 0);
         } else {
-            platformPropertiesConfigSource = new PropertiesConfigSource(builder.platformProperties, "platformProperties", 0);
+            platformPropertiesConfigSource = new PropertiesConfigSource(builder.platformProperties,
+                    "platformProperties", 0);
         }
 
-        this.config = ConfigUtils.emptyConfigBuilder()
-                .forClassLoader(toUrlClassloader(builder.sourceDirectories))
+        this.config = ConfigUtils.emptyConfigBuilder().forClassLoader(toUrlClassloader(builder.sourceDirectories))
                 .withSources(new PropertiesConfigSource(builder.forcedProperties, "forcedProperties", 600))
                 .withSources(new PropertiesConfigSource(asStringMap(builder.taskProperties), "taskProperties", 500))
                 .addSystemSources()
                 .withSources(new PropertiesConfigSource(builder.buildProperties, "quarkusBuildProperties", 290))
-                .withSources(new PropertiesConfigSource(asStringMap(builder.projectProperties), "projectProperties", 280))
+                .withSources(
+                        new PropertiesConfigSource(asStringMap(builder.projectProperties), "projectProperties", 280))
                 .withSources(new YamlConfigSourceLoader.InFileSystem())
-                .withSources(new YamlConfigSourceLoader.InClassPath())
-                .addPropertiesSources()
-                .withSources(platformPropertiesConfigSource)
-                .withDefaultValues(builder.defaultProperties)
-                .withProfile(builder.profile)
-                .withMapping(PackageConfig.class)
-                .withMapping(NativeConfig.class)
+                .withSources(new YamlConfigSourceLoader.InClassPath()).addPropertiesSources()
+                .withSources(platformPropertiesConfigSource).withDefaultValues(builder.defaultProperties)
+                .withProfile(builder.profile).withMapping(PackageConfig.class).withMapping(NativeConfig.class)
                 .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
                 .build();
         this.values = generateFullConfigMap(config);
@@ -184,14 +181,16 @@ public final class EffectiveConfig {
     }
 
     /**
-     * Builds a specific {@link ClassLoader} for {@link SmallRyeConfig} to include potential configuration files in
-     * the application source paths. The {@link ClassLoader} excludes the path <code>META-INF/services</code> because
-     * in most cases, the ServiceLoader files will reference service implementations that are not yet compiled. It is
+     * Builds a specific {@link ClassLoader} for {@link SmallRyeConfig} to include potential configuration files in the
+     * application source paths. The {@link ClassLoader} excludes the path <code>META-INF/services</code> because in
+     * most cases, the ServiceLoader files will reference service implementations that are not yet compiled. It is
      * possible that the service files reference implementations from dependencies, which are valid and, in this case,
-     * wrongly excluded, but most likely only required for the application and not the Gradle build. We will rewrite
-     * the implementation to cover that case if this becomes an issue.
+     * wrongly excluded, but most likely only required for the application and not the Gradle build. We will rewrite the
+     * implementation to cover that case if this becomes an issue.
      *
-     * @param sourceDirectories a Set of source directories specified by the Gradle build.
+     * @param sourceDirectories
+     *        a Set of source directories specified by the Gradle build.
+     *
      * @return a {@link ClassLoader} with the source paths
      */
     private static ClassLoader toUrlClassloader(Set<File> sourceDirectories) {

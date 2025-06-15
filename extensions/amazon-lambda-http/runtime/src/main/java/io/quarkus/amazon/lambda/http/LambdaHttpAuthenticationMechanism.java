@@ -31,7 +31,7 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
     Instance<IdentityProvider<LambdaAuthenticationRequest>> identityProviders;
 
     // there is no way in CDI to currently provide a prioritized list of IdentityProvider
-    // So, what we do here is to try to see if anybody has registered one.  If no identity, then
+    // So, what we do here is to try to see if anybody has registered one. If no identity, then
     // fire off a request that can only be resolved by the DefaultLambdaIdentityProvider
     boolean useDefault;
 
@@ -41,7 +41,8 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext routingContext, IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext routingContext,
+            IdentityProviderManager identityProviderManager) {
         MultiMap qheaders = routingContext.request().headers();
         if (qheaders instanceof QuarkusHttpHeaders) {
             Map<Class<?>, Object> contextObjects = ((QuarkusHttpHeaders) qheaders).getContextObjects();
@@ -49,14 +50,12 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
                 APIGatewayV2HTTPEvent event = (APIGatewayV2HTTPEvent) contextObjects.get(APIGatewayV2HTTPEvent.class);
                 if (isAuthenticatable(event)) {
                     if (useDefault) {
-                        return identityProviderManager
-                                .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
-                                        new DefaultLambdaAuthenticationRequest(event), routingContext));
+                        return identityProviderManager.authenticate(HttpSecurityUtils.setRoutingContextAttribute(
+                                new DefaultLambdaAuthenticationRequest(event), routingContext));
 
                     } else {
-                        return identityProviderManager
-                                .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
-                                        new LambdaAuthenticationRequest(event), routingContext));
+                        return identityProviderManager.authenticate(HttpSecurityUtils
+                                .setRoutingContextAttribute(new LambdaAuthenticationRequest(event), routingContext));
                     }
                 }
             }

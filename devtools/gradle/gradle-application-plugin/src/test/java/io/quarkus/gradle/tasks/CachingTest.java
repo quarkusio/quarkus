@@ -38,30 +38,20 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @ExtendWith(SoftAssertionsExtension.class)
 public class CachingTest {
-    private static final Map<String, TaskOutcome> ALL_SUCCESS = Map.of(
-            ":quarkusGenerateCode", TaskOutcome.SUCCESS,
-            ":quarkusGenerateCodeDev", TaskOutcome.SUCCESS,
-            ":quarkusGenerateCodeTests", TaskOutcome.SUCCESS,
-            ":quarkusAppPartsBuild", TaskOutcome.SUCCESS,
-            ":quarkusDependenciesBuild", TaskOutcome.SUCCESS,
-            ":quarkusBuild", TaskOutcome.SUCCESS,
-            ":build", TaskOutcome.SUCCESS);
-    private static final Map<String, TaskOutcome> ALL_UP_TO_DATE = Map.of(
-            ":quarkusGenerateCode", TaskOutcome.UP_TO_DATE,
+    private static final Map<String, TaskOutcome> ALL_SUCCESS = Map.of(":quarkusGenerateCode", TaskOutcome.SUCCESS,
+            ":quarkusGenerateCodeDev", TaskOutcome.SUCCESS, ":quarkusGenerateCodeTests", TaskOutcome.SUCCESS,
+            ":quarkusAppPartsBuild", TaskOutcome.SUCCESS, ":quarkusDependenciesBuild", TaskOutcome.SUCCESS,
+            ":quarkusBuild", TaskOutcome.SUCCESS, ":build", TaskOutcome.SUCCESS);
+    private static final Map<String, TaskOutcome> ALL_UP_TO_DATE = Map.of(":quarkusGenerateCode",
+            TaskOutcome.UP_TO_DATE,
             // intentionally omit ":quarkusGenerateCodeDev", it can be UP_TO_DATE or SUCCESS
-            ":quarkusGenerateCodeTests", TaskOutcome.UP_TO_DATE,
-            ":quarkusAppPartsBuild", TaskOutcome.UP_TO_DATE,
-            ":quarkusDependenciesBuild", TaskOutcome.UP_TO_DATE,
-            ":quarkusBuild", TaskOutcome.UP_TO_DATE,
-            ":build", TaskOutcome.UP_TO_DATE);
-    public static final Map<String, TaskOutcome> FROM_CACHE = Map.of(
-            ":quarkusGenerateCode", TaskOutcome.FROM_CACHE,
-            ":quarkusGenerateCodeDev", TaskOutcome.SUCCESS,
-            ":quarkusGenerateCodeTests", TaskOutcome.FROM_CACHE,
-            ":quarkusAppPartsBuild", TaskOutcome.FROM_CACHE,
-            ":quarkusDependenciesBuild", TaskOutcome.SUCCESS,
-            ":quarkusBuild", TaskOutcome.SUCCESS,
-            ":build", TaskOutcome.SUCCESS);
+            ":quarkusGenerateCodeTests", TaskOutcome.UP_TO_DATE, ":quarkusAppPartsBuild", TaskOutcome.UP_TO_DATE,
+            ":quarkusDependenciesBuild", TaskOutcome.UP_TO_DATE, ":quarkusBuild", TaskOutcome.UP_TO_DATE, ":build",
+            TaskOutcome.UP_TO_DATE);
+    public static final Map<String, TaskOutcome> FROM_CACHE = Map.of(":quarkusGenerateCode", TaskOutcome.FROM_CACHE,
+            ":quarkusGenerateCodeDev", TaskOutcome.SUCCESS, ":quarkusGenerateCodeTests", TaskOutcome.FROM_CACHE,
+            ":quarkusAppPartsBuild", TaskOutcome.FROM_CACHE, ":quarkusDependenciesBuild", TaskOutcome.SUCCESS,
+            ":quarkusBuild", TaskOutcome.SUCCESS, ":build", TaskOutcome.SUCCESS);
 
     @InjectSoftAssertions
     SoftAssertions soft;
@@ -72,13 +62,12 @@ public class CachingTest {
     @Test
     void envChangeInvalidatesBuild() throws Exception {
         // Declare the environment variables FOO_ENV_VAR and FROM_DOT_ENV_FILE as relevant for the build.
-        prepareGradleBuildProject(String.join("\n",
-                "cachingRelevantProperties.add(\"FOO_ENV_VAR\")",
+        prepareGradleBuildProject(String.join("\n", "cachingRelevantProperties.add(\"FOO_ENV_VAR\")",
                 "cachingRelevantProperties.add(\"FROM_DOT_ENV_FILE\")"));
 
-        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
-                "-Dquarkus.package.jar.type=fast-jar",
-                "-Dquarkus.randomized.value=" + UUID.randomUUID())
+        String[] arguments = List
+                .of("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
+                        "-Dquarkus.package.jar.type=fast-jar", "-Dquarkus.randomized.value=" + UUID.randomUUID())
                 .toArray(new String[0]);
 
         Map<String, String> env = Map.of();
@@ -109,13 +98,12 @@ public class CachingTest {
 
         try {
             // Declare the environment variables FOO_ENV_VAR and FROM_DOT_ENV_FILE as relevant for the build.
-            prepareGradleBuildProject(String.join("\n",
-                    "cachingRelevantProperties.add(\"FOO_ENV_VAR\")",
+            prepareGradleBuildProject(String.join("\n", "cachingRelevantProperties.add(\"FOO_ENV_VAR\")",
                     "cachingRelevantProperties.add(\"FROM_DOT_ENV_FILE\")"));
 
-            String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
-                    "-Dquarkus.package.jar.type=fast-jar",
-                    "-Dquarkus.randomized.value=" + UUID.randomUUID())
+            String[] arguments = List
+                    .of("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache",
+                            "-Dquarkus.package.jar.type=fast-jar", "-Dquarkus.randomized.value=" + UUID.randomUUID())
                     .toArray(new String[0]);
 
             Map<String, String> env = Map.of();
@@ -163,7 +151,8 @@ public class CachingTest {
 
     @ParameterizedTest
     @MethodSource
-    void gradleCaching(String packageType, boolean simulateCI, String outputDir, @TempDir Path saveDir) throws Exception {
+    void gradleCaching(String packageType, boolean simulateCI, String outputDir, @TempDir Path saveDir)
+            throws Exception {
         prepareGradleBuildProject("");
 
         Map<String, String> env = simulateCI ? Map.of("CI", "yes") : Map.of();
@@ -194,7 +183,8 @@ public class CachingTest {
 
         soft.assertThat(buildDir).doesNotExist();
 
-        // A follow-up 'build', without a build/ directory should fetch everything from the cache / pull the dependencies
+        // A follow-up 'build', without a build/ directory should fetch everything from the cache / pull the
+        // dependencies
 
         BuildResult result = gradleBuild(arguments, env);
         Map<String, TaskOutcome> taskResults = taskResults(result);
@@ -203,17 +193,17 @@ public class CachingTest {
         boolean isFastJar = "fast-jar".equals(packageType);
         boolean isFastOrLegacyJar = isFastJar || "legacy-jar".equals(packageType);
         Predicate<Path> filter = isFastOrLegacyJar ? p -> !p.startsWith(quarkusBuildGen) : p -> true;
-        soft.assertThat(directoryContents(buildDir))
-                .describedAs("output: %s", result.getOutput())
+        soft.assertThat(directoryContents(buildDir)).describedAs("output: %s", result.getOutput())
                 .containsExactlyElementsOf(directoryContents(saveBuildDir, filter));
 
-        soft.assertThat(taskResults)
-                .describedAs("output: %s", result.getOutput())
+        soft.assertThat(taskResults).describedAs("output: %s", result.getOutput())
                 .containsEntry(":compileJava", TaskOutcome.FROM_CACHE)
                 .containsEntry(":quarkusGenerateCode", TaskOutcome.FROM_CACHE)
                 .containsEntry(":quarkusGenerateCodeDev", TaskOutcome.UP_TO_DATE)
-                .containsEntry(":quarkusAppPartsBuild", isFastOrLegacyJar ? TaskOutcome.FROM_CACHE : TaskOutcome.UP_TO_DATE)
-                .containsEntry(":quarkusDependenciesBuild", isFastOrLegacyJar ? TaskOutcome.SUCCESS : TaskOutcome.UP_TO_DATE)
+                .containsEntry(":quarkusAppPartsBuild",
+                        isFastOrLegacyJar ? TaskOutcome.FROM_CACHE : TaskOutcome.UP_TO_DATE)
+                .containsEntry(":quarkusDependenciesBuild",
+                        isFastOrLegacyJar ? TaskOutcome.SUCCESS : TaskOutcome.UP_TO_DATE)
                 .containsEntry(":quarkusBuild", simulateCI || isFastJar ? TaskOutcome.SUCCESS : TaskOutcome.FROM_CACHE);
 
         // A follow-up 'build' does nothing, everything's up-to-date
@@ -229,19 +219,13 @@ public class CachingTest {
     }
 
     private BuildResult gradleBuild(String[] arguments, Map<String, String> env) {
-        return GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withArguments(arguments)
-                .withEnvironment(env)
-                .build();
+        return GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir.toFile())
+                .withArguments(arguments).withEnvironment(env).build();
     }
 
-    private void assertBuildResult(String step, BuildResult result,
-            Map<String, TaskOutcome> expected) {
+    private void assertBuildResult(String step, BuildResult result, Map<String, TaskOutcome> expected) {
         Map<String, TaskOutcome> taskResults = taskResults(result);
-        soft.assertThat(taskResults)
-                .describedAs("output: %s\n\nSTEP: %s", result.getOutput(), step)
+        soft.assertThat(taskResults).describedAs("output: %s\n\nSTEP: %s", result.getOutput(), step)
                 .containsAllEntriesOf(expected);
     }
 
@@ -268,8 +252,8 @@ public class CachingTest {
 
     static List<Path> directoryContents(Path dir, Predicate<Path> include) throws IOException {
         try (Stream<Path> saved = Files.walk(dir)) {
-            return saved.map(dir::relativize).filter(include).sorted(Comparator.comparing(Path::toString))
-                    .filter(p -> !p.toString().startsWith("reports" + File.separator + "configuration-cache" + File.separator))
+            return saved.map(dir::relativize).filter(include).sorted(Comparator.comparing(Path::toString)).filter(
+                    p -> !p.toString().startsWith("reports" + File.separator + "configuration-cache" + File.separator))
                     .collect(Collectors.toList());
         }
     }

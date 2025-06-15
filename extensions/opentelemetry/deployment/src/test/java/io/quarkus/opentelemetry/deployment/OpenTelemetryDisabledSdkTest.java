@@ -21,8 +21,7 @@ import io.vertx.core.spi.observability.HttpResponse;
 public class OpenTelemetryDisabledSdkTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.otel.sdk.disabled", "true");
 
     @Inject
@@ -45,25 +44,30 @@ public class OpenTelemetryDisabledSdkTest {
 
     @Test
     void noReceiveRequestInstrumenter() {
-        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig, buildConfig);
+        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig,
+                buildConfig);
 
-        Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter.getReceiveRequestInstrumenter();
+        Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter
+                .getReceiveRequestInstrumenter();
         assertFalse(receiveRequestInstrumenter.shouldStart(null, null),
                 "Instrumenter must not start, if it does, it will throw an exception because of the null objects we are passing");
     }
 
     @Test
     void noReceiveResponseInstrumenter() {
-        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig, buildConfig);
+        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig,
+                buildConfig);
 
-        Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter.getReceiveResponseInstrumenter();
+        Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter
+                .getReceiveResponseInstrumenter();
         assertFalse(receiveRequestInstrumenter.shouldStart(null, null),
                 "Instrumenter must not start, if it does, it will throw an exception because of the null objects we are passing");
     }
 
     @Test
     void noSendRequestInstrumenter() {
-        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig, buildConfig);
+        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig,
+                buildConfig);
 
         Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter.getSendRequestInstrumenter();
         assertFalse(receiveRequestInstrumenter.shouldStart(null, null),
@@ -72,7 +76,8 @@ public class OpenTelemetryDisabledSdkTest {
 
     @Test
     void noSendResponseInstrumenter() {
-        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig, buildConfig);
+        HttpInstrumenterVertxTracer instrumenter = new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig,
+                buildConfig);
 
         Instrumenter<HttpRequest, HttpResponse> receiveRequestInstrumenter = instrumenter.getSendResponseInstrumenter();
         assertFalse(receiveRequestInstrumenter.shouldStart(null, null),

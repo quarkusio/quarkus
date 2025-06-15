@@ -12,8 +12,8 @@ final class SpringCacheUtil {
     }
 
     /**
-     * Meant to be called for instances of {@code @Cacheable}, {@code @CacheEvict} or {@code @CachePut}
-     * Returns the single name of the cache to use
+     * Meant to be called for instances of {@code @Cacheable}, {@code @CacheEvict} or {@code @CachePut} Returns the
+     * single name of the cache to use
      */
     static Optional<String> getSpringCacheName(AnnotationInstance annotationInstance) {
         String cacheName = null;

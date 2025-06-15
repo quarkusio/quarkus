@@ -32,11 +32,11 @@ public class ScannedApplication {
     final ContextResolvers contextResolvers;
 
     public ScannedApplication(ResourceScanningResult resourceScanningResult, AdditionalReaders readers,
-            AdditionalWriters writers,
-            SerializerScanningResult serializerScanningResult, ApplicationScanningResult applicationScanningResult,
-            List<ResourceClass> resourceClasses, List<ResourceClass> subResourceClasses, Features scannedFeatures,
-            ResourceInterceptors resourceInterceptors, DynamicFeatures dynamicFeatures, ParamConverterProviders paramConverters,
-            ExceptionMapping exceptionMappers, ContextResolvers contextResolvers) {
+            AdditionalWriters writers, SerializerScanningResult serializerScanningResult,
+            ApplicationScanningResult applicationScanningResult, List<ResourceClass> resourceClasses,
+            List<ResourceClass> subResourceClasses, Features scannedFeatures, ResourceInterceptors resourceInterceptors,
+            DynamicFeatures dynamicFeatures, ParamConverterProviders paramConverters, ExceptionMapping exceptionMappers,
+            ContextResolvers contextResolvers) {
         this.resourceScanningResult = resourceScanningResult;
         this.readers = readers;
         this.writers = writers;

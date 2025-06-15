@@ -10,8 +10,7 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface LoadSheddingRuntimeConfig {
     /**
-     * Whether load shedding should be enabled.
-     * Currently, this only applies to incoming HTTP requests.
+     * Whether load shedding should be enabled. Currently, this only applies to incoming HTTP requests.
      */
     @WithDefault("true")
     boolean enabled();

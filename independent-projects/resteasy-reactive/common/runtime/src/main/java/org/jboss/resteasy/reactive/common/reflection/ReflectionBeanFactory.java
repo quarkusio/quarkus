@@ -13,8 +13,7 @@ public class ReflectionBeanFactory<T> implements BeanFactory<T> {
     public BeanInstance<T> createInstance() {
         try {
             T instance = (T) Class.forName(className, false, Thread.currentThread().getContextClassLoader())
-                    .getDeclaredConstructor()
-                    .newInstance();
+                    .getDeclaredConstructor().newInstance();
             return new BeanInstance<T>() {
                 @Override
                 public T getInstance() {

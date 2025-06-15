@@ -39,8 +39,8 @@ public class FormUrlEncodedProvider implements MessageBodyWriter<Form>, MessageB
         return Form.class.isAssignableFrom(type);
     }
 
-    public void writeTo(Form form, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+    public void writeTo(Form form, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
         String chartSet = MessageReaderUtil.charsetFromMediaType(mediaType);
         entityStream.write(formToString(form, chartSet).getBytes(chartSet));
@@ -65,7 +65,8 @@ public class FormUrlEncodedProvider implements MessageBodyWriter<Form>, MessageB
         return sb.toString();
     }
 
-    public static MultivaluedMap<String, String> parseForm(InputStream entityStream, MediaType charset) throws IOException {
+    public static MultivaluedMap<String, String> parseForm(InputStream entityStream, MediaType charset)
+            throws IOException {
         String form = MessageReaderUtil.readString(entityStream, charset);
 
         MultivaluedMap<String, String> formData = new QuarkusMultivaluedHashMap<String, String>();

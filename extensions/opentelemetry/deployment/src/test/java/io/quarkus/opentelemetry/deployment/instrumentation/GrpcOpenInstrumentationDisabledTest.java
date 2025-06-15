@@ -41,14 +41,12 @@ public class GrpcOpenInstrumentationDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addPackage(TestSpanExporter.class.getPackage())
-                    .addClasses(HelloService.class)
-                    .addClasses(GreeterGrpc.class, MutinyGreeterGrpc.class,
-                            Greeter.class, GreeterBean.class, GreeterClient.class,
-                            HelloProto.class, HelloRequest.class, HelloRequestOrBuilder.class,
-                            HelloReply.class, HelloReplyOrBuilder.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+            .withApplicationRoot(root -> root.addPackage(TestSpanExporter.class.getPackage())
+                    .addClasses(HelloService.class).addClasses(GreeterGrpc.class, MutinyGreeterGrpc.class,
+                            Greeter.class, GreeterBean.class, GreeterClient.class, HelloProto.class, HelloRequest.class,
+                            HelloRequestOrBuilder.class, HelloReply.class, HelloReplyOrBuilder.class)
+                    .addAsResource(
+                            new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
@@ -72,9 +70,7 @@ public class GrpcOpenInstrumentationDisabledTest {
 
     @Test
     void testTratestTracingDisabled() {
-        String response = hello.sayHello(
-                HelloRequest.newBuilder().setName("ping").build())
-                .map(HelloReply::getMessage)
+        String response = hello.sayHello(HelloRequest.newBuilder().setName("ping").build()).map(HelloReply::getMessage)
                 .await().atMost(Duration.ofSeconds(5));
         assertEquals("Hello ping", response);
 
@@ -94,9 +90,7 @@ public class GrpcOpenInstrumentationDisabledTest {
 
         @Override
         public Uni<HelloReply> sayHello(HelloRequest request) {
-            Span span = tracer.spanBuilder("span.internal")
-                    .setSpanKind(INTERNAL)
-                    .setAttribute("grpc.internal", "value")
+            Span span = tracer.spanBuilder("span.internal").setSpanKind(INTERNAL).setAttribute("grpc.internal", "value")
                     .startSpan();
             span.end();
             return Uni.createFrom().item(HelloReply.newBuilder().setMessage("Hello " + request.getName()).build());

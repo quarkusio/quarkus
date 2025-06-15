@@ -29,12 +29,12 @@ public class RedirectPrintStream extends PrintStream {
         write(new byte[] { (byte) b });
     }
 
-    //@Override
+    // @Override
     public void write(byte[] buf) {
         write(buf, 0, buf.length);
     }
 
-    //@Override
+    // @Override
     public void writeBytes(byte[] buf) {
         write(buf, 0, buf.length);
     }
@@ -147,11 +147,9 @@ public class RedirectPrintStream extends PrintStream {
     @Override
     public PrintStream format(String format, Object... args) {
         synchronized (this) {
-            if ((formatter == null)
-                    || (formatter.locale() != Locale.getDefault(Locale.Category.FORMAT)))
+            if ((formatter == null) || (formatter.locale() != Locale.getDefault(Locale.Category.FORMAT)))
                 formatter = new Formatter((Appendable) this);
-            formatter.format(Locale.getDefault(Locale.Category.FORMAT),
-                    format, args);
+            formatter.format(Locale.getDefault(Locale.Category.FORMAT), format, args);
         }
         return this;
     }
@@ -159,8 +157,7 @@ public class RedirectPrintStream extends PrintStream {
     @Override
     public PrintStream format(Locale l, String format, Object... args) {
         synchronized (this) {
-            if ((formatter == null)
-                    || (formatter.locale() != l))
+            if ((formatter == null) || (formatter.locale() != l))
                 formatter = new Formatter(this, l);
             formatter.format(l, format, args);
         }

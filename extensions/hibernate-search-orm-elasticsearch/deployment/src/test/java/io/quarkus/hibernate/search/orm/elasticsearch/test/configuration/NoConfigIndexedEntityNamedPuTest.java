@@ -15,11 +15,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoConfigIndexedEntityNamedPuTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application-nohsearchconfig-named-pu.properties")
-            .assertException(throwable -> assertThat(throwable)
-                    .isInstanceOf(ConfigurationException.class)
+            .assertException(throwable -> assertThat(throwable).isInstanceOf(ConfigurationException.class)
                     .hasMessageContaining("The Elasticsearch version needs to be defined via properties:"
                             + " quarkus.hibernate-search-orm.\"PU1\".elasticsearch.version"));
 

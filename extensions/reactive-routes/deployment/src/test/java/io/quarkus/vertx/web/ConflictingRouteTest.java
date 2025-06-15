@@ -16,8 +16,7 @@ public class ConflictingRouteTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoutes.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyRoutes.class));
 
     @Test
     public void testRouteConflict() {

@@ -61,11 +61,8 @@ public class CascadingConditionalDependenciesTest extends BootstrapFromOriginalJ
         install(extG);
         install(extH);
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extA)
-                .addDependency(extE);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extA).addDependency(extE);
     }
 
     @Override
@@ -73,28 +70,22 @@ public class CascadingConditionalDependenciesTest extends BootstrapFromOriginalJ
         final Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-a-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-d-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-e-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-f-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, getDeploymentOnlyDeps(model));
     }
 }

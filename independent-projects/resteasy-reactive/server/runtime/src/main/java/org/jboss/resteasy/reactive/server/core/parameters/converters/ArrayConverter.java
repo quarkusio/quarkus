@@ -28,7 +28,8 @@ public class ArrayConverter implements ParameterConverter {
             List<?> parameterAsList = (List<?>) parameter;
             Object result = Array.newInstance(elementTypeClass, parameterAsList.size());
             for (int i = 0; i < parameterAsList.size(); i++) {
-                Array.set(result, i, delegate == null ? parameterAsList.get(i) : delegate.convert(parameterAsList.get(i)));
+                Array.set(result, i,
+                        delegate == null ? parameterAsList.get(i) : delegate.convert(parameterAsList.get(i)));
             }
             return result;
         }
@@ -63,8 +64,7 @@ public class ArrayConverter implements ParameterConverter {
         @Override
         public ParameterConverter get() {
             return delegate == null ? new ArrayConverter(null, elementType)
-                    : new ArrayConverter(delegate.get(),
-                            elementType);
+                    : new ArrayConverter(delegate.get(), elementType);
         }
 
         @Override

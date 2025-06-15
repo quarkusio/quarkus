@@ -31,9 +31,10 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle panacheQuery = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+        ResultHandle panacheQuery = creator
+                .invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
     }
 
@@ -42,21 +43,20 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort) {
-        ResultHandle panacheQuery = creator.invokeStaticMethod(
-                ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class),
-                sort);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+        ResultHandle panacheQuery = creator
+                .invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class, Sort.class), sort);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
     }
 
     @Override
-    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query,
+            ResultHandle queryParams) {
         ResultHandle panacheQuery = creator.invokeStaticMethod(
-                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Map.class),
-                query, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Map.class), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
     }
 
@@ -64,10 +64,10 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle sort, ResultHandle query,
             ResultHandle queryParams) {
         ResultHandle panacheQuery = creator.invokeStaticMethod(
-                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Sort.class, Map.class),
-                query, sort, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Sort.class, Map.class), query, sort,
+                queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
     }
 
@@ -89,19 +89,21 @@ final class EntityDataAccessImplementor implements DataAccessImplementor {
     }
 
     @Override
-    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
-        ResultHandle panacheQuery = creator.invokeStaticMethod(ofMethod(entityClassName, "find", PanacheQuery.class,
-                String.class, Map.class), query, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query,
+            ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeStaticMethod(
+                ofMethod(entityClassName, "find", PanacheQuery.class, String.class, Map.class), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), panacheQuery);
     }
 
     @Override
     public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page) {
-        ResultHandle panacheQuery = creator.invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery,
-                page);
+        ResultHandle panacheQuery = creator
+                .invokeStaticMethod(ofMethod(entityClassName, "findAll", PanacheQuery.class));
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", int.class), panacheQuery);
     }
 }

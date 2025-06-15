@@ -16,13 +16,12 @@ import io.restassured.RestAssured;
 public class AnonymousAmqpTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(ConsumingBean.class, ProducingBean.class, TestResource.class,
-                            AnonymousAmqpBroker.class, ProtonProtocolManagerFactory.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(ConsumingBean.class, ProducingBean.class, TestResource.class, AnonymousAmqpBroker.class,
+                            ProtonProtocolManagerFactory.class)
                     .addAsResource("broker.xml"))
-            .setBeforeAllCustomizer(AnonymousAmqpBroker::start)
-            .setAfterAllCustomizer(AnonymousAmqpBroker::stop)
+            .setBeforeAllCustomizer(AnonymousAmqpBroker::start).setAfterAllCustomizer(AnonymousAmqpBroker::stop)
             .withConfigurationResource("application.properties");
 
     @Test

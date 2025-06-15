@@ -16,9 +16,8 @@ import io.restassured.RestAssured;
 public class PathInterfaceImplementorTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AlphaResource.class, AlphaResourceImpl.class, TestService.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(AlphaResource.class, AlphaResourceImpl.class, TestService.class));
 
     @Test
     public void testConstructorInjectionResource() {

@@ -38,11 +38,11 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
 
     // Preferred content types order for String or primitive type responses
-    private static final List<String> TEXT_MEDIA_TYPES = Arrays.asList(
-            MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_XML);
+    private static final List<String> TEXT_MEDIA_TYPES = Arrays.asList(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON,
+            MediaType.APPLICATION_XML, MediaType.TEXT_XML);
     // Preferred content types order for object type responses
-    private static final List<String> OBJECT_MEDIA_TYPES = Arrays.asList(
-            MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML, MediaType.TEXT_XML, MediaType.TEXT_PLAIN);
+    private static final List<String> OBJECT_MEDIA_TYPES = Arrays.asList(MediaType.APPLICATION_JSON,
+            MediaType.APPLICATION_XML, MediaType.TEXT_XML, MediaType.TEXT_PLAIN);
 
     private final MethodInfo controllerAdviceMethod;
     private final TypesUtil typesUtil;
@@ -70,10 +70,9 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
     }
 
     /**
-     * We need to go through each parameter of the method of the ControllerAdvice
-     * and make sure it's supported
-     * The jakarta.ws.rs.ext.ExceptionMapper only has one parameter, the exception, however
-     * other parameters can be obtained using @Context and therefore injected into the target method
+     * We need to go through each parameter of the method of the ControllerAdvice and make sure it's supported The
+     * jakarta.ws.rs.ext.ExceptionMapper only has one parameter, the exception, however other parameters can be obtained
+     * using @Context and therefore injected into the target method
      */
     @Override
     protected void preGenerateMethodBody(ClassCreator cc) {
@@ -89,27 +88,30 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
                 // do nothing since this will be handled during in generateMethodBody
             } else if (typesUtil.isAssignable(HttpServletRequest.class, parameterTypeDotName)) {
                 if (parameterTypeToField.containsKey(parameterType)) {
-                    throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
-                            + " is being used multiple times in method" + controllerAdviceMethod.name() + " of class"
-                            + controllerAdviceMethod.declaringClass().name());
+                    throw new IllegalArgumentException(
+                            "Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
+                                    + " is being used multiple times in method" + controllerAdviceMethod.name()
+                                    + " of class" + controllerAdviceMethod.declaringClass().name());
                 }
 
                 // we need to generate a field that injects the HttpServletRequest into the class
-                FieldCreator httpRequestFieldCreator = cc.getFieldCreator("httpServletRequest", HttpServletRequest.class)
-                        .setModifiers(Modifier.PRIVATE);
+                FieldCreator httpRequestFieldCreator = cc
+                        .getFieldCreator("httpServletRequest", HttpServletRequest.class).setModifiers(Modifier.PRIVATE);
                 httpRequestFieldCreator.addAnnotation(Context.class);
 
                 // stash the fieldCreator in a map indexed by the parameter type so we can retrieve it later
                 parameterTypeToField.put(parameterType, httpRequestFieldCreator.getFieldDescriptor());
             } else if (typesUtil.isAssignable(HttpServletResponse.class, parameterTypeDotName)) {
                 if (parameterTypeToField.containsKey(parameterType)) {
-                    throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
-                            + " is being used multiple times in method" + controllerAdviceMethod.name() + " of class"
-                            + controllerAdviceMethod.declaringClass().name());
+                    throw new IllegalArgumentException(
+                            "Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
+                                    + " is being used multiple times in method" + controllerAdviceMethod.name()
+                                    + " of class" + controllerAdviceMethod.declaringClass().name());
                 }
 
                 // we need to generate a field that injects the HttpServletRequest into the class
-                FieldCreator httpRequestFieldCreator = cc.getFieldCreator("httpServletResponse", HttpServletResponse.class)
+                FieldCreator httpRequestFieldCreator = cc
+                        .getFieldCreator("httpServletResponse", HttpServletResponse.class)
                         .setModifiers(Modifier.PRIVATE);
                 httpRequestFieldCreator.addAnnotation(Context.class);
 
@@ -120,17 +122,16 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
             }
         }
         if (notAllowedParameterIndex >= 0) {
-            throw new IllegalArgumentException(
-                    "Parameter type " + parameterTypes.get(notAllowedParameterIndex).name() + " is not supported for method"
-                            + controllerAdviceMethod.name() + " of class" + controllerAdviceMethod.declaringClass().name());
+            throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
+                    + " is not supported for method" + controllerAdviceMethod.name() + " of class"
+                    + controllerAdviceMethod.declaringClass().name());
         }
 
         createHttpHeadersField(cc);
     }
 
     private void createHttpHeadersField(ClassCreator classCreator) {
-        FieldCreator httpHeadersFieldCreator = classCreator
-                .getFieldCreator("httpHeaders", HttpHeaders.class)
+        FieldCreator httpHeadersFieldCreator = classCreator.getFieldCreator("httpHeaders", HttpHeaders.class)
                 .setModifiers(Modifier.PRIVATE);
         httpHeadersFieldCreator.addAnnotation(Context.class);
         httpHeadersField = httpHeadersFieldCreator.getFieldDescriptor();
@@ -151,8 +152,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
         invokeExceptionHandlerMethod(methodCreator);
         int status = getAnnotationStatusOrDefault(Response.Status.NO_CONTENT.getStatusCode());
         ResultHandle result = new ResponseBuilder(methodCreator, status)
-                .withType(getResponseContentType(methodCreator, TEXT_MEDIA_TYPES))
-                .build();
+                .withType(getResponseContentType(methodCreator, TEXT_MEDIA_TYPES)).build();
         methodCreator.returnValue(result);
     }
 
@@ -177,8 +177,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
         int status = getAnnotationStatusOrDefault(Response.Status.OK.getStatusCode());
         ResultHandle result = new ResponseBuilder(methodCreator, status)
                 .withEntity(invokeExceptionHandlerMethod(methodCreator))
-                .withType(getResponseContentType(methodCreator, getSupportedMediaTypesForType(returnType)))
-                .build();
+                .withType(getResponseContentType(methodCreator, getSupportedMediaTypesForType(returnType))).build();
 
         methodCreator.returnValue(result);
     }
@@ -192,8 +191,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
     }
 
     private ResultHandle getResponseContentType(MethodCreator methodCreator, List<String> supportedMediaTypeStrings) {
-        ResultHandle[] supportedMediaTypes = supportedMediaTypeStrings.stream()
-                .map(methodCreator::load)
+        ResultHandle[] supportedMediaTypes = supportedMediaTypeStrings.stream().map(methodCreator::load)
                 .toArray(ResultHandle[]::new);
 
         String responseContentTypeResolverClassName = isResteasyClassic
@@ -206,15 +204,13 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
             return methodCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(responseContentTypeResolverClassName, "resolve", MediaType.class,
                             HttpHeaders.class, String[].class),
-                    contentTypeResolver,
-                    methodCreator.readInstanceField(httpHeadersField, methodCreator.getThis()),
+                    contentTypeResolver, methodCreator.readInstanceField(httpHeadersField, methodCreator.getThis()),
                     methodCreator.marshalAsArray(String.class, supportedMediaTypes));
         }
         return methodCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(responseContentTypeResolverClassName, "resolve", MediaType.class,
                         HttpHeaders.class, String[].class),
-                contentTypeResolver,
-                getBeanFromArc(methodCreator, HttpHeaders.class.getName()),
+                contentTypeResolver, getBeanFromArc(methodCreator, HttpHeaders.class.getName()),
                 methodCreator.marshalAsArray(String.class, supportedMediaTypes));
     }
 
@@ -251,19 +247,18 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
                 } else if (typesUtil.isAssignable(Request.class, parameterType.name())) {
                     parameterTypeHandles[i] = getBeanFromArc(toResponse, Request.class.getName());
                 } else {
-                    throw new IllegalArgumentException(
-                            "Parameter type '" + parameterType.name() + "' is not supported for method '"
-                                    + controllerAdviceMethod.name() + "' of class '"
-                                    + controllerAdviceMethod.declaringClass().name()
-                                    + "'");
+                    throw new IllegalArgumentException("Parameter type '" + parameterType.name()
+                            + "' is not supported for method '" + controllerAdviceMethod.name() + "' of class '"
+                            + controllerAdviceMethod.declaringClass().name() + "'");
                 }
             }
         }
 
-        return toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(declaringClassName, controllerAdviceMethod.name(), returnTypeClassName,
-                        parameterTypesStr),
-                controllerAdviceInstance(toResponse), parameterTypeHandles);
+        return toResponse
+                .invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(declaringClassName, controllerAdviceMethod.name(),
+                                returnTypeClassName, parameterTypesStr),
+                        controllerAdviceInstance(toResponse), parameterTypeHandles);
     }
 
     private ResultHandle controllerAdviceInstance(MethodCreator toResponse) {
@@ -272,13 +267,11 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
 
             ResultHandle container = toResponse
                     .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-            ResultHandle instance = toResponse.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
-                            Annotation[].class),
-                    container, controllerAdviceClass, toResponse.loadNull());
+            ResultHandle instance = toResponse.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class,
+                    "instance", InstanceHandle.class, Class.class, Annotation[].class), container,
+                    controllerAdviceClass, toResponse.loadNull());
             ResultHandle bean = toResponse.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
-                    instance);
+                    MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instance);
             return toResponse.checkCast(bean, controllerAdviceMethod.declaringClass().name().toString());
         } else {
             return toResponse.checkCast(getBeanFromArc(toResponse, declaringClassName),
@@ -293,8 +286,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
                 MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                         Annotation[].class),
                 container, methodCreator.loadClassFromTCCL(beanClassName), methodCreator.loadNull());
-        return methodCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+        return methodCreator.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
                 instance);
     }
 

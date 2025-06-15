@@ -17,12 +17,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 /**
  * Attempts to register a complete type hierarchy for reflection.
  * <p>
- * This is intended to be used to register types that are going to be serialized,
- * e.g. by Jackson or some other JSON mapper.
+ * This is intended to be used to register types that are going to be serialized, e.g. by Jackson or some other JSON
+ * mapper.
  * <p>
- * This will do 'smart discovery' and in addition to registering the type itself it will also attempt to
- * register the following:
- *
+ * This will do 'smart discovery' and in addition to registering the type itself it will also attempt to register the
+ * following:
  * <ul>
  * <li>Superclasses</li>
  * <li>Component types of collections</li>
@@ -110,15 +109,16 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
      * @deprecated Use the Builder instead and provide a source for easy debugging.
      */
     @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate, String source) {
-        this(type, index, ignoreTypePredicate, DefaultIgnoreFieldPredicate.INSTANCE, DefaultIgnoreMethodPredicate.INSTANCE,
-                source, true, true, true, false, false, true);
+    public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate,
+            String source) {
+        this(type, index, ignoreTypePredicate, DefaultIgnoreFieldPredicate.INSTANCE,
+                DefaultIgnoreMethodPredicate.INSTANCE, source, true, true, true, false, false, true);
     }
 
     private ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate,
-            Predicate<FieldInfo> ignoreFieldPredicate, Predicate<MethodInfo> ignoreMethodPredicate,
-            String source, boolean constructors, boolean methods, boolean fields, boolean serialization,
-            boolean unsafeAllocated, boolean ignoreNested) {
+            Predicate<FieldInfo> ignoreFieldPredicate, Predicate<MethodInfo> ignoreMethodPredicate, String source,
+            boolean constructors, boolean methods, boolean fields, boolean serialization, boolean unsafeAllocated,
+            boolean ignoreNested) {
         this.type = type;
         this.index = index;
         this.ignoreTypePredicate = ignoreTypePredicate;
@@ -186,10 +186,12 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy is to
-     * be be registered for reflection.
+     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy
+     * is to be be registered for reflection.
      *
-     * @param clazz the Class which hierarchy is to be registered for reflection
+     * @param clazz
+     *        the Class which hierarchy is to be registered for reflection
+     *
      * @return a new {@link Builder} instance, initialized from the specified Class
      */
     public static Builder builder(Class<?> clazz) {
@@ -197,10 +199,12 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy is to
-     * be be registered for reflection.
+     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy
+     * is to be be registered for reflection.
      *
-     * @param className the name of the Class which hierarchy is to be registered for reflection
+     * @param className
+     *        the name of the Class which hierarchy is to be registered for reflection
+     *
      * @return a new {@link Builder} instance, initialized from the specified Class
      */
     public static Builder builder(String className) {
@@ -208,10 +212,12 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy is to
-     * be be registered for reflection.
+     * Creates a new {@link Builder} instance, using the specified class for the underlying {@link Type} which hierarchy
+     * is to be be registered for reflection.
      *
-     * @param className the {@link DotName} of the Class which hierarchy is to be registered for reflection
+     * @param className
+     *        the {@link DotName} of the Class which hierarchy is to be registered for reflection
+     *
      * @return a new {@link Builder} instance, initialized from the specified Class
      */
     public static Builder builder(DotName className) {
@@ -221,7 +227,9 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     /**
      * Creates a new {@link Builder} instance, initializing it with the specified {@link Type}
      *
-     * @param type the {@link Type} which hierarchy is to be registered for reflection
+     * @param type
+     *        the {@link Type} which hierarchy is to be registered for reflection
+     *
      * @return a new {@link Builder} instance, initialized from the specified {@link Type}
      */
     public static Builder builder(Type type) {
@@ -241,7 +249,8 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         private boolean fields = true;
         private boolean serialization;
         private boolean unsafeAllocated;
-        // when registering a hierarchy, we want to inspect what's actually needed and blindly include nested classes is not a good idea
+        // when registering a hierarchy, we want to inspect what's actually needed and blindly include nested classes is
+        // not a good idea
         private boolean ignoreNested = true;
 
         /**
@@ -269,8 +278,11 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         /**
          * Derives the target {@link Type} to be registered from the specified class name.
          *
-         * @param className a {@link DotName} representing the name of the class of the Type to be registered for reflection
+         * @param className
+         *        a {@link DotName} representing the name of the class of the Type to be registered for reflection
+         *
          * @return this {@link Builder} instance
+         *
          * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(DotName)} instead
          */
         @Deprecated(since = "3.12", forRemoval = true)
@@ -281,8 +293,11 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         /**
          * Derives the target {@link Type} to be registered from the specified class name.
          *
-         * @param className the name of the class of the Type to be registered for reflection
+         * @param className
+         *        the name of the class of the Type to be registered for reflection
+         *
          * @return this {@link Builder} instance
+         *
          * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(String)} instead
          */
         @Deprecated(since = "3.12", forRemoval = true)
@@ -347,8 +362,7 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
 
         public ReflectiveHierarchyBuildItem build() {
             return new ReflectiveHierarchyBuildItem(type, index, ignoreTypePredicate, ignoreFieldPredicate,
-                    ignoreMethodPredicate, source,
-                    constructors, methods, fields, serialization, unsafeAllocated,
+                    ignoreMethodPredicate, source, constructors, methods, fields, serialization, unsafeAllocated,
                     ignoreNested);
         }
     }
@@ -358,15 +372,15 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         public static final DefaultIgnoreTypePredicate INSTANCE = new DefaultIgnoreTypePredicate();
 
         private static final List<String> DEFAULT_IGNORED_PACKAGES = Arrays.asList("java.", "io.reactivex.",
-                "org.reactivestreams.", "org.slf4j.", "jakarta.", "jakarta.json.",
-                "javax.net.ssl.", "javax.xml.", "javax.management.", "reactor.core.",
-                "com.fasterxml.jackson.databind.", "io.vertx.core.json.", "kotlin.");
+                "org.reactivestreams.", "org.slf4j.", "jakarta.", "jakarta.json.", "javax.net.ssl.", "javax.xml.",
+                "javax.management.", "reactor.core.", "com.fasterxml.jackson.databind.", "io.vertx.core.json.",
+                "kotlin.");
         // if this gets more complicated we will need to move to some tree like structure
         static final Set<String> ALLOWED_FROM_IGNORED_PACKAGES = new HashSet<>(
                 Arrays.asList("java.math.BigDecimal", "java.math.BigInteger"));
 
-        static final List<String> PRIMITIVE = Arrays.asList("boolean", "byte",
-                "char", "short", "int", "long", "float", "double");
+        static final List<String> PRIMITIVE = Arrays.asList("boolean", "byte", "char", "short", "int", "long", "float",
+                "double");
 
         @Override
         public boolean test(DotName dotName) {

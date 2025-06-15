@@ -51,7 +51,8 @@ public final class Version {
     /**
      * Print out the current version on {@code System.out}.
      *
-     * @param args ignored
+     * @param args
+     *        ignored
      */
     public static void main(String[] args) {
         System.out.printf("Quarkus Builder (%s) version %s%n", JAR_NAME, VERSION);

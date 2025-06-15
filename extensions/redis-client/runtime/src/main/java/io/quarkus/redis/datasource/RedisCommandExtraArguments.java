@@ -15,7 +15,9 @@ public interface RedisCommandExtraArguments {
     }
 
     /**
-     * @param encoder an optional encoder to encode some of the values
+     * @param encoder
+     *        an optional encoder to encode some of the values
+     *
      * @return the list of arguments.
      */
     default List<Object> toArgs(Codec encoder) {

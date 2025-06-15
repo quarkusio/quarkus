@@ -10,15 +10,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DisabledInfoTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.info.enabled", "false");
 
     @Test
     public void test() {
-        when().get("/q/info")
-                .then()
-                .statusCode(404);
+        when().get("/q/info").then().statusCode(404);
 
     }
 }

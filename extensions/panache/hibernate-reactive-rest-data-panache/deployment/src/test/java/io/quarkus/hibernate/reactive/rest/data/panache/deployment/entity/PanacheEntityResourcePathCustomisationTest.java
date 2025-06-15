@@ -16,12 +16,10 @@ import io.smallrye.mutiny.Uni;
 class PanacheEntityResourcePathCustomisationTest extends AbstractPathCustomisationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
-                            Item.class, CustomPathCollectionsResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Collection.class, CollectionsResource.class, AbstractEntity.class, AbstractItem.class,
+                    Item.class, CustomPathCollectionsResource.class)
+            .addAsResource("application.properties").addAsResource("import.sql"));
 
     @ResourceProperties(path = "custom-collections", hal = true)
     public interface CustomPathCollectionsResource extends PanacheEntityResource<Collection, String> {

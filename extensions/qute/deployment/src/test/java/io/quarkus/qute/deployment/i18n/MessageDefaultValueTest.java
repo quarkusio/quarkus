@@ -18,23 +18,17 @@ public class MessageDefaultValueTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Messages.class)
-                    .addAsResource(new StringAsset("""
-                            alpha=Hi {foo}!
-                            delta=Hey {foo}!
-                            """), "messages/msg_en.properties")
-                    .addAsResource(new StringAsset("""
-                            alpha=Ahoj {foo}!
-                            delta=Hej {foo}!
-                            """), "messages/msg_cs.properties")
+            .withApplicationRoot(root -> root.addClasses(Messages.class).addAsResource(new StringAsset("""
+                    alpha=Hi {foo}!
+                    delta=Hey {foo}!
+                    """), "messages/msg_en.properties").addAsResource(new StringAsset("""
+                    alpha=Ahoj {foo}!
+                    delta=Hej {foo}!
+                    """), "messages/msg_cs.properties")
 
-                    .addAsResource(new StringAsset(
-                            "{msg:alpha('baz')}::{msg:bravo('baz')}::{msg:charlie('baz')}"),
+                    .addAsResource(new StringAsset("{msg:alpha('baz')}::{msg:bravo('baz')}::{msg:charlie('baz')}"),
                             "templates/foo.html")
-                    .addAsResource(new StringAsset(
-                            "{msg:delta('baz')}::{msg:echo('baz')}"),
-                            "templates/bar.html"))
+                    .addAsResource(new StringAsset("{msg:delta('baz')}::{msg:echo('baz')}"), "templates/bar.html"))
             .overrideConfigKey("quarkus.default-locale", "en");
 
     @Inject

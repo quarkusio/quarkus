@@ -38,7 +38,8 @@ public class HotDeploymentConfigBuildStep {
                         if (observesInstance.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
                             MethodParameterInfo methodParameterInfo = observesInstance.target().asMethodParameter();
                             short paramPos = methodParameterInfo.position();
-                            if (STARTUP_EVENT_NAME.equals(methodParameterInfo.method().parameterType(paramPos).name())) {
+                            if (STARTUP_EVENT_NAME
+                                    .equals(methodParameterInfo.method().parameterType(paramPos).name())) {
                                 return true;
                             }
                         }

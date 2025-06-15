@@ -26,122 +26,66 @@ public class ResponseStatusTest {
 
     @Test
     public void testReturnUni() {
-        RestAssured
-                .given()
-                .get("/test/uni")
-                .then()
-                .statusCode(201);
+        RestAssured.given().get("/test/uni").then().statusCode(201);
     }
 
     @Test
     public void testReturnMulti() {
-        RestAssured
-                .given()
-                .get("/test/multi")
-                .then()
-                .statusCode(202);
+        RestAssured.given().get("/test/multi").then().statusCode(202);
     }
 
     @Test
     public void testReturnCompletionStage() {
-        RestAssured
-                .given()
-                .get("/test/completion")
-                .then()
-                .statusCode(203);
+        RestAssured.given().get("/test/completion").then().statusCode(203);
     }
 
     @Test
     public void testReturnString() {
-        RestAssured
-                .given()
-                .get("/test/plain")
-                .then()
-                .statusCode(204);
+        RestAssured.given().get("/test/plain").then().statusCode(204);
     }
 
     @Test
     public void testUniThrowsException() {
-        RestAssured
-                .given()
-                .get("/test/exception_uni")
-                .then()
-                .statusCode(500);
+        RestAssured.given().get("/test/exception_uni").then().statusCode(500);
     }
 
     @Test
     public void testMultiThrowsException() {
-        RestAssured
-                .given()
-                .get("/test/exception_multi")
-                .then()
-                .statusCode(500);
+        RestAssured.given().get("/test/exception_multi").then().statusCode(500);
     }
 
     @Test
     public void testCompletionStageThrowsException() {
-        RestAssured
-                .given()
-                .get("/test/exception_completion")
-                .then()
-                .statusCode(500);
+        RestAssured.given().get("/test/exception_completion").then().statusCode(500);
     }
 
     @Test
     public void testStringThrowsException() {
-        RestAssured
-                .given()
-                .get("/test/exception_plain")
-                .then()
-                .statusCode(500);
+        RestAssured.given().get("/test/exception_plain").then().statusCode(500);
     }
 
     @Test
     public void testReturnRestMulti() {
-        RestAssured
-                .given()
-                .get("/test/rest-multi")
-                .then()
-                .statusCode(210);
+        RestAssured.given().get("/test/rest-multi").then().statusCode(210);
     }
 
     @Test
     public void testReturnRestMulti2() {
-        RestAssured
-                .given()
-                .get("/test/rest-multi2")
-                .then()
-                .statusCode(211);
+        RestAssured.given().get("/test/rest-multi2").then().statusCode(211);
     }
 
     @Test
     public void testReturnRestMulti3() {
-        RestAssured
-                .given()
-                .get("/test/rest-multi3")
-                .then()
-                .statusCode(200);
+        RestAssured.given().get("/test/rest-multi3").then().statusCode(200);
 
-        RestAssured
-                .given()
-                .get("/test/rest-multi3?status=212")
-                .then()
-                .statusCode(212);
+        RestAssured.given().get("/test/rest-multi3?status=212").then().statusCode(212);
     }
 
     @Test
     public void testReturnRestMulti4() {
-        RestAssured
-                .given()
-                .get("/test/rest-multi4")
-                .then()
-                .statusCode(200);
+        RestAssured.given().get("/test/rest-multi4").then().statusCode(200);
 
-        RestAssured
-                .given()
-                .get("/test/rest-multi4")
-                .then()
-                .statusCode(200);
+        RestAssured.given().get("/test/rest-multi4").then().statusCode(200);
     }
 
     @Path("/test")
@@ -221,8 +165,8 @@ public class ResponseStatusTest {
         @GET
         @Path("/rest-multi3")
         public RestMulti<String> getTestRestMulti3(@DefaultValue("200") @RestQuery Integer status) {
-            return RestMulti.fromUniResponse(Uni.createFrom().item("unused"), s -> Multi.createFrom().item("test"), null,
-                    s -> status);
+            return RestMulti.fromUniResponse(Uni.createFrom().item("unused"), s -> Multi.createFrom().item("test"),
+                    null, s -> status);
         }
 
         @GET

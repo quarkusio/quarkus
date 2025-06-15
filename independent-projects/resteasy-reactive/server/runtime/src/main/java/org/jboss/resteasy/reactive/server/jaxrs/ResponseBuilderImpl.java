@@ -78,8 +78,7 @@ public class ResponseBuilderImpl extends AbstractResponseBuilder {
                     if (!path.startsWith("/")) {
                         path = "/" + path;
                     }
-                    location = new URI(req.getRequestScheme(), null, host, port, null, null, null)
-                            .resolve(path);
+                    location = new URI(req.getRequestScheme(), null, host, port, null, null, null).resolve(path);
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
                 }
@@ -94,7 +93,7 @@ public class ResponseBuilderImpl extends AbstractResponseBuilder {
         return new ResponseBuilderImpl();
     }
 
-    //TODO: add the rest of static methods of Response if we need them
+    // TODO: add the rest of static methods of Response if we need them
 
     public static ResponseBuilderImpl withStatus(Response.Status status) {
         return (ResponseBuilderImpl) new ResponseBuilderImpl().status(status);

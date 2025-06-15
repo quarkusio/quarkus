@@ -40,7 +40,6 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the template id or {@code null} if there is no need to use qute; i.e. no expression/section found
      */
     public String getTemplateId() {
@@ -57,8 +56,8 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return {@code true} if there is a corresponding method declared on the message bundle interface
+     *
      * @see #getMethod()
      */
     public boolean hasMethod() {
@@ -79,7 +78,6 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return {@code true} if the message comes from the default bundle
      */
     public boolean isDefaultBundle() {
@@ -87,7 +85,6 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return {@code true} if the template was generated, e.g. a message bundle method for an enum
      */
     public boolean hasGeneratedTemplate() {
@@ -95,8 +92,8 @@ public final class MessageBundleMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the path
+     *
      * @see TemplateAnalysis#path
      */
     public String getPathForAnalysis() {

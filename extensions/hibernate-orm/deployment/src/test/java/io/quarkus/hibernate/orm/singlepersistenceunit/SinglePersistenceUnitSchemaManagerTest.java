@@ -22,9 +22,7 @@ public class SinglePersistenceUnitSchemaManagerTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"))
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addAsResource("application.properties"))
             .overrideConfigKey("quarkus.hibernate-orm.database.generation", "none");
     @Inject
     SchemaManager schemaManager;
@@ -36,8 +34,7 @@ public class SinglePersistenceUnitSchemaManagerTest {
     @Transactional
     public void testSchemaManager() {
         assertNotNull(schemaManager);
-        assertThrows(SchemaManagementException.class,
-                () -> schemaManager.validateMappedObjects(),
+        assertThrows(SchemaManagementException.class, () -> schemaManager.validateMappedObjects(),
                 "Validation should fail if table is missing.");
 
         schemaManager.exportMappedObjects(true);
@@ -48,8 +45,7 @@ public class SinglePersistenceUnitSchemaManagerTest {
         entityManager.createNativeQuery("DROP TABLE IF EXISTS DefaultEntity").executeUpdate();
 
         SchemaManagementException ex = assertThrows(SchemaManagementException.class,
-                () -> schemaManager.validateMappedObjects(),
-                "Validation should fail if table is missing.");
+                () -> schemaManager.validateMappedObjects(), "Validation should fail if table is missing.");
         assertTrue(ex.getMessage().toLowerCase(Locale.ROOT).contains("missing table"),
                 "Exception message should indicate missing table.");
 

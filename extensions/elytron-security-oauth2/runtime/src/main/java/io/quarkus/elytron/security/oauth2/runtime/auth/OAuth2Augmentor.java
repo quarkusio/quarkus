@@ -30,10 +30,8 @@ public class OAuth2Augmentor implements SecurityIdentityAugmentor {
                 @Override
                 public SecurityIdentity get() {
                     QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder()
-                            .setPrincipal(identity.getPrincipal())
-                            .addAttributes(identity.getAttributes())
-                            .addCredentials(identity.getCredentials())
-                            .addRoles(identity.getRoles());
+                            .setPrincipal(identity.getPrincipal()).addAttributes(identity.getAttributes())
+                            .addCredentials(identity.getCredentials()).addRoles(identity.getRoles());
                     String[] roles = extractRoles(((ElytronOAuth2CallerPrincipal) identity.getPrincipal()));
                     if (roles != null) {
                         for (String i : roles) {

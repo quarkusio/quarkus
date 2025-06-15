@@ -18,8 +18,7 @@ public class LookupConditionOnProducersTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Service.class, ServiceProducer.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Foo.class, Service.class, ServiceProducer.class))
             .overrideConfigKey("service.alpha.enabled", "false");
 
     @Inject

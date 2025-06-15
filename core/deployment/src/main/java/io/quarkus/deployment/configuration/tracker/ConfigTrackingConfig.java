@@ -15,8 +15,7 @@ import io.smallrye.config.WithDefault;
 /**
  * Configuration tracking and dumping
  * <p>
- * Configuration options for application build time configuration usage tracking
- * and dumping.
+ * Configuration options for application build time configuration usage tracking and dumping.
  */
 @ConfigMapping(prefix = "quarkus.config-tracking")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
@@ -29,16 +28,16 @@ public interface ConfigTrackingConfig {
     boolean enabled();
 
     /**
-     * Directory in which the configuration dump should be stored.
-     * If not configured the {@code .quarkus} directory under the project directory will be used.
+     * Directory in which the configuration dump should be stored. If not configured the {@code .quarkus} directory
+     * under the project directory will be used.
      */
     Optional<Path> directory();
 
     /**
      * File in which the configuration dump should be stored. If not configured, the {@link #filePrefix} and
-     * {@link #fileSuffix} will be used to generate the final file name.
-     * If the configured file path is absolute, the {@link #directory} option will be ignored. Otherwise,
-     * the path will be considered relative to the {@link #directory}.
+     * {@link #fileSuffix} will be used to generate the final file name. If the configured file path is absolute, the
+     * {@link #directory} option will be ignored. Otherwise, the path will be considered relative to the
+     * {@link #directory}.
      */
     Optional<Path> file();
 
@@ -55,8 +54,8 @@ public interface ConfigTrackingConfig {
     String fileSuffix();
 
     /**
-     * A list of config properties that should be excluded from the report.
-     * GLOB patterns could be used instead of property names.
+     * A list of config properties that should be excluded from the report. GLOB patterns could be used instead of
+     * property names.
      */
     Optional<List<String>> exclude();
 
@@ -70,9 +69,8 @@ public interface ConfigTrackingConfig {
     }
 
     /**
-     * A list of config properties whose values should be hashed in the report.
-     * The values will be hashed using SHA-512 algorithm.
-     * GLOB patterns could be used instead of property names.
+     * A list of config properties whose values should be hashed in the report. The values will be hashed using SHA-512
+     * algorithm. GLOB patterns could be used instead of property names.
      */
     Optional<List<String>> hashOptions();
 

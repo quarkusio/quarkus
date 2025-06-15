@@ -24,30 +24,17 @@ import io.restassured.http.ContentType;
 public class ProducesXMLTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Bar.class, FooResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Bar.class, FooResource.class));
 
     @Test
     public void testProducesXML() {
-        final Bar res = RestAssured.given()
-                .body("open bar")
-                .contentType(ContentType.TEXT)
-                .when().post("/foo")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(200)
-                .contentType(MediaType.APPLICATION_XML)
-                .extract().as(Bar.class);
+        final Bar res = RestAssured.given().body("open bar").contentType(ContentType.TEXT).when().post("/foo").then()
+                .log().ifValidationFails().statusCode(200).contentType(MediaType.APPLICATION_XML).extract()
+                .as(Bar.class);
         Assertions.assertEquals(new Bar("open", "bar"), res);
 
-        RestAssured.given()
-                .contentType(ContentType.TEXT)
-                .when().get("/foo")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(200)
-                .contentType(MediaType.APPLICATION_XML)
-                .body("bars.bar.size()", is(2));
+        RestAssured.given().contentType(ContentType.TEXT).when().get("/foo").then().log().ifValidationFails()
+                .statusCode(200).contentType(MediaType.APPLICATION_XML).body("bars.bar.size()", is(2));
     }
 
     @Path("/foo")
@@ -66,8 +53,7 @@ public class ProducesXMLTestCase {
         @Produces(MediaType.APPLICATION_XML)
         @Wrapped(element = "bars")
         public List<Bar> list() {
-            return Arrays.asList(new Bar("name_1", "description_1"),
-                    new Bar("name_2", "description_2"));
+            return Arrays.asList(new Bar("name_1", "description_1"), new Bar("name_2", "description_2"));
         }
     }
 }

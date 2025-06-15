@@ -26,24 +26,17 @@ import io.smallrye.config.WithDefault;
 
 public class ConfigMappingWithProviderTest {
     @RegisterExtension
-    static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MappingResource.class)
-                    .addClass(MappingFilter.class)
-                    .addClass(Mapping.class)
+    static final QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClass(MappingResource.class).addClass(MappingFilter.class).addClass(Mapping.class)
                     .addAsResource(new StringAsset("mapping.hello=hello\n"), "application.properties"));
 
     @Test
     void configMapping() {
-        RestAssured.when().get("/hello").then()
-                .statusCode(200)
-                .body(is("hello"));
+        RestAssured.when().get("/hello").then().statusCode(200).body(is("hello"));
 
         TEST.modifyResourceFile("application.properties", s -> "mapping.hello=Hello\n");
 
-        RestAssured.when().get("/hello").then()
-                .statusCode(200)
-                .body(is("Hello"));
+        RestAssured.when().get("/hello").then().statusCode(200).body(is("Hello"));
     }
 
     @Path("/hello")

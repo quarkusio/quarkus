@@ -15,8 +15,8 @@ public class BlockingTransactionalKeyCommandsImpl<K> extends AbstractTransaction
 
     private final ReactiveTransactionalKeyCommands<K> reactive;
 
-    public BlockingTransactionalKeyCommandsImpl(TransactionalRedisDataSource ds, ReactiveTransactionalKeyCommands<K> reactive,
-            Duration timeout) {
+    public BlockingTransactionalKeyCommandsImpl(TransactionalRedisDataSource ds,
+            ReactiveTransactionalKeyCommands<K> reactive, Duration timeout) {
         super(ds, timeout);
         this.reactive = reactive;
     }

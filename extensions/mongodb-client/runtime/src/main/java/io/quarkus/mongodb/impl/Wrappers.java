@@ -37,8 +37,7 @@ class Wrappers {
 
     static <T> Uni<List<T>> toUniOfList(Publisher<T> publisher) {
         Context context = Vertx.currentContext();
-        Uni<List<T>> uni = Multi.createFrom().publisher(AdaptersToFlow.publisher(publisher))
-                .collect().asList();
+        Uni<List<T>> uni = Multi.createFrom().publisher(AdaptersToFlow.publisher(publisher)).collect().asList();
 
         if (context != null) {
             return uni.emitOn(command -> context.runOnContext(x -> command.run()));

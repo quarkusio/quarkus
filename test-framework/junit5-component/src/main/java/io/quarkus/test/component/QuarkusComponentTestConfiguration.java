@@ -48,18 +48,12 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 
 class QuarkusComponentTestConfiguration {
 
-    // As defined in /quarkus/core/runtime/src/main/resources/META-INF/services/org.eclipse.microprofile.config.spi.Converter
+    // As defined in
+    // /quarkus/core/runtime/src/main/resources/META-INF/services/org.eclipse.microprofile.config.spi.Converter
     static final List<Converter<?>> DEFAULT_CONVERTERS = List.of(new InetSocketAddressConverter(),
-            new CharsetConverter(),
-            new CidrAddressConverter(),
-            new InetAddressConverter(),
-            new RegexConverter(),
-            new PathConverter(),
-            new DurationConverter(),
-            new MemorySizeConverter(),
-            new LocaleConverter(),
-            new ZoneIdConverter(),
-            new LevelConverter());
+            new CharsetConverter(), new CidrAddressConverter(), new InetAddressConverter(), new RegexConverter(),
+            new PathConverter(), new DurationConverter(), new MemorySizeConverter(), new LocaleConverter(),
+            new ZoneIdConverter(), new LevelConverter());
 
     static final QuarkusComponentTestConfiguration DEFAULT = new QuarkusComponentTestConfiguration(Map.of(), Set.of(),
             List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL, List.of(),
@@ -156,14 +150,11 @@ class QuarkusComponentTestConfiguration {
         // All fields annotated with @Inject represent component classes
         for (Field field : testClass.getDeclaredFields()) {
             if (field.isAnnotationPresent(Inject.class)) {
-                if (Instance.class.isAssignableFrom(field.getType())
-                        || QuarkusComponentTestExtension.isListAllInjectionPoint(field.getGenericType(),
-                                field.getAnnotations(),
-                                field)) {
+                if (Instance.class.isAssignableFrom(field.getType()) || QuarkusComponentTestExtension
+                        .isListAllInjectionPoint(field.getGenericType(), field.getAnnotations(), field)) {
                     // Special handling for Instance<Foo> and @All List<Foo>
-                    componentClasses
-                            .add(getRawType(
-                                    QuarkusComponentTestExtension.getFirstActualTypeArgument(field.getGenericType())));
+                    componentClasses.add(getRawType(
+                            QuarkusComponentTestExtension.getFirstActualTypeArgument(field.getGenericType())));
                 } else if (!resolvesToBuiltinBean(field.getType())) {
                     componentClasses.add(field.getType());
                 }
@@ -185,17 +176,14 @@ class QuarkusComponentTestConfiguration {
                 for (Parameter param : method.getParameters()) {
                     if (QuarkusComponentTestExtension.BUILTIN_PARAMETER.test(param)
                             || param.isAnnotationPresent(InjectMock.class)
-                            || param.isAnnotationPresent(SkipInject.class)
-                            || param.isAnnotationPresent(Mock.class)) {
+                            || param.isAnnotationPresent(SkipInject.class) || param.isAnnotationPresent(Mock.class)) {
                         continue;
                     }
-                    if (Instance.class.isAssignableFrom(param.getType())
-                            || QuarkusComponentTestExtension.isListAllInjectionPoint(param.getParameterizedType(),
-                                    param.getAnnotations(),
-                                    param)) {
+                    if (Instance.class.isAssignableFrom(param.getType()) || QuarkusComponentTestExtension
+                            .isListAllInjectionPoint(param.getParameterizedType(), param.getAnnotations(), param)) {
                         // Special handling for Instance<Foo> and @All List<Foo>
-                        componentClasses.add(getRawType(
-                                QuarkusComponentTestExtension.getFirstActualTypeArgument(param.getParameterizedType())));
+                        componentClasses.add(getRawType(QuarkusComponentTestExtension
+                                .getFirstActualTypeArgument(param.getParameterizedType())));
                     } else {
                         componentClasses.add(param.getType());
                     }
@@ -218,18 +206,15 @@ class QuarkusComponentTestConfiguration {
         for (TestConfigProperty testConfigProperty : testConfigProperties) {
             configProperties.put(testConfigProperty.key(), testConfigProperty.value());
         }
-        return new QuarkusComponentTestConfiguration(configProperties, componentClasses,
-                mockConfigurators, useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal,
-                annotationsTransformers, configConverters, configBuilderCustomizer);
+        return new QuarkusComponentTestConfiguration(configProperties, componentClasses, mockConfigurators,
+                useDefaultConfigProperties, addNestedClassesAsComponents, configSourceOrdinal, annotationsTransformers,
+                configConverters, configBuilderCustomizer);
     }
 
     private static boolean resolvesToBuiltinBean(Class<?> rawType) {
-        return Provider.class.equals(rawType)
-                || Instance.class.equals(rawType)
-                || InjectableInstance.class.equals(rawType)
-                || Event.class.equals(rawType)
-                || BeanContainer.class.equals(rawType)
-                || BeanManager.class.equals(rawType);
+        return Provider.class.equals(rawType) || Instance.class.equals(rawType)
+                || InjectableInstance.class.equals(rawType) || Event.class.equals(rawType)
+                || BeanContainer.class.equals(rawType) || BeanManager.class.equals(rawType);
     }
 
     @SuppressWarnings("unchecked")

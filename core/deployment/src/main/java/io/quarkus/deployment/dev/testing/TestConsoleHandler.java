@@ -33,9 +33,8 @@ public class TestConsoleHandler implements TestListener {
 
     private static final Logger log = Logger.getLogger("io.quarkus.test");
 
-    public static final ConsoleCommand TOGGLE_TEST_OUTPUT = new ConsoleCommand('o', "Toggle test output", "Toggle test output",
-            1000,
-            new ConsoleCommand.HelpState(TestSupport.instance().get()::isDisplayTestOutput),
+    public static final ConsoleCommand TOGGLE_TEST_OUTPUT = new ConsoleCommand('o', "Toggle test output",
+            "Toggle test output", 1000, new ConsoleCommand.HelpState(TestSupport.instance().get()::isDisplayTestOutput),
             () -> TestSupport.instance().get().toggleTestOutput());
 
     final DevModeType devModeType;
@@ -117,16 +116,15 @@ public class TestConsoleHandler implements TestListener {
     }
 
     private void setupTestsRunningConsole() {
-        consoleContext.reset(
-                new ConsoleCommand('r', "Re-run all tests", "to re-run", 500, null, () -> {
-                    testController.runAllTests();
-                }), new ConsoleCommand('f', "Re-run failed tests", null, () -> {
-                    testController.runFailedTests();
-                }),
-                new ConsoleCommand('b', "Toggle 'broken only' mode, where only failing tests are run",
-                        new ConsoleCommand.HelpState(testController::isBrokenOnlyMode),
-                        () -> testController.toggleBrokenOnlyMode()),
-                new ConsoleCommand('v', "Print failures from the last test run", null, () -> testController.printFullResults()),
+        consoleContext.reset(new ConsoleCommand('r', "Re-run all tests", "to re-run", 500, null, () -> {
+            testController.runAllTests();
+        }), new ConsoleCommand('f', "Re-run failed tests", null, () -> {
+            testController.runFailedTests();
+        }), new ConsoleCommand('b', "Toggle 'broken only' mode, where only failing tests are run",
+                new ConsoleCommand.HelpState(testController::isBrokenOnlyMode),
+                () -> testController.toggleBrokenOnlyMode()),
+                new ConsoleCommand('v', "Print failures from the last test run", null,
+                        () -> testController.printFullResults()),
                 new ConsoleCommand('p', "Pause tests", null, () -> TestSupport.instance().get().stop()));
         addTestOutput();
     }
@@ -185,10 +183,10 @@ public class TestConsoleHandler implements TestListener {
                     if (paths.size() == 1) {
                         end = end + " due to changes to " + paths.iterator().next().getFileName() + ".";
                     } else if (paths.size() > 1) {
-                        end = end + " due to changes to " + paths.iterator().next().getFileName() + " and " + (paths.size() - 1)
-                                + " other files.";
+                        end = end + " due to changes to " + paths.iterator().next().getFileName() + " and "
+                                + (paths.size() - 1) + " other files.";
                     } else {
-                        //should never happen
+                        // should never happen
                         end = end + ".";
                     }
                 } else {
@@ -204,31 +202,27 @@ public class TestConsoleHandler implements TestListener {
                     }
                     currentlyFailing = false;
                     lastResults = String.format(
-                            GREEN + "All %d " + pluralize("test is", "tests are", results.getPassedCount()) + " passing "
-                                    + "(%d skipped), "
-                                    + "%d "
+                            GREEN + "All %d " + pluralize("test is", "tests are", results.getPassedCount())
+                                    + " passing " + "(%d skipped), " + "%d "
                                     + pluralize("test was", "tests were",
                                             results.getCurrentTotalCount() - results.getCurrentSkippedCount())
-                                    + " run in %dms."
-                                    + end + RESET,
-                            results.getPassedCount(),
-                            results.getSkippedCount(),
+                                    + " run in %dms." + end + RESET,
+                            results.getPassedCount(), results.getSkippedCount(),
                             results.getCurrentTotalCount() - results.getCurrentSkippedCount(), results.getTotalTime());
                 } else {
                     currentlyFailing = true;
-                    //TODO: this should not use the logger, it should print a nicer status
-                    //first print the full failures
+                    // TODO: this should not use the logger, it should print a nicer status
+                    // first print the full failures
                     log.error(statusHeader("TEST REPORT #" + results.getId()));
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
                             if (test.isReportable()) {
-                                log.error(
-                                        RED + "Test " + test.getDisplayName() + " failed \n" + RESET,
+                                log.error(RED + "Test " + test.getDisplayName() + " failed \n" + RESET,
                                         test.getTestExecutionResult().getThrowable().get());
                             }
                         }
                     }
-                    //then print the summary
+                    // then print the summary
                     StringBuilder summary = new StringBuilder(statusFooter(RED + "Summary:") + "\n");
                     for (Map.Entry<String, TestClassResult> classEntry : results.getCurrentFailing().entrySet()) {
                         for (TestResult test : classEntry.getValue().getFailing()) {
@@ -248,9 +242,8 @@ public class TestConsoleHandler implements TestListener {
                                     summary.append(testclass.getClassName() + "#" + testclass.getMethodName() + "("
                                             + testclass.getFileName() + ":" + testclass.getLineNumber() + ") ");
                                 }
-                                summary.append(RED
-                                        + test.getDisplayName() + RESET
-                                        + " " + test.getTestExecutionResult().getThrowable().get().getMessage());
+                                summary.append(RED + test.getDisplayName() + RESET + " "
+                                        + test.getTestExecutionResult().getThrowable().get().getMessage());
                             }
                         }
                     }
@@ -258,19 +251,19 @@ public class TestConsoleHandler implements TestListener {
                         summary.setLength(summary.length() - 1);
                     }
                     log.error(summary.toString());
-                    log.error(
-                            statusFooter(RED + results.getCurrentFailedCount() + " "
-                                    + pluralize("TEST", "TESTS", results.getCurrentFailedCount()) + " FAILED"));
+                    log.error(statusFooter(RED + results.getCurrentFailedCount() + " "
+                            + pluralize("TEST", "TESTS", results.getCurrentFailedCount()) + " FAILED"));
                     lastResults = String.format(
                             RED + "%d " + pluralize("test", "tests", results.getCurrentFailedCount()) + " failed"
-                                    + RESET + " (" + GREEN + "%d passing" + RESET + ", " + BLUE + "%d skipped"
-                                    + RESET + "), " + RED + "%d " + pluralize("test was", "tests were",
+                                    + RESET + " (" + GREEN + "%d passing" + RESET + ", " + BLUE + "%d skipped" + RESET
+                                    + "), " + RED + "%d "
+                                    + pluralize("test was", "tests were",
                                             results.getCurrentTotalCount() - results.getCurrentSkippedCount())
                                     + " run in %dms." + end + RESET,
                             results.getCurrentFailedCount(), results.getPassedCount(), results.getSkippedCount(),
                             results.getCurrentTotalCount() - results.getCurrentSkippedCount(), results.getTotalTime());
                 }
-                //this will re-print when using the basic console
+                // this will re-print when using the basic console
                 if (!disabled) {
                     resultsOutput.setMessage(lastResults);
                     testsStatusOutput.setMessage(null);
@@ -286,12 +279,11 @@ public class TestConsoleHandler implements TestListener {
             public void testStarted(TestIdentifier testIdentifier, String className) {
                 String status = "Running " + (methodCount.get() + 1) + "/" + totalNoTests
                         + (failureCount.get() == 0 ? "."
-                                : ". " + RED + failureCount + " " + pluralize("failure", "failures", failureCount) + " so far."
-                                        + RESET)
-                        + " Running: "
-                        + className + "#" + testIdentifier.getDisplayName();
-                if (TestSupport.instance().get().isDisplayTestOutput() &&
-                        QuarkusConsole.INSTANCE instanceof AeshConsole) {
+                                : ". " + RED + failureCount + " " + pluralize("failure", "failures", failureCount)
+                                        + " so far." + RESET)
+                        + " Running: " + className + "#" + testIdentifier.getDisplayName();
+                if (TestSupport.instance().get().isDisplayTestOutput()
+                        && QuarkusConsole.INSTANCE instanceof AeshConsole) {
                     log.info(status);
                 }
                 testsStatusOutput.setMessage(status);

@@ -27,17 +27,13 @@ public class UserResource {
         }
 
         // create new user with role 'user' and do not validate whether username is unique
-        return PanacheRoleEntity
-                .<PanacheRoleEntity> find("role", "user")
-                .singleResult()
-                .flatMap(userRole -> {
-                    PanacheUserEntity user = new PanacheUserEntity();
-                    user.name = username;
-                    user.pass = username;
-                    user.roles = List.of(userRole);
-                    return user.persist();
-                })
-                .map(user -> Response.created(null).build());
+        return PanacheRoleEntity.<PanacheRoleEntity> find("role", "user").singleResult().flatMap(userRole -> {
+            PanacheUserEntity user = new PanacheUserEntity();
+            user.name = username;
+            user.pass = username;
+            user.roles = List.of(userRole);
+            return user.persist();
+        }).map(user -> Response.created(null).build());
     }
 
     @GET

@@ -38,10 +38,8 @@ public class BuildAnalyticsProvider {
         analyticsService = new AnalyticsService(FileLocationsImpl.INSTANCE, new MojoMessageWriter(getLog()));
     }
 
-    public void sendAnalytics(TrackEventType trackEventType,
-            ApplicationModel applicationModel,
-            Map<String, String> graalVMInfo,
-            File localBuildDir) {
+    public void sendAnalytics(TrackEventType trackEventType, ApplicationModel applicationModel,
+            Map<String, String> graalVMInfo, File localBuildDir) {
         final long start = System.nanoTime();
 
         final Map<String, Object> buildInfo = new HashMap<>(graalVMInfo);

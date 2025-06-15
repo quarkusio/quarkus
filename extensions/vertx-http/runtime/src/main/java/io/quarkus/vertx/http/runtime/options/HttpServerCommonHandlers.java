@@ -37,31 +37,32 @@ public class HttpServerCommonHandlers {
         if (limits.maxBodySize().isPresent()) {
             long limit = limits.maxBodySize().get().asLongValue();
             Long limitObj = limit;
-            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_UPLOAD_LIMIT).handler(new Handler<RoutingContext>() {
-                @Override
-                public void handle(RoutingContext event) {
-                    String lengthString = event.request().headers().get(HttpHeaderNames.CONTENT_LENGTH);
+            httpRouteRouter.route().order(RouteConstants.ROUTE_ORDER_UPLOAD_LIMIT)
+                    .handler(new Handler<RoutingContext>() {
+                        @Override
+                        public void handle(RoutingContext event) {
+                            String lengthString = event.request().headers().get(HttpHeaderNames.CONTENT_LENGTH);
 
-                    if (lengthString != null) {
-                        long length = Long.parseLong(lengthString);
-                        if (length > limit) {
-                            event.response().headers().add(HttpHeaderNames.CONNECTION, "close");
-                            event.response().setStatusCode(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE.code());
-                            event.response().endHandler(new Handler<Void>() {
-                                @Override
-                                public void handle(Void e) {
-                                    event.request().connection().close();
+                            if (lengthString != null) {
+                                long length = Long.parseLong(lengthString);
+                                if (length > limit) {
+                                    event.response().headers().add(HttpHeaderNames.CONNECTION, "close");
+                                    event.response().setStatusCode(HttpResponseStatus.REQUEST_ENTITY_TOO_LARGE.code());
+                                    event.response().endHandler(new Handler<Void>() {
+                                        @Override
+                                        public void handle(Void e) {
+                                            event.request().connection().close();
+                                        }
+                                    });
+                                    event.response().end();
+                                    return;
                                 }
-                            });
-                            event.response().end();
-                            return;
+                            } else {
+                                event.put(VertxHttpRecorder.MAX_REQUEST_SIZE_KEY, limitObj);
+                            }
+                            event.next();
                         }
-                    } else {
-                        event.put(VertxHttpRecorder.MAX_REQUEST_SIZE_KEY, limitObj);
-                    }
-                    event.next();
-                }
-            });
+                    });
         }
     }
 
@@ -101,7 +102,8 @@ public class HttpServerCommonHandlers {
                 return new Handler<HttpServerRequest>() {
                     @Override
                     public void handle(HttpServerRequest event) {
-                        root.handle(new ForwardedServerRequestWrapper(event, forwardingProxyOptions, allowAllProxyCheck));
+                        root.handle(
+                                new ForwardedServerRequestWrapper(event, forwardingProxyOptions, allowAllProxyCheck));
                     }
                 };
             } else {
@@ -121,21 +123,18 @@ public class HttpServerCommonHandlers {
                 var methods = filterConfig.methods();
                 var headers = filterConfig.header();
                 if (methods.isEmpty()) {
-                    httpRouteRouter.routeWithRegex(matches)
-                            .order(order)
-                            .handler(new Handler<RoutingContext>() {
-                                @Override
-                                public void handle(RoutingContext event) {
-                                    addFilterHeaders(event, headers);
-                                    event.next();
-                                }
+                    httpRouteRouter.routeWithRegex(matches).order(order).handler(new Handler<RoutingContext>() {
+                        @Override
+                        public void handle(RoutingContext event) {
+                            addFilterHeaders(event, headers);
+                            event.next();
+                        }
 
-                            });
+                    });
                 } else {
                     for (var method : methods.get()) {
                         httpRouteRouter.routeWithRegex(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), matches)
-                                .order(order)
-                                .handler(new Handler<RoutingContext>() {
+                                .order(order).handler(new Handler<RoutingContext>() {
                                     @Override
                                     public void handle(RoutingContext event) {
                                         addFilterHeaders(event, headers);
@@ -176,8 +175,7 @@ public class HttpServerCommonHandlers {
                 var name = entry.getKey();
                 var config = entry.getValue();
                 if (config.methods().isEmpty()) {
-                    httpRouteRouter.route(config.path())
-                            .order(RouteConstants.ROUTE_ORDER_HEADERS)
+                    httpRouteRouter.route(config.path()).order(RouteConstants.ROUTE_ORDER_HEADERS)
                             .handler(new Handler<RoutingContext>() {
                                 @Override
                                 public void handle(RoutingContext event) {
@@ -188,8 +186,7 @@ public class HttpServerCommonHandlers {
                 } else {
                     for (String method : config.methods().get()) {
                         httpRouteRouter.route(HttpMethod.valueOf(method.toUpperCase(Locale.ROOT)), config.path())
-                                .order(RouteConstants.ROUTE_ORDER_HEADERS)
-                                .handler(new Handler<RoutingContext>() {
+                                .order(RouteConstants.ROUTE_ORDER_HEADERS).handler(new Handler<RoutingContext>() {
                                     @Override
                                     public void handle(RoutingContext event) {
                                         event.response().headers().add(name, config.value());

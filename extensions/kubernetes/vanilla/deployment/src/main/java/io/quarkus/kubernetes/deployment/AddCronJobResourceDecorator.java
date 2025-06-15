@@ -28,11 +28,8 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
 
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        CronJobBuilder builder = list.buildItems().stream()
-                .filter(this::containsCronJobResource)
-                .map(replaceExistingCronJobResource(list))
-                .findAny()
-                .orElseGet(this::createCronJobResource)
+        CronJobBuilder builder = list.buildItems().stream().filter(this::containsCronJobResource)
+                .map(replaceExistingCronJobResource(list)).findAny().orElseGet(this::createCronJobResource)
                 .accept(CronJobBuilder.class, this::initCronJobResourceWithDefaults);
 
         if (Strings.isNullOrEmpty(builder.buildSpec().getSchedule())) {
@@ -50,16 +47,9 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
     private void initCronJobResourceWithDefaults(CronJobBuilder builder) {
         CronJobFluent<?>.SpecNested<CronJobBuilder> spec = builder.editOrNewSpec();
 
-        var jobTemplateSpec = spec
-                .editOrNewJobTemplate()
-                .editOrNewSpec();
+        var jobTemplateSpec = spec.editOrNewJobTemplate().editOrNewSpec();
 
-        jobTemplateSpec.editOrNewSelector()
-                .endSelector()
-                .editOrNewTemplate()
-                .editOrNewSpec()
-                .endSpec()
-                .endTemplate();
+        jobTemplateSpec.editOrNewSelector().endSelector().editOrNewTemplate().editOrNewSpec().endSpec().endTemplate();
 
         // defaults for:
         // - match labels
@@ -74,7 +64,8 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         }
         // - container
         if (!containsContainerWithName(spec)) {
-            jobTemplateSpec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec().endTemplate();
+            jobTemplateSpec.editTemplate().editSpec().addNewContainer().withName(name).endContainer().endSpec()
+                    .endTemplate();
         }
 
         spec.withSuspend(config.suspend());
@@ -86,7 +77,8 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
         config.timeZone().ifPresent(spec::withTimeZone);
 
         jobTemplateSpec.withCompletionMode(config.completionMode().name());
-        jobTemplateSpec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec().endTemplate();
+        jobTemplateSpec.editTemplate().editSpec().withRestartPolicy(config.restartPolicy().name()).endSpec()
+                .endTemplate();
         config.parallelism().ifPresent(jobTemplateSpec::withParallelism);
         config.completions().ifPresent(jobTemplateSpec::withCompletions);
         config.backoffLimit().ifPresent(jobTemplateSpec::withBackoffLimit);
@@ -110,9 +102,7 @@ public class AddCronJobResourceDecorator extends ResourceProvidingDecorator<Kube
 
     private boolean containsContainerWithName(CronJobFluent<?>.SpecNested<CronJobBuilder> spec) {
         var jobTemplate = spec.buildJobTemplate();
-        if (jobTemplate == null
-                || jobTemplate.getSpec() == null
-                || jobTemplate.getSpec().getTemplate() == null
+        if (jobTemplate == null || jobTemplate.getSpec() == null || jobTemplate.getSpec().getTemplate() == null
                 || jobTemplate.getSpec().getTemplate().getSpec() == null) {
             return false;
         }

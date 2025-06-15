@@ -19,12 +19,14 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
             this.fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClassPath());
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
             if (context.getGeneratedSourcesDirectory() != null) {
-                this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
+                this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT,
+                        List.of(context.getGeneratedSourcesDirectory()));
             }
             if (context.getAnnotationProcessorPaths() != null) {
                 // Paths might be missing! (see: https://github.com/quarkusio/quarkus/issues/42908)
                 ensureDirectories(context.getAnnotationProcessorPaths());
-                this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH, context.getAnnotationProcessorPaths());
+                this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH,
+                        context.getAnnotationProcessorPaths());
             }
         } catch (IOException e) {
             throw new RuntimeException("Cannot initialize file manager", e);
@@ -38,12 +40,14 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
             this.fileManager.setLocation(StandardLocation.CLASS_PATH, context.getClassPath());
             this.fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(context.getOutputDirectory()));
             if (context.getGeneratedSourcesDirectory() != null) {
-                this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT, List.of(context.getGeneratedSourcesDirectory()));
+                this.fileManager.setLocation(StandardLocation.SOURCE_OUTPUT,
+                        List.of(context.getGeneratedSourcesDirectory()));
             }
             if (context.getAnnotationProcessorPaths() != null) {
                 // Paths might be missing! (see: https://github.com/quarkusio/quarkus/issues/42908)
                 ensureDirectories(context.getAnnotationProcessorPaths());
-                this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH, context.getAnnotationProcessorPaths());
+                this.fileManager.setLocation(StandardLocation.ANNOTATION_PROCESSOR_PATH,
+                        context.getAnnotationProcessorPaths());
             }
         } catch (IOException e) {
             throw new RuntimeException("Cannot reset file manager", e);
@@ -75,9 +79,9 @@ public abstract class QuarkusFileManager extends ForwardingJavaFileManager<Stand
         private final File generatedSourcesDirectory;
         private final Set<File> annotationProcessorPaths;
 
-        public Context(Set<File> classPath, Set<File> reloadableClassPath,
-                File outputDirectory, File generatedSourcesDirectory, Set<File> annotationProcessorPaths,
-                Charset sourceEncoding, boolean ignoreModuleInfo) {
+        public Context(Set<File> classPath, Set<File> reloadableClassPath, File outputDirectory,
+                File generatedSourcesDirectory, Set<File> annotationProcessorPaths, Charset sourceEncoding,
+                boolean ignoreModuleInfo) {
             this.classPath = classPath;
             this.reloadableClassPath = reloadableClassPath;
             this.outputDirectory = outputDirectory;

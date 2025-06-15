@@ -8,13 +8,9 @@ import java.util.Objects;
 import org.jboss.logmanager.MDCProvider;
 
 /**
- * Class enabling Quarkus to instantiate a {@link MDCProvider}
- * and set a delegate during runtime initialization.
- *
- * While/when no delegate is set it serves as a thread local MDC.
- *
- * LateBoundMDCProvider is an implementation of the MDC Provider SPI
- * it will only be used/discovered if a provider configuration file
+ * Class enabling Quarkus to instantiate a {@link MDCProvider} and set a delegate during runtime initialization.
+ * While/when no delegate is set it serves as a thread local MDC. LateBoundMDCProvider is an implementation of the MDC
+ * Provider SPI it will only be used/discovered if a provider configuration file
  * {@code META-INF/services/org.jboss.logmanager.MDCProvider } is created.
  */
 @SuppressWarnings({ "unused" })
@@ -34,7 +30,8 @@ public class LateBoundMDCProvider implements MDCProvider {
     /**
      * Set the actual {@link MDCProvider} to use as the delegate.
      *
-     * @param delegate Properly constructed {@link MDCProvider}.
+     * @param delegate
+     *        Properly constructed {@link MDCProvider}.
      */
     public synchronized static void setMDCProviderDelegate(MDCProvider delegate) {
         LateBoundMDCProvider.delegate = delegate;

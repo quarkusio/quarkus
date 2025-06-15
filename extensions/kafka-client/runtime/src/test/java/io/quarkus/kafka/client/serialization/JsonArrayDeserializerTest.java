@@ -16,14 +16,10 @@ import io.vertx.core.json.JsonArray;
 public class JsonArrayDeserializerTest {
     @Test
     void shouldDeserializeEntity() {
-        JsonArray expected = new JsonArray(List.of(
-                Map.of("id", 1, "name", "entity1"),
-                Map.of("id", 2, "name", "entity2")));
+        JsonArray expected = new JsonArray(
+                List.of(Map.of("id", 1, "name", "entity1"), Map.of("id", 2, "name", "entity2")));
         JsonArrayDeserializer deserializer = new JsonArrayDeserializer();
-        String actualString = "[" +
-                "{\"id\":1,\"name\":\"entity1\"}," +
-                "{\"id\":2,\"name\":\"entity2\"}" +
-                "]";
+        String actualString = "[" + "{\"id\":1,\"name\":\"entity1\"}," + "{\"id\":2,\"name\":\"entity2\"}" + "]";
         JsonArray actual = deserializer.deserialize("topic", actualString.getBytes());
         assertNotNull(actual);
         assertEquals(expected, actual);

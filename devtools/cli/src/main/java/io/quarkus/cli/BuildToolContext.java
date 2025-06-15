@@ -10,9 +10,8 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 
 /**
- * Context class that holds all the required info that is passed to {@link BuildToolDelegatingCommand}.
- * In many cases a subcommand delegates to the parent. It's cleaner to keep all the state in a single
- * class to pass along.
+ * Context class that holds all the required info that is passed to {@link BuildToolDelegatingCommand}. In many cases a
+ * subcommand delegates to the parent. It's cleaner to keep all the state in a single class to pass along.
  */
 public class BuildToolContext {
 

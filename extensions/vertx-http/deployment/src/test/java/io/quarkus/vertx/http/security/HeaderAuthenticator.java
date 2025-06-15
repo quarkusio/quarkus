@@ -22,7 +22,8 @@ public class HeaderAuthenticator implements HttpAuthenticationMechanism {
     public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         String user = context.request().getHeader("user");
         if (user != null) {
-            return Uni.createFrom().item(QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal(user)).build());
+            return Uni.createFrom()
+                    .item(QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal(user)).build());
         }
         return Uni.createFrom().nullItem();
     }

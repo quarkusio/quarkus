@@ -15,7 +15,6 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
 
     /**
      * Creates a new JSON formatter.
-     *
      */
     public JsonFormatter() {
         super();
@@ -26,9 +25,9 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     /**
      * Creates a new JSON formatter.
      *
-     * @param keyOverrides a string representation of a map to override keys
-     *
-     *        "@see org.jboss.logmanager.ext.PropertyValues#stringToEnumMap(Class, String)"
+     * @param keyOverrides
+     *        a string representation of a map to override keys "@see
+     *        org.jboss.logmanager.ext.PropertyValues#stringToEnumMap(Class, String)"
      */
     public JsonFormatter(final String keyOverrides) {
         super(keyOverrides);
@@ -39,11 +38,13 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     /**
      * Creates a new JSON formatter.
      *
-     * @param keyOverrides a string representation of a map to override keys
-     *
-     *        "@see org.jboss.logmanager.ext.PropertyValues#stringToEnumMap(Class, String)"
-     * @param excludedKeys a list of keys to be excluded when writing the output
-     * @param additionalFields additionalFields to be added to the output
+     * @param keyOverrides
+     *        a string representation of a map to override keys "@see
+     *        org.jboss.logmanager.ext.PropertyValues#stringToEnumMap(Class, String)"
+     * @param excludedKeys
+     *        a list of keys to be excluded when writing the output
+     * @param additionalFields
+     *        additionalFields to be added to the output
      */
     public JsonFormatter(final String keyOverrides, final Set<String> excludedKeys,
             final Map<String, AdditionalField> additionalFields) {

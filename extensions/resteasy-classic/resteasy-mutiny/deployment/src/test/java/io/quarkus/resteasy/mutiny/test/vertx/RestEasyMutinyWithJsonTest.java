@@ -14,8 +14,7 @@ public class RestEasyMutinyWithJsonTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ResourceProducingJsonObject.class, MutinyInjector.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ResourceProducingJsonObject.class, MutinyInjector.class));
 
     @Test
     public void testUni() {

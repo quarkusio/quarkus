@@ -9,7 +9,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The current time
- *
  */
 public class DateTimeAttribute implements ExchangeAttribute {
 

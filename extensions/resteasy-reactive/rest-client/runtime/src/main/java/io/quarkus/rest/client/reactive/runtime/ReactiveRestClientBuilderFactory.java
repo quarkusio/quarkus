@@ -19,8 +19,8 @@ public class ReactiveRestClientBuilderFactory implements RestClientBuilderFactor
 
         RestClientBuilderImpl restClientBuilder = new RestClientBuilderImpl();
         QuarkusRestClientBuilderImpl quarkusRestClientBuilder = new QuarkusRestClientBuilderImpl(restClientBuilder);
-        RestClientCDIDelegateBuilder<?> restClientBase = new RestClientCDIDelegateBuilder<>(proxyType, baseUri, configKey,
-                restClientsConfigRoot);
+        RestClientCDIDelegateBuilder<?> restClientBase = new RestClientCDIDelegateBuilder<>(proxyType, baseUri,
+                configKey, restClientsConfigRoot);
         restClientBase.configureBuilder(quarkusRestClientBuilder);
 
         return restClientBuilder;

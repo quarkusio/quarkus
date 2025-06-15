@@ -13,7 +13,8 @@ class ResponseStatusOnExceptionGenerator extends AbstractExceptionMapperGenerato
 
     private final ClassInfo exceptionClassInfo;
 
-    ResponseStatusOnExceptionGenerator(ClassInfo exceptionClassInfo, ClassOutput classOutput, boolean isResteasyClassic) {
+    ResponseStatusOnExceptionGenerator(ClassInfo exceptionClassInfo, ClassOutput classOutput,
+            boolean isResteasyClassic) {
         super(exceptionClassInfo.name(), classOutput, isResteasyClassic);
         this.exceptionClassInfo = exceptionClassInfo;
     }
@@ -22,24 +23,17 @@ class ResponseStatusOnExceptionGenerator extends AbstractExceptionMapperGenerato
         ResultHandle status = toResponse
                 .load(getHttpStatusFromAnnotation(exceptionClassInfo.declaredAnnotation(RESPONSE_STATUS)));
         ResultHandle responseBuilder = toResponse.invokeStaticMethod(
-                MethodDescriptor.ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class),
-                status);
+                MethodDescriptor.ofMethod(Response.class, "status", Response.ResponseBuilder.class, int.class), status);
         ResultHandle exceptionMessage = toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Throwable.class, "getMessage", String.class),
-                toResponse.getMethodParam(0));
-        toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "entity", Response.ResponseBuilder.class,
-                        Object.class),
-                responseBuilder, exceptionMessage);
+                MethodDescriptor.ofMethod(Throwable.class, "getMessage", String.class), toResponse.getMethodParam(0));
+        toResponse.invokeVirtualMethod(MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "entity",
+                Response.ResponseBuilder.class, Object.class), responseBuilder, exceptionMessage);
         ResultHandle httpResponseType = toResponse.load("text/plain");
-        toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "type", Response.ResponseBuilder.class,
-                        String.class),
-                responseBuilder, httpResponseType);
+        toResponse.invokeVirtualMethod(MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "type",
+                Response.ResponseBuilder.class, String.class), responseBuilder, httpResponseType);
 
         ResultHandle response = toResponse.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "build", Response.class),
-                responseBuilder);
+                MethodDescriptor.ofMethod(Response.ResponseBuilder.class, "build", Response.class), responseBuilder);
         toResponse.returnValue(response);
     }
 }

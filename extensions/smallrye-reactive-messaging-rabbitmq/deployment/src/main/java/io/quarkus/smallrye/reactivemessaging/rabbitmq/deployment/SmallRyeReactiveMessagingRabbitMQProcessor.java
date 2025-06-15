@@ -29,16 +29,13 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem build() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(RabbitmqClientConfigCustomizer.class)
-                .setUnremovable()
+        return AdditionalBeanBuildItem.builder().addBeanClass(RabbitmqClientConfigCustomizer.class).setUnremovable()
                 .build();
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void dynamicCredentials(RabbitMQRecorder recorder,
-            RabbitMQBuildTimeConfig rabbitMQBuildTimeConfig,
+    public void dynamicCredentials(RabbitMQRecorder recorder, RabbitMQBuildTimeConfig rabbitMQBuildTimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> configDefaults) {
@@ -48,23 +45,19 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
         if (rabbitMQBuildTimeConfig.credentialsProvider().isPresent()) {
             String credentialsProvider = rabbitMQBuildTimeConfig.credentialsProvider().get();
 
-            RuntimeValue<CredentialsProviderLink> credentialsProviderLink = recorder.configureOptions(
-                    credentialsProvider,
-                    rabbitMQBuildTimeConfig.credentialsProviderName());
+            RuntimeValue<CredentialsProviderLink> credentialsProviderLink = recorder
+                    .configureOptions(credentialsProvider, rabbitMQBuildTimeConfig.credentialsProviderName());
 
             String identifier = "credentials-provider-link-" + credentialsProvider;
 
             ExtendedBeanConfigurator rabbitMQOptionsConfigurator = SyntheticBeanBuildItem
-                    .configure(CredentialsProviderLink.class)
-                    .defaultBean()
-                    .addType(CredentialsProvider.class)
+                    .configure(CredentialsProviderLink.class).defaultBean().addType(CredentialsProvider.class)
                     .addQualifier().annotation(Identifier.class).addValue("value", identifier).done()
-                    .scope(ApplicationScoped.class)
-                    .runtimeValue(credentialsProviderLink)
-                    .unremovable()
+                    .scope(ApplicationScoped.class).runtimeValue(credentialsProviderLink).unremovable()
                     .setRuntimeInit();
 
-            configDefaults.produce(new RunTimeConfigurationDefaultBuildItem("rabbitmq-credentials-provider-name", identifier));
+            configDefaults.produce(
+                    new RunTimeConfigurationDefaultBuildItem("rabbitmq-credentials-provider-name", identifier));
             syntheticBeans.produce(rabbitMQOptionsConfigurator.done());
         }
     }

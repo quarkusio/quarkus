@@ -30,44 +30,30 @@ public class GraphicsIT {
     public static Pattern AWT_EXTENSION_HINT_PATTERN = Pattern.compile(".*" + AWT_EXTENSION_HINT + ".*");
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "IIORegistry",
-            "GraphicsEnvironment",
-            "Color",
-            "BufferedImage",
-            "Transformations",
-            "ConvolveOp",
-            "Path2D",
-            "ImageReader",
-            "ImageWriter"
-    })
+    @ValueSource(strings = { "IIORegistry", "GraphicsEnvironment", "Color", "BufferedImage", "Transformations",
+            "ConvolveOp", "Path2D", "ImageReader", "ImageWriter" })
     public void testGraphics(String entrypoint) throws IOException {
         LOG.infof("Triggering test: %s", entrypoint);
-        RestAssured.given().when()
-                .param("entrypoint", entrypoint)
-                .get("/graphics")
-                .then()
-                .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR)
-                .log().all();
+        RestAssured.given().when().param("entrypoint", entrypoint).get("/graphics").then()
+                .statusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR).log().all();
         checkLog(AWT_EXTENSION_HINT_PATTERN);
     }
 
     /**
      * Looks for a pattern in the log, line by line.
      *
-     * @param lineMatchRegexp pattern
+     * @param lineMatchRegexp
+     *        pattern
      */
     static void checkLog(final Pattern lineMatchRegexp) {
         final Path logFilePath = Paths.get(".", "target", "quarkus.log").toAbsolutePath();
-        org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(3, TimeUnit.SECONDS)
+        org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS).atMost(3, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
                     assertTrue(Files.exists(logFilePath), "Quarkus log file " + logFilePath + " is missing");
                     boolean found = false;
                     final StringBuilder sbLog = new StringBuilder();
-                    try (BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(logFilePath)),
-                                    StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                            new ByteArrayInputStream(Files.readAllBytes(logFilePath)), StandardCharsets.UTF_8))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             sbLog.append(line).append("\r\n");
@@ -77,8 +63,8 @@ public class GraphicsIT {
                             }
                         }
                     }
-                    assertTrue(found, "Pattern " + lineMatchRegexp.pattern() + " not found in log " + logFilePath + ". \n" +
-                            "The log was: " + sbLog);
+                    assertTrue(found, "Pattern " + lineMatchRegexp.pattern() + " not found in log " + logFilePath
+                            + ". \n" + "The log was: " + sbLog);
                 });
     }
 

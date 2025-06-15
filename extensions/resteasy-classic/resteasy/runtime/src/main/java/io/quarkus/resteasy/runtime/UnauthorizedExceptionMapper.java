@@ -16,8 +16,7 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
- *         <br>
+ * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com <br>
  *         Date: 05/10/2019
  */
 @Provider
@@ -41,8 +40,7 @@ public class UnauthorizedExceptionMapper implements ExceptionMapper<Unauthorized
         if (context != null) {
             HttpAuthenticator authenticator = context.get(HttpAuthenticator.class.getName());
             if (authenticator != null) {
-                ChallengeData challengeData = authenticator.getChallenge(context)
-                        .await().indefinitely();
+                ChallengeData challengeData = authenticator.getChallenge(context).await().indefinitely();
                 if (challengeData != null) {
                     Response.ResponseBuilder status = Response.status(challengeData.status);
                     if (challengeData.headerName != null) {

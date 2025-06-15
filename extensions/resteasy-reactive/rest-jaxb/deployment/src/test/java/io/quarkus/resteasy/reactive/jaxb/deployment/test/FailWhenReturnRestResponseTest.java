@@ -21,10 +21,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FailWhenReturnRestResponseTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(GreetingResource.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class));
 
     @Test
     void shouldFailWithDeploymentException() {

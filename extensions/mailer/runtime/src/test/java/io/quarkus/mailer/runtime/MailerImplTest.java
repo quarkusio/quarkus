@@ -57,9 +57,8 @@ class MailerImplTest {
     @BeforeEach
     void init() {
         mailer = new MutinyMailerImpl(vertx,
-                MailClient.createShared(vertx,
-                        new MailConfig().setPort(wiser.getServer().getPort())),
-                null, FROM, null, false, List.of(), false, false, null);
+                MailClient.createShared(vertx, new MailConfig().setPort(wiser.getServer().getPort())), null, FROM, null,
+                false, List.of(), false, false, null);
 
         wiser.getMessages().clear();
     }
@@ -98,17 +97,16 @@ class MailerImplTest {
     @Test
     void testWithSeveralMails() {
         Mail mail1 = Mail.withText(TO, "Mail 1", "Mail 1").addCc("cc@quarkus.io").addBcc("bcc@quarkus.io");
-        Mail mail2 = Mail.withHtml(TO, "Mail 2", "<strong>Mail 2</strong>").addCc("cc2@quarkus.io").addBcc("bcc2@quarkus.io");
+        Mail mail2 = Mail.withHtml(TO, "Mail 2", "<strong>Mail 2</strong>").addCc("cc2@quarkus.io")
+                .addBcc("bcc2@quarkus.io");
         mailer.send(mail1, mail2).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(6);
     }
 
     @Test
     void testHeaders() throws MessagingException {
-        mailer.send(Mail.withText(TO, "Test", "testHeaders")
-                .addHeader("X-header", "value")
-                .addHeader("X-header-2", "value1", "value2"))
-                .await().indefinitely();
+        mailer.send(Mail.withText(TO, "Test", "testHeaders").addHeader("X-header", "value").addHeader("X-header-2",
+                "value1", "value2")).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         MimeMessage msg = actual.getMimeMessage();
@@ -121,9 +119,8 @@ class MailerImplTest {
     @Test
     void testAttachment() throws MessagingException, IOException {
         String payload = UUID.randomUUID().toString();
-        mailer.send(Mail.withText(TO, "Test", "testAttachment")
-                .addAttachment("my-file.txt", payload.getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE))
-                .await().indefinitely();
+        mailer.send(Mail.withText(TO, "Test", "testAttachment").addAttachment("my-file.txt",
+                payload.getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE)).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testAttachment");
@@ -152,9 +149,8 @@ class MailerImplTest {
             }
         };
 
-        mailer.send(Mail.withText(TO, "Test", "testAttachmentAsStream")
-                .addAttachment("my-file.txt", Multi.createFrom().iterable(iterable), TEXT_CONTENT_TYPE))
-                .await().indefinitely();
+        mailer.send(Mail.withText(TO, "Test", "testAttachmentAsStream").addAttachment("my-file.txt",
+                Multi.createFrom().iterable(iterable), TEXT_CONTENT_TYPE)).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testAttachment");
@@ -168,9 +164,8 @@ class MailerImplTest {
     @Test
     void testInlineAttachment() throws MessagingException, IOException {
         String cid = UUID.randomUUID() + "@acme";
-        mailer.send(Mail.withHtml(TO, "Test", "testInlineAttachment")
-                .addInlineAttachment("inline.txt", "my inlined text".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE, cid))
-                .await().indefinitely();
+        mailer.send(Mail.withHtml(TO, "Test", "testInlineAttachment").addInlineAttachment("inline.txt",
+                "my inlined text".getBytes(StandardCharsets.UTF_8), TEXT_CONTENT_TYPE, cid)).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         assertThat(getContent(actual)).contains("testInlineAttachment");
@@ -202,9 +197,7 @@ class MailerImplTest {
 
     @Test
     void testReplyToHeaderIsSet() throws MessagingException {
-        mailer.send(Mail.withText(TO, "Test", "testHeaders")
-                .setReplyTo("reply-to@quarkus.io"))
-                .await().indefinitely();
+        mailer.send(Mail.withText(TO, "Test", "testHeaders").setReplyTo("reply-to@quarkus.io")).await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
         MimeMessage msg = actual.getMimeMessage();
@@ -214,8 +207,7 @@ class MailerImplTest {
 
     @Test
     void testMultipleReplyToHeaderIsSet() throws MessagingException {
-        mailer.send(Mail.withText(TO, "Test", "testHeaders")
-                .setReplyTo("reply-to@quarkus.io", "another@quarkus.io"))
+        mailer.send(Mail.withText(TO, "Test", "testHeaders").setReplyTo("reply-to@quarkus.io", "another@quarkus.io"))
                 .await().indefinitely();
         assertThat(wiser.getMessages()).hasSize(1);
         WiserMessage actual = wiser.getMessages().get(0);
@@ -254,14 +246,16 @@ class MailerImplTest {
             if (bodyPart.getContent() instanceof MimeMultipart) {
                 for (int j = 0; j < ((MimeMultipart) bodyPart.getContent()).getCount(); j++) {
                     BodyPart nested = ((MimeMultipart) bodyPart.getContent()).getBodyPart(j);
-                    if (nested.getHeader("Content-ID") != null && nested.getHeader("Content-ID")[0].equalsIgnoreCase(cid)) {
+                    if (nested.getHeader("Content-ID") != null
+                            && nested.getHeader("Content-ID")[0].equalsIgnoreCase(cid)) {
                         assertThat(nested.getDisposition()).isEqualTo("inline");
                         assertThat(nested.getContentType()).startsWith(TEXT_CONTENT_TYPE);
                         return read(nested);
                     }
                 }
             } else if (bodyPart.getContent() instanceof String) {
-                if (bodyPart.getHeader("Content-ID") != null && bodyPart.getHeader("Content-ID")[0].equalsIgnoreCase(cid)) {
+                if (bodyPart.getHeader("Content-ID") != null
+                        && bodyPart.getHeader("Content-ID")[0].equalsIgnoreCase(cid)) {
                     return (String) bodyPart.getContent();
                 }
             }
@@ -276,8 +270,7 @@ class MailerImplTest {
         }
     }
 
-    private String getTextFromMimeMultipart(
-            MimeMultipart mimeMultipart) throws MessagingException, IOException {
+    private String getTextFromMimeMultipart(MimeMultipart mimeMultipart) throws MessagingException, IOException {
         StringBuilder result = new StringBuilder();
         int count = mimeMultipart.getCount();
         for (int i = 0; i < count; i++) {

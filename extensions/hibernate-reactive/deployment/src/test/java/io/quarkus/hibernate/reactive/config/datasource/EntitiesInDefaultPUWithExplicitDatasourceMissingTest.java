@@ -16,24 +16,21 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class EntitiesInDefaultPUWithExplicitDatasourceMissingTest {
 
-    // To get exactly this error message, two different JDBC drivers needs to be included, otherwise the error message will be different
+    // To get exactly this error message, two different JDBC drivers needs to be included, otherwise the error message
+    // will be different
     // https://github.com/quarkusio/quarkus/issues/47036
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.datasource", "ds-1")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create")
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-reactive-pg-client", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-jdbc-h2", Version.getVersion())))
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            // Hibernate Reactive doesn't support explicitly setting the datasource (yet),
-                            // so it will just notice the datasource is not configured!
-                            "The datasource must be configured for Hibernate Reactive",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-reactive-pg-client", Version.getVersion()),
+                            Dependency.of("io.quarkus", "quarkus-jdbc-h2", Version.getVersion())))
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class).hasMessageContainingAll(
+                    // Hibernate Reactive doesn't support explicitly setting the datasource (yet),
+                    // so it will just notice the datasource is not configured!
+                    "The datasource must be configured for Hibernate Reactive",
+                    "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
     public void testInvalidConfiguration() {

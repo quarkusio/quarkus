@@ -5,8 +5,8 @@ import java.util.function.Function;
 /**
  * An abstract base for both {@link RunOptions} and {@link TransactionRunnerImpl}.
  * <p>
- * Necessary because having {@link RunOptions} extend {@link TransactionRunnerImpl}.,
- * or the other way around, results in signature conflicts in {@code exceptionHandler(Function)}.
+ * Necessary because having {@link RunOptions} extend {@link TransactionRunnerImpl}., or the other way around, results
+ * in signature conflicts in {@code exceptionHandler(Function)}.
  */
 class RunOptionsBase {
     TransactionSemantics semantics = TransactionSemantics.REQUIRE_NEW;

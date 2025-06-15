@@ -10,19 +10,18 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface ObservabilityConfiguration extends ModulesConfiguration {
     /**
-     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
-     * by default, unless there is an existing configuration present.
+     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled by default, unless there
+     * is an existing configuration present.
      * <p>
-     * When DevServices is enabled Quarkus will attempt to automatically configure and start
-     * a containers when running in Dev or Test mode and when Docker is running.
+     * When DevServices is enabled Quarkus will attempt to automatically configure and start a containers when running
+     * in Dev or Test mode and when Docker is running.
      */
     @WithDefault("true")
     boolean enabled();
 
     /**
-     * Enable simplified usage of dev resources,
-     * instead of full observability processing.
-     * Make sure @code{enabled} is set to false.
+     * Enable simplified usage of dev resources, instead of full observability processing. Make sure @code{enabled} is
+     * set to false.
      */
     @WithDefault("false")
     boolean devResources();

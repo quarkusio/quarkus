@@ -19,9 +19,7 @@ public class NoTransactionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Address.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(Address.class).addAsResource("application.properties"));
 
     @Inject
     EntityManager entityManager;

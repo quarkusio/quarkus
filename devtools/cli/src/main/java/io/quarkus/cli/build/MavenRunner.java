@@ -49,8 +49,8 @@ public class MavenRunner implements BuildSystemRunner {
     final PropertiesOptions propertiesOptions;
     final Path projectRoot;
 
-    public MavenRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions, RegistryClientMixin registryClient,
-            Path projectRoot) {
+    public MavenRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions,
+            RegistryClientMixin registryClient, Path projectRoot) {
         this.output = output;
         this.projectRoot = projectRoot;
         this.propertiesOptions = propertiesOptions;
@@ -65,9 +65,7 @@ public class MavenRunner implements BuildSystemRunner {
 
     @Override
     public File getExecutable() {
-        return ExecuteUtil.findExecutable("mvn",
-                "Unable to find the maven executable, is it in your path?",
-                output);
+        return ExecuteUtil.findExecutable("mvn", "Unable to find the maven executable, is it in your path?", output);
     }
 
     @Override
@@ -91,33 +89,22 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format)
-            throws Exception {
+    public Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format) throws Exception {
 
-        QuarkusCommandOutcome outcome = new ListCategories(quarkusProject(), output)
-                .fromCli(true)
-                .format(format.getFormatString())
-                .batchMode(runMode.isBatchMode())
-                .execute();
+        QuarkusCommandOutcome outcome = new ListCategories(quarkusProject(), output).fromCli(true)
+                .format(format.getFormatString()).batchMode(runMode.isBatchMode()).execute();
 
         return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
     }
 
     @Override
-    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
-            String category)
-            throws Exception {
+    public Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable,
+            String searchPattern, String category) throws Exception {
 
         // we do not have to spawn to list extensions for maven
-        QuarkusCommandOutcome outcome = new ListExtensions(quarkusProject(), output)
-                .fromCli(true)
-                .all(false)
-                .installed(!installable)
-                .format(format.getFormatString())
-                .search(searchPattern)
-                .category(category)
-                .batchMode(runMode.isBatchMode())
-                .execute();
+        QuarkusCommandOutcome outcome = new ListExtensions(quarkusProject(), output).fromCli(true).all(false)
+                .installed(!installable).format(format.getFormatString()).search(searchPattern).category(category)
+                .batchMode(runMode.isBatchMode()).execute();
 
         return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
     }
@@ -154,8 +141,7 @@ public class MavenRunner implements BuildSystemRunner {
         ArrayDeque<String> args = new ArrayDeque<>();
         setMavenProperties(args, true);
         final ExtensionCatalog extensionCatalog = ToolsUtils.resolvePlatformDescriptorDirectly(
-                ToolsConstants.QUARKUS_CORE_GROUP_ID, null,
-                Version.clientVersion(),
+                ToolsConstants.QUARKUS_CORE_GROUP_ID, null, Version.clientVersion(),
                 QuarkusProjectHelper.artifactResolver(), MessageWriter.info());
         final Properties props = ToolsUtils.readQuarkusProperties(extensionCatalog);
         args.add(ToolsUtils.getPluginKey(props) + ":" + ToolsUtils.getMavenPluginVersion(props) + ":update");
@@ -230,7 +216,8 @@ public class MavenRunner implements BuildSystemRunner {
     }
 
     @Override
-    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params, String filter) {
+    public BuildCommandArgs prepareTest(BuildOptions buildOptions, RunModeOption runMode, List<String> params,
+            String filter) {
         if (filter != null) {
             params.add("-Dtest=" + filter);
         }
@@ -310,7 +297,8 @@ public class MavenRunner implements BuildSystemRunner {
     void verifyBuildFile() {
         File buildFile = projectRoot.resolve("pom.xml").toFile();
         if (!buildFile.isFile()) {
-            throw new IllegalStateException("Is this a project directory? Unable to find a build file in: " + projectRoot);
+            throw new IllegalStateException(
+                    "Is this a project directory? Unable to find a build file in: " + projectRoot);
         }
     }
 }

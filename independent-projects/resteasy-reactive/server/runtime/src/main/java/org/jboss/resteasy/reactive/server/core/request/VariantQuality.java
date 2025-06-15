@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.MediaType;
  * A individual variant quality bean for the RVSA (Remote Variant Selection Algorithm).
  *
  * @author Pascal S. de Kloe
+ *
  * @see "RFC 2296"
  */
 public class VariantQuality {
@@ -69,6 +70,7 @@ public class VariantQuality {
 
     /**
      * @return the quality value between zero and one with five decimal places after the point.
+     *
      * @see "3.3 Computing overall quality values"
      */
     public BigDecimal getOverallQuality() {

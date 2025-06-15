@@ -8,6 +8,7 @@ public class MultipartFeature extends AbstractFeatureScanner {
 
     @Override
     public void integrateWithIndexer(ServerEndpointIndexer.Builder builder, IndexView index) {
-        builder.setMultipartReturnTypeIndexerExtension(new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput));
+        builder.setMultipartReturnTypeIndexerExtension(
+                new GeneratedHandlerMultipartReturnTypeIndexerExtension(classOutput));
     }
 }

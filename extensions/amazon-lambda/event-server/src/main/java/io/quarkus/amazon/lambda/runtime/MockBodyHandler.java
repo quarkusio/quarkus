@@ -15,8 +15,8 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.impl.RoutingContextInternal;
 
 /**
- * Copy of Vertx BodyHandlerImpl. Had to do this because I want to get raw bytes of everything
- * and if it was a form or multipart it would not set the body buffer.
+ * Copy of Vertx BodyHandlerImpl. Had to do this because I want to get raw bytes of everything and if it was a form or
+ * multipart it would not set the body buffer.
  */
 public class MockBodyHandler implements BodyHandler {
 
@@ -26,7 +26,7 @@ public class MockBodyHandler implements BodyHandler {
     private String uploadsDir;
     private boolean mergeFormAttributes = DEFAULT_MERGE_FORM_ATTRIBUTES;
     private boolean isPreallocateBodyBuffer = DEFAULT_PREALLOCATE_BODY_BUFFER;
-    private static final int DEFAULT_INITIAL_BODY_BUFFER_SIZE = 1024; //bytes
+    private static final int DEFAULT_INITIAL_BODY_BUFFER_SIZE = 1024; // bytes
 
     public MockBodyHandler() {
     }

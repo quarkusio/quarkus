@@ -20,18 +20,16 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that access to fields or getters of embeddable records by the application works correctly.
- * See https://github.com/quarkusio/quarkus/issues/36747
+ * Checks that access to fields or getters of embeddable records by the application works correctly. See
+ * https://github.com/quarkusio/quarkus/issues/36747
  */
 public class RecordFieldAccessTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class)
-                    .addClasses(MyRecordEmbeddableWithoutAdditionalGetters.class)
-                    .addClasses(MyRecordEmbeddableWithAdditionalGetters.class)
-                    .addClass(AccessDelegate.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(MyEntity.class).addClasses(MyRecordEmbeddableWithoutAdditionalGetters.class)
+                            .addClasses(MyRecordEmbeddableWithAdditionalGetters.class).addClass(AccessDelegate.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -47,7 +45,8 @@ public class RecordFieldAccessTest {
 
             @Override
             public Long getValue(MyEntity entity) {
-                return entity.embeddedWithoutAdditionalGetters == null ? null : entity.embeddedWithoutAdditionalGetters.value;
+                return entity.embeddedWithoutAdditionalGetters == null ? null
+                        : entity.embeddedWithoutAdditionalGetters.value;
             }
         });
     }
@@ -62,7 +61,8 @@ public class RecordFieldAccessTest {
 
             @Override
             public Long getValue(MyEntity entity) {
-                return entity.embeddedWithoutAdditionalGetters == null ? null : entity.embeddedWithoutAdditionalGetters.value();
+                return entity.embeddedWithoutAdditionalGetters == null ? null
+                        : entity.embeddedWithoutAdditionalGetters.value();
             }
         });
     }
@@ -92,7 +92,8 @@ public class RecordFieldAccessTest {
 
             @Override
             public Long getValue(MyEntity entity) {
-                return entity.embeddedWithAdditionalGetters == null ? null : entity.embeddedWithAdditionalGetters.value();
+                return entity.embeddedWithAdditionalGetters == null ? null
+                        : entity.embeddedWithAdditionalGetters.value();
             }
         });
     }
@@ -107,7 +108,8 @@ public class RecordFieldAccessTest {
 
             @Override
             public Long getValue(MyEntity entity) {
-                return entity.embeddedWithAdditionalGetters == null ? null : entity.embeddedWithAdditionalGetters.getValue();
+                return entity.embeddedWithAdditionalGetters == null ? null
+                        : entity.embeddedWithAdditionalGetters.getValue();
             }
         });
     }
@@ -123,9 +125,7 @@ public class RecordFieldAccessTest {
 
         QuarkusTransaction.disallowingExisting().run(() -> {
             var entity = em.find(MyEntity.class, id);
-            assertThat(delegate.getValue(entity))
-                    .as("Loaded value before update")
-                    .isNull();
+            assertThat(delegate.getValue(entity)).as("Loaded value before update").isNull();
         });
 
         QuarkusTransaction.disallowingExisting().run(() -> {
@@ -138,29 +138,21 @@ public class RecordFieldAccessTest {
         QuarkusTransaction.disallowingExisting().run(() -> {
             var entity = em.find(MyEntity.class, id);
             // We're working on an initialized entity.
-            assertThat(entity)
-                    .as("find() should return uninitialized entity")
-                    .returns(true, Hibernate::isInitialized);
+            assertThat(entity).as("find() should return uninitialized entity").returns(true, Hibernate::isInitialized);
             // The above should have persisted a value that passes the assertion.
-            assertThat(delegate.getValue(entity))
-                    .as("Loaded value after update")
-                    .isEqualTo(42L);
+            assertThat(delegate.getValue(entity)).as("Loaded value after update").isEqualTo(42L);
         });
 
         QuarkusTransaction.disallowingExisting().run(() -> {
             var entity = em.getReference(MyEntity.class, id);
             // We're working on an uninitialized entity.
-            assertThat(entity)
-                    .as("getReference() should return uninitialized entity")
-                    .returns(false, Hibernate::isInitialized);
+            assertThat(entity).as("getReference() should return uninitialized entity").returns(false,
+                    Hibernate::isInitialized);
             // The above should have persisted a value that passes the assertion.
-            assertThat(delegate.getValue(entity))
-                    .as("Lazily loaded value after update")
-                    .isEqualTo(42L);
+            assertThat(delegate.getValue(entity)).as("Lazily loaded value after update").isEqualTo(42L);
             // Accessing the value should trigger initialization of the entity.
-            assertThat(entity)
-                    .as("Getting the value should initialize the entity")
-                    .returns(true, Hibernate::isInitialized);
+            assertThat(entity).as("Getting the value should initialize the entity").returns(true,
+                    Hibernate::isInitialized);
         });
     }
 

@@ -28,10 +28,8 @@ public class QuarkusProdModeTestConfusingLogTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest simpleApp = new QuarkusProdModeTest()
-            .withApplicationRoot(jar -> jar.addClass(Main.class))
-            .setApplicationName("simple-app")
-            .setApplicationVersion("0.1-SNAPSHOT")
-            .setRun(true);
+            .withApplicationRoot(jar -> jar.addClass(Main.class)).setApplicationName("simple-app")
+            .setApplicationVersion("0.1-SNAPSHOT").setRun(true);
 
     static HttpClient client;
 
@@ -39,9 +37,7 @@ public class QuarkusProdModeTestConfusingLogTest {
     static void setUp() {
         // No tear down, because there's no way to shut down the client explicitly before Java 21 :(
         // We'll just hope no connection is left hanging.
-        client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(100))
-                .build();
+        client = HttpClient.newBuilder().connectTimeout(Duration.ofMillis(100)).build();
     }
 
     @Test
@@ -74,8 +70,9 @@ public class QuarkusProdModeTestConfusingLogTest {
     }
 
     private void tryReachApp() throws IOException, InterruptedException {
-        String response = client.send(HttpRequest.newBuilder().uri(URI.create("http://localhost:8081/test")).GET().build(),
-                HttpResponse.BodyHandlers.ofString())
+        String response = client
+                .send(HttpRequest.newBuilder().uri(URI.create("http://localhost:8081/test")).GET().build(),
+                        HttpResponse.BodyHandlers.ofString())
                 .body();
         // If the app is reachable, this is the expected response.
         assertEquals("OK", response, "App returned unexpected response");

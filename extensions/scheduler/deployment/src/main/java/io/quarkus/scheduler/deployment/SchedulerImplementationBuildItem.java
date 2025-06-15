@@ -37,6 +37,7 @@ public final class SchedulerImplementationBuildItem extends MultiBuildItem {
      * The implementation with highest priority is selected if {@link Scheduled#AUTO} is used.
      *
      * @return the priority
+     *
      * @see Scheduled#AUTO
      */
     public int getPriority() {
@@ -45,8 +46,9 @@ public final class SchedulerImplementationBuildItem extends MultiBuildItem {
 
     @Override
     public String toString() {
-        return "SchedulerImplementationBuildItem [" + (implementation != null ? "implementation=" + implementation + ", " : "")
-                + "priority=" + priority + "]";
+        return "SchedulerImplementationBuildItem ["
+                + (implementation != null ? "implementation=" + implementation + ", " : "") + "priority=" + priority
+                + "]";
     }
 
 }

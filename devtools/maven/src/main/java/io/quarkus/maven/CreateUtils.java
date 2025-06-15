@@ -21,20 +21,16 @@ import io.quarkus.maven.utilities.MojoUtils;
 public final class CreateUtils {
 
     public static final String GRADLE_WRAPPER_PATH = "gradle-wrapper";
-    public static final String[] GRADLE_WRAPPER_FILES = new String[] {
-            "gradlew",
-            "gradlew.bat",
-            "gradle/wrapper/gradle-wrapper.properties",
-            "gradle/wrapper/gradle-wrapper.jar"
-    };
+    public static final String[] GRADLE_WRAPPER_FILES = new String[] { "gradlew", "gradlew.bat",
+            "gradle/wrapper/gradle-wrapper.properties", "gradle/wrapper/gradle-wrapper.jar" };
 
     private CreateUtils() {
-        //Not to be constructed
+        // Not to be constructed
     }
 
     public static String getDerivedPath(String className) {
-        String[] resourceClassName = StringUtils.splitByCharacterTypeCamelCase(
-                className.substring(className.lastIndexOf(".") + 1));
+        String[] resourceClassName = StringUtils
+                .splitByCharacterTypeCamelCase(className.substring(className.lastIndexOf(".") + 1));
         return "/" + resourceClassName[0].toLowerCase();
     }
 
@@ -73,7 +69,8 @@ public final class CreateUtils {
         }
     }
 
-    private static String getChildElementTextValue(final Node parentNode, String childName) throws MojoExecutionException {
+    private static String getChildElementTextValue(final Node parentNode, String childName)
+            throws MojoExecutionException {
         final Node node = getElement(parentNode.getChildNodes(), childName);
         final String text = getText(node);
         if (text.isEmpty()) {

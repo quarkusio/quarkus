@@ -17,13 +17,11 @@ import io.restassured.RestAssured;
 public class AllRegistriesDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.export.json.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withEmptyApplication();
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withEmptyApplication();
 
     @Inject
     MeterRegistry registry;

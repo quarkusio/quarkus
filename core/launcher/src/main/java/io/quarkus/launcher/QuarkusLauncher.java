@@ -53,7 +53,8 @@ public class QuarkusLauncher {
             Thread.currentThread().setContextClassLoader(loader);
 
             Class<?> launcher = loader.loadClass("io.quarkus.bootstrap.IDELauncherImpl");
-            return (Closeable) launcher.getDeclaredMethod("launch", Path.class, Map.class).invoke(null, appClasses, context);
+            return (Closeable) launcher.getDeclaredMethod("launch", Path.class, Map.class).invoke(null, appClasses,
+                    context);
         } catch (Exception e) {
             throw new RuntimeException(e);
         } finally {

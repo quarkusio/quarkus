@@ -25,8 +25,7 @@ public class AddClusterRoleBindingResourceDecorator extends ResourceProvidingDec
     private final Subject[] subjects;
 
     public AddClusterRoleBindingResourceDecorator(String deploymentName, String name, Map<String, String> labels,
-            RoleRef roleRef,
-            Subject... subjects) {
+            RoleRef roleRef, Subject... subjects) {
         this.deploymentName = deploymentName;
         this.name = name;
         this.labels = labels;
@@ -41,28 +40,17 @@ public class AddClusterRoleBindingResourceDecorator extends ResourceProvidingDec
 
         Map<String, String> clusterRoleBindingLabels = new HashMap<>();
         clusterRoleBindingLabels.putAll(labels);
-        getDeploymentMetadata(list, deploymentName)
-                .map(ObjectMeta::getLabels)
+        getDeploymentMetadata(list, deploymentName).map(ObjectMeta::getLabels)
                 .ifPresent(clusterRoleBindingLabels::putAll);
 
-        ClusterRoleBindingBuilder builder = new ClusterRoleBindingBuilder()
-                .withNewMetadata()
-                .withName(name)
-                .withLabels(clusterRoleBindingLabels)
-                .endMetadata()
-                .withNewRoleRef()
-                .withKind(CLUSTER_ROLE)
-                .withName(roleRef.getName())
-                .withApiGroup(RBAC_API_GROUP)
-                .endRoleRef();
+        ClusterRoleBindingBuilder builder = new ClusterRoleBindingBuilder().withNewMetadata().withName(name)
+                .withLabels(clusterRoleBindingLabels).endMetadata().withNewRoleRef().withKind(CLUSTER_ROLE)
+                .withName(roleRef.getName()).withApiGroup(RBAC_API_GROUP).endRoleRef();
 
         for (Subject subject : subjects) {
-            builder.addNewSubject()
-                    .withApiGroup(subject.getApiGroup())
-                    .withKind(subject.getKind())
+            builder.addNewSubject().withApiGroup(subject.getApiGroup()).withKind(subject.getKind())
                     .withName(Strings.defaultIfEmpty(subject.getName(), deploymentName))
-                    .withNamespace(subject.getNamespace())
-                    .endSubject();
+                    .withNamespace(subject.getNamespace()).endSubject();
         }
 
         list.addToItems(builder.build());

@@ -35,8 +35,8 @@ public class OpenShiftClientObjectMapperCDITest {
 
     @Test
     public void kubernetesClientUsesCustomizedObjectMapper() {
-        final var result = client.getKubernetesSerialization()
-                .unmarshal("{\"quarkusName\":\"the-name\"}", ObjectMeta.class);
+        final var result = client.getKubernetesSerialization().unmarshal("{\"quarkusName\":\"the-name\"}",
+                ObjectMeta.class);
         assertEquals("the-name", result.getName());
     }
 

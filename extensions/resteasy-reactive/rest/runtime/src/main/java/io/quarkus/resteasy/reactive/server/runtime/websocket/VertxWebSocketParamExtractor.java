@@ -31,10 +31,10 @@ public class VertxWebSocketParamExtractor implements ParameterExtractor {
                         }
                     });
                     parameterCallback.setResult(result);
-                    //the completion callback is generally invoked by the websocket close
-                    //so the close will be a no-op
-                    //if there is an exception somewhere else in processing though
-                    //we want to close the websocket
+                    // the completion callback is generally invoked by the websocket close
+                    // so the close will be a no-op
+                    // if there is an exception somewhere else in processing though
+                    // we want to close the websocket
                     context.registerCompletionCallback(new CompletionCallback() {
                         @Override
                         public void onComplete(Throwable throwable) {

@@ -44,55 +44,54 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, DockerBuild.class }, onlyIfNot = NativeBuild.class)
-    public void dockerBuildFromJar(DockerConfig dockerConfig,
-            DockerStatusBuildItem dockerStatusBuildItem,
-            ContainerImageConfig containerImageConfig,
-            OutputTargetBuildItem out,
+    public void dockerBuildFromJar(DockerConfig dockerConfig, DockerStatusBuildItem dockerStatusBuildItem,
+            ContainerImageConfig containerImageConfig, OutputTargetBuildItem out,
             ContainerImageInfoBuildItem containerImageInfo,
             @SuppressWarnings("unused") CompiledJavaVersionBuildItem compiledJavaVersion,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
-            @SuppressWarnings("unused") Optional<JvmStartupOptimizerArchiveResultBuildItem> jvmStartupOptimizerArchiveResult, // ensure docker build will be performed after AppCDS creation
+            @SuppressWarnings("unused") Optional<JvmStartupOptimizerArchiveResultBuildItem> jvmStartupOptimizerArchiveResult, // ensure
+            // docker
+            // build
+            // will
+            // be
+            // performed
+            // after
+            // AppCDS
+            // creation
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
-            PackageConfig packageConfig,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder, PackageConfig packageConfig,
             @SuppressWarnings("unused") JarBuildItem jar// used to ensure that the jar has been built
     ) {
 
-        buildFromJar(dockerConfig, dockerStatusBuildItem, containerImageConfig, out, containerImageInfo,
-                buildRequest, pushRequest, artifactResultProducer, containerImageBuilder, packageConfig,
-                ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
+        buildFromJar(dockerConfig, dockerStatusBuildItem, containerImageConfig, out, containerImageInfo, buildRequest,
+                pushRequest, artifactResultProducer, containerImageBuilder, packageConfig, ContainerRuntime.DOCKER,
+                ContainerRuntime.PODMAN);
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, NativeBuild.class, DockerBuild.class })
-    public void dockerBuildFromNativeImage(DockerConfig dockerConfig,
-            DockerStatusBuildItem dockerStatusBuildItem,
-            ContainerImageConfig containerImageConfig,
-            ContainerImageInfoBuildItem containerImage,
+    public void dockerBuildFromNativeImage(DockerConfig dockerConfig, DockerStatusBuildItem dockerStatusBuildItem,
+            ContainerImageConfig containerImageConfig, ContainerImageInfoBuildItem containerImage,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
-            Optional<ContainerImagePushRequestBuildItem> pushRequest,
-            OutputTargetBuildItem out,
-            @SuppressWarnings("unused") Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work with the compressed native binary if compression was enabled
+            Optional<ContainerImagePushRequestBuildItem> pushRequest, OutputTargetBuildItem out,
+            @SuppressWarnings("unused") Optional<UpxCompressedBuildItem> upxCompressed, // used to ensure that we work
+            // with the compressed native
+            // binary if compression was
+            // enabled
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
-            PackageConfig packageConfig,
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder, PackageConfig packageConfig,
             // used to ensure that the native binary has been built
             NativeImageBuildItem nativeImage) {
 
-        buildFromNativeImage(dockerConfig, dockerStatusBuildItem, containerImageConfig, containerImage,
-                buildRequest, pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig, nativeImage,
+        buildFromNativeImage(dockerConfig, dockerStatusBuildItem, containerImageConfig, containerImage, buildRequest,
+                pushRequest, out, artifactResultProducer, containerImageBuilder, packageConfig, nativeImage,
                 ContainerRuntime.DOCKER, ContainerRuntime.PODMAN);
     }
 
     @Override
-    protected String createContainerImage(ContainerImageConfig containerImageConfig,
-            DockerConfig dockerConfig,
-            ContainerImageInfoBuildItem containerImageInfo,
-            OutputTargetBuildItem out,
-            DockerfilePaths dockerfilePaths,
-            boolean buildContainerImage,
-            boolean pushContainerImage,
-            PackageConfig packageConfig,
+    protected String createContainerImage(ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,
+            ContainerImageInfoBuildItem containerImageInfo, OutputTargetBuildItem out, DockerfilePaths dockerfilePaths,
+            boolean buildContainerImage, boolean pushContainerImage, PackageConfig packageConfig,
             String executableName) {
 
         boolean useBuildx = dockerConfig.buildx().useBuildx();
@@ -108,9 +107,11 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
         // 3) Push the image and all tags (docker push)
         //
         // If using any of the buildx options (useBuildx == true), the tagging & pushing happens
-        // as part of the 'docker buildx build' command via the added -t and --push params (see the getDockerArgs method).
+        // as part of the 'docker buildx build' command via the added -t and --push params (see the getDockerArgs
+        // method).
         //
-        // This is because when using buildx with more than one platform, the resulting images are not loaded into 'docker images'.
+        // This is because when using buildx with more than one platform, the resulting images are not loaded into
+        // 'docker images'.
         // Therefore, a docker tag or docker push will not work after a docker build.
 
         if (useBuildx && pushContainerImage) {
@@ -119,17 +120,15 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
         }
 
         if (buildContainerImage) {
-            var dockerBuildArgs = getDockerBuildArgs(containerImageInfo.getImage(), dockerfilePaths, containerImageConfig,
-                    dockerConfig, containerImageInfo, pushContainerImage, executableName);
+            var dockerBuildArgs = getDockerBuildArgs(containerImageInfo.getImage(), dockerfilePaths,
+                    containerImageConfig, dockerConfig, containerImageInfo, pushContainerImage, executableName);
 
             buildImage(containerImageInfo, out, executableName, dockerBuildArgs, false);
 
-            dockerConfig.buildx().platform()
-                    .filter(platform -> !platform.isEmpty())
-                    .ifPresentOrElse(
-                            platform -> LOG.infof("Built container image %s (%s platform(s))\n", containerImageInfo.getImage(),
-                                    String.join(",", platform)),
-                            () -> LOG.infof("Built container image %s\n", containerImageInfo.getImage()));
+            dockerConfig.buildx().platform().filter(platform -> !platform.isEmpty()).ifPresentOrElse(
+                    platform -> LOG.infof("Built container image %s (%s platform(s))\n", containerImageInfo.getImage(),
+                            String.join(",", platform)),
+                    () -> LOG.infof("Built container image %s\n", containerImageInfo.getImage()));
 
             // If we didn't use buildx, now we need to process any tags
             if (!useBuildx && !containerImageInfo.getAdditionalImageTags().isEmpty()) {
@@ -160,15 +159,12 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
         return executableName;
     }
 
-    private String[] getDockerBuildArgs(String image,
-            DockerfilePaths dockerfilePaths,
-            ContainerImageConfig containerImageConfig,
-            DockerConfig dockerConfig,
-            ContainerImageInfoBuildItem containerImageInfo,
-            boolean pushImages,
-            String executableName) {
+    private String[] getDockerBuildArgs(String image, DockerfilePaths dockerfilePaths,
+            ContainerImageConfig containerImageConfig, DockerConfig dockerConfig,
+            ContainerImageInfoBuildItem containerImageInfo, boolean pushImages, String executableName) {
 
-        var dockerBuildArgs = getContainerCommonBuildArgs(image, dockerfilePaths, containerImageConfig, dockerConfig, true);
+        var dockerBuildArgs = getContainerCommonBuildArgs(image, dockerfilePaths, containerImageConfig, dockerConfig,
+                true);
         var buildx = dockerConfig.buildx();
         var useBuildx = buildx.useBuildx();
 
@@ -183,16 +179,14 @@ public class DockerProcessor extends CommonProcessor<DockerConfig> {
             dockerBuildArgs.add(0, "buildx");
         }
 
-        buildx.platform()
-                .filter(platform -> !platform.isEmpty())
-                .ifPresent(platform -> {
-                    dockerBuildArgs.addAll(List.of("--platform", String.join(",", platform)));
+        buildx.platform().filter(platform -> !platform.isEmpty()).ifPresent(platform -> {
+            dockerBuildArgs.addAll(List.of("--platform", String.join(",", platform)));
 
-                    if (platform.size() == 1) {
-                        // Buildx only supports loading the image to the docker system if there is only 1 image
-                        dockerBuildArgs.add("--load");
-                    }
-                });
+            if (platform.size() == 1) {
+                // Buildx only supports loading the image to the docker system if there is only 1 image
+                dockerBuildArgs.add("--load");
+            }
+        });
 
         buildx.progress().ifPresent(progress -> dockerBuildArgs.addAll(List.of("--progress", progress)));
         buildx.output().ifPresent(output -> dockerBuildArgs.addAll(List.of("--output", output)));

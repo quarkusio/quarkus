@@ -3,7 +3,7 @@ package io.quarkus.opentelemetry.runtime.config.build;
 public enum ExporterType {
     OTLP(Constants.OTLP_VALUE),
     HTTP(Constants.HTTP_VALUE),
-    //    JAEGER(Constants.JAEGER), // Moved to Quarkiverse
+    // JAEGER(Constants.JAEGER), // Moved to Quarkiverse
     /**
      * To be used by legacy CDI beans setup. Will be removed soon.
      */

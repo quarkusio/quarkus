@@ -12,10 +12,8 @@ public final class ExtensionsBuildItem extends SimpleBuildItem {
     private final List<Extension> sectionMenuExtensions;
     private final List<Extension> footerTabsExtensions;
 
-    public ExtensionsBuildItem(List<Extension> activeExtensions,
-            List<Extension> inactiveExtensions,
-            List<Extension> sectionMenuExtensions,
-            List<Extension> footerTabsExtensions) {
+    public ExtensionsBuildItem(List<Extension> activeExtensions, List<Extension> inactiveExtensions,
+            List<Extension> sectionMenuExtensions, List<Extension> footerTabsExtensions) {
         this.activeExtensions = activeExtensions;
         this.inactiveExtensions = inactiveExtensions;
         this.sectionMenuExtensions = sectionMenuExtensions;

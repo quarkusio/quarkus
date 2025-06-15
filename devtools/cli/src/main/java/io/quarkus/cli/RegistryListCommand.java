@@ -23,7 +23,8 @@ public class RegistryListCommand extends BaseRegistryCommand {
         registryClient.refreshRegistryCache(output);
         final RegistriesConfig config = registryClient.resolveConfig();
 
-        final ExtensionCatalogResolver catalogResolver = streams ? registryClient.getExtensionCatalogResolver(output) : null;
+        final ExtensionCatalogResolver catalogResolver = streams ? registryClient.getExtensionCatalogResolver(output)
+                : null;
 
         if (streams) {
             output.info("Available Quarkus platform streams per registry:");
@@ -34,7 +35,8 @@ public class RegistryListCommand extends BaseRegistryCommand {
             if (r.isEnabled()) {
                 output.info(r.getId());
                 if (catalogResolver != null) {
-                    final PlatformCatalog platformCatalog = catalogResolver.resolvePlatformCatalogFromRegistry(r.getId());
+                    final PlatformCatalog platformCatalog = catalogResolver
+                            .resolvePlatformCatalogFromRegistry(r.getId());
                     if (platformCatalog != null) {
                         for (Platform p : platformCatalog.getPlatforms()) {
                             for (PlatformStream s : p.getStreams()) {

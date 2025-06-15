@@ -15,8 +15,8 @@ import io.quarkus.arc.InstanceHandle;
 public class ArcConstraintValidatorFactoryImpl implements ConstraintValidatorFactory {
 
     /**
-     * In the case of a predefined scope {@code ValidatorFactory} as the one used by Quarkus, all the constraint validators are
-     * created at bootstrap in a single thread so we can use an {@link IdentityHashMap}.
+     * In the case of a predefined scope {@code ValidatorFactory} as the one used by Quarkus, all the constraint
+     * validators are created at bootstrap in a single thread so we can use an {@link IdentityHashMap}.
      * <p>
      * Note that this is not the case when using a standard {@code ValidatorFactory}.
      */

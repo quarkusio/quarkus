@@ -25,20 +25,17 @@ class OpenApiIntegrationTest {
                             AbstractEntity.class, AbstractItem.class, Item.class, ItemsResource.class,
                             ItemsRepository.class, EmptyListItem.class, EmptyListItemsRepository.class,
                             EmptyListItemsResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"))
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-smallrye-openapi-deployment", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-jdbc-h2-deployment", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-resteasy-jsonb-deployment", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-security-deployment", Version.getVersion())))
+                    .addAsResource("application.properties").addAsResource("import.sql"))
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-smallrye-openapi-deployment", Version.getVersion()),
+                            Dependency.of("io.quarkus", "quarkus-jdbc-h2-deployment", Version.getVersion()),
+                            Dependency.of("io.quarkus", "quarkus-resteasy-jsonb-deployment", Version.getVersion()),
+                            Dependency.of("io.quarkus", "quarkus-security-deployment", Version.getVersion())))
             .setRun(true);
 
     @Test
     public void testOpenApiForGeneratedResources() {
-        RestAssured.given().queryParam("format", "JSON")
-                .when().get(OPEN_API_PATH)
-                .then()
+        RestAssured.given().queryParam("format", "JSON").when().get(OPEN_API_PATH).then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("info.title", Matchers.equalTo("quarkus-hibernate-orm-rest-data-panache-deployment API"))
                 .body("paths.'/collections'", Matchers.hasKey("get"))
@@ -73,10 +70,8 @@ class OpenApiIntegrationTest {
                 .body("paths.'/empty-list-items/{id}'", Matchers.hasKey("get"))
                 .body("paths.'/empty-list-items/{id}'", Matchers.hasKey("put"))
                 .body("paths.'/empty-list-items/{id}'", Matchers.hasKey("delete"))
-                .body("paths.'/items'", Matchers.hasKey("get"))
-                .body("paths.'/items'", Matchers.hasKey("post"))
-                .body("paths.'/items/{id}'", Matchers.hasKey("get"))
-                .body("paths.'/items/{id}'", Matchers.hasKey("put"))
+                .body("paths.'/items'", Matchers.hasKey("get")).body("paths.'/items'", Matchers.hasKey("post"))
+                .body("paths.'/items/{id}'", Matchers.hasKey("get")).body("paths.'/items/{id}'", Matchers.hasKey("put"))
                 .body("paths.'/items/{id}'", Matchers.hasKey("delete"));
     }
 }

@@ -19,10 +19,9 @@ public class OpenApiStoreSchemaTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiRoute.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-openapi.store-schema-directory=" + directory),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiRoute.class).addAsResource(
+                    new StringAsset("quarkus.smallrye-openapi.store-schema-directory=" + directory),
+                    "application.properties"));
 
     @Test
     public void testOpenApiPathAccessResource() {

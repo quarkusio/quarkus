@@ -51,11 +51,9 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
     }
 
     /**
-     * Generate JAX-RS UPDATE method.
-     *
-     * The RESTEasy Classic version exposes {@link RestDataResource#update(Object, Object)}.
-     * Expose {@link RestDataResource#update(Object, Object)} via JAX-RS method.
-     * Generated code looks more or less like this:
+     * Generate JAX-RS UPDATE method. The RESTEasy Classic version exposes
+     * {@link RestDataResource#update(Object, Object)}. Expose {@link RestDataResource#update(Object, Object)} via
+     * JAX-RS method. Generated code looks more or less like this:
      *
      * <pre>
      * {@code
@@ -139,8 +137,7 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(METHOD_NAME, classCreator,
                 isNotReactivePanache() ? responseType(resourceMetadata.getEntityType())
                         : uniType(resourceMetadata.getEntityType()),
-                param("id", resourceMetadata.getIdType()),
-                param("entity", resourceMetadata.getEntityType()),
+                param("id", resourceMetadata.getIdType()), param("entity", resourceMetadata.getEntityType()),
                 param("uriInfo", UriInfo.class));
 
         // Add method annotations
@@ -183,20 +180,19 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
                 ofMethod(resourceMetadata.getResourceClass(), RESOURCE_GET_METHOD_NAME, Uni.class, Object.class),
                 resource, id);
 
-        methodCreator
-                .returnValue(UniImplementor.flatMap(methodCreator, uniResponse, EXCEPTION_MESSAGE, (getBody, itemWasFound) -> {
+        methodCreator.returnValue(
+                UniImplementor.flatMap(methodCreator, uniResponse, EXCEPTION_MESSAGE, (getBody, itemWasFound) -> {
 
                     ResultHandle uniUpdateEntity = getBody.invokeVirtualMethod(
-                            ofMethod(resourceMetadata.getResourceClass(), RESOURCE_UPDATE_METHOD_NAME, Uni.class, Object.class,
-                                    Object.class),
+                            ofMethod(resourceMetadata.getResourceClass(), RESOURCE_UPDATE_METHOD_NAME, Uni.class,
+                                    Object.class, Object.class),
                             resource, id, entityToSave);
 
                     getBody.returnValue(UniImplementor.map(getBody, uniUpdateEntity, EXCEPTION_MESSAGE,
                             (updateBody, itemUpdated) -> {
                                 BranchResult ifEntityIsNew = updateBody.ifNull(itemWasFound);
-                                ifEntityIsNew.trueBranch()
-                                        .returnValue(responseImplementor.created(ifEntityIsNew.trueBranch(), itemUpdated,
-                                                resourceProperties));
+                                ifEntityIsNew.trueBranch().returnValue(responseImplementor
+                                        .created(ifEntityIsNew.trueBranch(), itemUpdated, resourceProperties));
                                 ifEntityIsNew.falseBranch()
                                         .returnValue(responseImplementor.noContent(ifEntityIsNew.falseBranch()));
                             }));
@@ -213,8 +209,8 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         ResultHandle updateFunction = getUpdateFunction(tryBlock, resourceMetadata.getResourceClass(), resource, id,
                 entityToSave);
         ResultHandle newEntity = tryBlock.invokeInterfaceMethod(
-                ofMethod(UpdateExecutor.class, "execute", Object.class, Supplier.class),
-                updateExecutor, updateFunction);
+                ofMethod(UpdateExecutor.class, "execute", Object.class, Supplier.class), updateExecutor,
+                updateFunction);
 
         BranchResult createdNewEntity = tryBlock.ifNotNull(newEntity);
         createdNewEntity.trueBranch()
@@ -245,16 +241,16 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
                 ofMethod(resourceClass, RESOURCE_GET_METHOD_NAME, Object.class, Object.class), resource, id));
     }
 
-    private void createAndReturn(BytecodeCreator creator, String resourceClass, ResultHandle resource,
-            ResultHandle id, ResultHandle entityToSave) {
+    private void createAndReturn(BytecodeCreator creator, String resourceClass, ResultHandle resource, ResultHandle id,
+            ResultHandle entityToSave) {
         ResultHandle newEntity = creator.invokeVirtualMethod(
                 ofMethod(resourceClass, RESOURCE_UPDATE_METHOD_NAME, Object.class, Object.class, Object.class),
                 resource, id, entityToSave);
         creator.returnValue(newEntity);
     }
 
-    private void updateAndReturn(BytecodeCreator creator, String resourceClass, ResultHandle resource,
-            ResultHandle id, ResultHandle entityToSave) {
+    private void updateAndReturn(BytecodeCreator creator, String resourceClass, ResultHandle resource, ResultHandle id,
+            ResultHandle entityToSave) {
         creator.invokeVirtualMethod(
                 ofMethod(resourceClass, RESOURCE_UPDATE_METHOD_NAME, Object.class, Object.class, Object.class),
                 resource, id, entityToSave);
@@ -266,13 +262,11 @@ public final class UpdateMethodImplementor extends StandardMethodImplementor {
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
                 arcContainer, creator.loadClassFromTCCL(UpdateExecutor.class), creator.newArray(Annotation.class, 0));
-        ResultHandle instance = creator.invokeInterfaceMethod(
-                ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+        ResultHandle instance = creator.invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class),
+                instanceHandle);
 
-        creator.ifNull(instance)
-                .trueBranch()
-                .throwException(RuntimeException.class,
-                        UpdateExecutor.class.getSimpleName() + " instance was not found");
+        creator.ifNull(instance).trueBranch().throwException(RuntimeException.class,
+                UpdateExecutor.class.getSimpleName() + " instance was not found");
 
         return instance;
     }

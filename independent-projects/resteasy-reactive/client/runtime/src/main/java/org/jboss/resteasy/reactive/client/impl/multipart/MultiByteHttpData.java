@@ -39,16 +39,12 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 
 /**
- * A FileUpload implementation that is responsible for sending Multi&lt;Byte&gt; as a file in a multipart message.
- * It is meant to be used by the {@link PausableHttpPostRequestEncoder}
- *
- * When created, MultiByteHttpData will subscribe to the underlying Multi and request {@link MultiByteHttpData#BUFFER_SIZE}
- * of bytes.
- *
- * Before reading the next chunk of data with {@link #getChunk(int)}, the post encoder checks if data {@link #isReady(int)}
- * and if not, triggers {@link #suspend(int)}. That's because a chunk smaller than requested is treated as the end of input.
- * Then, when the requested amount of bytes is ready, or the underlying Multi is completed, `resumption` is executed.
- *
+ * A FileUpload implementation that is responsible for sending Multi&lt;Byte&gt; as a file in a multipart message. It is
+ * meant to be used by the {@link PausableHttpPostRequestEncoder} When created, MultiByteHttpData will subscribe to the
+ * underlying Multi and request {@link MultiByteHttpData#BUFFER_SIZE} of bytes. Before reading the next chunk of data
+ * with {@link #getChunk(int)}, the post encoder checks if data {@link #isReady(int)} and if not, triggers
+ * {@link #suspend(int)}. That's because a chunk smaller than requested is treated as the end of input. Then, when the
+ * requested amount of bytes is ready, or the underlying Multi is completed, `resumption` is executed.
  */
 public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
     private static final Logger log = Logger.getLogger(MultiByteHttpData.class);
@@ -75,8 +71,8 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
     private int awaitedBytes;
 
     static {
-        BUFFER_SIZE = Integer
-                .parseInt(System.getProperty("quarkus.rest.client.multipart-buffer-size", String.valueOf(DEFAULT_BUFFER_SIZE)));
+        BUFFER_SIZE = Integer.parseInt(
+                System.getProperty("quarkus.rest.client.multipart-buffer-size", String.valueOf(DEFAULT_BUFFER_SIZE)));
         if (BUFFER_SIZE < DEFAULT_BUFFER_SIZE) {
             throw new IllegalStateException(
                     "quarkus.rest.client.multipart-buffer-size cannot be lower than " + DEFAULT_BUFFER_SIZE);
@@ -84,20 +80,28 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
     }
 
     /**
-     *
-     * @param name name of the parameter
-     * @param filename file name
-     * @param contentType content type
-     * @param contentTransferEncoding "binary" for sending binary files
-     * @param charset the charset
-     * @param content the Multi to send
-     * @param errorHandler error handler invoked when the Multi emits an exception
-     * @param context Vertx context on which the data is sent
-     * @param resumption the action to execute when the requested amount of bytes is ready, or the Multi is completed
+     * @param name
+     *        name of the parameter
+     * @param filename
+     *        file name
+     * @param contentType
+     *        content type
+     * @param contentTransferEncoding
+     *        "binary" for sending binary files
+     * @param charset
+     *        the charset
+     * @param content
+     *        the Multi to send
+     * @param errorHandler
+     *        error handler invoked when the Multi emits an exception
+     * @param context
+     *        Vertx context on which the data is sent
+     * @param resumption
+     *        the action to execute when the requested amount of bytes is ready, or the Multi is completed
      */
-    public MultiByteHttpData(String name, String filename, String contentType,
-            String contentTransferEncoding, Charset charset, Multi<Byte> content,
-            Consumer<Throwable> errorHandler, Context context, Runnable resumption) {
+    public MultiByteHttpData(String name, String filename, String contentType, String contentTransferEncoding,
+            Charset charset, Multi<Byte> content, Consumer<Throwable> errorHandler, Context context,
+            Runnable resumption) {
         super(name, charset, 0);
         this.context = context;
         setFilename(filename);
@@ -105,31 +109,27 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
         setContentTransferEncoding(contentTransferEncoding);
 
         var contextualExecutor = new ExecutorWithContext(context);
-        content.emitOn(contextualExecutor).runSubscriptionOn(contextualExecutor).subscribe().with(
-                subscription -> {
-                    MultiByteHttpData.this.subscription = subscription;
-                    subscription.request(BUFFER_SIZE);
-                },
-                b -> {
-                    buffer.writeByte(b);
-                    if (paused && (done || buffer.readableBytes() >= awaitedBytes)) {
-                        paused = false;
-                        awaitedBytes = 0;
-                        resumption.run();
-                    }
-                },
-                th -> {
-                    log.error("Multi<Byte> used to send a multipart message failed", th);
-                    done = true;
-                    errorHandler.accept(th);
-                },
-                () -> {
-                    done = true;
-                    if (paused) {
-                        paused = false;
-                        resumption.run();
-                    }
-                });
+        content.emitOn(contextualExecutor).runSubscriptionOn(contextualExecutor).subscribe().with(subscription -> {
+            MultiByteHttpData.this.subscription = subscription;
+            subscription.request(BUFFER_SIZE);
+        }, b -> {
+            buffer.writeByte(b);
+            if (paused && (done || buffer.readableBytes() >= awaitedBytes)) {
+                paused = false;
+                awaitedBytes = 0;
+                resumption.run();
+            }
+        }, th -> {
+            log.error("Multi<Byte> used to send a multipart message failed", th);
+            done = true;
+            errorHandler.accept(th);
+        }, () -> {
+            done = true;
+            if (paused) {
+                paused = false;
+                resumption.run();
+            }
+        });
     }
 
     void suspend(int awaitedBytes) {
@@ -175,7 +175,9 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
     /**
      * check if it is possible to read the next chunk of data of a given size
      *
-     * @param chunkSize amount of bytes
+     * @param chunkSize
+     *        amount of bytes
+     *
      * @return true if the requested amount of bytes is ready to be read or the Multi is completed, i.e. there will be
      *         no more bytes to read
      */
@@ -184,18 +186,19 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
     }
 
     /**
-     * {@inheritDoc}
-     * <br/>
+     * {@inheritDoc} <br/>
      * NOTE: should only be invoked when {@link #isReady(int)} returns true
      *
-     * @param toRead amount of bytes to read
+     * @param toRead
+     *        amount of bytes to read
+     *
      * @return ByteBuf with the requested bytes
      */
     @Override
     public ByteBuf getChunk(int toRead) {
         if (Vertx.currentContext() != context) {
-            throw new IllegalStateException("MultiByteHttpData invoked on an invalid context : " + Vertx.currentContext()
-                    + ", thread: " + Thread.currentThread());
+            throw new IllegalStateException("MultiByteHttpData invoked on an invalid context : "
+                    + Vertx.currentContext() + ", thread: " + Thread.currentThread());
         }
         if (buffer.readableBytes() == 0 && done) {
             return Unpooled.EMPTY_BUFFER;
@@ -298,8 +301,7 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
     @Override
     public int compareTo(InterfaceHttpData o) {
         if (!(o instanceof MultiByteHttpData)) {
-            throw new ClassCastException("Cannot compare " + getHttpDataType() +
-                    " with " + o.getHttpDataType());
+            throw new ClassCastException("Cannot compare " + getHttpDataType() + " with " + o.getHttpDataType());
         }
         return compareTo((MultiByteHttpData) o);
     }
@@ -350,13 +352,11 @@ public class MultiByteHttpData extends AbstractHttpData implements FileUpload {
 
     @Override
     public String toString() {
-        return HttpHeaderNames.CONTENT_DISPOSITION + ": " +
-                HttpHeaderValues.FORM_DATA + "; " + HttpHeaderValues.NAME + "=\"" + getName() +
-                "\"; " + HttpHeaderValues.FILENAME + "=\"" + filename + "\"\r\n" +
-                HttpHeaderNames.CONTENT_TYPE + ": " + contentType +
-                (getCharset() != null ? "; " + HttpHeaderValues.CHARSET + '=' + getCharset().name() + "\r\n" : "\r\n") +
-                HttpHeaderNames.CONTENT_LENGTH + ": " + length() + "\r\n" +
-                "Completed: " + isCompleted();
+        return HttpHeaderNames.CONTENT_DISPOSITION + ": " + HttpHeaderValues.FORM_DATA + "; " + HttpHeaderValues.NAME
+                + "=\"" + getName() + "\"; " + HttpHeaderValues.FILENAME + "=\"" + filename + "\"\r\n"
+                + HttpHeaderNames.CONTENT_TYPE + ": " + contentType
+                + (getCharset() != null ? "; " + HttpHeaderValues.CHARSET + '=' + getCharset().name() + "\r\n" : "\r\n")
+                + HttpHeaderNames.CONTENT_LENGTH + ": " + length() + "\r\n" + "Completed: " + isCompleted();
     }
 
     static class ExecutorWithContext implements Executor {

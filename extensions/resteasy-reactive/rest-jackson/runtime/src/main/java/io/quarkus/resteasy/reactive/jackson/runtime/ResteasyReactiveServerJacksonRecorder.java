@@ -107,13 +107,16 @@ public class ResteasyReactiveServerJacksonRecorder {
     }
 
     @SuppressWarnings("unchecked")
-    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> customSerializationForMethod(String methodId) {
+    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> customSerializationForMethod(
+            String methodId) {
         return (Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>>) customSerializationMap.get(methodId);
     }
 
     @SuppressWarnings("unchecked")
-    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> customSerializationForClass(Class<?> clazz) {
-        return (Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>>) customSerializationMap.get(clazz.getName());
+    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> customSerializationForClass(
+            Class<?> clazz) {
+        return (Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>>) customSerializationMap
+                .get(clazz.getName());
     }
 
     @SuppressWarnings("unchecked")
@@ -123,15 +126,18 @@ public class ResteasyReactiveServerJacksonRecorder {
     }
 
     @SuppressWarnings("unchecked")
-    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> customDeserializationForClass(Class<?> clazz) {
-        return (Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>>) customDeserializationMap.get(clazz.getName());
+    public static Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>> customDeserializationForClass(
+            Class<?> clazz) {
+        return (Class<? extends BiFunction<ObjectMapper, Type, ObjectReader>>) customDeserializationMap
+                .get(clazz.getName());
     }
 
     private Class<?> loadClass(String className) {
         try {
             return Thread.currentThread().getContextClassLoader().loadClass(className);
         } catch (ClassNotFoundException e) {
-            throw new RuntimeException("Unable to load class '" + className + "' for supporting custom JSON serialization", e);
+            throw new RuntimeException(
+                    "Unable to load class '" + className + "' for supporting custom JSON serialization", e);
         }
     }
 }

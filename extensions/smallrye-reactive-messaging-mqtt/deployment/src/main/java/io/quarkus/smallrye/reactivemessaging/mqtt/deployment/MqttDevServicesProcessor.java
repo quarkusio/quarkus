@@ -51,27 +51,25 @@ public class MqttDevServicesProcessor {
     private static final Logger log = Logger.getLogger(MqttDevServicesProcessor.class);
 
     /**
-     * Label to add to shared Dev Service for MQTT running in containers.
-     * This allows other applications to discover the running service and use it instead of starting a new instance.
+     * Label to add to shared Dev Service for MQTT running in containers. This allows other applications to discover the
+     * running service and use it instead of starting a new instance.
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-mqtt";
 
     private static final int MQTT_PORT = 1883;
     private static final int MQTT_TLS_PORT = 8883;
 
-    private static final ContainerLocator mqttContainerLocator = locateContainerWithLabels(MQTT_PORT, DEV_SERVICE_LABEL);
+    private static final ContainerLocator mqttContainerLocator = locateContainerWithLabels(MQTT_PORT,
+            DEV_SERVICE_LABEL);
     static volatile RunningDevService devService;
     static volatile MqttDevServiceCfg cfg;
     static volatile boolean first = true;
 
     @BuildStep
-    public DevServicesResultBuildItem startMqttDevService(
-            DockerStatusBuildItem dockerStatusBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            LaunchModeBuildItem launchMode,
+    public DevServicesResultBuildItem startMqttDevService(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, LaunchModeBuildItem launchMode,
             MqttBuildTimeConfig mqttClientBuildTimeConfig,
-            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem,
+            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem, LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem) {
 
@@ -150,9 +148,8 @@ public class MqttDevServicesProcessor {
     }
 
     private RunningDevService startMqttBroker(DockerStatusBuildItem dockerStatusBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            MqttDevServiceCfg config, LaunchModeBuildItem launchMode,
-            Optional<Duration> timeout, boolean useSharedNetwork) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, MqttDevServiceCfg config,
+            LaunchModeBuildItem launchMode, Optional<Duration> timeout, boolean useSharedNetwork) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for MQTT, as it has been disabled in the config.");
@@ -173,49 +170,40 @@ public class MqttDevServicesProcessor {
         final Supplier<RunningDevService> defaultMqttBrokerSupplier = () -> {
 
             ConfiguredMqttContainer container = new ConfiguredMqttContainer(
-                    DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("mqtt"),
-                    config.fixedExposedPort,
+                    DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("mqtt"), config.fixedExposedPort,
                     launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName : null,
-                    composeProjectBuildItem.getDefaultNetworkId(),
-                    useSharedNetwork);
+                    composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork);
 
             // Starting the broker
             timeout.ifPresent(container::withStartupTimeout);
             container.withEnv(config.containerEnv);
             container.start();
-            return getRunningDevService(
-                    container.getContainerId(),
-                    container::close,
-                    container.getEffectiveHost(),
+            return getRunningDevService(container.getContainerId(), container::close, container.getEffectiveHost(),
                     container.getPort());
         };
 
-        return mqttContainerLocator.locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode())
-                .map(containerAddress -> getRunningDevService(
-                        containerAddress.getId(),
-                        null,
-                        containerAddress.getHost(),
-                        containerAddress.getPort()))
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(config.imageName, "hivemq", "eclipse-mosquitto"),
-                        launchMode.getLaunchMode()).stream()
-                        .filter(r -> Arrays.stream(r.containerInfo().exposedPorts())
-                                .anyMatch(c -> c.privatePort() == MQTT_PORT || c.privatePort() == MQTT_TLS_PORT))
-                        .findFirst().map(r -> getRunningDevService(
-                                r.containerInfo().id(),
-                                null,
-                                useSharedNetwork ? ComposeLocator.getServiceName(r)
-                                        : DockerClientFactory.instance().dockerHostIpAddress(),
-                                useSharedNetwork ? MQTT_PORT
-                                        : r.getPortMapping(MQTT_PORT).or(() -> r.getPortMapping(MQTT_TLS_PORT)).orElse(0))))
+        return mqttContainerLocator
+                .locateContainer(config.serviceName, config.shared, launchMode.getLaunchMode()).map(
+                        containerAddress -> getRunningDevService(containerAddress.getId(), null,
+                                containerAddress.getHost(), containerAddress.getPort()))
+                .or(() -> ComposeLocator
+                        .locateContainer(composeProjectBuildItem,
+                                List.of(config.imageName, "hivemq", "eclipse-mosquitto"), launchMode.getLaunchMode())
+                        .stream()
+                        .filter(r -> Arrays.stream(r.containerInfo().exposedPorts()).anyMatch(
+                                c -> c.privatePort() == MQTT_PORT || c.privatePort() == MQTT_TLS_PORT))
+                        .findFirst().map(
+                                r -> getRunningDevService(r.containerInfo().id(), null,
+                                        useSharedNetwork
+                                                ? ComposeLocator.getServiceName(r)
+                                                : DockerClientFactory.instance().dockerHostIpAddress(),
+                                        useSharedNetwork ? MQTT_PORT
+                                                : r.getPortMapping(MQTT_PORT).or(() -> r.getPortMapping(MQTT_TLS_PORT))
+                                                        .orElse(0))))
                 .orElseGet(defaultMqttBrokerSupplier);
     }
 
-    private RunningDevService getRunningDevService(
-            String containerId,
-            Closeable closeable,
-            String host,
-            int port) {
+    private RunningDevService getRunningDevService(String containerId, Closeable closeable, String host, int port) {
         Map<String, String> configMap = new HashMap<>();
         configMap.put("mp.messaging.connector.smallrye-mqtt.host", host);
         configMap.put("mp.messaging.connector.smallrye-mqtt.port", String.valueOf(port));
@@ -294,12 +282,8 @@ public class MqttDevServicesProcessor {
         private final boolean useSharedNetwork;
         private final String hostName;
 
-        private ConfiguredMqttContainer(
-                DockerImageName dockerImageName,
-                int fixedExposedPort,
-                String serviceName,
-                String defaultNetworkId,
-                boolean useSharedNetwork) {
+        private ConfiguredMqttContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
+                String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.port = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -308,9 +292,7 @@ public class MqttDevServicesProcessor {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
-            withClasspathResourceMapping("mosquitto.conf",
-                    "/mosquitto/config/mosquitto.conf",
-                    BindMode.READ_ONLY);
+            withClasspathResourceMapping("mosquitto.conf", "/mosquitto/config/mosquitto.conf", BindMode.READ_ONLY);
             if (!dockerImageName.getRepository().endsWith("eclipse-mosquitto")) {
                 throw new IllegalArgumentException("Only official eclipse-mosquitto images are supported");
             }

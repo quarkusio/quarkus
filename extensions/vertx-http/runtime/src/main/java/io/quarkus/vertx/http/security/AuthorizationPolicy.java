@@ -9,9 +9,8 @@ import java.lang.annotation.Target;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 
 /**
- * Secures endpoint classes and methods with {@link HttpSecurityPolicy}.
- * Policies selected by this annotation will run right after all path-matching policies.
- * Consider following example of the {@link HttpSecurityPolicy}:
+ * Secures endpoint classes and methods with {@link HttpSecurityPolicy}. Policies selected by this annotation will run
+ * right after all path-matching policies. Consider following example of the {@link HttpSecurityPolicy}:
  *
  * <pre>
  * {@code

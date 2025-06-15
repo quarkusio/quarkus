@@ -48,8 +48,8 @@ public final class TypeCheckExcludeBuildItem extends MultiBuildItem {
     /**
      * Represents a type check of a part of an expression.
      * <p>
-     * For example, the expression {@code item.name} has two parts, {@code item} and {@code name}, and for each part a new
-     * instance is created and tested for exclusion.
+     * For example, the expression {@code item.name} has two parts, {@code item} and {@code name}, and for each part a
+     * new instance is created and tested for exclusion.
      */
     public static class TypeCheck {
 

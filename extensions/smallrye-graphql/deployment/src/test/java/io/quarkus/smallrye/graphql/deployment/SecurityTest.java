@@ -25,81 +25,48 @@ import io.smallrye.common.annotation.NonBlocking;
 public class SecurityTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SecuredApi.class, Foo.class)
-                    .addAsResource("application-secured.properties", "application.properties")
-                    .addAsResource("users.properties")
-                    .addAsResource("roles.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(SecuredApi.class, Foo.class)
+            .addAsResource("application-secured.properties", "application.properties").addAsResource("users.properties")
+            .addAsResource("roles.properties").addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testAuthenticatedUser() {
         String query = getPayload("{ foo { message} }");
-        RestAssured.given()
-                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql/")
-                .then()
-                .assertThat()
-                .body("errors", nullValue())
+        RestAssured.given().header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz")).body(query)
+                .contentType(MEDIATYPE_JSON).post("/graphql/").then().assertThat().body("errors", nullValue())
                 .body("data.foo.message", equalTo("foo"));
     }
 
     @Test
     public void testAuthenticatedUserWithSource() {
         String query = getPayload("{ foo { bonusFoo } }");
-        RestAssured.given()
-                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql/")
-                .then()
-                .assertThat()
-                .body("errors", nullValue())
+        RestAssured.given().header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz")).body(query)
+                .contentType(MEDIATYPE_JSON).post("/graphql/").then().assertThat().body("errors", nullValue())
                 .body("data.foo.bonusFoo", equalTo("bonus"));
     }
 
     @Test
     public void testAuthenticatedUserBlocking() {
         String query = getPayload("{ blockingFoo { message} }");
-        RestAssured.given()
-                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql/")
-                .then()
-                .assertThat()
-                .body("errors", nullValue())
+        RestAssured.given().header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz")).body(query)
+                .contentType(MEDIATYPE_JSON).post("/graphql/").then().assertThat().body("errors", nullValue())
                 .body("data.blockingFoo.message", equalTo("foo"));
     }
 
     @Test
     public void testAuthenticatedUserWithSourceBlocking() {
         String query = getPayload("{ blockingFoo { blockingBonusFoo } }");
-        RestAssured.given()
-                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql/")
-                .then()
-                .assertThat()
-                .body("errors", nullValue())
+        RestAssured.given().header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz")).body(query)
+                .contentType(MEDIATYPE_JSON).post("/graphql/").then().assertThat().body("errors", nullValue())
                 .body("data.blockingFoo.blockingBonusFoo", equalTo("bonus"));
     }
 
     @Test
     public void testUnauthorizedRole() {
         String query = getPayload("{ bar { message } }");
-        RestAssured.given()
-                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .body("errors", notNullValue())
+        RestAssured.given().header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz")).body(query)
+                .contentType(MEDIATYPE_JSON).post("/graphql").then().assertThat().body("errors", notNullValue())
                 .body("data.bar.message", nullValue());
     }
 
@@ -110,14 +77,8 @@ public class SecurityTest extends AbstractGraphQLTest {
     @Test
     public void testUnauthorizedForSource() {
         String query = getPayload("{ foo { bonusBar } }");
-        RestAssured.given()
-                .header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz"))
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql/")
-                .then()
-                .assertThat()
-                .body("errors", notNullValue())
+        RestAssured.given().header(new Header("Authorization", "Basic ZGF2aWQ6cXdlcnR5MTIz")).body(query)
+                .contentType(MEDIATYPE_JSON).post("/graphql/").then().assertThat().body("errors", notNullValue())
                 .body("data.foo.bonusBar", nullValue());
     }
 

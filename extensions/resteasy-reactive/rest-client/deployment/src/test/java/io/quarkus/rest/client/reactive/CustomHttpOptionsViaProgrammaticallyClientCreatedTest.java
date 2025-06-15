@@ -26,8 +26,7 @@ public class CustomHttpOptionsViaProgrammaticallyClientCreatedTest {
     URI baseUri;
 
     @RegisterExtension
-    static final QuarkusUnitTest app = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(Client.class));
+    static final QuarkusUnitTest app = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Client.class));
 
     @Test
     void shouldUseCustomHttpOptionsUsingProvider() {
@@ -38,8 +37,7 @@ public class CustomHttpOptionsViaProgrammaticallyClientCreatedTest {
         // Now, it should fail if we use a custom http client options with a very limited max header size:
 
         Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri)
-                .register(CustomHttpClientOptionsWithLimit.class)
-                .build(Client.class);
+                .register(CustomHttpClientOptionsWithLimit.class).build(Client.class);
         assertThatThrownBy(() -> client.get()).hasMessageContaining("HTTP header is larger than 1 bytes.");
     }
 
@@ -52,8 +50,7 @@ public class CustomHttpOptionsViaProgrammaticallyClientCreatedTest {
         // Now, it should fail if we use a custom http client options with a very limited max header size:
         HttpClientOptions options = new HttpClientOptions();
         options.setMaxHeaderSize(1); // this is just to verify that this HttpClientOptions is indeed used.
-        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri)
-                .httpClientOptions(options)
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).httpClientOptions(options)
                 .build(Client.class);
         assertThatThrownBy(() -> client.get()).hasMessageContaining("HTTP header is larger than 1 bytes.");
     }
@@ -64,8 +61,7 @@ public class CustomHttpOptionsViaProgrammaticallyClientCreatedTest {
         @GET
         public RestResponse<String> get() {
             return RestResponse.ResponseBuilder.ok(EXPECTED_VALUE)
-                    .header("long-header", "VERY LONNGGGGGGGGGGGGGGGGGGGGGGGGGGGG!")
-                    .build();
+                    .header("long-header", "VERY LONNGGGGGGGGGGGGGGGGGGGGGGGGGGGG!").build();
         }
     }
 

@@ -17,8 +17,7 @@ public class ConsumerNonexistingConfigPropertyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(MessageConsumers.class))
-            .assertException(t -> {
+            .withApplicationRoot(root -> root.addClasses(MessageConsumers.class)).assertException(t -> {
                 Throwable root = ExceptionUtil.getRootCause(t);
                 assertTrue(
                         root.getMessage().contains(

@@ -21,8 +21,8 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 
 /**
- * Logic to locate and process Flyway {@link Callback} classes.
- * This class also helps to keep the {@link FlywayProcessor} class as lean as possible to make it easier to maintain
+ * Logic to locate and process Flyway {@link Callback} classes. This class also helps to keep the
+ * {@link FlywayProcessor} class as lean as possible to make it easier to maintain
  */
 class FlywayCallbacksLocator {
     private final Collection<String> dataSourceNames;
@@ -31,27 +31,35 @@ class FlywayCallbacksLocator {
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
 
     private FlywayCallbacksLocator(Collection<String> dataSourceNames, FlywayBuildTimeConfig flywayBuildConfig,
-            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
         this.dataSourceNames = dataSourceNames;
         this.flywayBuildConfig = flywayBuildConfig;
         this.combinedIndexBuildItem = combinedIndexBuildItem;
         this.reflectiveClassProducer = reflectiveClassProducer;
     }
 
-    public static FlywayCallbacksLocator with(Collection<String> dataSourceNames, FlywayBuildTimeConfig flywayBuildConfig,
-            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
-        return new FlywayCallbacksLocator(dataSourceNames, flywayBuildConfig, combinedIndexBuildItem, reflectiveClassProducer);
+    public static FlywayCallbacksLocator with(Collection<String> dataSourceNames,
+            FlywayBuildTimeConfig flywayBuildConfig, CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
+        return new FlywayCallbacksLocator(dataSourceNames, flywayBuildConfig, combinedIndexBuildItem,
+                reflectiveClassProducer);
     }
 
     /**
      * Main logic to identify callbacks and return them to be processed by the {@link FlywayProcessor}
      *
      * @return Map containing the callbacks for each datasource. The datasource name is the map key
-     * @exception ClassNotFoundException if the {@link Callback} class cannot be located by the Quarkus class loader
-     * @exception InstantiationException if the {@link Callback} class represents an abstract class.
-     * @exception InvocationTargetException if the underlying constructor throws an exception.
-     * @exception IllegalAccessException if the {@link Callback} constructor is enforcing Java language access control
-     *            and the underlying constructor is inaccessible
+     *
+     * @exception ClassNotFoundException
+     *            if the {@link Callback} class cannot be located by the Quarkus class loader
+     * @exception InstantiationException
+     *            if the {@link Callback} class represents an abstract class.
+     * @exception InvocationTargetException
+     *            if the underlying constructor throws an exception.
+     * @exception IllegalAccessException
+     *            if the {@link Callback} constructor is enforcing Java language access control and the underlying
+     *            constructor is inaccessible
      */
     public Map<String, Collection<Callback>> getCallbacks()
             throws ClassNotFoundException, InvocationTargetException, InstantiationException, IllegalAccessException {
@@ -64,15 +72,19 @@ class FlywayCallbacksLocator {
     }
 
     /**
-     *
      * Reads the configuration, instantiates the {@link Callback} class. Also, adds it to the reflective producer
      *
      * @return List of callbacks for the datasource
-     * @exception ClassNotFoundException if the {@link Callback} class cannot be located by the Quarkus class loader
-     * @exception InstantiationException if the {@link Callback} class represents an abstract class.
-     * @exception InvocationTargetException if the underlying constructor throws an exception.
-     * @exception IllegalAccessException if the {@link Callback} constructor is enforcing Java language access control
-     *            and the underlying constructor is inaccessible
+     *
+     * @exception ClassNotFoundException
+     *            if the {@link Callback} class cannot be located by the Quarkus class loader
+     * @exception InstantiationException
+     *            if the {@link Callback} class represents an abstract class.
+     * @exception InvocationTargetException
+     *            if the underlying constructor throws an exception.
+     * @exception IllegalAccessException
+     *            if the {@link Callback} constructor is enforcing Java language access control and the underlying
+     *            constructor is inaccessible
      */
     private Collection<Callback> callbacksForDataSource(String dataSourceName)
             throws ClassNotFoundException, IllegalAccessException, InvocationTargetException, InstantiationException {
@@ -93,8 +105,7 @@ class FlywayCallbacksLocator {
             final Class<?> clazzType = Class.forName(callback, false, Thread.currentThread().getContextClassLoader());
             final Callback instance = (Callback) clazzType.getConstructors()[0].newInstance();
             instances.add(instance);
-            reflectiveClassProducer
-                    .produce(ReflectiveClassBuildItem.builder(clazz.name().toString()).build());
+            reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(clazz.name().toString()).build());
         }
         return instances;
     }

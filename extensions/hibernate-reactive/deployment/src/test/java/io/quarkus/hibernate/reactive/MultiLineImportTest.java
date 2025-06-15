@@ -17,9 +17,8 @@ public class MultiLineImportTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Hero.class)
-                    .addAsResource("complexMultilineImports.sql", "import.sql"))
+            .withApplicationRoot(
+                    (jar) -> jar.addClass(Hero.class).addAsResource("complexMultilineImports.sql", "import.sql"))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -28,8 +27,7 @@ public class MultiLineImportTest {
     @Test
     @RunOnVertxContext
     public void integerIdentifierWithStageAPI(UniAsserter asserter) {
-        asserter.assertThat(() -> sessionFactory.withSession(s -> s.createQuery(
-                "from Hero h where h.name = :name").setParameter("name", "Galadriel").getResultList()),
-                list -> assertThat(list).hasSize(1));
+        asserter.assertThat(() -> sessionFactory.withSession(s -> s.createQuery("from Hero h where h.name = :name")
+                .setParameter("name", "Galadriel").getResultList()), list -> assertThat(list).hasSize(1));
     }
 }

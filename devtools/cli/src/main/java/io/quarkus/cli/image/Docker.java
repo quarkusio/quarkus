@@ -23,9 +23,8 @@ public class Docker extends BaseImageSubCommand {
     public void populateContext(BuildToolContext context) {
         Map<String, String> properties = context.getPropertiesOptions().properties;
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, DOCKER);
-        dockerFile.ifPresent(d -> properties.put(
-                DOCKER_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? DOCKERFILE_NATIVE_PATH : DOCKERFILE_JVM_PATH),
-                d));
+        dockerFile.ifPresent(d -> properties.put(DOCKER_CONFIG_PREFIX
+                + (context.getBuildOptions().buildNative ? DOCKERFILE_NATIVE_PATH : DOCKERFILE_JVM_PATH), d));
         context.getForcedExtensions().add(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + DOCKER);
     }
 

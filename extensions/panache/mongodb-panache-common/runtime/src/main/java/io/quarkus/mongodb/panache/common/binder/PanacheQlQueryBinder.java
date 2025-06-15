@@ -16,12 +16,12 @@ public class PanacheQlQueryBinder {
     public static String bindQuery(Class<?> clazz, String query, Object[] params) {
         Map<String, String> replacementMap = MongoPropertyUtil.getReplacementMap(clazz);
 
-        //shorthand query
+        // shorthand query
         if (params.length == 1 && query.indexOf('?') == -1) {
             return "{'" + replaceField(query, replacementMap) + "':" + CommonQueryBinder.escape(params[0]) + "}";
         }
 
-        //classic query
+        // classic query
         Map<String, Object> parameterMaps = new HashMap<>();
         for (int i = 1; i <= params.length; i++) {
             String bindParamsKey = "?" + i;
@@ -47,7 +47,8 @@ public class PanacheQlQueryBinder {
         return replacementMap.getOrDefault(field, field);
     }
 
-    private static String prepareQuery(String query, Map<String, String> replacementMap, Map<String, Object> parameterMaps) {
+    private static String prepareQuery(String query, Map<String, String> replacementMap,
+            Map<String, Object> parameterMaps) {
         HqlLexer lexer = new HqlLexer(CharStreams.fromString(query));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         HqlParser parser = new HqlParser(tokens);

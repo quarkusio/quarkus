@@ -18,21 +18,19 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class ChangeSourceAndTestAtOnceTestCase {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(CoupledService.class)
-                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.type=unit")),
-                                    "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(CoupledET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(CoupledService.class).add(
+                    new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.type=unit")),
+                    "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(CoupledET.class);
+        }
+    });
 
     @Test
     public void testChangeSourceAndTestAtOnce() throws InterruptedException {

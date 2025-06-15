@@ -32,8 +32,7 @@ public class ConfiguredPathInfo {
     }
 
     public String getEndpointPath(NonApplicationRootPathBuildItem nonAppRoot,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            LaunchModeBuildItem mode) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, LaunchModeBuildItem mode) {
         if (absolutePath) {
             return endpointPath;
         }

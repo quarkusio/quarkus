@@ -24,10 +24,9 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
     final CurrentIdentityAssociation association;
     boolean userSetup = false;
 
-    public QuarkusResteasyReactiveRequestContext(Deployment deployment,
-            RoutingContext context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
-            ServerRestHandler[] abortHandlerChain, ClassLoader devModeTccl,
-            CurrentIdentityAssociation currentIdentityAssociation) {
+    public QuarkusResteasyReactiveRequestContext(Deployment deployment, RoutingContext context,
+            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
+            ClassLoader devModeTccl, CurrentIdentityAssociation currentIdentityAssociation) {
         super(deployment, context, requestContext, handlerChain, abortHandlerChain, devModeTccl);
         this.association = currentIdentityAssociation;
         if (VertxContext.isOnDuplicatedContext()) {
@@ -62,7 +61,9 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
 
     @Override
     protected void handleUnrecoverableError(Throwable throwable) {
-        context.fail(effectiveThrowableForQuarkusLogging(throwable)); // this results in io.quarkus.vertx.http.runtime.QuarkusErrorHandler logging the error
+        context.fail(effectiveThrowableForQuarkusLogging(throwable)); // this results in
+                                                                      // io.quarkus.vertx.http.runtime.QuarkusErrorHandler
+                                                                      // logging the error
         endResponse(); // we just want to end the response, nothing more
     }
 
@@ -77,8 +78,9 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         while ((depth < stackTrace.length) && (depth < 5)) { // only check a few of the top frames
             StackTraceElement stackTraceElement = stackTrace[depth];
             String className = stackTraceElement.getClassName();
-            if (className.contains(InvocationHandler.class.getSimpleName()) || className.contains(
-                    ResourceRequestFilterHandler.class.getSimpleName())) { // TODO: we may need more here
+            if (className.contains(InvocationHandler.class.getSimpleName())
+                    || className.contains(ResourceRequestFilterHandler.class.getSimpleName())) { // TODO: we may need
+                                                                                                                                                                 // more here
                 convertException = true;
                 break;
             }
@@ -90,7 +92,8 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
 
     @Override
     public boolean handlesUnmappedException() {
-        return false; // false because handleUnmappedException just throws and lets QuarkusErrorHandler return the final response
+        return false; // false because handleUnmappedException just throws and lets QuarkusErrorHandler return the final
+                      // response
     }
 
     @Override
@@ -105,10 +108,10 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
 
     /**
      * The implementation looks like it makes no sense, but it in fact does make sense from a performance perspective.
-     * The idea is to reduce the use instances of megamorphic calls into a series of instance checks and monomorphic calls.
-     * The rationale behind this is fully explored in
-     * https://shipilev.net/blog/2015/black-magic-method-dispatch/#_cheating_the_runtime_2
-     * and this specific instance has been verified experimentally to result in better performance.
+     * The idea is to reduce the use instances of megamorphic calls into a series of instance checks and monomorphic
+     * calls. The rationale behind this is fully explored in
+     * https://shipilev.net/blog/2015/black-magic-method-dispatch/#_cheating_the_runtime_2 and this specific instance
+     * has been verified experimentally to result in better performance.
      */
     @Override
     protected void invokeHandler(int pos) throws Exception {

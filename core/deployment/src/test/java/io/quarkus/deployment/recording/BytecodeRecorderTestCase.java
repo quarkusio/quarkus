@@ -144,17 +144,12 @@ public class BytecodeRecorderTestCase {
             assertThatCode(() -> {
                 generator.registerNonDefaultConstructor(
                         JobParameter.class.getDeclaredConstructor(String.class, String.class, Object.class),
-                        jobParameter -> Arrays.asList(
-                                jobParameter.getClassName(),
-                                jobParameter.getActualClassName(),
+                        jobParameter -> Arrays.asList(jobParameter.getClassName(), jobParameter.getActualClassName(),
                                 jobParameter.getObject()));
                 generator.registerNonDefaultConstructor(
                         JobDetails.class.getDeclaredConstructor(String.class, String.class, String.class, List.class),
-                        jobDetails -> Arrays.asList(
-                                jobDetails.getClassName(),
-                                jobDetails.getStaticFieldName(),
-                                jobDetails.getMethodName(),
-                                jobDetails.getJobParameters()));
+                        jobDetails -> Arrays.asList(jobDetails.getClassName(), jobDetails.getStaticFieldName(),
+                                jobDetails.getMethodName(), jobDetails.getJobParameters()));
             }).doesNotThrowAnyException();
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.bean(new JobDetails("A string", null, "methodName", List.of(JobParameter.JobContext)));
@@ -225,8 +220,7 @@ public class BytecodeRecorderTestCase {
     @Test
     public void testUnmodifiableMapWithinAMap() throws Exception {
         Map<Integer, Map<Integer, TestJavaBean>> outerMap = new HashMap<>();
-        outerMap.put(1, Collections.unmodifiableMap(
-                Collections.singletonMap(1, new TestJavaBean())));
+        outerMap.put(1, Collections.unmodifiableMap(Collections.singletonMap(1, new TestJavaBean())));
 
         runTest(generator -> {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);

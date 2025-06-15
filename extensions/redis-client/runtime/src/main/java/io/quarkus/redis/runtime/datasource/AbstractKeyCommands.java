@@ -35,8 +35,8 @@ class AbstractKeyCommands<K> extends AbstractRedisCommands {
     Uni<Response> _copy(K source, K destination) {
         nonNull(source, "source");
         nonNull(destination, "destination");
-        return execute(RedisCommand.of(Command.COPY)
-                .put(marshaller.encode(source)).put(marshaller.encode(destination)));
+        return execute(
+                RedisCommand.of(Command.COPY).put(marshaller.encode(source)).put(marshaller.encode(destination)));
     }
 
     Uni<Response> _copy(K source, K destination, CopyArgs copyArgs) {
@@ -233,8 +233,7 @@ class AbstractKeyCommands<K> extends AbstractRedisCommands {
     Uni<Response> _rename(K key, K newKey) {
         nonNull(key, "key");
         nonNull(newKey, "newKey");
-        return execute(RedisCommand.of(Command.RENAME)
-                .put(marshaller.encode(key)).put(marshaller.encode(newKey)))
+        return execute(RedisCommand.of(Command.RENAME).put(marshaller.encode(key)).put(marshaller.encode(newKey)))
                 .onFailure().transform(t -> {
                     if (t.getMessage().equalsIgnoreCase("ERR no such key")) {
                         return new NoSuchElementException(new String(marshaller.encode(key), StandardCharsets.UTF_8));
@@ -246,8 +245,7 @@ class AbstractKeyCommands<K> extends AbstractRedisCommands {
     Uni<Response> _renamenx(K key, K newKey) {
         nonNull(key, "key");
         nonNull(newKey, "newKey");
-        return execute(RedisCommand.of(Command.RENAMENX)
-                .put(marshaller.encode(key)).put(marshaller.encode(newKey)))
+        return execute(RedisCommand.of(Command.RENAMENX).put(marshaller.encode(key)).put(marshaller.encode(newKey)))
                 .onFailure().transform(t -> {
                     if (t.getMessage().equalsIgnoreCase("ERR no such key")) {
                         return new NoSuchElementException(new String(marshaller.encode(key), StandardCharsets.UTF_8));

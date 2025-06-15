@@ -65,15 +65,16 @@ public class FileUtil {
     }
 
     /**
-     * Translates a file path from the Windows Style to a syntax accepted by Docker and Podman,
-     * so that volumes be safely mounted in both Docker Desktop for Windows and Podman Windows.
+     * Translates a file path from the Windows Style to a syntax accepted by Docker and Podman, so that volumes be
+     * safely mounted in both Docker Desktop for Windows and Podman Windows.
      * <p>
      * <code>docker run -v /c/foo/bar:/somewhere (...)</code>
      * <p>
-     * You should only use this method on Windows-style paths, and not Unix-style
-     * paths.
+     * You should only use this method on Windows-style paths, and not Unix-style paths.
      *
-     * @param windowsStylePath A path formatted in Windows-style, e.g. "C:\foo\bar".
+     * @param windowsStylePath
+     *        A path formatted in Windows-style, e.g. "C:\foo\bar".
+     *
      * @return A translated path accepted by Docker, e.g. "/c/foo/bar".
      */
     public static String translateToVolumePath(String windowsStylePath) {

@@ -27,11 +27,9 @@ import io.vertx.ext.web.RoutingContext;
 
 public class DisabledProactiveSecIdentityProviderTest {
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.auth.proactive=false\n" +
-            "quarkus.http.auth.policy.r1.roles-allowed=admin\n" +
-            "quarkus.http.auth.permission.roles1.paths=/admin\n" +
-            "quarkus.http.auth.permission.roles1.policy=r1\n";
+    private static final String APP_PROPS = "" + "quarkus.http.auth.proactive=false\n"
+            + "quarkus.http.auth.policy.r1.roles-allowed=admin\n" + "quarkus.http.auth.permission.roles1.paths=/admin\n"
+            + "quarkus.http.auth.permission.roles1.policy=r1\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
@@ -46,37 +44,23 @@ public class DisabledProactiveSecIdentityProviderTest {
     @Test
     public void testAuthenticationIsAttempted() {
         // path requires authentication
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .redirects().follow(false)
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(401);
+        RestAssured.given().auth().preemptive().basic("admin", "admin").redirects().follow(false).when().get("/admin")
+                .then().assertThat().statusCode(401);
     }
 
     @Test
     public void testAuthenticationIsNotAttempted() {
         // path does not require authentication
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .redirects().follow(false)
-                .when()
-                .get("/anonymous")
-                .then()
-                .assertThat()
-                .statusCode(200);
+        RestAssured.given().auth().preemptive().basic("admin", "admin").redirects().follow(false).when()
+                .get("/anonymous").then().assertThat().statusCode(200);
     }
 
     @ApplicationScoped
     public static class FailingAuthenticationMechanism implements HttpAuthenticationMechanism {
 
         @Override
-        public Uni<SecurityIdentity> authenticate(
-                final RoutingContext context, final IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(final RoutingContext context,
+                final IdentityProviderManager identityProviderManager) {
             throw new AuthenticationFailedException();
         }
 
@@ -105,8 +89,7 @@ public class DisabledProactiveSecIdentityProviderTest {
         }
 
         @Override
-        public Uni<SecurityIdentity> authenticate(
-                BaseAuthenticationRequest simpleAuthenticationRequest,
+        public Uni<SecurityIdentity> authenticate(BaseAuthenticationRequest simpleAuthenticationRequest,
                 AuthenticationRequestContext authenticationRequestContext) {
             return Uni.createFrom().nothing();
         }

@@ -45,8 +45,8 @@ public final class NameIterator {
     }
 
     /**
-     * Get the cursor position. It will be {@code -1} if the cursor is at the beginning of the string, or {@code name.length()}
-     * if it is at the end.
+     * Get the cursor position. It will be {@code -1} if the cursor is at the beginning of the string, or
+     * {@code name.length()} if it is at the end.
      *
      * @return the cursor position
      */
@@ -55,15 +55,8 @@ public final class NameIterator {
     }
 
     /*
-     * next-iteration DFA
-     * <any> → <end> ## on EOI
-     * I → <end> ## on '.'
-     * I → Q ## on '"'
-     * Q → I ## on '"'
-     * Q → QBS ## on '\'
-     * QBS → Q ## on any
-     * I → BS ## on '\'
-     * BS → I ## on any
+     * next-iteration DFA <any> → <end> ## on EOI I → <end> ## on '.' I → Q ## on '"' Q → I ## on '"' Q → QBS ## on '\'
+     * QBS → Q ## on any I → BS ## on '\' BS → I ## on any
      */
     private static final int FS_INITIAL = 0;
     private static final int FS_QUOTE = 1;
@@ -71,12 +64,7 @@ public final class NameIterator {
     private static final int FS_QUOTE_BACKSLASH = 3;
 
     /*
-     * Iteration cookie format
-     *
-     * Bit: 14...12 11 ... 0
-     * ┌───────┬────────────┐
-     * │ state │ position │
-     * │ │ (signed) │
+     * Iteration cookie format Bit: 14...12 11 ... 0 ┌───────┬────────────┐ │ state │ position │ │ │ (signed) │
      * └───────┴────────────┘
      */
 
@@ -104,7 +92,9 @@ public final class NameIterator {
     /**
      * Move to the next position.
      *
-     * @param cookie the original cookie value
+     * @param cookie
+     *        the original cookie value
+     *
      * @return the new cookie value
      */
     private int nextPos(int cookie) {
@@ -194,7 +184,8 @@ public final class NameIterator {
     }
 
     private boolean isSegmentDelimiter(int cookie) {
-        return isStartOfString(cookie) || isEndOfString(cookie) || getState(cookie) == FS_INITIAL && charAt(cookie) == '.';
+        return isStartOfString(cookie) || isEndOfString(cookie)
+                || getState(cookie) == FS_INITIAL && charAt(cookie) == '.';
     }
 
     private boolean isEndOfString(int cookie) {

@@ -17,7 +17,8 @@ public class ServerCharArrayMessageBodyHandler extends CharArrayMessageBodyHandl
         implements ServerMessageBodyWriter<char[]>, ServerMessageBodyReader<char[]> {
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return true;
     }
 
@@ -28,7 +29,8 @@ public class ServerCharArrayMessageBodyHandler extends CharArrayMessageBodyHandl
     }
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return type.equals(String.class);
     }
 

@@ -26,8 +26,7 @@ public class AdditionalTemplateRootTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt")
+            .withApplicationRoot(root -> root.addAsResource(new StringAsset("Hi {name}!"), "templates/hi.txt")
                     .addAsResource(new StringAsset("Hoho {name}!"), "templates/nested/hoho.txt")
                     .addAsResource(new StringAsset("Hello {name}!"), "web/public/hello.txt"))
             .addBuildChainCustomizer(buildCustomizer());
@@ -41,14 +40,14 @@ public class AdditionalTemplateRootTest {
                     public void execute(BuildContext context) {
                         context.produce(new TemplateRootBuildItem("web/public"));
                     }
-                }).produces(TemplateRootBuildItem.class)
-                        .build();
+                }).produces(TemplateRootBuildItem.class).build();
 
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
                         int found = 0;
-                        List<NativeImageResourceBuildItem> items = context.consumeMulti(NativeImageResourceBuildItem.class);
+                        List<NativeImageResourceBuildItem> items = context
+                                .consumeMulti(NativeImageResourceBuildItem.class);
                         for (NativeImageResourceBuildItem item : items) {
                             if (item.getResources().contains("web/public/hello.txt")
                                     || item.getResources().contains("templates/hi.txt")
@@ -62,9 +61,7 @@ public class AdditionalTemplateRootTest {
                         }
                         context.produce(new ServiceStartBuildItem("foo"));
                     }
-                }).produces(ServiceStartBuildItem.class)
-                        .consumes(NativeImageResourceBuildItem.class)
-                        .build();
+                }).produces(ServiceStartBuildItem.class).consumes(NativeImageResourceBuildItem.class).build();
             }
         };
     }

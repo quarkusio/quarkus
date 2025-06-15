@@ -29,17 +29,15 @@ public class TwoConnectorsAttachmentIncomingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MySecondDummyConnector.class, MySecondDummyConnector.class, MySink.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MySecondDummyConnector.class,
+                    MySecondDummyConnector.class, MySink.class));
 
     @Inject
     MySink sink;
 
     @Test
     public void testAutoAttachmentOfIncomingChannel() {
-        await()
-                .pollDelay(Duration.ofMillis(100))
-                .until(() -> sink.items().isEmpty());
+        await().pollDelay(Duration.ofMillis(100)).until(() -> sink.items().isEmpty());
     }
 
     @ApplicationScoped
@@ -48,8 +46,8 @@ public class TwoConnectorsAttachmentIncomingTest {
 
         @Override
         public PublisherBuilder<? extends Message<?>> getPublisherBuilder(Config config) {
-            return ReactiveStreams
-                    .fromPublisher(AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
+            return ReactiveStreams.fromPublisher(
+                    AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
         }
     }
 
@@ -59,8 +57,8 @@ public class TwoConnectorsAttachmentIncomingTest {
 
         @Override
         public PublisherBuilder<? extends Message<?>> getPublisherBuilder(Config config) {
-            return ReactiveStreams
-                    .fromPublisher(AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
+            return ReactiveStreams.fromPublisher(
+                    AdaptersToReactiveStreams.publisher(Multi.createFrom().range(0, 5).map(Message::of)));
         }
     }
 

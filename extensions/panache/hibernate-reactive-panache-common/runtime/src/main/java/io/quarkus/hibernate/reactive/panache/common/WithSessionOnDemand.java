@@ -9,15 +9,15 @@ import java.lang.annotation.Target;
 import jakarta.interceptor.InterceptorBinding;
 
 /**
- * Instructs Panache to trigger the {@link io.smallrye.mutiny.Uni} returned from the intercepted method within a scope of a
- * reactive {@link org.hibernate.reactive.mutiny.Mutiny.Session} (if needed).
+ * Instructs Panache to trigger the {@link io.smallrye.mutiny.Uni} returned from the intercepted method within a scope
+ * of a reactive {@link org.hibernate.reactive.mutiny.Mutiny.Session} (if needed).
  * <p>
- * If a reactive session exists when the {@link io.smallrye.mutiny.Uni} returned from the annotated method is triggered, then
- * this session is reused. Otherwise, a new session is opened <b>when needed</b> and eventually closed when the
+ * If a reactive session exists when the {@link io.smallrye.mutiny.Uni} returned from the annotated method is triggered,
+ * then this session is reused. Otherwise, a new session is opened <b>when needed</b> and eventually closed when the
  * {@link io.smallrye.mutiny.Uni} completes.
  * <p>
- * * A method annotated with this annotation must return {@link io.smallrye.mutiny.Uni}. If declared on a class then all methods
- * that return {@link io.smallrye.mutiny.Uni} are considered; all other methods are ignored.
+ * * A method annotated with this annotation must return {@link io.smallrye.mutiny.Uni}. If declared on a class then all
+ * methods that return {@link io.smallrye.mutiny.Uni} are considered; all other methods are ignored.
  */
 @Inherited
 @InterceptorBinding

@@ -31,8 +31,8 @@ public class ConnectorAttributeLiteral implements ConnectorAttribute {
 
     public static ConnectorAttribute create(String name, String description, boolean hidden, boolean mandatory,
             Direction direction, String defaultValue, boolean deprecated, String alias, String type) {
-        return new ConnectorAttributeLiteral(name, description, hidden, mandatory, direction, defaultValue, deprecated, alias,
-                type);
+        return new ConnectorAttributeLiteral(name, description, hidden, mandatory, direction, defaultValue, deprecated,
+                alias, type);
     }
 
     public String name() {

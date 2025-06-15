@@ -26,16 +26,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class IfBuildProfileStereotypeTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DevOnly.class, InheritableDevOnly.class, TransitiveDevOnly.class,
-                            InheritableTransitiveDevOnly.class, MyService.class, DevOnlyMyService.class,
-                            InheritableDevOnlyMyService.class, TransitiveDevOnlyMyService.class,
-                            InheritableTransitiveDevOnlyMyService.class, MyServiceSimple.class,
-                            MyServiceDevOnlyDirect.class, MyServiceDevOnlyTransitive.class,
-                            MyServiceDevOnlyOnSuperclassNotInheritable.class,
-                            MyServiceDevOnlyOnSuperclassInheritable.class,
-                            MyServiceDevOnlyTransitiveOnSuperclassNotInheritable.class,
-                            MyServiceDevOnlyTransitiveOnSuperclassInheritable.class, Producers.class));
+            .withApplicationRoot((jar) -> jar.addClasses(DevOnly.class, InheritableDevOnly.class,
+                    TransitiveDevOnly.class, InheritableTransitiveDevOnly.class, MyService.class,
+                    DevOnlyMyService.class, InheritableDevOnlyMyService.class, TransitiveDevOnlyMyService.class,
+                    InheritableTransitiveDevOnlyMyService.class, MyServiceSimple.class, MyServiceDevOnlyDirect.class,
+                    MyServiceDevOnlyTransitive.class, MyServiceDevOnlyOnSuperclassNotInheritable.class,
+                    MyServiceDevOnlyOnSuperclassInheritable.class,
+                    MyServiceDevOnlyTransitiveOnSuperclassNotInheritable.class,
+                    MyServiceDevOnlyTransitiveOnSuperclassInheritable.class, Producers.class));
 
     @Inject
     @Any
@@ -44,11 +42,9 @@ public class IfBuildProfileStereotypeTest {
     @Test
     public void test() {
         Set<String> hello = services.stream().map(MyService::hello).collect(Collectors.toSet());
-        Set<Object> expected = Set.of(
-                MyServiceSimple.class.getSimpleName(),
+        Set<Object> expected = Set.of(MyServiceSimple.class.getSimpleName(),
                 MyServiceDevOnlyOnSuperclassNotInheritable.class.getSimpleName(),
-                MyServiceDevOnlyTransitiveOnSuperclassNotInheritable.class.getSimpleName(),
-                Producers.SIMPLE);
+                MyServiceDevOnlyTransitiveOnSuperclassNotInheritable.class.getSimpleName(), Producers.SIMPLE);
         assertEquals(expected, hello);
     }
 

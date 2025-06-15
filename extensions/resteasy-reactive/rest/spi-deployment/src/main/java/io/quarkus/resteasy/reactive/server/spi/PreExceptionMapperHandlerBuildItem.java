@@ -7,9 +7,9 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A build item that allows extension to define a {@link ServerRestHandler} that runs write before
- * RESTEasy Reactive attempt to do exception mapping according to the JAX-RS spec.
- * This is only meant to be used in very advanced use cases.
+ * A build item that allows extension to define a {@link ServerRestHandler} that runs write before RESTEasy Reactive
+ * attempt to do exception mapping according to the JAX-RS spec. This is only meant to be used in very advanced use
+ * cases.
  */
 public final class PreExceptionMapperHandlerBuildItem extends MultiBuildItem
         implements Comparable<PreExceptionMapperHandlerBuildItem> {

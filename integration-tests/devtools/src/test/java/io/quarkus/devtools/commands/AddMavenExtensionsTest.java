@@ -23,10 +23,7 @@ class AddMavenExtensionsTest extends AbstractAddExtensionsTest<Model> {
         final File pom = getProjectPath().resolve("pom.xml").toFile();
         SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
         final QuarkusProject project = getQuarkusProject();
-        new CreateProject(project)
-                .groupId("org.acme")
-                .artifactId("add-maven-extension-test")
-                .version("0.0.1-SNAPSHOT")
+        new CreateProject(project).groupId("org.acme").artifactId("add-maven-extension-test").version("0.0.1-SNAPSHOT")
                 .execute();
         return MojoUtils.readPom(pom);
     }
@@ -38,17 +35,14 @@ class AddMavenExtensionsTest extends AbstractAddExtensionsTest<Model> {
 
     @Override
     protected QuarkusCommandOutcome addExtensions(List<String> extensions) throws IOException, QuarkusCommandException {
-        return new AddExtensions(getQuarkusProject())
-                .extensions(new HashSet<>(extensions))
-                .execute();
+        return new AddExtensions(getQuarkusProject()).extensions(new HashSet<>(extensions)).execute();
     }
 
     @Override
     protected long countDependencyOccurrences(final Model project, final String groupId, final String artifactId,
             final String version) {
-        return project.getDependencies().stream().filter(d -> d.getGroupId().equals(groupId) &&
-                d.getArtifactId().equals(artifactId) &&
-                Objects.equals(d.getVersion(), version)).count();
+        return project.getDependencies().stream().filter(d -> d.getGroupId().equals(groupId)
+                && d.getArtifactId().equals(artifactId) && Objects.equals(d.getVersion(), version)).count();
     }
 
     private QuarkusProject getQuarkusProject() {

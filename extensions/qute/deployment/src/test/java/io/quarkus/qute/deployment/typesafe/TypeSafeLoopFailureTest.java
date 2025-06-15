@@ -16,12 +16,9 @@ public class TypeSafeLoopFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Foo.class)
+            .withApplicationRoot((jar) -> jar.addClass(Foo.class)
                     .addAsResource(new StringAsset("{@java.util.List<io.quarkus.qute.deployment.Foo> list}"
-                            + "{#for foo in list}"
-                            + "{foo.name}={foo.ages}"
-                            + "{/}"), "templates/foo.html"))
+                            + "{#for foo in list}" + "{foo.name}={foo.ages}" + "{/}"), "templates/foo.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

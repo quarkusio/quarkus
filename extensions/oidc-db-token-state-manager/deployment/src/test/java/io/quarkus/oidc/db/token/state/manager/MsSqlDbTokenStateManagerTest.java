@@ -11,7 +11,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MsSqlDbTokenStateManagerTest extends AbstractDbTokenStateManagerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = createQuarkusUnitTest("quarkus-reactive-mssql-client",
-            jar -> jar.addAsResource(new StringAsset(System.getProperty("mssql.image")), "container-license-acceptance.txt"));
+    static final QuarkusUnitTest test = createQuarkusUnitTest("quarkus-reactive-mssql-client", jar -> jar
+            .addAsResource(new StringAsset(System.getProperty("mssql.image")), "container-license-acceptance.txt"));
 
 }

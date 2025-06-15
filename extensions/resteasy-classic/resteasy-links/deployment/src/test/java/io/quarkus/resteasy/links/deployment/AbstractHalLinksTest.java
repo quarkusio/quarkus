@@ -13,9 +13,7 @@ public abstract class AbstractHalLinksTest {
 
     @Test
     void shouldGetHalLinksForCollections() {
-        Response response = given().accept(APPLICATION_HAL_JSON)
-                .get("/records")
-                .thenReturn();
+        Response response = given().accept(APPLICATION_HAL_JSON).get("/records").thenReturn();
 
         assertThat(response.body().jsonPath().getList("_embedded.items.id")).containsOnly(1, 2);
         assertThat(response.body().jsonPath().getString("_links.list.href")).endsWith("/records");
@@ -23,9 +21,7 @@ public abstract class AbstractHalLinksTest {
 
     @Test
     void shouldGetHalLinksForInstance() {
-        Response response = given().accept(APPLICATION_HAL_JSON)
-                .get("/records/first")
-                .thenReturn();
+        Response response = given().accept(APPLICATION_HAL_JSON).get("/records/first").thenReturn();
 
         assertThat(response.body().jsonPath().getString("_links.list.href")).endsWith("/records");
     }

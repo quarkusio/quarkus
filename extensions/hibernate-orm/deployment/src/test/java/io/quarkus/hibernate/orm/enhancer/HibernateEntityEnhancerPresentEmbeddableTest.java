@@ -29,25 +29,21 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that the missing @Embeddable check doesn't mistakely report
- * types that are annotated with @Embeddable (https://github.com/quarkusio/quarkus/issues/35598)
- * or generic type parameters on @Embedded field types (https://github.com/quarkusio/quarkus/issues/36065)
- * or overriden getters annotated with @EmbeddedId/@Embedded where the supertype getter returns a type not annotated
- * with @Embeddable
+ * Checks that the missing @Embeddable check doesn't mistakely report types that are annotated with @Embeddable
+ * (https://github.com/quarkusio/quarkus/issues/35598) or generic type parameters on @Embedded field types
+ * (https://github.com/quarkusio/quarkus/issues/36065) or overriden getters annotated with @EmbeddedId/@Embedded where
+ * the supertype getter returns a type not annotated with @Embeddable
  * (https://github.com/quarkusio/quarkus/issues/36421).
  */
 public class HibernateEntityEnhancerPresentEmbeddableTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionTestUtils.class)
-                    .addClasses(EntityWithEmbedded.class, EmbeddableWithAnnotation.class,
-                            ExtendedEmbeddableWithAnnotation.class,
-                            NestingEmbeddableWithAnnotation.class,
-                            GenericEmbeddableWithAnnotation.class,
-                            EntityWithEmbeddedId.class, EntityWithEmbeddedIdAndOverriddenGetter.class,
-                            EmbeddableIdWithAnnotation.class))
+            .withApplicationRoot((jar) -> jar.addClass(TransactionTestUtils.class).addClasses(EntityWithEmbedded.class,
+                    EmbeddableWithAnnotation.class, ExtendedEmbeddableWithAnnotation.class,
+                    NestingEmbeddableWithAnnotation.class, GenericEmbeddableWithAnnotation.class,
+                    EntityWithEmbeddedId.class, EntityWithEmbeddedIdAndOverriddenGetter.class,
+                    EmbeddableIdWithAnnotation.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.implicit-naming-strategy", "component-path");
 
@@ -66,40 +62,30 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
             entity.setNestingEmbeddedWithAnnotation(nesting);
             nesting.setEmbedded(new EmbeddableWithAnnotation("nested"));
             entity.setGenericEmbeddedWithAnnotation(new GenericEmbeddableWithAnnotation<>("generic"));
-            entity.setEmbeddableListWithAnnotation(List.of(
-                    new EmbeddableWithAnnotation("list1"),
-                    new EmbeddableWithAnnotation("list2")));
-            entity.setEmbeddableMapValueWithAnnotation(new TreeMap<>(Map.of(
-                    "first", new EmbeddableWithAnnotation("map1"),
-                    "second", new EmbeddableWithAnnotation("map2"))));
+            entity.setEmbeddableListWithAnnotation(
+                    List.of(new EmbeddableWithAnnotation("list1"), new EmbeddableWithAnnotation("list2")));
+            entity.setEmbeddableMapValueWithAnnotation(new TreeMap<>(Map.of("first",
+                    new EmbeddableWithAnnotation("map1"), "second", new EmbeddableWithAnnotation("map2"))));
             em.persist(entity);
             return entity.getId();
         });
 
         QuarkusTransaction.requiringNew().run(() -> {
             EntityWithEmbedded entity = em.find(EntityWithEmbedded.class, id);
-            assertThat(entity).extracting(e -> e.getName())
-                    .isEqualTo("name");
-            assertThat(entity).extracting(e -> e.getEmbeddedWithAnnotation().getText())
-                    .isEqualTo("simple");
-            assertThat(entity).extracting(e -> e.getExtendedEmbeddedWithAnnotation().getText())
-                    .isEqualTo("extended");
-            assertThat(entity).extracting(e -> e.getExtendedEmbeddedWithAnnotation().getInteger())
-                    .isEqualTo(42);
-            assertThat(entity).extracting(e -> e.getNestingEmbeddedWithAnnotation().getText())
-                    .isEqualTo("nesting");
+            assertThat(entity).extracting(e -> e.getName()).isEqualTo("name");
+            assertThat(entity).extracting(e -> e.getEmbeddedWithAnnotation().getText()).isEqualTo("simple");
+            assertThat(entity).extracting(e -> e.getExtendedEmbeddedWithAnnotation().getText()).isEqualTo("extended");
+            assertThat(entity).extracting(e -> e.getExtendedEmbeddedWithAnnotation().getInteger()).isEqualTo(42);
+            assertThat(entity).extracting(e -> e.getNestingEmbeddedWithAnnotation().getText()).isEqualTo("nesting");
             assertThat(entity).extracting(e -> e.getNestingEmbeddedWithAnnotation().getEmbedded().getText())
                     .isEqualTo("nested");
-            assertThat(entity).extracting(e -> e.getGenericEmbeddedWithAnnotation().getValue())
-                    .isEqualTo("generic");
+            assertThat(entity).extracting(e -> e.getGenericEmbeddedWithAnnotation().getValue()).isEqualTo("generic");
             assertThat(entity).extracting(e -> e.getEmbeddableListWithAnnotation())
                     .asInstanceOf(InstanceOfAssertFactories.list(EmbeddableWithAnnotation.class))
-                    .extracting(EmbeddableWithAnnotation::getText)
-                    .containsExactly("list1", "list2");
+                    .extracting(EmbeddableWithAnnotation::getText).containsExactly("list1", "list2");
             assertThat(entity).extracting(e -> e.getEmbeddableMapValueWithAnnotation())
                     .asInstanceOf(InstanceOfAssertFactories.map(String.class, EmbeddableWithAnnotation.class))
-                    .extractingFromEntries(e -> e.getValue().getText())
-                    .containsExactly("map1", "map2");
+                    .extractingFromEntries(e -> e.getValue().getText()).containsExactly("map1", "map2");
         });
     }
 
@@ -206,7 +192,8 @@ public class HibernateEntityEnhancerPresentEmbeddableTest {
             return genericEmbeddedWithAnnotation;
         }
 
-        public void setGenericEmbeddedWithAnnotation(GenericEmbeddableWithAnnotation<String> genericEmbeddedWithAnnotation) {
+        public void setGenericEmbeddedWithAnnotation(
+                GenericEmbeddableWithAnnotation<String> genericEmbeddedWithAnnotation) {
             this.genericEmbeddedWithAnnotation = genericEmbeddedWithAnnotation;
         }
 

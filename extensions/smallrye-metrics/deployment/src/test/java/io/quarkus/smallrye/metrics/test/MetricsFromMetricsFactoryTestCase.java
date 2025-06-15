@@ -20,9 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MetricsFromMetricsFactoryTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MeasureThis.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MeasureThis.class));
 
     @Inject
     @RegistryType(type = MetricRegistry.Type.VENDOR)

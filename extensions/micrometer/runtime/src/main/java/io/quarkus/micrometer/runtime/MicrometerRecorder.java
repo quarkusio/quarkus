@@ -66,12 +66,12 @@ public class MicrometerRecorder {
     }
 
     @RuntimeInit
-    public void configureRegistries(MicrometerConfig config,
-            Set<Class<? extends MeterRegistry>> registryClasses,
+    public void configureRegistries(MicrometerConfig config, Set<Class<? extends MeterRegistry>> registryClasses,
             ShutdownContext context) {
         BeanManager beanManager = Arc.container().beanManager();
 
-        Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters = new HashMap<>(registryClasses.size());
+        Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters = new HashMap<>(
+                registryClasses.size());
         List<MeterFilter> globalFilters = new ArrayList<>();
         populateMeterFilters(registryClasses, beanManager, classMeterFilters, globalFilters);
 
@@ -90,8 +90,8 @@ public class MicrometerRecorder {
         applyMeterRegistryCustomizers(Metrics.globalRegistry, globalMeterRegistryCustomizers);
 
         for (Bean<?> i : beans) {
-            MeterRegistry registry = (MeterRegistry) beanManager
-                    .getReference(i, MeterRegistry.class, beanManager.createCreationalContext(i));
+            MeterRegistry registry = (MeterRegistry) beanManager.getReference(i, MeterRegistry.class,
+                    beanManager.createCreationalContext(i));
 
             // Add & configure non-root registries
             if (registry != Metrics.globalRegistry && registry != null) {
@@ -140,8 +140,7 @@ public class MicrometerRecorder {
         // Discover and bind MeterBinders (includes annotated gauges, etc.)
         // This must be done at runtime. If done before backend registries are
         // configured, some measurements may be missed.
-        Instance<MeterBinder> allBinders = beanManager.createInstance()
-                .select(MeterBinder.class, Any.Literal.INSTANCE);
+        Instance<MeterBinder> allBinders = beanManager.createInstance().select(MeterBinder.class, Any.Literal.INSTANCE);
         for (MeterBinder meterBinder : allBinders) {
             meterBinder.bindTo(Metrics.globalRegistry);
         }
@@ -173,19 +172,18 @@ public class MicrometerRecorder {
     }
 
     private void populateMeterFilters(Set<Class<? extends MeterRegistry>> registryClasses, BeanManager beanManager,
-            Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters,
-            List<MeterFilter> globalFilters) {
+            Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters, List<MeterFilter> globalFilters) {
         // Find global/common registry configuration
-        Instance<MeterFilter> globalFilterInstance = beanManager.createInstance()
-                .select(MeterFilter.class, Default.Literal.INSTANCE);
+        Instance<MeterFilter> globalFilterInstance = beanManager.createInstance().select(MeterFilter.class,
+                Default.Literal.INSTANCE);
         populateList(globalFilterInstance, globalFilters);
         log.debugf("Discovered global MeterFilters : %s", globalFilters);
 
         // Find MeterFilters for specific registry classes, i.e.:
         // @MeterFilterConstraint(applyTo = DatadogMeterRegistry.class) Instance<MeterFilter> filters
         for (Class<? extends MeterRegistry> typeClass : registryClasses) {
-            Instance<MeterFilter> classFilterInstance = beanManager.createInstance()
-                    .select(MeterFilter.class, new MeterFilterConstraint.Literal(typeClass));
+            Instance<MeterFilter> classFilterInstance = beanManager.createInstance().select(MeterFilter.class,
+                    new MeterFilterConstraint.Literal(typeClass));
             List<MeterFilter> classFilters = classMeterFilters.computeIfAbsent(typeClass, k -> new ArrayList<>());
 
             populateList(classFilterInstance, classFilters);
@@ -193,7 +191,8 @@ public class MicrometerRecorder {
         }
     }
 
-    private void populateMeterRegistryCustomizers(Set<Class<? extends MeterRegistry>> registryClasses, BeanManager beanManager,
+    private void populateMeterRegistryCustomizers(Set<Class<? extends MeterRegistry>> registryClasses,
+            BeanManager beanManager,
             Map<Class<? extends MeterRegistry>, List<MeterRegistryCustomizer>> classMeterRegistryCustomizers,
             List<MeterRegistryCustomizer> globalMeterRegistryCustomizers) {
         // Find global/common registry configuration
@@ -203,7 +202,8 @@ public class MicrometerRecorder {
         log.debugf("Discovered global MeterRegistryCustomizer : %s", globalMeterRegistryCustomizers);
 
         // Find MeterRegistryCustomizers for specific registry classes, i.e.:
-        // @MeterRegistryCustomizerConstraint(applyTo = DatadogMeterRegistryCustomizer.class) Instance<MeterRegistryCustomizer> customizers
+        // @MeterRegistryCustomizerConstraint(applyTo = DatadogMeterRegistryCustomizer.class)
+        // Instance<MeterRegistryCustomizer> customizers
         log.debugf("Configuring Micrometer registries : %s", registryClasses);
         for (Class<? extends MeterRegistry> typeClass : registryClasses) {
             Instance<MeterRegistryCustomizer> classFilterInstance = beanManager.createInstance()
@@ -254,7 +254,8 @@ public class MicrometerRecorder {
             clazz = Class.forName(classname, false, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException ignored) {
         }
-        log.debugf("getClass: TCCL: %s ## %s : %s", Thread.currentThread().getContextClassLoader(), classname, (clazz != null));
+        log.debugf("getClass: TCCL: %s ## %s : %s", Thread.currentThread().getContextClassLoader(), classname,
+                (clazz != null));
         return clazz;
     }
 
@@ -269,15 +270,10 @@ public class MicrometerRecorder {
     }
 
     @RuntimeInit
-    public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(
-            boolean httpServerMetricsEnabled,
-            boolean httpClientMetricsEnabled,
-            HttpServerConfig serverConfig,
-            HttpClientConfig clientConfig,
+    public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(boolean httpServerMetricsEnabled,
+            boolean httpClientMetricsEnabled, HttpServerConfig serverConfig, HttpClientConfig clientConfig,
             VertxConfig vertxConfig) {
-        return new RuntimeValue<HttpBinderConfiguration>(
-                new HttpBinderConfiguration(httpServerMetricsEnabled,
-                        httpClientMetricsEnabled,
-                        serverConfig, clientConfig, vertxConfig));
+        return new RuntimeValue<HttpBinderConfiguration>(new HttpBinderConfiguration(httpServerMetricsEnabled,
+                httpClientMetricsEnabled, serverConfig, clientConfig, vertxConfig));
     }
 }

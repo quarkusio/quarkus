@@ -24,7 +24,8 @@ public interface SecretsRoleConfig {
     boolean clusterWide();
 
     /**
-     * If the current role is meant to be generated or not. If not, it will only be used to generate the role binding resource.
+     * If the current role is meant to be generated or not. If not, it will only be used to generate the role binding
+     * resource.
      */
     @WithDefault("true")
     boolean generate();

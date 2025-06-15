@@ -50,8 +50,7 @@ public class DependencyVersionOverridesManagedVersionTest extends BootstrapFromO
 
         createWorkspace();
 
-        final TsArtifact appJar = TsArtifact.jar("app")
-                .addManagedDependency(new TsDependency(bom, "import"))
+        final TsArtifact appJar = TsArtifact.jar("app").addManagedDependency(new TsDependency(bom, "import"))
                 .addDependency(new TsDependency(new TsArtifact(extB_100_rt.getGroupId(), extB_100_rt.getArtifactId(),
                         extB_100_rt.getClassifier(), extB_100_rt.getType(), null)))
                 .addDependency(extA_101.getRuntime());

@@ -29,8 +29,7 @@ public class CodeGenerationGroup {
             "--no-code" }, description = "Include starter code provided by extensions or generate an empty project", negatable = true)
     public boolean includeCode = true;
 
-    @CommandLine.Option(names = {
-            "--no-dockerfiles" }, description = "Include standard dockerfiles", negatable = true)
+    @CommandLine.Option(names = { "--no-dockerfiles" }, description = "Include standard dockerfiles", negatable = true)
     public boolean includeDockerfiles = true;
 
     @CommandLine.Option(names = { "-c",
@@ -47,11 +46,7 @@ public class CodeGenerationGroup {
 
     @Override
     public String toString() {
-        return "CodeGenerationGroup ["
-                + "includeCode=" + includeCode
-                + ", includeWrapper=" + includeWrapper
-                + ", includeDockerfiles=" + includeDockerfiles
-                + ", packageName=" + packageName
-                + "]";
+        return "CodeGenerationGroup [" + "includeCode=" + includeCode + ", includeWrapper=" + includeWrapper
+                + ", includeDockerfiles=" + includeDockerfiles + ", packageName=" + packageName + "]";
     }
 }

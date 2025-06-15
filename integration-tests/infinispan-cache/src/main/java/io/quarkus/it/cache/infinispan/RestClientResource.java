@@ -24,7 +24,8 @@ public class RestClientResource {
     SunriseRestClient sunriseRestClient;
 
     @Inject
-    HttpHeaders headers; // used in order to make sure that @RequestScoped beans continue to work despite the cache coming into play
+    HttpHeaders headers; // used in order to make sure that @RequestScoped beans continue to work despite the cache
+                         // coming into play
 
     @GET
     @Path("time/{city}")
@@ -32,12 +33,10 @@ public class RestClientResource {
         Set<String> incomingHeadersBeforeRestCall = headers.getRequestHeaders().keySet();
         String restResponse = sunriseRestClient.getSunriseTime(city, date);
         Set<String> incomingHeadersAfterRestCall = headers.getRequestHeaders().keySet();
-        return RestResponse.ResponseBuilder
-                .ok(restResponse)
+        return RestResponse.ResponseBuilder.ok(restResponse)
                 .header("before", String.join(", ", incomingHeadersBeforeRestCall))
                 .header("after", String.join(", ", incomingHeadersAfterRestCall))
-                .header("blockingAllowed", BlockingOperationControl.isBlockingAllowed())
-                .build();
+                .header("blockingAllowed", BlockingOperationControl.isBlockingAllowed()).build();
     }
 
     @GET
@@ -48,12 +47,10 @@ public class RestClientResource {
             @Override
             public RestResponse<String> apply(String restResponse) {
                 Set<String> incomingHeadersAfterRestCall = headers.getRequestHeaders().keySet();
-                return RestResponse.ResponseBuilder
-                        .ok(restResponse)
+                return RestResponse.ResponseBuilder.ok(restResponse)
                         .header("before", String.join(", ", incomingHeadersBeforeRestCall))
                         .header("after", String.join(", ", incomingHeadersAfterRestCall))
-                        .header("blockingAllowed", BlockingOperationControl.isBlockingAllowed())
-                        .build();
+                        .header("blockingAllowed", BlockingOperationControl.isBlockingAllowed()).build();
             }
         });
     }
@@ -68,16 +65,14 @@ public class RestClientResource {
     @Path("invalidate/{city}")
     public Uni<RestResponse<Void>> invalidate(@RestPath String city, @RestQuery String notPartOfTheCacheKey,
             @RestQuery String date) {
-        return sunriseRestClient.invalidate(city, notPartOfTheCacheKey, date).onItem().transform(
-                new Function<>() {
-                    @Override
-                    public RestResponse<Void> apply(Void unused) {
-                        return RestResponse.ResponseBuilder.<Void> create(RestResponse.Status.NO_CONTENT)
-                                .header("blockingAllowed", BlockingOperationControl.isBlockingAllowed())
-                                .header("incoming", String.join(", ", headers.getRequestHeaders().keySet()))
-                                .build();
-                    }
-                });
+        return sunriseRestClient.invalidate(city, notPartOfTheCacheKey, date).onItem().transform(new Function<>() {
+            @Override
+            public RestResponse<Void> apply(Void unused) {
+                return RestResponse.ResponseBuilder.<Void> create(RestResponse.Status.NO_CONTENT)
+                        .header("blockingAllowed", BlockingOperationControl.isBlockingAllowed())
+                        .header("incoming", String.join(", ", headers.getRequestHeaders().keySet())).build();
+            }
+        });
     }
 
     @DELETE

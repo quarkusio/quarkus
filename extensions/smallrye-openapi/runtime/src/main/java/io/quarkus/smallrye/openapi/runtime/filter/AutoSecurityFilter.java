@@ -71,11 +71,9 @@ public abstract class AutoSecurityFilter implements OASFilter {
         Map<String, SecurityScheme> securitySchemes = new LinkedHashMap<>();
 
         // Add any existing security
-        Optional.ofNullable(openAPI.getComponents().getSecuritySchemes())
-                .ifPresent(securitySchemes::putAll);
+        Optional.ofNullable(openAPI.getComponents().getSecuritySchemes()).ifPresent(securitySchemes::putAll);
 
-        SecurityScheme securityScheme = securitySchemes.computeIfAbsent(
-                securitySchemeName,
+        SecurityScheme securityScheme = securitySchemes.computeIfAbsent(securitySchemeName,
                 name -> OASFactory.createSecurityScheme());
 
         updateSecurityScheme(securityScheme);

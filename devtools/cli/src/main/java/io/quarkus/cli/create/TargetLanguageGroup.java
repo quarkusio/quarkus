@@ -31,7 +31,8 @@ public class TargetLanguageGroup {
     @CommandLine.Option(names = { "--scala" }, description = "Use Scala")
     boolean scala = false;
 
-    public SourceType getSourceType(CommandSpec spec, BuildTool buildTool, Set<String> extensions, OutputOptionMixin output) {
+    public SourceType getSourceType(CommandSpec spec, BuildTool buildTool, Set<String> extensions,
+            OutputOptionMixin output) {
         if (kotlin && scala) {
             throw new ParameterException(spec.commandLine(),
                     "Invalid source type. Projects can target either Kotlin (--kotlin) or Scala (--scala), not both.");
@@ -61,10 +62,7 @@ public class TargetLanguageGroup {
 
     @Override
     public String toString() {
-        return "TargetLanguageGroup [java=" + javaVersion
-                + ", kotlin=" + kotlin
-                + ", scala=" + scala
-                + ", sourceType=" + sourceType
-                + "]";
+        return "TargetLanguageGroup [java=" + javaVersion + ", kotlin=" + kotlin + ", scala=" + scala + ", sourceType="
+                + sourceType + "]";
     }
 }

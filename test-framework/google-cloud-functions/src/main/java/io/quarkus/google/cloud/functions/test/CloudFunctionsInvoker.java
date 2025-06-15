@@ -15,10 +15,7 @@ class CloudFunctionsInvoker {
         if (realPort != port) {
             System.setProperty("quarkus.http.test-port", String.valueOf(realPort));
         }
-        this.invoker = new Invoker(
-                realPort,
-                functionType.getTarget(),
-                functionType.getSignatureType(),
+        this.invoker = new Invoker(realPort, functionType.getTarget(), functionType.getSignatureType(),
                 Thread.currentThread().getContextClassLoader());
     }
 

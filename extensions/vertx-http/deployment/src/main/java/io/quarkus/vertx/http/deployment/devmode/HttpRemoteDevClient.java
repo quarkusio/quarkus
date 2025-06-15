@@ -33,12 +33,11 @@ public class HttpRemoteDevClient implements RemoteDevClient {
     private final Logger log = Logger.getLogger(HttpRemoteDevClient.class);
 
     /**
-     * The default Accept header defined in sun.net.www.protocol.http.HttpURLConnection is invalid and
-     * does not respect the RFC, so we override it with a valid value.
-     * RESTEasy is quite strict regarding the RFC and throws an error.
-     * Note that this is just the default HttpURLConnection header value made valid.
-     * See https://bugs.openjdk.java.net/browse/JDK-8163921 and https://bugs.openjdk.java.net/browse/JDK-8177439
-     * and https://github.com/quarkusio/quarkus/issues/20904
+     * The default Accept header defined in sun.net.www.protocol.http.HttpURLConnection is invalid and does not respect
+     * the RFC, so we override it with a valid value. RESTEasy is quite strict regarding the RFC and throws an error.
+     * Note that this is just the default HttpURLConnection header value made valid. See
+     * https://bugs.openjdk.java.net/browse/JDK-8163921 and https://bugs.openjdk.java.net/browse/JDK-8177439 and
+     * https://github.com/quarkusio/quarkus/issues/20904
      */
     private static final String DEFAULT_ACCEPT = "text/html, image/gif, image/jpeg; q=0.2, */*; q=0.2";
 
@@ -59,12 +58,13 @@ public class HttpRemoteDevClient implements RemoteDevClient {
 
     @Override
     public Closeable sendConnectRequest(RemoteDevState initialState,
-            Function<Set<String>, Map<String, byte[]>> initialConnectFunction, Supplier<SyncResult> changeRequestFunction) {
-        //so when we connect we send the current state
-        //the server will respond with a list of files it needs, one per line as a standard UTF-8 document
+            Function<Set<String>, Map<String, byte[]>> initialConnectFunction,
+            Supplier<SyncResult> changeRequestFunction) {
+        // so when we connect we send the current state
+        // the server will respond with a list of files it needs, one per line as a standard UTF-8 document
         try {
-            //we are now good to go
-            //the server is now up-to-date
+            // we are now good to go
+            // the server is now up-to-date
             return new Session(initialState, initialConnectFunction, changeRequestFunction);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -86,9 +86,8 @@ public class HttpRemoteDevClient implements RemoteDevClient {
         private final URL probeUrl;
         int errorCount;
 
-        private Session(RemoteDevState initialState,
-                Function<Set<String>, Map<String, byte[]>> initialConnectFunction, Supplier<SyncResult> changeRequestFunction)
-                throws MalformedURLException {
+        private Session(RemoteDevState initialState, Function<Set<String>, Map<String, byte[]>> initialConnectFunction,
+                Supplier<SyncResult> changeRequestFunction) throws MalformedURLException {
             this.initialState = initialState;
             this.initialConnectFunction = initialConnectFunction;
             this.changeRequestFunction = changeRequestFunction;
@@ -107,7 +106,8 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             connection.setDoOutput(true);
             connection.setRequestProperty(HttpHeaders.ACCEPT.toString(), DEFAULT_ACCEPT);
             connection.addRequestProperty(HttpHeaders.CONTENT_TYPE.toString(), RemoteSyncHandler.APPLICATION_QUARKUS);
-            connection.addRequestProperty(RemoteSyncHandler.QUARKUS_SESSION_COUNT, Integer.toString(currentSessionCounter));
+            connection.addRequestProperty(RemoteSyncHandler.QUARKUS_SESSION_COUNT,
+                    Integer.toString(currentSessionCounter));
 
             connection.addRequestProperty(RemoteSyncHandler.QUARKUS_PASSWORD,
                     sha256(sha256(entry.getValue()) + session + currentSessionCounter + password));
@@ -118,8 +118,8 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             IoUtil.readBytes(connection.getInputStream());
         }
 
-        private String doConnect(RemoteDevState initialState, Function<Set<String>, Map<String, byte[]>> initialConnectFunction)
-                throws IOException {
+        private String doConnect(RemoteDevState initialState,
+                Function<Set<String>, Map<String, byte[]>> initialConnectFunction) throws IOException {
 
             currentSessionCounter = 1;
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -133,11 +133,11 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                     .openConnection();
             connection.setRequestProperty(HttpHeaders.ACCEPT.toString(), DEFAULT_ACCEPT);
             connection.addRequestProperty(HttpHeaders.CONTENT_TYPE.toString(), RemoteSyncHandler.APPLICATION_QUARKUS);
-            //for the connection we use the hash of the password and the contents
-            //this can be replayed, but only with the same contents, and this does not affect the server
-            //state anyway
-            //subsequent requests need to use the randomly generated session ID which prevents replay
-            //when actually updating the server
+            // for the connection we use the hash of the password and the contents
+            // this can be replayed, but only with the same contents, and this does not affect the server
+            // state anyway
+            // subsequent requests need to use the randomly generated session ID which prevents replay
+            // when actually updating the server
             connection.addRequestProperty(RemoteSyncHandler.QUARKUS_PASSWORD, sha256(dataHash + password));
             connection.setDoOutput(true);
 
@@ -156,9 +156,9 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             Set<String> changed = new HashSet<>();
             changed.addAll(Arrays.asList(result.split(";")));
             Map<String, byte[]> data = new LinkedHashMap<>(initialConnectFunction.apply(changed));
-            //this file needs to be sent last
-            //if it is modified it will trigger a reload
-            //and we need the rest of the app to be present
+            // this file needs to be sent last
+            // if it is modified it will trigger a reload
+            // and we need the rest of the app to be present
             byte[] lastFile = data.remove(QuarkusEntryPoint.LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT);
             if (lastFile != null) {
                 data.put(QuarkusEntryPoint.LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT, lastFile);
@@ -168,8 +168,8 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                 sendData(entry, session);
             }
             if (lastFile != null) {
-                //a bit of a hack, but if we sent this the app is going to restart
-                //if we attempt to connect too soon it won't be ready
+                // a bit of a hack, but if we sent this the app is going to restart
+                // if we attempt to connect too soon it won't be ready
                 session = waitForRestart(initialState, initialConnectFunction);
             } else {
                 log.info("Connected to remote server");
@@ -204,12 +204,13 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                     try (ObjectOutputStream out = new ObjectOutputStream(baos)) {
                         out.writeObject(problem);
                     }
-                    //long polling request
-                    //we always send the current problem state
+                    // long polling request
+                    // we always send the current problem state
                     connection = (HttpURLConnection) devUrl.openConnection();
                     connection.setRequestProperty(HttpHeaders.ACCEPT.toString(), DEFAULT_ACCEPT);
                     connection.setRequestMethod("POST");
-                    connection.addRequestProperty(HttpHeaders.CONTENT_TYPE.toString(), RemoteSyncHandler.APPLICATION_QUARKUS);
+                    connection.addRequestProperty(HttpHeaders.CONTENT_TYPE.toString(),
+                            RemoteSyncHandler.APPLICATION_QUARKUS);
                     connection.addRequestProperty(RemoteSyncHandler.QUARKUS_SESSION_COUNT,
                             Integer.toString(currentSessionCounter));
                     connection.addRequestProperty(RemoteSyncHandler.QUARKUS_PASSWORD,
@@ -224,14 +225,14 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                     if (status == 200) {
                         SyncResult sync = changeRequestFunction.get();
                         problem = sync.getProblem();
-                        //if there have been any changes send the new files
+                        // if there have been any changes send the new files
                         for (Map.Entry<String, byte[]> entry : sync.getChangedFiles().entrySet()) {
                             sendData(entry, sessionId);
                         }
                         for (String file : sync.getRemovedFiles()) {
                             if (file.endsWith("META-INF/MANIFEST.MF") || file.contains("META-INF/maven")
                                     || !file.contains("/")) {
-                                //we have some filters, for files that we don't want to delete
+                                // we have some filters, for files that we don't want to delete
                                 continue;
                             }
                             log.info("deleting " + file);
@@ -242,7 +243,7 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                                     RemoteSyncHandler.APPLICATION_QUARKUS);
                             connection.addRequestProperty(RemoteSyncHandler.QUARKUS_SESSION_COUNT,
                                     Integer.toString(currentSessionCounter));
-                            //for delete requests we add the path to the password hash
+                            // for delete requests we add the path to the password hash
                             connection.addRequestProperty(RemoteSyncHandler.QUARKUS_PASSWORD,
                                     sha256(sha256("/" + file) + sessionId + currentSessionCounter + password));
                             currentSessionCounter++;
@@ -251,7 +252,7 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                             IoUtil.readBytes(connection.getInputStream());
                         }
                     } else if (status == 203) {
-                        //need a new session
+                        // need a new session
                         sessionId = doConnect(initialState, initialConnectFunction);
                     }
                     errorCount = 0;
@@ -286,7 +287,8 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                     HttpURLConnection connection = (HttpURLConnection) probeUrl.openConnection();
                     connection.setRequestProperty(HttpHeaders.ACCEPT.toString(), DEFAULT_ACCEPT);
                     connection.setRequestMethod("POST");
-                    connection.addRequestProperty(HttpHeaders.CONTENT_TYPE.toString(), RemoteSyncHandler.APPLICATION_QUARKUS);
+                    connection.addRequestProperty(HttpHeaders.CONTENT_TYPE.toString(),
+                            RemoteSyncHandler.APPLICATION_QUARKUS);
                     IoUtil.readBytes(connection.getInputStream());
                     return doConnect(initialState, initialConnectFunction);
                 } catch (IOException e) {

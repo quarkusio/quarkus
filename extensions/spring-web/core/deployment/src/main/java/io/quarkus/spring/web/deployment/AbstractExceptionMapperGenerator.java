@@ -37,20 +37,21 @@ abstract class AbstractExceptionMapperGenerator {
     abstract void generateMethodBody(MethodCreator toResponse);
 
     String generate() {
-        String generatedClassName = "io.quarkus.spring.web.mappers." + exceptionDotName.withoutPackagePrefix() + "_Mapper_"
-                + HashUtil.sha1(exceptionDotName.toString());
+        String generatedClassName = "io.quarkus.spring.web.mappers." + exceptionDotName.withoutPackagePrefix()
+                + "_Mapper_" + HashUtil.sha1(exceptionDotName.toString());
         String exceptionClassName = exceptionDotName.toString();
 
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedClassName)
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
                 .interfaces(ExceptionMapper.class)
-                .signature(String.format("Ljava/lang/Object;L" + ExceptionMapper.class.getName().replace(".", "/") + "<L%s;>;",
+                .signature(String.format(
+                        "Ljava/lang/Object;L" + ExceptionMapper.class.getName().replace(".", "/") + "<L%s;>;",
                         exceptionClassName.replace('.', '/')))
                 .build()) {
 
             preGenerateMethodBody(cc);
 
-            try (MethodCreator toResponse = cc.getMethodCreator("toResponse", Response.class.getName(), exceptionClassName)) {
+            try (MethodCreator toResponse = cc.getMethodCreator("toResponse", Response.class.getName(),
+                    exceptionClassName)) {
                 generateMethodBody(toResponse);
             }
 
@@ -58,7 +59,8 @@ abstract class AbstractExceptionMapperGenerator {
             try (MethodCreator bridgeToResponse = cc.getMethodCreator("toResponse", Response.class, Throwable.class)) {
                 MethodDescriptor toResponse = MethodDescriptor.ofMethod(generatedClassName, "toResponse",
                         Response.class.getName(), exceptionClassName);
-                ResultHandle castedObject = bridgeToResponse.checkCast(bridgeToResponse.getMethodParam(0), exceptionClassName);
+                ResultHandle castedObject = bridgeToResponse.checkCast(bridgeToResponse.getMethodParam(0),
+                        exceptionClassName);
                 ResultHandle result = bridgeToResponse.invokeVirtualMethod(toResponse, bridgeToResponse.getThis(),
                         castedObject);
                 bridgeToResponse.returnValue(result);
@@ -66,13 +68,12 @@ abstract class AbstractExceptionMapperGenerator {
         }
 
         if (isResteasyClassic) {
-            String generatedSubtypeClassName = "io.quarkus.spring.web.mappers.Subtype" + exceptionDotName.withoutPackagePrefix()
-                    + "Mapper_" + HashUtil.sha1(exceptionDotName.toString());
-            // additionally generate a dummy subtype to get past the RESTEasy's ExceptionMapper check for synthetic classes
-            try (ClassCreator cc = ClassCreator.builder()
-                    .classOutput(classOutput).className(generatedSubtypeClassName)
-                    .superClass(generatedClassName)
-                    .build()) {
+            String generatedSubtypeClassName = "io.quarkus.spring.web.mappers.Subtype"
+                    + exceptionDotName.withoutPackagePrefix() + "Mapper_" + HashUtil.sha1(exceptionDotName.toString());
+            // additionally generate a dummy subtype to get past the RESTEasy's ExceptionMapper check for synthetic
+            // classes
+            try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedSubtypeClassName)
+                    .superClass(generatedClassName).build()) {
                 cc.addAnnotation(Provider.class);
             }
 

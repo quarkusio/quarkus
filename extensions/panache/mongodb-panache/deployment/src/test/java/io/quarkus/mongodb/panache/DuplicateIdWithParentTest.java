@@ -12,9 +12,8 @@ public class DuplicateIdWithParentTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
-            .setExpectedException(BuildException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DuplicateIdWithParentEntity.class, DuplicateIdParentEntity.class));
+            .setExpectedException(BuildException.class).withApplicationRoot(
+                    (jar) -> jar.addClasses(DuplicateIdWithParentEntity.class, DuplicateIdParentEntity.class));
 
     @Test
     void shouldThrow() {

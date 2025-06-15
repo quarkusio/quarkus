@@ -23,8 +23,7 @@ public class RequestScopeTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class, Identity.class, Greeting.class, MyFunction.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, Identity.class, Greeting.class, MyFunction.class)
                     .addAsResource("greeting.properties", "application.properties"));
 
     @BeforeEach
@@ -34,12 +33,8 @@ public class RequestScopeTest {
 
     @Test
     public void testRequestScope() {
-        RestAssured.given().contentType("application/json")
-                .body("{\"name\": \"Roxanne\"}")
-                .post("/")
-                .then().statusCode(200)
-                .header("ce-id", nullValue())
-                .body("name", equalTo("Roxanne"))
+        RestAssured.given().contentType("application/json").body("{\"name\": \"Roxanne\"}").post("/").then()
+                .statusCode(200).header("ce-id", nullValue()).body("name", equalTo("Roxanne"))
                 .body("message", equalTo("Hello Roxanne!"));
 
         Assertions.assertEquals(1, MyBean.DISPOSED.get());
@@ -47,9 +42,7 @@ public class RequestScopeTest {
 
     @Test
     public void testRequestScopeTerminationWithSynchronousFailure() {
-        String body = RestAssured.given().contentType("application/json")
-                .body("{\"name\": \"failure\"}")
-                .post("/")
+        String body = RestAssured.given().contentType("application/json").body("{\"name\": \"failure\"}").post("/")
                 .then().statusCode(500).extract().asString();
 
         Assertions.assertTrue(body.contains("expected failure"));

@@ -29,7 +29,8 @@ public class ObjectMapperSerializer<T> implements Serializer<T> {
 
     @Override
     public void configure(Map<String, ?> configs, boolean isKey) {
-        if (configs.containsKey(NULL_AS_NULL_CONFIG) && Boolean.parseBoolean((String) configs.get(NULL_AS_NULL_CONFIG))) {
+        if (configs.containsKey(NULL_AS_NULL_CONFIG)
+                && Boolean.parseBoolean((String) configs.get(NULL_AS_NULL_CONFIG))) {
             nullAsNull = true;
         }
     }

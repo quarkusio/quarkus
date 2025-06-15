@@ -23,10 +23,10 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class DefaultDataSourceConfigTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @Inject
     AgroalDataSource defaultDataSource;
-    //end::injection[]
+    // end::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -40,8 +40,9 @@ public class DefaultDataSourceConfigTest {
     }
 
     private static void testDataSource(AgroalDataSource dataSource, String username, int minSize, int maxSize,
-            int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout, Duration leakDetectionInterval,
-            Duration idleRemovalInterval, Duration maxLifetime, String newConnectionSql) {
+            int initialSize, Duration backgroundValidationInterval, Duration acquisitionTimeout,
+            Duration leakDetectionInterval, Duration idleRemovalInterval, Duration maxLifetime,
+            String newConnectionSql) {
         AgroalConnectionPoolConfiguration configuration = dataSource.getConfiguration().connectionPoolConfiguration();
         AgroalConnectionFactoryConfiguration agroalConnectionFactoryConfiguration = configuration
                 .connectionFactoryConfiguration();
@@ -63,10 +64,8 @@ public class DefaultDataSourceConfigTest {
         assertTrue(dataSource.getConfiguration().metricsEnabled());
         assertFalse(configuration.flushOnClose());
         assertEquals(newConnectionSql, agroalConnectionFactoryConfiguration.initialSql());
-        assertThat(agroalConnectionFactoryConfiguration.jdbcProperties())
-                .contains(
-                        entry("extraProperty1", "extraProperty1Value"),
-                        entry("extraProperty2", "extraProperty2Value"));
+        assertThat(agroalConnectionFactoryConfiguration.jdbcProperties()).contains(
+                entry("extraProperty1", "extraProperty1Value"), entry("extraProperty2", "extraProperty2Value"));
         assertThatCode(() -> dataSource.getConnection().close()).doesNotThrowAnyException();
     }
 }

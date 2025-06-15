@@ -43,8 +43,8 @@ public class SyntheticBeanBuildItemProxyTest {
                     @Override
                     public void execute(BuildContext context) {
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
-                                TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode(), true, s -> null);
+                                TestRecorder.class.getSimpleName(), "test", "" + TestRecorder.class.hashCode(), true,
+                                s -> null);
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {
@@ -52,26 +52,18 @@ public class SyntheticBeanBuildItemProxyTest {
 
                             Object proxy1 = test.invoke(recorderProxy, "ok");
                             ExtendedBeanConfigurator configurator1 = SyntheticBeanBuildItem.configure(SynthBean.class)
-                                    .scope(ApplicationScoped.class)
-                                    .identifier("ok")
-                                    .unremovable();
+                                    .scope(ApplicationScoped.class).identifier("ok").unremovable();
                             // No creator
-                            assertThrows(IllegalStateException.class,
-                                    () -> configurator1.done());
+                            assertThrows(IllegalStateException.class, () -> configurator1.done());
                             // Not a returned proxy
                             assertThrows(IllegalArgumentException.class,
                                     () -> configurator1.runtimeProxy(new SynthBean()));
-                            context.produce(configurator1
-                                    .runtimeProxy(proxy1)
-                                    .done());
+                            context.produce(configurator1.runtimeProxy(proxy1).done());
 
                             // Register a synthetic bean with same types and qualifiers but different identifier
                             context.produce(SyntheticBeanBuildItem.configure(SynthBean.class)
-                                    .scope(ApplicationScoped.class)
-                                    .identifier("nok")
-                                    .unremovable()
-                                    .runtimeProxy(test.invoke(recorderProxy, "nok"))
-                                    .done());
+                                    .scope(ApplicationScoped.class).identifier("nok").unremovable()
+                                    .runtimeProxy(test.invoke(recorderProxy, "nok")).done());
 
                         } catch (Exception e) {
                             throw new RuntimeException(e);

@@ -26,8 +26,7 @@ public class AutoFieldInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AutoFieldInjectionTest.class, Client.class, Producer.class));
+            .withApplicationRoot((jar) -> jar.addClasses(AutoFieldInjectionTest.class, Client.class, Producer.class));
 
     @Inject
     Client bean;

@@ -111,8 +111,8 @@ public class StringCommandsTest extends DatasourceTestBase {
         assertThat(strings.mget(key)).containsExactly(entry(key, null));
         strings.set("one", "1");
         strings.set("two", "2");
-        assertThat(strings.mget("one", "missing", "two")).containsExactly(entry("one", "1"),
-                entry("missing", null), entry("two", "2"));
+        assertThat(strings.mget("one", "missing", "two")).containsExactly(entry("one", "1"), entry("missing", null),
+                entry("two", "2"));
     }
 
     @Test
@@ -197,12 +197,14 @@ public class StringCommandsTest extends DatasourceTestBase {
 
     @Test
     void setNegativeEX() {
-        assertThatThrownBy(() -> strings.set(key, value, new SetArgs().ex(-10))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> strings.set(key, value, new SetArgs().ex(-10)))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void setNegativePX() {
-        assertThatThrownBy(() -> strings.set(key, value, new SetArgs().px(-1000))).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> strings.set(key, value, new SetArgs().px(-1000)))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

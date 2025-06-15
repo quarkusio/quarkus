@@ -35,7 +35,7 @@ public final class HibernateEnversDisabledProcessor {
     }
 
     // TODO move this to runtime init once we implement in Hibernate ORM a way
-    //  to remove entity types from the metamodel on runtime init
+    // to remove entity types from the metamodel on runtime init
     public void checkNoExplicitActiveTrue(HibernateEnversBuildTimeConfig buildTimeConfig) {
         for (var entry : buildTimeConfig.persistenceUnits().entrySet()) {
             var config = entry.getValue();
@@ -43,15 +43,12 @@ public final class HibernateEnversDisabledProcessor {
                 var puName = entry.getKey();
                 String enabledPropertyKey = HibernateEnversBuildTimeConfig.extensionPropertyKey("enabled");
                 String activePropertyKey = HibernateEnversBuildTimeConfig.persistenceUnitPropertyKey(puName, "active");
-                throw new ConfigurationException(
-                        "Hibernate Envers activated explicitly for persistence unit '" + puName
-                                + "', but the Hibernate Envers extension was disabled at build time."
-                                + " If you want Hibernate Envers to be active for this persistence unit, you must set '"
-                                + enabledPropertyKey
-                                + "' to 'true' at build time."
-                                + " If you don't want Hibernate Envers to be active for this persistence unit, you must leave '"
-                                + activePropertyKey
-                                + "' unset or set it to 'false'.",
+                throw new ConfigurationException("Hibernate Envers activated explicitly for persistence unit '" + puName
+                        + "', but the Hibernate Envers extension was disabled at build time."
+                        + " If you want Hibernate Envers to be active for this persistence unit, you must set '"
+                        + enabledPropertyKey + "' to 'true' at build time."
+                        + " If you don't want Hibernate Envers to be active for this persistence unit, you must leave '"
+                        + activePropertyKey + "' unset or set it to 'false'.",
                         Set.of(enabledPropertyKey, activePropertyKey));
             }
         }

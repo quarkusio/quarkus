@@ -32,13 +32,9 @@ public class GeneratedStaticResourcesRecorder {
         StaticResourcesConfig config = httpConfig.getValue().staticResources();
 
         DevClasspathStaticHandlerOptions options = new DevClasspathStaticHandlerOptions.Builder()
-                .indexPage(config.indexPage())
-                .httpBuildTimeConfig(httpBuildTimeConfig)
-                .defaultEncoding(config.contentEncoding())
-                .build();
-        return new DevStaticHandler(generatedClasspathResources,
-                generatedFilesResources,
-                options);
+                .indexPage(config.indexPage()).httpBuildTimeConfig(httpBuildTimeConfig)
+                .defaultEncoding(config.contentEncoding()).build();
+        return new DevStaticHandler(generatedClasspathResources, generatedFilesResources, options);
 
     }
 

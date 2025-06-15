@@ -14,10 +14,8 @@ public class CheckedTemplatePrimitiveTypeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Templates.class)
-                    .addAsResource(new StringAsset("Hello {val}!"),
-                            "templates/CheckedTemplatePrimitiveTypeTest/integers.txt"));
+            .withApplicationRoot((jar) -> jar.addClasses(Templates.class).addAsResource(new StringAsset("Hello {val}!"),
+                    "templates/CheckedTemplatePrimitiveTypeTest/integers.txt"));
 
     @Test
     public void testPrimitiveParamBinding() {

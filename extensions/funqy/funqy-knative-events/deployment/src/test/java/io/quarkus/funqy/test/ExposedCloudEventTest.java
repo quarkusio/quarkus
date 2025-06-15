@@ -21,75 +21,42 @@ import io.restassured.specification.RequestSpecification;
 public class ExposedCloudEventTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ExposedCloudEvents.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ExposedCloudEvents.class));
 
     @Test
     public void testVanillaHttp() {
         // when a function handles CloudEvent explicitly, vanilla HTTP is considered to be a bad request.
-        RestAssured.given().contentType("application/json")
-                .body("{}")
-                .post("/doubleIt")
-                .then()
-                .statusCode(400);
+        RestAssured.given().contentType("application/json").body("{}").post("/doubleIt").then().statusCode(400);
     }
 
     @Test
     public void testCloudEventAttributeDefaultsForStructuredEncoding() {
-        String event = "{ \"id\" : \"test-id\", " +
-                "  \"specversion\": \"1.0\", " +
-                "  \"source\": \"test-source\", " +
-                "  \"type\": \"test-defaults\" " +
-                "}";
-        RestAssured.given().contentType("application/cloudevents+json")
-                .body(event)
-                .post("/")
-                .then()
-                .statusCode(200)
-                .body("specversion", equalTo("1.0"))
-                .body("id", notNullValue())
-                .body("type", equalTo("default-type"))
+        String event = "{ \"id\" : \"test-id\", " + "  \"specversion\": \"1.0\", " + "  \"source\": \"test-source\", "
+                + "  \"type\": \"test-defaults\" " + "}";
+        RestAssured.given().contentType("application/cloudevents+json").body(event).post("/").then().statusCode(200)
+                .body("specversion", equalTo("1.0")).body("id", notNullValue()).body("type", equalTo("default-type"))
                 .body("source", equalTo("default-source"));
     }
 
     @Test
     public void testCloudEventAttributeDefaultsForBinaryEncoding() {
-        RestAssured.given()
-                .header("ce-id", "test-id")
-                .header("ce-specversion", "1.0")
-                .header("ce-type", "test-defaults")
-                .header("ce-source", "test-source")
-                .post()
-                .then()
-                .statusCode(204)
-                .header("ce-specversion", equalTo("1.0"))
-                .header("ce-id", notNullValue())
-                .header("ce-type", equalTo("default-type"))
-                .header("ce-source", equalTo("default-source"));
+        RestAssured.given().header("ce-id", "test-id").header("ce-specversion", "1.0")
+                .header("ce-type", "test-defaults").header("ce-source", "test-source").post().then().statusCode(204)
+                .header("ce-specversion", equalTo("1.0")).header("ce-id", notNullValue())
+                .header("ce-type", equalTo("default-type")).header("ce-source", equalTo("default-source"));
     }
 
     @Test
     public void testGenericInput() {
-        RestAssured.given().contentType("application/json")
-                .header("ce-id", "test-id")
-                .header("ce-specversion", "1.0")
-                .header("ce-type", "test-generics")
-                .header("ce-source", "test-source")
-                .body("[{\"i\" : 1}, {\"i\" : 2}, {\"i\" : 3}]")
-                .then()
-                .statusCode(200)
-                .body(equalTo("6"));
+        RestAssured.given().contentType("application/json").header("ce-id", "test-id").header("ce-specversion", "1.0")
+                .header("ce-type", "test-generics").header("ce-source", "test-source")
+                .body("[{\"i\" : 1}, {\"i\" : 2}, {\"i\" : 3}]").then().statusCode(200).body(equalTo("6"));
     }
 
     @Test
     public void testNullResponse() {
-        RestAssured.given().contentType("application/json")
-                .header("ce-id", "test-id")
-                .header("ce-specversion", "1.0")
-                .header("ce-type", "test-null-response")
-                .header("ce-source", "test-source")
-                .post()
-                .then()
+        RestAssured.given().contentType("application/json").header("ce-id", "test-id").header("ce-specversion", "1.0")
+                .header("ce-type", "test-null-response").header("ce-source", "test-source").post().then()
                 .statusCode(204);
     }
 
@@ -103,36 +70,21 @@ public class ExposedCloudEventTest {
             req = req.header(h.getKey(), h.getValue());
         }
 
-        req.body(BINARY_ENCODED_EVENT_BODY)
-                .post("/")
-                .then()
-                .statusCode(200)
-                .header("ce-specversion", equalTo(specversion))
-                .header("ce-id", equalTo("double-it-id"))
-                .header("ce-type", equalTo("double-it-type"))
-                .header("ce-source", equalTo("/OfDoubleIt"))
+        req.body(BINARY_ENCODED_EVENT_BODY).post("/").then().statusCode(200)
+                .header("ce-specversion", equalTo(specversion)).header("ce-id", equalTo("double-it-id"))
+                .header("ce-type", equalTo("double-it-type")).header("ce-source", equalTo("/OfDoubleIt"))
                 .header(dataSchemaHdrName, equalTo("dataschema-server"))
-                .header("ce-extserver", equalTo("ext-server-val"))
-                .body("i", equalTo(42))
-                .body("s", equalTo("abcabc"));
+                .header("ce-extserver", equalTo("ext-server-val")).body("i", equalTo(42)).body("s", equalTo("abcabc"));
     }
 
     @ParameterizedTest
     @MethodSource("provideStructuredEncodingTestArgs")
     public void testStructuredEncoding(String event, String specversion, String dataSchemaFieldName) {
-        RestAssured.given().contentType("application/cloudevents+json")
-                .body(event)
-                .post("/")
-                .then()
-                .statusCode(200)
-                .body("specversion", equalTo(specversion))
-                .body("id", equalTo("double-it-id"))
-                .body("type", equalTo("double-it-type"))
-                .body("source", equalTo("/OfDoubleIt"))
-                .body(dataSchemaFieldName, equalTo("dataschema-server"))
-                .body("extserver", equalTo("ext-server-val"))
-                .body("data.i", equalTo(42))
-                .body("data.s", equalTo("abcabc"));
+        RestAssured.given().contentType("application/cloudevents+json").body(event).post("/").then().statusCode(200)
+                .body("specversion", equalTo(specversion)).body("id", equalTo("double-it-id"))
+                .body("type", equalTo("double-it-type")).body("source", equalTo("/OfDoubleIt"))
+                .body(dataSchemaFieldName, equalTo("dataschema-server")).body("extserver", equalTo("ext-server-val"))
+                .body("data.i", equalTo(42)).body("data.s", equalTo("abcabc"));
     }
 
     static {
@@ -168,52 +120,33 @@ public class ExposedCloudEventTest {
         return Stream.<Arguments> builder()
                 .add(Arguments.arguments(BINARY_ENCODED_EVENT_V1_HEADERS, "1.0", "ce-dataschema"))
                 .add(Arguments.arguments(BINARY_ENCODED_EVENT_V1_1_HEADERS, "1.1", "ce-dataschema"))
-                .add(Arguments.arguments(BINARY_ENCODED_EVENT_V03_HEADERS, "0.3", "ce-schemaurl"))
-                .build();
+                .add(Arguments.arguments(BINARY_ENCODED_EVENT_V03_HEADERS, "0.3", "ce-schemaurl")).build();
     }
 
     public static final String BINARY_ENCODED_EVENT_BODY = " { \"i\" : 21, \"s\" : \"abc\" } ";
 
-    static final String STRUCTURED_ENCODED_EVENT_V1_BODY = "{ \"id\" : \"test-id\", " +
-            "  \"specversion\": \"1.0\", " +
-            "  \"source\": \"/OfTest\", " +
-            "  \"subject\": \"test-subj\", " +
-            "  \"time\": \"2018-04-05T17:31:00Z\", " +
-            "  \"type\": \"test-type\", " +
-            "  \"extclient\": \"ext-client-val\", " +
-            "  \"dataschema\": \"test-dataschema-client\", " +
-            "  \"datacontenttype\": \"application/json\", " +
-            "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " +
-            "}";
+    static final String STRUCTURED_ENCODED_EVENT_V1_BODY = "{ \"id\" : \"test-id\", " + "  \"specversion\": \"1.0\", "
+            + "  \"source\": \"/OfTest\", " + "  \"subject\": \"test-subj\", "
+            + "  \"time\": \"2018-04-05T17:31:00Z\", " + "  \"type\": \"test-type\", "
+            + "  \"extclient\": \"ext-client-val\", " + "  \"dataschema\": \"test-dataschema-client\", "
+            + "  \"datacontenttype\": \"application/json\", " + "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " + "}";
 
-    static final String STRUCTURED_ENCODED_EVENT_V1_1_BODY = "{ \"id\" : \"test-id\", " +
-            "  \"specversion\": \"1.1\", " +
-            "  \"source\": \"/OfTest\", " +
-            "  \"subject\": \"test-subj\", " +
-            "  \"time\": \"2018-04-05T17:31:00Z\", " +
-            "  \"type\": \"test-type\", " +
-            "  \"extclient\": \"ext-client-val\", " +
-            "  \"dataschema\": \"test-dataschema-client\", " +
-            "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " +
-            "}";
+    static final String STRUCTURED_ENCODED_EVENT_V1_1_BODY = "{ \"id\" : \"test-id\", " + "  \"specversion\": \"1.1\", "
+            + "  \"source\": \"/OfTest\", " + "  \"subject\": \"test-subj\", "
+            + "  \"time\": \"2018-04-05T17:31:00Z\", " + "  \"type\": \"test-type\", "
+            + "  \"extclient\": \"ext-client-val\", " + "  \"dataschema\": \"test-dataschema-client\", "
+            + "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " + "}";
 
-    static final String STRUCTURED_ENCODED_EVENT_V03_BODY = "{ \"id\" : \"test-id\", " +
-            "  \"specversion\": \"0.3\", " +
-            "  \"source\": \"/OfTest\", " +
-            "  \"subject\": \"test-subj\", " +
-            "  \"time\": \"2018-04-05T17:31:00Z\", " +
-            "  \"type\": \"test-type\", " +
-            "  \"extclient\": \"ext-client-val\", " +
-            "  \"schemaurl\": \"test-dataschema-client\", " +
-            "  \"datacontenttype\": \"application/json\", " +
-            "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " +
-            "}";
+    static final String STRUCTURED_ENCODED_EVENT_V03_BODY = "{ \"id\" : \"test-id\", " + "  \"specversion\": \"0.3\", "
+            + "  \"source\": \"/OfTest\", " + "  \"subject\": \"test-subj\", "
+            + "  \"time\": \"2018-04-05T17:31:00Z\", " + "  \"type\": \"test-type\", "
+            + "  \"extclient\": \"ext-client-val\", " + "  \"schemaurl\": \"test-dataschema-client\", "
+            + "  \"datacontenttype\": \"application/json\", " + "  \"data\": { \"i\" : 21, \"s\" : \"abc\" } " + "}";
 
     private static Stream<Arguments> provideStructuredEncodingTestArgs() {
         return Stream.<Arguments> builder()
                 .add(Arguments.arguments(STRUCTURED_ENCODED_EVENT_V1_BODY, "1.0", "dataschema"))
                 .add(Arguments.arguments(STRUCTURED_ENCODED_EVENT_V1_1_BODY, "1.1", "dataschema"))
-                .add(Arguments.arguments(STRUCTURED_ENCODED_EVENT_V03_BODY, "0.3", "schemaurl"))
-                .build();
+                .add(Arguments.arguments(STRUCTURED_ENCODED_EVENT_V03_BODY, "0.3", "schemaurl")).build();
     }
 }

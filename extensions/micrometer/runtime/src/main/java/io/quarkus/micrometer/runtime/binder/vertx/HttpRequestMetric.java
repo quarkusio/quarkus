@@ -117,8 +117,7 @@ public class HttpRequestMetric extends RequestMetricInfo {
     }
 
     private boolean isCORSPreflightRequest() {
-        return request.method() == HttpMethod.OPTIONS
-                && request.getHeader("Origin") != null
+        return request.method() == HttpMethod.OPTIONS && request.getHeader("Origin") != null
                 && request.getHeader("Access-Control-Request-Method") != null
                 && request.getHeader("Access-Control-Request-Headers") != null;
     }

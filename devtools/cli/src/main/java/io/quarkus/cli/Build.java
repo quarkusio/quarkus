@@ -45,38 +45,27 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
 
             int exitCode = runner.run(commandArgs);
             if (exitCode == CommandLine.ExitCode.OK && buildOptions.generateReport) {
-                output.printText(new String[] {
-                        "\nBuild report available: " + new BuildReport(runner).generate().toPath().toAbsolutePath().toString()
-                                + "\n"
-                });
+                output.printText(new String[] { "\nBuild report available: "
+                        + new BuildReport(runner).generate().toPath().toAbsolutePath().toString() + "\n" });
             }
             return exitCode;
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to build project: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to build project: " + e.getMessage());
         }
     }
 
     void dryRunBuild(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
-        output.printText(new String[] {
-                "\nBuild current project\n",
-                "\t" + projectRoot().toString()
-        });
+        output.printText(new String[] { "\nBuild current project\n", "\t" + projectRoot().toString() });
         Map<String, String> dryRunOutput = new TreeMap<>();
         dryRunOutput.put("Build tool", buildTool.name());
         output.info(help.createTextTable(dryRunOutput).toString());
 
-        output.printText(new String[] {
-                "\nCommand line:\n",
-                args.showCommand()
-        });
+        output.printText(new String[] { "\nCommand line:\n", args.showCommand() });
     }
 
     @Override
     public String toString() {
-        return "Build [buildOptions=" + buildOptions
-                + ", properties=" + propertiesOptions.properties
-                + ", output=" + output
-                + ", params=" + params + "]";
+        return "Build [buildOptions=" + buildOptions + ", properties=" + propertiesOptions.properties + ", output="
+                + output + ", params=" + params + "]";
     }
 }

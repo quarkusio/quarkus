@@ -42,8 +42,8 @@ class QuarkusProtocol implements Protocol<QuarkusProtocolConfiguration> {
     }
 
     @Override
-    public ContainerMethodExecutor getExecutor(QuarkusProtocolConfiguration protocolConfiguration, ProtocolMetaData metaData,
-            CommandCallback callback) {
+    public ContainerMethodExecutor getExecutor(QuarkusProtocolConfiguration protocolConfiguration,
+            ProtocolMetaData metaData, CommandCallback callback) {
         return injector.get().inject(new QuarkusMethodExecutor());
     }
 
@@ -119,9 +119,8 @@ class QuarkusProtocol implements Protocol<QuarkusProtocolConfiguration> {
     }
 
     /**
-     * getMethod() returns a method found using the system class loader, but the actual parameters are loaded by
-     * TCCL
-     * so to be able to invoke the method we find the same method using TCCL
+     * getMethod() returns a method found using the system class loader, but the actual parameters are loaded by TCCL so
+     * to be able to invoke the method we find the same method using TCCL
      */
     static Class<?>[] convertToTCCL(Class<?>[] classes) throws ClassNotFoundException {
         return convertToCL(classes, Thread.currentThread().getContextClassLoader());

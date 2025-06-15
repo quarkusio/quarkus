@@ -26,10 +26,7 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
     protected List<String> createProject() throws IOException, QuarkusCommandException {
         SnapshotTesting.deleteTestDirectory(getProjectPath().toFile());
         final QuarkusProject project = getQuarkusProject();
-        new CreateProject(project)
-                .groupId("org.acme")
-                .artifactId("add-gradle-extension-test")
-                .version("0.0.1-SNAPSHOT")
+        new CreateProject(project).groupId("org.acme").artifactId("add-gradle-extension-test").version("0.0.1-SNAPSHOT")
                 .execute();
         return readProject();
     }
@@ -40,21 +37,20 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
     }
 
     @Override
-    protected QuarkusCommandOutcome addExtensions(final List<String> extensions) throws IOException, QuarkusCommandException {
-        return new AddExtensions(getQuarkusProject())
-                .extensions(new HashSet<>(extensions))
-                .execute();
+    protected QuarkusCommandOutcome addExtensions(final List<String> extensions)
+            throws IOException, QuarkusCommandException {
+        return new AddExtensions(getQuarkusProject()).extensions(new HashSet<>(extensions)).execute();
     }
 
     @Override
-    protected long countDependencyOccurrences(final List<String> buildFile, final String groupId, final String artifactId,
-            final String version) {
-        return buildFile.stream()
-                .filter(d -> d.equals(getBuildFileDependencyString(groupId, artifactId, version)))
+    protected long countDependencyOccurrences(final List<String> buildFile, final String groupId,
+            final String artifactId, final String version) {
+        return buildFile.stream().filter(d -> d.equals(getBuildFileDependencyString(groupId, artifactId, version)))
                 .count();
     }
 
-    private static String getBuildFileDependencyString(final String groupId, final String artifactId, final String version) {
+    private static String getBuildFileDependencyString(final String groupId, final String artifactId,
+            final String version) {
         final String versionPart = version != null ? ":" + version : "";
         return "    implementation '" + groupId + ":" + artifactId + versionPart + "'";
     }
@@ -84,11 +80,8 @@ class AddGradleExtensionsTest extends AbstractAddExtensionsTest<List<String>> {
             }
             if (getBuildContent().contains(
                     "implementation enforcedPlatform(\"${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}\")")) {
-                builder.add(createDependency(
-                        getProperty("quarkusPlatformGroupId"),
-                        getProperty("quarkusPlatformArtifactId"),
-                        getProperty("quarkusPlatformVersion"),
-                        "pom"));
+                builder.add(createDependency(getProperty("quarkusPlatformGroupId"),
+                        getProperty("quarkusPlatformArtifactId"), getProperty("quarkusPlatformVersion"), "pom"));
             }
             return builder;
         }

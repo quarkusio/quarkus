@@ -12,16 +12,15 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NonEmptyReflectionFreeSerializationTest extends AbstractNonEmptySerializationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(JsonIncludeTestResource.class, MyObject.class, NonEmptyObjectMapperCustomizer.class)
-                            .addAsResource(
-                                    new StringAsset(
-                                            "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),
-                                    "application.properties");
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(JsonIncludeTestResource.class, MyObject.class, NonEmptyObjectMapperCustomizer.class)
+                    .addAsResource(
+                            new StringAsset(
+                                    "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),
+                            "application.properties");
+        }
+    });
 }

@@ -11,7 +11,7 @@ import io.vertx.ext.web.RoutingContext;
  */
 public final class ManagementInterfaceFilterBuildItem extends MultiBuildItem {
 
-    //predefined system priorities
+    // predefined system priorities
     public static final int AUTHENTICATION = -200;
     public static final int AUTHORIZATION = -100;
 
@@ -21,9 +21,11 @@ public final class ManagementInterfaceFilterBuildItem extends MultiBuildItem {
     /**
      * Creates a new instance of {@link ManagementInterfaceFilterBuildItem}.
      *
-     * @param handler the handler, if {@code null} the filter won't be used.
-     * @param priority the priority, higher priority gets invoked first. Priority is only used to sort filters, user
-     *        routes are called afterwards. Must be positive.
+     * @param handler
+     *        the handler, if {@code null} the filter won't be used.
+     * @param priority
+     *        the priority, higher priority gets invoked first. Priority is only used to sort filters, user routes
+     *        are called afterwards. Must be positive.
      */
     public ManagementInterfaceFilterBuildItem(Handler<RoutingContext> handler, int priority) {
         this.handler = handler;

@@ -17,13 +17,14 @@ public class VertxJsonObjectMessageBodyReader extends VertxJsonObjectBasicMessag
         implements ServerMessageBodyReader<JsonObject> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return isReadable(type);
     }
 
     @Override
-    public JsonObject readFrom(Class<JsonObject> type, Type genericType, MediaType mediaType, ServerRequestContext context)
-            throws WebApplicationException, IOException {
+    public JsonObject readFrom(Class<JsonObject> type, Type genericType, MediaType mediaType,
+            ServerRequestContext context) throws WebApplicationException, IOException {
         return readFrom(context.getInputStream());
     }
 }

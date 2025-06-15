@@ -17,15 +17,11 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KeycloakRealmUserPasswordManager.class)
 public class NamedOidcClientInjectionTestCase {
 
-    private static Class<?>[] testClasses = {
-            NamedOidcClientResource.class
-    };
+    private static Class<?>[] testClasses = { NamedOidcClientResource.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-named-oidc-client-credentials.properties", "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("application-named-oidc-client-credentials.properties", "application.properties"));
 
     @Test
     public void testInjectedNamedOidcClients() {

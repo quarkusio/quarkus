@@ -15,20 +15,15 @@ import io.smallrye.jwt.util.KeyUtils;
 public class JwtBuildUnitTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("publicKey.pem")
-                    .addAsResource("privateKey.pem")
-                    .addAsResource("application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource("publicKey.pem").addAsResource("privateKey.pem").addAsResource("application.properties"));
 
     @Test
     public void signToken() throws Exception {
         String jwt = Jwt.preferredUserName("alice").sign();
 
-        JwtClaims jwtClaims = new JwtConsumerBuilder()
-                .setVerificationKey(KeyUtils.readPublicKey("/publicKey.pem"))
-                .build()
-                .processToClaims(jwt);
+        JwtClaims jwtClaims = new JwtConsumerBuilder().setVerificationKey(KeyUtils.readPublicKey("/publicKey.pem"))
+                .build().processToClaims(jwt);
         assertEquals("alice", jwtClaims.getClaimValue(Claims.preferred_username.name()));
 
     }

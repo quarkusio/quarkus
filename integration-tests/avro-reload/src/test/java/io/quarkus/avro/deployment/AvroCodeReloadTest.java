@@ -15,11 +15,8 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class AvroCodeReloadTest {
     @RegisterExtension
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(AvroReloadResource.class))
-            .setCodeGenSources("avro")
-            .setBuildSystemProperty("avro.codegen.avsc.imports", "imports");
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(AvroReloadResource.class))
+            .setCodeGenSources("avro").setBuildSystemProperty("avro.codegen.avsc.imports", "imports");
 
     @Test
     void shouldAlterSchema() throws InterruptedException {
@@ -40,7 +37,8 @@ public class AvroCodeReloadTest {
                 text -> text.replaceAll(Pattern.quote("\"symbols\" : [ \"Public\", \"Private\"]"),
                         "\"symbols\" : [ \"Public\", \"Private\", \"Default\"]"));
         Thread.sleep(5000); // to wait for eager reload for code gen sources to happen
-        assertThat(when().get("/protocol").body().print().split(",")).containsExactlyInAnyOrder("Public", "Private", "Default");
+        assertThat(when().get("/protocol").body().print().split(",")).containsExactlyInAnyOrder("Public", "Private",
+                "Default");
     }
 
     @Test
@@ -48,10 +46,10 @@ public class AvroCodeReloadTest {
         assertThat(when().get("/avdl").body().print().split(",")).containsExactlyInAnyOrder("LOW", "MEDIUM", "HIGH");
 
         test.modifyFile("avro/Hello.avdl",
-                text -> text.replaceAll(Pattern.quote("LOW, MEDIUM, HIGH"),
-                        "LOWER, MEDIUM, HIGHEST"));
+                text -> text.replaceAll(Pattern.quote("LOW, MEDIUM, HIGH"), "LOWER, MEDIUM, HIGHEST"));
         Thread.sleep(5000); // to wait for eager reload for code gen sources to happen
-        assertThat(when().get("/avdl").body().print().split(",")).containsExactlyInAnyOrder("LOWER", "MEDIUM", "HIGHEST");
+        assertThat(when().get("/avdl").body().print().split(",")).containsExactlyInAnyOrder("LOWER", "MEDIUM",
+                "HIGHEST");
     }
 
 }

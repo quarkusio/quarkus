@@ -191,7 +191,8 @@ public class HashCommandsTest extends DatasourceTestBase {
         populateForHmget();
         Map<String, Person> values = hash.hmget(key, "one", "missing", "two");
         assertThat(values).hasSize(3);
-        assertThat(values).containsExactly(entry("one", Person.person1), entry("missing", null), entry("two", Person.person2));
+        assertThat(values).containsExactly(entry("one", Person.person1), entry("missing", null),
+                entry("two", Person.person2));
     }
 
     private void populateForHmget() {
@@ -203,7 +204,8 @@ public class HashCommandsTest extends DatasourceTestBase {
     @Test
     void hmset() {
         hash.hmset(key, Map.of("one", Person.person1, "two", Person.person2));
-        assertThat(hash.hmget(key, "one", "two")).containsExactly(entry("one", Person.person1), entry("two", Person.person2));
+        assertThat(hash.hmget(key, "one", "two")).containsExactly(entry("one", Person.person1),
+                entry("two", Person.person2));
     }
 
     @Test
@@ -233,8 +235,7 @@ public class HashCommandsTest extends DatasourceTestBase {
         Map<String, Person> map = Map.of("one", Person.person1, "two", Person.person2, "three", Person.person3);
         hash.hset(key, map);
 
-        assertThat(hash.hrandfieldWithValues(key, 1))
-                .anySatisfy((s, p) -> assertThat(map.get(s)).isEqualTo(p));
+        assertThat(hash.hrandfieldWithValues(key, 1)).anySatisfy((s, p) -> assertThat(map.get(s)).isEqualTo(p));
         assertThat(hash.hrandfieldWithValues(key, 2)).hasSize(2)
                 .allSatisfy((s, p) -> assertThat(map.get(s)).isEqualTo(p));
 
@@ -275,8 +276,7 @@ public class HashCommandsTest extends DatasourceTestBase {
         hash.hset(key, "one", Person.person1);
         hash.hset(key, "two", Person.person2);
         List<Person> values = hash.hvals(key);
-        assertThat(values).hasSize(2)
-                .containsExactly(Person.person1, Person.person2);
+        assertThat(values).hasSize(2).containsExactly(Person.person1, Person.person2);
     }
 
     @Test

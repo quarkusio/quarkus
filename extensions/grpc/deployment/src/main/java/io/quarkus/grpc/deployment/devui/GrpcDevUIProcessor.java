@@ -58,36 +58,30 @@ public class GrpcDevUIProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     public AdditionalBeanBuildItem beans() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(GrpcServices.class)
-                .addBeanClasses(StreamCollectorInterceptor.class, CollectStreams.class)
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(GrpcServices.class)
+                .addBeanClasses(StreamCollectorInterceptor.class, CollectStreams.class).build();
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    void prepareDelegatingBeanStorage(
-            List<DelegatingGrpcBeanBuildItem> delegatingBeans,
+    void prepareDelegatingBeanStorage(List<DelegatingGrpcBeanBuildItem> delegatingBeans,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans) {
         String className = "io.quarkus.grpc.internal.DelegatingGrpcBeansStorageImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(className)
-                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans))
-                .superClass(DelegatingGrpcBeansStorage.class)
+        try (ClassCreator classCreator = ClassCreator.builder().className(className)
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeans)).superClass(DelegatingGrpcBeansStorage.class)
                 .build()) {
             classCreator.addAnnotation(Singleton.class.getName());
             MethodCreator constructor = classCreator
                     .getMethodCreator(io.quarkus.gizmo.MethodDescriptor.ofConstructor(className));
-            constructor.invokeSpecialMethod(io.quarkus.gizmo.MethodDescriptor.ofConstructor(DelegatingGrpcBeansStorage.class),
+            constructor.invokeSpecialMethod(
+                    io.quarkus.gizmo.MethodDescriptor.ofConstructor(DelegatingGrpcBeansStorage.class),
                     constructor.getThis());
 
             for (DelegatingGrpcBeanBuildItem delegatingBean : delegatingBeans) {
                 constructor.invokeVirtualMethod(
-                        io.quarkus.gizmo.MethodDescriptor.ofMethod(DelegatingGrpcBeansStorage.class, "addDelegatingMapping",
-                                void.class,
-                                String.class, String.class),
-                        constructor.getThis(),
-                        constructor.load(delegatingBean.userDefinedBean.name().toString()),
+                        io.quarkus.gizmo.MethodDescriptor.ofMethod(DelegatingGrpcBeansStorage.class,
+                                "addDelegatingMapping", void.class, String.class, String.class),
+                        constructor.getThis(), constructor.load(delegatingBean.userDefinedBean.name().toString()),
                         constructor.load(delegatingBean.generatedBean.name().toString()));
             }
             constructor.returnValue(null);
@@ -135,7 +129,8 @@ public class GrpcDevUIProcessor {
                 if (getRawTypesInHierarchy(serviceClass, index).contains(GrpcDotNames.MUTINY_SERVICE)) {
                     continue;
                 }
-                // 2. The enclosing class of an extended class that implements BindableService must not implement MutinyGrpc
+                // 2. The enclosing class of an extended class that implements BindableService must not implement
+                // MutinyGrpc
                 ClassInfo abstractBindableService = findAbstractBindableService(serviceClass, index);
                 if (abstractBindableService != null) {
                     ClassInfo enclosingClass = serviceClass.enclosingClass() != null
@@ -152,40 +147,32 @@ public class GrpcDevUIProcessor {
         if (servicesToTransform.isEmpty()) {
             return null;
         }
-        return new AnnotationsTransformerBuildItem(
-                new AnnotationsTransformer() {
-                    @Override
-                    public boolean appliesTo(AnnotationTarget.Kind kind) {
-                        return kind == AnnotationTarget.Kind.CLASS;
-                    }
+        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            public boolean appliesTo(AnnotationTarget.Kind kind) {
+                return kind == AnnotationTarget.Kind.CLASS;
+            }
 
-                    @Override
-                    public void transform(AnnotationsTransformer.TransformationContext context) {
-                        ClassInfo clazz = context.getTarget().asClass();
-                        if (servicesToTransform.contains(clazz.name())) {
-                            context.transform()
-                                    .add(CollectStreams.class)
-                                    .done();
-                        }
-                    }
-                });
+            @Override
+            public void transform(AnnotationsTransformer.TransformationContext context) {
+                ClassInfo clazz = context.getTarget().asClass();
+                if (servicesToTransform.contains(clazz.name())) {
+                    context.transform().add(CollectStreams.class).done();
+                }
+            }
+        });
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    public CardPageBuildItem pages(CombinedIndexBuildItem index) throws ClassNotFoundException,
-            NoSuchMethodException,
-            SecurityException,
-            IllegalAccessException,
-            IllegalArgumentException,
-            InvocationTargetException,
-            InvalidProtocolBufferException {
+    public CardPageBuildItem pages(CombinedIndexBuildItem index)
+            throws ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException,
+            IllegalArgumentException, InvocationTargetException, InvalidProtocolBufferException {
 
         // Create the card for Dev UI
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
-        cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                .icon("font-awesome-solid:gears")
-                .componentLink("qwc-grpc-services.js"));
+        cardPageBuildItem.addPage(
+                Page.webComponentPageBuilder().icon("font-awesome-solid:gears").componentLink("qwc-grpc-services.js"));
 
         return cardPageBuildItem;
     }

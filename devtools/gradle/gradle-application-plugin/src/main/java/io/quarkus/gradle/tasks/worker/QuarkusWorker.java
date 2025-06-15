@@ -23,16 +23,9 @@ public abstract class QuarkusWorker<P extends QuarkusParams> implements WorkActi
         Path buildDir = params.getTargetDirectory().getAsFile().get().toPath();
         String baseName = params.getBaseName().get();
         ApplicationModel appModel = params.getAppModel().get();
-        return QuarkusBootstrap.builder()
-                .setBaseClassLoader(getClass().getClassLoader())
-                .setExistingModel(appModel)
-                .setTargetDirectory(buildDir)
-                .setBaseName(baseName)
-                .setBuildSystemProperties(buildSystemProperties())
-                .setAppArtifact(appModel.getAppArtifact())
-                .setLocalProjectDiscovery(false)
-                .setIsolateDeployment(true)
-                .setDependencyInfoProvider(() -> null)
-                .build().bootstrap();
+        return QuarkusBootstrap.builder().setBaseClassLoader(getClass().getClassLoader()).setExistingModel(appModel)
+                .setTargetDirectory(buildDir).setBaseName(baseName).setBuildSystemProperties(buildSystemProperties())
+                .setAppArtifact(appModel.getAppArtifact()).setLocalProjectDiscovery(false).setIsolateDeployment(true)
+                .setDependencyInfoProvider(() -> null).build().bootstrap();
     }
 }

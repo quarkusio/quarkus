@@ -14,17 +14,12 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 public class PicocliCodestartTest {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("picocli")
-            .languages(JAVA, KOTLIN)
-            .build();
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("picocli")
+            .languages(JAVA, KOTLIN).build();
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartGradleTest = QuarkusCodestartTest.builder()
-            .codestarts("picocli")
-            .buildTool(BuildTool.GRADLE)
-            .languages(JAVA)
-            .build();
+    public static QuarkusCodestartTest codestartGradleTest = QuarkusCodestartTest.builder().codestarts("picocli")
+            .buildTool(BuildTool.GRADLE).languages(JAVA).build();
 
     @Test
     void testContent() throws Throwable {

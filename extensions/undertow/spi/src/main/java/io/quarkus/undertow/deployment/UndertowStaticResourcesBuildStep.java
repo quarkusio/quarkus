@@ -28,7 +28,6 @@ import io.smallrye.common.os.OS;
 
 /**
  * NOTE: Shared with Resteasy standalone!
- *
  */
 public class UndertowStaticResourcesBuildStep {
 
@@ -36,7 +35,8 @@ public class UndertowStaticResourcesBuildStep {
     protected static final String META_INF_RESOURCES = "META-INF/resources";
 
     @BuildStep
-    void handleGeneratedWebResources(Capabilities capabilities, BuildProducer<GeneratedResourceBuildItem> generatedResources,
+    void handleGeneratedWebResources(Capabilities capabilities,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedWebResourceBuildItem> generatedWebResources) throws Exception {
         if (!capabilities.isPresent(Capability.SERVLET)) {
             return;
@@ -51,13 +51,13 @@ public class UndertowStaticResourcesBuildStep {
     void scanStaticResources(Capabilities capabilities, ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<KnownPathsBuildItem> knownPathsBuilds,
-            List<GeneratedWebResourceBuildItem> generatedWebResources,
-            LaunchModeBuildItem launchModeBuildItem) throws Exception {
+            List<GeneratedWebResourceBuildItem> generatedWebResources, LaunchModeBuildItem launchModeBuildItem)
+            throws Exception {
         if (!capabilities.isPresent(Capability.SERVLET)) {
             return;
         }
-        //we need to check for web resources in order to get welcome files to work
-        //this kinda sucks
+        // we need to check for web resources in order to get welcome files to work
+        // this kinda sucks
         final Set<String> knownFiles = new HashSet<>();
         final Set<String> knownDirectories = new HashSet<>();
         for (ApplicationArchive i : applicationArchivesBuildItem.getAllApplicationArchives()) {
@@ -93,8 +93,8 @@ public class UndertowStaticResourcesBuildStep {
             }
         }
         if (launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            //we don't need knownPaths in development mode
-            //we serve directly from the project dir
+            // we don't need knownPaths in development mode
+            // we serve directly from the project dir
             knownPathsBuilds.produce(new KnownPathsBuildItem(Collections.emptySet(), Collections.emptySet()));
         } else {
             knownPathsBuilds.produce(new KnownPathsBuildItem(knownFiles, knownDirectories));
@@ -106,15 +106,13 @@ public class UndertowStaticResourcesBuildStep {
             Files.walkFileTree(resource, new SimpleFileVisitor<Path>() {
 
                 @Override
-                public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
-                        throws IOException {
+                public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
                     knownFiles.add(normalizePath(resource.relativize(path).toString()));
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs)
-                        throws IOException {
+                public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs) throws IOException {
                     knownDirectories.add(normalizePath(resource.relativize(path).toString()));
                     return FileVisitResult.CONTINUE;
                 }

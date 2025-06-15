@@ -10,15 +10,12 @@ import io.quarkus.test.QuarkusUnitTest;
 
 class EmptyListRecordsPagedResourceTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AbstractEntity.class, EmptyListRecord.class, EmptyListRecordsRepository.class)
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(AbstractEntity.class, EmptyListRecord.class, EmptyListRecordsRepository.class)
                     .addAsResource("application.properties"));
 
     @Test
     void shouldListEmptyTable() {
-        given().accept("application/json")
-                .when().get("/empty-list-records")
-                .then().statusCode(200);
+        given().accept("application/json").when().get("/empty-list-records").then().statusCode(200);
     }
 }

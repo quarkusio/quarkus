@@ -44,15 +44,13 @@ public class CacheInvalidateAllInterceptor extends CacheInterceptor {
     private Object invalidateAllNonBlocking(InvocationContext invocationContext,
             CacheInterceptionContext<CacheInvalidateAll> interceptionContext, ReturnType returnType) {
         LOGGER.trace("Invalidating all cache entries in a non-blocking way");
-        var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
-                .onItem().transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
+        var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings()).onItem()
+                .transformToUniAndMerge(new Function<CacheInvalidateAll, Uni<? extends Void>>() {
                     @Override
                     public Uni<Void> apply(CacheInvalidateAll binding) {
                         return invalidateAll(binding);
                     }
-                })
-                .onItem().ignoreAsUni()
-                .onItem().transformToUni(new Function<Object, Uni<?>>() {
+                }).onItem().ignoreAsUni().onItem().transformToUni(new Function<Object, Uni<?>>() {
                     @Override
                     public Uni<?> apply(Object ignored) {
                         try {

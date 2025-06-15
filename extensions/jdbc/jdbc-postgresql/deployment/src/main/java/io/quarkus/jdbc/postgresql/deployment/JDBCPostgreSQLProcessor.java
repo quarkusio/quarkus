@@ -41,8 +41,7 @@ public class JDBCPostgreSQLProcessor {
 
     @BuildStep
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
-            BuildProducer<NativeImageResourceBuildItem> resources,
-            SslNativeConfigBuildItem sslNativeConfigBuildItem) {
+            BuildProducer<NativeImageResourceBuildItem> resources, SslNativeConfigBuildItem sslNativeConfigBuildItem) {
         jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.POSTGRESQL, "org.postgresql.Driver",
                 "org.postgresql.xa.PGXADataSource"));
         // Accessed in org.postgresql.Driver.loadDefaultProperties
@@ -55,25 +54,21 @@ public class JDBCPostgreSQLProcessor {
     }
 
     @BuildStep
-    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            Capabilities capabilities) {
+    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans
-                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(PostgreSQLAgroalConnectionConfigurer.class)
-                            .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                            .setUnremovable()
-                            .build());
+            additionalBeans.produce(
+                    new AdditionalBeanBuildItem.Builder().addBeanClass(PostgreSQLAgroalConnectionConfigurer.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
         }
     }
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider,
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            PostgreSQLServiceBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    PostgreSQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.POSTGRESQL));
     }

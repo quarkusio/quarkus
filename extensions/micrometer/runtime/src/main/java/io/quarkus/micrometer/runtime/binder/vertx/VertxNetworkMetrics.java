@@ -39,17 +39,18 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
         nameBytesRead = nameBytesReadBuilder.register(registry);
         nameBytesWritten = nameBytesWrittenBuilder.register(registry);
 
-        exceptions = Counter.builder(prefix + ".errors")
-                .description("Number of exceptions")
-                .withRegistry(registry);
+        exceptions = Counter.builder(prefix + ".errors").description("Number of exceptions").withRegistry(registry);
     }
 
     /**
      * Called when bytes have been read
      *
-     * @param socketMetric the socket metric, null for UDP
-     * @param remoteAddress the remote address which this socket received bytes from
-     * @param numberOfBytes the number of bytes read
+     * @param socketMetric
+     *        the socket metric, null for UDP
+     * @param remoteAddress
+     *        the remote address which this socket received bytes from
+     * @param numberOfBytes
+     *        the number of bytes read
      */
     @Override
     public void bytesRead(Map<String, Object> socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
@@ -59,9 +60,12 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
     /**
      * Called when bytes have been written
      *
-     * @param socketMetric the socket metric, null for UDP
-     * @param remoteAddress the remote address which bytes are being written to
-     * @param numberOfBytes the number of bytes written
+     * @param socketMetric
+     *        the socket metric, null for UDP
+     * @param remoteAddress
+     *        the remote address which bytes are being written to
+     * @param numberOfBytes
+     *        the number of bytes written
      */
     @Override
     public void bytesWritten(Map<String, Object> socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
@@ -71,10 +75,12 @@ public class VertxNetworkMetrics implements NetworkMetrics<Map<String, Object>> 
     /**
      * Called when exceptions occur for a specific connection.
      *
-     * @param socketMetric the socket metric, null for UDP
-     * @param remoteAddress the remote address of the connection or null if it's
-     *        datagram/udp
-     * @param t the exception that occurred
+     * @param socketMetric
+     *        the socket metric, null for UDP
+     * @param remoteAddress
+     *        the remote address of the connection or null if it's datagram/udp
+     * @param t
+     *        the exception that occurred
      */
     @Override
     public void exceptionOccurred(Map<String, Object> socketMetric, SocketAddress remoteAddress, Throwable t) {

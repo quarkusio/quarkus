@@ -28,11 +28,12 @@ public class ScannedSerializer {
 
     public ScannedSerializer(ClassInfo classInfo, String handledClassName, List<String> mediaTypeStrings,
             RuntimeType runtimeType, boolean builtin, Integer priority) {
-        this(classInfo, classInfo.name().toString(), handledClassName, mediaTypeStrings, runtimeType, builtin, priority);
+        this(classInfo, classInfo.name().toString(), handledClassName, mediaTypeStrings, runtimeType, builtin,
+                priority);
     }
 
-    private ScannedSerializer(ClassInfo classInfo, String className, String handledClassName, List<String> mediaTypeStrings,
-            RuntimeType runtimeType, boolean builtin, Integer priority) {
+    private ScannedSerializer(ClassInfo classInfo, String className, String handledClassName,
+            List<String> mediaTypeStrings, RuntimeType runtimeType, boolean builtin, Integer priority) {
         this.classInfo = classInfo;
         this.className = className;
         this.handledClassName = handledClassName;

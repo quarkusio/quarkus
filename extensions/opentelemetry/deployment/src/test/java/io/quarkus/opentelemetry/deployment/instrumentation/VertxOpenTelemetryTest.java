@@ -54,13 +54,11 @@ import io.restassured.RestAssured;
 
 public class VertxOpenTelemetryTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TracerRouter.class)
-                    .addClass(TestUtil.class)
-                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, SemconvResolver.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClass(TracerRouter.class).addClass(TestUtil.class)
+            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, SemconvResolver.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .overrideConfigKey("quarkus.otel.traces.exporter", "test-span-exporter")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.logs.exporter", "none")
@@ -78,9 +76,7 @@ public class VertxOpenTelemetryTest {
 
     @Test
     void trace() throws NoSuchFieldException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        RestAssured.when().get("/tracer").then()
-                .statusCode(200)
-                .body(is("Hello Tracer!"));
+        RestAssured.when().get("/tracer").then().statusCode(200).body(is("Hello Tracer!"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
@@ -95,8 +91,8 @@ public class VertxOpenTelemetryTest {
         assertSemanticAttribute(server, "localhost", SERVER_ADDRESS);
         assertSemanticAttribute(server, 8081L, SERVER_PORT);
         assertSemanticAttribute(server, "127.0.0.1", CLIENT_ADDRESS);
-        assertThat(textMapPropagators, arrayContainingInAnyOrder(W3CTraceContextPropagator.getInstance(),
-                W3CBaggagePropagator.getInstance()));
+        assertThat(textMapPropagators,
+                arrayContainingInAnyOrder(W3CTraceContextPropagator.getInstance(), W3CBaggagePropagator.getInstance()));
         assertThat(idGenerator, instanceOf(IdGenerator.random().getClass()));
         assertThat(sampler.getDescription(), stringContainsInOrder("ParentBased", "AlwaysOnSampler"));
         assertNotNull(server.getAttributes().get(USER_AGENT_ORIGINAL));
@@ -108,9 +104,7 @@ public class VertxOpenTelemetryTest {
 
     @Test
     void spanNameWithoutQueryString() {
-        RestAssured.when().get("/tracer?id=1").then()
-                .statusCode(200)
-                .body(is("Hello Tracer!"));
+        RestAssured.when().get("/tracer?id=1").then().statusCode(200).body(is("Hello Tracer!"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
 
@@ -132,11 +126,7 @@ public class VertxOpenTelemetryTest {
 
     @Test
     void spanPath() {
-        given()
-                .get("/hello/{name}", "Naruto")
-                .then()
-                .statusCode(HTTP_OK)
-                .body(equalTo("hello Naruto"));
+        given().get("/hello/{name}", "Naruto").then().statusCode(HTTP_OK).body(equalTo("hello Naruto"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
         assertEquals(1, spans.size());
@@ -161,10 +151,7 @@ public class VertxOpenTelemetryTest {
 
     @Test
     void notFoundPath() {
-        given()
-                .get("/hello/{name}", "Goku")
-                .then()
-                .statusCode(HTTP_NOT_FOUND);
+        given().get("/hello/{name}", "Goku").then().statusCode(HTTP_NOT_FOUND);
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
         assertEquals(1, spans.size());

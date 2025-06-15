@@ -19,15 +19,11 @@ class KubernetesConfigFallbackTest {
     @Test
     void fallback() {
         SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withSources(
-                        inClassPath("application-kubernetes.properties", 250, Thread.currentThread().getContextClassLoader()))
-                .addDiscoveredCustomizers()
-                .withConverter(Duration.class, 100, new DurationConverter())
-                .withMappingIgnore("quarkus.**")
-                .withMapping(KubernetesConfig.class)
-                .withMapping(OpenShiftConfig.class)
-                .withMapping(KnativeConfig.class)
-                .build();
+                .withSources(inClassPath("application-kubernetes.properties", 250,
+                        Thread.currentThread().getContextClassLoader()))
+                .addDiscoveredCustomizers().withConverter(Duration.class, 100, new DurationConverter())
+                .withMappingIgnore("quarkus.**").withMapping(KubernetesConfig.class).withMapping(OpenShiftConfig.class)
+                .withMapping(KnativeConfig.class).build();
 
         KubernetesConfig kubernetes = config.getConfigMapping(KubernetesConfig.class);
         OpenShiftConfig openShift = config.getConfigMapping(OpenShiftConfig.class);
@@ -51,14 +47,11 @@ class KubernetesConfigFallbackTest {
 
     @Test
     void sharedOnlyBetweenKubernetesAndOpenshift() {
-        SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .addDiscoveredCustomizers()
-                .withConverter(Duration.class, 100, new DurationConverter())
-                .withMappingIgnore("quarkus.**")
-                .withMapping(KubernetesConfig.class)
-                .withMapping(OpenShiftConfig.class)
-                .withMapping(KnativeConfig.class)
-                .withSources(new PropertiesConfigSource(Map.of("quarkus.kubernetes.init-task-defaults.enabled", "false"), ""))
+        SmallRyeConfig config = new SmallRyeConfigBuilder().addDiscoveredCustomizers()
+                .withConverter(Duration.class, 100, new DurationConverter()).withMappingIgnore("quarkus.**")
+                .withMapping(KubernetesConfig.class).withMapping(OpenShiftConfig.class).withMapping(KnativeConfig.class)
+                .withSources(new PropertiesConfigSource(
+                        Map.of("quarkus.kubernetes.init-task-defaults.enabled", "false"), ""))
                 .build();
 
         KubernetesConfig kubernetes = config.getConfigMapping(KubernetesConfig.class);

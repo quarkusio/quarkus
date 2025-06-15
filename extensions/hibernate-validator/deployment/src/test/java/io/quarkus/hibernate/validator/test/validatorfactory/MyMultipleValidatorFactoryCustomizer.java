@@ -16,18 +16,14 @@ public class MyMultipleValidatorFactoryCustomizer implements ValidatorFactoryCus
     public void customize(BaseHibernateValidatorConfiguration<?> configuration) {
         ConstraintMapping constraintMapping = configuration.createConstraintMapping();
 
-        constraintMapping
-                .constraintDefinition(Email.class)
-                .includeExistingValidators(false)
+        constraintMapping.constraintDefinition(Email.class).includeExistingValidators(false)
                 .validatedBy(MyEmailValidator.class);
 
         configuration.addMapping(constraintMapping);
 
         constraintMapping = configuration.createConstraintMapping();
 
-        constraintMapping
-                .constraintDefinition(Min.class)
-                .includeExistingValidators(false)
+        constraintMapping.constraintDefinition(Min.class).includeExistingValidators(false)
                 .validatedBy(MyNumValidator.class);
 
         configuration.addMapping(constraintMapping);

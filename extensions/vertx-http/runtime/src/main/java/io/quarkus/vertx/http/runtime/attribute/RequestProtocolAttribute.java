@@ -5,7 +5,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The request getProtocol
- *
  */
 public class RequestProtocolAttribute implements ExchangeAttribute {
 
@@ -38,9 +37,7 @@ public class RequestProtocolAttribute implements ExchangeAttribute {
             default ->
                 // best effort to try and infer the HTTP version from
                 // any "unknown" enum value
-                version.name()
-                        .replace("HTTP_", "HTTP/")
-                        .replace("_", ".");
+                version.name().replace("HTTP_", "HTTP/").replace("_", ".");
         };
     }
 

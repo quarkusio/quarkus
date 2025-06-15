@@ -37,9 +37,8 @@ public class FlywayExtensionConfigMultiDataSourcesTest {
     Flyway flywayNamedInventory;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FlywayExtensionConfigFixture.class, FlywayExtensionCallback.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FlywayExtensionConfigFixture.class, FlywayExtensionCallback.class)
                     .addAsResource("config-for-multiple-datasources.properties", "application.properties"));
 
     @Test

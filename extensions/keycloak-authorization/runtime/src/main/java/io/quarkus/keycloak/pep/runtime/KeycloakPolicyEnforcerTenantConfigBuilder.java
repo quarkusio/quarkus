@@ -40,8 +40,9 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
             Map<String, Map<String, Map<String, String>>> complexConfig) implements ClaimInformationPointConfig {
     }
 
-    private record MethodConfigImpl(String method, List<String> scopes,
-            ScopeEnforcementMode scopesEnforcementMode) implements MethodConfig {
+    private record MethodConfigImpl(String method, List<String> scopes, ScopeEnforcementMode scopesEnforcementMode)
+            implements
+                MethodConfig {
     }
 
     private record PathConfigImpl(Optional<String> name, Optional<String> path, Optional<List<String>> paths,
@@ -74,8 +75,8 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
     }
 
     /**
-     * Creates immutable {@link KeycloakPolicyEnforcerTenantConfig}.
-     * Original builder can be safely re-used. The builder itself is not a thread-safe.
+     * Creates immutable {@link KeycloakPolicyEnforcerTenantConfig}. Original builder can be safely re-used. The builder
+     * itself is not a thread-safe.
      *
      * @return KeycloakPolicyEnforcerTenantConfig
      */
@@ -90,8 +91,9 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
                 pathConfigs.put(name, pathConfig);
             }
         });
-        return new KeycloakPolicyEnforcerTenantConfigImpl(connectionPoolSize, new KeycloakConfigPolicyEnforcerImpl(
-                Map.copyOf(pathConfigs), enforcementMode, lazyLoadPaths, httpMethodAsScope, claimInformationPoint, pathCache));
+        return new KeycloakPolicyEnforcerTenantConfigImpl(connectionPoolSize,
+                new KeycloakConfigPolicyEnforcerImpl(Map.copyOf(pathConfigs), enforcementMode, lazyLoadPaths,
+                        httpMethodAsScope, claimInformationPoint, pathCache));
     }
 
     public KeycloakPolicyEnforcerTenantConfigBuilder connectionPoolSize(int connectionPoolSize) {
@@ -134,15 +136,19 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         return new PathCacheConfigBuilder(this);
     }
 
-    public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(Map<String, Map<String, String>> simpleConfig) {
-        claimInformationPoint = new ClaimInformationPointConfigImpl(simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
+    public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(
+            Map<String, Map<String, String>> simpleConfig) {
+        claimInformationPoint = new ClaimInformationPointConfigImpl(
+                simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
                 claimInformationPoint == null ? Map.of() : claimInformationPoint.complexConfig());
         return this;
     }
 
-    public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(Map<String, Map<String, String>> simpleConfig,
+    public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(
+            Map<String, Map<String, String>> simpleConfig,
             Map<String, Map<String, Map<String, String>>> complexConfig) {
-        claimInformationPoint = new ClaimInformationPointConfigImpl(simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
+        claimInformationPoint = new ClaimInformationPointConfigImpl(
+                simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
                 complexConfig == null ? Map.of() : Map.copyOf(complexConfig));
         return this;
     }
@@ -153,7 +159,8 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
             @Override
             public KeycloakPolicyEnforcerTenantConfigBuilder build() {
                 if (simpleConfig != null || complexConfig != null) {
-                    return KeycloakPolicyEnforcerTenantConfigBuilder.this.claimInformationPoint(simpleConfig, complexConfig);
+                    return KeycloakPolicyEnforcerTenantConfigBuilder.this.claimInformationPoint(simpleConfig,
+                            complexConfig);
                 }
                 return KeycloakPolicyEnforcerTenantConfigBuilder.this;
             }
@@ -163,9 +170,13 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
     /**
      * Adds path with {@param name).
      *
-     * @param name refers to the 'path1' from the 'quarkus.keycloak.policy-enforcer.paths."path1".*' config properties
-     * @param paths refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".paths' configuration property
-     * @param enforcementMode enforcement mode
+     * @param name
+     *        refers to the 'path1' from the 'quarkus.keycloak.policy-enforcer.paths."path1".*' config properties
+     * @param paths
+     *        refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".paths' configuration property
+     * @param enforcementMode
+     *        enforcement mode
+     *
      * @return PathConfigBuilder
      */
     public PathConfigBuilder namedPaths(String name, EnforcementMode enforcementMode, String... paths) {
@@ -177,8 +188,11 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
     /**
      * Adds path with {@param name).
      *
-     * @param name refers to the 'path1' from the 'quarkus.keycloak.policy-enforcer.paths."path1".*' config properties
-     * @param paths refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".paths' configuration property
+     * @param name
+     *        refers to the 'path1' from the 'quarkus.keycloak.policy-enforcer.paths."path1".*' config properties
+     * @param paths
+     *        refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".paths' configuration property
+     *
      * @return PathConfigBuilder
      */
     public PathConfigBuilder namedPaths(String name, String... paths) {
@@ -199,8 +213,11 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
     /**
      * Adds paths with generated name.
      *
-     * @param paths refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".paths' configuration property
-     * @param enforcementMode enforcement mode
+     * @param paths
+     *        refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".paths' configuration property
+     * @param enforcementMode
+     *        enforcement mode
+     *
      * @return PathConfigBuilder
      */
     public PathConfigBuilder paths(EnforcementMode enforcementMode, String... paths) {
@@ -212,7 +229,9 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
     /**
      * Adds paths with generated name.
      *
-     * @param paths refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".paths' configuration property
+     * @param paths
+     *        refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".paths' configuration property
+     *
      * @return PathConfigBuilder
      */
     public PathConfigBuilder paths(String... paths) {
@@ -247,7 +266,9 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a POST method only.
          *
-         * @param scopes optional scopes
+         * @param scopes
+         *        optional scopes
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder post(String... scopes);
@@ -255,9 +276,13 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a POST method only.
          *
-         * @param scopes optional scopes
-         * @param scopeEnforcementMode refers to the
-         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config property
+         * @param scopes
+         *        optional scopes
+         * @param scopeEnforcementMode
+         *        refers to the
+         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config
+         *        property
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder post(ScopeEnforcementMode scopeEnforcementMode, String... scopes);
@@ -265,7 +290,9 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a HEAD method only.
          *
-         * @param scopes optional scopes
+         * @param scopes
+         *        optional scopes
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder head(String... scopes);
@@ -273,9 +300,13 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a HEAD method only.
          *
-         * @param scopes optional scopes
-         * @param scopeEnforcementMode refers to the
-         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config property
+         * @param scopes
+         *        optional scopes
+         * @param scopeEnforcementMode
+         *        refers to the
+         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config
+         *        property
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder head(ScopeEnforcementMode scopeEnforcementMode, String... scopes);
@@ -283,7 +314,9 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a GET method only.
          *
-         * @param scopes optional scopes
+         * @param scopes
+         *        optional scopes
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder get(String... scopes);
@@ -291,9 +324,13 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a GET method only.
          *
-         * @param scopes optional scopes
-         * @param scopeEnforcementMode refers to the
-         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config property
+         * @param scopes
+         *        optional scopes
+         * @param scopeEnforcementMode
+         *        refers to the
+         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config
+         *        property
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder get(ScopeEnforcementMode scopeEnforcementMode, String... scopes);
@@ -301,7 +338,9 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a PUT method only.
          *
-         * @param scopes optional scopes
+         * @param scopes
+         *        optional scopes
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder put(String... scopes);
@@ -309,9 +348,13 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a PUT method only.
          *
-         * @param scopes optional scopes
-         * @param scopeEnforcementMode refers to the
-         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config property
+         * @param scopes
+         *        optional scopes
+         * @param scopeEnforcementMode
+         *        refers to the
+         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config
+         *        property
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder put(ScopeEnforcementMode scopeEnforcementMode, String... scopes);
@@ -319,7 +362,9 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a PATCH method only.
          *
-         * @param scopes optional scopes
+         * @param scopes
+         *        optional scopes
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder patch(String... scopes);
@@ -327,9 +372,13 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Makes this path specific for a PATCH method only.
          *
-         * @param scopes optional scopes
-         * @param scopeEnforcementMode refers to the
-         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config property
+         * @param scopes
+         *        optional scopes
+         * @param scopeEnforcementMode
+         *        refers to the
+         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config
+         *        property
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder patch(ScopeEnforcementMode scopeEnforcementMode, String... scopes);
@@ -337,32 +386,41 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         /**
          * Make this path specific for the HTTP {@code method} only.
          *
-         * @param method refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".method' config property
-         * @param scopeEnforcementMode refers to the
-         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config property
-         * @param scopes refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes' config property
+         * @param method
+         *        refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".method' config
+         *        property
+         * @param scopeEnforcementMode
+         *        refers to the
+         *        'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes-enforcement-mode' config
+         *        property
+         * @param scopes
+         *        refers to the 'quarkus.keycloak.policy-enforcer.paths."paths".methods."methods".scopes' config
+         *        property
+         *
          * @return KeycloakPolicyEnforcerTenantConfigBuilder
          */
         KeycloakPolicyEnforcerTenantConfigBuilder method(String method, ScopeEnforcementMode scopeEnforcementMode,
                 String... scopes);
 
         /**
-         * Creates builder for a path method.
-         * Corresponds to configuration properties 'quarkus.keycloak.policy-enforcer.paths."paths".methods.*'.
+         * Creates builder for a path method. Corresponds to configuration properties
+         * 'quarkus.keycloak.policy-enforcer.paths."paths".methods.*'.
          *
          * @return method builder
          */
         MethodConfigBuilder method();
 
         /**
-         * @param name permission name, as set by the 'quarkus.keycloak.policy-enforcer.paths."paths".name' config property
+         * @param name
+         *        permission name, as set by the 'quarkus.keycloak.policy-enforcer.paths."paths".name' config
+         *        property
+         *
          * @return PathConfigBuilder
          */
         PathConfigBuilder permissionName(String name);
 
         /**
-         * Returns parent {@link KeycloakPolicyEnforcerTenantConfigBuilder}.
-         * Calling this method is purely optional.
+         * Returns parent {@link KeycloakPolicyEnforcerTenantConfigBuilder}. Calling this method is purely optional.
          *
          * @return parent builder
          */
@@ -401,7 +459,8 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         }
 
         @Override
-        public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(Map<String, Map<String, String>> simpleConfig,
+        public KeycloakPolicyEnforcerTenantConfigBuilder claimInformationPoint(
+                Map<String, Map<String, String>> simpleConfig,
                 Map<String, Map<String, Map<String, String>>> complexConfig) {
             claimInformationPointConfig = new ClaimInformationPointConfigImpl(
                     simpleConfig == null ? Map.of() : Map.copyOf(simpleConfig),
@@ -442,7 +501,8 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         }
 
         @Override
-        public KeycloakPolicyEnforcerTenantConfigBuilder post(ScopeEnforcementMode scopeEnforcementMode, String... scopes) {
+        public KeycloakPolicyEnforcerTenantConfigBuilder post(ScopeEnforcementMode scopeEnforcementMode,
+                String... scopes) {
             return method("POST", scopeEnforcementMode, scopes);
         }
 
@@ -452,7 +512,8 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         }
 
         @Override
-        public KeycloakPolicyEnforcerTenantConfigBuilder head(ScopeEnforcementMode scopeEnforcementMode, String... scopes) {
+        public KeycloakPolicyEnforcerTenantConfigBuilder head(ScopeEnforcementMode scopeEnforcementMode,
+                String... scopes) {
             return method("HEAD", scopeEnforcementMode, scopes);
         }
 
@@ -462,7 +523,8 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         }
 
         @Override
-        public KeycloakPolicyEnforcerTenantConfigBuilder get(ScopeEnforcementMode scopeEnforcementMode, String... scopes) {
+        public KeycloakPolicyEnforcerTenantConfigBuilder get(ScopeEnforcementMode scopeEnforcementMode,
+                String... scopes) {
             return method("GET", scopeEnforcementMode, scopes);
         }
 
@@ -472,7 +534,8 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         }
 
         @Override
-        public KeycloakPolicyEnforcerTenantConfigBuilder put(ScopeEnforcementMode scopeEnforcementMode, String... scopes) {
+        public KeycloakPolicyEnforcerTenantConfigBuilder put(ScopeEnforcementMode scopeEnforcementMode,
+                String... scopes) {
             return method("PUT", scopeEnforcementMode, scopes);
         }
 
@@ -482,13 +545,14 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
         }
 
         @Override
-        public KeycloakPolicyEnforcerTenantConfigBuilder patch(ScopeEnforcementMode scopeEnforcementMode, String... scopes) {
+        public KeycloakPolicyEnforcerTenantConfigBuilder patch(ScopeEnforcementMode scopeEnforcementMode,
+                String... scopes) {
             return method("PATCH", scopeEnforcementMode, scopes);
         }
 
         @Override
-        public KeycloakPolicyEnforcerTenantConfigBuilder method(String method, ScopeEnforcementMode scopeEnforcementMode,
-                String... scopes) {
+        public KeycloakPolicyEnforcerTenantConfigBuilder method(String method,
+                ScopeEnforcementMode scopeEnforcementMode, String... scopes) {
             Objects.requireNonNull(method);
             if (scopeEnforcementMode == null) {
                 // default enforcement scope is ALL

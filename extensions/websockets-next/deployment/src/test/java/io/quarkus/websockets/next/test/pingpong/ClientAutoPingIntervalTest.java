@@ -24,10 +24,9 @@ import io.vertx.core.buffer.Buffer;
 public class ClientAutoPingIntervalTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
-            }).overrideConfigKey("quarkus.websockets-next.client.auto-ping-interval", "200ms");
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
+    }).overrideConfigKey("quarkus.websockets-next.client.auto-ping-interval", "200ms");
 
     @TestHTTPResource("/")
     URI uri;

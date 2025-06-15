@@ -40,20 +40,13 @@ public class OpenApiDocumentService {
                 Set<String> userFilters = new LinkedHashSet<>(runtimeFilters.filters());
                 boolean dynamic = config.getOptionalValue("quarkus.smallrye-openapi.always-run-filter", Boolean.class)
                         .orElse(Boolean.FALSE);
-                SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder()
-                        .withConfig(config)
-                        .withApplicationClassLoader(loader)
-                        .enableModelReader(false)
-                        .enableStandardStaticFiles(false)
-                        .enableAnnotationScan(false)
-                        .enableStandardFilter(false)
-                        .withCustomStaticFile(() -> source);
+                SmallRyeOpenAPI.Builder builder = new OpenAPIRuntimeBuilder().withConfig(config)
+                        .withApplicationClassLoader(loader).enableModelReader(false).enableStandardStaticFiles(false)
+                        .enableAnnotationScan(false).enableStandardFilter(false).withCustomStaticFile(() -> source);
 
                 // Auth-security and disabled endpoint filters will only run once
-                Optional.ofNullable(autoSecurityFilter)
-                        .ifPresent(builder::addFilter);
-                DisabledRestEndpointsFilter.maybeGetInstance()
-                        .ifPresent(builder::addFilter);
+                Optional.ofNullable(autoSecurityFilter).ifPresent(builder::addFilter);
+                DisabledRestEndpointsFilter.maybeGetInstance().ifPresent(builder::addFilter);
 
                 if (dynamic && !userFilters.isEmpty()) {
                     // Only regenerate the OpenAPI document when configured and there are filters to run

@@ -9,10 +9,8 @@ public class SecureRandomProcessor {
     @BuildStep
     void registerReflectiveMethods(BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
         // Called reflectively through java.security.SecureRandom.SecureRandom()
-        reflectiveMethods.produce(new ReflectiveMethodBuildItem(
-                getClass().getName(),
-                "sun.security.provider.NativePRNG", "<init>",
-                java.security.SecureRandomParameters.class));
+        reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(),
+                "sun.security.provider.NativePRNG", "<init>", java.security.SecureRandomParameters.class));
     }
 
 }

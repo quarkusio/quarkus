@@ -19,17 +19,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class ConfigPropertyMapInjectionTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsServiceProvider(Converter.class, VersionConverter.class)
-                    .addAsResource(new StringAsset(
-                            "root.numbers.1=one\n" +
-                                    "root.numbers.2=two\n" +
-                                    "root.numbers.3=three\n" +
-                                    "versions.v1=1.The version 1.0.3\n" +
-                                    "versions.v1.2=1.The version 1.2.0\n" +
-                                    "versions.v2=2.The version 2.0.0\n"),
-                            "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsServiceProvider(Converter.class, VersionConverter.class)
+            .addAsResource(new StringAsset("root.numbers.1=one\n" + "root.numbers.2=two\n" + "root.numbers.3=three\n"
+                    + "versions.v1=1.The version 1.0.3\n" + "versions.v1.2=1.The version 1.2.0\n"
+                    + "versions.v2=2.The version 2.0.0\n"), "application.properties"));
 
     @ConfigProperty(name = "root.numbers")
     Map<Integer, String> numbers;

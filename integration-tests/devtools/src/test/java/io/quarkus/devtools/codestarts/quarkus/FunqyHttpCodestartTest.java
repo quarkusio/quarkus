@@ -11,10 +11,8 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 public class FunqyHttpCodestartTest {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("funqy-http")
-            .languages(JAVA)
-            .build();
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("funqy-http")
+            .languages(JAVA).build();
 
     @Test
     void testContent() throws Throwable {

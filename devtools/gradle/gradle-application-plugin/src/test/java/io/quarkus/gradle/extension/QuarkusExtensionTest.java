@@ -22,8 +22,8 @@ public class QuarkusExtensionTest {
     void prefixesBuildProperty() {
         Project project = ProjectBuilder.builder().build();
         project.getPluginManager().apply("java");
-        QuarkusPluginExtension extension = project.getExtensions()
-                .create(EXTENSION_NAME, QuarkusPluginExtension.class, project);
+        QuarkusPluginExtension extension = project.getExtensions().create(EXTENSION_NAME, QuarkusPluginExtension.class,
+                project);
 
         extension.set("test.args", "value");
 

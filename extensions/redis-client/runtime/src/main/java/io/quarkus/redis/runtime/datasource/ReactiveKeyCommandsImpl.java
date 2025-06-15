@@ -34,44 +34,37 @@ public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implement
 
     @Override
     public Uni<Boolean> copy(K source, K destination) {
-        return super._copy(source, destination)
-                .map(Response::toBoolean);
+        return super._copy(source, destination).map(Response::toBoolean);
     }
 
     @Override
     public Uni<Boolean> copy(K source, K destination, CopyArgs copyArgs) {
-        return super._copy(source, destination, copyArgs)
-                .map(Response::toBoolean);
+        return super._copy(source, destination, copyArgs).map(Response::toBoolean);
     }
 
     @Override
     public Uni<Integer> del(K... keys) {
-        return super._del(keys)
-                .map(Response::toInteger);
+        return super._del(keys).map(Response::toInteger);
     }
 
     @Override
     public Uni<String> dump(K key) {
-        return super._dump(key)
-                .map(this::decodeStringOrNull);
+        return super._dump(key).map(this::decodeStringOrNull);
     }
 
     @Override
     public Uni<Boolean> exists(K key) {
-        return super._exists(key)
-                .map(Response::toBoolean);
+        return super._exists(key).map(Response::toBoolean);
     }
 
     @Override
     public Uni<Integer> exists(K... keys) {
-        return super._exists(keys)
-                .map(Response::toInteger);
+        return super._exists(keys).map(Response::toInteger);
     }
 
     @Override
     public Uni<Boolean> expire(K key, long seconds, ExpireArgs expireArgs) {
-        return super._expire(key, seconds, expireArgs)
-                .map(Response::toBoolean);
+        return super._expire(key, seconds, expireArgs).map(Response::toBoolean);
     }
 
     @Override
@@ -101,8 +94,7 @@ public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implement
 
     @Override
     public Uni<Boolean> expireat(K key, long timestamp, ExpireArgs expireArgs) {
-        return super._expireat(key, timestamp, expireArgs)
-                .map(Response::toBoolean);
+        return super._expireat(key, timestamp, expireArgs).map(Response::toBoolean);
     }
 
     @Override
@@ -112,32 +104,27 @@ public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implement
 
     @Override
     public Uni<Long> expiretime(K key) {
-        return super._expiretime(key)
-                .map(r -> decodeExpireResponse(key, r));
+        return super._expiretime(key).map(r -> decodeExpireResponse(key, r));
     }
 
     @Override
     public Uni<List<K>> keys(String pattern) {
-        return super._keys(pattern)
-                .map(this::decodeKeys);
+        return super._keys(pattern).map(this::decodeKeys);
     }
 
     @Override
     public Uni<Boolean> move(K key, long db) {
-        return super._move(key, db)
-                .map(Response::toBoolean);
+        return super._move(key, db).map(Response::toBoolean);
     }
 
     @Override
     public Uni<Boolean> persist(K key) {
-        return super._persist(key)
-                .map(Response::toBoolean);
+        return super._persist(key).map(Response::toBoolean);
     }
 
     @Override
     public Uni<Boolean> pexpire(K key, long milliseconds, ExpireArgs expireArgs) {
-        return super._pexpire(key, milliseconds, expireArgs)
-                .map(Response::toBoolean);
+        return super._pexpire(key, milliseconds, expireArgs).map(Response::toBoolean);
     }
 
     @Override
@@ -167,8 +154,7 @@ public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implement
 
     @Override
     public Uni<Boolean> pexpireat(K key, long timestamp, ExpireArgs expireArgs) {
-        return super._pexpireat(key, timestamp, expireArgs)
-                .map(Response::toBoolean);
+        return super._pexpireat(key, timestamp, expireArgs).map(Response::toBoolean);
     }
 
     @Override
@@ -178,32 +164,27 @@ public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implement
 
     @Override
     public Uni<Long> pexpiretime(K key) {
-        return super._pexpiretime(key)
-                .map(r -> decodeExpireResponse(key, r));
+        return super._pexpiretime(key).map(r -> decodeExpireResponse(key, r));
     }
 
     @Override
     public Uni<Long> pttl(K key) {
-        return super._pttl(key)
-                .map(r -> decodeExpireResponse(key, r));
+        return super._pttl(key).map(r -> decodeExpireResponse(key, r));
     }
 
     @Override
     public Uni<K> randomkey() {
-        return super._randomkey()
-                .map(this::decodeK);
+        return super._randomkey().map(this::decodeK);
     }
 
     @Override
     public Uni<Void> rename(K key, K newKey) {
-        return super._rename(key, newKey)
-                .replaceWithVoid();
+        return super._rename(key, newKey).replaceWithVoid();
     }
 
     @Override
     public Uni<Boolean> renamenx(K key, K newKey) {
-        return super._renamenx(key, newKey)
-                .map(Response::toBoolean);
+        return super._renamenx(key, newKey).map(Response::toBoolean);
     }
 
     @Override
@@ -219,26 +200,22 @@ public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implement
 
     @Override
     public Uni<Integer> touch(K... keys) {
-        return super._touch(keys)
-                .map(Response::toInteger);
+        return super._touch(keys).map(Response::toInteger);
     }
 
     @Override
     public Uni<Long> ttl(K key) {
-        return super._ttl(key)
-                .map(r -> decodeExpireResponse(key, r));
+        return super._ttl(key).map(r -> decodeExpireResponse(key, r));
     }
 
     @Override
     public Uni<RedisValueType> type(K key) {
-        return super._type(key)
-                .map(this::decodeRedisType);
+        return super._type(key).map(this::decodeRedisType);
     }
 
     @Override
     public Uni<Integer> unlink(K... keys) {
-        return super._unlink(keys)
-                .map(Response::toInteger);
+        return super._unlink(keys).map(Response::toInteger);
     }
 
 }

@@ -6,15 +6,11 @@ import io.quarkus.redis.datasource.RedisDataSource;
 import io.vertx.redis.client.Response;
 
 /**
- * A synchronous Redis client offering blocking Redis commands.
- * The commands have a default timeout of 10 seconds which can be configured
- * via {@code quarkus.redis.timeout} configuration knob.
+ * A synchronous Redis client offering blocking Redis commands. The commands have a default timeout of 10 seconds which
+ * can be configured via {@code quarkus.redis.timeout} configuration knob. For more information about how each
+ * individual command visit the <a href="https://redis.io/commands">Redis Commands Page</a>
  *
- * For more information about how each individual command visit
- * the <a href="https://redis.io/commands">Redis Commands Page</a>
- *
- * @deprecated Use {@link io.vertx.mutiny.redis.client.RedisAPI} or
- *             {@link RedisDataSource} instead.
+ * @deprecated Use {@link io.vertx.mutiny.redis.client.RedisAPI} or {@link RedisDataSource} instead.
  */
 @Deprecated
 public interface RedisClient {

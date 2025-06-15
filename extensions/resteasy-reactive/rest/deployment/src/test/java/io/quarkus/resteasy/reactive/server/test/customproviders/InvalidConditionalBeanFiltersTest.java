@@ -20,19 +20,17 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidConditionalBeanFiltersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class, Filters.class);
-                }
-            }).assertException(t -> {
-                String message = t.getMessage();
-                assertTrue(message.contains("@IfBuildProfile"));
-                assertTrue(message.contains("request"));
-                assertTrue(message.contains(InvalidConditionalBeanFiltersTest.Filters.class.getName()));
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class, Filters.class);
+        }
+    }).assertException(t -> {
+        String message = t.getMessage();
+        assertTrue(message.contains("@IfBuildProfile"));
+        assertTrue(message.contains("request"));
+        assertTrue(message.contains(InvalidConditionalBeanFiltersTest.Filters.class.getName()));
+    });
 
     @Test
     public void test() {

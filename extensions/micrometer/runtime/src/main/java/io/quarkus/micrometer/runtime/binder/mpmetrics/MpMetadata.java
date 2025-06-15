@@ -177,11 +177,7 @@ public class MpMetadata implements Metadata {
 
     @Override
     public String toString() {
-        return name
-                + "["
-                + (description == null ? "" : "description=" + description + " ")
-                + (unit == null ? "" : "unit=" + unit + " ")
-                + type
-                + "]";
+        return name + "[" + (description == null ? "" : "description=" + description + " ")
+                + (unit == null ? "" : "unit=" + unit + " ") + type + "]";
     }
 }

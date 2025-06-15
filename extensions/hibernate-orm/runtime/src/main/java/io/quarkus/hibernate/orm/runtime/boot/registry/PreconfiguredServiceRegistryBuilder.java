@@ -51,13 +51,11 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectResolve
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.QuarkusRuntimeBytecodeProviderInitiator;
 
 /**
- * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
- * will perform only minimal configuration validation and will never modify the
- * given configuration properties.
+ * Helps to instantiate a ServiceRegistryBuilder from a previous state. This will perform only minimal configuration
+ * validation and will never modify the given configuration properties.
  * <p>
- * Meant to be used only to rebuild a previously created ServiceRegistry, which
- * has been created via the traditional methods, so this builder expects much
- * more explicit input.
+ * Meant to be used only to rebuild a previously created ServiceRegistry, which has been created via the traditional
+ * methods, so this builder expects much more explicit input.
  */
 public class PreconfiguredServiceRegistryBuilder {
 
@@ -69,7 +67,8 @@ public class PreconfiguredServiceRegistryBuilder {
 
     private void checkIsNotReactive(RecordedState rs) {
         if (rs.isReactive())
-            throw new IllegalStateException("Booting a blocking Hibernate ORM serviceregistry on a Reactive RecordedState!");
+            throw new IllegalStateException(
+                    "Booting a blocking Hibernate ORM serviceregistry on a Reactive RecordedState!");
     }
 
     public PreconfiguredServiceRegistryBuilder(String puName, RecordedState rs,
@@ -77,8 +76,7 @@ public class PreconfiguredServiceRegistryBuilder {
         checkIsNotReactive(rs);
         this.initiators = buildQuarkusServiceInitiatorList(puName, rs, puConfig);
         this.integrators = rs.getIntegrators();
-        this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata()
-                .getMetadataBuildingOptions()
+        this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata().getMetadataBuildingOptions()
                 .getServiceRegistry();
     }
 
@@ -118,13 +116,13 @@ public class PreconfiguredServiceRegistryBuilder {
         destroyedRegistry.resetAndReactivate(bootstrapServiceRegistry, initiators, providedServices, settingsCopy);
         return destroyedRegistry;
 
-        //		return new StandardServiceRegistryImpl(
-        //				true,
-        //				bootstrapServiceRegistry,
-        //				initiators,
-        //				providedServices,
-        //				settingsCopy
-        //		);
+        // return new StandardServiceRegistryImpl(
+        // true,
+        // bootstrapServiceRegistry,
+        // initiators,
+        // providedServices,
+        // settingsCopy
+        // );
     }
 
     private BootstrapServiceRegistry buildEmptyBootstrapServiceRegistry() {
@@ -135,18 +133,17 @@ public class PreconfiguredServiceRegistryBuilder {
 
         // N.B. support for custom StrategySelector is not implemented yet
 
-        // A non-empty selector is needed in order to support ID generators that retrieve a naming strategy -- at runtime!
+        // A non-empty selector is needed in order to support ID generators that retrieve a naming strategy -- at
+        // runtime!
         var strategySelector = QuarkusStrategySelectorBuilder.buildRuntimeSelector(providedClassLoaderService);
 
-        return new BootstrapServiceRegistryImpl(true,
-                providedClassLoaderService,
-                strategySelector, // new MirroringStrategySelector(),
+        return new BootstrapServiceRegistryImpl(true, providedClassLoaderService, strategySelector, // new
+                // MirroringStrategySelector(),
                 new MirroringIntegratorService(integrators));
     }
 
     /**
-     * Modified copy from
-     * org.hibernate.service.StandardServiceInitiators#buildStandardServiceInitiatorList
+     * Modified copy from org.hibernate.service.StandardServiceInitiators#buildStandardServiceInitiatorList
      * <p>
      * N.B. not to be confused with
      * org.hibernate.service.internal.StandardSessionFactoryServiceInitiators#buildStandardServiceInitiatorList()
@@ -157,19 +154,19 @@ public class PreconfiguredServiceRegistryBuilder {
             HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<StandardServiceInitiator<?>>();
 
-        //References to this object need to be injected in both the initiator for BytecodeProvider and for
-        //the registered ProxyFactoryFactoryInitiator
+        // References to this object need to be injected in both the initiator for BytecodeProvider and for
+        // the registered ProxyFactoryFactoryInitiator
         QuarkusRuntimeProxyFactoryFactory statefulProxyFactory = new QuarkusRuntimeProxyFactoryFactory(
                 rs.getProxyClassDefinitions());
 
-        //Enforces no bytecode enhancement will happen at runtime,
-        //but allows use of proxies generated at build time
+        // Enforces no bytecode enhancement will happen at runtime,
+        // but allows use of proxies generated at build time
         serviceInitiators.add(new QuarkusRuntimeBytecodeProviderInitiator(statefulProxyFactory));
 
-        //Routes to the standard implementation, but w/o allowing configuration options to override it
+        // Routes to the standard implementation, but w/o allowing configuration options to override it
         serviceInitiators.add(QuarkusMutationExecutorServiceInitiator.INSTANCE);
 
-        //Use a custom ProxyFactoryFactory which is able to use the class definitions we already created:
+        // Use a custom ProxyFactoryFactory which is able to use the class definitions we already created:
         serviceInitiators.add(new QuarkusRuntimeProxyFactoryFactoryInitiator(statefulProxyFactory));
 
         // Replaces org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator :

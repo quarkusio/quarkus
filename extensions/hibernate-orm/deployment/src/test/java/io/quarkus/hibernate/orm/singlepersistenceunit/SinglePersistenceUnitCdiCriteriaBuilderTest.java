@@ -17,9 +17,7 @@ public class SinglePersistenceUnitCdiCriteriaBuilderTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addAsResource("application.properties"));
 
     @Inject
     CriteriaBuilder criteriaBuilder;
@@ -32,8 +30,7 @@ public class SinglePersistenceUnitCdiCriteriaBuilderTest {
 
         CriteriaQuery<DefaultEntity> equalQuery = criteriaBuilder.createQuery(DefaultEntity.class);
         Root<DefaultEntity> root = equalQuery.from(DefaultEntity.class);
-        equalQuery.select(root)
-                .where(criteriaBuilder.equal(root.get("name"), "test"));
+        equalQuery.select(root).where(criteriaBuilder.equal(root.get("name"), "test"));
         assertNotNull(equalQuery);
     }
 
@@ -43,8 +40,7 @@ public class SinglePersistenceUnitCdiCriteriaBuilderTest {
 
         CriteriaQuery<DefaultEntity> equalQuery = hibernateCriteriaBuilder.createQuery(DefaultEntity.class);
         Root<DefaultEntity> root = equalQuery.from(DefaultEntity.class);
-        equalQuery.select(root)
-                .where(hibernateCriteriaBuilder.equal(root.get("name"), "test"));
+        equalQuery.select(root).where(hibernateCriteriaBuilder.equal(root.get("name"), "test"));
         assertNotNull(equalQuery);
     }
 

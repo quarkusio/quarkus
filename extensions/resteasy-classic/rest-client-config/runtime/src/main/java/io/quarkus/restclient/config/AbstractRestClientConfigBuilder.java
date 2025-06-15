@@ -25,14 +25,13 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 /**
  * Registers and force load REST Client configuration.
  * <p>
- * To populate a <code>Map</code>, because the names are dynamic, the Config system has to rely on the list of
- * property names provided by each source. This also applies to the REST Client, but since the names are known to
- * Quarkus, the REST Client configuration could be loaded even for sources that don't provide a list of property
- * names. To achieve such behaviour, we use {@link io.smallrye.config.WithKeys} and
+ * To populate a <code>Map</code>, because the names are dynamic, the Config system has to rely on the list of property
+ * names provided by each source. This also applies to the REST Client, but since the names are known to Quarkus, the
+ * REST Client configuration could be loaded even for sources that don't provide a list of property names. To achieve
+ * such behaviour, we use {@link io.smallrye.config.WithKeys} and
  * {@link io.quarkus.restclient.config.RestClientsConfig.RestClientKeysProvider} to provide the REST Client keys.
  * <p>
  * The REST Client configuration looks up the following names in order:
- *
  * <ol>
  * <li>quarkus.rest-client."[FQN of the REST Interface]".*</li>
  * <li>quarkus.rest-client.[Simple Name of the REST Interface].*</li>
@@ -42,9 +41,8 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  * <li>[FQN of the REST Interface]/mp-rest/*</li>
  * <li>[Config Key from @RegisterRestClient]/mp-rest/*</li>
  * </ol>
- *
- * The order follows the same logic specified in the MicroProfile Config REST Client, where the FQN names have
- * priority over {@link RegisterRestClient#configKey()}.
+ * The order follows the same logic specified in the MicroProfile Config REST Client, where the FQN names have priority
+ * over {@link RegisterRestClient#configKey()}.
  * <p>
  * The {@link RegisterRestClient#configKey()} lookups are not included in case the <code>configKey</code> value is
  * <code>null</code>. A fallback is generated for a quoted key when the <code>configKey</code> is a single segment.
@@ -144,8 +142,8 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         }
 
         // Since interceptors do not keep state, we rewrite the key from the previous lookup:
-        //  - FQN rewrites Simple Name
-        //  - Simple Name rewrites "Simple Name" ... and so on
+        // - FQN rewrites Simple Name
+        // - Simple Name rewrites "Simple Name" ... and so on
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
             @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
@@ -320,8 +318,8 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
 
     /**
      * Relocates every possible name (Quarkus and MP) to
-     * <code>quarkus.rest-client."[FQN of the REST Interface]".*</code>. The same <code>configKey</code> can relocate
-     * to many <code>quarkus.rest-client."[FQN of the REST Interface]".*</code>.
+     * <code>quarkus.rest-client."[FQN of the REST Interface]".*</code>. The same <code>configKey</code> can relocate to
+     * many <code>quarkus.rest-client."[FQN of the REST Interface]".*</code>.
      */
     private static class Relocates implements ConfigSourceInterceptor {
         private final Map<String, List<String>> relocates;
@@ -368,8 +366,8 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
                                     if (name.regionMatches(indexOfRestClient, original, 0, original.length())) {
                                         if (name.length() > endOfConfigKey && name.charAt(endOfConfigKey) == '.') {
                                             for (String relocatedName : entry.getValue()) {
-                                                relocatedNames.add(
-                                                        REST_CLIENT_PREFIX + relocatedName + name.substring(endOfConfigKey));
+                                                relocatedNames.add(REST_CLIENT_PREFIX + relocatedName
+                                                        + name.substring(endOfConfigKey));
                                             }
                                             return name;
                                         }

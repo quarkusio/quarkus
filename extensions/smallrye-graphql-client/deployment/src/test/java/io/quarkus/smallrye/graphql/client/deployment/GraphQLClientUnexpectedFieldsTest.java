@@ -19,9 +19,9 @@ import io.smallrye.graphql.client.Response;
 import io.smallrye.graphql.client.dynamic.api.DynamicGraphQLClient;
 
 /**
- * This test verifies that if <code>quarkus.smallrye-graphql-client.CLIENT_NAME.allow-unexpected-response-fields=true</code>
- * is set, then the client , instead of throwing an exception, logs a warning if it receives an unexpected top-level
- * field in a response.
+ * This test verifies that if
+ * <code>quarkus.smallrye-graphql-client.CLIENT_NAME.allow-unexpected-response-fields=true</code> is set, then the
+ * client , instead of throwing an exception, logs a warning if it receives an unexpected top-level field in a response.
  */
 public class GraphQLClientUnexpectedFieldsTest {
 
@@ -29,15 +29,12 @@ public class GraphQLClientUnexpectedFieldsTest {
             + System.getProperty("quarkus.http.test-port", "8081") + "/invalid-graphql-endpoint";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(
-                            new StringAsset(
-                                    "quarkus.smallrye-graphql-client.client1.url=" + url + "\n" +
-                                            "quarkus.smallrye-graphql-client.client1.allow-unexpected-response-fields=true\n"),
-                            "application.properties")
-                    .addClass(MockGraphQLEndpoint.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(
+                    new StringAsset("quarkus.smallrye-graphql-client.client1.url=" + url + "\n"
+                            + "quarkus.smallrye-graphql-client.client1.allow-unexpected-response-fields=true\n"),
+                    "application.properties")
+            .addClass(MockGraphQLEndpoint.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Path("/invalid-graphql-endpoint")
     @Produces("application/json+graphql")
@@ -45,13 +42,7 @@ public class GraphQLClientUnexpectedFieldsTest {
     public static class MockGraphQLEndpoint {
         @POST
         public String returnInvalidResponse() {
-            return "{\n" +
-                    "  \"data\": {\n" +
-                    "    \"number\": 32\n" +
-                    "  },\n" +
-                    "  \"bugs\": {\n" +
-                    "  }\n" +
-                    "}";
+            return "{\n" + "  \"data\": {\n" + "    \"number\": 32\n" + "  },\n" + "  \"bugs\": {\n" + "  }\n" + "}";
         }
     }
 

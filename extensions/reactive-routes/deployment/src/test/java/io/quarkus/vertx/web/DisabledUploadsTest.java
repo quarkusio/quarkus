@@ -35,11 +35,9 @@ public class DisabledUploadsTest {
     private static final String UPLOADS_DIR = "target/disabled-uploads-" + UUID.randomUUID().toString();
     @RegisterExtension
     static final QuarkusUnitTest CONFIG = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Routes.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.http.body.handle-file-uploads = false\n" //
-                                    + "quarkus.http.body.uploads-directory = " + UPLOADS_DIR + "\n"),
+            .withApplicationRoot((jar) -> jar.addClasses(Routes.class)
+                    .addAsResource(new StringAsset("quarkus.http.body.handle-file-uploads = false\n" //
+                            + "quarkus.http.body.uploads-directory = " + UPLOADS_DIR + "\n"),
                             "application.properties"));
 
     @Test
@@ -47,10 +45,10 @@ public class DisabledUploadsTest {
 
         final byte[] bytes = new byte[] { 0xc, 0xa, 0xf, 0xe, 0xb, 0xa, 0xb, 0xe };
         final String cafeBabe = "cafe babe";
-        final String uploadedPath = RestAssured.given().contentType("multipart/form-data").multiPart("file", "bytes.bin", bytes)
-                .formParam("description", cafeBabe).formParam("echoAttachment", "bytes.bin")
-                .post("/vertx-web/upload").then().statusCode(200)
-                .extract().body().asString();
+        final String uploadedPath = RestAssured.given().contentType("multipart/form-data")
+                .multiPart("file", "bytes.bin", bytes).formParam("description", cafeBabe)
+                .formParam("echoAttachment", "bytes.bin").post("/vertx-web/upload").then().statusCode(200).extract()
+                .body().asString();
         Assertions.assertTrue(uploadedPath.isEmpty());
         Assertions.assertFalse(new File(UPLOADS_DIR).exists());
     }

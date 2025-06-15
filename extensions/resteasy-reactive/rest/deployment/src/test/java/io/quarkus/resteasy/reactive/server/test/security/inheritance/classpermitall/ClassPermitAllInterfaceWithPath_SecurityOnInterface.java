@@ -27,12 +27,13 @@ public interface ClassPermitAllInterfaceWithPath_SecurityOnInterface {
 
     @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE + CLASS_PERMIT_ALL_PATH)
     default ClassPermitAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnInterface_ClassPermitAll() {
-        return new ClassPermitAllSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_INTERFACE + CLASS_PERMIT_ALL_PATH);
+        return new ClassPermitAllSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE + CLASS_PERMIT_ALL_PATH);
     }
 
     @PermitAll
-    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE
+            + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
     default ClassPermitAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnInterface_ClassPermitAllMethodPermitAll() {
         return new ClassPermitAllSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
                 + SUB_IMPL_ON_INTERFACE + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH);
@@ -47,8 +48,10 @@ public interface ClassPermitAllInterfaceWithPath_SecurityOnInterface {
     @PermitAll
     @POST
     @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
-    default String classPathOnInterface_ImplOnInterface_ImplMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    default String classPathOnInterface_ImplOnInterface_ImplMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
 }

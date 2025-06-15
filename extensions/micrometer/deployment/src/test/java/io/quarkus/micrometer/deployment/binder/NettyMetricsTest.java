@@ -70,29 +70,22 @@ public class NettyMetricsTest {
     @Inject
     Vertx vertx;
 
-    private static final Set<Tag> NAM_PBBA_TAGS = Tags.of(
-            "name", NettyMetricsProvider.NETTY_DEFAULT_POOLED_ALLOCATOR_NAME,
-            "allocator.type", "PooledByteBufAllocator")
-            .stream()
-            .collect(Collectors.toSet());
+    private static final Set<Tag> NAM_PBBA_TAGS = Tags.of("name",
+            NettyMetricsProvider.NETTY_DEFAULT_POOLED_ALLOCATOR_NAME, "allocator.type", "PooledByteBufAllocator")
+            .stream().collect(Collectors.toSet());
 
-    private static final Set<Tag> NAM_UNPBBA_TAGS = Tags.of(
-            "name", NettyMetricsProvider.NETTY_DEFAULT_UNPOOLED_ALLOCATOR_NAME,
-            "allocator.type", "UnpooledByteBufAllocator")
-            .stream()
-            .collect(Collectors.toSet());
+    private static final Set<Tag> NAM_UNPBBA_TAGS = Tags.of("name",
+            NettyMetricsProvider.NETTY_DEFAULT_UNPOOLED_ALLOCATOR_NAME, "allocator.type", "UnpooledByteBufAllocator")
+            .stream().collect(Collectors.toSet());
 
-    private static final Set<Tag> VX_NAM_PBBA_TAGS = Tags.of(
-            "name", VertxNettyAllocatorMetricsProvider.VERTX_POOLED_ALLOCATOR_NAME,
-            "allocator.type", "PooledByteBufAllocator")
-            .stream()
-            .collect(Collectors.toSet());
+    private static final Set<Tag> VX_NAM_PBBA_TAGS = Tags.of("name",
+            VertxNettyAllocatorMetricsProvider.VERTX_POOLED_ALLOCATOR_NAME, "allocator.type", "PooledByteBufAllocator")
+            .stream().collect(Collectors.toSet());
 
-    private static final Set<Tag> VX_NAM_UNPBBA_TAGS = Tags.of(
-            "name", VertxNettyAllocatorMetricsProvider.VERTX_UNPOOLED_ALLOCATOR_NAME,
-            "allocator.type", "UnpooledByteBufAllocator")
-            .stream()
-            .collect(Collectors.toSet());
+    private static final Set<Tag> VX_NAM_UNPBBA_TAGS = Tags
+            .of("name", VertxNettyAllocatorMetricsProvider.VERTX_UNPOOLED_ALLOCATOR_NAME, "allocator.type",
+                    "UnpooledByteBufAllocator")
+            .stream().collect(Collectors.toSet());
 
     private static final Tag HEAP_MEMORY = Tag.of(AllocatorMemoryKeyNames.MEMORY_TYPE.asString(), "heap");
     private static final Tag DIRECT_MEMORY = Tag.of(AllocatorMemoryKeyNames.MEMORY_TYPE.asString(), "direct");
@@ -107,9 +100,7 @@ public class NettyMetricsTest {
 
     private void testNettyMetrics(long expected, Class<? extends MeterBinder> mbClass) {
         Assertions.assertFalse(binders.isUnsatisfied());
-        long count = binders.stream()
-                .filter(mbClass::isInstance)
-                .count();
+        long count = binders.stream().filter(mbClass::isInstance).count();
         Assertions.assertEquals(expected, count);
     }
 

@@ -13,8 +13,7 @@ public class JpaOperations extends AbstractJpaOperations<PanacheQueryImpl<?>> {
 
     @Override
     protected PanacheQueryImpl<?> createPanacheQuery(Uni<Mutiny.Session> session, String query, String originalQuery,
-            String orderBy,
-            Object paramsArrayOrMap) {
+            String orderBy, Object paramsArrayOrMap) {
         return new PanacheQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
     }
 

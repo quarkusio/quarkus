@@ -19,9 +19,9 @@ import org.hibernate.boot.archive.spi.InputStreamAccess;
 
 /**
  * A hard coded scanner. This scanner is serialized to bytecode, and used to avoid scanning on Hibernate startup.
- * Technically the scanners are receiving all classes and categorize them as JPA useful or not.
- * In Quarkus's case, we detect the JPA friendly ones and not list the other ones.
- * Emmanuel thinks it's fine as AFAICS, Hibernate ORM filter out the non JPA specific ones.
+ * Technically the scanners are receiving all classes and categorize them as JPA useful or not. In Quarkus's case, we
+ * detect the JPA friendly ones and not list the other ones. Emmanuel thinks it's fine as AFAICS, Hibernate ORM filter
+ * out the non JPA specific ones.
  */
 public class QuarkusScanner implements Scanner {
 
@@ -60,15 +60,15 @@ public class QuarkusScanner implements Scanner {
             this.selectedClassDescriptors = new HashSet<>();
 
             for (PackageDescriptor packageDescriptor : packageDescriptors) {
-                if (scanOptions.canDetectUnlistedClassesInRoot() ||
-                        scanEnvironment.getExplicitlyListedClassNames().contains(packageDescriptor.getName())) {
+                if (scanOptions.canDetectUnlistedClassesInRoot()
+                        || scanEnvironment.getExplicitlyListedClassNames().contains(packageDescriptor.getName())) {
                     this.selectedPackageDescriptors.add(packageDescriptor);
                 }
             }
 
             for (ClassDescriptor classDescriptor : classDescriptors) {
-                if (scanOptions.canDetectUnlistedClassesInRoot() ||
-                        scanEnvironment.getExplicitlyListedClassNames().contains(classDescriptor.getName())) {
+                if (scanOptions.canDetectUnlistedClassesInRoot()
+                        || scanEnvironment.getExplicitlyListedClassNames().contains(classDescriptor.getName())) {
                     this.selectedClassDescriptors.add(classDescriptor);
                 }
             }
@@ -86,7 +86,7 @@ public class QuarkusScanner implements Scanner {
 
         @Override
         public Set<MappingFileDescriptor> getLocatedMappingFiles() {
-            //TODO: handle hbm files
+            // TODO: handle hbm files
             return Collections.emptySet();
         }
     }
@@ -113,8 +113,8 @@ public class QuarkusScanner implements Scanner {
 
         @Override
         public InputStreamAccess getStreamAccess() {
-            return new UrlInputStreamAccess(
-                    Thread.currentThread().getContextClassLoader().getResource(name.replace('.', '/') + "/package-info.class"));
+            return new UrlInputStreamAccess(Thread.currentThread().getContextClassLoader()
+                    .getResource(name.replace('.', '/') + "/package-info.class"));
         }
     }
 
@@ -152,8 +152,7 @@ public class QuarkusScanner implements Scanner {
         @Override
         public InputStreamAccess getStreamAccess() {
             final String resourceName = fromClassNameToResourceName(name);
-            return new UrlInputStreamAccess(
-                    Thread.currentThread().getContextClassLoader().getResource(resourceName));
+            return new UrlInputStreamAccess(Thread.currentThread().getContextClassLoader().getResource(resourceName));
         }
     }
 }

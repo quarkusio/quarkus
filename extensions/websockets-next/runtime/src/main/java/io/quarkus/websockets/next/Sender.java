@@ -13,6 +13,7 @@ public interface Sender {
      * Send a text message.
      *
      * @param message
+     *
      * @return a new {@link Uni} with a {@code null} item
      */
     @CheckReturnValue
@@ -36,7 +37,9 @@ public interface Sender {
      *
      * @param <M>
      * @param message
+     *
      * @return a new {@link Uni} with a {@code null} item
+     *
      * @see TextMessageCodec
      */
     @CheckReturnValue
@@ -51,6 +54,7 @@ public interface Sender {
      *
      * @param <M>
      * @param message
+     *
      * @see TextMessageCodec
      */
     default <M> void sendTextAndAwait(M message) {
@@ -61,6 +65,7 @@ public interface Sender {
      * Send a binary message.
      *
      * @param message
+     *
      * @return a new {@link Uni} with a {@code null} item
      */
     @CheckReturnValue
@@ -81,6 +86,7 @@ public interface Sender {
      * Send a binary message.
      *
      * @param message
+     *
      * @return a new {@link Uni} with a {@code null} item
      */
     @CheckReturnValue
@@ -102,7 +108,9 @@ public interface Sender {
     /**
      * Send a ping message.
      *
-     * @param data May be at most 125 bytes
+     * @param data
+     *        May be at most 125 bytes
+     *
      * @return a new {@link Uni} with a {@code null} item
      */
     @CheckReturnValue
@@ -113,7 +121,8 @@ public interface Sender {
      * <p>
      * This method should never be called on an event loop thread.
      *
-     * @param data May be at most 125 bytes
+     * @param data
+     *        May be at most 125 bytes
      */
     default void sendPingAndAwait(Buffer data) {
         sendPing(data).await().indefinitely();
@@ -123,10 +132,12 @@ public interface Sender {
      * Send an unsolicited pong message.
      * <p>
      * Note that the server automatically responds to a ping message sent from the client. However, the RFC 6455
-     * <a href="https://tools.ietf.org/html/rfc6455#section-5.5.3">section 5.5.3</a> states that unsolicited pong may serve as a
-     * unidirectional heartbeat.
+     * <a href="https://tools.ietf.org/html/rfc6455#section-5.5.3">section 5.5.3</a> states that unsolicited pong may
+     * serve as a unidirectional heartbeat.
      *
-     * @param data May be at most 125 bytes
+     * @param data
+     *        May be at most 125 bytes
+     *
      * @return a new {@link Uni} with a {@code null} item
      */
     @CheckReturnValue
@@ -138,10 +149,11 @@ public interface Sender {
      * This method should never be called on an event loop thread.
      * <p>
      * Note that the server automatically responds to a ping message sent from the client. However, the RFC 6455
-     * <a href="https://tools.ietf.org/html/rfc6455#section-5.5.3">section 5.5.3</a> states that unsolicited pong may serve as a
-     * unidirectional heartbeat.
+     * <a href="https://tools.ietf.org/html/rfc6455#section-5.5.3">section 5.5.3</a> states that unsolicited pong may
+     * serve as a unidirectional heartbeat.
      *
-     * @param data May be at most 125 bytes
+     * @param data
+     *        May be at most 125 bytes
      */
     default void sendPongAndAwait(Buffer data) {
         sendPong(data).await().indefinitely();

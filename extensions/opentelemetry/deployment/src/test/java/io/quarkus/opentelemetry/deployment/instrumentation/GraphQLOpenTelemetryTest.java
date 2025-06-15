@@ -55,17 +55,16 @@ import io.restassured.RestAssured;
 public class GraphQLOpenTelemetryTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, CustomCDIBean.class, TestSpanExporterProvider.class,
-                            TestSpanExporter.class, SemconvResolver.class)
-                    .addAsResource(new StringAsset("smallrye.graphql.allowGet=true"), "application.properties")
-                    .addAsResource(new StringAsset("smallrye.graphql.printDataFetcherException=true"), "application.properties")
-                    .addAsResource(new StringAsset("smallrye.graphql.events.enabled=true"), "application.properties")
-                    .addAsResource(new StringAsset("quarkus.otel.metrics.exporter=none"), "application.properties")
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(HelloResource.class, CustomCDIBean.class, TestSpanExporterProvider.class,
+                    TestSpanExporter.class, SemconvResolver.class)
+            .addAsResource(new StringAsset("smallrye.graphql.allowGet=true"), "application.properties")
+            .addAsResource(new StringAsset("smallrye.graphql.printDataFetcherException=true"), "application.properties")
+            .addAsResource(new StringAsset("smallrye.graphql.events.enabled=true"), "application.properties")
+            .addAsResource(new StringAsset("quarkus.otel.metrics.exporter=none"), "application.properties")
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
     @Inject
     TestSpanExporter spanExporter;
 
@@ -76,10 +75,7 @@ public class GraphQLOpenTelemetryTest {
 
     @Test
     void singleResultQueryTraceTest() {
-        String request = getPayload("query hello {\n" +
-                "  hello\n" +
-                "}",
-                null);
+        String request = getPayload("query hello {\n" + "  hello\n" + "}", null);
 
         assertSuccessfulRequestContainingMessages(request, "hello xyz");
 
@@ -99,10 +95,7 @@ public class GraphQLOpenTelemetryTest {
 
     @Test
     void multipleResultQueryTraceTest() {
-        String request = getPayload("query {\n" +
-                "  hellos\n" +
-                "}",
-                null);
+        String request = getPayload("query {\n" + "  hellos\n" + "}", null);
 
         assertSuccessfulRequestContainingMessages(request, "[\"hello, hi, hey\"]");
 
@@ -122,18 +115,15 @@ public class GraphQLOpenTelemetryTest {
     @Test
     @Disabled // TODO: flaky test, find out how to fix it
     void nestedCdiBeanInsideQueryTraceTest() throws ExecutionException, InterruptedException {
-        String request = getPayload("query {\n" +
-                "  helloAfterSecond\n" +
-                "}",
-                null);
+        String request = getPayload("query {\n" + "  helloAfterSecond\n" + "}", null);
         int iterations = 500;
         ExecutorService executor = Executors.newFixedThreadPool(50);
 
         try {
             CompletableFuture<Void>[] futures = new CompletableFuture[iterations];
             for (int i = 0; i < iterations; i++) {
-                futures[i] = CompletableFuture.supplyAsync(() -> assertSuccessfulRequestContainingMessages(request, "hello"),
-                        executor);
+                futures[i] = CompletableFuture
+                        .supplyAsync(() -> assertSuccessfulRequestContainingMessages(request, "hello"), executor);
             }
             getNestedCdiBeanTestResult(futures, iterations);
         } finally {
@@ -150,12 +140,10 @@ public class GraphQLOpenTelemetryTest {
                 .unmodifiableList(spanExporter.getFinishedSpanItems(iterations * numberOfSpansPerGroup));
 
         List<List<SpanData>> spanCollections = spans.stream()
-                .collect(Collectors.groupingBy(
-                        SpanData::getTraceId,
-                        LinkedHashMap::new, // use a LinkedHashMap to preserve insertion order
+                .collect(Collectors.groupingBy(SpanData::getTraceId, LinkedHashMap::new, // use a LinkedHashMap to
+                        // preserve insertion order
                         Collectors.toList()))
-                .values().stream()
-                .collect(Collectors.toList());
+                .values().stream().collect(Collectors.toList());
 
         assertEquals(spanCollections.size(), iterations);
         for (List<SpanData> spanGroup : spanCollections) {
@@ -165,7 +153,8 @@ public class GraphQLOpenTelemetryTest {
             final SpanData operationSpan = getSpanByKindAndParentId(spanGroup, SpanKind.INTERNAL, httpSpan.getSpanId());
             assertGraphQLSpan(operationSpan, "GraphQL", "QUERY", "");
 
-            final SpanData querySpan = getSpanByKindAndParentId(spanGroup, SpanKind.INTERNAL, operationSpan.getSpanId());
+            final SpanData querySpan = getSpanByKindAndParentId(spanGroup, SpanKind.INTERNAL,
+                    operationSpan.getSpanId());
             assertEquals(operationSpan.getSpanId(), querySpan.getParentSpanId());
             assertEquals("HelloResource.helloAfterSecond", querySpan.getName());
 
@@ -247,20 +236,11 @@ public class GraphQLOpenTelemetryTest {
     }
 
     private Void assertSuccessfulRequestContainingMessages(String request, String... messages) {
-        org.hamcrest.Matcher messageMatcher = Arrays.stream(messages)
-                .map(CoreMatchers::containsString)
+        org.hamcrest.Matcher messageMatcher = Arrays.stream(messages).map(CoreMatchers::containsString)
                 .reduce(Matchers.allOf(), (a, b) -> Matchers.allOf(a, b));
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .body(messageMatcher);
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request).post("/graphql")
+                .then().assertThat().statusCode(200).and().body(messageMatcher);
         return null;
     }
 

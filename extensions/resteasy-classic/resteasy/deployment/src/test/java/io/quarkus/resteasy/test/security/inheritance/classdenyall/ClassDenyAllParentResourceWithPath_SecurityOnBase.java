@@ -30,12 +30,14 @@ public abstract class ClassDenyAllParentResourceWithPath_SecurityOnBase
     public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassDenyAll(JsonObject array);
 
     @POST
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
     public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassDenyAllMethodPermitAll(
             JsonObject array);
 
     @POST
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
     public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassDenyAllMethodRolesAllowed(
             JsonObject array);
 

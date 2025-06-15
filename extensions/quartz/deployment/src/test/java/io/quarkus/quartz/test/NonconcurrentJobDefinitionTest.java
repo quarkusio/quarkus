@@ -18,8 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NonconcurrentJobDefinitionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(Jobs.class))
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class))
             .overrideConfigKey("quarkus.scheduler.start-mode", "forced");
 
     @Inject
@@ -27,24 +26,20 @@ public class NonconcurrentJobDefinitionTest {
 
     @Test
     public void testExecution() throws InterruptedException {
-        scheduler.newJob("foo")
-                .setTask(se -> {
-                    Jobs.NONCONCURRENT_COUNTER.incrementAndGet();
-                    try {
-                        if (!Jobs.CONCURRENT_LATCH.await(10, TimeUnit.SECONDS)) {
-                            throw new IllegalStateException("nonconcurrent() execution blocked too long...");
-                        }
-                    } catch (InterruptedException e) {
-                        throw new IllegalStateException(e);
-                    }
-                    if (Jobs.NONCONCURRENT_COUNTER.get() == 1) {
-                        // concurrent() executed >= 5x and nonconcurrent() 1x
-                        Jobs.NONCONCURRENT_LATCH.countDown();
-                    }
-                })
-                .setInterval("1s")
-                .setNonconcurrent()
-                .schedule();
+        scheduler.newJob("foo").setTask(se -> {
+            Jobs.NONCONCURRENT_COUNTER.incrementAndGet();
+            try {
+                if (!Jobs.CONCURRENT_LATCH.await(10, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("nonconcurrent() execution blocked too long...");
+                }
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+            if (Jobs.NONCONCURRENT_COUNTER.get() == 1) {
+                // concurrent() executed >= 5x and nonconcurrent() 1x
+                Jobs.NONCONCURRENT_LATCH.countDown();
+            }
+        }).setInterval("1s").setNonconcurrent().schedule();
 
         assertTrue(Jobs.NONCONCURRENT_LATCH.await(10, TimeUnit.SECONDS),
                 String.format("nonconcurrent() executed: %sx", Jobs.NONCONCURRENT_COUNTER.get()));

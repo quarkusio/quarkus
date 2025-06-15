@@ -28,18 +28,14 @@ public class PersistenceXmlTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO))
-            .assertLogRecords(records -> assertThat(records)
-                    .as("Logs on startup")
-                    .anySatisfy(record -> {
-                        assertThat(LOG_FORMATTER.formatMessage(record))
-                                .contains("A legacy persistence.xml file is present in the classpath",
-                                        "any configuration of the Hibernate ORM extension will be ignored",
-                                        "To ignore persistence.xml files",
-                                        "set the configuration property 'quarkus.hibernate-orm.persistence-xml.ignore' to 'true'");
-                    }))
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(MyEntity.class)
+            .assertLogRecords(records -> assertThat(records).as("Logs on startup").anySatisfy(record -> {
+                assertThat(LOG_FORMATTER.formatMessage(record)).contains(
+                        "A legacy persistence.xml file is present in the classpath",
+                        "any configuration of the Hibernate ORM extension will be ignored",
+                        "To ignore persistence.xml files",
+                        "set the configuration property 'quarkus.hibernate-orm.persistence-xml.ignore' to 'true'");
+            }))
+            .withApplicationRoot((jar) -> jar.addClass(SmokeTestUtils.class).addClass(MyEntity.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
                     .addAsResource("application-datasource-only.properties", "application.properties"));
 
@@ -61,9 +57,8 @@ public class PersistenceXmlTest {
     @Test
     @Transactional
     public void smokeTest() {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager,
-                MyEntity.class, MyEntity::new,
-                e -> e.id, (e, value) -> e.name = value, e -> e.name);
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager, MyEntity.class, MyEntity::new, e -> e.id,
+                (e, value) -> e.name = value, e -> e.name);
     }
 
 }

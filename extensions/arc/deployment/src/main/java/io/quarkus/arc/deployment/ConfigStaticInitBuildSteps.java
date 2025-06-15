@@ -13,10 +13,8 @@ public class ConfigStaticInitBuildSteps {
 
     @BuildStep
     AdditionalBeanBuildItem registerBeans() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClasses(ConfigStaticInitCheckInterceptor.class, ConfigStaticInitValues.class,
-                        ConfigStaticInitCheck.class)
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClasses(ConfigStaticInitCheckInterceptor.class,
+                ConfigStaticInitValues.class, ConfigStaticInitCheck.class).build();
     }
 
     @BuildStep
@@ -25,8 +23,7 @@ public class ConfigStaticInitBuildSteps {
 
         return new AnnotationsTransformerBuildItem(AnnotationsTransformer.appliedToMethod().whenMethod(m -> {
             // Apply to all producer methods declared on io.smallrye.config.inject.ConfigProducer
-            return m.declaringClass().name().equals(configProducerName)
-                    && m.hasAnnotation(DotNames.PRODUCES)
+            return m.declaringClass().name().equals(configProducerName) && m.hasAnnotation(DotNames.PRODUCES)
                     && m.hasAnnotation(ConfigBuildStep.MP_CONFIG_PROPERTY_NAME);
         }).thenTransform(t -> {
             t.add(ConfigStaticInitCheck.class);

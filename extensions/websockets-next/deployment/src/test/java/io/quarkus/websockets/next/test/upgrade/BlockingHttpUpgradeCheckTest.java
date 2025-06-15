@@ -29,9 +29,8 @@ import io.vertx.core.Vertx;
 public class BlockingHttpUpgradeCheckTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(BlockingHttpUpgradeCheck.class, Endpoint.class, WSClient.class));
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addClasses(BlockingHttpUpgradeCheck.class, Endpoint.class, WSClient.class));
 
     @TestHTTPResource("/end")
     URI endUri;

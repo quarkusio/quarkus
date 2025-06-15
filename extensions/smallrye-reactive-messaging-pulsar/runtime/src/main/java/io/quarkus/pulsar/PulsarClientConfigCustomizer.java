@@ -53,23 +53,24 @@ public class PulsarClientConfigCustomizer implements ClientCustomizer<ClientBuil
 
                 if (keyStoreOptions instanceof PemKeyCertOptions keyCertOptions
                         && trustStoreOptions instanceof PemTrustOptions trustCertOptions) {
-                    Buffer trust = trustCertOptions.getCertValues().stream()
-                            .collect(Buffer::buffer, Buffer::appendBuffer, Buffer::appendBuffer);
+                    Buffer trust = trustCertOptions.getCertValues().stream().collect(Buffer::buffer,
+                            Buffer::appendBuffer, Buffer::appendBuffer);
                     builder.authentication(new AuthenticationTls(
                             () -> new ByteArrayInputStream(keyCertOptions.getCertValue().getBytes()),
                             () -> new ByteArrayInputStream(keyCertOptions.getKeyValue().getBytes()),
                             () -> new ByteArrayInputStream(trust.getBytes())));
-                    log.debugf("Configured PulsarClientConfiguration for channel %s with TLS configuration %s",
-                            channel, tlsConfig);
+                    log.debugf("Configured PulsarClientConfiguration for channel %s with TLS configuration %s", channel,
+                            tlsConfig);
                 } else if (keyStoreOptions instanceof KeyStoreOptionsBase
                         && trustStoreOptions instanceof KeyStoreOptionsBase) {
                     // Set to false even though we use keyStore TLS
                     builder.useKeyStoreTls(false);
                     builder.authentication(new QuarkusPulsarKeyStoreAuthentication(configuration));
-                    log.debugf("Configured PulsarClientConfiguration for channel %s with TLS configuration %s",
-                            channel, tlsConfig);
+                    log.debugf("Configured PulsarClientConfiguration for channel %s with TLS configuration %s", channel,
+                            tlsConfig);
                 } else {
-                    log.warnf("Unsupported TLS configuration for channel %s with TLS configuration %s", channel, tlsConfig);
+                    log.warnf("Unsupported TLS configuration for channel %s with TLS configuration %s", channel,
+                            tlsConfig);
                 }
             }
         }

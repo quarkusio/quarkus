@@ -6,7 +6,8 @@ public final class WriterInterceptorBuildItem extends AbstractInterceptorBuildIt
         super(builder);
     }
 
-    public static final class Builder extends AbstractInterceptorBuildItem.Builder<WriterInterceptorBuildItem, Builder> {
+    public static final class Builder
+            extends AbstractInterceptorBuildItem.Builder<WriterInterceptorBuildItem, Builder> {
 
         public Builder(String className) {
             super(className);

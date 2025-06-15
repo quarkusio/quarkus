@@ -17,7 +17,8 @@ public class CookieParamExtractor implements ParameterExtractor {
     @Override
     public Object extractParameter(ResteasyReactiveRequestContext context) {
         if (Cookie.class.getName().equals(parameterTypeName)) {
-            // we need to make sure we preserve the name because otherwise CookieHeaderDelegate will not be able to convert back to Cookie
+            // we need to make sure we preserve the name because otherwise CookieHeaderDelegate will not be able to
+            // convert back to Cookie
             Cookie cookie = context.getHttpHeaders().getCookies().get(name);
             return cookie != null ? cookie.toString() : null;
         }

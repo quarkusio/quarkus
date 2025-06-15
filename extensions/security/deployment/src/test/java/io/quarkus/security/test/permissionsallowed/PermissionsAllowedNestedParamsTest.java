@@ -43,11 +43,10 @@ public class PermissionsAllowedNestedParamsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class, StringRecord.class,
-                            SecuredBean.class, CustomPermissionWithStringArg.class, TopTierRecord.class, SimpleFieldParam.class,
-                            ComplexFieldParam.class, NestedMethodsObject.class, CombinedAccessParam.class,
-                            CustomPermissionWithMultipleArgs.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class,
+                    StringRecord.class, SecuredBean.class, CustomPermissionWithStringArg.class, TopTierRecord.class,
+                    SimpleFieldParam.class, ComplexFieldParam.class, NestedMethodsObject.class,
+                    CombinedAccessParam.class, CustomPermissionWithMultipleArgs.class));
 
     @Inject
     SecuredBean securedBean;
@@ -64,8 +63,8 @@ public class PermissionsAllowedNestedParamsTest {
     public void testNestedRecordParam_NestingLevelThree() {
         var validTopTierRecord = new TopTierRecord(
                 new TopTierRecord.SecondTierRecord(null, new StringRecord(EXPECTED_FIELD_STRING_ARGUMENT)), -1);
-        assertSuccess(() -> securedBean.nestedRecordParam_ThreeTiers(validTopTierRecord), EXPECTED_FIELD_STRING_ARGUMENT,
-                USER_WITH_TEST_PERM);
+        assertSuccess(() -> securedBean.nestedRecordParam_ThreeTiers(validTopTierRecord),
+                EXPECTED_FIELD_STRING_ARGUMENT, USER_WITH_TEST_PERM);
         var invalidTopTierRecord = new TopTierRecord(
                 new TopTierRecord.SecondTierRecord(null, new StringRecord("unexpected_value")), -1);
         assertFailureFor(() -> securedBean.nestedRecordParam_ThreeTiers(invalidTopTierRecord), ForbiddenException.class,
@@ -88,8 +87,8 @@ public class PermissionsAllowedNestedParamsTest {
                 USER_WITH_TEST_PERM);
         var invalidComplexParam = new ComplexFieldParam(
                 new ComplexFieldParam.NestedFieldParam(new SimpleFieldParam("unexpected_value")));
-        assertFailureFor(() -> securedBean.nestedFieldParam_ThreeTiers(invalidComplexParam),
-                ForbiddenException.class, USER_WITH_TEST_PERM);
+        assertFailureFor(() -> securedBean.nestedFieldParam_ThreeTiers(invalidComplexParam), ForbiddenException.class,
+                USER_WITH_TEST_PERM);
     }
 
     @Test
@@ -104,10 +103,13 @@ public class PermissionsAllowedNestedParamsTest {
 
     @Test
     public void combinedFieldAndMethodAccess() {
-        var validCombinedParam = new CombinedAccessParam(new CombinedAccessParam.ParamField(EXPECTED_FIELD_STRING_ARGUMENT));
-        assertSuccess(() -> securedBean.combinedParam(validCombinedParam), EXPECTED_FIELD_STRING_ARGUMENT, USER_WITH_TEST_PERM);
+        var validCombinedParam = new CombinedAccessParam(
+                new CombinedAccessParam.ParamField(EXPECTED_FIELD_STRING_ARGUMENT));
+        assertSuccess(() -> securedBean.combinedParam(validCombinedParam), EXPECTED_FIELD_STRING_ARGUMENT,
+                USER_WITH_TEST_PERM);
         var invalidCombinedParam = new CombinedAccessParam(new CombinedAccessParam.ParamField("unexpected_value"));
-        assertFailureFor(() -> securedBean.combinedParam(invalidCombinedParam), ForbiddenException.class, USER_WITH_TEST_PERM);
+        assertFailureFor(() -> securedBean.combinedParam(invalidCombinedParam), ForbiddenException.class,
+                USER_WITH_TEST_PERM);
     }
 
     @Test
@@ -116,18 +118,23 @@ public class PermissionsAllowedNestedParamsTest {
                 Set.of(new StringPermission("read"), new EqualTestPermissions()));
         var noReadPerm = new AuthData(Set.of(), false, "ignored",
                 Set.of(new StringPermission("write"), new EqualTestPermissions()));
-        var validCombinedParam = new CombinedAccessParam(new CombinedAccessParam.ParamField(EXPECTED_FIELD_STRING_ARGUMENT));
+        var validCombinedParam = new CombinedAccessParam(
+                new CombinedAccessParam.ParamField(EXPECTED_FIELD_STRING_ARGUMENT));
         // succeed as all params are correct
-        assertSuccess(() -> securedBean.simpleAndNested(EXPECTED_FIELD_LONG_ARGUMENT, -1, validCombinedParam, -2,
-                EXPECTED_FIELD_INT_ARGUMENT, -3), EXPECTED_FIELD_LONG_ARGUMENT + "" + EXPECTED_FIELD_LONG_ARGUMENT, readPerm);
+        assertSuccess(
+                () -> securedBean.simpleAndNested(EXPECTED_FIELD_LONG_ARGUMENT, -1, validCombinedParam, -2,
+                        EXPECTED_FIELD_INT_ARGUMENT, -3),
+                EXPECTED_FIELD_LONG_ARGUMENT + "" + EXPECTED_FIELD_LONG_ARGUMENT, readPerm);
         // fail as String permission is wrong
         assertFailureFor(() -> securedBean.simpleAndNested(EXPECTED_FIELD_LONG_ARGUMENT, -1, validCombinedParam, -2,
                 EXPECTED_FIELD_INT_ARGUMENT, -3), ForbiddenException.class, noReadPerm);
         // fail as long param is wrong
-        assertFailureFor(() -> securedBean.simpleAndNested(0, -1, validCombinedParam, -2, EXPECTED_FIELD_INT_ARGUMENT, -3),
+        assertFailureFor(
+                () -> securedBean.simpleAndNested(0, -1, validCombinedParam, -2, EXPECTED_FIELD_INT_ARGUMENT, -3),
                 ForbiddenException.class, readPerm);
         // fail as int param is wrong
-        assertFailureFor(() -> securedBean.simpleAndNested(EXPECTED_FIELD_LONG_ARGUMENT, -1, validCombinedParam, -2, -9, -3),
+        assertFailureFor(
+                () -> securedBean.simpleAndNested(EXPECTED_FIELD_LONG_ARGUMENT, -1, validCombinedParam, -2, -9, -3),
                 ForbiddenException.class, readPerm);
         // fail as combined param is wrong
         var invalidCombinedParam = new CombinedAccessParam(new CombinedAccessParam.ParamField("unexpected_value"));

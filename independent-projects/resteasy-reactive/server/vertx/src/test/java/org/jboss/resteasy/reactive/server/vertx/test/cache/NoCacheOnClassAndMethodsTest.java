@@ -28,31 +28,23 @@ public class NoCacheOnClassAndMethodsTest {
                 public void accept(ResteasyReactiveDeploymentManager.ScanStep scanStep) {
                     scanStep.addMethodScanner(new CacheControlScanner());
                 }
-            })
-            .setArchiveProducer(new Supplier<>() {
+            }).setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(ResourceWithNoCache.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(ResourceWithNoCache.class);
                 }
             });
 
     @Test
     public void testWith() {
-        RestAssured.get("/test/with")
-                .then()
-                .statusCode(200)
-                .body(equalTo("with"))
-                .header("Cache-Control", "no-cache=\"f1\", no-cache=\"f2\"");
+        RestAssured.get("/test/with").then().statusCode(200).body(equalTo("with")).header("Cache-Control",
+                "no-cache=\"f1\", no-cache=\"f2\"");
     }
 
     @Test
     public void testWithout() {
-        RestAssured.get("/test/without")
-                .then()
-                .statusCode(200)
-                .body(equalTo("without"))
-                .header("Cache-Control", "no-cache=\"f1\"");
+        RestAssured.get("/test/without").then().statusCode(200).body(equalTo("without")).header("Cache-Control",
+                "no-cache=\"f1\"");
     }
 
     @NoCache(fields = "f1")

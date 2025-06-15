@@ -32,11 +32,8 @@ public class UnsatisfiedConditionalDependencyWithTwoConditionsTest extends Boots
         addToExpectedLib(extA.getRuntime());
         addToExpectedLib(extC.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extC)
-                .addDependency(extA);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extC).addDependency(extA);
     }
 
     @Override

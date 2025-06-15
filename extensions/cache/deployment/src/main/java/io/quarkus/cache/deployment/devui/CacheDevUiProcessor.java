@@ -13,9 +13,7 @@ public class CacheDevUiProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     CardPageBuildItem create(CurateOutcomeBuildItem bi) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("Caches")
-                .componentLink("qwc-cache-caches.js")
+        pageBuildItem.addPage(Page.webComponentPageBuilder().title("Caches").componentLink("qwc-cache-caches.js")
                 .icon("font-awesome-solid:database"));
 
         return pageBuildItem;

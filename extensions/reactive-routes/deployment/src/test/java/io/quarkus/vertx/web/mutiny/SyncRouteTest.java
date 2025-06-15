@@ -35,37 +35,31 @@ public class SyncRouteTest {
 
     @Test
     public void testSynchronousRoute() {
-        when().get("hello-sync").then().statusCode(200)
-                .body(is("Sync Hello world"))
-                .header("content-type", is(nullValue()));
+        when().get("hello-sync").then().statusCode(200).body(is("Sync Hello world")).header("content-type",
+                is(nullValue()));
 
-        when().get("hello-buffer-sync").then().statusCode(200).body(is("Sync Buffer"))
-                .header("content-type", is(nullValue()));
+        when().get("hello-buffer-sync").then().statusCode(200).body(is("Sync Buffer")).header("content-type",
+                is(nullValue()));
 
         when().get("hello-buffer-mutiny-sync").then().statusCode(200).body(is("Sync Mutiny Buffer"))
                 .header("content-type", is(nullValue()));
 
-        when().get("/person-sync").then().statusCode(200)
-                .body("name", is("neo"))
-                .body("id", is(12345))
+        when().get("/person-sync").then().statusCode(200).body("name", is("neo")).body("id", is(12345))
                 .header("content-type", "application/json");
 
-        when().get("/person-sync-content-type-set").then().statusCode(200)
-                .body("name", is("neo"))
-                .body("id", is(12345))
+        when().get("/person-sync-content-type-set").then().statusCode(200).body("name", is("neo")).body("id", is(12345))
                 .header("content-type", "application/json;charset=utf-8");
 
-        when().get("/fail-sync")
-                .then().statusCode(500)
-                .body(containsString("boom"));
+        when().get("/fail-sync").then().statusCode(500).body(containsString("boom"));
     }
 
-    //https://github.com/quarkusio/quarkus/issues/10960
+    // https://github.com/quarkusio/quarkus/issues/10960
     @Test
     public void testNoAcceptHeaderContentType() throws Exception {
-        //RESTAssured always sets an Accept header
+        // RESTAssured always sets an Accept header
         try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-            CloseableHttpResponse res = client.execute(new HttpGet(this.url.toExternalForm() + "/default-content-type"));
+            CloseableHttpResponse res = client
+                    .execute(new HttpGet(this.url.toExternalForm() + "/default-content-type"));
             JsonParser parser = Json.createParser(res.getEntity().getContent());
             parser.next();
             JsonObject obj = parser.getObject();
@@ -110,9 +104,7 @@ public class SyncRouteTest {
 
         @Route(path = "default-content-type", produces = "application/json")
         void hi(RoutingExchange routing) {
-            routing.ok(new io.vertx.core.json.JsonObject()
-                    .put("name", "neo")
-                    .put("id", 12345).encode());
+            routing.ok(new io.vertx.core.json.JsonObject().put("name", "neo").put("id", 12345).encode());
         }
 
     }

@@ -38,8 +38,7 @@ public interface MongodbConfig {
     /**
      * Configures additional mongo client connections.
      * <p>
-     * each cluster have a unique identifier witch must be identified to select the right connection.
-     * example:
+     * each cluster have a unique identifier witch must be identified to select the right connection. example:
      * <p>
      *
      * <pre>
@@ -62,11 +61,10 @@ public interface MongodbConfig {
     Map<String, MongoClientConfig> mongoClientConfigs();
 
     /**
-     * The default DNS resolver used to handle {@code mongo+srv://} urls cannot be used in a native executable.
-     * This option enables a fallback to use Vert.x to resolve the server names instead of JNDI.
-     *
-     * <strong>IMPORTANT:</strong> The resolution may be different in JVM mode using the default (JNDI-based) DNS resolver,
-     * and in native mode. This feature is experimental.
+     * The default DNS resolver used to handle {@code mongo+srv://} urls cannot be used in a native executable. This
+     * option enables a fallback to use Vert.x to resolve the server names instead of JNDI. <strong>IMPORTANT:</strong>
+     * The resolution may be different in JVM mode using the default (JNDI-based) DNS resolver, and in native mode. This
+     * feature is experimental.
      *
      * @deprecated This resolver is always used
      */
@@ -76,9 +74,9 @@ public interface MongodbConfig {
     boolean useVertxDnsResolverInNativeMode();
 
     /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server.
-     * If the server is not set, it tries to read the first {@code nameserver} from {@code /etc/resolv.conf} (if the
-     * file exists), otherwise fallback to the default.
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server. If
+     * the server is not set, it tries to read the first {@code nameserver} from {@code /etc/resolv.conf} (if the file
+     * exists), otherwise fallback to the default.
      *
      * @deprecated this property has been deprecated in favor of {@link #dnsServer}
      */
@@ -87,14 +85,15 @@ public interface MongodbConfig {
     Optional<String> dnsServerInNativeMode();
 
     /**
-     * This property configures the DNS server. If the server is not set, it tries to read the first {@code nameserver} from
-     * {@code /etc /resolv.conf} (if the file exists), otherwise fallback to the default.
+     * This property configures the DNS server. If the server is not set, it tries to read the first {@code nameserver}
+     * from {@code /etc /resolv.conf} (if the file exists), otherwise fallback to the default.
      */
     @WithName(DNS_SERVER_HOST)
     Optional<String> dnsServer();
 
     /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server port.
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS server
+     * port.
      *
      * @deprecated this property has been deprecated in favor of {@link #dnsServerPort}
      */
@@ -109,8 +108,8 @@ public interface MongodbConfig {
     OptionalInt dnsServerPort();
 
     /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
-     * duration.
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup
+     * timeout duration.
      *
      * @deprecated this property has been deprecated in favor of {@link #dnsLookupTimeout}
      */
@@ -120,16 +119,16 @@ public interface MongodbConfig {
     Duration dnsLookupTimeoutInNativeMode();
 
     /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
-     * duration.
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup
+     * timeout duration.
      */
     @WithName(DNS_LOOKUP_TIMEOUT)
     @WithDefault("5s")
     Duration dnsLookupTimeout();
 
     /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property enables the logging ot the
-     * DNS lookup. It can be useful to understand why the lookup fails.
+     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property enables the logging ot the DNS
+     * lookup. It can be useful to understand why the lookup fails.
      *
      * @deprecated this property has been deprecated in favor of {@link #dnsLookupLogActivity}
      */

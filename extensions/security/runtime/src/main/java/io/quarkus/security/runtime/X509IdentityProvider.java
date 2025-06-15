@@ -22,13 +22,13 @@ public class X509IdentityProvider implements IdentityProvider<CertificateAuthent
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(CertificateAuthenticationRequest request, AuthenticationRequestContext context) {
+    public Uni<SecurityIdentity> authenticate(CertificateAuthenticationRequest request,
+            AuthenticationRequestContext context) {
         X509Certificate certificate = request.getCertificate().getCertificate();
-        return Uni.createFrom().item(QuarkusSecurityIdentity.builder()
-                .setPrincipal(certificate.getSubjectX500Principal())
-                .addCredential(request.getCertificate())
-                .addRoles(extractRoles(certificate, request.getAttribute(ROLES_MAPPER_ATTRIBUTE)))
-                .build());
+        return Uni.createFrom()
+                .item(QuarkusSecurityIdentity.builder().setPrincipal(certificate.getSubjectX500Principal())
+                        .addCredential(request.getCertificate())
+                        .addRoles(extractRoles(certificate, request.getAttribute(ROLES_MAPPER_ATTRIBUTE))).build());
     }
 
     private static Set<String> extractRoles(X509Certificate certificate,

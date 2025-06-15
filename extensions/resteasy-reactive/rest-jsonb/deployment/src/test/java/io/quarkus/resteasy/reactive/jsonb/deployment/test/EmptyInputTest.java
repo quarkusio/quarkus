@@ -20,31 +20,29 @@ import io.restassured.http.ContentType;
 public class EmptyInputTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(GreetingResource.class, Greeting.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class, Greeting.class);
+        }
+    });
 
     @Test
     public void emptyBlocking() {
-        RestAssured.with().contentType(ContentType.JSON).post("/greeting/blocking")
-                .then().statusCode(200).body(equalTo("null"));
+        RestAssured.with().contentType(ContentType.JSON).post("/greeting/blocking").then().statusCode(200)
+                .body(equalTo("null"));
     }
 
     @Test
     public void emptyNonBlocking() {
-        RestAssured.with().contentType(ContentType.JSON).post("/greeting/nonBlocking")
-                .then().statusCode(200).body(equalTo("null"));
+        RestAssured.with().contentType(ContentType.JSON).post("/greeting/nonBlocking").then().statusCode(200)
+                .body(equalTo("null"));
     }
 
     @Test
     public void nonEmptyBlocking() {
-        RestAssured.with().contentType(ContentType.JSON).body("{\"message\": \"Hi\"}").post("/greeting/blocking")
-                .then().statusCode(200).body(equalTo("Hi"));
+        RestAssured.with().contentType(ContentType.JSON).body("{\"message\": \"Hi\"}").post("/greeting/blocking").then()
+                .statusCode(200).body(equalTo("Hi"));
     }
 
     @Test

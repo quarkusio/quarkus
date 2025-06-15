@@ -14,66 +14,52 @@ public class WithAttributeFilter {
     @Funq
     @CloudEventMapping(attributes = { @EventAttribute(name = "source", value = "mytestvalue") })
     public String listOfStrings(List<Identity> identityList) {
-        return identityList
-                .stream()
-                .map(Identity::getName)
-                .collect(Collectors.joining(":"));
+        return identityList.stream().map(Identity::getName).collect(Collectors.joining(":"));
     }
 
     @Funq
-    @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "testvalue") })
+    @CloudEventMapping(trigger = "listOfStrings", attributes = {
+            @EventAttribute(name = "source", value = "testvalue") })
     public String toCommaSeparated(List<Identity> identityList) {
-        return identityList
-                .stream()
-                .map(Identity::getName)
-                .collect(Collectors.joining(","));
+        return identityList.stream().map(Identity::getName).collect(Collectors.joining(","));
     }
 
     @Funq
     @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "test2") })
     public String toSemicolonSeparated(List<Identity> identityList) {
-        return identityList
-                .stream()
-                .map(Identity::getName)
-                .collect(Collectors.joining(";"));
+        return identityList.stream().map(Identity::getName).collect(Collectors.joining(";"));
     }
 
     @Funq
     @CloudEventMapping(trigger = "integer", attributes = { @EventAttribute(name = "source", value = "test"),
             @EventAttribute(name = "custom", value = "hello") })
     public Uni<List<Integer>> range(int n) {
-        return Uni.createFrom().item(() -> IntStream.range(0, n)
-                .boxed()
-                .collect(Collectors.toList()));
+        return Uni.createFrom().item(() -> IntStream.range(0, n).boxed().collect(Collectors.toList()));
     }
 
     @Funq
-    @CloudEventMapping(trigger = "listOfStrings", attributes = {
-            @EventAttribute(name = "source", value = "test"),
+    @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "test"),
             @EventAttribute(name = "custom", value = "value") })
     public String foo(List<Identity> identityList) {
         return "value";
     }
 
     @Funq
-    @CloudEventMapping(trigger = "listOfStrings", attributes = {
-            @EventAttribute(name = "source", value = "test"),
+    @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "test"),
             @EventAttribute(name = "custom", value = "someOtherValue") })
     public String bar(List<Identity> identityList) {
         return "someOtherValue";
     }
 
     @Funq
-    @CloudEventMapping(trigger = "listOfStrings", attributes = {
-            @EventAttribute(name = "source", value = "test"),
+    @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "test"),
             @EventAttribute(name = "customA", value = "value") })
     public String anotherFoo(List<Identity> identityList) {
         return "value";
     }
 
     @Funq
-    @CloudEventMapping(trigger = "listOfStrings", attributes = {
-            @EventAttribute(name = "source", value = "test"),
+    @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "test"),
             @EventAttribute(name = "customB", value = "value") })
     public String anotherBar(List<Identity> identityList) {
         return "someOtherValue";

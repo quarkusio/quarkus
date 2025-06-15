@@ -45,7 +45,8 @@ public class DevModeClient {
     }
 
     public static List<ProcessHandle> killDescendingProcesses() {
-        // Warning: Do not try to evaluate ProcessHandle.Info.arguments() or .commandLine() as those are always empty on Windows:
+        // Warning: Do not try to evaluate ProcessHandle.Info.arguments() or .commandLine() as those are always empty on
+        // Windows:
         // https://bugs.openjdk.java.net/browse/JDK-8176725
         //
         // Intentionally collecting the ProcessHandles before calling .destroy(), because it seemed that, at least on
@@ -90,15 +91,15 @@ public class DevModeClient {
 
     public String getHttpResponse(Supplier<String> brokenReason) {
         AtomicReference<String> resp = new AtomicReference<>();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
-                //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
+        await().pollDelay(1, TimeUnit.SECONDS)
+                // Allow for a long maximum time as the first hit to a build might require to download dependencies from
+                // Maven repositories;
+                // some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
                 .atMost(2L + DEFAULT_TIMEOUT, TimeUnit.MINUTES).until(() -> {
                     try {
                         String broken = brokenReason.get();
                         if (broken != null) {
-                            //try and avoid waiting 3m
+                            // try and avoid waiting 3m
                             resp.set("BROKEN: " + broken);
                             return true;
                         }
@@ -118,15 +119,15 @@ public class DevModeClient {
 
     public String getHttpErrorResponse(Supplier<String> brokenReason) {
         AtomicReference<String> resp = new AtomicReference<>();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                //Allow for a long maximum time as the first hit to a build might require to download dependencies from Maven repositories;
-                //some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
+        await().pollDelay(1, TimeUnit.SECONDS)
+                // Allow for a long maximum time as the first hit to a build might require to download dependencies from
+                // Maven repositories;
+                // some, such as org.jetbrains.kotlin:kotlin-compiler, are huge and will take more than a minute.
                 .atMost(20, TimeUnit.MINUTES).until(() -> {
                     try {
                         String broken = brokenReason.get();
                         if (broken != null) {
-                            //try and avoid waiting 20m
+                            // try and avoid waiting 20m
                             resp.set("BROKEN: " + broken);
                             return true;
                         }
@@ -159,50 +160,49 @@ public class DevModeClient {
             TimeUnit tu) {
         AtomicReference<String> resp = new AtomicReference<>();
 
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(timeout, tu).until(() -> {
-                    String broken = brokenReason.get();
-                    if (broken != null) {
-                        resp.set("BROKEN: " + broken);
-                        return true;
-                    }
-                    try {
-                        URL url = prepareUrl(path);
+        await().pollDelay(1, TimeUnit.SECONDS).atMost(timeout, tu).until(() -> {
+            String broken = brokenReason.get();
+            if (broken != null) {
+                resp.set("BROKEN: " + broken);
+                return true;
+            }
+            try {
+                URL url = prepareUrl(path);
 
-                        String content;
-                        if (!allowError) {
-                            content = IOUtils.toString(url, StandardCharsets.UTF_8);
-                        } else {
-                            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                            conn.setDefaultUseCaches(false);
-                            conn.setUseCaches(false);
-                            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.8
-                            conn.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
-                            if (conn.getResponseCode() >= 400) {
-                                content = IOUtils.toString(conn.getErrorStream(), StandardCharsets.UTF_8);
-                            } else {
-                                content = IOUtils.toString(conn.getInputStream(), StandardCharsets.UTF_8);
-                            }
-                            conn.disconnect();
-                        }
-
-                        resp.set(content);
-                        return true;
-                    } catch (Exception e) {
-                        var sb = new StringBuilder();
-                        sb.append("DevModeClient failed to accessed ").append(path)
-                                .append(". It might be a normal testing behavior but logging the messages for information: ")
-                                .append(e.getLocalizedMessage());
-                        var cause = e.getCause();
-                        while (cause != null) {
-                            sb.append(": ").append(cause.getLocalizedMessage());
-                            cause = cause.getCause();
-                        }
-                        LOG.error(sb);
-                        return false;
+                String content;
+                if (!allowError) {
+                    content = IOUtils.toString(url, StandardCharsets.UTF_8);
+                } else {
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setDefaultUseCaches(false);
+                    conn.setUseCaches(false);
+                    // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation
+                    // as it uses q=.8
+                    conn.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+                    if (conn.getResponseCode() >= 400) {
+                        content = IOUtils.toString(conn.getErrorStream(), StandardCharsets.UTF_8);
+                    } else {
+                        content = IOUtils.toString(conn.getInputStream(), StandardCharsets.UTF_8);
                     }
-                });
+                    conn.disconnect();
+                }
+
+                resp.set(content);
+                return true;
+            } catch (Exception e) {
+                var sb = new StringBuilder();
+                sb.append("DevModeClient failed to accessed ").append(path)
+                        .append(". It might be a normal testing behavior but logging the messages for information: ")
+                        .append(e.getLocalizedMessage());
+                var cause = e.getCause();
+                while (cause != null) {
+                    sb.append(": ").append(cause.getLocalizedMessage());
+                    cause = cause.getCause();
+                }
+                LOG.error(sb);
+                return false;
+            }
+        });
         return resp.get();
     }
 
@@ -212,56 +212,54 @@ public class DevModeClient {
 
     public boolean getHttpResponse(String path, int expectedStatus, long timeout, TimeUnit tu) {
         AtomicBoolean code = new AtomicBoolean();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(timeout, tu).until(() -> {
-                    try {
-                        URL url = prepareUrl(path);
-                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                        connection.setDefaultUseCaches(false);
-                        connection.setUseCaches(false);
-                        // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
-                        connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
-                        if (connection.getResponseCode() == expectedStatus) {
-                            code.set(true);
-                            return true;
-                        }
-                        return false;
-                    } catch (Exception e) {
-                        LOG.error(
-                                "An error occurred when DevModeClient accessed " + path
-                                        + ". It might be a normal testing behavior but logging the exception for information",
-                                e);
-                        return false;
-                    }
-                });
+        await().pollDelay(1, TimeUnit.SECONDS).atMost(timeout, tu).until(() -> {
+            try {
+                URL url = prepareUrl(path);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setDefaultUseCaches(false);
+                connection.setUseCaches(false);
+                // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it
+                // uses q=.2
+                connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+                if (connection.getResponseCode() == expectedStatus) {
+                    code.set(true);
+                    return true;
+                }
+                return false;
+            } catch (Exception e) {
+                LOG.error(
+                        "An error occurred when DevModeClient accessed " + path
+                                + ". It might be a normal testing behavior but logging the exception for information",
+                        e);
+                return false;
+            }
+        });
         return code.get();
     }
 
     // will fail if it receives any http response except the expected one
     public boolean getStrictHttpResponse(String path, int expectedStatus) {
         AtomicBoolean code = new AtomicBoolean();
-        await()
-                .pollDelay(1, TimeUnit.SECONDS)
-                .atMost(5, TimeUnit.MINUTES).until(() -> {
-                    try {
-                        URL url = prepareUrl(path);
-                        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-                        connection.setDefaultUseCaches(false);
-                        connection.setUseCaches(false);
-                        // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
-                        connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
-                        code.set(connection.getResponseCode() == expectedStatus);
-                        //complete no matter what the response code was
-                        return true;
-                    } catch (Exception e) {
-                        LOG.error(
-                                "An error occurred when DevModeClient accessed " + path
-                                        + ". It might be a normal testing behavior but logging the exception for information",
-                                e);
-                        return false;
-                    }
-                });
+        await().pollDelay(1, TimeUnit.SECONDS).atMost(5, TimeUnit.MINUTES).until(() -> {
+            try {
+                URL url = prepareUrl(path);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setDefaultUseCaches(false);
+                connection.setUseCaches(false);
+                // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it
+                // uses q=.2
+                connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
+                code.set(connection.getResponseCode() == expectedStatus);
+                // complete no matter what the response code was
+                return true;
+            } catch (Exception e) {
+                LOG.error(
+                        "An error occurred when DevModeClient accessed " + path
+                                + ". It might be a normal testing behavior but logging the exception for information",
+                        e);
+                return false;
+            }
+        });
         return code.get();
     }
 

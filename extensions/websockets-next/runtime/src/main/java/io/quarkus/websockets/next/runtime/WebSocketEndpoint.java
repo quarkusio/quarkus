@@ -15,7 +15,6 @@ import io.vertx.core.buffer.Buffer;
 public interface WebSocketEndpoint {
 
     /**
-     *
      * @return the inbound processing mode
      */
     InboundProcessingMode inboundProcessingMode();
@@ -87,8 +86,8 @@ public interface WebSocketEndpoint {
     Uni<Void> doOnError(Throwable t);
 
     /**
-     *
      * @return the identifier of the bean with callbacks
+     *
      * @see io.quarkus.arc.InjectableBean#getIdentifier()
      */
     String beanIdentifier();

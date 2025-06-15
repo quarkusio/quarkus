@@ -74,7 +74,8 @@ public class OidcRecorder {
 
     public void initTenantConfigBean() {
         try {
-            // makes sure that config of static tenants is validated during app startup and create static tenant contexts
+            // makes sure that config of static tenants is validated during app startup and create static tenant
+            // contexts
             Arc.container().instance(TenantConfigBean.class).get();
         } catch (CreationException wrapper) {
             if (wrapper.getCause() instanceof RuntimeException runtimeException) {
@@ -101,18 +102,16 @@ public class OidcRecorder {
                                 return;
                             } else {
                                 // @Tenant selects the different tenant than already selected
-                                throw new AuthenticationFailedException(
-                                        """
-                                                The '%1$s' selected with the @Tenant annotation must be used to authenticate
-                                                the request but it was already authenticated with the '%2$s' tenant. It
-                                                can happen if the '%1$s' is selected with an annotation but '%2$s' is
-                                                resolved during authentication required by the HTTP Security Policy which
-                                                is enforced before the JAX-RS chain is run. In such cases, please set the
-                                                'quarkus.http.auth.permission."permissions".applies-to=JAXRS' to all HTTP
-                                                Security Policies which secure the same REST endpoints as the ones
-                                                where the '%1$s' tenant is resolved by the '@Tenant' annotation.
-                                                """
-                                                .formatted(tenantId, tenantUsedForAuth));
+                                throw new AuthenticationFailedException("""
+                                        The '%1$s' selected with the @Tenant annotation must be used to authenticate
+                                        the request but it was already authenticated with the '%2$s' tenant. It
+                                        can happen if the '%1$s' is selected with an annotation but '%2$s' is
+                                        resolved during authentication required by the HTTP Security Policy which
+                                        is enforced before the JAX-RS chain is run. In such cases, please set the
+                                        'quarkus.http.auth.permission."permissions".applies-to=JAXRS' to all HTTP
+                                        Security Policies which secure the same REST endpoints as the ones
+                                        where the '%1$s' tenant is resolved by the '@Tenant' annotation.
+                                        """.formatted(tenantId, tenantUsedForAuth));
                             }
                         }
 
@@ -142,7 +141,8 @@ public class OidcRecorder {
             public Consumer<RoutingContext> apply(String annotationBinding) {
                 int separatorIndex = annotationBinding.indexOf(ACR_VALUES_TO_MAX_AGE_SEPARATOR);
                 String acrValues = annotationBinding.substring(0, separatorIndex);
-                String maxAgeAsStr = annotationBinding.substring(separatorIndex + ACR_VALUES_TO_MAX_AGE_SEPARATOR.length());
+                String maxAgeAsStr = annotationBinding
+                        .substring(separatorIndex + ACR_VALUES_TO_MAX_AGE_SEPARATOR.length());
                 final Duration maxAgeDuration;
                 if (maxAgeAsStr.isEmpty()) {
                     maxAgeDuration = null;
@@ -165,8 +165,10 @@ public class OidcRecorder {
                                     annotated with the '@AuthenticationContext' annotation.
                                     """.formatted(requestPath));
                         }
-                        LOG.debugf("The '@AuthenticationContext' annotation set required 'acr' values '%s' "
-                                + "and max age '%s' for the request path '%s'", acrValues, maxAgeAsStr, requestPath);
+                        LOG.debugf(
+                                "The '@AuthenticationContext' annotation set required 'acr' values '%s' "
+                                        + "and max age '%s' for the request path '%s'",
+                                acrValues, maxAgeAsStr, requestPath);
                         policy.storeSelfOnContext(routingContext);
                     }
                 };

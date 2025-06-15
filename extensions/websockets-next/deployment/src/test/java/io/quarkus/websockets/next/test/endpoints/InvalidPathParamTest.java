@@ -13,11 +13,9 @@ import io.quarkus.websockets.next.WebSocketServerException;
 public class InvalidPathParamTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(InvalidPathParam.class);
-            })
-            .setExpectedException(WebSocketServerException.class);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(InvalidPathParam.class);
+    }).setExpectedException(WebSocketServerException.class);
 
     @Test
     void testInvalidPathParam() {

@@ -31,14 +31,12 @@ public class IgnoredPrivateInterceptedMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class, SimpleInterceptor.class, Simple.class)
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class, SimpleInterceptor.class, Simple.class)
                     .addAsResource(new StringAsset("quarkus.arc.fail-on-intercepted-private-method=false"),
                             "application.properties"))
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
-            .assertLogRecords(records -> assertThat(records)
-                    .anySatisfy(record -> assertThat(record)
-                            .extracting(LogRecord::getMessage, InstanceOfAssertFactories.STRING)
+            .assertLogRecords(records -> assertThat(records).anySatisfy(
+                    record -> assertThat(record).extracting(LogRecord::getMessage, InstanceOfAssertFactories.STRING)
                             .contains("@Simple will have no effect on method " + SimpleBean.class.getName() + ".foo")));
 
     @Inject

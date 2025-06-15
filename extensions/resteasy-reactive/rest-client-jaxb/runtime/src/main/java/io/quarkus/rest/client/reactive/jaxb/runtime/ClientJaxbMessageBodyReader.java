@@ -27,7 +27,8 @@ public class ClientJaxbMessageBodyReader implements MessageBodyReader<Object> {
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws WebApplicationException, IOException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws WebApplicationException, IOException {
         return doReadFrom(type, entityStream);
     }
 

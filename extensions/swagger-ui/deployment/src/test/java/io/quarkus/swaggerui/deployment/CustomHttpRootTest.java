@@ -12,9 +12,8 @@ import io.restassured.RestAssured;
 public class CustomHttpRootTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
 
     @Test
     public void shouldUseCustomConfig() {

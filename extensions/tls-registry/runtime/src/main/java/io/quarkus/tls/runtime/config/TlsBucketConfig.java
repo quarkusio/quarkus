@@ -14,24 +14,22 @@ import io.smallrye.config.WithDefault;
 public interface TlsBucketConfig {
 
     /**
-     * The key store configuration.
-     * Key stores are used to store private keys and their associated X.509 certificate chains.
-     * For example, for {@code HTTPS}, it stores the server's private key and the server's certificate.
-     * The certificate is used to prove the server's identity to the client.
+     * The key store configuration. Key stores are used to store private keys and their associated X.509 certificate
+     * chains. For example, for {@code HTTPS}, it stores the server's private key and the server's certificate. The
+     * certificate is used to prove the server's identity to the client.
      */
     Optional<KeyStoreConfig> keyStore();
 
     /**
-     * The trust store configuration.
-     * Trust stores are used to store certificates from trusted entities.
-     * For example, for {@code HTTPS}, it stores the certificate authorities that are trusted by the server.
-     * The server uses the trust store to verify the client's certificate when mTLS (client authentication) is enabled.
+     * The trust store configuration. Trust stores are used to store certificates from trusted entities. For example,
+     * for {@code HTTPS}, it stores the certificate authorities that are trusted by the server. The server uses the
+     * trust store to verify the client's certificate when mTLS (client authentication) is enabled.
      */
     Optional<TrustStoreConfig> trustStore();
 
     /**
-     * Sets the ordered list of enabled cipher suites.
-     * If none is given, a reasonable default is selected from the built-in ciphers.
+     * Sets the ordered list of enabled cipher suites. If none is given, a reasonable default is selected from the
+     * built-in ciphers.
      * <p>
      * When suites are set, it takes precedence over the default suite defined by the {@code SSLEngineOptions} in use.
      */
@@ -40,12 +38,10 @@ public interface TlsBucketConfig {
     /**
      * Sets the ordered list of enabled TLS protocols.
      * <p>
-     * If not set, it defaults to {@code "TLSv1.3, TLSv1.2"}.
-     * The following list of protocols are supported: {@code TLSv1, TLSv1.1, TLSv1.2, TLSv1.3}.
-     * To only enable {@code TLSv1.3}, set the value to {@code to "TLSv1.3"}.
+     * If not set, it defaults to {@code "TLSv1.3, TLSv1.2"}. The following list of protocols are supported:
+     * {@code TLSv1, TLSv1.1, TLSv1.2, TLSv1.3}. To only enable {@code TLSv1.3}, set the value to {@code to "TLSv1.3"}.
      * <p>
-     * Note that setting an empty list, and enabling TLS is invalid.
-     * You must at least have one protocol.
+     * Note that setting an empty list, and enabling TLS is invalid. You must at least have one protocol.
      * <p>
      * Also, setting this replaces the default list of protocols.
      */
@@ -76,14 +72,13 @@ public interface TlsBucketConfig {
      * Sets the list of revoked certificates (paths to files).
      * <p>
      * A Certificate Revocation List (CRL) is a list of digital certificates that have been revoked by the issuing
-     * Certificate Authority (CA) before their scheduled expiration date. When a certificate is compromised, no
-     * longer needed, or deemed invalid for any reason, the CA adds it to the CRL to inform relying parties not to
-     * trust the certificate anymore.
+     * Certificate Authority (CA) before their scheduled expiration date. When a certificate is compromised, no longer
+     * needed, or deemed invalid for any reason, the CA adds it to the CRL to inform relying parties not to trust the
+     * certificate anymore.
      * <p>
-     * Two formats are allowed: DER and PKCS#7 (also known as P7B).
-     * When using the DER format, you must pass DER-encoded CRLs.
-     * When using the PKCS#7 format, you must pass PKCS#7 {@code SignedData} object, with the only significant field
-     * being {@code crls}.
+     * Two formats are allowed: DER and PKCS#7 (also known as P7B). When using the DER format, you must pass DER-encoded
+     * CRLs. When using the PKCS#7 format, you must pass PKCS#7 {@code SignedData} object, with the only significant
+     * field being {@code crls}.
      */
     Optional<List<Path>> certificateRevocationList();
 
@@ -96,14 +91,13 @@ public interface TlsBucketConfig {
     boolean trustAll();
 
     /**
-     * The hostname verification algorithm to use in case the server's identity should be checked.
-     * Should be {@code HTTPS} (default), {@code LDAPS} or {@code NONE}.
+     * The hostname verification algorithm to use in case the server's identity should be checked. Should be
+     * {@code HTTPS} (default), {@code LDAPS} or {@code NONE}.
      * <p>
      * If set to {@code NONE}, it does not verify the hostname.
      * <p>
-     * If not set, the configured extension decides the default algorithm to use.
-     * For example, for HTTP, it will be "HTTPS". For TCP, it can depend on the protocol.
-     * Nevertheless, it is recommended to set it to "HTTPS" or "LDAPS".
+     * If not set, the configured extension decides the default algorithm to use. For example, for HTTP, it will be
+     * "HTTPS". For TCP, it can depend on the protocol. Nevertheless, it is recommended to set it to "HTTPS" or "LDAPS".
      */
     Optional<String> hostnameVerificationAlgorithm();
 
@@ -112,13 +106,12 @@ public interface TlsBucketConfig {
      * {@link CertificateUpdatedEvent} if the reload is successful
      * <p>
      * This property configures the period to reload the certificates. IF not set, the certificates won't be reloaded
-     * automatically.
-     * However, the application can still trigger the reload manually using the {@link io.quarkus.tls.TlsConfiguration#reload()}
-     * method,
-     * and then fire the {@link CertificateUpdatedEvent} manually.
+     * automatically. However, the application can still trigger the reload manually using the
+     * {@link io.quarkus.tls.TlsConfiguration#reload()} method, and then fire the {@link CertificateUpdatedEvent}
+     * manually.
      * <p>
-     * The fired event is used to notify the application that the certificates have been updated, and thus proceed with the
-     * actual switch of certificates.
+     * The fired event is used to notify the application that the certificates have been updated, and thus proceed with
+     * the actual switch of certificates.
      */
     Optional<Duration> reloadPeriod();
 

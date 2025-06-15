@@ -56,27 +56,25 @@ public abstract class GrpcAuthTestBase {
             Metadata.ASCII_STRING_MARSHALLER);
     private static final Metadata.Key<String> BLOCK_REQUEST_KEY = Metadata.Key.of(BLOCK_REQUEST,
             Metadata.ASCII_STRING_MARSHALLER);
-    private static final String PROPS = "quarkus.security.users.embedded.enabled=true\n" +
-            "quarkus.security.users.embedded.users.john=john\n" +
-            "quarkus.security.users.embedded.roles.john=employees\n" +
-            "quarkus.security.users.embedded.users.paul=paul\n" +
-            "quarkus.security.users.embedded.roles.paul=interns\n" +
-            "quarkus.security.users.embedded.plain-text=true\n" +
-            "quarkus.http.auth.basic=true\n";
+    private static final String PROPS = "quarkus.security.users.embedded.enabled=true\n"
+            + "quarkus.security.users.embedded.users.john=john\n"
+            + "quarkus.security.users.embedded.roles.john=employees\n"
+            + "quarkus.security.users.embedded.users.paul=paul\n"
+            + "quarkus.security.users.embedded.roles.paul=interns\n"
+            + "quarkus.security.users.embedded.plain-text=true\n" + "quarkus.http.auth.basic=true\n";
 
     protected static QuarkusUnitTest createQuarkusUnitTest(String extraProperty, boolean useGrpcAuthMechanism) {
-        return new QuarkusUnitTest().setArchiveProducer(
-                () -> {
-                    var props = PROPS;
-                    if (extraProperty != null) {
-                        props += extraProperty;
-                    }
-                    var jar = ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Service.class, BlockingHttpSecurityPolicy.class, SecurityEventObserver.class)
-                            .addPackage(SecuredService.class.getPackage())
-                            .add(new StringAsset(props), "application.properties");
-                    return useGrpcAuthMechanism ? jar.addClass(BasicGrpcSecurityMechanism.class) : jar;
-                });
+        return new QuarkusUnitTest().setArchiveProducer(() -> {
+            var props = PROPS;
+            if (extraProperty != null) {
+                props += extraProperty;
+            }
+            var jar = ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(Service.class, BlockingHttpSecurityPolicy.class, SecurityEventObserver.class)
+                    .addPackage(SecuredService.class.getPackage())
+                    .add(new StringAsset(props), "application.properties");
+            return useGrpcAuthMechanism ? jar.addClass(BasicGrpcSecurityMechanism.class) : jar;
+        });
     }
 
     public static final String JOHN_BASIC_CREDS = "am9objpqb2hu";
@@ -99,16 +97,14 @@ public abstract class GrpcAuthTestBase {
         headers.put(AUTHORIZATION, "Basic " + JOHN_BASIC_CREDS);
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         AtomicInteger resultCount = new AtomicInteger();
-        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build())
-                .subscribe().with(e -> {
-                    if (!e.getIsOnEventLoop()) {
-                        Assertions.fail("Secured method should be run on event loop");
-                    }
-                    resultCount.incrementAndGet();
-                });
+        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build()).subscribe().with(e -> {
+            if (!e.getIsOnEventLoop()) {
+                Assertions.fail("Secured method should be run on event loop");
+            }
+            resultCount.incrementAndGet();
+        });
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> resultCount.get() == 1);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
     }
 
@@ -118,28 +114,27 @@ public abstract class GrpcAuthTestBase {
         headers.put(AUTHORIZATION, "Basic wrongcredentials");
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         AtomicInteger authenticationFailedCount = new AtomicInteger();
-        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build())
-                .subscribe().with(ti -> {
-                }, error -> {
-                    if (error instanceof StatusRuntimeException statusException) {
-                        if (Status.UNAUTHENTICATED.getCode().equals(statusException.getStatus().getCode())) {
-                            authenticationFailedCount.incrementAndGet();
-                        } else {
-                            Assertions.fail("Expected unauthenticated response status, got " + statusException.getStatus());
-                        }
-                    } else {
-                        Assertions.fail("Expected 'StatusRuntimeException' exception, got " + error);
-                    }
-                });
+        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build()).subscribe().with(ti -> {
+        }, error -> {
+            if (error instanceof StatusRuntimeException statusException) {
+                if (Status.UNAUTHENTICATED.getCode().equals(statusException.getStatus().getCode())) {
+                    authenticationFailedCount.incrementAndGet();
+                } else {
+                    Assertions.fail("Expected unauthenticated response status, got " + statusException.getStatus());
+                }
+            } else {
+                Assertions.fail("Expected 'StatusRuntimeException' exception, got " + error);
+            }
+        });
 
         await().atMost(10, TimeUnit.SECONDS).until(() -> authenticationFailedCount.get() == 1);
         Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
             AuthenticationFailureEvent authFailureEvent = securityEventObserver.getStorage().stream()
-                    .filter(e -> e instanceof AuthenticationFailureEvent)
-                    .map(e -> (AuthenticationFailureEvent) e)
+                    .filter(e -> e instanceof AuthenticationFailureEvent).map(e -> (AuthenticationFailureEvent) e)
                     .findFirst().orElse(null);
             Assertions.assertNotNull(authFailureEvent);
-            Assertions.assertInstanceOf(AuthenticationFailedException.class, authFailureEvent.getAuthenticationFailure());
+            Assertions.assertInstanceOf(AuthenticationFailedException.class,
+                    authFailureEvent.getAuthenticationFailure());
         });
     }
 
@@ -149,16 +144,14 @@ public abstract class GrpcAuthTestBase {
         headers.put(AUTHORIZATION, "Basic " + JOHN_BASIC_CREDS);
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         AtomicInteger resultCount = new AtomicInteger();
-        client.unaryCallBlocking(Security.Container.newBuilder().setText("woo-hoo").build())
-                .subscribe().with(e -> {
-                    if (e.getIsOnEventLoop()) {
-                        Assertions.fail("Secured method annotated with @Blocking should be executed on worker thread");
-                    }
-                    resultCount.incrementAndGet();
-                });
+        client.unaryCallBlocking(Security.Container.newBuilder().setText("woo-hoo").build()).subscribe().with(e -> {
+            if (e.getIsOnEventLoop()) {
+                Assertions.fail("Secured method annotated with @Blocking should be executed on worker thread");
+            }
+            resultCount.incrementAndGet();
+        });
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> resultCount.get() == 1);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
     }
 
@@ -169,11 +162,10 @@ public abstract class GrpcAuthTestBase {
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         List<Boolean> results = new CopyOnWriteArrayList<>();
         client.streamCall(Multi.createBy().repeating()
-                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
-                .subscribe().with(e -> results.add(e.getIsOnEventLoop()));
+                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4)).subscribe()
+                .with(e -> results.add(e.getIsOnEventLoop()));
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> results.size() == 5);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> !e)).isEmpty();
         assertSecurityEventsFired("paul");
@@ -186,11 +178,10 @@ public abstract class GrpcAuthTestBase {
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         List<Boolean> results = new CopyOnWriteArrayList<>();
         client.streamCallBlocking(Multi.createBy().repeating()
-                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
-                .subscribe().with(e -> results.add(e.getIsOnEventLoop()));
+                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4)).subscribe()
+                .with(e -> results.add(e.getIsOnEventLoop()));
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> results.size() == 5);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> e)).isEmpty();
         assertSecurityEventsFired("paul");
@@ -205,12 +196,10 @@ public abstract class GrpcAuthTestBase {
         AtomicReference<Throwable> error = new AtomicReference<>();
 
         AtomicInteger resultCount = new AtomicInteger();
-        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build())
-                .onFailure().invoke(error::set)
+        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build()).onFailure().invoke(error::set)
                 .subscribe().with(e -> resultCount.incrementAndGet());
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> error.get() != null);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> error.get() != null);
     }
 
     @Test
@@ -222,20 +211,19 @@ public abstract class GrpcAuthTestBase {
         AtomicReference<Throwable> error = new AtomicReference<>();
 
         AtomicInteger resultCount = new AtomicInteger();
-        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build())
-                .onFailure().invoke(error::set)
+        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build()).onFailure().invoke(error::set)
                 .subscribe().with(e -> resultCount.incrementAndGet());
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> error.get() != null);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> error.get() != null);
         StatusRuntimeException statusRuntimeException = (StatusRuntimeException) error.get();
         Assertions.assertEquals(Status.PERMISSION_DENIED, statusRuntimeException.getStatus());
 
-        // we don't check exact count as HTTP Security policies are not supported when gRPC is running on separate server
+        // we don't check exact count as HTTP Security policies are not supported when gRPC is running on separate
+        // server
         assertFalse(securityEventObserver.getStorage().isEmpty());
         // fails RolesAllowed check as the anonymous identity has no roles
-        AuthorizationFailureEvent event = (AuthorizationFailureEvent) securityEventObserver
-                .getStorage().get(securityEventObserver.getStorage().size() - 1);
+        AuthorizationFailureEvent event = (AuthorizationFailureEvent) securityEventObserver.getStorage()
+                .get(securityEventObserver.getStorage().size() - 1);
         assertNotNull(event.getSecurityIdentity());
         assertTrue(event.getSecurityIdentity().isAnonymous());
         assertInstanceOf(UnauthorizedException.class, event.getAuthorizationFailure());
@@ -249,16 +237,14 @@ public abstract class GrpcAuthTestBase {
         addBlockingHeaders(headers);
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         AtomicInteger resultCount = new AtomicInteger();
-        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build())
-                .subscribe().with(e -> {
-                    if (!e.getIsOnEventLoop()) {
-                        Assertions.fail("Secured method should be run on event loop");
-                    }
-                    resultCount.incrementAndGet();
-                });
+        client.unaryCall(Security.Container.newBuilder().setText("woo-hoo").build()).subscribe().with(e -> {
+            if (!e.getIsOnEventLoop()) {
+                Assertions.fail("Secured method should be run on event loop");
+            }
+            resultCount.incrementAndGet();
+        });
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> resultCount.get() == 1);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
     }
 
@@ -269,16 +255,14 @@ public abstract class GrpcAuthTestBase {
         addBlockingHeaders(headers);
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         AtomicInteger resultCount = new AtomicInteger();
-        client.unaryCallBlocking(Security.Container.newBuilder().setText("woo-hoo").build())
-                .subscribe().with(e -> {
-                    if (e.getIsOnEventLoop()) {
-                        Assertions.fail("Secured method annotated with @Blocking should be executed on worker thread");
-                    }
-                    resultCount.incrementAndGet();
-                });
+        client.unaryCallBlocking(Security.Container.newBuilder().setText("woo-hoo").build()).subscribe().with(e -> {
+            if (e.getIsOnEventLoop()) {
+                Assertions.fail("Secured method annotated with @Blocking should be executed on worker thread");
+            }
+            resultCount.incrementAndGet();
+        });
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> resultCount.get() == 1);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
     }
 
@@ -290,13 +274,12 @@ public abstract class GrpcAuthTestBase {
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         List<Boolean> results = new CopyOnWriteArrayList<>();
         client.streamCall(Multi.createBy().repeating()
-                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
-                .subscribe().with(e -> {
+                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4)).subscribe()
+                .with(e -> {
                     results.add(e.getIsOnEventLoop());
                 });
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> results.size() == 5);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> !e)).isEmpty();
         assertSecurityEventsFired("paul");
@@ -310,11 +293,10 @@ public abstract class GrpcAuthTestBase {
         SecuredService client = GrpcClientUtils.attachHeaders(securityClient, headers);
         List<Boolean> results = new CopyOnWriteArrayList<>();
         client.streamCallBlocking(Multi.createBy().repeating()
-                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
-                .subscribe().with(e -> results.add(e.getIsOnEventLoop()));
+                .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4)).subscribe()
+                .with(e -> results.add(e.getIsOnEventLoop()));
 
-        await().atMost(10, TimeUnit.SECONDS)
-                .until(() -> results.size() == 5);
+        await().atMost(10, TimeUnit.SECONDS).until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> e)).isEmpty();
         assertSecurityEventsFired("paul");
@@ -322,7 +304,8 @@ public abstract class GrpcAuthTestBase {
 
     private void assertSecurityEventsFired(String username) {
         // expect at least authentication success and RolesAllowed security check success
-        // we don't check exact count as HTTP Security policies are not supported when gRPC is running on separate server
+        // we don't check exact count as HTTP Security policies are not supported when gRPC is running on separate
+        // server
         assertTrue(securityEventObserver.getStorage().size() >= 2);
         assertTrue(securityEventObserver.getStorage().stream().anyMatch(e -> e instanceof AuthenticationSuccessEvent));
         AuthorizationSuccessEvent event = (AuthorizationSuccessEvent) securityEventObserver.getStorage()
@@ -341,33 +324,29 @@ public abstract class GrpcAuthTestBase {
         @Override
         @RolesAllowed("employees")
         public Uni<Security.ThreadInfo> unaryCall(Security.Container request) {
-            return Uni.createFrom()
-                    .item(newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build());
+            return Uni.createFrom().item(newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build());
         }
 
         @Override
         @RolesAllowed("interns")
         public Multi<Security.ThreadInfo> streamCall(Multi<Security.Container> request) {
-            return Multi.createBy()
-                    .repeating().supplier(() -> newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build())
-                    .atMost(5);
+            return Multi.createBy().repeating()
+                    .supplier(() -> newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build()).atMost(5);
         }
 
         @Blocking
         @Override
         @RolesAllowed("employees")
         public Uni<Security.ThreadInfo> unaryCallBlocking(Security.Container request) {
-            return Uni.createFrom()
-                    .item(newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build());
+            return Uni.createFrom().item(newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build());
         }
 
         @Blocking
         @Override
         @RolesAllowed("interns")
         public Multi<Security.ThreadInfo> streamCallBlocking(Multi<Security.Container> request) {
-            return Multi.createBy()
-                    .repeating().supplier(() -> newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build())
-                    .atMost(5);
+            return Multi.createBy().repeating()
+                    .supplier(() -> newBuilder().setIsOnEventLoop(Context.isOnEventLoopThread()).build()).atMost(5);
         }
     }
 }

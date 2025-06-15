@@ -24,39 +24,34 @@ public class YearParamTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, CustomDateTimeFormatterProvider.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, CustomDateTimeFormatterProvider.class));
 
     @Test
     public void yearAsQueryParam() {
-        RestAssured.get("/hello?date=01984")
-                .then().statusCode(200).body(Matchers.equalTo("hello#1984"));
+        RestAssured.get("/hello?date=01984").then().statusCode(200).body(Matchers.equalTo("hello#1984"));
     }
 
     @Test
     public void yearAsPathParam() {
-        RestAssured.get("/hello/1821")
-                .then().statusCode(200).body(Matchers.equalTo("hello@1821"));
+        RestAssured.get("/hello/1821").then().statusCode(200).body(Matchers.equalTo("hello@1821"));
     }
 
     @Test
     public void yearAsFormParam() {
-        RestAssured.given().formParam("date", "995").post("/hello")
-                .then().statusCode(200).body(Matchers.equalTo("hello:995"));
+        RestAssured.given().formParam("date", "995").post("/hello").then().statusCode(200)
+                .body(Matchers.equalTo("hello:995"));
     }
 
     @Test
     public void yearAsHeader() {
-        RestAssured.with().header("date", "1984")
-                .get("/hello/header")
-                .then().statusCode(200).body(Matchers.equalTo("hello=1984"));
+        RestAssured.with().header("date", "1984").get("/hello/header").then().statusCode(200)
+                .body(Matchers.equalTo("hello=1984"));
     }
 
     @Test
     public void yearAsCookie() {
-        RestAssured.with().cookie("date", "1984")
-                .get("/hello/cookie")
-                .then().statusCode(200).body(Matchers.equalTo("hello/1984"));
+        RestAssured.with().cookie("date", "1984").get("/hello/cookie").then().statusCode(200)
+                .body(Matchers.equalTo("hello/1984"));
     }
 
     @Path("hello")
@@ -81,15 +76,13 @@ public class YearParamTest {
 
         @GET
         @Path("cookie")
-        public String helloCookie(
-                @CookieParam("date") Year date) {
+        public String helloCookie(@CookieParam("date") Year date) {
             return "hello/" + date;
         }
 
         @GET
         @Path("header")
-        public String helloHeader(
-                @HeaderParam("date") Year date) {
+        public String helloHeader(@HeaderParam("date") Year date) {
             return "hello=" + date;
         }
     }

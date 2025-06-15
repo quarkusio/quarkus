@@ -11,8 +11,7 @@ import io.restassured.RestAssured;
 public class DevServicesElasticsearchDevModeTestCase {
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TestResource.class));
+            .withApplicationRoot((jar) -> jar.addClass(TestResource.class));
 
     @Test
     public void testDatasource() throws Exception {
@@ -21,14 +20,9 @@ public class DevServicesElasticsearchDevModeTestCase {
         fruit.name = "banana";
         fruit.color = "yellow";
 
-        RestAssured
-                .given().body(fruit).contentType("application/json")
-                .when().post("/fruits")
-                .then().statusCode(204);
+        RestAssured.given().body(fruit).contentType("application/json").when().post("/fruits").then().statusCode(204);
 
-        RestAssured.when().get("/fruits/search?term=color&match=yellow")
-                .then()
-                .statusCode(200)
+        RestAssured.when().get("/fruits/search?term=color&match=yellow").then().statusCode(200)
                 .body(equalTo("[{\"id\":\"1\",\"name\":\"banana\",\"color\":\"yellow\"}]"));
     }
 }

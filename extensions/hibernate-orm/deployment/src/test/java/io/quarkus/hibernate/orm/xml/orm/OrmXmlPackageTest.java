@@ -21,11 +21,8 @@ public class OrmXmlPackageTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(SchemaUtil.class)
-                    .addClass(NonAnnotatedEntity.class)
-                    .addClass(OtherNonAnnotatedEntity.class)
+            .withApplicationRoot((jar) -> jar.addClass(SmokeTestUtils.class).addClass(SchemaUtil.class)
+                    .addClass(NonAnnotatedEntity.class).addClass(OtherNonAnnotatedEntity.class)
                     .addAsResource("META-INF/orm-package.xml", "my-orm.xml"))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping-files", "my-orm.xml");
@@ -39,23 +36,21 @@ public class OrmXmlPackageTest {
     @Test
     @Transactional
     public void ormXmlTakenIntoAccount() {
-        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, NonAnnotatedEntity.class))
-                .contains("thename")
+        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, NonAnnotatedEntity.class)).contains("thename")
                 .doesNotContain("name");
-        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, OtherNonAnnotatedEntity.class))
-                .contains("thename")
+        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, OtherNonAnnotatedEntity.class)).contains("thename")
                 .doesNotContain("name");
     }
 
     @Test
     @Transactional
     public void smokeTest() {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager,
-                NonAnnotatedEntity.class, NonAnnotatedEntity::new,
-                NonAnnotatedEntity::getId, NonAnnotatedEntity::setName, NonAnnotatedEntity::getName);
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager,
-                OtherNonAnnotatedEntity.class, OtherNonAnnotatedEntity::new,
-                OtherNonAnnotatedEntity::getId, OtherNonAnnotatedEntity::setName, OtherNonAnnotatedEntity::getName);
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager, NonAnnotatedEntity.class,
+                NonAnnotatedEntity::new, NonAnnotatedEntity::getId, NonAnnotatedEntity::setName,
+                NonAnnotatedEntity::getName);
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager, OtherNonAnnotatedEntity.class,
+                OtherNonAnnotatedEntity::new, OtherNonAnnotatedEntity::getId, OtherNonAnnotatedEntity::setName,
+                OtherNonAnnotatedEntity::getName);
     }
 
 }

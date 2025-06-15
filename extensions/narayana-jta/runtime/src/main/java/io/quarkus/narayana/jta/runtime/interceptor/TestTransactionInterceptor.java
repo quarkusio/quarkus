@@ -29,13 +29,16 @@ public class TestTransactionInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {
-        // do nothing in case there is already a transaction (e.g. self-intercepted non-private non-test method in test class)
-        // w/o this check userTransaction.begin() would fail because there is already a tx associated with the current thread
+        // do nothing in case there is already a transaction (e.g. self-intercepted non-private non-test method in test
+        // class)
+        // w/o this check userTransaction.begin() would fail because there is already a tx associated with the current
+        // thread
         if (userTransaction.getStatus() != Status.STATUS_NO_TRANSACTION) {
             return context.proceed();
         }
 
-        // an exception from proceed() has to be captured to avoid shadowing it in finally() with an exception from rollback()
+        // an exception from proceed() has to be captured to avoid shadowing it in finally() with an exception from
+        // rollback()
         Throwable caught = null;
         try {
             userTransaction.begin();

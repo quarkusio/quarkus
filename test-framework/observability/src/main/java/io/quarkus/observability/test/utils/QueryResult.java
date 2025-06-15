@@ -14,10 +14,7 @@ public class QueryResult {
 
     @Override
     public String toString() {
-        return "QueryResult{" +
-                "status='" + status + '\'' +
-                ", data=" + data +
-                '}';
+        return "QueryResult{" + "status='" + status + '\'' + ", data=" + data + '}';
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -29,10 +26,7 @@ public class QueryResult {
 
         @Override
         public String toString() {
-            return "Data{" +
-                    "resultType='" + resultType + '\'' +
-                    ", result=" + result +
-                    '}';
+            return "Data{" + "resultType='" + resultType + '\'' + ", result=" + result + '}';
         }
     }
 
@@ -45,10 +39,7 @@ public class QueryResult {
 
         @Override
         public String toString() {
-            return "ResultItem{" +
-                    "metric=" + metric +
-                    ", value=" + value +
-                    '}';
+            return "ResultItem{" + "metric=" + metric + ", value=" + value + '}';
         }
     }
 
@@ -63,11 +54,7 @@ public class QueryResult {
 
         @Override
         public String toString() {
-            return "Metric{" +
-                    "name='" + name + '\'' +
-                    ", job='" + job + '\'' +
-                    ", test='" + test + '\'' +
-                    '}';
+            return "Metric{" + "name='" + name + '\'' + ", job='" + job + '\'' + ", test='" + test + '\'' + '}';
         }
     }
 }

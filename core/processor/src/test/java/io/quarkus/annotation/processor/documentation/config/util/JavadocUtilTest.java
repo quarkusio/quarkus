@@ -206,8 +206,10 @@ public class JavadocUtilTest {
     public void shouldReturnALinkToAgroalJavaDocIfTypeIsDeclaredInAgroalPackage() {
         String value = JavadocUtil.getJavadocSiteLink(
                 "io.agroal.api.configuration.AgroalConnectionFactoryConfiguration.TransactionIsolation");
-        assertEquals(JavadocUtil.AGROAL_API_JAVA_DOC_SITE
-                + "io/agroal/api/configuration/AgroalConnectionFactoryConfiguration.TransactionIsolation.html", value);
+        assertEquals(
+                JavadocUtil.AGROAL_API_JAVA_DOC_SITE
+                        + "io/agroal/api/configuration/AgroalConnectionFactoryConfiguration.TransactionIsolation.html",
+                value);
 
         value = JavadocUtil.getJavadocSiteLink("io.agroal.api.AgroalDataSource.FlushMode");
         assertEquals(JavadocUtil.AGROAL_API_JAVA_DOC_SITE + "io/agroal/api/AgroalDataSource.FlushMode.html", value);
@@ -215,8 +217,7 @@ public class JavadocUtilTest {
 
     @Test
     public void shouldReturnALinkToVertxJavaDocIfTypeIsDeclaredInVertxPackage() {
-        String value = JavadocUtil.getJavadocSiteLink(
-                "io.vertx.core.Context");
+        String value = JavadocUtil.getJavadocSiteLink("io.vertx.core.Context");
         assertEquals(JavadocUtil.VERTX_JAVA_DOC_SITE + "io/vertx/core/Context.html", value);
 
         value = JavadocUtil.getJavadocSiteLink("io.vertx.amqp.AmqpMessage");

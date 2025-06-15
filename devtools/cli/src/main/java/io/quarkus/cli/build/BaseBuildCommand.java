@@ -45,11 +45,11 @@ public class BaseBuildCommand {
     }
 
     /**
-     * Commands using `@ParentCommand` need to set the output.
-     * This is needed for testing purposes.
-     * More specifically --cli-test-dir relies on this.
+     * Commands using `@ParentCommand` need to set the output. This is needed for testing purposes. More specifically
+     * --cli-test-dir relies on this.
      *
-     * @param output The command ouput
+     * @param output
+     *        The command ouput
      */
     public void setOutput(OutputOptionMixin output) {
         this.output = output;

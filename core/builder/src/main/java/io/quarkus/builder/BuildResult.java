@@ -37,11 +37,15 @@ public final class BuildResult {
     /**
      * Consume the value produced for the named item.
      *
-     * @param type the item type (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     *
      * @return the produced item (may be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}, or if {@code type} is
-     *         {@code null}
-     * @throws ClassCastException if the cast failed
+     *
+     * @throws IllegalArgumentException
+     *         if this deployer was not declared to consume {@code type}, or if {@code type} is {@code null}
+     * @throws ClassCastException
+     *         if the cast failed
      */
     public <T extends SimpleBuildItem> T consume(Class<T> type) {
         final ItemId itemId = new ItemId(type);
@@ -55,9 +59,13 @@ public final class BuildResult {
     /**
      * Consume the value produced for the named item.
      *
-     * @param type the item type (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     *
      * @return the produced item (may be {@code null})
-     * @throws ClassCastException if the cast failed
+     *
+     * @throws ClassCastException
+     *         if the cast failed
      */
     public <T extends SimpleBuildItem> T consumeOptional(Class<T> type) {
         final ItemId itemId = new ItemId(type);
@@ -71,9 +79,13 @@ public final class BuildResult {
     /**
      * Consume all the values produced for the named item.
      *
-     * @param type the item element type (must not be {@code null})
+     * @param type
+     *        the item element type (must not be {@code null})
+     *
      * @return the produced items (may be empty, will not be {@code null})
-     * @throws IllegalArgumentException if this deployer was not declared to consume {@code type}
+     *
+     * @throws IllegalArgumentException
+     *         if this deployer was not declared to consume {@code type}
      */
     public <T extends MultiBuildItem> List<T> consumeMulti(Class<T> type) {
         final ItemId itemId = new ItemId(type);
@@ -97,7 +109,9 @@ public final class BuildResult {
     /**
      * Get the amount of elapsed time from the time the operation was initiated to the time it was completed.
      *
-     * @param timeUnit the time unit to return
+     * @param timeUnit
+     *        the time unit to return
+     *
      * @return the time
      */
     public long getDuration(TimeUnit timeUnit) {

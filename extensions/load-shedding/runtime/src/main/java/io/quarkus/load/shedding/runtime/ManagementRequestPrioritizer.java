@@ -14,8 +14,7 @@ public class ManagementRequestPrioritizer implements RequestPrioritizer<HttpServ
     private final String managementPath;
 
     @Inject
-    public ManagementRequestPrioritizer(
-            VertxHttpBuildTimeConfig buildTimeConfig,
+    public ManagementRequestPrioritizer(VertxHttpBuildTimeConfig buildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         if (managementBuildTimeConfig.enabled()) {
             managementPath = null;

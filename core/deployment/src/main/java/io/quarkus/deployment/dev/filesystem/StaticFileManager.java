@@ -36,8 +36,8 @@ public class StaticFileManager extends QuarkusFileManager {
         if (file != null && context.ignoreModuleInfo() && "CLASS_OUTPUT".equalsIgnoreCase(location.getName())
                 && "module-info".equalsIgnoreCase(className)) {
             if (once.compareAndSet(false, true)) {
-                Logger.getLogger(StaticFileManager.class).info("Ignoring module-info.java in dev mode, " +
-                        "set the `quarkus.live-reload.ignore-module-info` property to `false` in your project descriptor (`pom.xml` or `build.gradle`) to disable this behavior.");
+                Logger.getLogger(StaticFileManager.class).info("Ignoring module-info.java in dev mode, "
+                        + "set the `quarkus.live-reload.ignore-module-info` property to `false` in your project descriptor (`pom.xml` or `build.gradle`) to disable this behavior.");
             }
             return null;
         }

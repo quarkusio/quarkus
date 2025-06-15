@@ -41,17 +41,16 @@ public class OidcTokenPropagationReactiveBuildStep {
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             BuildProducer<RegisterProviderAnnotationInstanceBuildItem> providerProducer) {
         if (!accessTokenInstances.isEmpty()) {
-            var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeans, reflectiveClass, generatedBean,
-                    AccessTokenRequestReactiveFilter.class);
+            var filterGenerator = new AccessTokenRequestFilterGenerator(unremovableBeans, reflectiveClass,
+                    generatedBean, AccessTokenRequestReactiveFilter.class);
             for (AccessTokenInstanceBuildItem instance : accessTokenInstances) {
                 String providerClass = filterGenerator.generateClass(instance);
-                providerProducer
-                        .produce(new RegisterProviderAnnotationInstanceBuildItem(instance.targetClass(),
-                                AnnotationInstance.create(DotNames.REGISTER_PROVIDER, instance.getAnnotationTarget(), List.of(
-                                        AnnotationValue.createClassValue("value",
-                                                Type.create(DotName.createSimple(providerClass),
-                                                        org.jboss.jandex.Type.Kind.CLASS)),
-                                        AnnotationValue.createIntegerValue("priority", Priorities.AUTHENTICATION)))));
+                providerProducer.produce(new RegisterProviderAnnotationInstanceBuildItem(instance.targetClass(),
+                        AnnotationInstance.create(DotNames.REGISTER_PROVIDER, instance.getAnnotationTarget(), List.of(
+                                AnnotationValue.createClassValue("value",
+                                        Type.create(DotName.createSimple(providerClass),
+                                                org.jboss.jandex.Type.Kind.CLASS)),
+                                AnnotationValue.createIntegerValue("priority", Priorities.AUTHENTICATION)))));
             }
         }
     }
@@ -62,8 +61,7 @@ public class OidcTokenPropagationReactiveBuildStep {
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AccessTokenRequestReactiveFilter.class));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(AccessTokenRequestReactiveFilter.class)
-                .reason(getClass().getName())
-                .methods().fields().build());
+                .reason(getClass().getName()).methods().fields().build());
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(AccessTokenRequestReactiveFilter.class.getName()));
     }
@@ -79,9 +77,9 @@ public class OidcTokenPropagationReactiveBuildStep {
         }
 
         throw new ConfigurationException(
-                "Configuration property 'quarkus.rest-client-oidc-token-propagation.enabled-during-authentication' is set to " +
-                        "'true', however this configuration property is only supported when either 'quarkus-oidc' or " +
-                        "'quarkus-smallrye-jwt' extensions are present.");
+                "Configuration property 'quarkus.rest-client-oidc-token-propagation.enabled-during-authentication' is set to "
+                        + "'true', however this configuration property is only supported when either 'quarkus-oidc' or "
+                        + "'quarkus-smallrye-jwt' extensions are present.");
     }
 
     public static class IsEnabled implements BooleanSupplier {

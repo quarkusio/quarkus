@@ -13,24 +13,18 @@ import io.quarkus.maven.dependency.ArtifactKey;
 public class KotlinSerializationCodestartTest {
     @RegisterExtension
     public static QuarkusCodestartTest codestartMavenTest = QuarkusCodestartTest.builder()
-            .extension(ArtifactKey.fromString("io.quarkus:quarkus-rest-kotlin-serialization"))
-            .languages(KOTLIN)
-            .buildTool(BuildTool.MAVEN)
-            .build();
+            .extension(ArtifactKey.fromString("io.quarkus:quarkus-rest-kotlin-serialization")).languages(KOTLIN)
+            .buildTool(BuildTool.MAVEN).build();
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartGradleTest = QuarkusCodestartTest.builder()
-            .extension(ArtifactKey.fromString("io.quarkus:quarkus-rest-kotlin-serialization"))
-            .languages(KOTLIN)
-            .buildTool(BuildTool.GRADLE)
-            .build();
+            .extension(ArtifactKey.fromString("io.quarkus:quarkus-rest-kotlin-serialization")).languages(KOTLIN)
+            .buildTool(BuildTool.GRADLE).build();
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartGradleKotlinTest = QuarkusCodestartTest.builder()
-            .extension(ArtifactKey.fromString("io.quarkus:quarkus-rest-kotlin-serialization"))
-            .languages(KOTLIN)
-            .buildTool(BuildTool.GRADLE_KOTLIN_DSL)
-            .build();
+            .extension(ArtifactKey.fromString("io.quarkus:quarkus-rest-kotlin-serialization")).languages(KOTLIN)
+            .buildTool(BuildTool.GRADLE_KOTLIN_DSL).build();
 
     @Test
     void testMavenContent() throws Throwable {

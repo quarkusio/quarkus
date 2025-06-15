@@ -26,8 +26,7 @@ abstract class AbstractRemoveExtensionsTest<T> extends PlatformAwareTestBase {
     @Test
     void removeSomeValidExtensions() throws Exception {
         createProject();
-        List<String> extensions = asList("jdbc-postgre", "agroal", " hibernate-validator",
-                "commons-io:commons-io:2.6");
+        List<String> extensions = asList("jdbc-postgre", "agroal", " hibernate-validator", "commons-io:commons-io:2.6");
         addExtensions(extensions);
         final T project = readProject();
         hasDependency(project, "quarkus-agroal");
@@ -109,7 +108,8 @@ abstract class AbstractRemoveExtensionsTest<T> extends PlatformAwareTestBase {
 
     protected abstract T readProject() throws IOException;
 
-    protected abstract QuarkusCommandOutcome addExtensions(List<String> extensions) throws IOException, QuarkusCommandException;
+    protected abstract QuarkusCommandOutcome addExtensions(List<String> extensions)
+            throws IOException, QuarkusCommandException;
 
     protected abstract long countDependencyOccurrences(T project, String groupId, String artifactId, String version);
 

@@ -13,9 +13,7 @@ public class JsonArraySchema extends AbstractSchema<JsonArray> {
 
     public static final JsonArraySchema INSTANCE = new JsonArraySchema();
 
-    private static final SchemaInfo SCHEMA_INFO = SchemaInfoImpl.builder()
-            .name("JsonArray")
-            .type(SchemaType.NONE)
+    private static final SchemaInfo SCHEMA_INFO = SchemaInfoImpl.builder().name("JsonArray").type(SchemaType.NONE)
             .schema(new byte[0]).build();
 
     @Override

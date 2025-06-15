@@ -4,8 +4,8 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
 /**
- * In-process config
- * * <a href="https://grpc.github.io/grpc-java/javadoc/io/grpc/inprocess/InProcessServerBuilder.html">in-process usage</a>
+ * In-process config *
+ * <a href="https://grpc.github.io/grpc-java/javadoc/io/grpc/inprocess/InProcessServerBuilder.html">in-process usage</a>
  */
 @ConfigGroup
 public interface InProcess extends Enabled {

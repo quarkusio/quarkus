@@ -18,10 +18,10 @@ public @interface Claim {
     String value();
 
     /**
-     * Claim value type.
-     * If this type is set to {@link ClaimType#DEFAULT} then the value will be converted to String unless the claim
-     * is a standard claim such as `exp` (expiry), `iat` (issued at), `nbf` (not before), `auth_time` (authentication time)
-     * whose value will be converted to Long or `email_verified` whose value will be converted to Boolean.
+     * Claim value type. If this type is set to {@link ClaimType#DEFAULT} then the value will be converted to String
+     * unless the claim is a standard claim such as `exp` (expiry), `iat` (issued at), `nbf` (not before), `auth_time`
+     * (authentication time) whose value will be converted to Long or `email_verified` whose value will be converted to
+     * Boolean.
      */
     ClaimType type() default ClaimType.DEFAULT;
 }

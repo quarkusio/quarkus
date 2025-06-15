@@ -17,8 +17,7 @@ public class RepeatedScheduledMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ScheduledBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ScheduledBean.class));
 
     @Test
     public void test() throws InterruptedException {

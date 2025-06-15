@@ -15,8 +15,7 @@ public class EmitterWithBroadcastAndSubscriberTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EmitterWithBroadcastAndSubscriberExample.class));
+            .withApplicationRoot((jar) -> jar.addClasses(EmitterWithBroadcastAndSubscriberExample.class));
 
     @Inject
     EmitterWithBroadcastAndSubscriberExample bean;

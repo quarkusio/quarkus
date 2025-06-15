@@ -23,8 +23,7 @@ public class LiquibaseExtensionSecureParsingDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("insecure-db/changeLog.xml", "db/changeLog.xml")
+            .withApplicationRoot((jar) -> jar.addAsResource("insecure-db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("insecure-db/dbchangelog-3.8.xsd", "db/dbchangelog-3.8.xsd")
                     .addAsResource("secure-parsing-disabled.properties", "application.properties"));
 

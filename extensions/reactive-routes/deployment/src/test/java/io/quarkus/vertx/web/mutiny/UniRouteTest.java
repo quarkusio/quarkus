@@ -28,14 +28,10 @@ public class UniRouteTest {
         when().get("/hello-on-pool").then().statusCode(200).body(is("Pool"));
         when().get("/hello-mutiny-buffer").then().statusCode(200).body(is("Mutiny Buffer"));
 
-        when().get("/person").then().statusCode(200)
-                .body("name", is("neo"))
-                .body("id", is(12345))
+        when().get("/person").then().statusCode(200).body("name", is("neo")).body("id", is(12345))
                 .header("content-type", "application/json");
 
-        when().get("/person-content-type-set").then().statusCode(200)
-                .body("name", is("neo"))
-                .body("id", is(12345))
+        when().get("/person-content-type-set").then().statusCode(200).body("name", is("neo")).body("id", is(12345))
                 .header("content-type", "application/json;charset=utf-8");
 
         when().get("/failure").then().statusCode(500).body(containsString("boom"));
@@ -65,8 +61,7 @@ public class UniRouteTest {
 
         @Route(path = "hello-on-pool")
         Uni<String> helloOnPool() {
-            return Uni.createFrom().item("Pool")
-                    .emitOn(Infrastructure.getDefaultExecutor());
+            return Uni.createFrom().item("Pool").emitOn(Infrastructure.getDefaultExecutor());
         }
 
         @Route(path = "failure")
@@ -102,8 +97,7 @@ public class UniRouteTest {
 
         @Route(path = "person-content-type-set", produces = "application/json")
         Uni<Person> getPersonAsUniUtf8(RoutingContext context) {
-            return Uni.createFrom().item(() -> new Person("neo", 12345))
-                    .onItem()
+            return Uni.createFrom().item(() -> new Person("neo", 12345)).onItem()
                     .invoke(x -> context.response().putHeader("content-type", "application/json;charset=utf-8"))
                     .emitOn(Infrastructure.getDefaultExecutor());
         }

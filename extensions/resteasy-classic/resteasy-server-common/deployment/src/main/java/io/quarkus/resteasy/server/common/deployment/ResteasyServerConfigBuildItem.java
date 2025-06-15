@@ -16,8 +16,8 @@ public final class ResteasyServerConfigBuildItem extends SimpleBuildItem {
     private final Map<String, String> initParameters;
 
     /**
-     * rootPath can be different from the path if {@code @ApplicationPath} is used.
-     * rootPath will not contain the {@code @ApplicationPath} while path will contain it.
+     * rootPath can be different from the path if {@code @ApplicationPath} is used. rootPath will not contain the
+     * {@code @ApplicationPath} while path will contain it.
      */
     public ResteasyServerConfigBuildItem(String rootPath, String path, Map<String, String> initParameters) {
         this.rootPath = rootPath;

@@ -34,8 +34,8 @@ public class H2DevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.H2, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
+                    Optional<Duration> startupTimeout) {
                 try {
                     final Server tcpServer = Server.createTcpServer("-tcpPort",
                             containerConfig.getFixedExposedPort().isPresent()
@@ -44,10 +44,12 @@ public class H2DevServicesProcessor {
                             "-ifNotExists");
                     tcpServer.start();
 
-                    String effectiveUsername = containerConfig.getUsername().orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
-                    String effectivePassword = containerConfig.getPassword().orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
-                    String effectiveDbName = containerConfig.getDbName().orElse(
-                            DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+                    String effectiveUsername = containerConfig.getUsername()
+                            .orElse(username.orElse(DEFAULT_DATABASE_USERNAME));
+                    String effectivePassword = containerConfig.getPassword()
+                            .orElse(password.orElse(DEFAULT_DATABASE_PASSWORD));
+                    String effectiveDbName = containerConfig.getDbName()
+                            .orElse(DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
                     StringBuilder additionalArgs = new StringBuilder();
                     for (Map.Entry<String, String> i : containerConfig.getAdditionalJdbcUrlProperties().entrySet()) {
@@ -59,25 +61,18 @@ public class H2DevServicesProcessor {
 
                     LOG.info("Dev Services for H2 started.");
 
-                    String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:"
-                            + effectiveDbName
+                    String connectionUrl = "jdbc:h2:tcp://localhost:" + tcpServer.getPort() + "/mem:" + effectiveDbName
                             + ";DB_CLOSE_DELAY=-1" + additionalArgs.toString();
-                    return new RunningDevServicesDatasource(null,
-                            connectionUrl,
-                            null,
-                            effectiveUsername,
-                            effectivePassword,
-                            new Closeable() {
+                    return new RunningDevServicesDatasource(null, connectionUrl, null, effectiveUsername,
+                            effectivePassword, new Closeable() {
                                 @Override
                                 public void close() throws IOException {
-                                    //Test first, to not make too much noise if the Server is dead already
-                                    //(perhaps we failed to start?)
+                                    // Test first, to not make too much noise if the Server is dead already
+                                    // (perhaps we failed to start?)
                                     if (tcpServer.isRunning(false)) {
-                                        //make sure the DB is removed on close
-                                        try (Connection connection = DriverManager.getConnection(
-                                                connectionUrl,
-                                                effectiveUsername,
-                                                effectivePassword)) {
+                                        // make sure the DB is removed on close
+                                        try (Connection connection = DriverManager.getConnection(connectionUrl,
+                                                effectiveUsername, effectivePassword)) {
                                             try (Statement statement = connection.createStatement()) {
                                                 statement.execute("SET DB_CLOSE_DELAY 0");
                                             }
@@ -85,7 +80,8 @@ public class H2DevServicesProcessor {
                                             t.printStackTrace();
                                         }
                                         tcpServer.stop();
-                                        LOG.info("Dev Services for H2 shut down; server status: " + tcpServer.getStatus());
+                                        LOG.info("Dev Services for H2 shut down; server status: "
+                                                + tcpServer.getStatus());
                                     } else {
                                         LOG.info(
                                                 "Dev Services for H2 was NOT shut down as it appears it was down already; server status: "

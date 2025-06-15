@@ -14,8 +14,7 @@ public class NoSuitableDriverTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-no-suitable-driver.properties")
-            .assertException(t -> {
+            .withConfigurationResource("application-no-suitable-driver.properties").assertException(t -> {
                 assertEquals(ConfigurationException.class, t.getClass());
                 assertThat(t).hasMessageStartingWith("Unable to find a JDBC driver corresponding to the database kind");
             });

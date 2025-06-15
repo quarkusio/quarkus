@@ -37,34 +37,27 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 /**
- * Test services exposed by the gRPC server implemented using the regular gRPC model.
- * Communication uses TLS.
+ * Test services exposed by the gRPC server implemented using the regular gRPC model. Communication uses TLS.
  */
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "grpc-tls", password = "wibble", formats = {
         Format.JKS, Format.PEM, Format.PKCS12 }))
 public class MutinyGrpcServiceWithSSLTest extends GrpcServiceTestBase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true).setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(MutinyHelloService.class, MutinyTestService.class, AssertHelper.class,
-                                    GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
-                                    MutinyGreeterGrpc.class,
-                                    HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
-                                    EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
-                                    TestServiceGrpc.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MutinyHelloService.class,
+                    MutinyTestService.class, AssertHelper.class, GreeterGrpc.class, Greeter.class, GreeterBean.class,
+                    HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class, HelloRequestOrBuilder.class,
+                    HelloReplyOrBuilder.class, EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
+                    TestServiceGrpc.class))
             .withConfigurationResource("grpc-server-tls-configuration.properties");
 
     @Override
     @BeforeEach
     public void init() throws Exception {
-        SslContext sslcontext = GrpcSslContexts.forClient()
-                .trustManager(new File("target/certs/grpc-tls-ca.crt"))
+        SslContext sslcontext = GrpcSslContexts.forClient().trustManager(new File("target/certs/grpc-tls-ca.crt"))
                 .build();
-        channel = NettyChannelBuilder.forAddress("localhost", 9001)
-                .sslContext(sslcontext)
-                .build();
+        channel = NettyChannelBuilder.forAddress("localhost", 9001).sslContext(sslcontext).build();
     }
 
     // Create a TrustManager which trusts everything

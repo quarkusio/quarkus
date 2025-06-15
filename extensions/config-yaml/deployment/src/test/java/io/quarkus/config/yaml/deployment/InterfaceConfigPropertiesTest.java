@@ -16,9 +16,8 @@ import io.smallrye.config.WithName;
 public class InterfaceConfigPropertiesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DummyBean.class, SqlConfiguration.class, SqlConfiguration.Type.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(DummyBean.class, SqlConfiguration.class, SqlConfiguration.Type.class)
                     .addAsResource("configprops.yaml", "application.yaml"));
 
     @Inject

@@ -28,8 +28,9 @@ public class JacksonTimeZonePropertiesTest {
 
     @Test
     public void testTimezone() throws JsonProcessingException {
-        Assertions.assertThat(objectMapper.writeValueAsString(new Pojo(Date.from(
-                ZonedDateTime.of(LocalDateTime.of(2021, Month.MARCH, 3, 11, 5), ZoneId.of("GMT")).toInstant()))))
+        Assertions
+                .assertThat(objectMapper.writeValueAsString(new Pojo(Date.from(ZonedDateTime
+                        .of(LocalDateTime.of(2021, Month.MARCH, 3, 11, 5), ZoneId.of("GMT")).toInstant()))))
                 .contains("+07");
     }
 

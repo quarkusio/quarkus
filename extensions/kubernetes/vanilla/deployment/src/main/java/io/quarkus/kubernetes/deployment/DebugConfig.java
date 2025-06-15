@@ -23,8 +23,8 @@ public interface DebugConfig {
     String transport();
 
     /**
-     * If enabled, it means the JVM will wait for the debugger to attach before executing the main class. If false,
-     * the JVM will immediately execute the main class, while listening for the debugger connection.
+     * If enabled, it means the JVM will wait for the debugger to attach before executing the main class. If false, the
+     * JVM will immediately execute the main class, while listening for the debugger connection.
      */
     @WithDefault("n")
     String suspend();
@@ -36,16 +36,11 @@ public interface DebugConfig {
     Integer addressPort();
 
     default Env buildJavaToolOptionsEnv() {
-        return new EnvBuilder()
-                .withName(JAVA_TOOL_OPTIONS)
-                .withValue(String.format(AGENTLIB_FORMAT, transport(), suspend(), addressPort()))
-                .build();
+        return new EnvBuilder().withName(JAVA_TOOL_OPTIONS)
+                .withValue(String.format(AGENTLIB_FORMAT, transport(), suspend(), addressPort())).build();
     }
 
     default Port buildDebugPort() {
-        return Port.newBuilder()
-                .withName(PORT_NAME)
-                .withContainerPort(addressPort())
-                .build();
+        return Port.newBuilder().withName(PORT_NAME).withContainerPort(addressPort()).build();
     }
 }

@@ -40,8 +40,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         processCompanions(index, transformers, reflectiveClass, propertyMappingClass,
-                createCompanionEnhancer(index, methodCustomizers),
-                getImperativeTypeBundle());
+                createCompanionEnhancer(index, methodCustomizers), getImperativeTypeBundle());
     }
 
     @BuildStep
@@ -55,8 +54,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
                 .map(bi -> bi.getMethodCustomizer()).collect(Collectors.toList());
 
         processCompanions(index, transformers, reflectiveClass, propertyMappingClass,
-                createReactiveCompanionEnhancer(index, methodCustomizers),
-                getReactiveTypeBundle());
+                createReactiveCompanionEnhancer(index, methodCustomizers), getReactiveTypeBundle());
     }
 
     protected KotlinImperativeTypeBundle getImperativeTypeBundle() {
@@ -115,7 +113,8 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
         // of PanacheMongoEntity if we ask for subtypes of PanacheMongoEntityBase
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementors(typeBundle.entityCompanionBase().dotName())) {
+        for (ClassInfo classInfo : index.getIndex()
+                .getAllKnownImplementors(typeBundle.entityCompanionBase().dotName())) {
             if (classInfo.name().equals(typeBundle.entityCompanion().dotName())) {
                 continue;
             }
@@ -129,7 +128,7 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
         for (String modelClass : modelClasses) {
             transformers.produce(new BytecodeTransformerBuildItem(modelClass, companionEnhancer));
 
-            //register for reflection entity classes
+            // register for reflection entity classes
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(modelClass).methods().fields().build());
 
             // Register for building the property mapping cache

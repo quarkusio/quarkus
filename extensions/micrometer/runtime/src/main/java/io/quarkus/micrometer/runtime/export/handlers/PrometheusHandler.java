@@ -30,8 +30,7 @@ public class PrometheusHandler implements Handler<RoutingContext> {
 
         HttpServerResponse response = routingContext.response();
         if (registry == null) {
-            response.setStatusCode(500)
-                    .setStatusMessage("Unable to resolve Prometheus registry instance");
+            response.setStatusCode(500).setStatusMessage("Unable to resolve Prometheus registry instance");
         } else {
             ManagedContext requestContext = Arc.container().requestContext();
             var acceptHeader = chooseContentType(routingContext.request().getHeader("Accept"));
@@ -59,8 +58,7 @@ public class PrometheusHandler implements Handler<RoutingContext> {
     }
 
     private void doHandle(HttpServerResponse response, String acceptHeader) {
-        response.putHeader("Content-Type", acceptHeader)
-                .end(Buffer.buffer(registry.scrape(acceptHeader)));
+        response.putHeader("Content-Type", acceptHeader).end(Buffer.buffer(registry.scrape(acceptHeader)));
     }
 
     private void setup() {
@@ -71,8 +69,7 @@ public class PrometheusHandler implements Handler<RoutingContext> {
             registry = null;
         } else if (registries.isAmbiguous()) {
             registry = registries.iterator().next();
-            log.warnf("Multiple prometheus registries present. Using %s with the built-in scrape endpoint",
-                    registry);
+            log.warnf("Multiple prometheus registries present. Using %s with the built-in scrape endpoint", registry);
         } else {
             registry = registries.get();
         }

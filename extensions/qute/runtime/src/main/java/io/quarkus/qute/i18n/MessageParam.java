@@ -29,7 +29,6 @@ import java.lang.annotation.Target;
 public @interface MessageParam {
 
     /**
-     *
      * @return the name of the parameter declaration
      */
     String value() default Message.ELEMENT_NAME;

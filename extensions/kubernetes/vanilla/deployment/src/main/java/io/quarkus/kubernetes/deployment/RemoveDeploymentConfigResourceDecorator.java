@@ -20,8 +20,7 @@ public class RemoveDeploymentConfigResourceDecorator extends Decorator<Kubernete
 
     @Override
     public void visit(KubernetesListBuilder builder) {
-        List<HasMetadata> imageStreams = builder.buildItems().stream()
-                .filter(d -> d instanceof HasMetadata)
+        List<HasMetadata> imageStreams = builder.buildItems().stream().filter(d -> d instanceof HasMetadata)
                 .map(d -> (HasMetadata) d)
                 .filter(i -> i.getKind().equals(DEPLOYMENT_CONFIG) && i.getMetadata().getName().equalsIgnoreCase(name))
                 .collect(Collectors.toList());

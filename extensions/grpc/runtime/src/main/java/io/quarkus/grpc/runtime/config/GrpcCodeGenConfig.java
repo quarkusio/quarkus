@@ -16,9 +16,8 @@ import io.smallrye.config.WithName;
 public interface GrpcCodeGenConfig {
 
     /**
-     * gRPC code generation can scan dependencies of the application for proto files to generate Java stubs from.
-     * This property sets the scope of the dependencies to scan.
-     * Applicable values:
+     * gRPC code generation can scan dependencies of the application for proto files to generate Java stubs from. This
+     * property sets the scope of the dependencies to scan. Applicable values:
      * <ul>
      * <li><i>none</i> - default - don't scan dependencies</li>
      * <li>a comma separated list of <i>groupId:artifactId</i> coordinates to scan</li>
@@ -44,8 +43,8 @@ public interface GrpcCodeGenConfig {
     String scanForImports();
 
     /**
-     * Controls whether Kotlin code is generated when the {@code quarkus-kotlin} extension is present (in which case the default
-     * is {@code true}).
+     * Controls whether Kotlin code is generated when the {@code quarkus-kotlin} extension is present (in which case the
+     * default is {@code true}).
      */
     @WithName("kotlin.generate")
     Optional<Boolean> generateKotlin();

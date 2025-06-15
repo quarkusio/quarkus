@@ -31,7 +31,8 @@ public class TestResourceManagerReloadTest {
     @Test
     public void differentCount() {
         Set<TestResourceComparisonInfo> existing = Collections.emptySet();
-        Set<TestResourceComparisonInfo> next = Set.of(new TestResourceComparisonInfo("test", RESTRICTED_TO_CLASS, Map.of()));
+        Set<TestResourceComparisonInfo> next = Set
+                .of(new TestResourceComparisonInfo("test", RESTRICTED_TO_CLASS, Map.of()));
 
         assertTrue(testResourcesRequireReload(existing, next));
         assertTrue(testResourcesRequireReload(next, existing));
@@ -43,7 +44,8 @@ public class TestResourceManagerReloadTest {
     public void sameSingleRestrictedToClassResource() {
         Set<TestResourceComparisonInfo> existing = Set
                 .of(new TestResourceComparisonInfo("test", RESTRICTED_TO_CLASS, Map.of()));
-        Set<TestResourceComparisonInfo> next = Set.of(new TestResourceComparisonInfo("test", RESTRICTED_TO_CLASS, Map.of()));
+        Set<TestResourceComparisonInfo> next = Set
+                .of(new TestResourceComparisonInfo("test", RESTRICTED_TO_CLASS, Map.of()));
         assertTrue(testResourcesRequireReload(existing, next));
 
         assertNotEquals(getReloadGroupIdentifier(existing), getReloadGroupIdentifier(next));
@@ -51,8 +53,10 @@ public class TestResourceManagerReloadTest {
 
     @Test
     public void sameSingleMatchingResource() {
-        Set<TestResourceComparisonInfo> existing = Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of()));
-        Set<TestResourceComparisonInfo> next = Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of()));
+        Set<TestResourceComparisonInfo> existing = Set
+                .of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of()));
+        Set<TestResourceComparisonInfo> next = Set
+                .of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of()));
 
         assertFalse(testResourcesRequireReload(existing, next));
 
@@ -75,7 +79,8 @@ public class TestResourceManagerReloadTest {
     public void sameSingleResourceDifferentArgs() {
         Set<TestResourceComparisonInfo> existing = Set
                 .of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of("a", "b")));
-        Set<TestResourceComparisonInfo> next = Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of()));
+        Set<TestResourceComparisonInfo> next = Set
+                .of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of()));
 
         assertTrue(testResourcesRequireReload(existing, next));
 
@@ -96,8 +101,10 @@ public class TestResourceManagerReloadTest {
 
     @Test
     public void differentSingleMatchingResource() {
-        Set<TestResourceComparisonInfo> existing = Set.of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of()));
-        Set<TestResourceComparisonInfo> next = Set.of(new TestResourceComparisonInfo("test2", MATCHING_RESOURCES, Map.of()));
+        Set<TestResourceComparisonInfo> existing = Set
+                .of(new TestResourceComparisonInfo("test", MATCHING_RESOURCES, Map.of()));
+        Set<TestResourceComparisonInfo> next = Set
+                .of(new TestResourceComparisonInfo("test2", MATCHING_RESOURCES, Map.of()));
         assertTrue(testResourcesRequireReload(existing, next));
 
         assertNotEquals(getReloadGroupIdentifier(existing), getReloadGroupIdentifier(next));
@@ -128,8 +135,7 @@ public class TestResourceManagerReloadTest {
                 new TestResourceComparisonInfo("test2", MATCHING_RESOURCES, Map.of()),
                 new TestResourceComparisonInfo("TEST", MATCHING_RESOURCES, Map.of()));
         assertTrue(testResourcesRequireReload(existing, next));
-        assertNotEquals(getReloadGroupIdentifier(existing),
-                getReloadGroupIdentifier(next));
+        assertNotEquals(getReloadGroupIdentifier(existing), getReloadGroupIdentifier(next));
     }
 
     @Test
@@ -143,8 +149,7 @@ public class TestResourceManagerReloadTest {
                 new TestResourceComparisonInfo("TEST", MATCHING_RESOURCES, Map.of()));
 
         assertTrue(testResourcesRequireReload(existing, next));
-        assertNotEquals(getReloadGroupIdentifier(existing),
-                getReloadGroupIdentifier(next));
+        assertNotEquals(getReloadGroupIdentifier(existing), getReloadGroupIdentifier(next));
 
     }
 }

@@ -21,10 +21,8 @@ import io.restassured.specification.RequestSpecification;
 @QuarkusTestResource(LdapServerTestResource.class)
 public abstract class LdapSecurityRealmTest {
 
-    protected static Class[] testClasses = {
-            SingleRoleSecuredServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
-            ParametrizedPathsResource.class, SubjectExposingResource.class
-    };
+    protected static Class[] testClasses = { SingleRoleSecuredServlet.class, TestApplication.class,
+            RolesEndpointClassLevel.class, ParametrizedPathsResource.class, SubjectExposingResource.class };
 
     // Basic @ServletSecurity tests
     @Test()
@@ -39,16 +37,13 @@ public abstract class LdapSecurityRealmTest {
 
     @Test()
     public void testNotSearchingRecursiveFailure() {
-        setupAuth("subUser", "subUserPassword")
-                .when().redirects().follow(false).get("/servlet-secured").then()
+        setupAuth("subUser", "subUserPassword").when().redirects().follow(false).get("/servlet-secured").then()
                 .statusCode(getAuthFailureStatusCode());
     }
 
     @Test()
     public void testSecureRoleFailure() {
-        setupAuth("noRoleUser", "noRoleUserPassword")
-                .when().get("/servlet-secured").then()
-                .statusCode(403);
+        setupAuth("noRoleUser", "noRoleUserPassword").when().get("/servlet-secured").then().statusCode(403);
     }
 
     @Test()
@@ -56,8 +51,7 @@ public abstract class LdapSecurityRealmTest {
         String username = "standardUser";
         String password = "standardUserPassword";
         RequestSpecification requestSpec = setupAuth(username, password);
-        requestSpec.when().get("/servlet-secured").then()
-                .statusCode(200);
+        requestSpec.when().get("/servlet-secured").then().statusCode(200);
     }
 
     protected RequestSpecification setupAuth(String username, String password) {
@@ -78,9 +72,7 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetRoleFailure() {
-        setupAuth("noRoleUser", "noRoleUserPassword")
-                .when().get("/jaxrs-secured/roles-class").then()
-                .statusCode(403);
+        setupAuth("noRoleUser", "noRoleUserPassword").when().get("/jaxrs-secured/roles-class").then().statusCode(403);
     }
 
     /**
@@ -88,8 +80,7 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetRoleSuccess() {
-        setupAuth("standardUser", "standardUserPassword")
-                .when().get("/jaxrs-secured/roles-class").then()
+        setupAuth("standardUser", "standardUserPassword").when().get("/jaxrs-secured/roles-class").then()
                 .statusCode(200);
     }
 
@@ -98,16 +89,14 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsPathAdminRoleSuccess() {
-        setupAuth("adminUser", "adminUserPassword")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
-                .statusCode(200);
+        setupAuth("adminUser", "adminUserPassword").when().get("/jaxrs-secured/parameterized-paths/my/banking/admin")
+                .then().statusCode(200);
     }
 
     @Test
     public void testJaxrsPathAdminRoleFailure() {
-        setupAuth("standardUser", "standardUserPassword")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
-                .statusCode(403);
+        setupAuth("standardUser", "standardUserPassword").when()
+                .get("/jaxrs-secured/parameterized-paths/my/banking/admin").then().statusCode(403);
     }
 
     /**
@@ -115,9 +104,8 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsPathUserRoleSuccess() {
-        setupAuth("standardUser", "standardUserPassword")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/view").then()
-                .statusCode(200);
+        setupAuth("standardUser", "standardUserPassword").when()
+                .get("/jaxrs-secured/parameterized-paths/my/banking/view").then().statusCode(200);
     }
 
     /**
@@ -125,18 +113,14 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsUserRoleSuccess() {
-        setupAuth("standardUser", "standardUserPassword")
-                .when().get("/jaxrs-secured/subject/secured").then()
-                .statusCode(200)
-                .body(equalTo(expectedStandardUserName()));
+        setupAuth("standardUser", "standardUserPassword").when().get("/jaxrs-secured/subject/secured").then()
+                .statusCode(200).body(equalTo(expectedStandardUserName()));
     }
 
     @Test
     public void testJaxrsInjectedPrincipalSuccess() {
-        setupAuth("standardUser", "standardUserPassword")
-                .when().get("/jaxrs-secured/subject/principal-secured").then()
-                .statusCode(200)
-                .body(equalTo(expectedStandardUserName()));
+        setupAuth("standardUser", "standardUserPassword").when().get("/jaxrs-secured/subject/principal-secured").then()
+                .statusCode(200).body(equalTo(expectedStandardUserName()));
     }
 
     protected String expectedStandardUserName() {
@@ -148,9 +132,7 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetPermitAll() {
-        RestAssured.when().get("/jaxrs-secured/subject/unsecured").then()
-                .statusCode(200)
-                .body(equalTo("anonymous"));
+        RestAssured.when().get("/jaxrs-secured/subject/unsecured").then().statusCode(200).body(equalTo("anonymous"));
     }
 
     /**
@@ -167,8 +149,7 @@ public abstract class LdapSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetDenyAllWithAuth() {
-        setupAuth("standardUser", "standardUserPassword")
-                .when().get("/jaxrs-secured/subject/denied").then()
+        setupAuth("standardUser", "standardUserPassword").when().get("/jaxrs-secured/subject/denied").then()
                 .statusCode(403);
     }
 }

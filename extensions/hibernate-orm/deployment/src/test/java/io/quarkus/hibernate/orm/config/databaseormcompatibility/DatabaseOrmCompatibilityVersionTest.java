@@ -29,41 +29,38 @@ public class DatabaseOrmCompatibilityVersionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SpyingIdentifierGeneratorEntity.class)
+            .withApplicationRoot((jar) -> jar.addClass(SpyingIdentifierGeneratorEntity.class)
                     .addClass(SettingsSpyingIdentifierGenerator.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.database.orm-compatibility.version", "5.6")
             // We allow overriding database/orm compatibility settings with .unsupported-properties,
             // to enable step-by-step migration
-            .overrideConfigKey(
-                    "quarkus.hibernate-orm.unsupported-properties.\"" + AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE + "\"",
-                    "TIMESTAMP_UTC")
+            .overrideConfigKey("quarkus.hibernate-orm.unsupported-properties.\""
+                    + AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE + "\"", "TIMESTAMP_UTC")
             // Expect warnings on startup
-            .setLogRecordPredicate(record -> FastBootHibernatePersistenceProvider.class.getName().equals(record.getLoggerName())
-                    && record.getLevel().intValue() >= Level.WARNING.intValue())
+            .setLogRecordPredicate(
+                    record -> FastBootHibernatePersistenceProvider.class.getName().equals(record.getLoggerName())
+                            && record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(records -> {
-                var assertion = assertThat(records)
-                        .as("Warnings on startup")
-                        .hasSizeGreaterThanOrEqualTo(3);
-                assertion.element(0).satisfies(record -> assertThat(LOG_FORMATTER.formatMessage(record))
-                        .contains("Persistence-unit [<default>] sets unsupported properties")
-                        // We should not log property values, that could be a security breach for some properties.
-                        .doesNotContain("some-value"));
-                assertion.element(1).satisfies(record -> assertThat(LOG_FORMATTER.formatMessage(record))
-                        .contains("Persistence-unit [<default>]:"
+                var assertion = assertThat(records).as("Warnings on startup").hasSizeGreaterThanOrEqualTo(3);
+                assertion.element(0)
+                        .satisfies(record -> assertThat(LOG_FORMATTER.formatMessage(record))
+                                .contains("Persistence-unit [<default>] sets unsupported properties")
+                                // We should not log property values, that could be a security breach for some
+                                // properties.
+                                .doesNotContain("some-value"));
+                assertion.element(1).satisfies(record -> assertThat(LOG_FORMATTER.formatMessage(record)).contains(
+                        "Persistence-unit [<default>]:"
                                 + " enabling best-effort backwards compatibility with 'quarkus.hibernate-orm.database.orm-compatibility.version=5.6'.",
-                                "Quarkus will attempt to change the behavior and expected schema of Hibernate ORM"
-                                        + " to match those of Hibernate ORM 5.6.",
-                                "This is an inherently best-effort feature",
-                                "may stop working in future versions of Quarkus",
-                                "Consider migrating your application",
-                                "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration"));
-                assertion.anySatisfy(record -> assertThat(LOG_FORMATTER.formatMessage(record))
-                        .contains(
-                                "Persistence-unit [<default>] - 5.6 compatibility: setting 'hibernate.timezone.default_storage=NORMALIZE'.",
-                                "affects Hibernate ORM's behavior and schema compatibility",
-                                "may stop working in future versions of Quarkus"));
+                        "Quarkus will attempt to change the behavior and expected schema of Hibernate ORM"
+                                + " to match those of Hibernate ORM 5.6.",
+                        "This is an inherently best-effort feature", "may stop working in future versions of Quarkus",
+                        "Consider migrating your application",
+                        "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration"));
+                assertion.anySatisfy(record -> assertThat(LOG_FORMATTER.formatMessage(record)).contains(
+                        "Persistence-unit [<default>] - 5.6 compatibility: setting 'hibernate.timezone.default_storage=NORMALIZE'.",
+                        "affects Hibernate ORM's behavior and schema compatibility",
+                        "may stop working in future versions of Quarkus"));
             });
 
     @Inject
@@ -77,8 +74,7 @@ public class DatabaseOrmCompatibilityVersionTest {
         // Two sets of settings: 0 is static init, 1 is runtime init.
         assertThat(SettingsSpyingIdentifierGenerator.collectedSettings).hasSize(2);
         Map<String, Object> settings = SettingsSpyingIdentifierGenerator.collectedSettings.get(0);
-        assertThat(settings).containsAllEntriesOf(Map.of(
-                AvailableSettings.TIMEZONE_DEFAULT_STORAGE, "NORMALIZE",
+        assertThat(settings).containsAllEntriesOf(Map.of(AvailableSettings.TIMEZONE_DEFAULT_STORAGE, "NORMALIZE",
                 // We allow overriding database/orm compatibility settings with .unsupported-properties,
                 // to enable step-by-step migration
                 AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE, "TIMESTAMP_UTC"));
@@ -86,11 +82,11 @@ public class DatabaseOrmCompatibilityVersionTest {
 
     @Test
     public void testPropertiesPropagatedToRuntimeInit() {
-        assertThat(emf.getProperties()).containsAllEntriesOf(Map.of(
-                AvailableSettings.TIMEZONE_DEFAULT_STORAGE, "NORMALIZE",
-                // We allow overriding database/orm compatibility settings with .unsupported-properties,
-                // to enable step-by-step migration
-                AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE, "TIMESTAMP_UTC"));
+        assertThat(emf.getProperties())
+                .containsAllEntriesOf(Map.of(AvailableSettings.TIMEZONE_DEFAULT_STORAGE, "NORMALIZE",
+                        // We allow overriding database/orm compatibility settings with .unsupported-properties,
+                        // to enable step-by-step migration
+                        AvailableSettings.PREFERRED_INSTANT_JDBC_TYPE, "TIMESTAMP_UTC"));
     }
 
     @Entity

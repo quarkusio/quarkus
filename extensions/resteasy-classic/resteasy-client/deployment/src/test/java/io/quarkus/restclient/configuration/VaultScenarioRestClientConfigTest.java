@@ -19,20 +19,19 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.config.common.AbstractConfigSource;
 
 /**
- * This test makes sure that the rest client configuration is loaded even if it's provided by a ConfigSource which doesn't
- * list its contents via {@link ConfigSource#getPropertyNames()} (e.g. {@link VaultLikeConfigSource}).
+ * This test makes sure that the rest client configuration is loaded even if it's provided by a ConfigSource which
+ * doesn't list its contents via {@link ConfigSource#getPropertyNames()} (e.g. {@link VaultLikeConfigSource}).
  * <p>
- * This wasn't working when the configuration was accessed through a ConfigSource map - rest client initialization would fail
- * because no URI/URL configuration was obtained.
+ * This wasn't working when the configuration was accessed through a ConfigSource map - rest client initialization would
+ * fail because no URI/URL configuration was obtained.
  */
 public class VaultScenarioRestClientConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(EchoResource.class, EchoClient.class, VaultLikeConfigSource.class)
-                    .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
-                            "io.quarkus.restclient.configuration.VaultScenarioRestClientConfigTest$VaultLikeConfigSource"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(EchoResource.class, EchoClient.class, VaultLikeConfigSource.class)
+            .addAsServiceProvider("org.eclipse.microprofile.config.spi.ConfigSource",
+                    "io.quarkus.restclient.configuration.VaultScenarioRestClientConfigTest$VaultLikeConfigSource"));
 
     @Inject
     @RestClient

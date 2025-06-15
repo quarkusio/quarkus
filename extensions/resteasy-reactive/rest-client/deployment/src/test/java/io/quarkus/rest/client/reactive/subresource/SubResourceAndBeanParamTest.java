@@ -20,9 +20,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class SubResourceAndBeanParamTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestClient.class, SubClient.class, TestBean.class, Exception.class, Resource.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestClient.class, SubClient.class, TestBean.class, Exception.class, Resource.class));
 
     @TestHTTPResource
     URI baseUri;

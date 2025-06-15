@@ -6,8 +6,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.graal.GraalVM;
 
 /**
- * A build item that indicates that a Java package should be exported using
- * '-J--add-exports' option to become visible to native-image
+ * A build item that indicates that a Java package should be exported using '-J--add-exports' option to become visible
+ * to native-image
  */
 public final class JPMSExportBuildItem extends MultiBuildItem {
     private final String moduleName;
@@ -26,10 +26,15 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
     /**
      * Creates a build item that indicates that a Java package should be exported for a specific GraalVM version range.
      *
-     * @param moduleName the module name
-     * @param packageName the package name
-     * @param exportSince the version of GraalVM since which the package should be exported (inclusive)
-     * @param exportBefore the version of GraalVM before which the package should be exported (exclusive)
+     * @param moduleName
+     *        the module name
+     * @param packageName
+     *        the package name
+     * @param exportSince
+     *        the version of GraalVM since which the package should be exported (inclusive)
+     * @param exportBefore
+     *        the version of GraalVM before which the package should be exported (exclusive)
+     *
      * @deprecated use {@link #JPMSExportBuildItem(String, String, GraalVM.Version, GraalVM.Version)} instead
      */
     @Deprecated
@@ -45,10 +50,14 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
     /**
      * Creates a build item that indicates that a Java package should be exported for a specific GraalVM version range.
      *
-     * @param moduleName the module name
-     * @param packageName the package name
-     * @param exportSince the version of GraalVM since which the package should be exported (inclusive)
-     * @param exportBefore the version of GraalVM before which the package should be exported (exclusive)
+     * @param moduleName
+     *        the module name
+     * @param packageName
+     *        the package name
+     * @param exportSince
+     *        the version of GraalVM since which the package should be exported (inclusive)
+     * @param exportBefore
+     *        the version of GraalVM before which the package should be exported (exclusive)
      */
     public JPMSExportBuildItem(String moduleName, String packageName, GraalVM.Version exportSince,
             GraalVM.Version exportBefore) {
@@ -92,7 +101,7 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
     }
 
     public boolean isRequired(GraalVM.Version current) {
-        return (exportSince == null || current.compareTo(exportSince) >= 0) &&
-                (exportBefore == null || current.compareTo(exportBefore) < 0);
+        return (exportSince == null || current.compareTo(exportSince) >= 0)
+                && (exportBefore == null || current.compareTo(exportBefore) < 0);
     }
 }

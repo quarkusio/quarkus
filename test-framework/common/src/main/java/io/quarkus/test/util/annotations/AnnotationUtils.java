@@ -10,10 +10,9 @@ import java.util.Set;
 import org.junit.platform.commons.util.Preconditions;
 
 /**
- * Provides utility methods for obtaining annotations on test classes.
- *
- * This class is basically an adaptation of {@link org.junit.platform.commons.support.AnnotationSupport}
- * altered to include the element which was annotated in the result and filtered out to only contain methods we use.
+ * Provides utility methods for obtaining annotations on test classes. This class is basically an adaptation of
+ * {@link org.junit.platform.commons.support.AnnotationSupport} altered to include the element which was annotated in
+ * the result and filtered out to only contain methods we use.
  */
 public final class AnnotationUtils {
 
@@ -21,24 +20,23 @@ public final class AnnotationUtils {
     }
 
     /**
-     * Find the first annotation of {@code annotationType} that is either
-     * <em>directly present</em>, <em>meta-present</em>, or <em>indirectly
-     * present</em> on the supplied {@code element}.
-     *
+     * Find the first annotation of {@code annotationType} that is either <em>directly present</em>,
+     * <em>meta-present</em>, or <em>indirectly present</em> on the supplied {@code element}.
      * <p>
-     * If the element is a class and the annotation is neither <em>directly
-     * present</em> nor <em>meta-present</em> on the class, this method will
-     * additionally search on interfaces implemented by the class before
-     * finding an annotation that is <em>indirectly present</em> on the class
-     * (meaning that the same process will be repeated for superclasses if {@link Inherited} is present on
-     * {@code annotationType}).
+     * If the element is a class and the annotation is neither <em>directly present</em> nor <em>meta-present</em> on
+     * the class, this method will additionally search on interfaces implemented by the class before finding an
+     * annotation that is <em>indirectly present</em> on the class (meaning that the same process will be repeated for
+     * superclasses if {@link Inherited} is present on {@code annotationType}).
      *
-     * @param <A> the annotation type
-     * @param element the element on which to search for the annotation; may be
-     *        {@code null}
-     * @param annotationType the annotation type to search for; never {@code null}
-     * @return an {@code Optional} containing the annotation and the element on which it was present; never {@code null} but
-     *         potentially empty
+     * @param <A>
+     *        the annotation type
+     * @param element
+     *        the element on which to search for the annotation; may be {@code null}
+     * @param annotationType
+     *        the annotation type to search for; never {@code null}
+     *
+     * @return an {@code Optional} containing the annotation and the element on which it was present; never {@code null}
+     *         but potentially empty
      */
     public static <A extends Annotation> Optional<AnnotationContainer<A>> findAnnotation(AnnotatedElement element,
             Class<A> annotationType) {
@@ -48,8 +46,7 @@ public final class AnnotationUtils {
     }
 
     private static <A extends Annotation> Optional<AnnotationContainer<A>> findAnnotation(AnnotatedElement element,
-            Class<A> annotationType,
-            boolean inherited, Set<Annotation> visited) {
+            Class<A> annotationType, boolean inherited, Set<Annotation> visited) {
 
         Preconditions.notNull(annotationType, "annotationType must not be null");
 
@@ -65,8 +62,7 @@ public final class AnnotationUtils {
 
         // Meta-present on directly present annotations?
         Optional<AnnotationContainer<A>> directMetaAnnotation = findMetaAnnotation(annotationType,
-                element.getDeclaredAnnotations(),
-                inherited, visited);
+                element.getDeclaredAnnotations(), inherited, visited);
         if (directMetaAnnotation.isPresent()) {
             return directMetaAnnotation;
         }
@@ -77,8 +73,8 @@ public final class AnnotationUtils {
             // Search on interfaces
             for (Class<?> ifc : clazz.getInterfaces()) {
                 if (ifc != Annotation.class) {
-                    Optional<AnnotationContainer<A>> annotationOnInterface = findAnnotation(ifc, annotationType, inherited,
-                            visited);
+                    Optional<AnnotationContainer<A>> annotationOnInterface = findAnnotation(ifc, annotationType,
+                            inherited, visited);
                     if (annotationOnInterface.isPresent()) {
                         return annotationOnInterface;
                     }
@@ -109,9 +105,8 @@ public final class AnnotationUtils {
         for (Annotation candidateAnnotation : candidates) {
             Class<? extends Annotation> candidateAnnotationType = candidateAnnotation.annotationType();
             if (!isInJavaLangAnnotationPackage(candidateAnnotationType) && visited.add(candidateAnnotation)) {
-                Optional<AnnotationContainer<A>> metaAnnotation = findAnnotation(candidateAnnotationType, annotationType,
-                        inherited,
-                        visited);
+                Optional<AnnotationContainer<A>> metaAnnotation = findAnnotation(candidateAnnotationType,
+                        annotationType, inherited, visited);
                 if (metaAnnotation.isPresent()) {
                     return metaAnnotation;
                 }

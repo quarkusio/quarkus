@@ -15,7 +15,8 @@ public class UnsupportedRemoteCacheConfigurator {
         builder.addSectionHelper(new CacheSectionHelper.Factory(new CacheSectionHelper.Cache() {
 
             @Override
-            public CompletionStage<ResultNode> getValue(String key, Function<String, CompletionStage<ResultNode>> loader) {
+            public CompletionStage<ResultNode> getValue(String key,
+                    Function<String, CompletionStage<ResultNode>> loader) {
                 throw new IllegalStateException("#cache is not supported for remote caches");
             }
         }));

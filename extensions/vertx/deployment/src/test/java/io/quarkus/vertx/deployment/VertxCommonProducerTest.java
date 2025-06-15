@@ -17,8 +17,7 @@ public class VertxCommonProducerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new File("src/test/resources/lorem.txt"), "files/lorem.txt")
+            .withApplicationRoot((jar) -> jar.addAsResource(new File("src/test/resources/lorem.txt"), "files/lorem.txt")
                     .addClasses(BeanUsingBareVertx.class));
 
     @Inject

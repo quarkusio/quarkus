@@ -21,36 +21,31 @@ import io.confluent.kafka.schemaregistry.json.SpecificationVersion;
 final class Target_io_confluent_kafka_schemaregistry_json_JsonSchemaUtils {
 
     @Substitute
-    public static JsonSchema getSchema(
-            Object object,
-            SpecificationVersion specVersion,
-            boolean useOneofForNullables,
-            boolean failUnknownProperties,
-            ObjectMapper objectMapper,
-            SchemaRegistryClient client) throws IOException {
+    public static JsonSchema getSchema(Object object, SpecificationVersion specVersion, boolean useOneofForNullables,
+            boolean failUnknownProperties, ObjectMapper objectMapper, SchemaRegistryClient client) throws IOException {
 
         if (object == null) {
             return null;
         }
 
         Class<?> cls = object.getClass();
-        //We only support the scenario of having the schema defined in the annotation in the java bean, since it does not rely on outdated libraries.
+        // We only support the scenario of having the schema defined in the annotation in the java bean, since it does
+        // not rely on outdated libraries.
         if (cls.isAnnotationPresent(Schema.class)) {
             Schema schema = cls.getAnnotation(Schema.class);
-            List<SchemaReference> references = Arrays.stream(schema.refs())
-                    .map(new Function<io.confluent.kafka.schemaregistry.annotations.SchemaReference, SchemaReference>() {
+            List<SchemaReference> references = Arrays.stream(schema.refs()).map(
+                    new Function<io.confluent.kafka.schemaregistry.annotations.SchemaReference, SchemaReference>() {
                         @Override
                         public SchemaReference apply(
                                 io.confluent.kafka.schemaregistry.annotations.SchemaReference schemaReference) {
                             return new SchemaReference(schemaReference.name(), schemaReference.subject(),
                                     schemaReference.version());
                         }
-                    })
-                    .collect(Collectors.toList());
+                    }).collect(Collectors.toList());
             if (client == null) {
                 if (!references.isEmpty()) {
-                    throw new IllegalArgumentException("Cannot resolve schema " + schema.value()
-                            + " with refs " + references);
+                    throw new IllegalArgumentException(
+                            "Cannot resolve schema " + schema.value() + " with refs " + references);
                 }
                 return new JsonSchema(schema.value());
             } else {
@@ -58,8 +53,7 @@ final class Target_io_confluent_kafka_schemaregistry_json_JsonSchemaUtils {
                         .orElseThrow(new Supplier<IOException>() {
                             @Override
                             public IOException get() {
-                                return new IOException("Invalid schema " + schema.value()
-                                        + " with refs " + references);
+                                return new IOException("Invalid schema " + schema.value() + " with refs " + references);
                             }
                         });
             }

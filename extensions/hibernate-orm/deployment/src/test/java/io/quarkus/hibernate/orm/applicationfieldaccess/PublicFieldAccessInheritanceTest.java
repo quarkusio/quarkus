@@ -22,18 +22,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that access to public fields by the application is correctly replaced with getter/setter calls
- * and works correctly regardless of where the field is declared in the class hierarchy.
+ * Checks that access to public fields by the application is correctly replaced with getter/setter calls and works
+ * correctly regardless of where the field is declared in the class hierarchy.
  */
 public class PublicFieldAccessInheritanceTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyMappedSuperclass.class)
-                    .addClass(MyAbstractEntity.class)
-                    .addClass(MyConcreteEntity.class)
-                    .addClass(FieldAccessEnhancedDelegate.class))
+            .withApplicationRoot((jar) -> jar.addClass(MyMappedSuperclass.class).addClass(MyAbstractEntity.class)
+                    .addClass(MyConcreteEntity.class).addClass(FieldAccessEnhancedDelegate.class))
             .withConfigurationResource("application.properties")
             // FIXME Temporary debug options for https://github.com/quarkusio/quarkus/issues/42479
             .overrideConfigKey("quarkus.hibernate-orm.log.sql", "true")
@@ -41,9 +38,8 @@ public class PublicFieldAccessInheritanceTest {
             // see https://github.com/quarkusio/quarkus/issues/43180
             // It's not necessary anyway as the only effect of this config property is to change
             // the logging level for a specific "org.hibernate.something" category, which we already do below.
-            //.overrideConfigKey("quarkus.hibernate-orm.log.bind-parameters", "true")
-            .debugBytecode(true)
-            .traceCategories("org.hibernate", "io.quarkus.hibernate", "io.quarkus.panache");
+            // .overrideConfigKey("quarkus.hibernate-orm.log.bind-parameters", "true")
+            .debugBytecode(true).traceCategories("org.hibernate", "io.quarkus.hibernate", "io.quarkus.panache");
 
     @Inject
     EntityManager em;
@@ -52,9 +48,8 @@ public class PublicFieldAccessInheritanceTest {
     UserTransaction transaction;
 
     @Test
-    public void testFieldAccess()
-            throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    public void testFieldAccess() throws SystemException, NotSupportedException, HeuristicRollbackException,
+            HeuristicMixedException, RollbackException {
         // Ideally we'd write a @ParameterizedTest and pass the delegates as parameters,
         // but we cannot do that due to JUnit using a different classloader than the test.
         for (FieldAccessEnhancedDelegate delegate : FieldAccessEnhancedDelegate.values()) {
@@ -62,9 +57,8 @@ public class PublicFieldAccessInheritanceTest {
         }
     }
 
-    private void doTestFieldAccess(FieldAccessEnhancedDelegate delegate)
-            throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    private void doTestFieldAccess(FieldAccessEnhancedDelegate delegate) throws SystemException, NotSupportedException,
+            HeuristicRollbackException, HeuristicMixedException, RollbackException {
         MyConcreteEntity entity = new MyConcreteEntity();
 
         transaction.begin();

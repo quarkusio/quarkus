@@ -6,12 +6,12 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.MessageCodec;
 
 /**
- * An implementation of {@link MessageCodec} for local delivery only.
- * It does not support the clustered event bus.
+ * An implementation of {@link MessageCodec} for local delivery only. It does not support the clustered event bus.
  * <p>
  * The {@link #transform(Object)} method returns the passed instance. So make sure it's immutable.
  *
- * @param <T> the type of object supported by this codec.
+ * @param <T>
+ *        the type of object supported by this codec.
  */
 public class LocalEventBusCodec<T> implements MessageCodec<T, T> {
 

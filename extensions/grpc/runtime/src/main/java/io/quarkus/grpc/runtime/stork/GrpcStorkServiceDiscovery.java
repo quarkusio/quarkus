@@ -27,8 +27,8 @@ import io.smallrye.stork.api.ServiceDiscovery;
 import io.smallrye.stork.api.ServiceInstance;
 
 /**
- * for gRPC, the service instance id must be immutable.
- * Even a change of attributes of a service instance must result in changing the service instance id.
+ * for gRPC, the service instance id must be immutable. Even a change of attributes of a service instance must result in
+ * changing the service instance id.
  */
 public class GrpcStorkServiceDiscovery extends NameResolverProvider {
     private static final Logger log = Logger.getLogger(GrpcStorkServiceDiscovery.class);
@@ -80,8 +80,8 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
                 serviceName = targetUri.getHost();
                 Service service = Stork.getInstance().getService(serviceName);
                 if (service == null) {
-                    listener.onError(
-                            Status.ABORTED.withDescription("No service definition for serviceName " + serviceName + " found."));
+                    listener.onError(Status.ABORTED
+                            .withDescription("No service definition for serviceName " + serviceName + " found."));
                     return;
                 }
                 serviceDiscovery = service.getServiceDiscovery();
@@ -126,10 +126,9 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
                             }
 
                             if (!socketAddresses.isEmpty()) {
-                                Attributes attributes = Attributes.newBuilder()
-                                        .set(SERVICE_INSTANCE, instance)
-                                        .build();
-                                EquivalentAddressGroup addressGroup = new EquivalentAddressGroup(socketAddresses, attributes);
+                                Attributes attributes = Attributes.newBuilder().set(SERVICE_INSTANCE, instance).build();
+                                EquivalentAddressGroup addressGroup = new EquivalentAddressGroup(socketAddresses,
+                                        attributes);
                                 addresses.add(addressGroup);
                             }
                         }
@@ -139,10 +138,8 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
                             listener.onError(Status.FAILED_PRECONDITION);
                         } else {
                             ConfigOrError serviceConfig = configParser.parseServiceConfig(mapConfigForServiceName());
-                            listener.onResult(ResolutionResult.newBuilder()
-                                    .setAddresses(addresses)
-                                    .setServiceConfig(serviceConfig)
-                                    .build());
+                            listener.onResult(ResolutionResult.newBuilder().setAddresses(addresses)
+                                    .setServiceConfig(serviceConfig).build());
                         }
                     }
                 } finally {
@@ -160,8 +157,7 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
             }
 
             private Map<String, List<Map<String, Map<String, String>>>> mapConfigForServiceName() {
-                return Map.of("loadBalancingConfig", List.of(
-                        Map.of(Stork.STORK, Map.of("service-name", serviceName))));
+                return Map.of("loadBalancingConfig", List.of(Map.of(Stork.STORK, Map.of("service-name", serviceName))));
             }
         };
     }

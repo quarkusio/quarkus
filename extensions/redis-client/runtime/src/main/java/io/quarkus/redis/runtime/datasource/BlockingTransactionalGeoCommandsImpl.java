@@ -89,7 +89,8 @@ public class BlockingTransactionalGeoCommandsImpl<K, V> extends AbstractTransact
 
     @Deprecated
     @Override
-    public void georadius(K key, double longitude, double latitude, double radius, GeoUnit unit, GeoRadiusArgs geoArgs) {
+    public void georadius(K key, double longitude, double latitude, double radius, GeoUnit unit,
+            GeoRadiusArgs geoArgs) {
         this.reactive.georadius(key, longitude, latitude, radius, unit, geoArgs).await().atMost(this.timeout);
     }
 

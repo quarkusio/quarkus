@@ -47,7 +47,9 @@ public class Document {
     /**
      * Gets a specific property from the document
      *
-     * @param name the name, must not be {@code null}
+     * @param name
+     *        the name, must not be {@code null}
+     *
      * @return the property, {@code null} if not found
      */
     public Property property(String name) {

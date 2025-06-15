@@ -28,8 +28,8 @@ public class CreateCli extends BaseCreateCommand {
     @CommandLine.Mixin
     TargetGAVGroup gav = new TargetGAVGroup();
 
-    @CommandLine.Option(order = 1, paramLabel = "EXTENSION", names = { "-x",
-            "--extension", "--extensions" }, description = "Extension(s) to add to the project.", split = ",")
+    @CommandLine.Option(order = 1, paramLabel = "EXTENSION", names = { "-x", "--extension",
+            "--extensions" }, description = "Extension(s) to add to the project.", split = ",")
     Set<String> extensions = new HashSet<>();
 
     @CommandLine.Option(order = 2, paramLabel = "NAME", names = { "--name" }, description = "Name of the project.")
@@ -80,8 +80,8 @@ public class CreateCli extends BaseCreateCommand {
             setValue(CreateProjectKey.PROJECT_DESCRIPTION, description);
             setValue(CreateProjectKey.DATA, dataOptions.data);
 
-            QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion,
-                    propertiesOptions.properties, extensions);
+            QuarkusCommandInvocation invocation = build(buildTool, targetQuarkusVersion, propertiesOptions.properties,
+                    extensions);
 
             boolean success = true;
             if (runMode.isDryRun()) {
@@ -101,23 +101,15 @@ public class CreateCli extends BaseCreateCommand {
             }
             return CommandLine.ExitCode.SOFTWARE;
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to create project: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to create project: " + e.getMessage());
         }
     }
 
     @Override
     public String toString() {
-        return "CreateCli{"
-                + "gav=" + gav
-                + ", quarkusVersion=" + targetQuarkusVersion
-                + ", targetBuildTool=" + targetBuildTool
-                + ", targetLanguage=" + targetLanguage
-                + ", codeGeneration=" + codeGeneration
-                + ", extensions=" + extensions
-                + ", project=" + super.toString()
-                + ", data=" + dataOptions.data
-                + ", properties=" + propertiesOptions.properties
-                + '}';
+        return "CreateCli{" + "gav=" + gav + ", quarkusVersion=" + targetQuarkusVersion + ", targetBuildTool="
+                + targetBuildTool + ", targetLanguage=" + targetLanguage + ", codeGeneration=" + codeGeneration
+                + ", extensions=" + extensions + ", project=" + super.toString() + ", data=" + dataOptions.data
+                + ", properties=" + propertiesOptions.properties + '}';
     }
 }

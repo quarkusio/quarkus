@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class serves for passing a list of disabled REST paths (via the `@EndpointDisabled` annotation)
- * so that an OpenAPI filter can omit them from the generated OpenAPI document.
+ * This class serves for passing a list of disabled REST paths (via the `@EndpointDisabled` annotation) so that an
+ * OpenAPI filter can omit them from the generated OpenAPI document.
  */
 public class DisabledRestEndpoints {
 

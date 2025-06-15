@@ -5,11 +5,10 @@ import org.hibernate.engine.jdbc.dialect.spi.DialectResolutionInfo;
 import org.hibernate.engine.jdbc.dialect.spi.DialectResolver;
 
 /**
- * A dialect resolver used for runtime init;
- * simply restores the dialect used during static init.
+ * A dialect resolver used for runtime init; simply restores the dialect used during static init.
  * <p>
- * This is necessary on top of {@link QuarkusRuntimeInitDialectFactory}
- * because schema tools, for example, bypass the factory and use the dialect resolver directly.
+ * This is necessary on top of {@link QuarkusRuntimeInitDialectFactory} because schema tools, for example, bypass the
+ * factory and use the dialect resolver directly.
  *
  * @see QuarkusStaticInitDialectFactory
  */

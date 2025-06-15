@@ -23,9 +23,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(value, "value");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CMS_INCRBY)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value))
+        RedisCommand cmd = RedisCommand.of(Command.CMS_INCRBY).put(marshaller.encode(key)).put(marshaller.encode(value))
                 .put(increment);
         return execute(cmd);
     }
@@ -38,8 +36,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`couples` must not be empty"));
         }
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CMS_INCRBY)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.CMS_INCRBY).put(marshaller.encode(key));
         for (Map.Entry<V, Long> entry : couples.entrySet()) {
             cmd.put(marshaller.encode(entry.getKey()));
             cmd.put(entry.getValue());
@@ -52,10 +49,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
         // Validation
         nonNull(key, "key");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CMS_INITBYDIM)
-                .put(marshaller.encode(key))
-                .put(width)
-                .put(depth);
+        RedisCommand cmd = RedisCommand.of(Command.CMS_INITBYDIM).put(marshaller.encode(key)).put(width).put(depth);
         return execute(cmd);
     }
 
@@ -63,9 +57,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
         // Validation
         nonNull(key, "key");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CMS_INITBYPROB)
-                .put(marshaller.encode(key))
-                .put(error)
+        RedisCommand cmd = RedisCommand.of(Command.CMS_INITBYPROB).put(marshaller.encode(key)).put(error)
                 .put(probability);
         return execute(cmd);
     }
@@ -75,9 +67,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(item, "item");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CMS_QUERY)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(item));
+        RedisCommand cmd = RedisCommand.of(Command.CMS_QUERY).put(marshaller.encode(key)).put(marshaller.encode(item));
         return execute(cmd);
     }
 
@@ -89,8 +79,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`items` must not be empty"));
         }
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CMS_QUERY)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.CMS_QUERY).put(marshaller.encode(key));
         for (V item : items) {
             cmd.put(marshaller.encode(item));
         }
@@ -103,9 +92,7 @@ public class AbstractCountMinCommands<K, V> extends AbstractRedisCommands {
         doesNotContainNull(src, "src");
         isNotEmpty(src, "src");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CMS_MERGE)
-                .put(marshaller.encode(dest))
-                .put(src.size());
+        RedisCommand cmd = RedisCommand.of(Command.CMS_MERGE).put(marshaller.encode(dest)).put(src.size());
 
         for (K k : src) {
             cmd.put(marshaller.encode(k));

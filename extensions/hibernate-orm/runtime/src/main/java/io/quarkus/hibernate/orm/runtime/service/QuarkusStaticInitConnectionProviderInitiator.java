@@ -9,10 +9,11 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 /**
  * Initializes the connection provider during static init.
  * <p>
- * Since the database is not available during static init,
- * the connection provider is just a stub that will fail on connection retrieval.
+ * Since the database is not available during static init, the connection provider is just a stub that will fail on
+ * connection retrieval.
  */
-public final class QuarkusStaticInitConnectionProviderInitiator implements StandardServiceInitiator<ConnectionProvider> {
+public final class QuarkusStaticInitConnectionProviderInitiator
+        implements StandardServiceInitiator<ConnectionProvider> {
 
     public static final QuarkusStaticInitConnectionProviderInitiator INSTANCE = new QuarkusStaticInitConnectionProviderInitiator();
 

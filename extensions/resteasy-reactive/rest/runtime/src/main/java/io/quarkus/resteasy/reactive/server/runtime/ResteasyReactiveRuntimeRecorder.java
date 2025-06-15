@@ -37,8 +37,7 @@ public class ResteasyReactiveRuntimeRecorder {
                 httpConfig.body().deleteUploadedFilesOnEnd(), httpConfig.body().uploadsDirectory(),
                 httpConfig.body().multipart().fileContentTypes().orElse(null),
                 runtimeConf.multipart().inputPart().defaultCharset(), maxBodySize,
-                httpConfig.limits().maxFormAttributeSize().asLongValue(),
-                httpConfig.limits().maxParameters());
+                httpConfig.limits().maxFormAttributeSize().asLongValue(), httpConfig.limits().maxParameters());
 
         deployment.getValue().setRuntimeConfiguration(runtimeConfiguration);
 
@@ -52,8 +51,8 @@ public class ResteasyReactiveRuntimeRecorder {
 
     @SuppressWarnings({ "unchecked", "rawtypes", "ForLoopReplaceableByForEach" })
     public void configureHandlers(RuntimeValue<Deployment> deployment, Map<Class<?>, Supplier<?>> runtimeConfigMap) {
-        List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment.getValue()
-                .getRuntimeConfigurableServerRestHandlers();
+        List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment
+                .getValue().getRuntimeConfigurableServerRestHandlers();
         for (int i = 0; i < runtimeConfigurableServerRestHandlers.size(); i++) {
             GenericRuntimeConfigurableServerRestHandler handler = runtimeConfigurableServerRestHandlers.get(i);
             Supplier<?> supplier = runtimeConfigMap.get(handler.getConfigurationClass());

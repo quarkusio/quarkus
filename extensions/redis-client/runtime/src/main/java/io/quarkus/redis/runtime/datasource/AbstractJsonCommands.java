@@ -55,36 +55,28 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(path, "path");
         nonNull(args, "args");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_SET)
-                .put(marshaller.encode(key))
-                .put(path)
-                .put(encoded)
+        RedisCommand cmd = RedisCommand.of(Command.JSON_SET).put(marshaller.encode(key)).put(path).put(encoded)
                 .putAll(args.toArgs());
         return execute(cmd);
     }
 
     Uni<Response> _jsonGet(K key) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of((Command.JSON_GET))
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of((Command.JSON_GET)).put(marshaller.encode(key));
         return execute(cmd);
     }
 
     Uni<Response> _jsonGet(K key, String path) {
         nonNull(key, "key");
         nonNull(path, "path");
-        RedisCommand cmd = RedisCommand.of((Command.JSON_GET))
-                .put(marshaller.encode(key))
-                .put(path);
+        RedisCommand cmd = RedisCommand.of((Command.JSON_GET)).put(marshaller.encode(key)).put(path);
         return execute(cmd);
     }
 
     Uni<Response> _jsonGet(K key, String... paths) {
         nonNull(key, "key");
         doesNotContainNull(paths, "path");
-        RedisCommand cmd = RedisCommand.of((Command.JSON_GET))
-                .put(marshaller.encode(key))
-                .putAll(paths);
+        RedisCommand cmd = RedisCommand.of((Command.JSON_GET)).put(marshaller.encode(key)).putAll(paths);
         return execute(cmd);
     }
 
@@ -95,8 +87,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
         for (T value : values) {
             encoded.add(Json.encode(value));
         }
-        RedisCommand cmd = RedisCommand.of((Command.JSON_ARRAPPEND))
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of((Command.JSON_ARRAPPEND)).put(marshaller.encode(key));
 
         if (path != null) {
             cmd.put(path);
@@ -109,12 +100,8 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(path, "path");
         nonNull(value, "value");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_ARRINDEX)
-                .put(marshaller.encode(key))
-                .put(path)
-                .put(Json.encode(value))
-                .put(start)
-                .put(end);
+        RedisCommand cmd = RedisCommand.of(Command.JSON_ARRINDEX).put(marshaller.encode(key)).put(path)
+                .put(Json.encode(value)).put(start).put(end);
         return execute(cmd);
     }
 
@@ -122,10 +109,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(path, "path");
         doesNotContainNull(values, "values");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_ARRINSERT)
-                .put(marshaller.encode(key))
-                .put(path)
-                .put(index);
+        RedisCommand cmd = RedisCommand.of(Command.JSON_ARRINSERT).put(marshaller.encode(key)).put(path).put(index);
 
         for (T value : values) {
             cmd.put(Json.encode(value));
@@ -136,8 +120,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
 
     Uni<Response> _jsonArrLen(K key, String path) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of((Command.JSON_ARRLEN))
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of((Command.JSON_ARRLEN)).put(marshaller.encode(key));
         if (path != null) {
             cmd.put(path);
         }
@@ -147,8 +130,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
     Uni<Response> _jsonArrPop(K key, String path, int index) {
         nonNull(key, "key");
 
-        RedisCommand cmd = RedisCommand.of(Command.JSON_ARRPOP)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.JSON_ARRPOP).put(marshaller.encode(key));
 
         if (path != null) {
             cmd.put(path);
@@ -162,10 +144,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
     Uni<Response> _jsonArrTrim(K key, String path, int start, int stop) {
         nonNull(key, "key");
         nonNull(path, "path");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_ARRTRIM)
-                .put(marshaller.encode(key))
-                .put(path)
-                .put(start)
+        RedisCommand cmd = RedisCommand.of(Command.JSON_ARRTRIM).put(marshaller.encode(key)).put(path).put(start)
                 .put(stop);
 
         return execute(cmd);
@@ -173,8 +152,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
 
     Uni<Response> _jsonClear(K key, String path) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_CLEAR)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.JSON_CLEAR).put(marshaller.encode(key));
 
         if (path != null) {
             cmd.put(path);
@@ -184,8 +162,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
 
     Uni<Response> _jsonDel(K key, String path) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_DEL)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.JSON_DEL).put(marshaller.encode(key));
 
         if (path != null) {
             cmd.put(path);
@@ -211,18 +188,14 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrBlank(path, "path");
 
-        RedisCommand cmd = RedisCommand.of(Command.JSON_NUMINCRBY)
-                .put(marshaller.encode(key))
-                .put(path)
-                .put(value);
+        RedisCommand cmd = RedisCommand.of(Command.JSON_NUMINCRBY).put(marshaller.encode(key)).put(path).put(value);
 
         return execute(cmd);
     }
 
     Uni<Response> _jsonObjKeys(K key, String path) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_OBJKEYS)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.JSON_OBJKEYS).put(marshaller.encode(key));
         if (path != null) {
             cmd.put(path);
         }
@@ -232,8 +205,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
 
     Uni<Response> _jsonObjLen(K key, String path) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_OBJLEN)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.JSON_OBJLEN).put(marshaller.encode(key));
         if (path != null) {
             cmd.put(path);
         }
@@ -244,8 +216,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
     Uni<Response> _jsonStrAppend(K key, String path, String value) {
         nonNull(key, "key");
         nonNull(value, "value");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_STRAPPEND)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.JSON_STRAPPEND).put(marshaller.encode(key));
         if (path != null) {
             cmd.put(path);
         }
@@ -256,16 +227,13 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
     Uni<Response> _jsonToggle(K key, String path) {
         nonNull(key, "key");
         nonNull(path, "path");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_TOGGLE)
-                .put(marshaller.encode(key))
-                .put(path);
+        RedisCommand cmd = RedisCommand.of(Command.JSON_TOGGLE).put(marshaller.encode(key)).put(path);
         return execute(cmd);
     }
 
     Uni<Response> _jsonStrLen(K key, String path) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_STRLEN)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.JSON_STRLEN).put(marshaller.encode(key));
         if (path != null) {
             cmd.put(path);
         }
@@ -275,8 +243,7 @@ public class AbstractJsonCommands<K> extends AbstractRedisCommands {
 
     Uni<Response> _jsonType(K key, String path) {
         nonNull(key, "key");
-        RedisCommand cmd = RedisCommand.of(Command.JSON_TYPE)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.JSON_TYPE).put(marshaller.encode(key));
         if (path != null) {
             cmd.put(path);
         }

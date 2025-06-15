@@ -12,8 +12,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketConnectOptions;
 
-record Connection(URI uri, String[] messagesToSend, boolean binaryMode,
-        String[] expectedResponses) {
+record Connection(URI uri, String[] messagesToSend, boolean binaryMode, String[] expectedResponses) {
 
     static Connection of(URI uri, boolean binaryMode, String[] sentMessages, String[] expectedResponses) {
         return new Connection(uri, sentMessages, binaryMode, expectedResponses);
@@ -37,11 +36,13 @@ record Connection(URI uri, String[] messagesToSend, boolean binaryMode,
             var expectedResponses = expectedResponses();
             if (expectedResponses.length != 0) {
                 client.waitForMessages(expectedResponses.length);
-                Set<String> actualResponses = client.getMessages().stream().map(Buffer::toString).collect(Collectors.toSet());
+                Set<String> actualResponses = client.getMessages().stream().map(Buffer::toString)
+                        .collect(Collectors.toSet());
 
                 for (String expectedResponse : expectedResponses) {
                     assertTrue(actualResponses.contains(expectedResponse),
-                            () -> "Expected response '%s' not found, was: %s".formatted(expectedResponse, actualResponses));
+                            () -> "Expected response '%s' not found, was: %s".formatted(expectedResponse,
+                                    actualResponses));
                 }
 
                 client.getMessages().clear();

@@ -18,20 +18,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ProviderPriorityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class,
-                            HelloClient.class,
-                            HelloClient2.class,
-                            HelloClientWithFilter.class,
-                            ResponseFilterLowestPrio.class,
-                            GlobalResponseFilter.class,
-                            GlobalResponseFilterLowPrio.class)
-                    .addAsResource(
-                            new StringAsset(setUrlForClass(HelloClient.class)
-                                    + setUrlForClass(HelloClient2.class)
-                                    + setUrlForClass(HelloClientWithFilter.class)),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(HelloResource.class, HelloClient.class, HelloClient2.class, HelloClientWithFilter.class,
+                    ResponseFilterLowestPrio.class, GlobalResponseFilter.class, GlobalResponseFilterLowPrio.class)
+            .addAsResource(new StringAsset(setUrlForClass(HelloClient.class) + setUrlForClass(HelloClient2.class)
+                    + setUrlForClass(HelloClientWithFilter.class)), "application.properties"));
 
     @RestClient
     HelloClient helloClient;

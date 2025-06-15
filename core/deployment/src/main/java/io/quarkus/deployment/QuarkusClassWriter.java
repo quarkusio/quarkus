@@ -4,8 +4,7 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 
 /**
- * ClassWriter which tries to get around ClassNotFoundExceptions related to reflection usage in
- * getCommonSuperClass.
+ * ClassWriter which tries to get around ClassNotFoundExceptions related to reflection usage in getCommonSuperClass.
  *
  * @author Stéphane Épardaud
  */

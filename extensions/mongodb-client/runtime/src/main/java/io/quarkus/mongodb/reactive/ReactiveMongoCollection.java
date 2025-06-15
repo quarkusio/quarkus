@@ -44,7 +44,9 @@ import io.smallrye.mutiny.Uni;
 /**
  * A reactive API to interact with a Mongo collection.
  *
- * @param <T> The type that this collection will encode documents from and decode documents to.
+ * @param <T>
+ *        The type that this collection will encode documents from and decode documents to.
+ *
  * @since 1.0
  */
 public interface ReactiveMongoCollection<T> {
@@ -73,7 +75,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Gets an estimate of the count of documents in a collection using collection metadata.
      *
-     * @param options the options describing the count
+     * @param options
+     *        the options describing the count
+     *
      * @return a {@link Uni} completed with the estimated number of documents
      */
     Uni<Long> estimatedDocumentCount(EstimatedDocumentCountOptions options);
@@ -88,7 +92,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Counts the number of documents in the collection according to the given options.
      *
-     * @param filter the query filter
+     * @param filter
+     *        the query filter
+     *
      * @return a {@link Uni} completed with the number of documents
      */
     Uni<Long> countDocuments(Bson filter);
@@ -96,8 +102,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Counts the number of documents in the collection according to the given options.
      *
-     * @param filter the query filter
-     * @param options the options describing the count
+     * @param filter
+     *        the query filter
+     * @param options
+     *        the options describing the count
+     *
      * @return a {@link Uni} completed with the number of documents
      */
     Uni<Long> countDocuments(Bson filter, CountOptions options);
@@ -105,7 +114,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Counts the number of documents in the collection according to the given options.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return a {@link Uni} completed with the number of documents
      */
     Uni<Long> countDocuments(ClientSession clientSession);
@@ -113,8 +124,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Counts the number of documents in the collection according to the given options.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter
+     *
      * @return a {@link Uni} completed with the number of documents
      */
     Uni<Long> countDocuments(ClientSession clientSession, Bson filter);
@@ -122,9 +136,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Counts the number of documents in the collection according to the given options.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter
-     * @param options the options describing the count
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter
+     * @param options
+     *        the options describing the count
+     *
      * @return a {@link Uni} completed with the number of documents
      */
     Uni<Long> countDocuments(ClientSession clientSession, Bson filter, CountOptions options);
@@ -132,9 +150,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Gets the distinct values of the specified field name.
      *
-     * @param fieldName the field name*
-     * @param clazz the default class to cast any distinct items into.
-     * @param <D> the target type of the iterable.
+     * @param fieldName
+     *        the field name*
+     * @param clazz
+     *        the default class to cast any distinct items into.
+     * @param <D>
+     *        the target type of the iterable.
+     *
      * @return a {@link Multi} emitting the sequence of distinct values
      */
     <D> Multi<D> distinct(String fieldName, Class<D> clazz);
@@ -142,10 +164,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Gets the distinct values of the specified field name.
      *
-     * @param fieldName the field name
-     * @param filter the query filter
-     * @param clazz the default class to cast any distinct items into.
-     * @param <D> the target type of the iterable.
+     * @param fieldName
+     *        the field name
+     * @param filter
+     *        the query filter
+     * @param clazz
+     *        the default class to cast any distinct items into.
+     * @param <D>
+     *        the target type of the iterable.
+     *
      * @return a {@link Multi} emitting the sequence of distinct values
      */
     <D> Multi<D> distinct(String fieldName, Bson filter, Class<D> clazz);
@@ -153,10 +180,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Gets the distinct values of the specified field name.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param fieldName the field name
-     * @param clazz the default class to cast any distinct items into.
-     * @param <D> the target type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param fieldName
+     *        the field name
+     * @param clazz
+     *        the default class to cast any distinct items into.
+     * @param <D>
+     *        the target type of the iterable.
+     *
      * @return a {@link Multi} emitting the sequence of distinct values
      */
     <D> Multi<D> distinct(ClientSession clientSession, String fieldName, Class<D> clazz);
@@ -164,11 +196,17 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Gets the distinct values of the specified field name.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param fieldName the field name
-     * @param filter the query filter
-     * @param clazz the default class to cast any distinct items into.
-     * @param <D> the target type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param fieldName
+     *        the field name
+     * @param filter
+     *        the query filter
+     * @param clazz
+     *        the default class to cast any distinct items into.
+     * @param <D>
+     *        the target type of the iterable.
+     *
      * @return a {@link Multi} emitting the sequence of distinct values
      */
     <D> Multi<D> distinct(ClientSession clientSession, String fieldName, Bson filter, Class<D> clazz);
@@ -176,10 +214,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Gets the distinct values of the specified field name.
      *
-     * @param fieldName the field name
-     * @param clazz the default class to cast any distinct items into.
-     * @param <D> the target type of the iterable.
-     * @param options the stream options
+     * @param fieldName
+     *        the field name
+     * @param clazz
+     *        the default class to cast any distinct items into.
+     * @param <D>
+     *        the target type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return a {@link Multi} emitting the sequence of distinct values
      */
     <D> Multi<D> distinct(String fieldName, Class<D> clazz, DistinctOptions options);
@@ -187,11 +230,17 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Gets the distinct values of the specified field name.
      *
-     * @param fieldName the field name
-     * @param filter the query filter
-     * @param clazz the default class to cast any distinct items into.
-     * @param <D> the target type of the iterable.
-     * @param options the stream options
+     * @param fieldName
+     *        the field name
+     * @param filter
+     *        the query filter
+     * @param clazz
+     *        the default class to cast any distinct items into.
+     * @param <D>
+     *        the target type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return a {@link Multi} emitting the sequence of distinct values
      */
     <D> Multi<D> distinct(String fieldName, Bson filter, Class<D> clazz, DistinctOptions options);
@@ -199,25 +248,37 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Gets the distinct values of the specified field name.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param fieldName the field name
-     * @param clazz the default class to cast any distinct items into.
-     * @param <D> the target type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param fieldName
+     *        the field name
+     * @param clazz
+     *        the default class to cast any distinct items into.
+     * @param <D>
+     *        the target type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return a {@link Multi} emitting the sequence of distinct values
      */
-    <D> Multi<D> distinct(ClientSession clientSession, String fieldName, Class<D> clazz,
-            DistinctOptions options);
+    <D> Multi<D> distinct(ClientSession clientSession, String fieldName, Class<D> clazz, DistinctOptions options);
 
     /**
      * Gets the distinct values of the specified field name.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param fieldName the field name
-     * @param filter the query filter
-     * @param clazz the default class to cast any distinct items into.
-     * @param <D> the target type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param fieldName
+     *        the field name
+     * @param filter
+     *        the query filter
+     * @param clazz
+     *        the default class to cast any distinct items into.
+     * @param <D>
+     *        the target type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return a {@link Multi} emitting the sequence of distinct values
      */
     <D> Multi<D> distinct(ClientSession clientSession, String fieldName, Bson filter, Class<D> clazz,
@@ -233,8 +294,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     <D> Multi<D> find(Class<D> clazz);
@@ -242,7 +306,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param filter the query filter
+     * @param filter
+     *        the query filter
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     Multi<T> find(Bson filter);
@@ -250,9 +316,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param filter the query filter
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param filter
+     *        the query filter
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     <D> Multi<D> find(Bson filter, Class<D> clazz);
@@ -260,7 +330,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     Multi<T> find(ClientSession clientSession);
@@ -268,9 +340,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     <D> Multi<D> find(ClientSession clientSession, Class<D> clazz);
@@ -278,8 +354,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     Multi<T> find(ClientSession clientSession, Bson filter);
@@ -287,10 +366,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     <D> Multi<D> find(ClientSession clientSession, Bson filter, Class<D> clazz);
@@ -298,7 +382,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param options the stream options
+     * @param options
+     *        the stream options
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     Multi<T> find(FindOptions options);
@@ -306,9 +392,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     <D> Multi<D> find(Class<D> clazz, FindOptions options);
@@ -316,7 +406,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param filter the query filter
+     * @param filter
+     *        the query filter
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     Multi<T> find(Bson filter, FindOptions options);
@@ -324,10 +416,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param filter the query filter
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param filter
+     *        the query filter
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     <D> Multi<D> find(Bson filter, Class<D> clazz, FindOptions options);
@@ -335,8 +432,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param options
+     *        the stream options
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     Multi<T> find(ClientSession clientSession, FindOptions options);
@@ -344,10 +444,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     <D> Multi<D> find(ClientSession clientSession, Class<D> clazz, FindOptions options);
@@ -355,9 +460,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter
+     * @param options
+     *        the stream options
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     Multi<T> find(ClientSession clientSession, Bson filter, FindOptions options);
@@ -365,11 +474,17 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Finds all documents in the collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream with the selected documents, can be empty if none matches.
      */
     <D> Multi<D> find(ClientSession clientSession, Bson filter, Class<D> clazz, FindOptions options);
@@ -377,7 +492,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified aggregation pipeline.
      *
-     * @param pipeline the aggregate pipeline
+     * @param pipeline
+     *        the aggregate pipeline
+     *
      * @return a stream containing the result of the aggregation operation
      */
     Multi<T> aggregate(List<? extends Bson> pipeline);
@@ -385,9 +502,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified aggregation pipeline.
      *
-     * @param pipeline the aggregate pipeline
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param pipeline
+     *        the aggregate pipeline
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return a stream containing the result of the aggregation operation
      */
     <D> Multi<D> aggregate(List<? extends Bson> pipeline, Class<D> clazz);
@@ -395,8 +516,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified aggregation pipeline.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregate pipeline
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregate pipeline
+     *
      * @return a stream containing the result of the aggregation operation
      */
     Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline);
@@ -404,10 +528,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified aggregation pipeline.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregate pipeline
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregate pipeline
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return a stream containing the result of the aggregation operation
      */
     <D> Multi<D> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, Class<D> clazz);
@@ -417,8 +546,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified aggregation pipeline.
      *
-     * @param pipeline the aggregate pipeline
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregate pipeline
+     * @param options
+     *        the stream options
+     *
      * @return a stream containing the result of the aggregation operation
      */
     Multi<T> aggregate(List<? extends Bson> pipeline, AggregateOptions options);
@@ -426,10 +558,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified aggregation pipeline.
      *
-     * @param pipeline the aggregate pipeline
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregate pipeline
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return a stream containing the result of the aggregation operation
      */
     <D> Multi<D> aggregate(List<? extends Bson> pipeline, Class<D> clazz, AggregateOptions options);
@@ -437,22 +574,31 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified aggregation pipeline.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregate pipeline
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregate pipeline
+     * @param options
+     *        the stream options
+     *
      * @return a stream containing the result of the aggregation operation
      */
-    Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline,
-            AggregateOptions options);
+    Multi<T> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, AggregateOptions options);
 
     /**
      * Aggregates documents according to the specified aggregation pipeline.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregate pipeline
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregate pipeline
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return a stream containing the result of the aggregation operation
      */
     <D> Multi<D> aggregate(ClientSession clientSession, List<? extends Bson> pipeline, Class<D> clazz,
@@ -468,8 +614,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream of changes
      */
     <D> Multi<ChangeStreamDocument<D>> watch(Class<D> clazz);
@@ -477,7 +626,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     *
      * @return the stream of changes
      */
     Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline);
@@ -485,9 +636,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream of changes
      */
     <D> Multi<ChangeStreamDocument<D>> watch(List<? extends Bson> pipeline, Class<D> clazz);
@@ -495,7 +650,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return the stream of changes
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession);
@@ -503,9 +660,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream of changes
      */
     <D> Multi<ChangeStreamDocument<D>> watch(ClientSession clientSession, Class<D> clazz);
@@ -513,8 +674,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     *
      * @return the stream of changes
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline);
@@ -522,10 +686,15 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream of changes
      */
     <D> Multi<ChangeStreamDocument<D>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
@@ -534,7 +703,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param options the stream options
+     * @param options
+     *        the stream options
+     *
      * @return the stream of changes
      */
     Multi<ChangeStreamDocument<Document>> watch(ChangeStreamOptions options);
@@ -542,31 +713,41 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of changes
      */
-    <D> Multi<ChangeStreamDocument<D>> watch(Class<D> clazz,
-            ChangeStreamOptions options);
+    <D> Multi<ChangeStreamDocument<D>> watch(Class<D> clazz, ChangeStreamOptions options);
 
     /**
      * Creates a change stream for this collection.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param options
+     *        the stream options
+     *
      * @return the stream of changes
      */
-    Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline,
-            ChangeStreamOptions options);
+    Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline, ChangeStreamOptions options);
 
     /**
      * Creates a change stream for this collection.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of changes
      */
     <D> Multi<ChangeStreamDocument<D>> watch(List<? extends Bson> pipeline, Class<D> clazz,
@@ -575,31 +756,41 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param options
+     *        the stream options
+     *
      * @return the stream of changes
      */
-    Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession,
-            ChangeStreamOptions options);
+    Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, ChangeStreamOptions options);
 
     /**
      * Creates a change stream for this collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of changes
      */
-    <D> Multi<ChangeStreamDocument<D>> watch(ClientSession clientSession, Class<D> clazz,
-            ChangeStreamOptions options);
+    <D> Multi<ChangeStreamDocument<D>> watch(ClientSession clientSession, Class<D> clazz, ChangeStreamOptions options);
 
     /**
      * Creates a change stream for this collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param options
+     *        the stream options
+     *
      * @return the stream of changes
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
@@ -608,22 +799,31 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates a change stream for this collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of changes
      */
-    <D> Multi<ChangeStreamDocument<D>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
-            Class<D> clazz, ChangeStreamOptions options);
+    <D> Multi<ChangeStreamDocument<D>> watch(ClientSession clientSession, List<? extends Bson> pipeline, Class<D> clazz,
+            ChangeStreamOptions options);
 
     /**
      * Aggregates documents according to the specified map-reduce function.
      *
-     * @param mapFunction A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-     * @param reduceFunction A JavaScript function that "reduces" to a single object all the values associated with a particular
+     * @param mapFunction
+     *        A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
+     * @param reduceFunction
+     *        A JavaScript function that "reduces" to a single object all the values associated with a particular
      *        key.
+     *
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
     Multi<T> mapReduce(String mapFunction, String reduceFunction);
@@ -631,11 +831,16 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified map-reduce function.
      *
-     * @param mapFunction A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-     * @param reduceFunction A JavaScript function that "reduces" to a single object all the values associated with a particular
+     * @param mapFunction
+     *        A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
+     * @param reduceFunction
+     *        A JavaScript function that "reduces" to a single object all the values associated with a particular
      *        key.
-     * @param clazz the class to decode each resulting document into.
-     * @param <D> the target document type of the iterable.
+     * @param clazz
+     *        the class to decode each resulting document into.
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
     <D> Multi<D> mapReduce(String mapFunction, String reduceFunction, Class<D> clazz);
@@ -643,10 +848,14 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified map-reduce function.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param mapFunction A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-     * @param reduceFunction A JavaScript function that "reduces" to a single object all the values associated with a particular
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param mapFunction
+     *        A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
+     * @param reduceFunction
+     *        A JavaScript function that "reduces" to a single object all the values associated with a particular
      *        key.
+     *
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
     Multi<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction);
@@ -654,24 +863,33 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified map-reduce function.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param mapFunction A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-     * @param reduceFunction A JavaScript function that "reduces" to a single object all the values associated with a particular
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param mapFunction
+     *        A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
+     * @param reduceFunction
+     *        A JavaScript function that "reduces" to a single object all the values associated with a particular
      *        key.
-     * @param clazz the class to decode each resulting document into.
-     * @param <D> the target document type of the iterable.
+     * @param clazz
+     *        the class to decode each resulting document into.
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
-    <D> Multi<D> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
-            Class<D> clazz);
+    <D> Multi<D> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction, Class<D> clazz);
 
     /**
      * Aggregates documents according to the specified map-reduce function.
      *
-     * @param mapFunction A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-     * @param reduceFunction A JavaScript function that "reduces" to a single object all the values associated with a particular
+     * @param mapFunction
+     *        A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
+     * @param reduceFunction
+     *        A JavaScript function that "reduces" to a single object all the values associated with a particular
      *        key.
-     * @param options The map reduce options configuring process and result.
+     * @param options
+     *        The map reduce options configuring process and result.
+     *
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
     Multi<T> mapReduce(String mapFunction, String reduceFunction, MapReduceOptions options);
@@ -679,25 +897,35 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified map-reduce function.
      *
-     * @param mapFunction A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-     * @param reduceFunction A JavaScript function that "reduces" to a single object all the values associated with a particular
+     * @param mapFunction
+     *        A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
+     * @param reduceFunction
+     *        A JavaScript function that "reduces" to a single object all the values associated with a particular
      *        key.
-     * @param clazz the class to decode each resulting document into.
-     * @param options The map reduce options configuring process and result.
-     * @param <D> the target document type of the iterable.
+     * @param clazz
+     *        the class to decode each resulting document into.
+     * @param options
+     *        The map reduce options configuring process and result.
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
-    <D> Multi<D> mapReduce(String mapFunction, String reduceFunction, Class<D> clazz,
-            MapReduceOptions options);
+    <D> Multi<D> mapReduce(String mapFunction, String reduceFunction, Class<D> clazz, MapReduceOptions options);
 
     /**
      * Aggregates documents according to the specified map-reduce function.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param mapFunction A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-     * @param reduceFunction A JavaScript function that "reduces" to a single object all the values associated with a particular
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param mapFunction
+     *        A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
+     * @param reduceFunction
+     *        A JavaScript function that "reduces" to a single object all the values associated with a particular
      *        key.
-     * @param options The map reduce options configuring process and result.
+     * @param options
+     *        The map reduce options configuring process and result.
+     *
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
     Multi<T> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
@@ -706,23 +934,31 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Aggregates documents according to the specified map-reduce function.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param mapFunction A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-     * @param reduceFunction A JavaScript function that "reduces" to a single object all the values associated with a particular
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param mapFunction
+     *        A JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
+     * @param reduceFunction
+     *        A JavaScript function that "reduces" to a single object all the values associated with a particular
      *        key.
-     * @param clazz the class to decode each resulting document into.
-     * @param options The map reduce options configuring process and result.
-     * @param <D> the target document type of the iterable.
+     * @param clazz
+     *        the class to decode each resulting document into.
+     * @param options
+     *        The map reduce options configuring process and result.
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return a {@link Multi} containing the result of the map-reduce operation
      */
-    <D> Multi<D> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction,
-            Class<D> clazz,
+    <D> Multi<D> mapReduce(ClientSession clientSession, String mapFunction, String reduceFunction, Class<D> clazz,
             MapReduceOptions options);
 
     /**
      * Executes a mix of inserts, updates, replaces, and deletes.
      *
-     * @param requests the writes to execute
+     * @param requests
+     *        the writes to execute
+     *
      * @return a {@link Uni} receiving the {@link BulkWriteResult}
      */
     Uni<BulkWriteResult> bulkWrite(List<? extends WriteModel<? extends T>> requests);
@@ -730,39 +966,48 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Executes a mix of inserts, updates, replaces, and deletes.
      *
-     * @param requests the writes to execute
-     * @param options the options to apply to the bulk write operation
+     * @param requests
+     *        the writes to execute
+     * @param options
+     *        the options to apply to the bulk write operation
+     *
      * @return a {@link Uni} receiving the {@link BulkWriteResult}
      */
-    Uni<BulkWriteResult> bulkWrite(List<? extends WriteModel<? extends T>> requests,
-            BulkWriteOptions options);
+    Uni<BulkWriteResult> bulkWrite(List<? extends WriteModel<? extends T>> requests, BulkWriteOptions options);
 
     /**
      * Executes a mix of inserts, updates, replaces, and deletes.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param requests the writes to execute
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param requests
+     *        the writes to execute
+     *
      * @return a {@link Uni} receiving the {@link BulkWriteResult}
      */
-    Uni<BulkWriteResult> bulkWrite(ClientSession clientSession,
-            List<? extends WriteModel<? extends T>> requests);
+    Uni<BulkWriteResult> bulkWrite(ClientSession clientSession, List<? extends WriteModel<? extends T>> requests);
 
     /**
      * Executes a mix of inserts, updates, replaces, and deletes.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param requests the writes to execute
-     * @param options the options to apply to the bulk write operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param requests
+     *        the writes to execute
+     * @param options
+     *        the options to apply to the bulk write operation
+     *
      * @return a {@link Uni} receiving the {@link BulkWriteResult}
      */
-    Uni<BulkWriteResult> bulkWrite(ClientSession clientSession,
-            List<? extends WriteModel<? extends T>> requests,
+    Uni<BulkWriteResult> bulkWrite(ClientSession clientSession, List<? extends WriteModel<? extends T>> requests,
             BulkWriteOptions options);
 
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
      *
-     * @param document the document to insert
+     * @param document
+     *        the document to insert
+     *
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
@@ -771,8 +1016,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
      *
-     * @param document the document to insert
-     * @param options the options to apply to the operation
+     * @param document
+     *        the document to insert
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
@@ -781,8 +1029,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param document the document to insert
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param document
+     *        the document to insert
+     *
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
@@ -791,9 +1042,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Inserts the provided document. If the document is missing an identifier, the driver should generate one.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param document the document to insert
-     * @param options the options to apply to the operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param document
+     *        the document to insert
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
@@ -802,7 +1057,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
      *
-     * @param documents the documents to insert
+     * @param documents
+     *        the documents to insert
+     *
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
@@ -811,8 +1068,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
      *
-     * @param documents the documents to insert
-     * @param options the options to apply to the operation
+     * @param documents
+     *        the documents to insert
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
@@ -821,8 +1081,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param documents the documents to insert
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param documents
+     *        the documents to insert
+     *
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
@@ -831,9 +1094,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Inserts a batch of documents. The preferred way to perform bulk inserts is to use the BulkWrite API.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param documents the documents to insert
-     * @param options the options to apply to the operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param documents
+     *        the documents to insert
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed successfully when the operation completes, or propagating a
      *         {@link com.mongodb.DuplicateKeyException} or {@link com.mongodb.MongoException} on failure.
      */
@@ -841,44 +1108,56 @@ public interface ReactiveMongoCollection<T> {
             InsertManyOptions options);
 
     /**
-     * Removes at most one document from the collection that matches the given filter.
-     * If no documents match, the collection is not modified.
+     * Removes at most one document from the collection that matches the given filter. If no documents match, the
+     * collection is not modified.
      *
-     * @param filter the query filter to apply to the delete operation
+     * @param filter
+     *        the query filter to apply to the delete operation
+     *
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
     Uni<DeleteResult> deleteOne(Bson filter);
 
     /**
-     * Removes at most one document from the collection that matches the given filter.
-     * If no documents match, the collection is not modified.
+     * Removes at most one document from the collection that matches the given filter. If no documents match, the
+     * collection is not modified.
      *
-     * @param filter the query filter to apply to the delete operation
-     * @param options the options to apply to the delete operation
+     * @param filter
+     *        the query filter to apply to the delete operation
+     * @param options
+     *        the options to apply to the delete operation
+     *
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
     Uni<DeleteResult> deleteOne(Bson filter, DeleteOptions options);
 
     /**
-     * Removes at most one document from the collection that matches the given filter.
-     * If no documents match, the collection is not modified.
+     * Removes at most one document from the collection that matches the given filter. If no documents match, the
+     * collection is not modified.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply to the delete operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to apply to the delete operation
+     *
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
     Uni<DeleteResult> deleteOne(ClientSession clientSession, Bson filter);
 
     /**
-     * Removes at most one document from the collection that matches the given filter.
-     * If no documents match, the collection is not modified.
+     * Removes at most one document from the collection that matches the given filter. If no documents match, the
+     * collection is not modified.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply to the delete operation
-     * @param options the options to apply to the delete operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to apply to the delete operation
+     * @param options
+     *        the options to apply to the delete operation
+     *
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -888,7 +1167,9 @@ public interface ReactiveMongoCollection<T> {
      * Removes all documents from the collection that match the given query filter. If no documents match, the
      * collection is not modified.
      *
-     * @param filter the query filter to apply to the delete operation
+     * @param filter
+     *        the query filter to apply to the delete operation
+     *
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -898,8 +1179,11 @@ public interface ReactiveMongoCollection<T> {
      * Removes all documents from the collection that match the given query filter. If no documents match, the
      * collection is not modified.
      *
-     * @param filter the query filter to apply to the delete operation
-     * @param options the options to apply to the delete operation
+     * @param filter
+     *        the query filter to apply to the delete operation
+     * @param options
+     *        the options to apply to the delete operation
+     *
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -909,8 +1193,11 @@ public interface ReactiveMongoCollection<T> {
      * Removes all documents from the collection that match the given query filter. If no documents match, the
      * collection is not modified.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply to the delete operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to apply to the delete operation
+     *
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -920,9 +1207,13 @@ public interface ReactiveMongoCollection<T> {
      * Removes all documents from the collection that match the given query filter. If no documents match, the
      * collection is not modified.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply to the delete operation
-     * @param options the options to apply to the delete operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to apply to the delete operation
+     * @param options
+     *        the options to apply to the delete operation
+     *
      * @return a {@link Uni} receiving the {@link DeleteResult}, or propagating a {@link com.mongodb.MongoException} on
      *         failure.
      */
@@ -931,8 +1222,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Replace a document in the collection according to the specified arguments.
      *
-     * @param filter the query filter to apply to the replace operation
-     * @param replacement the replacement document
+     * @param filter
+     *        the query filter to apply to the replace operation
+     * @param replacement
+     *        the replacement document
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> replaceOne(Bson filter, T replacement);
@@ -940,9 +1234,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Replace a document in the collection according to the specified arguments.
      *
-     * @param filter the query filter to apply to the replace operation
-     * @param replacement the replacement document
-     * @param options the options to apply to the replace operation
+     * @param filter
+     *        the query filter to apply to the replace operation
+     * @param replacement
+     *        the replacement document
+     * @param options
+     *        the options to apply to the replace operation
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> replaceOne(Bson filter, T replacement, ReplaceOptions options);
@@ -950,9 +1248,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Replace a document in the collection according to the specified arguments.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply to the replace operation
-     * @param replacement the replacement document
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to apply to the replace operation
+     * @param replacement
+     *        the replacement document
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> replaceOne(ClientSession clientSession, Bson filter, T replacement);
@@ -960,21 +1262,28 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Replace a document in the collection according to the specified arguments.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply to the replace operation
-     * @param replacement the replacement document
-     * @param options the options to apply to the replace operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to apply to the replace operation
+     * @param replacement
+     *        the replacement document
+     * @param options
+     *        the options to apply to the replace operation
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
-    Uni<UpdateResult> replaceOne(ClientSession clientSession, Bson filter, T replacement,
-            ReplaceOptions options);
+    Uni<UpdateResult> replaceOne(ClientSession clientSession, Bson filter, T replacement, ReplaceOptions options);
 
     /**
      * Update a single document in the collection according to the specified arguments.
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> updateOne(Bson filter, Bson update);
@@ -982,10 +1291,14 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update a single document in the collection according to the specified arguments.
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
-     * @param options the options to apply to the update operation
+     * @param options
+     *        the options to apply to the update operation
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> updateOne(Bson filter, Bson update, UpdateOptions options);
@@ -993,10 +1306,14 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update a single document in the collection according to the specified arguments.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, Bson update);
@@ -1004,78 +1321,98 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update a single document in the collection according to the specified arguments.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
-     * @param options the options to apply to the update operation
+     * @param options
+     *        the options to apply to the update operation
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
-    Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, Bson update,
-            UpdateOptions options);
+    Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, Bson update, UpdateOptions options);
 
     /**
      * Update a single document in the collection according to the specified arguments.
-     *
      * <p>
      * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
      * </p>
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     *
      * @return a publisher with a single element the UpdateResult
      */
     Uni<UpdateResult> updateOne(Bson filter, List<? extends Bson> update);
 
     /**
      * Update a single document in the collection according to the specified arguments.
-     *
      * <p>
      * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
      * </p>
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
-     * @param options the options to apply to the update operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     * @param options
+     *        the options to apply to the update operation
+     *
      * @return a publisher with a single element the UpdateResult
      */
     Uni<UpdateResult> updateOne(Bson filter, List<? extends Bson> update, UpdateOptions options);
 
     /**
      * Update a single document in the collection according to the specified arguments.
-     *
      * <p>
      * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
      * </p>
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     *
      * @return a publisher with a single element the UpdateResult
      */
     Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update);
 
     /**
      * Update a single document in the collection according to the specified arguments.
-     *
      * <p>
      * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
      * </p>
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
-     * @param options the options to apply to the update operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     * @param options
+     *        the options to apply to the update operation
+     *
      * @return a publisher with a single element the UpdateResult
      */
-    Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update, UpdateOptions options);
+    Uni<UpdateResult> updateOne(ClientSession clientSession, Bson filter, List<? extends Bson> update,
+            UpdateOptions options);
 
     /**
      * Update all documents in the collection according to the specified arguments.
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> updateMany(Bson filter, Bson update);
@@ -1083,10 +1420,14 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update all documents in the collection according to the specified arguments.
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
-     * @param options the options to apply to the update operation
+     * @param options
+     *        the options to apply to the update operation
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> updateMany(Bson filter, Bson update, UpdateOptions options);
@@ -1094,10 +1435,14 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update all documents in the collection according to the specified arguments.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
     Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, Bson update);
@@ -1105,21 +1450,28 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update all documents in the collection according to the specified arguments.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
-     * @param options the options to apply to the update operation
+     * @param options
+     *        the options to apply to the update operation
+     *
      * @return a {@link Uni} receiving the {@link UpdateResult}
      */
-    Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, Bson update,
-            UpdateOptions options);
+    Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, Bson update, UpdateOptions options);
 
     /**
      * Update all documents in the collection according to the specified arguments.
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     *
      * @return a publisher with a single element the UpdateResult
      */
     Uni<UpdateResult> updateMany(Bson filter, List<? extends Bson> update);
@@ -1127,9 +1479,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update all documents in the collection according to the specified arguments.
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
-     * @param options the options to apply to the update operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     * @param options
+     *        the options to apply to the update operation
+     *
      * @return a publisher with a single element the UpdateResult
      */
     Uni<UpdateResult> updateMany(Bson filter, List<? extends Bson> update, UpdateOptions options);
@@ -1137,9 +1493,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update all documents in the collection according to the specified arguments.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     *
      * @return a publisher with a single element the UpdateResult
      */
     Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update);
@@ -1147,18 +1507,26 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Update all documents in the collection according to the specified arguments.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
-     * @param options the options to apply to the update operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     * @param options
+     *        the options to apply to the update operation
+     *
      * @return a publisher with a single element the UpdateResult
      */
-    Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update, UpdateOptions options);
+    Uni<UpdateResult> updateMany(ClientSession clientSession, Bson filter, List<? extends Bson> update,
+            UpdateOptions options);
 
     /**
      * Atomically find a document and remove it.
      *
-     * @param filter the query filter to find the document with
+     * @param filter
+     *        the query filter to find the document with
+     *
      * @return a {@link Uni} completed with the document that was removed. If no documents matched the query filter,
      *         then the uni is completed with {@code null}.
      */
@@ -1167,8 +1535,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Atomically find a document and remove it.
      *
-     * @param filter the query filter to find the document with
-     * @param options the options to apply to the operation
+     * @param filter
+     *        the query filter to find the document with
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed with the document that was removed. If no documents matched the query filter,
      *         then the uni is completed with {@code null}.
      */
@@ -1177,8 +1548,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Atomically find a document and remove it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to find the document with
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to find the document with
+     *
      * @return a {@link Uni} completed with the document that was removed. If no documents matched the query filter,
      *         then the uni is completed with {@code null}.
      */
@@ -1187,9 +1561,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Atomically find a document and remove it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to find the document with
-     * @param options the options to apply to the operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to find the document with
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed with the document that was removed. If no documents matched the query filter,
      *         then the uni is completed with {@code null}.
      */
@@ -1198,190 +1576,208 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Atomically find a document and replace it.
      *
-     * @param filter the query filter to apply to the replace operation
-     * @param replacement the replacement document
+     * @param filter
+     *        the query filter to apply to the replace operation
+     * @param replacement
+     *        the replacement document
+     *
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then the uni is completed with {@code null}.
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then the uni is completed with {@code null}.
      */
     Uni<T> findOneAndReplace(Bson filter, T replacement);
 
     /**
      * Atomically find a document and replace it.
      *
-     * @param filter the query filter to apply to the replace operation
-     * @param replacement the replacement document
-     * @param options the options to apply to the operation
+     * @param filter
+     *        the query filter to apply to the replace operation
+     * @param replacement
+     *        the replacement document
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then the uni is completed with {@code null}.
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then the uni is completed with {@code null}.
      */
     Uni<T> findOneAndReplace(Bson filter, T replacement, FindOneAndReplaceOptions options);
 
     /**
      * Atomically find a document and replace it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply to the replace operation
-     * @param replacement the replacement document
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to apply to the replace operation
+     * @param replacement
+     *        the replacement document
+     *
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then the uni is completed with {@code null}.
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then the uni is completed with {@code null}.
      */
     Uni<T> findOneAndReplace(ClientSession clientSession, Bson filter, T replacement);
 
     /**
      * Atomically find a document and replace it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter the query filter to apply to the replace operation
-     * @param replacement the replacement document
-     * @param options the options to apply to the operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        the query filter to apply to the replace operation
+     * @param replacement
+     *        the replacement document
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed with the document that was replaced. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then the uni is completed with {@code null}.
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then the uni is completed with {@code null}.
      */
-    Uni<T> findOneAndReplace(ClientSession clientSession, Bson filter, T replacement,
-            FindOneAndReplaceOptions options);
+    Uni<T> findOneAndReplace(ClientSession clientSession, Bson filter, T replacement, FindOneAndReplaceOptions options);
 
     /**
      * Atomically find a document and update it.
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
+     *
      * @return a {@link Uni} completed with the document that was updated. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then the uni is completed with {@code null}.
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then the uni is completed with {@code null}.
      */
     Uni<T> findOneAndUpdate(Bson filter, Bson update);
 
     /**
      * Atomically find a document and update it.
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
-     * @param options the options to apply to the operation
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed with the document that was updated. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then the uni is completed with {@code null}.
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then the uni is completed with {@code null}.
      */
     Uni<T> findOneAndUpdate(Bson filter, Bson update, FindOneAndUpdateOptions options);
 
     /**
      * Atomically find a document and update it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
+     *
      * @return a {@link Uni} completed with the document that was updated. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then the uni is completed with {@code null}.
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then the uni is completed with {@code null}.
      */
     Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, Bson update);
 
     /**
      * Atomically find a document and update it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a document describing the update, which may not be null. The update to apply must include only update
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a document describing the update, which may not be null. The update to apply must include only update
      *        operators.
-     * @param options the options to apply to the operation
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a {@link Uni} completed with the document that was updated. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then the uni is completed with {@code null}.
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then the uni is completed with {@code null}.
      */
-    Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, Bson update,
-            FindOneAndUpdateOptions options);
+    Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, Bson update, FindOneAndUpdateOptions options);
 
     /**
      * Atomically find a document and update it.
-     *
      * <p>
      * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
      * </p>
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     *
      * @return a publisher with a single element the document that was updated. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then null will be returned
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then null will be returned
      */
     Uni<T> findOneAndUpdate(Bson filter, List<? extends Bson> update);
 
     /**
      * Atomically find a document and update it.
-     *
      * <p>
      * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
      * </p>
      *
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
-     * @param options the options to apply to the operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a publisher with a single element the document that was updated. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then null will be returned
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then null will be returned
      */
     Uni<T> findOneAndUpdate(Bson filter, List<? extends Bson> update, FindOneAndUpdateOptions options);
 
     /**
      * Atomically find a document and update it.
-     *
      * <p>
      * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
      * </p>
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     *
      * @return a publisher with a single element the document that was updated. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then null will be returned
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then null will be returned
      */
     Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, List<? extends Bson> update);
 
     /**
      * Atomically find a document and update it.
-     *
      * <p>
      * Note: Supports retryable writes on MongoDB server versions 3.6 or higher when the retryWrites setting is enabled.
      * </p>
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param filter a document describing the query filter, which may not be null.
-     * @param update a pipeline describing the update, which may not be null.
-     * @param options the options to apply to the operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param filter
+     *        a document describing the query filter, which may not be null.
+     * @param update
+     *        a pipeline describing the update, which may not be null.
+     * @param options
+     *        the options to apply to the operation
+     *
      * @return a publisher with a single element the document that was updated. Depending on the value of the
-     *         {@code returnOriginal}
-     *         property, this will either be the document as it was before the update or as it is after the update. If no
-     *         documents matched the
-     *         query filter, then null will be returned
+     *         {@code returnOriginal} property, this will either be the document as it was before the update or as it is
+     *         after the update. If no documents matched the query filter, then null will be returned
      */
     Uni<T> findOneAndUpdate(ClientSession clientSession, Bson filter, List<? extends Bson> update,
             FindOneAndUpdateOptions options);
@@ -1396,7 +1792,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops this collection from the database.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> drop(ClientSession clientSession);
@@ -1404,7 +1802,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates an index.
      *
-     * @param key an object describing the index key(s), which may not be null.
+     * @param key
+     *        an object describing the index key(s), which may not be null.
+     *
      * @return a {@link Uni} receiving the created index name.
      */
     Uni<String> createIndex(Bson key);
@@ -1412,8 +1812,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates an index.
      *
-     * @param key an object describing the index key(s), which may not be null.
-     * @param options the options for the index
+     * @param key
+     *        an object describing the index key(s), which may not be null.
+     * @param options
+     *        the options for the index
+     *
      * @return a {@link Uni} receiving the created index name.
      */
     Uni<String> createIndex(Bson key, IndexOptions options);
@@ -1421,8 +1824,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates an index.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param key an object describing the index key(s), which may not be null.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param key
+     *        an object describing the index key(s), which may not be null.
+     *
      * @return a {@link Uni} receiving the created index name.
      */
     Uni<String> createIndex(ClientSession clientSession, Bson key);
@@ -1430,9 +1836,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Creates an index.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param key an object describing the index key(s), which may not be null.
-     * @param options the options for the index
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param key
+     *        an object describing the index key(s), which may not be null.
+     * @param options
+     *        the options for the index
+     *
      * @return a {@link Uni} receiving the created index name.
      */
     Uni<String> createIndex(ClientSession clientSession, Bson key, IndexOptions options);
@@ -1440,7 +1850,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Create multiple indexes.
      *
-     * @param indexes the list of indexes
+     * @param indexes
+     *        the list of indexes
+     *
      * @return a {@link Uni} completed with the result when the operation is done. The redeemed list contains the
      *         created index names.
      */
@@ -1449,8 +1861,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Create multiple indexes.
      *
-     * @param indexes the list of indexes
-     * @param createIndexOptions options to use when creating indexes
+     * @param indexes
+     *        the list of indexes
+     * @param createIndexOptions
+     *        options to use when creating indexes
+     *
      * @return a {@link Uni} completed with the result when the operation is done. The redeemed list contains the
      *         created index names.
      */
@@ -1459,8 +1874,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Create multiple indexes.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param indexes the list of indexes
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param indexes
+     *        the list of indexes
+     *
      * @return a {@link Uni} completed with the result when the operation is done. The redeemed list contains the
      *         created index names.
      */
@@ -1469,9 +1887,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Create multiple indexes.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param indexes the list of indexes
-     * @param createIndexOptions options to use when creating indexes
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param indexes
+     *        the list of indexes
+     * @param createIndexOptions
+     *        options to use when creating indexes
+     *
      * @return a {@link Uni} completed with the result when the operation is done. The redeemed list contains the
      *         created index names.
      */
@@ -1488,8 +1910,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Get all the indexes in this collection.
      *
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream of indexes
      */
     <D> Multi<D> listIndexes(Class<D> clazz);
@@ -1497,7 +1922,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Get all the indexes in this collection.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return the stream of indexes
      */
     Multi<Document> listIndexes(ClientSession clientSession);
@@ -1505,9 +1932,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Get all the indexes in this collection.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <D> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <D>
+     *        the target document type of the iterable.
+     *
      * @return the stream of indexes
      */
     <D> Multi<D> listIndexes(ClientSession clientSession, Class<D> clazz);
@@ -1515,7 +1946,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops the index given the keys used to create it.
      *
-     * @param indexName the name of the index to remove
+     * @param indexName
+     *        the name of the index to remove
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndex(String indexName);
@@ -1523,7 +1956,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops the index given the keys used to create it.
      *
-     * @param keys the keys of the index to remove
+     * @param keys
+     *        the keys of the index to remove
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndex(Bson keys);
@@ -1531,8 +1966,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops the index given the keys used to create it.
      *
-     * @param indexName the name of the index to remove
-     * @param dropIndexOptions options to use when dropping indexes
+     * @param indexName
+     *        the name of the index to remove
+     * @param dropIndexOptions
+     *        options to use when dropping indexes
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndex(String indexName, DropIndexOptions dropIndexOptions);
@@ -1540,8 +1978,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops the index given the keys used to create it.
      *
-     * @param keys the keys of the index to remove
-     * @param dropIndexOptions options to use when dropping indexes
+     * @param keys
+     *        the keys of the index to remove
+     * @param dropIndexOptions
+     *        options to use when dropping indexes
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndex(Bson keys, DropIndexOptions dropIndexOptions);
@@ -1549,8 +1990,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops the index given the keys used to create it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param indexName the name of the index to remove
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param indexName
+     *        the name of the index to remove
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndex(ClientSession clientSession, String indexName);
@@ -1558,8 +2002,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops the index given the keys used to create it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param keys the keys of the index to remove
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param keys
+     *        the keys of the index to remove
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndex(ClientSession clientSession, Bson keys);
@@ -1567,9 +2014,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops the index given the keys used to create it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param indexName the name of the index to remove
-     * @param dropIndexOptions options to use when dropping indexes
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param indexName
+     *        the name of the index to remove
+     * @param dropIndexOptions
+     *        options to use when dropping indexes
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndex(ClientSession clientSession, String indexName, DropIndexOptions dropIndexOptions);
@@ -1577,9 +2028,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drops the index given the keys used to create it.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param keys the keys of the index to remove
-     * @param dropIndexOptions options to use when dropping indexes
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param keys
+     *        the keys of the index to remove
+     * @param dropIndexOptions
+     *        options to use when dropping indexes
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndex(ClientSession clientSession, Bson keys, DropIndexOptions dropIndexOptions);
@@ -1594,7 +2049,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drop all the indexes on this collection, except for the default on _id.
      *
-     * @param dropIndexOptions options to use when dropping indexes
+     * @param dropIndexOptions
+     *        options to use when dropping indexes
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndexes(DropIndexOptions dropIndexOptions);
@@ -1602,7 +2059,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drop all the indexes on this collection, except for the default on _id.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndexes(ClientSession clientSession);
@@ -1610,8 +2069,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Drop all the indexes on this collection, except for the default on _id.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param dropIndexOptions options to use when dropping indexes
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param dropIndexOptions
+     *        options to use when dropping indexes
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> dropIndexes(ClientSession clientSession, DropIndexOptions dropIndexOptions);
@@ -1619,7 +2081,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Rename the collection with oldCollectionName to the newCollectionName.
      *
-     * @param newCollectionNamespace the name the collection will be renamed to
+     * @param newCollectionNamespace
+     *        the name the collection will be renamed to
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> renameCollection(MongoNamespace newCollectionNamespace);
@@ -1627,8 +2091,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Rename the collection with oldCollectionName to the newCollectionName.
      *
-     * @param newCollectionNamespace the name the collection will be renamed to
-     * @param options the options for renaming a collection
+     * @param newCollectionNamespace
+     *        the name the collection will be renamed to
+     * @param options
+     *        the options for renaming a collection
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> renameCollection(MongoNamespace newCollectionNamespace, RenameCollectionOptions options);
@@ -1636,8 +2103,11 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Rename the collection with oldCollectionName to the newCollectionName.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param newCollectionNamespace the name the collection will be renamed to
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param newCollectionNamespace
+     *        the name the collection will be renamed to
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> renameCollection(ClientSession clientSession, MongoNamespace newCollectionNamespace);
@@ -1645,9 +2115,13 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Rename the collection with oldCollectionName to the newCollectionName.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param newCollectionNamespace the name the collection will be renamed to
-     * @param options the options for renaming a collection
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param newCollectionNamespace
+     *        the name the collection will be renamed to
+     * @param options
+     *        the options for renaming a collection
+     *
      * @return a {@link Uni} completed when the operation is done.
      */
     Uni<Void> renameCollection(ClientSession clientSession, MongoNamespace newCollectionNamespace,
@@ -1661,11 +2135,14 @@ public interface ReactiveMongoCollection<T> {
     CodecRegistry getCodecRegistry();
 
     /**
-     * Create a new ReactiveMongoCollection instance with a different default class to cast any documents returned from the
-     * database into..
+     * Create a new ReactiveMongoCollection instance with a different default class to cast any documents returned from
+     * the database into..
      *
-     * @param clazz the default class to cast any documents returned from the database into.
-     * @param <NewTDocument> The type that the new collection will encode documents from and decode documents to
+     * @param clazz
+     *        the default class to cast any documents returned from the database into.
+     * @param <NewTDocument>
+     *        The type that the new collection will encode documents from and decode documents to
+     *
      * @return a new ReactiveMongoCollection instance with the different default class
      */
     <NewTDocument> ReactiveMongoCollection<NewTDocument> withDocumentClass(Class<NewTDocument> clazz);
@@ -1673,7 +2150,9 @@ public interface ReactiveMongoCollection<T> {
     /**
      * Create a new ReactiveMongoCollection instance with a different read preference.
      *
-     * @param readPreference the new {@link com.mongodb.ReadPreference} for the collection
+     * @param readPreference
+     *        the new {@link com.mongodb.ReadPreference} for the collection
+     *
      * @return a new ReactiveMongoCollection instance with the different readPreference
      */
     ReactiveMongoCollection<T> withReadPreference(ReadPreference readPreference);

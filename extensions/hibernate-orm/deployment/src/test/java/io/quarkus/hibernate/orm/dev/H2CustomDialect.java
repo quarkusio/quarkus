@@ -14,22 +14,17 @@ import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
 public class H2CustomDialect extends H2Dialect {
 
     @Override
-    public SqmMultiTableMutationStrategy getFallbackSqmMutationStrategy(
-            EntityMappingType entityDescriptor,
+    public SqmMultiTableMutationStrategy getFallbackSqmMutationStrategy(EntityMappingType entityDescriptor,
             RuntimeModelCreationContext runtimeModelCreationContext) {
         return new SqmMultiTableMutationStrategy() {
             @Override
-            public int executeUpdate(
-                    SqmUpdateStatement<?> sqmUpdateStatement,
-                    DomainParameterXref domainParameterXref,
+            public int executeUpdate(SqmUpdateStatement<?> sqmUpdateStatement, DomainParameterXref domainParameterXref,
                     DomainQueryExecutionContext domainQueryExecutionContext) {
                 return 0;
             }
 
             @Override
-            public int executeDelete(
-                    SqmDeleteStatement<?> sqmDeleteStatement,
-                    DomainParameterXref domainParameterXref,
+            public int executeDelete(SqmDeleteStatement<?> sqmDeleteStatement, DomainParameterXref domainParameterXref,
                     DomainQueryExecutionContext domainQueryExecutionContext) {
                 return 0;
             }
@@ -37,14 +32,11 @@ public class H2CustomDialect extends H2Dialect {
     }
 
     @Override
-    public SqmMultiTableInsertStrategy getFallbackSqmInsertStrategy(
-            EntityMappingType entityDescriptor,
+    public SqmMultiTableInsertStrategy getFallbackSqmInsertStrategy(EntityMappingType entityDescriptor,
             RuntimeModelCreationContext runtimeModelCreationContext) {
         return new SqmMultiTableInsertStrategy() {
             @Override
-            public int executeInsert(
-                    SqmInsertStatement<?> sqmInsertStatement,
-                    DomainParameterXref domainParameterXref,
+            public int executeInsert(SqmInsertStatement<?> sqmInsertStatement, DomainParameterXref domainParameterXref,
                     DomainQueryExecutionContext domainQueryExecutionContext) {
                 return 0;
             }

@@ -11,29 +11,24 @@ import io.restassured.RestAssured;
  */
 public abstract class JpaSecurityRealmTest {
 
-    protected static Class[] testClasses = {
-            SingleRoleSecuredServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
-            ParametrizedPathsResource.class, SubjectExposingResource.class
-    };
+    protected static Class[] testClasses = { SingleRoleSecuredServlet.class, TestApplication.class,
+            RolesEndpointClassLevel.class, ParametrizedPathsResource.class, SubjectExposingResource.class };
 
     // Basic @ServletSecurity tests
     @Test()
     public void testSecureAccessFailure() {
-        RestAssured.when().get("/servlet-secured").then()
-                .statusCode(401);
+        RestAssured.when().get("/servlet-secured").then().statusCode(401);
     }
 
     @Test()
     public void testSecureRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUser")
-                .when().get("/servlet-secured").then()
+        RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUser").when().get("/servlet-secured").then()
                 .statusCode(403);
     }
 
     @Test()
     public void testSecureAccessSuccess() {
-        RestAssured.given().auth().preemptive().basic("user", "user")
-                .when().get("/servlet-secured").then()
+        RestAssured.given().auth().preemptive().basic("user", "user").when().get("/servlet-secured").then()
                 .statusCode(200);
     }
 
@@ -42,8 +37,7 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetFailure() {
-        RestAssured.when().get("/jaxrs-secured/roles-class").then()
-                .statusCode(401);
+        RestAssured.when().get("/jaxrs-secured/roles-class").then().statusCode(401);
     }
 
     /**
@@ -51,9 +45,8 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUser")
-                .when().get("/jaxrs-secured/roles-class").then()
-                .statusCode(403);
+        RestAssured.given().auth().preemptive().basic("noRoleUser", "noRoleUser").when()
+                .get("/jaxrs-secured/roles-class").then().statusCode(403);
     }
 
     /**
@@ -61,8 +54,7 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("user", "user")
-                .when().get("/jaxrs-secured/roles-class").then()
+        RestAssured.given().auth().preemptive().basic("user", "user").when().get("/jaxrs-secured/roles-class").then()
                 .statusCode(200);
     }
 
@@ -71,16 +63,14 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsPathAdminRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("admin", "admin")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
-                .statusCode(200);
+        RestAssured.given().auth().preemptive().basic("admin", "admin").when()
+                .get("/jaxrs-secured/parameterized-paths/my/banking/admin").then().statusCode(200);
     }
 
     @Test
     public void testJaxrsPathAdminRoleFailure() {
-        RestAssured.given().auth().preemptive().basic("user", "user")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/admin").then()
-                .statusCode(403);
+        RestAssured.given().auth().preemptive().basic("user", "user").when()
+                .get("/jaxrs-secured/parameterized-paths/my/banking/admin").then().statusCode(403);
     }
 
     /**
@@ -88,9 +78,8 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsPathUserRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("user", "user")
-                .when().get("/jaxrs-secured/parameterized-paths/my/banking/view").then()
-                .statusCode(200);
+        RestAssured.given().auth().preemptive().basic("user", "user").when()
+                .get("/jaxrs-secured/parameterized-paths/my/banking/view").then().statusCode(200);
     }
 
     /**
@@ -98,18 +87,14 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsUserRoleSuccess() {
-        RestAssured.given().auth().preemptive().basic("user", "user")
-                .when().get("/jaxrs-secured/subject/secured").then()
-                .statusCode(200)
-                .body(equalTo("user"));
+        RestAssured.given().auth().preemptive().basic("user", "user").when().get("/jaxrs-secured/subject/secured")
+                .then().statusCode(200).body(equalTo("user"));
     }
 
     @Test
     public void testJaxrsInjectedPrincipalSuccess() {
-        RestAssured.given().auth().preemptive().basic("user", "user")
-                .when().get("/jaxrs-secured/subject/principal-secured").then()
-                .statusCode(200)
-                .body(equalTo("user"));
+        RestAssured.given().auth().preemptive().basic("user", "user").when()
+                .get("/jaxrs-secured/subject/principal-secured").then().statusCode(200).body(equalTo("user"));
     }
 
     /**
@@ -117,9 +102,7 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetPermitAll() {
-        RestAssured.when().get("/jaxrs-secured/subject/unsecured").then()
-                .statusCode(200)
-                .body(equalTo("anonymous"));
+        RestAssured.when().get("/jaxrs-secured/subject/unsecured").then().statusCode(200).body(equalTo("anonymous"));
     }
 
     /**
@@ -127,8 +110,7 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetDenyAllWithoutAuth() {
-        RestAssured.when().get("/jaxrs-secured/subject/denied").then()
-                .statusCode(401);
+        RestAssured.when().get("/jaxrs-secured/subject/denied").then().statusCode(401);
     }
 
     /**
@@ -136,8 +118,7 @@ public abstract class JpaSecurityRealmTest {
      */
     @Test
     public void testJaxrsGetDenyAllWithAuth() {
-        RestAssured.given().auth().preemptive().basic("user", "user")
-                .when().get("/jaxrs-secured/subject/denied").then()
+        RestAssured.given().auth().preemptive().basic("user", "user").when().get("/jaxrs-secured/subject/denied").then()
                 .statusCode(403);
     }
 }

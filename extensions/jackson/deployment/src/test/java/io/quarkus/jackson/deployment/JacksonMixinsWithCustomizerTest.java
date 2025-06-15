@@ -54,7 +54,8 @@ public class JacksonMixinsWithCustomizerTest {
         public String name;
     }
 
-    // this mixin will override the AutoFruitMixin because it will be explicitly registered by the user with a customizer
+    // this mixin will override the AutoFruitMixin because it will be explicitly registered by the user with a
+    // customizer
     public abstract static class ManualFruitMixin {
         @JsonProperty("manual")
         public String name;

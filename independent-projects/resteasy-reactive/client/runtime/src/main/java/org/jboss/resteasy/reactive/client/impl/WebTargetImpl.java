@@ -38,9 +38,7 @@ public class WebTargetImpl implements WebTarget {
     private List<ParamConverterProvider> paramConverterProviders = Collections.emptyList();
 
     public WebTargetImpl(ClientImpl restClient, HttpClient client, UriBuilder uriBuilder,
-            ConfigurationImpl configuration,
-            HandlerChain handlerChain,
-            ThreadSetupAction requestContext) {
+            ConfigurationImpl configuration, HandlerChain handlerChain, ThreadSetupAction requestContext) {
         this.restClient = restClient;
         this.client = client;
         this.uriBuilder = uriBuilder;
@@ -50,11 +48,11 @@ public class WebTargetImpl implements WebTarget {
     }
 
     /**
-     * Get a new UriBuilder explicitly using RESTEasy implementation
-     * (instead of running UriBuilder.fromUri(uri) which relies on
-     * current registered JAX-RS implementation)
+     * Get a new UriBuilder explicitly using RESTEasy implementation (instead of running UriBuilder.fromUri(uri) which
+     * relies on current registered JAX-RS implementation)
      *
      * @param uri
+     *
      * @return
      */
     private static UriBuilder uriBuilderFromUri(URI uri) {
@@ -283,8 +281,9 @@ public class WebTargetImpl implements WebTarget {
         if (name == null)
             throw new NullPointerException("Param was null");
 
-        //The whole array can be represented as one object, so we need to cast it to array of objects
-        if (values.length == 1 && values[0].getClass().isArray() && !values[0].getClass().getComponentType().isPrimitive()) {
+        // The whole array can be represented as one object, so we need to cast it to array of objects
+        if (values.length == 1 && values[0].getClass().isArray()
+                && !values[0].getClass().getComponentType().isPrimitive()) {
             values = (Object[]) values[0];
         }
 
@@ -300,17 +299,14 @@ public class WebTargetImpl implements WebTarget {
         return newInstance(client, copy, configuration);
     }
 
-    protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder,
-            ConfigurationImpl configuration) {
+    protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder, ConfigurationImpl configuration) {
         return newInstance(client, uriBuilder, configuration, preClientSendHandler);
     }
 
-    protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder,
-            ConfigurationImpl configuration,
+    protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder, ConfigurationImpl configuration,
             ClientRestHandler preClientSendHandler) {
         WebTargetImpl result = new WebTargetImpl(restClient, client, uriBuilder, configuration,
-                handlerChain.setPreClientSendHandler(preClientSendHandler),
-                requestContext);
+                handlerChain.setPreClientSendHandler(preClientSendHandler), requestContext);
         result.setPreClientSendHandler(preClientSendHandler);
         return result;
     }
@@ -356,8 +352,10 @@ public class WebTargetImpl implements WebTarget {
     /**
      * If the URI starts with stork:// or storks://, then register the StorkClientRequestFilter automatically.
      *
-     * @param configuration the configuration
-     * @param actualUri the uri
+     * @param configuration
+     *        the configuration
+     * @param actualUri
+     *        the uri
      */
     private static void registerStorkFilterIfNeeded(ConfigurationImpl configuration, URI actualUri) {
         if (actualUri.getScheme() != null && actualUri.getScheme().startsWith("stork")
@@ -367,14 +365,15 @@ public class WebTargetImpl implements WebTarget {
     }
 
     /**
-     * Checks if the Stork request filter is already registered.
-     * We cannot use configuration.isRegistered, as the user registration uses a subclass, and so fail the equality
-     * expectation.
+     * Checks if the Stork request filter is already registered. We cannot use configuration.isRegistered, as the user
+     * registration uses a subclass, and so fail the equality expectation.
      * <p>
      * This method prevents having the stork filter registered twice: once because the uri starts with stork:// and,
      * once from the user.
      *
-     * @param configuration the configuration
+     * @param configuration
+     *        the configuration
+     *
      * @return {@code true} if stork is already registered.
      */
     private static boolean isStorkAlreadyRegistered(ConfigurationImpl configuration) {

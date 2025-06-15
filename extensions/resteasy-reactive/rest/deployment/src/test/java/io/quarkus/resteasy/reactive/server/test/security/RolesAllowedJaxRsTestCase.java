@@ -29,17 +29,14 @@ import io.restassured.RestAssured;
 public class RolesAllowedJaxRsTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RolesAllowedResource.class, UserResource.class, RolesAllowedBlockingResource.class,
-                            SerializationEntity.class, SerializationRolesResource.class, TestIdentityProvider.class,
-                            TestIdentityController.class, UnsecuredSubResource.class, RolesAllowedService.class,
-                            RolesAllowedServiceResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(RolesAllowedResource.class, UserResource.class,
+                    RolesAllowedBlockingResource.class, SerializationEntity.class, SerializationRolesResource.class,
+                    TestIdentityProvider.class, TestIdentityController.class, UnsecuredSubResource.class,
+                    RolesAllowedService.class, RolesAllowedServiceResource.class));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -56,7 +53,8 @@ public class RolesAllowedJaxRsTestCase {
     @Test
     public void testUser() {
         RestAssured.get("/user").then().body(is(""));
-        RestAssured.given().auth().preemptive().basic("admin", "admin").get("/user").then().statusCode(200).body(is("admin"));
+        RestAssured.given().auth().preemptive().basic("admin", "admin").get("/user").then().statusCode(200)
+                .body(is("admin"));
         RestAssured.given().auth().basic("admin", "admin").get("/user").then().body(is(""));
         RestAssured.given().auth().basic("user", "user").get("/user").then().body(is(""));
         RestAssured.given().auth().preemptive().basic("user", "user").get("/user").then().body(is("user"));
@@ -75,32 +73,27 @@ public class RolesAllowedJaxRsTestCase {
         read = false;
         RestAssured.given().body(new SerializationEntity()).post("/roles-validate").then().statusCode(401);
         Assertions.assertFalse(read);
-        RestAssured.given().body(new SerializationEntity()).auth().basic("admin", "admin").post("/roles-validate").then()
-                .statusCode(200);
+        RestAssured.given().body(new SerializationEntity()).auth().basic("admin", "admin").post("/roles-validate")
+                .then().statusCode(200);
         Assertions.assertTrue(read);
         read = false;
         RestAssured.given().body(new SerializationEntity()).auth().basic("user", "user").post("/roles-validate").then()
                 .statusCode(200);
         Assertions.assertTrue(read);
         read = false;
-        RestAssured.given().body(new SerializationEntity()).auth().basic("admin", "admin").post("/roles-validate/admin").then()
-                .statusCode(200);
+        RestAssured.given().body(new SerializationEntity()).auth().basic("admin", "admin").post("/roles-validate/admin")
+                .then().statusCode(200);
         Assertions.assertTrue(read);
         read = false;
-        RestAssured.given().body(new SerializationEntity()).auth().basic("user", "user").post("/roles-validate/admin").then()
-                .statusCode(403);
+        RestAssured.given().body(new SerializationEntity()).auth().basic("user", "user").post("/roles-validate/admin")
+                .then().statusCode(403);
         Assertions.assertFalse(read);
     }
 
     @Test
     public void testSecurityInterceptorsAfterHttpRequestCompleted() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .body("message one")
-                .post("/roles-service/secured-event-bus")
-                .then()
-                .statusCode(204);
+        RestAssured.given().auth().preemptive().basic("user", "user").body("message one")
+                .post("/roles-service/secured-event-bus").then().statusCode(204);
         Awaitility.await().until(() -> !EVENT_BUS_MESSAGES.isEmpty());
         Assertions.assertEquals(1, EVENT_BUS_MESSAGES.size(), EVENT_BUS_MESSAGES.toString());
         Assertions.assertEquals("permit all message one", EVENT_BUS_MESSAGES.get(0));

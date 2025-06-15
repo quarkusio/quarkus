@@ -30,9 +30,8 @@ public class HttpProxyDevServicesMultipleCustomProvidersTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Resource.class, Client.class, Custom1DevServicesRestClientProxyProvider.class,
-                            Custom2DevServicesRestClientProxyProvider.class))
+            .withApplicationRoot(jar -> jar.addClasses(Resource.class, Client.class,
+                    Custom1DevServicesRestClientProxyProvider.class, Custom2DevServicesRestClientProxyProvider.class))
             .overrideConfigKey(
                     "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesMultipleCustomProvidersTest$Client\".local-proxy-provider",
                     "custom2")
@@ -42,27 +41,23 @@ public class HttpProxyDevServicesMultipleCustomProvidersTest {
             .overrideConfigKey(
                     "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesMultipleCustomProvidersTest$Client\".url",
                     "http://localhost:${quarkus.http.test-port:8081}")
-            .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO))
-            .assertLogRecords(new Consumer<>() {
+            .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO)).assertLogRecords(new Consumer<>() {
                 @Override
                 public void accept(List<LogRecord> logRecords) {
-                    assertThat(logRecords).extracting(LogRecord::getMessage)
-                            .anyMatch(message -> message.startsWith("Started custom2 HTTP proxy server") && message.endsWith(
+                    assertThat(logRecords).extracting(LogRecord::getMessage).anyMatch(
+                            message -> message.startsWith("Started custom2 HTTP proxy server") && message.endsWith(
                                     "REST Client 'io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesMultipleCustomProvidersTest$Client'"));
                 }
-            })
-            .addBuildChainCustomizer(new Consumer<>() {
+            }).addBuildChainCustomizer(new Consumer<>() {
                 @Override
                 public void accept(BuildChainBuilder buildChainBuilder) {
                     buildChainBuilder.addBuildStep(new BuildStep() {
                         @Override
                         public void execute(BuildContext context) {
-                            context.produce(
-                                    new DevServicesRestClientProxyProvider.BuildItem(
-                                            new Custom1DevServicesRestClientProxyProvider()));
-                            context.produce(
-                                    new DevServicesRestClientProxyProvider.BuildItem(
-                                            new Custom2DevServicesRestClientProxyProvider()));
+                            context.produce(new DevServicesRestClientProxyProvider.BuildItem(
+                                    new Custom1DevServicesRestClientProxyProvider()));
+                            context.produce(new DevServicesRestClientProxyProvider.BuildItem(
+                                    new Custom2DevServicesRestClientProxyProvider()));
                         }
                     }).produces(DevServicesRestClientProxyProvider.BuildItem.class).build();
                 }
@@ -73,15 +68,11 @@ public class HttpProxyDevServicesMultipleCustomProvidersTest {
 
     @Test
     public void test() {
-        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://unused.dev")).build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://unused.dev"))
+                .build(Client.class);
 
         // test that the proxy works as expected
-        given()
-                .baseUri(proxyUrl)
-                .get("test/count")
-                .then()
-                .statusCode(200)
-                .body(equalTo("10"));
+        given().baseUri(proxyUrl).get("test/count").then().statusCode(200).body(equalTo("10"));
 
         // test that the client works as expected
         long result = client.count();
@@ -106,7 +97,8 @@ public class HttpProxyDevServicesMultipleCustomProvidersTest {
         }
     }
 
-    public static class Custom1DevServicesRestClientProxyProvider extends VertxHttpProxyDevServicesRestClientProxyProvider {
+    public static class Custom1DevServicesRestClientProxyProvider
+            extends VertxHttpProxyDevServicesRestClientProxyProvider {
 
         @Override
         public String name() {
@@ -115,12 +107,14 @@ public class HttpProxyDevServicesMultipleCustomProvidersTest {
 
         @Override
         protected void logStartup(String className, Integer port) {
-            log.info("Started custom1 HTTP proxy server on http://localhost:" + port + " for REST Client '" + className + "'");
+            log.info("Started custom1 HTTP proxy server on http://localhost:" + port + " for REST Client '" + className
+                    + "'");
         }
     }
 
     // this is tested by having this class provide a different startup log
-    public static class Custom2DevServicesRestClientProxyProvider extends VertxHttpProxyDevServicesRestClientProxyProvider {
+    public static class Custom2DevServicesRestClientProxyProvider
+            extends VertxHttpProxyDevServicesRestClientProxyProvider {
 
         @Override
         public String name() {
@@ -129,7 +123,8 @@ public class HttpProxyDevServicesMultipleCustomProvidersTest {
 
         @Override
         protected void logStartup(String className, Integer port) {
-            log.info("Started custom2 HTTP proxy server on http://localhost:" + port + " for REST Client '" + className + "'");
+            log.info("Started custom2 HTTP proxy server on http://localhost:" + port + " for REST Client '" + className
+                    + "'");
         }
     }
 }

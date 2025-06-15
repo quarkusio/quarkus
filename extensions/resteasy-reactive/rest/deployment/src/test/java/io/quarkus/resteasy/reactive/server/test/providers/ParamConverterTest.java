@@ -29,30 +29,21 @@ public class ParamConverterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UUIDResource.class, UUIDParamConverterProvider.class));
+            .withApplicationRoot((jar) -> jar.addClasses(UUIDResource.class, UUIDParamConverterProvider.class));
 
     @Test
     public void single() {
-        get("/uuid/single?id=whatever")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo(STATIC_UUID));
+        get("/uuid/single?id=whatever").then().statusCode(200).body(Matchers.equalTo(STATIC_UUID));
     }
 
     @Test
     public void set() {
-        get("/uuid/set?id=whatever&id=whatever2")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo(STATIC_UUID));
+        get("/uuid/set?id=whatever&id=whatever2").then().statusCode(200).body(Matchers.equalTo(STATIC_UUID));
     }
 
     @Test
     public void list() {
-        get("/uuid/list?id=whatever&id=whatever2")
-                .then()
-                .statusCode(200)
+        get("/uuid/list?id=whatever&id=whatever2").then().statusCode(200)
                 .body(Matchers.equalTo(STATIC_UUID + "," + STATIC_UUID));
     }
 

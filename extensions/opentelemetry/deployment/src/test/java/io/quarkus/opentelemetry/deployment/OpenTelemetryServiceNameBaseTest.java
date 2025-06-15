@@ -27,10 +27,7 @@ public abstract class OpenTelemetryServiceNameBaseTest {
 
     @Test
     void testServiceName() {
-        RestAssured.when()
-                .get("/hello").then()
-                .statusCode(200)
-                .body(is("hello"));
+        RestAssured.when().get("/hello").then().statusCode(200).body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
 

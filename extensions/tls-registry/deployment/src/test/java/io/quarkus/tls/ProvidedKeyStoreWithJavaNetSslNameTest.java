@@ -22,8 +22,8 @@ import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
-})
+        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM,
+                Format.PKCS12 }) })
 public class ProvidedKeyStoreWithJavaNetSslNameTest {
 
     private static final String configuration = """
@@ -32,8 +32,7 @@ public class ProvidedKeyStoreWithJavaNetSslNameTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"))
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
                 assertThat(t).hasMessageContaining("%s is reserved", TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME);
             });

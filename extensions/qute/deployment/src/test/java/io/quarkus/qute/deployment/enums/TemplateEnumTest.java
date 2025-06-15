@@ -18,12 +18,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateEnumTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TransactionType.class)
-                    .addAsResource(new StringAsset(
-                            "{#if tx == TransactionType:FOO}OK{/if}::{TransactionType:BAR}::{TransactionType:values[0]}"),
-                            "templates/bar.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TransactionType.class)
+            .addAsResource(new StringAsset(
+                    "{#if tx == TransactionType:FOO}OK{/if}::{TransactionType:BAR}::{TransactionType:values[0]}"),
+                    "templates/bar.txt"));
 
     @Inject
     Template bar;
@@ -32,7 +31,8 @@ public class TemplateEnumTest {
     public void testTemplateData() {
         assertEquals("OK::BAR::FOO", bar.data("tx", TransactionType.FOO).render());
         // Test the convenient Qute class
-        assertEquals("OK", Qute.fmt("{#if tx == TransactionType:FOO}OK{#else}NOK{/if}", Map.of("tx", TransactionType.FOO)));
+        assertEquals("OK",
+                Qute.fmt("{#if tx == TransactionType:FOO}OK{#else}NOK{/if}", Map.of("tx", TransactionType.FOO)));
     }
 
     // namespace is TransactionType

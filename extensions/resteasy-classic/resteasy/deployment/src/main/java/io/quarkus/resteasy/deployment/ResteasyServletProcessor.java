@@ -42,8 +42,7 @@ public class ResteasyServletProcessor {
     private static final String JAX_RS_SERVLET_NAME = JAVAX_WS_RS_APPLICATION;
 
     @BuildStep
-    public void jaxrsConfig(
-            Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
+    public void jaxrsConfig(Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
             BuildProducer<ResteasyJaxrsConfigBuildItem> resteasyJaxrsConfig,
             HttpRootPathBuildItem httpRootPathBuildItem) {
         if (resteasyServerConfig.isPresent()) {
@@ -57,7 +56,8 @@ public class ResteasyServletProcessor {
     @BuildStep
     public ResteasyServletMappingBuildItem webXmlMapping(Optional<WebMetadataBuildItem> webMetadataBuildItem) {
         if (webMetadataBuildItem.isPresent()) {
-            List<ServletMappingMetaData> servletMappings = webMetadataBuildItem.get().getWebMetaData().getServletMappings();
+            List<ServletMappingMetaData> servletMappings = webMetadataBuildItem.get().getWebMetaData()
+                    .getServletMappings();
             if (servletMappings != null) {
                 for (ServletMappingMetaData mapping : servletMappings) {
                     if (JAVAX_WS_RS_APPLICATION.equals(mapping.getServletName())) {
@@ -72,13 +72,9 @@ public class ResteasyServletProcessor {
     }
 
     @BuildStep
-    public void build(
-            Capabilities capabilities,
-            Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
-            BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<FilterBuildItem> filter,
-            BuildProducer<ServletBuildItem> servlet,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    public void build(Capabilities capabilities, Optional<ResteasyServerConfigBuildItem> resteasyServerConfig,
+            BuildProducer<FeatureBuildItem> feature, BuildProducer<FilterBuildItem> filter,
+            BuildProducer<ServletBuildItem> servlet, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ServletInitParamBuildItem> servletInitParameters,
             Optional<ServletContextPathBuildItem> servletContextPathBuildItem,
             ResteasyInjectionReadyBuildItem resteasyInjectionReady) {
@@ -91,21 +87,21 @@ public class ResteasyServletProcessor {
         if (resteasyServerConfig.isPresent()) {
             String path = resteasyServerConfig.get().getPath();
 
-            //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
+            // if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the
+            // whole mapped path
             if (path.equals("/") || path.isEmpty()) {
-                filter.produce(FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyFilter.class.getName()).setLoadOnStartup(1)
-                        .addFilterServletNameMapping("default", DispatcherType.REQUEST)
+                filter.produce(FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyFilter.class.getName())
+                        .setLoadOnStartup(1).addFilterServletNameMapping("default", DispatcherType.REQUEST)
                         .addFilterServletNameMapping("default", DispatcherType.FORWARD)
                         .addFilterServletNameMapping("default", DispatcherType.INCLUDE).setAsyncSupported(true)
                         .build());
-                reflectiveClass.produce(
-                        ReflectiveClassBuildItem.builder(ResteasyFilter.class.getName()).build());
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(ResteasyFilter.class.getName()).build());
             } else {
                 String mappingPath = getMappingPath(path);
                 servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, ResteasyServlet.class.getName())
                         .setLoadOnStartup(1).addMapping(mappingPath).setAsyncSupported(true).build());
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(HttpServlet30Dispatcher.class.getName())
-                        .build());
+                reflectiveClass
+                        .produce(ReflectiveClassBuildItem.builder(HttpServlet30Dispatcher.class.getName()).build());
             }
 
             for (Entry<String, String> initParameter : resteasyServerConfig.get().getInitParameters().entrySet()) {

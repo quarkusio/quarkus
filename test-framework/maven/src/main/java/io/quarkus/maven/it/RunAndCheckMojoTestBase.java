@@ -57,15 +57,15 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
     }
 
     /**
-     * Quarkus can be launched as `quarkus:dev` or `quarkus:test`.
-     * In most cases it doesn't matter and dev mode is fine, but sometimes it's useful to cover test mode,
-     * since it sometimes behaves differently.
+     * Quarkus can be launched as `quarkus:dev` or `quarkus:test`. In most cases it doesn't matter and dev mode is fine,
+     * but sometimes it's useful to cover test mode, since it sometimes behaves differently.
      */
     protected LaunchMode getDefaultLaunchMode() {
         return LaunchMode.DEVELOPMENT;
     }
 
-    protected void run(boolean performCompile, String... options) throws FileNotFoundException, MavenInvocationException {
+    protected void run(boolean performCompile, String... options)
+            throws FileNotFoundException, MavenInvocationException {
         run(performCompile, getDefaultLaunchMode(), options);
     }
 
@@ -110,10 +110,10 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
             args.add("-Ddebug=false");
         }
 
-        //we need to limit the memory consumption, as we can have a lot of these processes
-        //running at once, if they add default to 75% of total mem we can easily run out
-        //of physical memory as they will consume way more than what they need instead of
-        //just running GC
+        // we need to limit the memory consumption, as we can have a lot of these processes
+        // running at once, if they add default to 75% of total mem we can easily run out
+        // of physical memory as they will consume way more than what they need instead of
+        // just running GC
         args.add("-Djvm.args=-Xmx" + getAllowedHeapInMb() + "m");
         running.execute(args, Map.of());
     }
@@ -133,7 +133,8 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
         runAndCheck(true, options);
     }
 
-    protected void runAndCheck(LaunchMode mode, String... options) throws FileNotFoundException, MavenInvocationException {
+    protected void runAndCheck(LaunchMode mode, String... options)
+            throws FileNotFoundException, MavenInvocationException {
         runAndCheck(true, mode, options);
     }
 
@@ -148,8 +149,8 @@ public class RunAndCheckMojoTestBase extends MojoTestBase {
 
         String resp = devModeClient.getHttpResponse();
 
-        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application").containsIgnoringCase("org.acme")
-                .containsIgnoringCase("1.0-SNAPSHOT");
+        assertThat(resp).containsIgnoringCase("ready").containsIgnoringCase("application")
+                .containsIgnoringCase("org.acme").containsIgnoringCase("1.0-SNAPSHOT");
 
         String greeting = devModeClient.getHttpResponse("/app/hello");
         assertThat(greeting).containsIgnoringCase("hello");

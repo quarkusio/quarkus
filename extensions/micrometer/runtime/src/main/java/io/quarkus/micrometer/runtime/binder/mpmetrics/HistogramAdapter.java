@@ -14,9 +14,7 @@ public class HistogramAdapter implements Histogram, MeterHolder {
     HistogramAdapter register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
         if (summary == null || metadata.cleanDirtyMetadata()) {
             summary = io.micrometer.core.instrument.DistributionSummary.builder(metricInfo.name())
-                    .description(metadata.getDescription())
-                    .baseUnit(metadata.getUnit())
-                    .tags(metricInfo.tags())
+                    .description(metadata.getDescription()).baseUnit(metadata.getUnit()).tags(metricInfo.tags())
                     .register(registry);
         }
 

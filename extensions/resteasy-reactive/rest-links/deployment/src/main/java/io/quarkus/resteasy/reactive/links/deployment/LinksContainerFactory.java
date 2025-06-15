@@ -39,17 +39,19 @@ final class LinksContainerFactory {
     private static final String ADD = "add";
 
     /**
-     * Find the resource methods that are marked with a {@link RestLink} annotations and add them to a {@link LinksContainer}.
+     * Find the resource methods that are marked with a {@link RestLink} annotations and add them to a
+     * {@link LinksContainer}.
      */
-    LinksContainer getLinksContainer(List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> entries, IndexView index) {
+    LinksContainer getLinksContainer(List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> entries,
+            IndexView index) {
         LinksContainer linksContainer = new LinksContainer();
 
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : entries) {
             MethodInfo resourceMethodInfo = entry.getMethodInfo();
             AnnotationInstance restLinkAnnotation = resourceMethodInfo.annotation(DotNames.REST_LINK_ANNOTATION);
             if (restLinkAnnotation != null) {
-                LinkInfo linkInfo = getLinkInfo(entry.getResourceMethod(), resourceMethodInfo,
-                        restLinkAnnotation, entry.getBasicResourceClassInfo().getPath(), index);
+                LinkInfo linkInfo = getLinkInfo(entry.getResourceMethod(), resourceMethodInfo, restLinkAnnotation,
+                        entry.getBasicResourceClassInfo().getPath(), index);
                 linksContainer.put(linkInfo);
             }
         }
@@ -74,16 +76,15 @@ final class LinksContainerFactory {
     }
 
     /**
-     * When the "rel" property is not set, it will be resolved as follows:
-     * - "list" for GET methods returning a Collection.
-     * - "self" for GET methods returning a non-Collection.
-     * - "remove" for DELETE methods.
-     * - "update" for PUT methods.
-     * - "add" for POST methods.
+     * When the "rel" property is not set, it will be resolved as follows: - "list" for GET methods returning a
+     * Collection. - "self" for GET methods returning a non-Collection. - "remove" for DELETE methods. - "update" for
+     * PUT methods. - "add" for POST methods.
      * <p>
      * Otherwise, it will return the method name.
      *
-     * @param resourceMethod the resource method definition.
+     * @param resourceMethod
+     *        the resource method definition.
+     *
      * @return the deducted rel property.
      */
     private String deductRel(ResourceMethod resourceMethod, Type returnType, IndexView index) {
@@ -153,10 +154,8 @@ final class LinksContainerFactory {
                 // NOTE: same code in RuntimeResourceDeployment.getNonAsyncReturnType
                 ParameterizedType parameterizedType = returnType.asParameterizedType();
                 if (COMPLETION_STAGE.equals(parameterizedType.name())
-                        || COMPLETABLE_FUTURE.equals(parameterizedType.name())
-                        || UNI.equals(parameterizedType.name())
-                        || MULTI.equals(parameterizedType.name())
-                        || REST_MULTI.equals(parameterizedType.name())
+                        || COMPLETABLE_FUTURE.equals(parameterizedType.name()) || UNI.equals(parameterizedType.name())
+                        || MULTI.equals(parameterizedType.name()) || REST_MULTI.equals(parameterizedType.name())
                         || REST_RESPONSE.equals(parameterizedType.name())) {
                     return parameterizedType.arguments().get(0);
                 }

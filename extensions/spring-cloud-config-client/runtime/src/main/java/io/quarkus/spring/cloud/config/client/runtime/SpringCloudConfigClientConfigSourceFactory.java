@@ -74,7 +74,8 @@ public class SpringCloudConfigClientConfigSourceFactory
             log.debug("Obtained " + responses.size() + " from the config server");
 
             int ordinal = config.ordinal();
-            // Profiles are looked from the highest ordinal to lowest, so we reverse the collection to build the source list
+            // Profiles are looked from the highest ordinal to lowest, so we reverse the collection to build the source
+            // list
             Collections.reverse(responses);
             for (Response response : responses) {
                 List<PropertySource> propertySources = response.getPropertySources();
@@ -84,8 +85,8 @@ public class SpringCloudConfigClientConfigSourceFactory
                 for (PropertySource propertySource : propertySources) {
                     int ord = ordinal++;
                     if (log.isDebugEnabled()) {
-                        log.debug("Adding PropertySource named '" + propertySource.getName() + "', with and ordinal of '" + ord
-                                + "' that contains the following keys: "
+                        log.debug("Adding PropertySource named '" + propertySource.getName()
+                                + "', with and ordinal of '" + ord + "' that contains the following keys: "
                                 + String.join(",", propertySource.getSource().keySet()));
                     }
 
@@ -96,7 +97,8 @@ public class SpringCloudConfigClientConfigSourceFactory
             return sources;
 
         } catch (Exception e) {
-            final String errorMessage = "Unable to obtain configuration from Spring Cloud Config Server at " + config.url();
+            final String errorMessage = "Unable to obtain configuration from Spring Cloud Config Server at "
+                    + config.url();
             if (config.failFast()) {
                 throw new RuntimeException(errorMessage, e);
             } else {
@@ -116,7 +118,8 @@ public class SpringCloudConfigClientConfigSourceFactory
     }
 
     private static class SpringCloudPropertySource extends MapBackedConfigSource {
-        private SpringCloudPropertySource(final String name, final Map<String, String> propertyMap, final int defaultOrdinal) {
+        private SpringCloudPropertySource(final String name, final Map<String, String> propertyMap,
+                final int defaultOrdinal) {
             super(name, propertyMap, defaultOrdinal);
         }
 

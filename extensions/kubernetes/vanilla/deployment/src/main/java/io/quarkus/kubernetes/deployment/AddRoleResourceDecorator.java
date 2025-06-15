@@ -36,16 +36,9 @@ class AddRoleResourceDecorator extends ResourceProvidingDecorator<KubernetesList
 
         Map<String, String> roleLabels = new HashMap<>();
         roleLabels.putAll(labels);
-        getDeploymentMetadata(list, deploymentName)
-                .map(ObjectMeta::getLabels)
-                .ifPresent(roleLabels::putAll);
+        getDeploymentMetadata(list, deploymentName).map(ObjectMeta::getLabels).ifPresent(roleLabels::putAll);
 
-        list.addToItems(new RoleBuilder()
-                .withNewMetadata()
-                .withName(name)
-                .withNamespace(namespace)
-                .withLabels(roleLabels)
-                .endMetadata()
-                .withRules(rules));
+        list.addToItems(new RoleBuilder().withNewMetadata().withName(name).withNamespace(namespace)
+                .withLabels(roleLabels).endMetadata().withRules(rules));
     }
 }

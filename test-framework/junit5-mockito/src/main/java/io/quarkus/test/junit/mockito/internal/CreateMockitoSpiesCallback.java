@@ -51,7 +51,8 @@ public class CreateMockitoSpiesCallback implements QuarkusTestAfterConstructCall
         }
     }
 
-    private Object createSpyAndSetTestField(Object testInstance, Field field, InstanceHandle<?> beanHandle, boolean delegate) {
+    private Object createSpyAndSetTestField(Object testInstance, Field field, InstanceHandle<?> beanHandle,
+            boolean delegate) {
         Object spy;
         // Unwrap the client proxy if needed
         Object contextualInstance = ClientProxy.unwrap(beanHandle.get());

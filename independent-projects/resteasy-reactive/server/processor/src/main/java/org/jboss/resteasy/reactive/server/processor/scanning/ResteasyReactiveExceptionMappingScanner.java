@@ -46,12 +46,10 @@ public class ResteasyReactiveExceptionMappingScanner {
         Collection<ClassInfo> exceptionMappers = index
                 .getAllKnownImplementors(ResteasyReactiveDotNames.EXCEPTION_MAPPER);
         for (ClassInfo mapperClass : exceptionMappers) {
-            ApplicationScanningResult.KeepProviderResult keepProviderResult = result
-                    .keepProvider(mapperClass);
+            ApplicationScanningResult.KeepProviderResult keepProviderResult = result.keepProvider(mapperClass);
             if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(mapperClass.name(),
-                        ResteasyReactiveDotNames.EXCEPTION_MAPPER,
-                        index);
+                        ResteasyReactiveDotNames.EXCEPTION_MAPPER, index);
                 DotName handledExceptionDotName = typeParameters.get(0).name();
                 AnnotationInstance priorityInstance = mapperClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 int priority = Priorities.USER;

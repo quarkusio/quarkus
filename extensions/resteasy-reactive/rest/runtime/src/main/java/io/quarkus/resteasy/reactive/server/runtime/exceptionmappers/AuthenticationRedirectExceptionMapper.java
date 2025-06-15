@@ -10,11 +10,8 @@ public class AuthenticationRedirectExceptionMapper implements ExceptionMapper<Au
 
     @Override
     public Response toResponse(AuthenticationRedirectException ex) {
-        return Response.status(ex.getCode())
-                .header(HttpHeaders.LOCATION, ex.getRedirectUri())
-                .header(HttpHeaders.CACHE_CONTROL, "no-store")
-                .header("Pragma", "no-cache")
-                .build();
+        return Response.status(ex.getCode()).header(HttpHeaders.LOCATION, ex.getRedirectUri())
+                .header(HttpHeaders.CACHE_CONTROL, "no-store").header("Pragma", "no-cache").build();
     }
 
 }

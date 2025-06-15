@@ -51,7 +51,8 @@ class RestClientBaseTest {
     private static Path keystorePath;
 
     @BeforeAll
-    public static void beforeAll() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
+    public static void beforeAll()
+            throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
         // prepare keystore and truststore
 
         truststorePath = Files.createTempFile("truststore", ".jks");
@@ -91,10 +92,8 @@ class RestClientBaseTest {
 
     @Test
     void clientSpecificConfigs() throws Exception {
-        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
-                .setAddDefaultSources(false)
-                .withMapping(RestClientsConfig.class)
-                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder().setAddDefaultSources(false)
+                .withMapping(RestClientsConfig.class).withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
                         new AbstractRestClientConfigBuilder() {
@@ -104,21 +103,16 @@ class RestClientBaseTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .withDefaultValues(createSampleConfigRoot())
-                .withDefaultValues(createSampleClientConfig("test-client"))
-                .build()
+                }).withDefaultValues(createSampleConfigRoot())
+                .withDefaultValues(createSampleClientConfig("test-client")).build()
                 .getConfigMapping(RestClientsConfig.class);
 
         assertEquals(1, configRoot.clients().size());
         assertTrue(configRoot.clients().containsKey(TestClient.class.getName()));
 
         RestClientBuilder restClientBuilderMock = Mockito.mock(RestClientBuilder.class);
-        RestClientBase restClientBase = new RestClientBase(TestClient.class,
-                "http://localhost:8080",
-                "test-client",
-                null,
-                configRoot);
+        RestClientBase restClientBase = new RestClientBase(TestClient.class, "http://localhost:8080", "test-client",
+                null, configRoot);
         restClientBase.configureBuilder(restClientBuilderMock);
 
         verify(restClientBuilderMock).baseUrl(new URL("http://localhost:8080"));
@@ -137,10 +131,8 @@ class RestClientBaseTest {
 
     @Test
     void globalConfigs() throws MalformedURLException {
-        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
-                .setAddDefaultSources(false)
-                .withMapping(RestClientsConfig.class)
-                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder().setAddDefaultSources(false)
+                .withMapping(RestClientsConfig.class).withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
                         new AbstractRestClientConfigBuilder() {
@@ -150,20 +142,14 @@ class RestClientBaseTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .withDefaultValues(createSampleConfigRoot())
-                .build()
-                .getConfigMapping(RestClientsConfig.class);
+                }).withDefaultValues(createSampleConfigRoot()).build().getConfigMapping(RestClientsConfig.class);
 
         assertEquals(1, configRoot.clients().size());
         assertTrue(configRoot.clients().containsKey(TestClient.class.getName()));
 
         RestClientBuilder restClientBuilderMock = Mockito.mock(RestClientBuilder.class);
-        RestClientBase restClientBase = new RestClientBase(TestClient.class,
-                "http://localhost:8080",
-                "test-client",
-                null,
-                configRoot);
+        RestClientBase restClientBase = new RestClientBase(TestClient.class, "http://localhost:8080", "test-client",
+                null, configRoot);
         restClientBase.configureBuilder(restClientBuilderMock);
 
         // then
@@ -191,7 +177,8 @@ class RestClientBaseTest {
         rootConfig.put("quarkus.rest-client.connection-ttl", "202");
         rootConfig.put("quarkus.rest-client.connection-pool-size", "203");
         rootConfig.put("quarkus.rest-client.follow-redirects", "true");
-        rootConfig.put("quarkus.rest-client.providers", "io.quarkus.restclient.runtime.RestClientBaseTest$MyResponseFilter2");
+        rootConfig.put("quarkus.rest-client.providers",
+                "io.quarkus.restclient.runtime.RestClientBaseTest$MyResponseFilter2");
         rootConfig.put("quarkus.rest-client.query-param-style", "multi-pairs");
         rootConfig.put("quarkus.rest-client.trust-store", truststorePath.toAbsolutePath().toString());
         rootConfig.put("quarkus.rest-client.trust-store-password", "truststorePassword");
@@ -218,10 +205,12 @@ class RestClientBaseTest {
         clientConfig.put("quarkus.rest-client." + restClientName + ".providers",
                 "io.quarkus.restclient.runtime.RestClientBaseTest$MyResponseFilter1");
         clientConfig.put("quarkus.rest-client." + restClientName + ".query-param-style", "comma-separated");
-        clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store", truststorePath.toAbsolutePath().toString());
+        clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store",
+                truststorePath.toAbsolutePath().toString());
         clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store-password", "truststorePassword");
         clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store-type", "JKS");
-        clientConfig.put("quarkus.rest-client." + restClientName + ".key-store", keystorePath.toAbsolutePath().toString());
+        clientConfig.put("quarkus.rest-client." + restClientName + ".key-store",
+                keystorePath.toAbsolutePath().toString());
         clientConfig.put("quarkus.rest-client." + restClientName + ".key-store-password", "keystorePassword");
         clientConfig.put("quarkus.rest-client." + restClientName + ".key-store-type", "JKS");
         return clientConfig;

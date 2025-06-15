@@ -18,11 +18,12 @@ import io.quarkus.tls.runtime.JavaxNetSslTrustStoreProvider.JavaNetSslTrustOptio
 public class JavaxNetSslTrustStoreProviderTest {
 
     @Test
-    void copyCerts()
-            throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException, InvalidNameException {
+    void copyCerts() throws NoSuchAlgorithmException, KeyStoreException, IOException, CertificateException,
+            InvalidNameException {
         final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         KeyStore ks = KeyStore.getInstance("JKS");
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream("JavaxNetSslTrustStoreProviderTest.jks")) {
+        try (InputStream in = getClass().getClassLoader()
+                .getResourceAsStream("JavaxNetSslTrustStoreProviderTest.jks")) {
             ks.load(in, "changeit".toCharArray());
         }
         Assertions.assertThat(ks.size()).isGreaterThan(0);

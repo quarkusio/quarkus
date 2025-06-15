@@ -28,8 +28,7 @@ public class PermissionCheckerAssignabilityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     AssignabilitySecuredBean securedBean;
@@ -55,10 +54,13 @@ public class PermissionCheckerAssignabilityTest {
     public void testAssignabilityFromAbstractClass() {
         var classCorrectVal = new Third("abstract");
         assertSuccess(() -> securedBean.secondAbstract(classCorrectVal), "abstract", ADMIN_WITH_AUGMENTORS);
-        assertFailureFor(() -> securedBean.secondAbstract(classCorrectVal), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.secondAbstract(classCorrectVal), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
         var classWrongVal = new Third("wrong-value");
-        assertFailureFor(() -> securedBean.secondAbstract(classWrongVal), ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
-        assertFailureFor(() -> securedBean.secondAbstract(classWrongVal), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.secondAbstract(classWrongVal), ForbiddenException.class,
+                ADMIN_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.secondAbstract(classWrongVal), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
     }
 
     @Test
@@ -68,8 +70,10 @@ public class PermissionCheckerAssignabilityTest {
         assertFailureFor(() -> securedBean.thirdImplementation(classCorrectVal), ForbiddenException.class,
                 USER_WITH_AUGMENTORS);
         var classWrongVal = new Third("wrong-value");
-        assertFailureFor(() -> securedBean.thirdImplementation(classWrongVal), ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
-        assertFailureFor(() -> securedBean.thirdImplementation(classWrongVal), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.thirdImplementation(classWrongVal), ForbiddenException.class,
+                ADMIN_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.thirdImplementation(classWrongVal), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
     }
 
     @Test
@@ -79,11 +83,12 @@ public class PermissionCheckerAssignabilityTest {
         var theInterface = new Third("interface");
         var theAbstract = new Third("abstract");
         var implementation = new Third("implementation");
-        assertSuccess(() -> securedBean.allThree(implementation, theAbstract, theInterface), "allThree", ADMIN_WITH_AUGMENTORS);
-        assertFailureFor(() -> securedBean.allThree(theInterface, theAbstract, implementation), ForbiddenException.class,
+        assertSuccess(() -> securedBean.allThree(implementation, theAbstract, theInterface), "allThree",
                 ADMIN_WITH_AUGMENTORS);
-        assertFailureFor(() -> securedBean.allThree(theAbstract, theInterface, implementation), ForbiddenException.class,
-                ADMIN_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.allThree(theInterface, theAbstract, implementation),
+                ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.allThree(theAbstract, theInterface, implementation),
+                ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
     }
 
     @Test
@@ -101,8 +106,8 @@ public class PermissionCheckerAssignabilityTest {
         var theInterface = new Second_Record("interface"); // not assignable
         var theAbstract = new Third("abstract");
         var implementation = new Third("implementation");
-        assertFailureFor(() -> securedBean.allThree(implementation, theAbstract, theInterface), ForbiddenException.class,
-                ADMIN_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.allThree(implementation, theAbstract, theInterface),
+                ForbiddenException.class, ADMIN_WITH_AUGMENTORS);
     }
 
     @ApplicationScoped

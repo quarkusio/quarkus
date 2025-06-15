@@ -11,7 +11,8 @@ public enum SecurityAnnotation {
     CLASS_DENY_ALL(SubPaths.CLASS_DENY_ALL, true, null, true),
     CLASS_PERMIT_ALL(SubPaths.CLASS_PERMIT_ALL, false, null, true),
     CLASS_PERMIT_ALL_METHOD_PERMIT_ALL(SubPaths.CLASS_PERMIT_ALL_METHOD_PERMIT_ALL, false, null, true),
-    // class is annotated with the @DenyAll, but method level annotation must have priority, therefore we set denyAll=false
+    // class is annotated with the @DenyAll, but method level annotation must have priority, therefore we set
+    // denyAll=false
     CLASS_DENY_ALL_METHOD_ROLES_ALLOWED(SubPaths.CLASS_DENY_ALL_METHOD_ROLES_ALLOWED, false, "admin", true),
     CLASS_DENY_ALL_METHOD_PERMIT_ALL(SubPaths.CLASS_DENY_ALL_METHOD_PERMIT_ALL, false, null, true);
 
@@ -22,7 +23,8 @@ public enum SecurityAnnotation {
     private final boolean isClassSecurityAnnotation;
     private final boolean denyAll;
 
-    SecurityAnnotation(SubPaths.SubPath subPath, boolean denyAll, String allowedRole, boolean isClassSecurityAnnotation) {
+    SecurityAnnotation(SubPaths.SubPath subPath, boolean denyAll, String allowedRole,
+            boolean isClassSecurityAnnotation) {
         this.subPath = subPath;
         this.denyAll = denyAll;
         this.allowedRole = allowedRole;
@@ -46,8 +48,11 @@ public enum SecurityAnnotation {
     }
 
     /**
-     * @param basePath path common for all {@link this} annotations
-     * @param classSecurityOn whether class-level annotation is on interface, parent or base
+     * @param basePath
+     *        path common for all {@link this} annotations
+     * @param classSecurityOn
+     *        whether class-level annotation is on interface, parent or base
+     *
      * @return request path
      */
     String assemblePath(String basePath, String classSecurityOn) {

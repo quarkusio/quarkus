@@ -15,20 +15,11 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.TokenIntrospection;
 
 public class TokenIntrospectionTest {
-    TokenIntrospection introspection = new TokenIntrospection(
-            "{"
-                    + "\"active\": true,"
-                    + "\"username\": \"alice\","
-                    + "\"sub\": \"1234567\","
-                    + "\"aud\": \"http://localhost:8080\","
-                    + "\"iss\": \"http://keycloak/realm\","
-                    + "\"client_id\": \"quarkus\","
-                    + "\"custom\": null,"
-                    + "\"id\": 1234,"
-                    + "\"permissions\": [\"read\", \"write\"],"
-                    + "\"scope\": \"add divide\","
-                    + "\"scopes\": {\"scope\": \"see\"}"
-                    + "}");
+    TokenIntrospection introspection = new TokenIntrospection("{" + "\"active\": true," + "\"username\": \"alice\","
+            + "\"sub\": \"1234567\"," + "\"aud\": \"http://localhost:8080\"," + "\"iss\": \"http://keycloak/realm\","
+            + "\"client_id\": \"quarkus\"," + "\"custom\": null," + "\"id\": 1234,"
+            + "\"permissions\": [\"read\", \"write\"]," + "\"scope\": \"add divide\","
+            + "\"scopes\": {\"scope\": \"see\"}" + "}");
 
     @Test
     public void testActive() {

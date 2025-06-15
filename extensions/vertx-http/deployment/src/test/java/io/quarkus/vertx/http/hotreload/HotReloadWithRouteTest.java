@@ -17,35 +17,25 @@ public class HotReloadWithRouteTest {
 
     @Test
     public void testRouteChange() {
-        RestAssured.when().get("/dev").then()
-                .statusCode(200)
-                .body(is("Hello World"));
+        RestAssured.when().get("/dev").then().statusCode(200).body(is("Hello World"));
 
         test.modifySourceFile(USER_FILE, s -> s.replace("Hello World", "Hello Quarkus"));
 
-        RestAssured.when().get("/dev").then()
-                .statusCode(200)
-                .body(is("Hello Quarkus"));
+        RestAssured.when().get("/dev").then().statusCode(200).body(is("Hello Quarkus"));
 
         test.modifySourceFile("DevBean.java", s -> s.replace("/dev", "/new"));
 
-        RestAssured.when().get("/dev").then()
-                .statusCode(404);
+        RestAssured.when().get("/dev").then().statusCode(404);
 
-        RestAssured.when().get("/new").then()
-                .statusCode(200)
-                .body(is("Hello Quarkus"));
+        RestAssured.when().get("/new").then().statusCode(200).body(is("Hello Quarkus"));
     }
 
     @Test
     public void testAddBean() {
-        RestAssured.when().get("/bean").then()
-                .statusCode(404);
+        RestAssured.when().get("/bean").then().statusCode(404);
 
         test.addSourceFile(NewBean.class);
 
-        RestAssured.when().get("/bean").then()
-                .statusCode(200)
-                .body(is("Hello New World"));
+        RestAssured.when().get("/bean").then().statusCode(200).body(is("Hello New World"));
     }
 }

@@ -28,14 +28,9 @@ public class OidcGraphQLClientIntegrationRecorder {
 
     public Uni<String> getToken(OidcClients clients, String oidcClientId) {
         if (oidcClientId == null) {
-            return clients.getClient()
-                    .getTokens()
-                    .map(Tokens::getAccessToken)
-                    .map(token -> "Bearer " + token);
+            return clients.getClient().getTokens().map(Tokens::getAccessToken).map(token -> "Bearer " + token);
         } else {
-            return clients.getClient(oidcClientId)
-                    .getTokens()
-                    .map(Tokens::getAccessToken)
+            return clients.getClient(oidcClientId).getTokens().map(Tokens::getAccessToken)
                     .map(token -> "Bearer " + token);
         }
     }

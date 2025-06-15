@@ -13,13 +13,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CustomSettingsFileNotFoundTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-search-orm.elasticsearch.schema-management.settings-file",
                     "does-not-exist.json")
-            .assertException(throwable -> assertThat(throwable)
-                    .isInstanceOf(ConfigurationException.class)
+            .assertException(throwable -> assertThat(throwable).isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
                             "Unable to find file referenced in 'quarkus.hibernate-search-orm.elasticsearch.schema-management.settings-file=does-not-exist.json'",
                             "Remove property or add file to your path"));

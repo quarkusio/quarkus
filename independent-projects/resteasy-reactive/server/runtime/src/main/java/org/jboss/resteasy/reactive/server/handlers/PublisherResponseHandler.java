@@ -29,9 +29,9 @@ import org.jboss.resteasy.reactive.server.spi.StreamingResponse;
 import mutiny.zero.flow.adapters.AdaptersToFlow;
 
 /**
- * This handler is used to push streams of data to the client.
- * This handler is added to the chain in the {@link Phase#AFTER_METHOD_INVOKE} phase and is essentially the terminal phase
- * of the handler chain, as no other handlers will be called after this one.
+ * This handler is used to push streams of data to the client. This handler is added to the chain in the
+ * {@link Phase#AFTER_METHOD_INVOKE} phase and is essentially the terminal phase of the handler chain, as no other
+ * handlers will be called after this one.
  */
 public class PublisherResponseHandler implements ServerRestHandler {
 
@@ -48,8 +48,8 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
     private static class SseMultiSubscriber extends AbstractMultiSubscriber {
 
-        SseMultiSubscriber(ResteasyReactiveRequestContext requestContext, List<StreamingResponseCustomizer> staticCustomizers,
-                long demand) {
+        SseMultiSubscriber(ResteasyReactiveRequestContext requestContext,
+                List<StreamingResponseCustomizer> staticCustomizers, long demand) {
             super(requestContext, staticCustomizers, demand);
         }
 
@@ -88,14 +88,14 @@ public class PublisherResponseHandler implements ServerRestHandler {
         private volatile boolean hadItem;
 
         StreamingMultiSubscriber(ResteasyReactiveRequestContext requestContext,
-                List<StreamingResponseCustomizer> staticCustomizers, Publisher publisher,
-                boolean json, long demand, boolean encodeAsJsonArray) {
+                List<StreamingResponseCustomizer> staticCustomizers, Publisher publisher, boolean json, long demand,
+                boolean encodeAsJsonArray) {
             super(requestContext, staticCustomizers, demand);
             this.publisher = publisher;
             this.json = json;
             // encodeAsJsonArray == true means JSON array "encoding"
             // encodeAsJsonArray == false mean no prefix, no suffix and LF as message separator,
-            //     also used for/same as chunked-streaming
+            // also used for/same as chunked-streaming
             this.encodeAsJsonArray = encodeAsJsonArray;
             this.nextJsonPrefix = encodeAsJsonArray ? "[" : null;
             this.hadItem = false;
@@ -105,28 +105,28 @@ public class PublisherResponseHandler implements ServerRestHandler {
         public void onNext(Object item) {
             List<StreamingResponseCustomizer> customizers = determineCustomizers(!hadItem);
             hadItem = true;
-            StreamingUtil.send(requestContext, customizers, item, messagePrefix(), messageSuffix())
-                    .handle((v, t) -> {
-                        if (t != null) {
-                            // need to cancel because the exception didn't come from the Multi
-                            try {
-                                subscription.cancel();
-                            } catch (Throwable t2) {
-                                t2.printStackTrace();
-                            }
-                            handleException(requestContext, t);
-                        } else {
-                            // next item will need this prefix if json
-                            nextJsonPrefix = encodeAsJsonArray ? "," : null;
-                            // send in the next item
-                            subscription.request(demand);
-                        }
-                        return null;
-                    });
+            StreamingUtil.send(requestContext, customizers, item, messagePrefix(), messageSuffix()).handle((v, t) -> {
+                if (t != null) {
+                    // need to cancel because the exception didn't come from the Multi
+                    try {
+                        subscription.cancel();
+                    } catch (Throwable t2) {
+                        t2.printStackTrace();
+                    }
+                    handleException(requestContext, t);
+                } else {
+                    // next item will need this prefix if json
+                    nextJsonPrefix = encodeAsJsonArray ? "," : null;
+                    // send in the next item
+                    subscription.request(demand);
+                }
+                return null;
+            });
         }
 
         private List<StreamingResponseCustomizer> determineCustomizers(boolean isFirst) {
-            // we only need to obtain the customizers from the Publisher if it's the first time we are sending data and the Publisher has customizable data
+            // we only need to obtain the customizers from the Publisher if it's the first time we are sending data and
+            // the Publisher has customizable data
             // at this point no matter the type of RestMulti we can safely obtain the headers and status
             if (isFirst && (publisher instanceof RestMulti<?> restMulti)) {
                 Map<String, List<String>> headers = restMulti.getHeaders();
@@ -135,7 +135,8 @@ public class PublisherResponseHandler implements ServerRestHandler {
                     return staticCustomizers;
                 }
                 List<StreamingResponseCustomizer> result = new ArrayList<>(staticCustomizers.size() + 2);
-                result.addAll(staticCustomizers); // these are added first so that the result specific values will take precedence if there are conflicts
+                result.addAll(staticCustomizers); // these are added first so that the result specific values will take
+                                                  // precedence if there are conflicts
                 if (!headers.isEmpty()) {
                     result.add(new StreamingResponseCustomizer.AddHeadersCustomizer(headers));
                 }
@@ -151,7 +152,8 @@ public class PublisherResponseHandler implements ServerRestHandler {
         @Override
         public void onComplete() {
             if (!hadItem) {
-                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(), this.determineCustomizers(true));
+                StreamingUtil.setHeaders(requestContext, requestContext.serverResponse(),
+                        this.determineCustomizers(true));
             }
             if (json) {
                 String postfix = onCompleteText();
@@ -255,11 +257,9 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
     private static final Logger log = Logger.getLogger(PublisherResponseHandler.class);
 
-    private static final ServerRestHandler[] AWOL = new ServerRestHandler[] {
-            requestContext -> {
-                throw new IllegalStateException("FAILURE: should never be restarted");
-            }
-    };
+    private static final ServerRestHandler[] AWOL = new ServerRestHandler[] { requestContext -> {
+        throw new IllegalStateException("FAILURE: should never be restarted");
+    } };
 
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
@@ -312,14 +312,15 @@ public class PublisherResponseHandler implements ServerRestHandler {
                 || mediaType.isCompatible(RestMediaType.APPLICATION_STREAM_JSON_TYPE);
     }
 
-    private void handleChunkedStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
+    private void handleChunkedStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result,
+            boolean json) {
         long demand = 1L;
         if (result instanceof RestMulti.SyncRestMulti) {
             RestMulti.SyncRestMulti rest = (RestMulti.SyncRestMulti) result;
             demand = rest.getDemand();
         }
-        result.subscribe(
-                new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json, demand, false));
+        result.subscribe(new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json,
+                demand, false));
     }
 
     private void handleStreaming(ResteasyReactiveRequestContext requestContext, Publisher<?> result, boolean json) {
@@ -330,8 +331,8 @@ public class PublisherResponseHandler implements ServerRestHandler {
             demand = rest.getDemand();
             encodeAsJsonArray = rest.encodeAsJsonArray();
         }
-        result.subscribe(new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json, demand,
-                encodeAsJsonArray));
+        result.subscribe(new StreamingMultiSubscriber(requestContext, streamingResponseCustomizers, result, json,
+                demand, encodeAsJsonArray));
     }
 
     private void handleSse(ResteasyReactiveRequestContext requestContext, Publisher<?> result) {

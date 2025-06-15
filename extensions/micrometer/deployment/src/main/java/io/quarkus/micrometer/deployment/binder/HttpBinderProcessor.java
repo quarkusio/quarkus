@@ -58,11 +58,8 @@ public class HttpBinderProcessor {
 
     @BuildStep(onlyIf = MicrometerProcessor.MicrometerEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    SyntheticBeanBuildItem enableHttpBinders(MicrometerRecorder recorder,
-            MicrometerConfig buildTimeConfig,
-            HttpServerConfig serverConfig,
-            HttpClientConfig clientConfig,
-            VertxConfig vertxConfig,
+    SyntheticBeanBuildItem enableHttpBinders(MicrometerRecorder recorder, MicrometerConfig buildTimeConfig,
+            HttpServerConfig serverConfig, HttpClientConfig clientConfig, VertxConfig vertxConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         boolean clientEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder().httpClient());
@@ -74,13 +71,9 @@ public class HttpBinderProcessor {
         }
 
         // Other things use this bean to test whether http server/client metrics are enabled
-        return SyntheticBeanBuildItem
-                .configure(HttpBinderConfiguration.class)
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .unremovable()
-                .runtimeValue(recorder.configureHttpMetrics(serverEnabled, clientEnabled,
-                        serverConfig, clientConfig, vertxConfig))
+        return SyntheticBeanBuildItem.configure(HttpBinderConfiguration.class).scope(Singleton.class).setRuntimeInit()
+                .unremovable().runtimeValue(recorder.configureHttpMetrics(serverEnabled, clientEnabled, serverConfig,
+                        clientConfig, vertxConfig))
                 .done();
     }
 
@@ -91,15 +84,11 @@ public class HttpBinderProcessor {
 
         // But this might be present as well (fallback. Rest URI processing preferred)
         if (capabilities.isPresent(Capability.SERVLET)) {
-            servletFilters.produce(
-                    io.quarkus.undertow.deployment.FilterBuildItem.builder("metricsFilter", UNDERTOW_SERVLET_FILTER_CLASS_NAME)
-                            .setAsyncSupported(true)
-                            .addFilterUrlMapping("*", DispatcherType.FORWARD)
-                            .addFilterUrlMapping("*", DispatcherType.INCLUDE)
-                            .addFilterUrlMapping("*", DispatcherType.REQUEST)
-                            .addFilterUrlMapping("*", DispatcherType.ASYNC)
-                            .addFilterUrlMapping("*", DispatcherType.ERROR)
-                            .build());
+            servletFilters.produce(io.quarkus.undertow.deployment.FilterBuildItem
+                    .builder("metricsFilter", UNDERTOW_SERVLET_FILTER_CLASS_NAME).setAsyncSupported(true)
+                    .addFilterUrlMapping("*", DispatcherType.FORWARD).addFilterUrlMapping("*", DispatcherType.INCLUDE)
+                    .addFilterUrlMapping("*", DispatcherType.REQUEST).addFilterUrlMapping("*", DispatcherType.ASYNC)
+                    .addFilterUrlMapping("*", DispatcherType.ERROR).build());
             createAdditionalBean(additionalBeans, UNDERTOW_SERVLET_FILTER_CLASS_NAME);
         }
     }
@@ -112,8 +101,6 @@ public class HttpBinderProcessor {
     }
 
     private void createAdditionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans, String className) {
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(className)
-                .setUnremovable().build());
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(className).setUnremovable().build());
     }
 }

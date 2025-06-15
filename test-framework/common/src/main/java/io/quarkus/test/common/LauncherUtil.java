@@ -76,8 +76,7 @@ public final class LauncherUtil {
 
     /**
      * Waits (for a maximum of {@param waitTimeSeconds} seconds) until the launched process indicates the address it is
-     * listening on.
-     * If the wait time is exceeded an {@code IllegalStateException} is thrown.
+     * listening on. If the wait time is exceeded an {@code IllegalStateException} is thrown.
      */
     static ListeningAddress waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
         ensureProcessIsAlive(quarkusProcess);
@@ -88,7 +87,8 @@ public final class LauncherUtil {
                 Duration.ofSeconds(waitTimeSeconds), signal, resultReference);
         new Thread(captureListeningDataReader, "capture-listening-data").start();
         try {
-            signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the capturing thread
+            signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the
+                                                                 // capturing thread
             ListeningAddress result = resultReference.get();
             if (result != null) {
                 return result;
@@ -122,8 +122,7 @@ public final class LauncherUtil {
     }
 
     /**
-     * Try to destroy the process normally a few times
-     * and resort to forceful destruction if necessary
+     * Try to destroy the process normally a few times and resort to forceful destruction if necessary
      */
     static void destroyProcess(Process quarkusProcess) {
         quarkusProcess.destroy();
@@ -191,7 +190,9 @@ public final class LauncherUtil {
      * Waits for {@param startedFunction} to indicate that the application has started.
      *
      * @return the {@link io.quarkus.test.common.IntegrationTestStartedNotifier.Result} indicating a successful start
-     * @throws RuntimeException if no successful start was indicated by {@param startedFunction}
+     *
+     * @throws RuntimeException
+     *         if no successful start was indicated by {@param startedFunction}
      */
     static IntegrationTestStartedNotifier.Result waitForStartedFunction(
             Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction,
@@ -226,7 +227,8 @@ public final class LauncherUtil {
      */
     static void updateConfigForPort(Integer effectivePort) {
         if (effectivePort != null) {
-            System.setProperty("quarkus.http.port", effectivePort.toString()); //set the port as a system property in order to have it applied to Config
+            System.setProperty("quarkus.http.port", effectivePort.toString()); // set the port as a system property in
+                                                                               // order to have it applied to Config
             System.setProperty("quarkus.http.test-port", effectivePort.toString()); // needed for RestAssuredManager
             System.clearProperty("test.url"); // make sure the old value does not interfere with setting the new one
             System.setProperty("test.url", TestHTTPResourceManager.getUri());
@@ -234,8 +236,8 @@ public final class LauncherUtil {
     }
 
     /**
-     * Thread that reads a process output file looking for the line that indicates the address the application
-     * is listening on.
+     * Thread that reads a process output file looking for the line that indicates the address the application is
+     * listening on.
      */
     private static class CaptureListeningDataReader implements Runnable {
 
@@ -269,7 +271,8 @@ public final class LauncherUtil {
                 // generally, we want to start as soon as info about Quarkus having started is printed
                 // but just in case the line with http host and port is printed later, let's wait a bit more
                 while (true) {
-                    if (reader.ready()) { // avoid blocking as the input is a file which continually gets more data added
+                    if (reader.ready()) { // avoid blocking as the input is a file which continually gets more data
+                                          // added
                         String line = reader.readLine();
 
                         if (startedRegex.matcher(line).matches()) {
@@ -288,7 +291,7 @@ public final class LauncherUtil {
                             }
                         }
                     } else {
-                        //wait until there is more of the file for us to read
+                        // wait until there is more of the file for us to read
 
                         long now = System.currentTimeMillis();
                         // if we have seen info that the app is started in the log a while ago
@@ -297,7 +300,8 @@ public final class LauncherUtil {
                             if (started) {
                                 dataDetermined(null, null); // no http, all is null
                             } else {
-                                unableToDetermineData("Waited " + waitTime.getSeconds() + " seconds for " + processOutput
+                                unableToDetermineData("Waited " + waitTime.getSeconds() + " seconds for "
+                                        + processOutput
                                         + " to contain info about the listening port and protocol but no such info was found. "
                                         + "Check if the options quarkus.log.level and quarkus.log.file.level are at least INFO (or more verbose).");
                             }
@@ -369,7 +373,7 @@ public final class LauncherUtil {
                     System.out.print(new String(b, 0, i, StandardCharsets.UTF_8));
                 }
             } catch (IOException e) {
-                //ignore
+                // ignore
             }
         }
     }

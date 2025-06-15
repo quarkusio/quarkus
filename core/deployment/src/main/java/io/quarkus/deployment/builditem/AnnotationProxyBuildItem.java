@@ -21,9 +21,9 @@ public final class AnnotationProxyBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @param annotationInstance
      * @param annotationType
+     *
      * @return a new annotation proxy builder
      */
     public <A extends Annotation> AnnotationProxyBuilder<A> builder(AnnotationInstance annotationInstance,

@@ -97,14 +97,12 @@ public class RuntimeInterceptorDeployment {
         globalRequestInterceptorHandlers = new ArrayList<>(globalRequestInterceptorsMap.size());
         for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : globalRequestInterceptorsMap
                 .entrySet()) {
-            globalRequestInterceptorHandlers
-                    .add(new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired(),
-                            entry.getKey().isWithFormRead()));
+            globalRequestInterceptorHandlers.add(new ResourceRequestFilterHandler(entry.getValue(), false,
+                    entry.getKey().isNonBlockingRequired(), entry.getKey().isWithFormRead()));
         }
 
         InterceptorHandler globalInterceptorHandler = null;
-        if (!globalReaderInterceptorsMap.isEmpty() ||
-                !globalWriterInterceptorsMap.isEmpty()) {
+        if (!globalReaderInterceptorsMap.isEmpty() || !globalWriterInterceptorsMap.isEmpty()) {
             WriterInterceptor[] writers = null;
             ReaderInterceptor[] readers = null;
             if (!globalReaderInterceptorsMap.isEmpty()) {
@@ -169,8 +167,7 @@ public class RuntimeInterceptorDeployment {
         return new MethodInterceptorContext(method, lazyMethod);
     }
 
-    <T> TreeMap<ResourceInterceptor<T>, T> buildInterceptorMap(
-            Map<ResourceInterceptor<T>, T> globalInterceptorsMap,
+    <T> TreeMap<ResourceInterceptor<T>, T> buildInterceptorMap(Map<ResourceInterceptor<T>, T> globalInterceptorsMap,
             Map<ResourceInterceptor<T>, T> nameInterceptorsMap,
             Map<ResourceInterceptor<T>, T> methodSpecificInterceptorsMap, ResourceMethod method, boolean reversed) {
         TreeMap<ResourceInterceptor<T>, T> interceptorsToUse = new TreeMap<>(
@@ -178,7 +175,8 @@ public class RuntimeInterceptorDeployment {
         interceptorsToUse.putAll(globalInterceptorsMap);
         interceptorsToUse.putAll(methodSpecificInterceptorsMap);
         for (ResourceInterceptor<T> nameInterceptor : nameInterceptorsMap.keySet()) {
-            // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the interceptor has
+            // in order to the interceptor to be used, the method needs to have all the "qualifiers" that the
+            // interceptor has
             if (method.getNameBindingNames().containsAll(nameInterceptor.getNameBindingNames())) {
                 interceptorsToUse.put(nameInterceptor, nameInterceptorsMap.get(nameInterceptor));
             }
@@ -211,8 +209,8 @@ public class RuntimeInterceptorDeployment {
                 // in the global fields
                 ResourceInterceptors dynamicallyConfiguredInterceptors = new ResourceInterceptors();
 
-                DynamicFeatureContext context = new DynamicFeatureContext(
-                        dynamicallyConfiguredInterceptors, configurationImpl, info.getFactoryCreator());
+                DynamicFeatureContext context = new DynamicFeatureContext(dynamicallyConfiguredInterceptors,
+                        configurationImpl, info.getFactoryCreator());
                 for (ResourceDynamicFeature resourceDynamicFeature : dynamicFeatures.getResourceDynamicFeatures()) {
                     DynamicFeature feature = resourceDynamicFeature.getFactory().createInstance().getInstance();
                     feature.configure(lazyMethod, context);
@@ -221,22 +219,22 @@ public class RuntimeInterceptorDeployment {
 
                 if (!dynamicallyConfiguredInterceptors.getContainerRequestFilters().getGlobalResourceInterceptors()
                         .isEmpty()) {
-                    methodSpecificRequestInterceptorsMap = createInterceptorInstances(
-                            dynamicallyConfiguredInterceptors.getContainerRequestFilters().getGlobalResourceInterceptors(),
-                            closeTaskHandler);
+                    methodSpecificRequestInterceptorsMap = createInterceptorInstances(dynamicallyConfiguredInterceptors
+                            .getContainerRequestFilters().getGlobalResourceInterceptors(), closeTaskHandler);
                 }
                 if (!dynamicallyConfiguredInterceptors.getContainerResponseFilters().getGlobalResourceInterceptors()
                         .isEmpty()) {
-                    methodSpecificResponseInterceptorsMap = createInterceptorInstances(
-                            dynamicallyConfiguredInterceptors.getContainerResponseFilters().getGlobalResourceInterceptors(),
-                            closeTaskHandler);
+                    methodSpecificResponseInterceptorsMap = createInterceptorInstances(dynamicallyConfiguredInterceptors
+                            .getContainerResponseFilters().getGlobalResourceInterceptors(), closeTaskHandler);
                 }
-                if (!dynamicallyConfiguredInterceptors.getReaderInterceptors().getGlobalResourceInterceptors().isEmpty()) {
+                if (!dynamicallyConfiguredInterceptors.getReaderInterceptors().getGlobalResourceInterceptors()
+                        .isEmpty()) {
                     methodSpecificReaderInterceptorsMap = createInterceptorInstances(
                             dynamicallyConfiguredInterceptors.getReaderInterceptors().getGlobalResourceInterceptors(),
                             closeTaskHandler);
                 }
-                if (!dynamicallyConfiguredInterceptors.getWriterInterceptors().getGlobalResourceInterceptors().isEmpty()) {
+                if (!dynamicallyConfiguredInterceptors.getWriterInterceptors().getGlobalResourceInterceptors()
+                        .isEmpty()) {
                     methodSpecificWriterInterceptorsMap = createInterceptorInstances(
                             dynamicallyConfiguredInterceptors.getWriterInterceptors().getGlobalResourceInterceptors(),
                             closeTaskHandler);
@@ -263,9 +261,8 @@ public class RuntimeInterceptorDeployment {
                 }
             } else {
                 TreeMap<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> interceptorsToUse = buildInterceptorMap(
-                        globalResponseInterceptorsMap, nameResponseInterceptorsMap, methodSpecificResponseInterceptorsMap,
-                        method,
-                        true);
+                        globalResponseInterceptorsMap, nameResponseInterceptorsMap,
+                        methodSpecificResponseInterceptorsMap, method, true);
                 for (Map.Entry<ResourceInterceptor<ContainerResponseFilter>, ContainerResponseFilter> entry : interceptorsToUse
                         .entrySet()) {
                     responseFilterHandlers.add(new ResourceResponseFilterHandler(entry.getValue()));
@@ -285,11 +282,11 @@ public class RuntimeInterceptorDeployment {
                 return globalInterceptorHandler;
             } else {
                 TreeMap<ResourceInterceptor<ReaderInterceptor>, ReaderInterceptor> readerInterceptorsToUse = buildInterceptorMap(
-                        globalReaderInterceptorsMap, nameReaderInterceptorsMap, methodSpecificReaderInterceptorsMap, method,
-                        false);
+                        globalReaderInterceptorsMap, nameReaderInterceptorsMap, methodSpecificReaderInterceptorsMap,
+                        method, false);
                 TreeMap<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> writerInterceptorsToUse = buildInterceptorMap(
-                        globalWriterInterceptorsMap, nameWriterInterceptorsMap, methodSpecificWriterInterceptorsMap, method,
-                        false);
+                        globalWriterInterceptorsMap, nameWriterInterceptorsMap, methodSpecificWriterInterceptorsMap,
+                        method, false);
                 WriterInterceptor[] writers = null;
                 ReaderInterceptor[] readers = null;
                 if (!readerInterceptorsToUse.isEmpty()) {
@@ -325,17 +322,16 @@ public class RuntimeInterceptorDeployment {
                 }
             } else {
                 TreeMap<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> interceptorsToUse = buildInterceptorMap(
-                        globalRequestInterceptorsMap, nameRequestInterceptorsMap, methodSpecificRequestInterceptorsMap, method,
-                        false);
+                        globalRequestInterceptorsMap, nameRequestInterceptorsMap, methodSpecificRequestInterceptorsMap,
+                        method, false);
                 // because named filters are different for each Resource method,
                 // we need to make sure that the final set of filters do not alternate the threading model
                 // from blocking to non-blocking
                 validateRequestFilterThreadModel(interceptorsToUse.keySet());
                 for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : interceptorsToUse
                         .entrySet()) {
-                    handlers.add(
-                            new ResourceRequestFilterHandler(entry.getValue(), false, entry.getKey().isNonBlockingRequired(),
-                                    entry.getKey().isWithFormRead()));
+                    handlers.add(new ResourceRequestFilterHandler(entry.getValue(), false,
+                            entry.getKey().isNonBlockingRequired(), entry.getKey().isWithFormRead()));
                 }
             }
             return handlers;
@@ -354,10 +350,11 @@ public class RuntimeInterceptorDeployment {
                     return globalInterceptorHandler.hasWriterInterceptors();
                 }
             } else {
-                // this is not optimal at all, but this method is only used for return types of AsyncFile so limited impact
+                // this is not optimal at all, but this method is only used for return types of AsyncFile so limited
+                // impact
                 TreeMap<ResourceInterceptor<WriterInterceptor>, WriterInterceptor> writerInterceptorsToUse = buildInterceptorMap(
-                        globalWriterInterceptorsMap, nameWriterInterceptorsMap, methodSpecificWriterInterceptorsMap, method,
-                        false);
+                        globalWriterInterceptorsMap, nameWriterInterceptorsMap, methodSpecificWriterInterceptorsMap,
+                        method, false);
                 return !writerInterceptorsToUse.isEmpty();
             }
             return false;
@@ -365,7 +362,8 @@ public class RuntimeInterceptorDeployment {
     }
 
     /**
-     * Validates that any {@code ContainerRequestFilter} that has {@code nonBlockingRequired} set, comes before any other filter
+     * Validates that any {@code ContainerRequestFilter} that has {@code nonBlockingRequired} set, comes before any
+     * other filter
      */
     public static void validateRequestFilterThreadModel(
             Collection<ResourceInterceptor<ContainerRequestFilter>> requestFilters) {

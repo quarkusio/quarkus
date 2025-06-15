@@ -15,15 +15,12 @@ public class UserInfoRequiredWithoutUserPath {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "quarkus.oidc.authentication.id-token-required=false\n"
-                                    + "quarkus.oidc.authorization-path=authorize\n"
-                                    + "quarkus.oidc.token-path=token\n"
-                                    + "quarkus.oidc.application-type=web-app\n"
-                                    + "quarkus.oidc.authentication.verify-access-token=false\n"
-                                    + "quarkus.oidc.discovery-enabled=false\n"),
-                            "application.properties"))
+            .withApplicationRoot(
+                    (jar) -> jar.addAsResource(new StringAsset("quarkus.oidc.authentication.id-token-required=false\n"
+                            + "quarkus.oidc.authorization-path=authorize\n" + "quarkus.oidc.token-path=token\n"
+                            + "quarkus.oidc.application-type=web-app\n"
+                            + "quarkus.oidc.authentication.verify-access-token=false\n"
+                            + "quarkus.oidc.discovery-enabled=false\n"), "application.properties"))
             .assertException(t -> {
                 Throwable e = t;
                 ConfigurationException te = null;

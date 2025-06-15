@@ -8,15 +8,10 @@ import io.quarkus.test.QuarkusUnitTest;
  * Tests of a CUSTOM authentication mechanism that uses the BASIC authentication headers
  */
 public class CustomAuthEmbeddedTestCase extends CustomAuthEmbeddedBase {
-    static Class[] testClasses = {
-            TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
-            ParametrizedPathsResource.class, SubjectExposingResource.class
-    };
+    static Class[] testClasses = { TestSecureServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
+            ParametrizedPathsResource.class, SubjectExposingResource.class };
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addClasses(CustomAuth.class)
-                    .addAsResource("application-custom-auth-embedded.properties",
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addClasses(CustomAuth.class)
+                    .addAsResource("application-custom-auth-embedded.properties", "application.properties"));
 }

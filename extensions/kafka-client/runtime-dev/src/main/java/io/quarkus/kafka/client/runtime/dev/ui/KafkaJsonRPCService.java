@@ -31,11 +31,10 @@ public class KafkaJsonRPCService {
     }
 
     public List<KafkaTopic> createTopic(final String topicName, final int partitions, final int replications,
-            Map<String, String> configs)
-            throws InterruptedException, ExecutionException {
+            Map<String, String> configs) throws InterruptedException, ExecutionException {
 
-        KafkaCreateTopicRequest createTopicRequest = new KafkaCreateTopicRequest(topicName, partitions, (short) replications,
-                configs);
+        KafkaCreateTopicRequest createTopicRequest = new KafkaCreateTopicRequest(topicName, partitions,
+                (short) replications, configs);
         boolean created = kafkaAdminClient.createTopic(createTopicRequest);
         if (created) {
             return kafkaUiUtils.getTopics();
@@ -60,8 +59,7 @@ public class KafkaJsonRPCService {
     }
 
     public KafkaMessagePage createMessage(String topicName, Integer partition, String key, String value,
-            Map<String, String> headers)
-            throws ExecutionException, InterruptedException {
+            Map<String, String> headers) throws ExecutionException, InterruptedException {
 
         if (partition < 0)
             partition = null;

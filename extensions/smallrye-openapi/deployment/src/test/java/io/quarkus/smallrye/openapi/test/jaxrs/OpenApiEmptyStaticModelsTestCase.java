@@ -16,19 +16,14 @@ public class OpenApiEmptyStaticModelsTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(
-                            new StringAsset("quarkus.smallrye-openapi.additional-docs-directory=" + directory),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class).addAsResource(
+                    new StringAsset("quarkus.smallrye-openapi.additional-docs-directory=" + directory),
+                    "application.properties"));
 
     @Test
     public void testNonExistingAdditionalDocsDirectory() throws IOException {
 
-        RestAssured.given().header("Accept", "application/json")
-                .when().get("/q/openapi")
-                .then()
-                .log().body().and()
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then().log().body().and()
                 .body("openapi", Matchers.startsWith("3.1."));
     }
 }

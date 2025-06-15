@@ -47,6 +47,7 @@ public final class LowerBoundCheckOf extends ConverterType {
     }
 
     public boolean equals(final LowerBoundCheckOf obj) {
-        return obj == this || obj != null && lowerBound == obj.lowerBound && classConverterType.equals(obj.classConverterType);
+        return obj == this
+                || obj != null && lowerBound == obj.lowerBound && classConverterType.equals(obj.classConverterType);
     }
 }

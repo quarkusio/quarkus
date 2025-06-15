@@ -18,8 +18,9 @@ public class ContentTypes {
     QuteConfig config;
 
     /**
+     * @param templatePath
+     *        The path relative to the template root, uses the {@code /} path separator.
      *
-     * @param templatePath The path relative to the template root, uses the {@code /} path separator.
      * @return the content type
      */
     public String getContentType(String templatePath) {

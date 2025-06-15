@@ -29,7 +29,8 @@ public class GrpcServerReloader {
 
     public static StreamCollector devModeCollector() {
         if (LaunchMode.current() != LaunchMode.DEVELOPMENT) {
-            throw new IllegalStateException("Attempted to initialize development mode StreamCollector in non-development mode");
+            throw new IllegalStateException(
+                    "Attempted to initialize development mode StreamCollector in non-development mode");
         }
         return new DevModeStreamsCollector();
     }
@@ -60,8 +61,7 @@ public class GrpcServerReloader {
     }
 
     public static void reinitialize(List<ServerServiceDefinition> serviceDefinitions,
-            Map<String, ServerMethodDefinition<?, ?>> methods,
-            List<ServerInterceptor> sortedInterceptors) {
+            Map<String, ServerMethodDefinition<?, ?>> methods, List<ServerInterceptor> sortedInterceptors) {
         if (server == null) {
             return;
         }

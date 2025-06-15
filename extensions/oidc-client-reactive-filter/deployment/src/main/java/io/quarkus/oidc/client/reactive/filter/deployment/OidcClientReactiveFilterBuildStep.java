@@ -37,9 +37,11 @@ public class OidcClientReactiveFilterBuildStep {
 
     // we simply pretend that @OidcClientFilter means @RegisterProvider(OidcClientRequestReactiveFilter.class)
     @BuildStep
-    void oidcClientFilterSupport(CombinedIndexBuildItem indexBuildItem, BuildProducer<GeneratedBeanBuildItem> generatedBean,
+    void oidcClientFilterSupport(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<GeneratedBeanBuildItem> generatedBean,
             BuildProducer<RegisterProviderAnnotationInstanceBuildItem> producer) {
-        final var helper = new OidcClientFilterDeploymentHelper<>(AbstractOidcClientRequestReactiveFilter.class, generatedBean);
+        final var helper = new OidcClientFilterDeploymentHelper<>(AbstractOidcClientRequestReactiveFilter.class,
+                generatedBean);
 
         Collection<AnnotationInstance> instances = indexBuildItem.getIndex().getAnnotations(OIDC_CLIENT_FILTER);
         for (AnnotationInstance instance : instances) {
@@ -56,16 +58,16 @@ public class OidcClientReactiveFilterBuildStep {
                 valueAttr = createClassValue(OIDC_CLIENT_REQUEST_REACTIVE_FILTER);
             }
 
-            final AnnotationValue priorityAttr = AnnotationValue.createIntegerValue("priority", Priorities.AUTHENTICATION);
+            final AnnotationValue priorityAttr = AnnotationValue.createIntegerValue("priority",
+                    Priorities.AUTHENTICATION);
             String targetClass = instance.target().asClass().name().toString();
-            producer.produce(new RegisterProviderAnnotationInstanceBuildItem(targetClass, AnnotationInstance.create(
-                    DotNames.REGISTER_PROVIDER, instance.target(), List.of(valueAttr, priorityAttr))));
+            producer.produce(new RegisterProviderAnnotationInstanceBuildItem(targetClass, AnnotationInstance
+                    .create(DotNames.REGISTER_PROVIDER, instance.target(), List.of(valueAttr, priorityAttr))));
         }
     }
 
     private AnnotationValue createClassValue(DotName filter) {
-        return AnnotationValue.createClassValue("value",
-                Type.create(filter, Type.Kind.CLASS));
+        return AnnotationValue.createClassValue("value", Type.create(filter, Type.Kind.CLASS));
     }
 
     @BuildStep
@@ -76,7 +78,6 @@ public class OidcClientReactiveFilterBuildStep {
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(OidcClientRequestReactiveFilter.class.getName()));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(OidcClientRequestReactiveFilter.class)
-                .reason(getClass().getName())
-                .methods().fields().build());
+                .reason(getClass().getName()).methods().fields().build());
     }
 }

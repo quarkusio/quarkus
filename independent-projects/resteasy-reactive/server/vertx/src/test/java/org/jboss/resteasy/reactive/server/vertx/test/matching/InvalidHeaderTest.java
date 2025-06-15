@@ -20,36 +20,21 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class InvalidHeaderTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class);
+        }
+    });
 
     @Test
     void test() {
-        given()
-                .header("Accept", "application/json")
-                .when().get("/test/1")
-                .then()
-                .statusCode(200)
+        given().header("Accept", "application/json").when().get("/test/1").then().statusCode(200)
                 .body(is("{\"id\": \"1\"}"));
 
-        given()
-                .header("Accept", "text/plain")
-                .when().get("/test/1")
-                .then()
-                .statusCode(200)
-                .body(is("1"));
+        given().header("Accept", "text/plain").when().get("/test/1").then().statusCode(200).body(is("1"));
 
-        given()
-                .header("Accept", "foobar")
-                .when().get("/test/1")
-                .then()
-                .statusCode(400);
+        given().header("Accept", "foobar").when().get("/test/1").then().statusCode(400);
     }
 
     @Path("/test")

@@ -20,10 +20,8 @@ public class NamedBeanValidationFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(NamedFoo.class)
-                    .addAsResource(new StringAsset("{#each inject:foo.list}{it.ping}{/each}{cdi:foo.bar}"),
-                            "templates/fooping.html"))
+            .withApplicationRoot((jar) -> jar.addClass(NamedFoo.class).addAsResource(
+                    new StringAsset("{#each inject:foo.list}{it.ping}{/each}{cdi:foo.bar}"), "templates/fooping.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

@@ -34,11 +34,8 @@ public class DevServicesProcessor {
 
         InternalPageBuildItem devServicesPages = new InternalPageBuildItem("Dev Services", 40);
 
-        devServicesPages.addPage(Page.webComponentPageBuilder()
-                .namespace(NAMESPACE)
-                .title("Dev services")
-                .icon("font-awesome-solid:wand-magic-sparkles")
-                .componentLink("qwc-dev-services.js"));
+        devServicesPages.addPage(Page.webComponentPageBuilder().namespace(NAMESPACE).title("Dev services")
+                .icon("font-awesome-solid:wand-magic-sparkles").componentLink("qwc-dev-services.js"));
 
         Collection<DevServiceDescriptionBuildItem> services = getServices(devServiceDescriptions, otherDevServices);
 
@@ -73,9 +70,7 @@ public class DevServicesProcessor {
         for (DevServicesResultBuildItem devServicesResultBuildItem : devServicesResultBuildItems) {
             if (devServicesResultBuildItem.getContainerId() == null) {
                 devServiceDescriptions.add(new DevServiceDescriptionBuildItem(devServicesResultBuildItem.getName(),
-                        devServicesResultBuildItem.getDescription(),
-                        null,
-                        devServicesResultBuildItem.getConfig()));
+                        devServicesResultBuildItem.getDescription(), null, devServicesResultBuildItem.getConfig()));
             }
         }
         return devServiceDescriptions;
@@ -89,7 +84,8 @@ public class DevServicesProcessor {
                 ignored -> CompletableFuture.supplyAsync(() -> getServices(devServiceDescriptions, otherDevServices)));
     }
 
-    private Collection<DevServiceDescriptionBuildItem> getServices(List<DevServiceDescriptionBuildItem> devServiceDescriptions,
+    private Collection<DevServiceDescriptionBuildItem> getServices(
+            List<DevServiceDescriptionBuildItem> devServiceDescriptions,
             List<DevServiceDescriptionBuildItem> otherDevServices) {
         Map<String, DevServiceDescriptionBuildItem> combined = new TreeMap<>();
         addToMap(combined, devServiceDescriptions);

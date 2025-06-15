@@ -29,9 +29,7 @@ public class SyntheticObserverTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyObserver.class))
-            .addBuildChainCustomizer(buildCustomizer());
+            .withApplicationRoot((jar) -> jar.addClasses(MyObserver.class)).addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
         return new Consumer<BuildChainBuilder>() {
@@ -44,20 +42,19 @@ public class SyntheticObserverTest {
                     public void execute(BuildContext context) {
                         ObserverRegistrationPhaseBuildItem observerRegistrationPhase = context
                                 .consume(ObserverRegistrationPhaseBuildItem.class);
-                        context.produce(new ObserverConfiguratorBuildItem(
-                                observerRegistrationPhase.getContext().configure()
-                                        .beanClass(DotName.createSimple(SyntheticObserverTest.class.getName()))
-                                        .observedType(String.class).notify(mc -> {
-                                            ResultHandle events = mc
-                                                    .readStaticField(
-                                                            FieldDescriptor.of(MyObserver.class, "EVENTS", List.class));
-                                            mc.invokeInterfaceMethod(
-                                                    MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
-                                                    events, mc.load("synthetic"));
-                                            mc.returnValue(null);
-                                        })));
+                        context.produce(new ObserverConfiguratorBuildItem(observerRegistrationPhase.getContext()
+                                .configure().beanClass(DotName.createSimple(SyntheticObserverTest.class.getName()))
+                                .observedType(String.class).notify(mc -> {
+                                    ResultHandle events = mc.readStaticField(
+                                            FieldDescriptor.of(MyObserver.class, "EVENTS", List.class));
+                                    mc.invokeInterfaceMethod(
+                                            MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
+                                            events, mc.load("synthetic"));
+                                    mc.returnValue(null);
+                                })));
                     }
-                }).consumes(ObserverRegistrationPhaseBuildItem.class).produces(ObserverConfiguratorBuildItem.class).build();
+                }).consumes(ObserverRegistrationPhaseBuildItem.class).produces(ObserverConfiguratorBuildItem.class)
+                        .build();
             }
         };
     }

@@ -62,13 +62,11 @@ public class JDBCMySQLProcessor {
     }
 
     @BuildStep
-    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            Capabilities capabilities) {
+    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MySQLAgroalConnectionConfigurer.class)
-                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                    .setUnremovable()
-                    .build());
+            additionalBeans
+                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MySQLAgroalConnectionConfigurer.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
         }
     }
 
@@ -102,30 +100,28 @@ public class JDBCMySQLProcessor {
         proxies.add(new NativeImageProxyDefinitionBuildItem(JdbcStatement.class.getName()));
         proxies.add(new NativeImageProxyDefinitionBuildItem(Connection.class.getName()));
         proxies.add(new NativeImageProxyDefinitionBuildItem(ResultSet.class.getName()));
-        proxies.add(
-                new NativeImageProxyDefinitionBuildItem(JdbcPreparedStatement.class.getName(), JdbcStatement.class.getName()));
-        proxies.add(new NativeImageProxyDefinitionBuildItem(JdbcPropertySet.class.getName(), PropertySet.class.getName(),
-                Serializable.class.getName()));
-        proxies.add(
-                new NativeImageProxyDefinitionBuildItem(Resultset.class.getName(), ResultSetInternalMethods.class.getName()));
+        proxies.add(new NativeImageProxyDefinitionBuildItem(JdbcPreparedStatement.class.getName(),
+                JdbcStatement.class.getName()));
+        proxies.add(new NativeImageProxyDefinitionBuildItem(JdbcPropertySet.class.getName(),
+                PropertySet.class.getName(), Serializable.class.getName()));
+        proxies.add(new NativeImageProxyDefinitionBuildItem(Resultset.class.getName(),
+                ResultSetInternalMethods.class.getName()));
         proxies.add(new NativeImageProxyDefinitionBuildItem(LoadBalancedConnection.class.getName(),
                 JdbcConnection.class.getName()));
-        proxies.add(
-                new NativeImageProxyDefinitionBuildItem(ReplicationConnection.class.getName(), JdbcConnection.class.getName()));
-        proxies.add(
-                new NativeImageProxyDefinitionBuildItem(ResultSetInternalMethods.class.getName(),
-                        WarningListener.class.getName(), Resultset.class.getName()));
+        proxies.add(new NativeImageProxyDefinitionBuildItem(ReplicationConnection.class.getName(),
+                JdbcConnection.class.getName()));
+        proxies.add(new NativeImageProxyDefinitionBuildItem(ResultSetInternalMethods.class.getName(),
+                WarningListener.class.getName(), Resultset.class.getName()));
         return proxies;
     }
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider,
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            MySQLServiceBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    MySQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MYSQL));
     }

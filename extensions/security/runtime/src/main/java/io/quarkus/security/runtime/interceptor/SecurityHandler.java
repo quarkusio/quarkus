@@ -28,20 +28,19 @@ public class SecurityHandler {
         }
         Class<?> returnType = ic.getMethod().getReturnType();
         if (Uni.class.isAssignableFrom(returnType)) {
-            return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters())
-                    .onItem().transformToUni(new UniContinuation(ic));
+            return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters()).onItem()
+                    .transformToUni(new UniContinuation(ic));
         } else if (CompletionStage.class.isAssignableFrom(returnType)) {
-            return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters())
-                    .onItem().transformToUni((s) -> {
-                        try {
-                            return Uni.createFrom().completionStage((CompletionStage<?>) ic.proceed());
-                        } catch (Exception e) {
-                            return Uni.createFrom().failure(e);
-                        }
-                    }).subscribeAsCompletionStage();
+            return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters()).onItem().transformToUni((s) -> {
+                try {
+                    return Uni.createFrom().completionStage((CompletionStage<?>) ic.proceed());
+                } catch (Exception e) {
+                    return Uni.createFrom().failure(e);
+                }
+            }).subscribeAsCompletionStage();
         } else if (Multi.class.isAssignableFrom(returnType)) {
-            return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters())
-                    .onItem().transformToMulti(new MultiContinuation(ic));
+            return constrainer.nonBlockingCheck(ic.getMethod(), ic.getParameters()).onItem()
+                    .transformToMulti(new MultiContinuation(ic));
         } else {
             constrainer.check(ic.getMethod(), ic.getParameters());
             return ic.proceed();

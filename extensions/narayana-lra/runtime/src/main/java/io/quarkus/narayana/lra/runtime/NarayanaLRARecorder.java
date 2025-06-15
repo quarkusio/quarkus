@@ -28,8 +28,7 @@ public class NarayanaLRARecorder {
 
         for (String className : classNames) {
             try {
-                Class<?> clazz = Class.forName(className,
-                        false, Thread.currentThread().getContextClassLoader());
+                Class<?> clazz = Class.forName(className, false, Thread.currentThread().getContextClassLoader());
                 LRAParticipant lraParticipant = new LRAParticipant(clazz);
 
                 nonJaxParticipants.put(className, lraParticipant);

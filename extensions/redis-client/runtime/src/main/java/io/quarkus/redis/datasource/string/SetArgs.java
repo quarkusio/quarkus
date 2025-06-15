@@ -27,7 +27,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     /**
      * Set the specified expire time, in seconds.
      *
-     * @param timeout expire time in seconds.
+     * @param timeout
+     *        expire time in seconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public SetArgs ex(long timeout) {
@@ -41,7 +43,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     /**
      * Sets the expiration.
      *
-     * @param timeout expire time in seconds.
+     * @param timeout
+     *        expire time in seconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public SetArgs ex(Duration timeout) {
@@ -54,7 +58,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     /**
      * Sets the expiration time
      *
-     * @param timestamp the timestamp
+     * @param timestamp
+     *        the timestamp
+     *
      * @return the current {@code GetExArgs}
      */
     public SetArgs exAt(long timestamp) {
@@ -65,7 +71,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     /**
      * Sets the expiration time
      *
-     * @param timestamp the timestamp type: posix time in seconds.
+     * @param timestamp
+     *        the timestamp type: posix time in seconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public SetArgs exAt(Instant timestamp) {
@@ -79,7 +87,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     /**
      * Set the specified expire time, in milliseconds.
      *
-     * @param timeout expire time in milliseconds.
+     * @param timeout
+     *        expire time in milliseconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public SetArgs px(long timeout) {
@@ -93,7 +103,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     /**
      * Set the specified expire time, in milliseconds.
      *
-     * @param timeout expire time in milliseconds.
+     * @param timeout
+     *        expire time in milliseconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public SetArgs px(Duration timeout) {
@@ -106,7 +118,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     /**
      * Set the specified Unix time at which the key will expire, in milliseconds.
      *
-     * @param timestamp the timestamp
+     * @param timestamp
+     *        the timestamp
+     *
      * @return the current {@code GetExArgs}
      */
     public SetArgs pxAt(long timestamp) {
@@ -117,7 +131,9 @@ public class SetArgs extends io.quarkus.redis.datasource.value.SetArgs implement
     /**
      * Set the specified Unix time at which the key will expire, in milliseconds.
      *
-     * @param timestamp the timestamp
+     * @param timestamp
+     *        the timestamp
+     *
      * @return the current {@code SetArgs}
      */
     public SetArgs pxAt(Instant timestamp) {

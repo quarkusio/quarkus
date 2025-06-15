@@ -24,7 +24,7 @@ public class PanacheJpaEntityOperationsEnhancer extends PanacheEntityEnhancer {
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         ClassInfo entityInfo = indexView.getClassByName(DotName.createSimple(className));
-        return new PanacheEntityClassOperationGenerationVisitor(outputClassVisitor, typeBundle,
-                entityInfo, methodCustomizers, indexView);
+        return new PanacheEntityClassOperationGenerationVisitor(outputClassVisitor, typeBundle, entityInfo,
+                methodCustomizers, indexView);
     }
 }

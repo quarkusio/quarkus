@@ -11,8 +11,7 @@ public class ReactiveStreamsOperatorsHotReloadTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyTestResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyTestResource.class));
 
     @Test
     public void testHotReload() {

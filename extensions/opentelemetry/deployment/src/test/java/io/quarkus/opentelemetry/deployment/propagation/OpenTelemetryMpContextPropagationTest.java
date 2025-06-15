@@ -25,15 +25,12 @@ public class OpenTelemetryMpContextPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(OpenTelemetryMpContextPropagationTest.TestResource.class));
+            .withApplicationRoot((jar) -> jar.addClass(OpenTelemetryMpContextPropagationTest.TestResource.class));
 
     @Test
     void testOpenTelemetryContextPropagationWithCustomExecutorAndThreadContextProvider() {
-        String message = RestAssured.when()
-                .get("/helloWithContextPropagation").then()
-                .statusCode(200)
-                .extract().asString();
+        String message = RestAssured.when().get("/helloWithContextPropagation").then().statusCode(200).extract()
+                .asString();
         assertTrue(message.startsWith("Hello/"));
         String[] traceIds = message.split("/")[1].split("-");
         assertEquals(2, traceIds.length);
@@ -59,9 +56,9 @@ public class OpenTelemetryMpContextPropagationTest {
         public CompletionStage<String> helloWithCustomExecutor() {
             String message = "Hello/" + Span.current().getSpanContext().getTraceId();
             return this.threadContext
-                    .withContextCapture(CompletableFuture.supplyAsync(
-                            () -> message, this.customExecutorService))
-                    .thenApplyAsync(msg -> msg + "-" + Span.current().getSpanContext().getTraceId(), customExecutorService);
+                    .withContextCapture(CompletableFuture.supplyAsync(() -> message, this.customExecutorService))
+                    .thenApplyAsync(msg -> msg + "-" + Span.current().getSpanContext().getTraceId(),
+                            customExecutorService);
         }
     }
 }

@@ -56,8 +56,8 @@ public class AnnotationProxyProvider {
     public <A extends Annotation> AnnotationProxyBuilder<A> builder(AnnotationInstance annotationInstance,
             Class<A> annotationType) {
         if (!annotationInstance.name().toString().equals(annotationType.getName())) {
-            throw new IllegalArgumentException("Annotation instance " + annotationInstance + " does not match annotation type "
-                    + annotationType.getName());
+            throw new IllegalArgumentException("Annotation instance " + annotationInstance
+                    + " does not match annotation type " + annotationType.getName());
         }
         ClassInfo annotationClass = annotationClasses.computeIfAbsent(annotationInstance.name(), name -> {
             ClassInfo clazz = index.getClassByName(name);
@@ -113,6 +113,7 @@ public class AnnotationProxyProvider {
          *
          * @param name
          * @param value
+         *
          * @return self
          */
         public AnnotationProxyBuilder<A> withValue(String name, Object value) {
@@ -125,6 +126,7 @@ public class AnnotationProxyProvider {
          *
          * @param name
          * @param value
+         *
          * @return self
          */
         public AnnotationProxyBuilder<A> withDefaultValue(String name, Object value) {
@@ -144,12 +146,10 @@ public class AnnotationProxyProvider {
 
                 // Ljakarta/enterprise/util/AnnotationLiteral<Lcom/foo/MyAnnotation;>;Lcom/foo/MyAnnotation;
                 String signature = String.format("L%1$s<L%2$s;>;L%2$s;",
-                        AnnotationLiteral.class.getName().replace('.', '/'),
-                        name.replace('.', '/'));
+                        AnnotationLiteral.class.getName().replace('.', '/'), name.replace('.', '/'));
 
                 ClassCreator literal = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                        .superClass(AnnotationLiteral.class)
-                        .interfaces(name).signature(signature).build();
+                        .superClass(AnnotationLiteral.class).interfaces(name).signature(signature).build();
 
                 List<MethodInfo> constructorParams = annotationClass.methods().stream()
                         .filter(m -> !m.name().equals("<clinit>") && !m.name().equals("<init>"))
@@ -157,7 +157,8 @@ public class AnnotationProxyProvider {
 
                 MethodCreator constructor = literal.getMethodCreator("<init>", "V",
                         constructorParams.stream().map(m -> m.returnType().name().toString()).toArray());
-                constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class), constructor.getThis());
+                constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(AnnotationLiteral.class),
+                        constructor.getThis());
 
                 for (ListIterator<MethodInfo> iterator = constructorParams.listIterator(); iterator.hasNext();) {
                     MethodInfo param = iterator.next();
@@ -166,8 +167,7 @@ public class AnnotationProxyProvider {
                     literal.getFieldCreator(param.name(), returnType).setModifiers(ACC_PRIVATE | ACC_FINAL);
                     // constructor param
                     constructor.writeInstanceField(FieldDescriptor.of(literal.getClassName(), param.name(), returnType),
-                            constructor.getThis(),
-                            constructor.getMethodParam(iterator.previousIndex()));
+                            constructor.getThis(), constructor.getMethodParam(iterator.previousIndex()));
                     // value method
                     MethodCreator value = literal.getMethodCreator(param.name(), returnType).setModifiers(ACC_PUBLIC);
                     value.returnValue(value.readInstanceField(
@@ -208,7 +208,8 @@ public class AnnotationProxyProvider {
                                         if (member.defaultValue() != null) {
                                             yield member.defaultValue().value();
                                         }
-                                        throw new UnsupportedOperationException("Unknown value of annotation member " + name);
+                                        throw new UnsupportedOperationException(
+                                                "Unknown value of annotation member " + name);
                                     }
                                     throw new UnsupportedOperationException("Method " + method + " not implemented");
                                 }

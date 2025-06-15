@@ -14,10 +14,8 @@ public class MultipartResource {
     @POST
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public String hello(MultivaluedMap<String, String> formData) {
-        return formData.entrySet().stream()
-                .map(e -> e.getKey() + ":" + String.join(",", e.getValue()))
-                .collect(toList())
-                .toString();
+        return formData.entrySet().stream().map(e -> e.getKey() + ":" + String.join(",", e.getValue()))
+                .collect(toList()).toString();
     }
 
 }

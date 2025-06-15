@@ -15,12 +15,8 @@ import com.oracle.svm.core.annotate.TargetClass;
 public final class ScannerSubstitutions<I> {
 
     @Substitute
-    public ScannerSubstitutions(
-            Class<I> implementedInterface,
-            boolean stream,
-            ResourceNameCache resourceNameCache,
-            LocationScannerCache locationScannerCache,
-            Configuration configuration) {
+    public ScannerSubstitutions(Class<I> implementedInterface, boolean stream, ResourceNameCache resourceNameCache,
+            LocationScannerCache locationScannerCache, Configuration configuration) {
         throw new IllegalStateException("'org.flywaydb.core.internal.scanner.Scanner' is never used in Quarkus");
     }
 }

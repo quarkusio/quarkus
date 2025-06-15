@@ -20,24 +20,23 @@ public class ApicurioRegistryClientProcessor {
     public void apicurioRegistryClient(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.apicurio.rest.client.auth.exception.NotAuthorizedException",
-                        "io.apicurio.rest.client.auth.exception.ForbiddenException",
-                        "io.apicurio.rest.client.auth.exception.AuthException",
-                        "io.apicurio.rest.client.auth.exception.AuthErrorHandler",
-                        "io.apicurio.rest.client.auth.request.TokenRequestsProvider",
-                        "io.apicurio.rest.client.request.Request",
-                        "io.apicurio.rest.client.auth.AccessTokenResponse",
-                        "io.apicurio.rest.client.auth.Auth",
-                        "io.apicurio.rest.client.auth.BasicAuth",
-                        "io.apicurio.rest.client.auth.OidcAuth").methods().fields().build());
+                .produce(ReflectiveClassBuildItem
+                        .builder("io.apicurio.rest.client.auth.exception.NotAuthorizedException",
+                                "io.apicurio.rest.client.auth.exception.ForbiddenException",
+                                "io.apicurio.rest.client.auth.exception.AuthException",
+                                "io.apicurio.rest.client.auth.exception.AuthErrorHandler",
+                                "io.apicurio.rest.client.auth.request.TokenRequestsProvider",
+                                "io.apicurio.rest.client.request.Request",
+                                "io.apicurio.rest.client.auth.AccessTokenResponse", "io.apicurio.rest.client.auth.Auth",
+                                "io.apicurio.rest.client.auth.BasicAuth", "io.apicurio.rest.client.auth.OidcAuth")
+                        .methods().fields().build());
     }
 
     @BuildStep
     void registerSPIClient(BuildProducer<ServiceProviderBuildItem> services) throws IOException {
 
-        services.produce(
-                new ServiceProviderBuildItem(ApicurioHttpClientProvider.class.getName(),
-                        "io.apicurio.rest.client.VertxHttpClientProvider"));
+        services.produce(new ServiceProviderBuildItem(ApicurioHttpClientProvider.class.getName(),
+                "io.apicurio.rest.client.VertxHttpClientProvider"));
     }
 
     @BuildStep
@@ -49,7 +48,8 @@ public class ApicurioRegistryClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void apicurioRegistryClient(VertxBuildItem vertx, ApicurioRegistryClient client, LaunchModeBuildItem launchMode) {
+    public void apicurioRegistryClient(VertxBuildItem vertx, ApicurioRegistryClient client,
+            LaunchModeBuildItem launchMode) {
         if (launchMode.getLaunchMode().isDevOrTest()) {
             client.clearHttpClient();
         }

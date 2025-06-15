@@ -34,15 +34,11 @@ import io.smallrye.mutiny.Uni;
 public class BlockingMethodsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addPackage(EmptyProtos.class.getPackage())
-                            .addPackage(Messages.class.getPackage())
-                            .addPackage(BlockingTestServiceGrpc.class.getPackage())
-                            .addClasses(BlockingTestService.class, AssertHelper.class,
-                                    io.quarkus.grpc.blocking.BlockingTestService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(EmptyProtos.class.getPackage())
+                    .addPackage(Messages.class.getPackage()).addPackage(BlockingTestServiceGrpc.class.getPackage())
+                    .addClasses(BlockingTestService.class, AssertHelper.class,
+                            io.quarkus.grpc.blocking.BlockingTestService.class))
             .withConfigurationResource("blocking-test-config.properties");
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);
@@ -59,41 +55,35 @@ public class BlockingMethodsTest {
     @Test
     @Timeout(5)
     public void testEmpty() {
-        EmptyProtos.Empty empty = service
-                .emptyCall(EmptyProtos.Empty.newBuilder().build());
+        EmptyProtos.Empty empty = service.emptyCall(EmptyProtos.Empty.newBuilder().build());
         assertThat(empty).isNotNull();
     }
 
     @Test
     @Timeout(5)
     public void testBlockingEmpty() {
-        EmptyProtos.Empty empty = service
-                .emptyCallBlocking(EmptyProtos.Empty.newBuilder().build());
+        EmptyProtos.Empty empty = service.emptyCallBlocking(EmptyProtos.Empty.newBuilder().build());
         assertThat(empty).isNotNull();
     }
 
     @Test
     @Timeout(5)
     public void testUnaryMethod() {
-        Messages.SimpleResponse response = service
-                .unaryCall(Messages.SimpleRequest.newBuilder().build());
+        Messages.SimpleResponse response = service.unaryCall(Messages.SimpleRequest.newBuilder().build());
         assertThat(response).isNotNull();
     }
 
     @Test
     @Timeout(5)
     public void testUnaryMethodBlocking() {
-        Messages.SimpleResponse response = service
-                .unaryCallBlocking(Messages.SimpleRequest.newBuilder().build());
+        Messages.SimpleResponse response = service.unaryCallBlocking(Messages.SimpleRequest.newBuilder().build());
         assertThat(response).isNotNull();
     }
 
     @Test
     @Timeout(5)
     public void testUnaryMethodBlockingClient() {
-        Messages.SimpleRequest request = Messages.SimpleRequest.newBuilder()
-                .setMsg("IllegalArgument")
-                .build();
+        Messages.SimpleRequest request = Messages.SimpleRequest.newBuilder().setMsg("IllegalArgument").build();
         try {
             client.unaryCallBlocking(request).await().indefinitely();
             fail(); // should get SRE ...
@@ -113,10 +103,9 @@ public class BlockingMethodsTest {
             String content = so.getPayload().getBody().toStringUtf8();
             list.add(content);
         });
-        assertThat(list).hasSize(10)
-                .allSatisfy(s -> {
-                    assertThat(s).contains("eventloop");
-                });
+        assertThat(list).hasSize(10).allSatisfy(s -> {
+            assertThat(s).contains("eventloop");
+        });
     }
 
     @Test
@@ -130,10 +119,9 @@ public class BlockingMethodsTest {
             String content = so.getPayload().getBody().toStringUtf8();
             list.add(content);
         });
-        assertThat(list).hasSize(10)
-                .allSatisfy(s -> {
-                    assertThat(s).contains("executor");
-                });
+        assertThat(list).hasSize(10).allSatisfy(s -> {
+            assertThat(s).contains("executor");
+        });
     }
 
     @Test
@@ -164,14 +152,11 @@ public class BlockingMethodsTest {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
-        List<String> response = mutiny.fullDuplexCall(input)
-                .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collect().asList()
-                .await().atMost(TIMEOUT);
-        assertThat(response).isNotNull().hasSize(4)
-                .allSatisfy(s -> {
-                    assertThat(s).contains("eventloop");
-                });
+        List<String> response = mutiny.fullDuplexCall(input).map(o -> o.getPayload().getBody().toStringUtf8()).collect()
+                .asList().await().atMost(TIMEOUT);
+        assertThat(response).isNotNull().hasSize(4).allSatisfy(s -> {
+            assertThat(s).contains("eventloop");
+        });
     }
 
     @Test
@@ -180,14 +165,11 @@ public class BlockingMethodsTest {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
-        List<String> response = mutiny.fullDuplexCallBlocking(input)
-                .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collect().asList()
-                .await().atMost(TIMEOUT);
-        assertThat(response).isNotNull().hasSize(4)
-                .allSatisfy(s -> {
-                    assertThat(s).contains("executor");
-                });
+        List<String> response = mutiny.fullDuplexCallBlocking(input).map(o -> o.getPayload().getBody().toStringUtf8())
+                .collect().asList().await().atMost(TIMEOUT);
+        assertThat(response).isNotNull().hasSize(4).allSatisfy(s -> {
+            assertThat(s).contains("executor");
+        });
     }
 
     @Test
@@ -195,14 +177,11 @@ public class BlockingMethodsTest {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
-        List<String> response = mutiny.halfDuplexCall(input)
-                .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collect().asList()
-                .await().atMost(TIMEOUT);
-        assertThat(response).isNotNull().hasSize(4)
-                .allSatisfy(s -> {
-                    assertThat(s).contains("eventloop");
-                });
+        List<String> response = mutiny.halfDuplexCall(input).map(o -> o.getPayload().getBody().toStringUtf8()).collect()
+                .asList().await().atMost(TIMEOUT);
+        assertThat(response).isNotNull().hasSize(4).allSatisfy(s -> {
+            assertThat(s).contains("eventloop");
+        });
     }
 
     @Test
@@ -210,27 +189,20 @@ public class BlockingMethodsTest {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
                 .map(p -> Messages.StreamingOutputCallRequest.newBuilder().setPayload(p).build());
-        List<String> response = mutiny.halfDuplexCallBlocking(input)
-                .map(o -> o.getPayload().getBody().toStringUtf8())
-                .collect().asList()
-                .await().atMost(TIMEOUT);
-        assertThat(response).isNotNull().hasSize(4)
-                .allSatisfy(s -> {
-                    assertThat(s).contains("executor");
-                });
+        List<String> response = mutiny.halfDuplexCallBlocking(input).map(o -> o.getPayload().getBody().toStringUtf8())
+                .collect().asList().await().atMost(TIMEOUT);
+        assertThat(response).isNotNull().hasSize(4).allSatisfy(s -> {
+            assertThat(s).contains("executor");
+        });
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
     public void testUnimplementedMethod() {
-        Assertions.assertThatThrownBy(
-                () -> service
-                        .unimplementedCall(EmptyProtos.Empty.newBuilder().build()))
+        Assertions.assertThatThrownBy(() -> service.unimplementedCall(EmptyProtos.Empty.newBuilder().build()))
                 .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("UNIMPLEMENTED");
 
-        Assertions.assertThatThrownBy(
-                () -> service
-                        .unimplementedCallBlocking(EmptyProtos.Empty.newBuilder().build()))
+        Assertions.assertThatThrownBy(() -> service.unimplementedCallBlocking(EmptyProtos.Empty.newBuilder().build()))
                 .isInstanceOf(StatusRuntimeException.class).hasMessageContaining("UNIMPLEMENTED");
     }
 

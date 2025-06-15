@@ -46,8 +46,7 @@ public class RESTEasyExtension {
 
     private void scanAsyncResponseProvidersFromClassName(Class<?> asyncResponseProviderClass, String name) {
         try {
-            Class<?> klass = Class.forName(name, false,
-                    Thread.currentThread().getContextClassLoader());
+            Class<?> klass = Class.forName(name, false, Thread.currentThread().getContextClassLoader());
             if (asyncResponseProviderClass.isAssignableFrom(klass)) {
                 for (java.lang.reflect.Type type : klass.getGenericInterfaces()) {
                     if (type instanceof java.lang.reflect.ParameterizedType) {
@@ -57,7 +56,8 @@ public class RESTEasyExtension {
                             java.lang.reflect.Type asyncType = pType.getActualTypeArguments()[0];
                             String asyncTypeName;
                             if (asyncType instanceof java.lang.reflect.ParameterizedType)
-                                asyncTypeName = ((java.lang.reflect.ParameterizedType) asyncType).getRawType().getTypeName();
+                                asyncTypeName = ((java.lang.reflect.ParameterizedType) asyncType).getRawType()
+                                        .getTypeName();
                             else
                                 asyncTypeName = asyncType.getTypeName();
                             asyncTypes.add(DotName.createSimple(asyncTypeName));
@@ -90,8 +90,7 @@ public class RESTEasyExtension {
     }
 
     public Type resolveAsyncType(Type type) {
-        if (type.kind() == Type.Kind.PARAMETERIZED_TYPE
-                && asyncTypes.contains(type.name())) {
+        if (type.kind() == Type.Kind.PARAMETERIZED_TYPE && asyncTypes.contains(type.name())) {
             ParameterizedType pType = type.asParameterizedType();
             if (pType.arguments().size() == 1) {
                 return pType.arguments().get(0);

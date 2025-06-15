@@ -20,33 +20,22 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class ContentTypeCaseTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        given().header("test", "TeXt/Plain").get("/hello")
-                .then()
-                .statusCode(200)
-                .contentType("text/plain")
+        given().header("test", "TeXt/Plain").get("/hello").then().statusCode(200).contentType("text/plain")
                 .body(is("text/plain"));
 
-        given().header("test", "text/plain").get("/hello")
-                .then()
-                .statusCode(200)
-                .contentType("text/plain")
+        given().header("test", "text/plain").get("/hello").then().statusCode(200).contentType("text/plain")
                 .body(is("text/plain"));
 
-        given().header("test", "TEXT/PLAIN").get("/hello")
-                .then()
-                .statusCode(200)
-                .contentType("text/plain")
+        given().header("test", "TEXT/PLAIN").get("/hello").then().statusCode(200).contentType("text/plain")
                 .body(is("text/plain"));
     }
 

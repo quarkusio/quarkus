@@ -15,8 +15,8 @@ import io.vertx.core.MultiMap;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Locale resolver that retrieves the locale from HTTP headers of the current vert.x request.
- * Currently used for handling GraphQL requests.
+ * Locale resolver that retrieves the locale from HTTP headers of the current vert.x request. Currently used for
+ * handling GraphQL requests.
  */
 @Singleton
 public class ResteasyReactiveLocaleResolver extends AbstractLocaleResolver {

@@ -14,15 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OidcClientTooManyJwtCredentialKeyPropsTestCase {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "quarkus.oidc-client.token-path=http://localhost:8180/oidc/tokens\n"
-                                    + "quarkus.oidc-client.client-id=quarkus\n"
-                                    + "quarkus.oidc-client.credentials.jwt.secret=secret\n"
-                                    + "quarkus.oidc-client.credentials.jwt.key=base64encPrivateKey\n"
-                                    + "quarkus.oidc-client.grant.type=jwt"),
-                            "application.properties"))
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.oidc-client.token-path=http://localhost:8180/oidc/tokens\n"
+                    + "quarkus.oidc-client.client-id=quarkus\n" + "quarkus.oidc-client.credentials.jwt.secret=secret\n"
+                    + "quarkus.oidc-client.credentials.jwt.key=base64encPrivateKey\n"
+                    + "quarkus.oidc-client.grant.type=jwt"), "application.properties"))
             .assertException(t -> {
                 Throwable e = t;
                 ConfigurationException te = null;
@@ -37,8 +33,7 @@ public class OidcClientTooManyJwtCredentialKeyPropsTestCase {
                 assertEquals(
                         "Only a single OIDC JWT credential key property can be configured, but you have configured:"
                                 + " quarkus.oidc-client.credentials.jwt.key,quarkus.oidc-client.credentials.jwt.secret",
-                        te.getMessage(),
-                        "Too many JWT credential key properties are configured");
+                        te.getMessage(), "Too many JWT credential key properties are configured");
             });
 
     @Test

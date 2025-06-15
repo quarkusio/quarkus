@@ -10,8 +10,8 @@ import io.smallrye.config.WithDefault;
 public interface GraphQLClientBuildConfig {
 
     /**
-     * Configuration item to enable build-time scanning in Quarkus for generating typesafe GraphQL client models.
-     * If true, build-time scanning is enabled. By default, it is true.
+     * Configuration item to enable build-time scanning in Quarkus for generating typesafe GraphQL client models. If
+     * true, build-time scanning is enabled. By default, it is true.
      */
     @WithDefault("true")
     boolean enableBuildTimeScanning();

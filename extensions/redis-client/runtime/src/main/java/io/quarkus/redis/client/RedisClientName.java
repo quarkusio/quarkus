@@ -11,9 +11,8 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * Marker annotation to select the Redis client.
- *
- * For example, if the Redis connection is configured like so in {@code application.properties}:
+ * Marker annotation to select the Redis client. For example, if the Redis connection is configured like so in
+ * {@code application.properties}:
  *
  * <pre>
  * quarkus.redis.client1.hosts=localhost:6379

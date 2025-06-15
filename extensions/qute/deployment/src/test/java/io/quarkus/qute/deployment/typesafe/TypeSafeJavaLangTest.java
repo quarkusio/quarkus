@@ -17,23 +17,18 @@ public class TypeSafeJavaLangTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Movie.class)
-                    .addAsResource(new StringAsset("{@String movie}"
-                            + "{@java.util.List<Integer> movies}"
-                            + "{#if movie.toLowerCase is 'foo'}"
-                            + "Foo movie!"
-                            + "{/if}"
-                            + "::{movies.get(0).intValue}"
-                            + ""), "templates/foo.html"));
+            .withApplicationRoot((jar) -> jar.addClasses(Movie.class).addAsResource(
+                    new StringAsset(
+                            "{@String movie}" + "{@java.util.List<Integer> movies}" + "{#if movie.toLowerCase is 'foo'}"
+                                    + "Foo movie!" + "{/if}" + "::{movies.get(0).intValue}" + ""),
+                    "templates/foo.html"));
 
     @Inject
     Template foo;
 
     @Test
     public void testValidation() {
-        assertEquals("Foo movie!::42",
-                foo.data("movie", "foo", "movies", List.of(42)).render());
+        assertEquals("Foo movie!::42", foo.data("movie", "foo", "movies", List.of(42)).render());
     }
 
 }

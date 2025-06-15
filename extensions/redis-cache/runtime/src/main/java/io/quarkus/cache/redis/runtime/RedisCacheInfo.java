@@ -23,8 +23,7 @@ public class RedisCacheInfo {
     public Optional<Duration> expireAfterWrite = Optional.empty();
 
     /**
-     * the key prefix allowing to identify the keys belonging to the cache.
-     * If not set, use "cache:$cache-name"
+     * the key prefix allowing to identify the keys belonging to the cache. If not set, use "cache:$cache-name"
      */
     public String prefix;
 
@@ -39,16 +38,15 @@ public class RedisCacheInfo {
     public Type keyType = String.class;
 
     /**
-     * Whether the access to the cache should be using optimistic locking
-     * See <a href="https://redis.io/docs/manual/transactions/#optimistic-locking-using-check-and-set">Redis Optimistic
+     * Whether the access to the cache should be using optimistic locking See
+     * <a href="https://redis.io/docs/manual/transactions/#optimistic-locking-using-check-and-set">Redis Optimistic
      * Locking</a> for details.
      */
     public boolean useOptimisticLocking = false;
 
     /**
-     * If set, the {@code SCAN} command (used to implement invalidation) will have
-     * the {@code COUNT} argument with given value. If not set (default),
-     * no {@code COUNT} argument is present.
+     * If set, the {@code SCAN} command (used to implement invalidation) will have the {@code COUNT} argument with given
+     * value. If not set (default), no {@code COUNT} argument is present.
      */
     public OptionalInt invalidationScanSize = OptionalInt.empty();
 }

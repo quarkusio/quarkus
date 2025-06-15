@@ -59,8 +59,7 @@ public class SpringScheduledProcessorTest {
         List<AnnotationValue> annotationValues = springScheduledProcessor.buildDelayParams(annotation.values());
         AnnotationValue expectedDelayValue = AnnotationValue.createLongValue("delay", 1000L);
         AnnotationValue expectedDelayUnitValue = AnnotationValue.createEnumValue("delayUnit",
-                DotName.createSimple("java.util.concurrent.TimeUnit"),
-                TimeUnit.MILLISECONDS.name());
+                DotName.createSimple("java.util.concurrent.TimeUnit"), TimeUnit.MILLISECONDS.name());
         assertThat(annotationValues).contains(expectedDelayValue);
         assertThat(annotationValues).contains(expectedDelayUnitValue);
 
@@ -75,8 +74,7 @@ public class SpringScheduledProcessorTest {
         List<AnnotationValue> annotationValues = springScheduledProcessor.buildDelayParams(annotation.values());
         AnnotationValue expectedDelayValue = AnnotationValue.createLongValue("delay", 1000L);
         AnnotationValue expectedDelayUnitValue = AnnotationValue.createEnumValue("delayUnit",
-                DotName.createSimple("java.util.concurrent.TimeUnit"),
-                TimeUnit.MILLISECONDS.name());
+                DotName.createSimple("java.util.concurrent.TimeUnit"), TimeUnit.MILLISECONDS.name());
         assertThat(annotationValues).contains(expectedDelayValue);
         assertThat(annotationValues).contains(expectedDelayUnitValue);
 

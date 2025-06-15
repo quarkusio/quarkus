@@ -28,10 +28,9 @@ import io.vertx.core.Vertx;
 public class ServiceConnectionScopeTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(MyEndpoint.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(MyEndpoint.class, WSClient.class);
+    });
 
     @Inject
     MyEndpoint endpoint;
@@ -50,8 +49,7 @@ public class ServiceConnectionScopeTest {
     @Test
     void verifyThatConnectionIsAccessibleInSessionScope() {
         WSClient client = WSClient.create(vertx);
-        var resp = client.connect(WSClient.toWS(baseUri, "/ws"))
-                .sendAndAwaitReply("hello");
+        var resp = client.connect(WSClient.toWS(baseUri, "/ws")).sendAndAwaitReply("hello");
         assertThat(resp.toString()).isEqualTo("HELLO");
     }
 

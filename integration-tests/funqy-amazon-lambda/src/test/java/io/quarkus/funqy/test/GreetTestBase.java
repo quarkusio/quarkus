@@ -11,28 +11,13 @@ public abstract class GreetTestBase {
     public void testGreet() {
         Identity identity = new Identity();
         identity.setName("Matej");
-        given()
-                .contentType("application/json")
-                .accept("application/json")
-                .body(identity)
-                .when()
-                .post()
-                .then()
-                .statusCode(200)
-                .body("name", equalTo("Matej"))
-                .body("message", equalTo("Hello Matej!"));
+        given().contentType("application/json").accept("application/json").body(identity).when().post().then()
+                .statusCode(200).body("name", equalTo("Matej")).body("message", equalTo("Hello Matej!"));
     }
 
     @Test
     public void testGreetNPE() {
-        given()
-                .contentType("application/json")
-                .accept("application/json")
-                .body("[]")
-                .when()
-                .post()
-                .then()
-                .statusCode(500)
-                .body("errorMessage", containsString("Could not deserialize the provided message"));
+        given().contentType("application/json").accept("application/json").body("[]").when().post().then()
+                .statusCode(500).body("errorMessage", containsString("Could not deserialize the provided message"));
     }
 }

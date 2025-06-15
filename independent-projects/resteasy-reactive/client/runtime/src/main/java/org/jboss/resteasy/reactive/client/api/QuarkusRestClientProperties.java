@@ -51,9 +51,8 @@ public class QuarkusRestClientProperties {
     public static final String STATIC_HEADERS = "io.quarkus.rest.client.static-headers";
 
     /**
-     * Set to true to share the HTTP client between REST clients.
-     * There can be multiple shared clients distinguished by <em>name</em>, when no specific name is set,
-     * the name <code>__vertx.DEFAULT</code> is used.
+     * Set to true to share the HTTP client between REST clients. There can be multiple shared clients distinguished by
+     * <em>name</em>, when no specific name is set, the name <code>__vertx.DEFAULT</code> is used.
      */
     public static final String SHARED = "io.quarkus.rest.client.shared";
 
@@ -63,8 +62,8 @@ public class QuarkusRestClientProperties {
     public static final String NAME = "io.quarkus.rest.client.name";
 
     /**
-     * Set to true to prevent the client from providing additional contextual information (REST client class and method names)
-     * when exception happens during a client invocation.
+     * Set to true to prevent the client from providing additional contextual information (REST client class and method
+     * names) when exception happens during a client invocation.
      */
     public static final String DISABLE_CONTEXTUAL_ERROR_MESSAGES = "io.quarkus.rest.client.disable-contextual-error-messages";
 
@@ -86,17 +85,14 @@ public class QuarkusRestClientProperties {
     public static final String CAPTURE_STACKTRACE = "io.quarkus.rest.client.capture-stacktrace";
 
     /**
-     * Scope of logging for the client.
-     * <br/>
-     * WARNING: beware of logging sensitive data
-     * <br/>
+     * Scope of logging for the client. <br/>
+     * WARNING: beware of logging sensitive data <br/>
      * The possible values are:
      * <ul>
      * <li>{@code request-response} - enables logging request and responses, including redirect responses</li>
      * <li>{@code all} - enables logging requests and responses and lower-level logging</li>
      * <li>{@code none} - no additional logging</li>
      * </ul>
-     *
      * This property is applicable to reactive REST clients only.
      */
     public static final String LOGGING_SCOPE = "io.quarkus.rest.client.logging.scope";

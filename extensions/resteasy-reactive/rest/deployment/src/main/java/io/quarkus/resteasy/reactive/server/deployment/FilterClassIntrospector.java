@@ -48,7 +48,8 @@ public class FilterClassIntrospector {
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor superMethodVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (methodDescriptor.equals(descriptor)) {
                 return methodVisitor;

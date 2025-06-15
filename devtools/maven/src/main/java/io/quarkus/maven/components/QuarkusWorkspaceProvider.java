@@ -47,13 +47,9 @@ public class QuarkusWorkspaceProvider {
     private volatile BootstrapMavenContext ctx;
 
     @Inject
-    public QuarkusWorkspaceProvider(VersionResolver versionResolver,
-            VersionRangeResolver versionRangeResolver,
-            ArtifactResolver artifactResolver,
-            MetadataResolver metadataResolver,
-            Deployer deployer,
-            RemoteRepositoryManager remoteRepoManager,
-            SettingsDecrypter settingsDecrypter) {
+    public QuarkusWorkspaceProvider(VersionResolver versionResolver, VersionRangeResolver versionRangeResolver,
+            ArtifactResolver artifactResolver, MetadataResolver metadataResolver, Deployer deployer,
+            RemoteRepositoryManager remoteRepoManager, SettingsDecrypter settingsDecrypter) {
         this.versionResolver = versionResolver;
         this.versionRangeResolver = versionRangeResolver;
         this.artifactResolver = artifactResolver;
@@ -86,16 +82,11 @@ public class QuarkusWorkspaceProvider {
                 protected MavenFactory configureMavenFactory() {
                     final BootstrapMavenContext ctx = this;
                     return MavenFactory.create(
-                            List.of(RepositorySystem.class.getClassLoader(),
-                                    getClass().getClassLoader()),
-                            builder -> builder.addBeanInstance(versionResolver)
-                                    .addBeanInstance(versionRangeResolver)
-                                    .addBeanInstance(artifactResolver)
-                                    .addBeanInstance(metadataResolver)
-                                    .addBeanInstance(deployer)
-                                    .addBeanInstance(remoteRepoManager)
-                                    .addBeanInstance(settingsDecrypter)
-                                    .addBean(ModelBuilder.class)
+                            List.of(RepositorySystem.class.getClassLoader(), getClass().getClassLoader()),
+                            builder -> builder.addBeanInstance(versionResolver).addBeanInstance(versionRangeResolver)
+                                    .addBeanInstance(artifactResolver).addBeanInstance(metadataResolver)
+                                    .addBeanInstance(deployer).addBeanInstance(remoteRepoManager)
+                                    .addBeanInstance(settingsDecrypter).addBean(ModelBuilder.class)
                                     .setSupplier(new BeanSupplier<ModelBuilder>() {
                                         @Override
                                         public ModelBuilder get(Scope scope) {

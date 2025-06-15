@@ -32,9 +32,7 @@ public class OidcTenantHealthCheck implements HealthCheck {
 
     @Override
     public HealthCheckResponse call() {
-        HealthCheckResponseBuilder builder = HealthCheckResponse.builder()
-                .name(HEALTH_CHECK_NAME)
-                .up();
+        HealthCheckResponseBuilder builder = HealthCheckResponse.builder().name(HEALTH_CHECK_NAME).up();
 
         String status = checkTenant(builder, OidcUtils.DEFAULT_TENANT_ID, tenantConfigBean.getDefaultTenant());
         boolean atLeastOneTenantIsReady = OK_STATUS.equals(status);

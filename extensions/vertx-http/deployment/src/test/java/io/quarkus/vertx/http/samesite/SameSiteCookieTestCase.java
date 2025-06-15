@@ -17,32 +17,26 @@ import io.restassured.matcher.RestAssuredMatchers;
 public class SameSiteCookieTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SetCookieHandler.class)
-                            .addAsResource(new StringAsset(
-                                    "quarkus.http.same-site-cookie.cookie1.value=Lax\n" +
-                                            "quarkus.http.same-site-cookie.cookie2.value=Lax\n" +
-                                            "quarkus.http.same-site-cookie.cookie2.case-sensitive=true\n" +
-                                            "quarkus.http.same-site-cookie.cookie3.value=None\n"),
-                                    "application.properties");
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(SetCookieHandler.class)
+                    .addAsResource(new StringAsset("quarkus.http.same-site-cookie.cookie1.value=Lax\n"
+                            + "quarkus.http.same-site-cookie.cookie2.value=Lax\n"
+                            + "quarkus.http.same-site-cookie.cookie2.case-sensitive=true\n"
+                            + "quarkus.http.same-site-cookie.cookie3.value=None\n"), "application.properties");
+        }
+    });
 
     @Test
     public void testSameSiteCookie() {
-        RestAssured.get("/cookie")
-                .then().cookies(new HashMap<>())
+        RestAssured.get("/cookie").then().cookies(new HashMap<>())
                 .cookie("cookie1", RestAssuredMatchers.detailedCookie().sameSite("Lax"))
                 .cookie("COOKIE2", RestAssuredMatchers.detailedCookie().sameSite(Matchers.nullValue()))
                 .cookie("cookie3", RestAssuredMatchers.detailedCookie().sameSite("None"))
                 .cookie("cookie3", RestAssuredMatchers.detailedCookie().secured(true));
 
-        RestAssured.with().header("user-agent", "Chromium/53 foo").get("/cookie")
-                .then().cookies(new HashMap<>())
+        RestAssured.with().header("user-agent", "Chromium/53 foo").get("/cookie").then().cookies(new HashMap<>())
                 .cookie("cookie1", RestAssuredMatchers.detailedCookie().sameSite("Lax"))
                 .cookie("COOKIE2", RestAssuredMatchers.detailedCookie().sameSite(Matchers.nullValue()))
                 .cookie("cookie3", RestAssuredMatchers.detailedCookie().sameSite(Matchers.nullValue()));

@@ -12,11 +12,11 @@ import jakarta.interceptor.InterceptorBinding;
 import io.quarkus.infinispan.client.CacheInvalidateAll.List;
 
 /**
- * When a method annotated with {@link CacheInvalidateAll} is invoked, Quarkus will remove all entries from the Infinispan
- * cache.
+ * When a method annotated with {@link CacheInvalidateAll} is invoked, Quarkus will remove all entries from the
+ * Infinispan cache.
  * <p>
- * This annotation can be combined with {@link CacheResult} annotation on a single method. Caching operations will always
- * be executed in the same order: {@link CacheInvalidateAll} first, then {@link CacheInvalidate} and finally
+ * This annotation can be combined with {@link CacheResult} annotation on a single method. Caching operations will
+ * always be executed in the same order: {@link CacheInvalidateAll} first, then {@link CacheInvalidate} and finally
  * {@link CacheResult}.
  *
  * @deprecated Use Infinispan Cache Extension

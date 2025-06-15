@@ -11,9 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OpenTelemetryServiceNameCombinedResourceWinsTest extends OpenTelemetryServiceNameBaseTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TestSpanExporter.class)
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(TestSpanExporter.class)
                     .addClass(TestSpanExporterProvider.class))
             .overrideConfigKey("quarkus.application.name", "application-name-must-fail")
             .overrideRuntimeConfigKey("quarkus.otel.bsp.schedule.delay", "50")// speed up test

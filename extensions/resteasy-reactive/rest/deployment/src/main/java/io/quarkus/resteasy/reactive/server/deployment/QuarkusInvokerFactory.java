@@ -38,19 +38,15 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
     @Override
     public Supplier<EndpointInvoker> create(ResourceMethod method, ClassInfo currentClassInfo, MethodInfo info) {
 
-        String endpointIdentifier = info.toString() +
-                method.getHttpMethod() +
-                method.getPath() +
-                Arrays.toString(method.getConsumes()) +
-                Arrays.toString(method.getProduces());
+        String endpointIdentifier = info.toString() + method.getHttpMethod() + method.getPath()
+                + Arrays.toString(method.getConsumes()) + Arrays.toString(method.getProduces());
 
         String baseName = currentClassInfo.name() + "$quarkusrestinvoker$" + method.getName() + "_"
                 + HashUtil.sha1(endpointIdentifier);
         try (ClassCreator classCreator = new ClassCreator(
                 new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
                         applicationClassPredicate.test(currentClassInfo.name().toString())),
-                baseName, null,
-                Object.class.getName(), EndpointInvoker.class.getName())) {
+                baseName, null, Object.class.getName(), EndpointInvoker.class.getName())) {
             MethodCreator mc = classCreator.getMethodCreator("invoke", Object.class, Object.class, Object[].class);
             ResultHandle[] args = new ResultHandle[method.getParameters().length];
             ResultHandle array = mc.getMethodParam(1);

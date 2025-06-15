@@ -21,7 +21,7 @@ public class KotlinPanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhan
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         return new KotlinPanacheClassOperationGenerationVisitor(outputClassVisitor,
-                indexView.getClassByName(DotName.createSimple(className)), indexView, types,
-                types.repositoryBase(), Collections.emptyList());
+                indexView.getClassByName(DotName.createSimple(className)), indexView, types, types.repositoryBase(),
+                Collections.emptyList());
     }
 }

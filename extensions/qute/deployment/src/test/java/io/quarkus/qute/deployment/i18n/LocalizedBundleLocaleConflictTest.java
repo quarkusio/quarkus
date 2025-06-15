@@ -17,13 +17,12 @@ public class LocalizedBundleLocaleConflictTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Messages.class, EnMessages.class, AnotherEnMessages.class))
-            .overrideConfigKey("quarkus.default-locale", "cs")
-            .assertException(t -> {
+            .withApplicationRoot(root -> root.addClasses(Messages.class, EnMessages.class, AnotherEnMessages.class))
+            .overrideConfigKey("quarkus.default-locale", "cs").assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof MessageBundleException) {
-                    assertTrue(rootCause.getMessage().contains("a localized message bundle interface exists for locale [en]"));
+                    assertTrue(rootCause.getMessage()
+                            .contains("a localized message bundle interface exists for locale [en]"));
                 } else {
                     fail("No message bundle exception thrown: " + t);
                 }

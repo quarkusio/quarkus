@@ -28,9 +28,8 @@ public class RegisterReadTimeoutTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class))
-            .overrideRuntimeConfigKey("quarkus.rest-client.client.read-timeout", "1000")
-            .overrideRuntimeConfigKey("quarkus.rest-client.client.url",
-                    "http://${quarkus.http.host}:${quarkus.http.test-port}");
+            .overrideRuntimeConfigKey("quarkus.rest-client.client.read-timeout", "1000").overrideRuntimeConfigKey(
+                    "quarkus.rest-client.client.url", "http://${quarkus.http.host}:${quarkus.http.test-port}");
 
     @Test
     void shouldTimeoutIfReadTimeoutSetShort() {

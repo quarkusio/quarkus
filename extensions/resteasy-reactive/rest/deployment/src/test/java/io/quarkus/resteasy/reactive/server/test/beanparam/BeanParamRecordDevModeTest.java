@@ -15,28 +15,21 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class BeanParamRecordDevModeTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(FirstAndSecondResource.class,
-                            FirstAndSecondResource.Param.class);
-                }
-            });
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(FirstAndSecondResource.class,
+                    FirstAndSecondResource.Param.class);
+        }
+    });
 
     @Test
     void test() {
-        when().get("fs/foo/bar")
-                .then()
-                .statusCode(200)
-                .body(is("foo-bar"));
+        when().get("fs/foo/bar").then().statusCode(200).body(is("foo-bar"));
 
         TEST.modifySourceFile(FirstAndSecondResource.class, (orig) -> orig.replace("-", "#"));
 
-        when().get("fs/foo/bar")
-                .then()
-                .statusCode(200)
-                .body(is("foo#bar"));
+        when().get("fs/foo/bar").then().statusCode(200).body(is("foo#bar"));
     }
 
 }

@@ -55,7 +55,8 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
             } catch (Exception e) {
                 throw new RuntimeException("Failed to create compiler", e);
             }
-            TestSupport testSupport = new TestSupport(curatedApplication, compilationProviders, context, DevModeType.TEST_ONLY);
+            TestSupport testSupport = new TestSupport(curatedApplication, compilationProviders, context,
+                    DevModeType.TEST_ONLY);
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(applicationRoot, context, compiler,
                     DevModeType.TEST_ONLY, this::regenerateApplication,
                     new BiConsumer<DevModeContext.ModuleInfo, String>() {
@@ -101,7 +102,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
 
     }
 
-    //the main entry point, but loaded inside the augmentation class loader
+    // the main entry point, but loaded inside the augmentation class loader
     @Override
     public void accept(CuratedApplication o, Map<String, Object> params) {
         System.setProperty("java.nio.channels.DefaultThreadPool.threadFactory",
@@ -113,12 +114,13 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
             if (potentialContext instanceof DevModeContext) {
                 context = (DevModeContext) potentialContext;
             } else {
-                //this was from the external class loader
-                //we need to copy it into this one
+                // this was from the external class loader
+                // we need to copy it into this one
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 ObjectOutputStream oo = new ObjectOutputStream(out);
                 oo.writeObject(potentialContext);
-                context = (DevModeContext) new ObjectInputStream(new ByteArrayInputStream(out.toByteArray())).readObject();
+                context = (DevModeContext) new ObjectInputStream(new ByteArrayInputStream(out.toByteArray()))
+                        .readObject();
             }
             augmentAction = new AugmentActionImpl(curatedApplication);
             RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT));
@@ -131,7 +133,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                 augmentAction.performCustomBuild(TestHandler.class.getName(), null, TestSetupBuildItem.class.getName(),
                         LoggingSetupBuildItem.class.getName(), ConsoleFormatterBannerBuildItem.class.getName());
             } catch (Throwable t) {
-                //logging may not have been started, this is more reliable
+                // logging may not have been started, this is more reliable
                 System.err.println("Failed to start quarkus test mode");
                 t.printStackTrace();
                 System.exit(1);

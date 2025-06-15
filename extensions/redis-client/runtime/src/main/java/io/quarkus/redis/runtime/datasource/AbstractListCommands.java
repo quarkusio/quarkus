@@ -32,18 +32,17 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         this.typeOfValue = v;
     }
 
-    Uni<Response> _blmove(K source, K destination, Position positionInSource, Position positionInDest, Duration timeout) {
+    Uni<Response> _blmove(K source, K destination, Position positionInSource, Position positionInDest,
+            Duration timeout) {
         nonNull(source, "source");
         nonNull(destination, "destination");
         nonNull(positionInSource, "positionInSource");
         nonNull(positionInDest, "positionInDest");
         validate(timeout, "timeout");
 
-        return execute(RedisCommand.of(Command.BLMOVE).put(marshaller.encode(source))
-                .put(marshaller.encode(destination))
-                .put(positionInSource.name())
-                .put(positionInDest.name())
-                .put(timeout.toSeconds()));
+        return execute(
+                RedisCommand.of(Command.BLMOVE).put(marshaller.encode(source)).put(marshaller.encode(destination))
+                        .put(positionInSource.name()).put(positionInDest.name()).put(timeout.toSeconds()));
 
     }
 
@@ -188,11 +187,8 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         nonNull(positionInSource, "positionInSource");
         nonNull(positionInDest, "positionInDest");
 
-        return execute(RedisCommand.of(Command.LMOVE)
-                .put(marshaller.encode(source))
-                .put(marshaller.encode(destination))
-                .put(marshaller.encode(positionInSource.name()))
-                .put(marshaller.encode(positionInDest.name())));
+        return execute(RedisCommand.of(Command.LMOVE).put(marshaller.encode(source)).put(marshaller.encode(destination))
+                .put(marshaller.encode(positionInSource.name())).put(marshaller.encode(positionInDest.name())));
     }
 
     Uni<Response> _lmpop(Position position, K... keys) {
@@ -297,31 +293,28 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
 
     Uni<Response> _lrange(K key, long start, long stop) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.LRANGE).put(marshaller.encode(key))
-                .put(start)
-                .put(stop));
+        return execute(RedisCommand.of(Command.LRANGE).put(marshaller.encode(key)).put(start).put(stop));
     }
 
     Uni<Response> _lrem(K key, long count, V element) {
         nonNull(key, "key");
         nonNull(element, "element");
 
-        return execute(RedisCommand.of(Command.LREM).put(marshaller.encode(key))
-                .put(count).put(marshaller.encode(element)));
+        return execute(
+                RedisCommand.of(Command.LREM).put(marshaller.encode(key)).put(count).put(marshaller.encode(element)));
     }
 
     Uni<Response> _lset(K key, long index, V element) {
         nonNull(key, "key");
         nonNull(element, "element");
 
-        return execute(RedisCommand.of(Command.LSET).put(marshaller.encode(key))
-                .put(index).put(marshaller.encode(element)));
+        return execute(
+                RedisCommand.of(Command.LSET).put(marshaller.encode(key)).put(index).put(marshaller.encode(element)));
     }
 
     Uni<Response> _ltrim(K key, long start, long stop) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.LTRIM).put(marshaller.encode(key))
-                .put(start).put(stop));
+        return execute(RedisCommand.of(Command.LTRIM).put(marshaller.encode(key)).put(start).put(stop));
     }
 
     Uni<Response> _rpop(K key) {
@@ -337,8 +330,8 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
     Uni<Response> _rpoplpush(K source, K destination) {
         nonNull(source, "source");
         nonNull(destination, "destination");
-        return execute(RedisCommand.of(Command.RPOPLPUSH)
-                .put(marshaller.encode(source)).put(marshaller.encode(destination)));
+        return execute(
+                RedisCommand.of(Command.RPOPLPUSH).put(marshaller.encode(source)).put(marshaller.encode(destination)));
     }
 
     Uni<Response> _rpush(K key, V... values) {

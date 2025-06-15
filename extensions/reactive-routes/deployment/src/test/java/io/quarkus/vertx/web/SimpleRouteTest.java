@@ -30,12 +30,9 @@ public class SimpleRouteTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("application.properties")
-                    .addAsResource("test-users.properties")
-                    .addAsResource("test-roles.properties")
-                    .addClasses(SimpleBean.class,
-                            SimpleEventBusBean.class, SimpleRoutesBean.class, Transformer.class));
+            .withApplicationRoot((jar) -> jar.addAsResource("application.properties")
+                    .addAsResource("test-users.properties").addAsResource("test-roles.properties")
+                    .addClasses(SimpleBean.class, SimpleEventBusBean.class, SimpleRoutesBean.class, Transformer.class));
 
     @Test
     public void testSimpleRoute() {
@@ -47,10 +44,8 @@ public class SimpleRouteTest {
         when().get("/bar").then().statusCode(200).body(is("Hello bar!"));
         when().post("/delete").then().statusCode(405);
         when().delete("/delete").then().statusCode(200).body(is("deleted"));
-        when().get("/routes").then().statusCode(200)
-                .body(Matchers.containsString("/hello-event-bus"));
-        given().contentType("text/plain").body("world")
-                .post("/body").then().body(is("Hello world!"));
+        when().get("/routes").then().statusCode(200).body(Matchers.containsString("/hello-event-bus"));
+        given().contentType("text/plain").body("world").post("/body").then().body(is("Hello world!"));
         when().get("/request").then().statusCode(200).body(is("HellO!"));
         when().get("/inject?foo=Hey").then().statusCode(200).body(is("Hey"));
     }
@@ -65,7 +60,8 @@ public class SimpleRouteTest {
     @Test
     public void testSecurityIdentityInjection() {
         when().get("/security-identity").then().statusCode(200).body(is(""));
-        given().auth().preemptive().basic("alice", "alice").get("/security-identity").then().statusCode(200).body(is("alice"));
+        given().auth().preemptive().basic("alice", "alice").get("/security-identity").then().statusCode(200)
+                .body(is("alice"));
     }
 
     static class SimpleBean {
@@ -85,13 +81,14 @@ public class SimpleRouteTest {
         }
 
         @Route(path = "/secured")
-        @RolesAllowed("admin") //we are just testing that this is actually denied
+        @RolesAllowed("admin") // we are just testing that this is actually denied
         void secure(RoutingContext context) {
             context.response().setStatusCode(200).end();
         }
 
         @Route(path = "/security-identity")
-        //we are just testing that this does not throw an exception, see https://github.com/quarkusio/quarkus/issues/13835
+        // we are just testing that this does not throw an exception, see
+        // https://github.com/quarkusio/quarkus/issues/13835
         void secIdentity(RoutingContext context) {
             context.response().setStatusCode(200).end(securityIdentity.getPrincipal().getName());
         }
@@ -130,9 +127,8 @@ public class SimpleRouteTest {
 
         @Route(path = "/routes", methods = GET)
         void getRoutes(RoutingContext context) {
-            context.response().setStatusCode(200).end(
-                    router.getRoutes().stream().map(r -> r.getPath()).filter(Objects::nonNull)
-                            .collect(Collectors.joining(",")));
+            context.response().setStatusCode(200).end(router.getRoutes().stream().map(r -> r.getPath())
+                    .filter(Objects::nonNull).collect(Collectors.joining(",")));
         }
 
         void addBar(@Observes Router router) {

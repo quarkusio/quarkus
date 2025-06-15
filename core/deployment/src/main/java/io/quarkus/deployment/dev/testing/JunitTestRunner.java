@@ -89,7 +89,8 @@ public class JunitTestRunner {
     private static final Logger log = Logger.getLogger(JunitTestRunner.class);
     public static final DotName QUARKUS_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusTest");
     public static final DotName QUARKUS_MAIN_TEST = DotName.createSimple("io.quarkus.test.junit.main.QuarkusMainTest");
-    public static final DotName QUARKUS_INTEGRATION_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusIntegrationTest");
+    public static final DotName QUARKUS_INTEGRATION_TEST = DotName
+            .createSimple("io.quarkus.test.junit.QuarkusIntegrationTest");
     public static final DotName TEST_PROFILE = DotName.createSimple("io.quarkus.test.junit.TestProfile");
     public static final DotName TEST = DotName.createSimple(Test.class.getName());
     public static final DotName REPEATED_TEST = DotName.createSimple(RepeatedTest.class.getName());
@@ -125,7 +126,7 @@ public class JunitTestRunner {
     // A stable classloader for loading support classes, which can see more than the CL used to load this class
     private static QuarkusClassLoader firstDeploymentClassLoader;
 
-    //    private static ClassLoader classLoaderForLoadingTests;
+    // private static ClassLoader classLoaderForLoadingTests;
 
     public JunitTestRunner(Builder builder) {
         this.runId = builder.runId;
@@ -157,8 +158,7 @@ public class JunitTestRunner {
                 firstDeploymentClassLoader = deploymentClassLoader;
             }
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
-                    TestSupport.instance()
-                            .get()::isDisplayTestOutput);
+                    TestSupport.instance().get()::isDisplayTestOutput);
             Thread.currentThread().setContextClassLoader(tcl);
 
             Set<UniqueId> allDiscoveredIds = new HashSet<>();
@@ -186,9 +186,11 @@ public class JunitTestRunner {
             }
             if (specificSelection != null) {
                 if (specificSelection.startsWith("maven:")) {
-                    launchBuilder.filters(new MavenSpecificSelectionFilter(specificSelection.substring("maven:".length())));
+                    launchBuilder
+                            .filters(new MavenSpecificSelectionFilter(specificSelection.substring("maven:".length())));
                 } else if (specificSelection.startsWith("gradle:")) {
-                    launchBuilder.filters(new GradleSpecificSelectionFilter(specificSelection.substring("gradle:".length())));
+                    launchBuilder.filters(
+                            new GradleSpecificSelectionFilter(specificSelection.substring("gradle:".length())));
                 } else {
                     log.error("Unknown specific selection, ignoring: " + specificSelection);
                 }
@@ -209,8 +211,7 @@ public class JunitTestRunner {
                 launchBuilder.filters(new CurrentlyFailingFilter());
             }
 
-            LauncherDiscoveryRequest request = launchBuilder
-                    .build();
+            LauncherDiscoveryRequest request = launchBuilder.build();
             TestPlan testPlan = launcher.discover(request);
             long toRun = testPlan.countTestIdentifiers(TestIdentifier::isTest);
             for (TestRunListener listener : listeners) {
@@ -282,11 +283,10 @@ public class JunitTestRunner {
                                 String displayName = getDisplayNameFromIdentifier(testIdentifier, testClass);
                                 UniqueId id = UniqueId.parse(testIdentifier.getUniqueId());
                                 if (testClass != null) {
-                                    Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClass.getName(),
-                                            s -> new HashMap<>());
+                                    Map<UniqueId, TestResult> results = resultsByClass
+                                            .computeIfAbsent(testClass.getName(), s -> new HashMap<>());
                                     TestResult result = new TestResult(displayName, testClass.getName(),
-                                            toTagList(testIdentifier),
-                                            id, TestExecutionResult.aborted(null),
+                                            toTagList(testIdentifier), id, TestExecutionResult.aborted(null),
                                             logHandler.captureOutput(), testIdentifier.isTest(), runId, 0, true);
                                     results.put(id, result);
                                     if (result.isTest()) {
@@ -325,7 +325,7 @@ public class JunitTestRunner {
 
                                 if (testExecutionResult.getStatus() != TestExecutionResult.Status.ABORTED) {
                                     for (Set<String> i : touchedClasses) {
-                                        //also add the parent touched classes
+                                        // also add the parent touched classes
                                         touched.addAll(i);
                                     }
                                     if (startupClasses.get() != null) {
@@ -340,27 +340,26 @@ public class JunitTestRunner {
                                 Map<UniqueId, TestResult> results = resultsByClass.computeIfAbsent(testClassName,
                                         s -> new HashMap<>());
                                 TestResult result = new TestResult(displayName, testClassName,
-                                        toTagList(testIdentifier),
-                                        id, testExecutionResult,
-                                        logHandler.captureOutput(), testIdentifier.isTest(), runId,
+                                        toTagList(testIdentifier), id, testExecutionResult, logHandler.captureOutput(),
+                                        testIdentifier.isTest(), runId,
                                         System.currentTimeMillis() - startTimes.get(testIdentifier), true);
                                 if (!results.containsKey(id)) {
-                                    //if a child has failed we may have already marked the parent failed
+                                    // if a child has failed we may have already marked the parent failed
                                     results.put(id, result);
                                 }
                                 if (result.isTest()) {
                                     for (TestRunListener listener : listeners) {
                                         listener.testComplete(result);
                                     }
-                                    if (dynamic && testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
-                                        //if it is dynamic we fail the parent as well for re-runs
+                                    if (dynamic
+                                            && testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
+                                        // if it is dynamic we fail the parent as well for re-runs
 
                                         RuntimeException failure = new RuntimeException("A child test failed");
                                         failure.setStackTrace(new StackTraceElement[0]);
                                         results.put(id,
                                                 new TestResult(currentNonDynamicTest.get().getDisplayName(),
-                                                        result.getTestClass(),
-                                                        toTagList(testIdentifier),
+                                                        result.getTestClass(), toTagList(testIdentifier),
                                                         currentNonDynamicTest.get().getUniqueIdObject(),
                                                         TestExecutionResult.failed(failure), List.of(), false, runId, 0,
                                                         false));
@@ -373,14 +372,12 @@ public class JunitTestRunner {
                                         }
                                     }
                                 } else if (testExecutionResult.getStatus() == TestExecutionResult.Status.FAILED) {
-                                    //if a parent fails we fail the children
+                                    // if a parent fails we fail the children
                                     Set<TestIdentifier> children = testPlan.getChildren(testIdentifier);
                                     for (TestIdentifier child : children) {
                                         UniqueId childId = UniqueId.parse(child.getUniqueId());
                                         result = new TestResult(child.getDisplayName(), testClassName,
-                                                toTagList(testIdentifier),
-                                                childId,
-                                                testExecutionResult,
+                                                toTagList(testIdentifier), childId, testExecutionResult,
                                                 logHandler.captureOutput(), child.isTest(), runId,
                                                 System.currentTimeMillis() - startTimes.get(testIdentifier), true);
                                         results.put(childId, result);
@@ -416,8 +413,8 @@ public class JunitTestRunner {
 
                         QuarkusConsole.removeOutputFilter(logHandler);
                         for (TestRunListener listener : listeners) {
-                            listener.runComplete(new TestRunResults(runId, classScanResult, classScanResult == null, start,
-                                    System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
+                            listener.runComplete(new TestRunResults(runId, classScanResult, classScanResult == null,
+                                    start, System.currentTimeMillis(), toResultsMap(testState.getCurrentResults())));
                         }
                     } finally {
                         try {
@@ -449,12 +446,7 @@ public class JunitTestRunner {
     }
 
     private static List<String> toTagList(TestIdentifier testIdentifier) {
-        return testIdentifier
-                .getTags()
-                .stream()
-                .map(TestTag::getName)
-                .sorted()
-                .toList();
+        return testIdentifier.getTags().stream().map(TestTag::getName).sorted().toList();
     }
 
     private Class<?> getTestClassFromSource(Optional<TestSource> optionalTestSource) {
@@ -468,7 +460,8 @@ public class JunitTestRunner {
                 try {
                     return (Class<?>) testSource.getClass().getMethod("getJavaClass").invoke(testSource);
                 } catch (ReflectiveOperationException e) {
-                    log.warnf(e, "Failed to read javaClass reflectively from %s. ArchUnit >= 0.23.0 is required.", testSource);
+                    log.warnf(e, "Failed to read javaClass reflectively from %s. ArchUnit >= 0.23.0 is required.",
+                            testSource);
                 }
             }
         }
@@ -490,7 +483,7 @@ public class JunitTestRunner {
 
     private void trimStackTrace(Class<?> testClass, Throwable throwable) {
         if (testClass != null) {
-            //first we cut all the platform stuff out of the stack trace
+            // first we cut all the platform stuff out of the stack trace
             Throwable cause = throwable;
             while (cause != null) {
                 StackTraceElement[] st = cause.getStackTrace();
@@ -504,8 +497,8 @@ public class JunitTestRunner {
                     }
                 }
 
-                //now cut out all the restassured internals
-                //TODO: this should be pluggable
+                // now cut out all the restassured internals
+                // TODO: this should be pluggable
                 for (int i = st.length - 1; i >= 0; --i) {
                     StackTraceElement elem = st[i];
                     if (elem.getClassName().startsWith("io.restassured")) {
@@ -539,8 +532,7 @@ public class JunitTestRunner {
         }
     }
 
-    private Map<String, TestClassResult> toResultsMap(
-            Map<String, Map<UniqueId, TestResult>> resultsByClass) {
+    private Map<String, TestClassResult> toResultsMap(Map<String, Map<UniqueId, TestResult>> resultsByClass) {
         Map<String, TestClassResult> resultMap = new HashMap<>();
         Set<String> classes = new HashSet<>(resultsByClass.keySet());
         for (String clazz : classes) {
@@ -548,7 +540,8 @@ public class JunitTestRunner {
             List<TestResult> failing = new ArrayList<>();
             List<TestResult> skipped = new ArrayList<>();
             long time = 0;
-            for (TestResult i : Optional.ofNullable(resultsByClass.get(clazz)).orElse(Collections.emptyMap()).values()) {
+            for (TestResult i : Optional.ofNullable(resultsByClass.get(clazz)).orElse(Collections.emptyMap())
+                    .values()) {
                 if (i.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED) {
                     failing.add(i);
                 } else if (i.getTestExecutionResult().getStatus() == TestExecutionResult.Status.ABORTED) {
@@ -566,15 +559,15 @@ public class JunitTestRunner {
     }
 
     private DiscoveryResult discoverTestClasses() {
-        //maven has a lot of rules around this and is configurable
-        //for now this is out of scope, we are just going to do annotation based discovery
-        //we will need to fix this sooner rather than later though
+        // maven has a lot of rules around this and is configurable
+        // for now this is out of scope, we are just going to do annotation based discovery
+        // we will need to fix this sooner rather than later though
 
         if (moduleInfo.getTest().isEmpty()) {
             return DiscoveryResult.EMPTY;
         }
 
-        //we also only run tests from the current module, which we can also revisit later
+        // we also only run tests from the current module, which we can also revisit later
         Indexer indexer = new Indexer();
         try (Stream<Path> files = Files.walk(Paths.get(moduleInfo.getTest().get().getClassesPath()))) {
             files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
@@ -589,8 +582,8 @@ public class JunitTestRunner {
         }
 
         Index index = indexer.complete();
-        //we now have all the classes by name
-        //these tests we never run
+        // we now have all the classes by name
+        // these tests we never run
         Set<String> integrationTestClasses = new HashSet<>();
         for (AnnotationInstance i : index.getAnnotations(QUARKUS_INTEGRATION_TEST)) {
             DotName name = i.target().asClass().name();
@@ -603,9 +596,7 @@ public class JunitTestRunner {
         for (var a : Arrays.asList(QUARKUS_TEST, QUARKUS_MAIN_TEST)) {
             for (AnnotationInstance i : index.getAnnotations(a)) {
 
-                DotName name = i.target()
-                        .asClass()
-                        .name();
+                DotName name = i.target().asClass().name();
                 quarkusTestClasses.add(name.toString());
                 for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
                     if (!integrationTestClasses.contains(clazz.name().toString())) {
@@ -615,20 +606,18 @@ public class JunitTestRunner {
             }
         }
 
-        // The FacadeClassLoader approach of loading test classes with the classloader we will use to run them can only work for `@QuarkusTest` and not main or integration tests
-        // Most logic in the JUnitRunner counts main tests as quarkus tests, so do a (mildly irritating) special pass to get the ones which are strictly @QuarkusTest
+        // The FacadeClassLoader approach of loading test classes with the classloader we will use to run them can only
+        // work for `@QuarkusTest` and not main or integration tests
+        // Most logic in the JUnitRunner counts main tests as quarkus tests, so do a (mildly irritating) special pass to
+        // get the ones which are strictly @QuarkusTest
 
         Set<String> quarkusTestClassesForFacadeClassLoader = new HashSet<>();
         for (AnnotationInstance i : index.getAnnotations(QUARKUS_TEST)) {
-            DotName name = i.target()
-                    .asClass()
-                    .name();
+            DotName name = i.target().asClass().name();
             quarkusTestClassesForFacadeClassLoader.add(name.toString());
             for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                if (!integrationTestClasses.contains(clazz.name()
-                        .toString())) {
-                    quarkusTestClassesForFacadeClassLoader.add(clazz.name()
-                            .toString());
+                if (!integrationTestClasses.contains(clazz.name().toString())) {
+                    quarkusTestClassesForFacadeClassLoader.add(clazz.name().toString());
                 }
             }
         }
@@ -637,9 +626,7 @@ public class JunitTestRunner {
 
         for (AnnotationInstance i : index.getAnnotations(TEST_PROFILE)) {
 
-            DotName name = i.target()
-                    .asClass()
-                    .name();
+            DotName name = i.target().asClass().name();
             // We could do the value as a class, but it wouldn't be in the right classloader
             profiles.put(name.toString(), i.value().asString());
         }
@@ -672,13 +659,12 @@ public class JunitTestRunner {
                 }
             }
         }
-        //now we have all the classes with @Test
-        //figure out which ones we want to actually run
+        // now we have all the classes with @Test
+        // figure out which ones we want to actually run
         Set<String> unitTestClasses = new HashSet<>();
         for (DotName testClass : allTestClasses) {
             String name = testClass.toString();
-            if (integrationTestClasses.contains(name)
-                    || quarkusTestClasses.contains(name)) {
+            if (integrationTestClasses.contains(name) || quarkusTestClasses.contains(name)) {
                 continue;
             }
             var enclosing = enclosingClasses.get(testClass);
@@ -725,25 +711,26 @@ public class JunitTestRunner {
         Closeable classLoaderToClose = null;
         ClassLoader orig = Thread.currentThread().getContextClassLoader();
         try {
-            // JUnitTestRunner is loaded with an augmentation classloader which does not have visibility of FacadeClassLoader, but the deployment classloader can see it
-            // We need a consistent classloader or we leak curated applications, so use a static classloader we stashed away
+            // JUnitTestRunner is loaded with an augmentation classloader which does not have visibility of
+            // FacadeClassLoader, but the deployment classloader can see it
+            // We need a consistent classloader or we leak curated applications, so use a static classloader we stashed
+            // away
             Class fclClazz = firstDeploymentClassLoader.loadClass(FACADE_CLASS_LOADER_NAME);
-            Constructor constructor = fclClazz.getConstructor(ClassLoader.class, boolean.class, CuratedApplication.class,
-                    Map.class,
-                    Set.class,
-                    String.class);
+            Constructor constructor = fclClazz.getConstructor(ClassLoader.class, boolean.class,
+                    CuratedApplication.class, Map.class, Set.class, String.class);
 
-            // Passing in the test classes is necessary because in dev mode getAnnotations() on the class returns an empty array, for some reason (plus it saves rediscovery effort)
-            String classPath = moduleInfo.getMain()
-                    .getClassesPath() + File.pathSeparator + moduleInfo.getTest().get().getClassesPath();
-            classLoaderForLoadingTests = (ClassLoader) constructor.newInstance(Thread.currentThread()
-                    .getContextClassLoader(), true, testApplication, profiles, quarkusTestClassesForFacadeClassLoader,
-                    classPath);
-            // We only want to close classloaders if they're facade loaders we made, so squirrel away an instance to close on this path
+            // Passing in the test classes is necessary because in dev mode getAnnotations() on the class returns an
+            // empty array, for some reason (plus it saves rediscovery effort)
+            String classPath = moduleInfo.getMain().getClassesPath() + File.pathSeparator
+                    + moduleInfo.getTest().get().getClassesPath();
+            classLoaderForLoadingTests = (ClassLoader) constructor.newInstance(
+                    Thread.currentThread().getContextClassLoader(), true, testApplication, profiles,
+                    quarkusTestClassesForFacadeClassLoader, classPath);
+            // We only want to close classloaders if they're facade loaders we made, so squirrel away an instance to
+            // close on this path
             classLoaderToClose = (Closeable) classLoaderForLoadingTests;
 
-            Thread.currentThread()
-                    .setContextClassLoader(classLoaderForLoadingTests);
+            Thread.currentThread().setContextClassLoader(classLoaderForLoadingTests);
         } catch (ClassNotFoundException | NoSuchMethodException | IllegalAccessException | InstantiationException
                 | InvocationTargetException e) {
             // This is fine, and usually just means that test-framework/junit5 isn't one of the project dependencies
@@ -752,13 +739,13 @@ public class JunitTestRunner {
                     "Could not load class for FacadeClassLoader. This might be because quarkus-junit5 is not on the project classpath: "
                             + e);
             Log.debug(e);
-            classLoaderForLoadingTests = Thread.currentThread()
-                    .getContextClassLoader();
+            classLoaderForLoadingTests = Thread.currentThread().getContextClassLoader();
         }
 
         for (String i : quarkusTestClasses) {
             try {
-                // We could load these classes directly, since we know the profile and we have a handy interception point;
+                // We could load these classes directly, since we know the profile and we have a handy interception
+                // point;
                 // but we need to signal to the downstream interceptor that it shouldn't interfere with the classloading
                 // While we're doing that, we may as well share the classloading logic
                 itClasses.add(classLoaderForLoadingTests.loadClass(i));
@@ -782,9 +769,9 @@ public class JunitTestRunner {
         }));
         QuarkusClassLoader cl = null;
         if (!unitTestClasses.isEmpty()) {
-            //we need to work the unit test magic
-            //this is a lot more complex
-            //we need to transform the classes to make the tracing magic work
+            // we need to work the unit test magic
+            // this is a lot more complex
+            // we need to transform the classes to make the tracing magic work
 
             Set<String> classesToTransform = new HashSet<>(deploymentClassLoader.getReloadableClassNames());
             // this won't be the right classloader for some profiles, but that is ok because it's only for vanilla tests
@@ -792,8 +779,7 @@ public class JunitTestRunner {
             for (String i : classesToTransform) {
                 try {
                     String resourceName = fromClassNameToResourceName(i);
-                    byte[] classData = IoUtil
-                            .readBytes(deploymentClassLoader.getResourceAsStream(resourceName));
+                    byte[] classData = IoUtil.readBytes(deploymentClassLoader.getResourceAsStream(resourceName));
                     ClassReader cr = new ClassReader(classData);
                     ClassWriter writer = new QuarkusClassWriter(cr,
                             ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
@@ -830,9 +816,9 @@ public class JunitTestRunner {
 
         // Make sure you also update the logic for the empty case above if you adjust this part
         if (testType == TestType.ALL) {
-            //run unit style tests first
-            //before the quarkus tests have started
-            //which stops quarkus interfering with WireMock
+            // run unit style tests first
+            // before the quarkus tests have started
+            // which stops quarkus interfering with WireMock
             List<Class<?>> ret = new ArrayList<>(utClasses.size() + itClasses.size());
             ret.addAll(utClasses);
             ret.addAll(itClasses);
@@ -845,9 +831,9 @@ public class JunitTestRunner {
     }
 
     private static Set<DotName> collectTestAnnotations(Index index) {
-        //todo: read from the full index
-        //TODO: this is not 100% correct, discovery needs to be based on class name
-        //we can fix it when someone complains
+        // todo: read from the full index
+        // TODO: this is not 100% correct, discovery needs to be based on class name
+        // we can fix it when someone complains
         Set<DotName> ret = new HashSet<>();
         ret.add(TEST);
         ret.add(REPEATED_TEST);
@@ -857,8 +843,8 @@ public class JunitTestRunner {
         ret.add(TESTABLE);
         Set<DotName> metaAnnotations = new HashSet<>(ret);
         metaAnnotations.add(TESTABLE);
-        //these annotations can also be used as meta annotations
-        //so we take this into account
+        // these annotations can also be used as meta annotations
+        // so we take this into account
         for (DotName an : metaAnnotations) {
             for (AnnotationInstance instance : index.getAnnotations(an)) {
                 if (instance.target().kind() == AnnotationTarget.Kind.CLASS) {
@@ -875,7 +861,8 @@ public class JunitTestRunner {
                 }
                 processed.add(annotation);
                 try {
-                    Class<?> loadedAnnotation = Thread.currentThread().getContextClassLoader().loadClass(annotation.toString());
+                    Class<?> loadedAnnotation = Thread.currentThread().getContextClassLoader()
+                            .loadClass(annotation.toString());
                     if (loadedAnnotation.isAnnotationPresent(Testable.class)) {
                         ret.add(annotation);
                     }
@@ -1068,7 +1055,8 @@ public class JunitTestRunner {
                             list.add(new ClassMatcher(globToPattern(classPattern)));
                         } else {
                             List<Pattern> methods = extractMethodPatterns(item.substring(hashIndex + 1));
-                            list.add(new ClassAndMethodMatcher(globToPattern(classPattern), methods.toArray(new Pattern[0])));
+                            list.add(new ClassAndMethodMatcher(globToPattern(classPattern),
+                                    methods.toArray(new Pattern[0])));
                         }
                     } else {
                         String classPattern = adjustClassGlob(item);
@@ -1249,7 +1237,8 @@ public class JunitTestRunner {
                     }
 
                     Pattern include = includes[i];
-                    if (include.matcher(testedClassAndMethodName).matches() || include.matcher(testedClassName).matches()) {
+                    if (include.matcher(testedClassAndMethodName).matches()
+                            || include.matcher(testedClassName).matches()) {
                         return FilterResult.included(null);
                     }
                 }
@@ -1262,8 +1251,7 @@ public class JunitTestRunner {
     /**
      * filter for tests that are currently failing.
      * <p>
-     * Note that this also includes newly written tests, as we don't know if they
-     * will fail or not yet.
+     * Note that this also includes newly written tests, as we don't know if they will fail or not yet.
      */
     private class CurrentlyFailingFilter implements PostDiscoveryFilter {
 
@@ -1280,8 +1268,8 @@ public class JunitTestRunner {
                     if (testResult == null) {
                         return FilterResult.included("new test");
                     }
-                    return FilterResult
-                            .includedIf(testResult.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED);
+                    return FilterResult.includedIf(
+                            testResult.getTestExecutionResult().getStatus() == TestExecutionResult.Status.FAILED);
                 }
             }
             return FilterResult.included("not a method");

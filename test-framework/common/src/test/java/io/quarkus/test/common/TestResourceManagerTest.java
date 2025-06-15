@@ -167,7 +167,8 @@ public class TestResourceManagerTest {
             try {
                 // sleep so the SecondParallelQuarkusTestResource finishes, incrementing the parallel counter first
                 Thread.sleep(25);
-                Assertions.assertTrue(parallelTestResourceRunned, "The SecondParallelQuarkusTestResource did not run yet!");
+                Assertions.assertTrue(parallelTestResourceRunned,
+                        "The SecondParallelQuarkusTestResource did not run yet!");
                 return Collections.singletonMap("key1", "value1");
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);

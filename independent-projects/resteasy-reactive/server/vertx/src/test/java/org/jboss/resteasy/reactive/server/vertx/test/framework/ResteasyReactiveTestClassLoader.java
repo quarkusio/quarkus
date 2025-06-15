@@ -44,8 +44,7 @@ public class ResteasyReactiveTestClassLoader extends URLClassLoader {
                 if (resource != null) {
                     byte[] data;
                     ClassReader cr = new ClassReader(resource.readAllBytes());
-                    ClassWriter writer = new ClassWriter(cr,
-                            ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
+                    ClassWriter writer = new ClassWriter(cr, ClassWriter.COMPUTE_FRAMES | ClassWriter.COMPUTE_MAXS);
                     ClassVisitor visitor = writer;
                     for (BiFunction<String, ClassVisitor, ClassVisitor> i : transformers.get(name)) {
                         visitor = i.apply(name, visitor);

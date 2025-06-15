@@ -23,6 +23,7 @@ class HeaderUtilTest {
         MultivaluedTreeMap<String, String> multipleWeightedLanguages = new MultivaluedTreeMap<>();
         multipleWeightedLanguages.add("Accept-Language", "da, en-gb;q=0.8, en;q=0.7");
         Locale[] multipleWeightedLocales = new Locale[] { new Locale("da"), Locale.UK, Locale.ENGLISH };
-        assertArrayEquals(multipleWeightedLocales, HeaderUtil.getAcceptableLanguages(multipleWeightedLanguages).toArray());
+        assertArrayEquals(multipleWeightedLocales,
+                HeaderUtil.getAcceptableLanguages(multipleWeightedLanguages).toArray());
     }
 }

@@ -32,17 +32,17 @@ public class JsonArrayWriter implements AsyncMessageBodyWriter<JsonArray> {
     }
 
     @Override
-    public void writeTo(JsonArray jsonArray, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(JsonArray jsonArray, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         entityStream.write(jsonArray.toBuffer().getBytes());
         entityStream.flush();
         entityStream.close();
     }
 
     @Override
-    public CompletionStage<Void> asyncWriteTo(JsonArray jsonArray, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders,
+    public CompletionStage<Void> asyncWriteTo(JsonArray jsonArray, Class<?> type, Type genericType,
+            Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, Object> httpHeaders,
             AsyncOutputStream entityStream) {
         return entityStream.asyncWrite(jsonArray.toBuffer().getBytes());
     }

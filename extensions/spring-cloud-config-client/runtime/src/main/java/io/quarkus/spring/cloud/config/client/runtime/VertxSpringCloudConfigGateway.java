@@ -51,8 +51,8 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         try {
             this.baseURI = determineBaseUri(config);
         } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Value: '" + config.url()
-                    + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
+            throw new IllegalArgumentException(
+                    "Value: '" + config.url() + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
         }
         this.vertx = createVertxInstance();
         this.webClient = createHttpClient(vertx, config);
@@ -63,8 +63,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         // This is done using the DISABLE_DNS_RESOLVER_PROP_NAME system property.
         // The DNS resolver used by vert.x is configured during the (synchronous) initialization.
         // So, we just need to disable the async resolver around the Vert.x instance creation.
-        try (var resettableSystemProperties = ResettableSystemProperties.of(
-                DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
+        try (var resettableSystemProperties = ResettableSystemProperties.of(DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
             return Vertx.vertx(new VertxOptions());
         }
     }
@@ -124,8 +123,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
 
     private static <T extends KeyStoreOptionsBase> KeyStoreOptionsBase storeOptions(Path storePath,
             Optional<String> storePassword, T store) throws Exception {
-        return store
-                .setPassword(storePassword.orElse(""))
+        return store.setPassword(storePassword.orElse(""))
                 .setValue(io.vertx.core.buffer.Buffer.buffer(storeBytes(storePath)));
     }
 
@@ -137,8 +135,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         return JKS;
     }
 
-    private static byte[] storeBytes(Path keyStorePath)
-            throws Exception {
+    private static byte[] storeBytes(Path keyStorePath) throws Exception {
         InputStream classPathResource = Thread.currentThread().getContextClassLoader()
                 .getResourceAsStream(ClassPathUtils.toResourceName(keyStorePath));
         if (classPathResource != null) {
@@ -156,11 +153,11 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         return inputStream.readAllBytes();
     }
 
-    private URI determineBaseUri(SpringCloudConfigClientConfig springCloudConfigClientConfig) throws URISyntaxException {
+    private URI determineBaseUri(SpringCloudConfigClientConfig springCloudConfigClientConfig)
+            throws URISyntaxException {
         String url = springCloudConfigClientConfig.url();
         if (null == url || url.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "The 'quarkus.spring-cloud-config.url' property cannot be empty");
+            throw new IllegalArgumentException("The 'quarkus.spring-cloud-config.url' property cannot be empty");
         }
         if (url.endsWith("/")) {
             return new URI(url.substring(0, url.length() - 1));
@@ -184,10 +181,8 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     public Uni<Response> exchange(String applicationName, String profile) {
         final String requestURI = finalURI(applicationName, profile);
         String finalURI = getFinalURI(applicationName, profile);
-        HttpRequest<Buffer> request = webClient
-                .get(getPort(baseURI), baseURI.getHost(), requestURI)
-                .ssl(isHttps(baseURI))
-                .putHeader("Accept", "application/json");
+        HttpRequest<Buffer> request = webClient.get(getPort(baseURI), baseURI.getHost(), requestURI)
+                .ssl(isHttps(baseURI)).putHeader("Accept", "application/json");
         if (config.usernameAndPasswordSet()) {
             request.basicAuthentication(config.username().get(), config.password().get());
         }
@@ -198,8 +193,7 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         return request.send().map(r -> {
             log.debug("Received HTTP response code '" + r.statusCode() + "'");
             if (r.statusCode() != 200) {
-                throw new RuntimeException("Got unexpected HTTP response code " + r.statusCode()
-                        + " from " + finalURI);
+                throw new RuntimeException("Got unexpected HTTP response code " + r.statusCode() + " from " + finalURI);
             } else {
                 String bodyAsString = r.bodyAsString();
                 if (bodyAsString.isEmpty()) {

@@ -9,8 +9,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.qute.TemplateData;
 
 /**
- * This build item can be used to register an implicit value resolver for the specified class. It is also possible to specify
- * the synthetic {@link TemplateData}.
+ * This build item can be used to register an implicit value resolver for the specified class. It is also possible to
+ * specify the synthetic {@link TemplateData}.
  * <p>
  * If the specified class is also annotated with {@link TemplateData} the build item is ignored.
  * <p>

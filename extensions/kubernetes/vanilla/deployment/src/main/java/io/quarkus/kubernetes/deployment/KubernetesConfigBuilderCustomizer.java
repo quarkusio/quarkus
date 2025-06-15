@@ -33,7 +33,8 @@ public class KubernetesConfigBuilderCustomizer implements SmallRyeConfigBuilderC
                 return new Fallbacks(new Function<String, String>() {
                     @Override
                     public String apply(final String name) {
-                        if (name.startsWith("quarkus.openshift.") && !IGNORE_OPENSHIFT_NAMES.contains(new PropertyName(name))) {
+                        if (name.startsWith("quarkus.openshift.")
+                                && !IGNORE_OPENSHIFT_NAMES.contains(new PropertyName(name))) {
                             return "quarkus.kubernetes." + name.substring(18);
                         } else if (name.startsWith("quarkus.knative.")
                                 && !IGNORE_KNATIVE_NAMES.contains(new PropertyName(name))) {
@@ -84,7 +85,8 @@ public class KubernetesConfigBuilderCustomizer implements SmallRyeConfigBuilderC
                 return new RelocateConfigSourceInterceptor(new Function<String, String>() {
                     @Override
                     public String apply(final String name) {
-                        if (name.startsWith("quarkus.kubernetes.") && !IGNORE_KNATIVE_NAMES.contains(new PropertyName(name))) {
+                        if (name.startsWith("quarkus.kubernetes.")
+                                && !IGNORE_KNATIVE_NAMES.contains(new PropertyName(name))) {
                             return "quarkus.knative." + name.substring(19);
                         }
                         return name;
@@ -135,16 +137,16 @@ public class KubernetesConfigBuilderCustomizer implements SmallRyeConfigBuilderC
     }
 
     /**
-     * Collect the properties names that are not shared between <code>kubernetes</code> and <code>openshift</code>
-     * to ignore when performing the fallback functions.
+     * Collect the properties names that are not shared between <code>kubernetes</code> and <code>openshift</code> to
+     * ignore when performing the fallback functions.
      *
      * @return a Set of properties names to ignore
      */
     private static Set<PropertyName> ignoreOpenshiftNames() {
-        Set<String> kubernetes = getProperties(getConfigMapping(KubernetesConfig.class)).get(KubernetesConfig.class).get("")
-                .keySet();
-        Set<String> openshift = getProperties(getConfigMapping(OpenShiftConfig.class)).get(OpenShiftConfig.class).get("")
-                .keySet();
+        Set<String> kubernetes = getProperties(getConfigMapping(KubernetesConfig.class)).get(KubernetesConfig.class)
+                .get("").keySet();
+        Set<String> openshift = getProperties(getConfigMapping(OpenShiftConfig.class)).get(OpenShiftConfig.class)
+                .get("").keySet();
 
         Set<PropertyName> ignored = new HashSet<>();
         for (String name : kubernetes) {
@@ -176,9 +178,10 @@ public class KubernetesConfigBuilderCustomizer implements SmallRyeConfigBuilderC
      * @return a Set of properties names to ignore
      */
     private static Set<PropertyName> ignoreKnativeNames() {
-        Set<String> kubernetes = getProperties(getConfigMapping(KubernetesConfig.class)).get(KubernetesConfig.class).get("")
+        Set<String> kubernetes = getProperties(getConfigMapping(KubernetesConfig.class)).get(KubernetesConfig.class)
+                .get("").keySet();
+        Set<String> knative = getProperties(getConfigMapping(KnativeConfig.class)).get(KnativeConfig.class).get("")
                 .keySet();
-        Set<String> knative = getProperties(getConfigMapping(KnativeConfig.class)).get(KnativeConfig.class).get("").keySet();
 
         Set<PropertyName> ignored = new HashSet<>();
         for (String name : kubernetes) {

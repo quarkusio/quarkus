@@ -31,19 +31,16 @@ public class WebDependencyLocatorDevUIProcessor {
 
             // Web Dependency Asset List
             cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .componentLink("qwc-web-dependency-locator-libraries.js")
-                    .title("Web libraries")
-                    .icon("font-awesome-solid:folder-tree")
-                    .staticLabel(String.valueOf(webDependencyLibraries.size())));
+                    .componentLink("qwc-web-dependency-locator-libraries.js").title("Web libraries")
+                    .icon("font-awesome-solid:folder-tree").staticLabel(String.valueOf(webDependencyLibraries.size())));
 
             if (importMapBuildItem.isPresent()) {
                 cardPageBuildItem.addBuildTimeData("importMap", importMapBuildItem.get().getImportMap());
 
                 // ImportMap
-                cardPageBuildItem.addPage(Page.webComponentPageBuilder()
-                        .componentLink("qwc-web-dependency-locator-importmap.js")
-                        .title("Import Map")
-                        .icon("font-awesome-solid:diagram-project"));
+                cardPageBuildItem
+                        .addPage(Page.webComponentPageBuilder().componentLink("qwc-web-dependency-locator-importmap.js")
+                                .title("Import Map").icon("font-awesome-solid:diagram-project"));
 
             }
 

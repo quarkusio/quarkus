@@ -14,9 +14,9 @@ class HandshakeRequestCallbackArgument implements CallbackArgument {
 
     @Override
     public ResultHandle get(InvocationBytecodeContext context) {
-        return context.bytecode()
-                .invokeVirtualMethod(MethodDescriptor.ofMethod(WebSocketConnectionBase.class, "handshakeRequest",
-                        HandshakeRequest.class), context.getConnection());
+        return context.bytecode().invokeVirtualMethod(
+                MethodDescriptor.ofMethod(WebSocketConnectionBase.class, "handshakeRequest", HandshakeRequest.class),
+                context.getConnection());
     }
 
 }

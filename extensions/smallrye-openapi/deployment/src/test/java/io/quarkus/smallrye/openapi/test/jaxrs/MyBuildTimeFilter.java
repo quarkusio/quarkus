@@ -27,7 +27,8 @@ public class MyBuildTimeFilter implements OASFilter {
     public void filterOpenAPI(OpenAPI openAPI) {
         Collection<ClassInfo> knownClasses = this.view.getKnownClasses();
         Info info = OASFactory.createInfo();
-        info.setDescription("Created from Annotated Buildtime filter with " + knownClasses.size() + " known indexed classes");
+        info.setDescription(
+                "Created from Annotated Buildtime filter with " + knownClasses.size() + " known indexed classes");
         openAPI.setInfo(info);
     }
 

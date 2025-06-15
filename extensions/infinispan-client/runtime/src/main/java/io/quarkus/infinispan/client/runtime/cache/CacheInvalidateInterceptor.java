@@ -46,15 +46,13 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
     private Object invalidateNonBlocking(InvocationContext invocationContext,
             CacheInterceptionContext<CacheInvalidate> interceptionContext, ReturnType returnType) {
         LOGGER.trace("Invalidating cache entries in a non-blocking way");
-        var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings())
-                .onItem().transformToUniAndMerge(new Function<CacheInvalidate, Uni<? extends Void>>() {
+        var uni = Multi.createFrom().iterable(interceptionContext.getInterceptorBindings()).onItem()
+                .transformToUniAndMerge(new Function<CacheInvalidate, Uni<? extends Void>>() {
                     @Override
                     public Uni<Void> apply(CacheInvalidate binding) {
                         return invalidate(binding, invocationContext.getParameters());
                     }
-                })
-                .onItem().ignoreAsUni()
-                .onItem().transformToUni(new Function<Object, Uni<?>>() {
+                }).onItem().ignoreAsUni().onItem().transformToUni(new Function<Object, Uni<?>>() {
                     @Override
                     public Uni<?> apply(Object ignored) {
                         try {
@@ -71,8 +69,7 @@ public class CacheInvalidateInterceptor extends CacheInterceptor {
             CacheInterceptionContext<CacheInvalidate> interceptionContext) throws Exception {
         LOGGER.trace("Invalidating cache entries in a blocking way");
         for (CacheInvalidate binding : interceptionContext.getInterceptorBindings()) {
-            invalidate(binding, invocationContext.getParameters())
-                    .await().indefinitely();
+            invalidate(binding, invocationContext.getParameters()).await().indefinitely();
         }
         return invocationContext.proceed();
     }

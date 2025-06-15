@@ -22,8 +22,7 @@ public class MutinyEmitterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MutinyEmitterExample.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MutinyEmitterExample.class));
 
     @Inject
     MutinyEmitterExample example;

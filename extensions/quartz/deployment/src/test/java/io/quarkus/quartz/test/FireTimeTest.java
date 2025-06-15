@@ -23,11 +23,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FireTimeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.overdue-grace-period=2H"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("quarkus.scheduler.overdue-grace-period=2H"), "application.properties"));
 
     @Inject
     Scheduler scheduler;

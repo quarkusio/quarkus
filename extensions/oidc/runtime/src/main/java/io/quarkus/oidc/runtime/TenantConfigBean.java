@@ -42,8 +42,8 @@ public final class TenantConfigBean {
             return Uni.createFrom().item(tenant);
         }
 
-        return tenantContextFactory.createDynamic(oidcConfig).onItem().transform(
-                new Function<TenantConfigContext, TenantConfigContext>() {
+        return tenantContextFactory.createDynamic(oidcConfig).onItem()
+                .transform(new Function<TenantConfigContext, TenantConfigContext>() {
                     @Override
                     public TenantConfigContext apply(TenantConfigContext t) {
                         dynamicTenantsConfig.putIfAbsent(tenantId, t);

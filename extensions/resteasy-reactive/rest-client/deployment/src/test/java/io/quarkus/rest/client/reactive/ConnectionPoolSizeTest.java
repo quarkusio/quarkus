@@ -29,30 +29,26 @@ import io.vertx.core.Vertx;
 @Disabled("these tests seem unstable while their intent is also unclear")
 public class ConnectionPoolSizeTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(ClientHeaderParamFromPropertyTest.Client.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(ClientHeaderParamFromPropertyTest.Client.class));
 
     @TestHTTPResource
     URI uri;
 
     @Test
     void shouldPerform20CallsWithoutQueuing() throws InterruptedException {
-        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
-                .build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(Client.class);
 
         CountDownLatch latch = executeCalls(client, 20);
 
-        assertThat(latch.await(2, TimeUnit.SECONDS))
-                .overridingErrorMessage("Failed to do 20 calls in 2 seconds")
+        assertThat(latch.await(2, TimeUnit.SECONDS)).overridingErrorMessage("Failed to do 20 calls in 2 seconds")
                 .isTrue();
     }
 
     @Test
     @Timeout(5)
     void shouldPerform21CallsWithQueuing() throws InterruptedException {
-        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
-                .build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri).build(Client.class);
 
         long start = System.currentTimeMillis();
         CountDownLatch latch = executeCalls(client, 21);
@@ -65,8 +61,7 @@ public class ConnectionPoolSizeTest {
     @Timeout(5)
     void shouldPerform5CallsWithoutQueueingOnQueue6() throws InterruptedException {
         Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
-                .property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 6)
-                .build(Client.class);
+                .property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 6).build(Client.class);
 
         long start = System.currentTimeMillis();
         CountDownLatch latch = executeCalls(client, 5);
@@ -79,8 +74,7 @@ public class ConnectionPoolSizeTest {
     @Timeout(5)
     void shouldPerform5CallsWithQueueingOnQueue4() throws InterruptedException {
         Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
-                .property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 4)
-                .build(Client.class);
+                .property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 4).build(Client.class);
 
         long start = System.currentTimeMillis();
         CountDownLatch latch = executeCalls(client, 5);
@@ -115,8 +109,8 @@ public class ConnectionPoolSizeTest {
 
         @GET
         public Uni<String> getSlowly() {
-            return Uni.createFrom().emitter(emitter -> vertx.setTimer(1000 /* ms */,
-                    val -> emitter.complete("hello, world!")));
+            return Uni.createFrom()
+                    .emitter(emitter -> vertx.setTimer(1000 /* ms */, val -> emitter.complete("hello, world!")));
         }
     }
 

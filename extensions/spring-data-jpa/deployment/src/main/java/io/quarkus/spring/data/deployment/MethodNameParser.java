@@ -32,35 +32,17 @@ public class MethodNameParser {
     private static final String IGNORE_CASE = "IgnoreCase";
     private static final String ORDER_BY = "OrderBy";
 
-    private static final List<String> HANDLED_PROPERTY_OPERATIONS = Arrays.asList(
-            "Is", "Equals",
-            "IsNot", "Not",
-            "IsNull", "Null",
-            "IsNotNull", "NotNull",
-            "IsBetween", "Between",
-            "IsLessThan", "LessThan",
-            "IsLessThanEqual", "LessThanEqual",
-            "IsGreaterThan", "GreaterThan",
-            "IsGreaterThanEqual", "GreaterThanEqual",
-            "IsLike", "Like",
-            "IsNotLike", "NotLike",
-            "IsStartingWith", "StartingWith", "StartsWith",
-            "IsEndingWith", "EndingWith", "EndsWith",
-            "IsContaining", "Containing", "Contains",
-            "Before", "IsBefore",
-            "After", "IsAfter",
-            "True", "False",
-            "IsIn", "In",
-            "IsNotIn", "NotIn",
-            "IsEmpty", "Empty",
+    private static final List<String> HANDLED_PROPERTY_OPERATIONS = Arrays.asList("Is", "Equals", "IsNot", "Not",
+            "IsNull", "Null", "IsNotNull", "NotNull", "IsBetween", "Between", "IsLessThan", "LessThan",
+            "IsLessThanEqual", "LessThanEqual", "IsGreaterThan", "GreaterThan", "IsGreaterThanEqual",
+            "GreaterThanEqual", "IsLike", "Like", "IsNotLike", "NotLike", "IsStartingWith", "StartingWith",
+            "StartsWith", "IsEndingWith", "EndingWith", "EndsWith", "IsContaining", "Containing", "Contains", "Before",
+            "IsBefore", "After", "IsAfter", "True", "False", "IsIn", "In", "IsNotIn", "NotIn", "IsEmpty", "Empty",
             "IsNotEmpty", "NotEmpty");
 
-    private static final Set<String> STRING_LIKE_OPERATIONS = new HashSet<>(Arrays.asList(
-            "IsLike", "Like",
-            "IsNotLike", "NotLike",
-            "IsStartingWith", "StartingWith", "StartsWith",
-            "IsEndingWith", "EndingWith", "EndsWith",
-            "IsContaining", "Containing", "Contains"));
+    private static final Set<String> STRING_LIKE_OPERATIONS = new HashSet<>(
+            Arrays.asList("IsLike", "Like", "IsNotLike", "NotLike", "IsStartingWith", "StartingWith", "StartsWith",
+                    "IsEndingWith", "EndingWith", "EndsWith", "IsContaining", "Containing", "Contains"));
 
     private static final Set<String> BOOLEAN_OPERATIONS = new HashSet<>(Arrays.asList("True", "False"));
 
@@ -114,8 +96,8 @@ public class MethodNameParser {
                                 + repositoryMethodDescription + ".");
             }
             try {
-                String topCountStr = methodName.substring(minFirstOrTopIndex, byIndex)
-                        .replace("Top", "").replace("First", "");
+                String topCountStr = methodName.substring(minFirstOrTopIndex, byIndex).replace("Top", "")
+                        .replace("First", "");
                 if (topCountStr.isEmpty()) {
                     topCount = 1;
                 } else {
@@ -146,8 +128,8 @@ public class MethodNameParser {
         if (containsLogicOperator(afterByPart, ORDER_BY)) {
             int orderByIndex = afterByPart.indexOf(ORDER_BY);
             if (orderByIndex + ORDER_BY.length() == afterByPart.length()) {
-                throw new UnableToParseMethodException(
-                        "A field must by supplied after 'OrderBy' . Offending method is " + repositoryMethodDescription + ".");
+                throw new UnableToParseMethodException("A field must by supplied after 'OrderBy' . Offending method is "
+                        + repositoryMethodDescription + ".");
             }
             String afterOrderByPart = afterByPart.substring(orderByIndex + ORDER_BY.length());
             afterByPart = afterByPart.substring(0, orderByIndex);
@@ -161,10 +143,9 @@ public class MethodNameParser {
             }
             String orderField = lowerFirstLetter(afterOrderByPart);
             if (!entityContainsField(orderField)) {
-                throw new UnableToParseMethodException(
-                        "Field " + orderField
-                                + " which was configured as the order field does not exist in the entity. Offending method is "
-                                + repositoryMethodDescription + ".");
+                throw new UnableToParseMethodException("Field " + orderField
+                        + " which was configured as the order field does not exist in the entity. Offending method is "
+                        + repositoryMethodDescription + ".");
             }
 
             if (ascending) {
@@ -178,7 +159,7 @@ public class MethodNameParser {
         boolean containsAnd = containsLogicOperator(afterByPart, "And");
         boolean containsOr = containsLogicOperator(afterByPart, "Or");
         String[] partsArray = parts.toArray(new String[0]);
-        //Spring supports mixing clauses 'And' and 'Or' together in method names
+        // Spring supports mixing clauses 'And' and 'Or' together in method names
         if (containsAnd && containsOr) {
             List<String> words = splitAndIncludeRegex(afterByPart, "And", "Or");
             partsArray = words.toArray(new String[0]);
@@ -207,7 +188,8 @@ public class MethodNameParser {
             }
 
             String operation = getFieldOperation(part);
-            if (operation == null) { // no operation specified so we assume only the field was specified - something like findByLastname
+            if (operation == null) { // no operation specified so we assume only the field was specified - something
+                                     // like findByLastname
                 fieldName = lowerFirstLetter(part);
             } else {
                 fieldName = lowerFirstLetter(part.replaceAll(operation, ""));
@@ -220,17 +202,15 @@ public class MethodNameParser {
                 String topLevelFieldName = getTopLevelFieldName(fieldName);
                 String childEntityAlias = topLevelFieldName;
                 if (fieldInfo != null) {
-                    //logic to find the field mapping with the parent (with entityClass)
+                    // logic to find the field mapping with the parent (with entityClass)
                     FieldInfo relatedParentFieldInfo = indexView
-                            .getClassByName(fieldInfo.declaringClass().name().toString()).fields()
-                            .stream()
+                            .getClassByName(fieldInfo.declaringClass().name().toString()).fields().stream()
                             .filter(fi -> fi.type().name().equals(DotName.createSimple(entityClass.name().toString())))
                             .findFirst().orElse(null);
                     if (relatedParentFieldInfo != null) {
-                        joinClause = " LEFT JOIN " + topLevelFieldName + " " + childEntityAlias + " ON "
-                                + entityAlias + "." + getIdFieldInfo(entityClass).name() + " = "
-                                + topLevelFieldName + "." + relatedParentFieldInfo.name() + "."
-                                + getIdFieldInfo(entityClass).name();
+                        joinClause = " LEFT JOIN " + topLevelFieldName + " " + childEntityAlias + " ON " + entityAlias
+                                + "." + getIdFieldInfo(entityClass).name() + " = " + topLevelFieldName + "."
+                                + relatedParentFieldInfo.name() + "." + getIdFieldInfo(entityClass).name();
                     } else {
                         // Fallback for cases where the relationship is not explicit
                         joinClause = " LEFT JOIN " + entityAlias + "." + topLevelFieldName + " " + childEntityAlias;
@@ -240,9 +220,9 @@ public class MethodNameParser {
             }
             validateFieldWithOperation(operation, fieldInfo, fieldName, repositoryMethodDescription);
             if ((ignoreCase || allIgnoreCase) && !DotNames.STRING.equals(fieldInfo.type().name())) {
-                throw new UnableToParseMethodException(
-                        "IgnoreCase cannot be specified for field" + fieldInfo.name() + " because it is not a String type. "
-                                + "Offending method is " + repositoryMethodDescription + ".");
+                throw new UnableToParseMethodException("IgnoreCase cannot be specified for field" + fieldInfo.name()
+                        + " because it is not a String type. " + "Offending method is " + repositoryMethodDescription
+                        + ".");
             }
 
             if (where.length() > 0) {
@@ -320,8 +300,8 @@ public class MethodNameParser {
                     case "StartingWith":
                     case "StartsWith":
                         paramsCount++;
-                        where.append(" LIKE CONCAT(").append(upperPrefix).append("?").append(paramsCount).append(upperSuffix)
-                                .append(", '%')");
+                        where.append(" LIKE CONCAT(").append(upperPrefix).append("?").append(paramsCount)
+                                .append(upperSuffix).append(", '%')");
                         break;
                     case "IsEndingWith":
                     case "EndingWith":
@@ -364,24 +344,25 @@ public class MethodNameParser {
         }
 
         String whereQuery = where.toString().isEmpty() ? "" : " WHERE " + where.toString();
-        return new Result(entityClass, selectClause + fromClause + joinClause + whereQuery, queryType, paramsCount, sort,
-                topCount);
+        return new Result(entityClass, selectClause + fromClause + joinClause + whereQuery, queryType, paramsCount,
+                sort, topCount);
     }
 
     /**
      * Splits a given input string based on multiple regular expressions and includes each match in the result,
      * maintaining the order of parts and separators as they appear in the original string.
-     *
      * <p>
-     * This method allows you to provide multiple regex patterns that will be combined with an OR (`|`) operator,
-     * so any match from the list of patterns will act as a delimiter. The result will include both the segments
-     * of the input string that are between matches, as well as the matches themselves, in the order they appear.
+     * This method allows you to provide multiple regex patterns that will be combined with an OR (`|`) operator, so any
+     * match from the list of patterns will act as a delimiter. The result will include both the segments of the input
+     * string that are between matches, as well as the matches themselves, in the order they appear.
      *
-     * @param input the string to be split
-     * @param regexes one or more regular expression patterns to use as delimiters
-     * @return a list of strings representing the parts of the input string split by the specified regex patterns,
-     *         with matches themselves included in the output list
+     * @param input
+     *        the string to be split
+     * @param regexes
+     *        one or more regular expression patterns to use as delimiters
      *
+     * @return a list of strings representing the parts of the input string split by the specified regex patterns, with
+     *         matches themselves included in the output list
      *         <p>
      *         Example usage:
      *
@@ -400,7 +381,8 @@ public class MethodNameParser {
             if (patternBuilder.length() > 0) {
                 patternBuilder.append("|");
             }
-            // Add a limit word, \b, but adapted to camelCase (start or after a lowercase letter, end or followed by an uppercase letter)
+            // Add a limit word, \b, but adapted to camelCase (start or after a lowercase letter, end or followed by an
+            // uppercase letter)
             patternBuilder.append("(?<=[a-z])(").append(regex).append(")(?=[A-Z]|$)");
             patternBuilder.append("|(?<=^|[A-Z])(").append(regex).append(")(?=[A-Z]|$)");
         }
@@ -427,11 +409,11 @@ public class MethodNameParser {
     }
 
     /***
-     * This method extracts the first part of an input string (up to the first dot), corresponding to the class containing a
-     * field with the provided name.
-     * Or returns the entire input if no dot is found.
+     * This method extracts the first part of an input string (up to the first dot), corresponding to the class
+     * containing a field with the provided name. Or returns the entire input if no dot is found.
      *
-     * @param input: whole path of a nested field
+     * @param input:
+     *        whole path of a nested field
      *        <p>
      *        Example usage:
      *
@@ -440,7 +422,6 @@ public class MethodNameParser {
      * List<String> result = getTopLevelFieldName(input);
      * // result: customer
      * }</pre>
-     *
      */
     private String getTopLevelFieldName(String input) {
         if (input == null) {
@@ -460,29 +441,30 @@ public class MethodNameParser {
     }
 
     /**
-     * Resolves a nested field within an entity class based on a given field path expression.
-     * This method traverses through the entity class and potentially its related classes,
-     * identifying and returning the appropriate field. It handles complex field paths that may
-     * include multiple levels of nested fields, separated by underscores ('_').
-     *
-     * See:
-     * *
+     * Resolves a nested field within an entity class based on a given field path expression. This method traverses
+     * through the entity class and potentially its related classes, identifying and returning the appropriate field. It
+     * handles complex field paths that may include multiple levels of nested fields, separated by underscores ('_').
+     * See: *
      * https://docs.spring.io/spring-data/jpa/docs/current/reference/html/#repositories.query-methods.query-property-expressions
      *
-     * @param repositoryMethodDescription A description of the repository method,
-     *        typically used for error reporting.
-     * @param fieldPathExpression The expression representing the path of the field within
-     *        the entity class. Fields at different levels of nesting
-     *        should be separated by underscores ('_').
-     * @param fieldPathBuilder A StringBuilder used to construct and return the resolved field path.
-     *        It will contain the fully qualified field path once the method completes.
-     * @return The {@link FieldInfo} object representing the resolved field. If the field cannot be resolved,
-     *         an exception is thrown.
-     * @throws UnableToParseMethodException If the field cannot be resolved from the given
-     *         field path expression, this exception is thrown
-     *         with a detailed error message.
-     * @throws IllegalStateException If the resolved entity class referenced by the field is not found
-     *         in the Quarkus index, or if a typed field could not be resolved properly.
+     * @param repositoryMethodDescription
+     *        A description of the repository method, typically used for error reporting.
+     * @param fieldPathExpression
+     *        The expression representing the path of the field within the entity class. Fields at different levels
+     *        of nesting should be separated by underscores ('_').
+     * @param fieldPathBuilder
+     *        A StringBuilder used to construct and return the resolved field path. It will contain the fully
+     *        qualified field path once the method completes.
+     *
+     * @return The {@link FieldInfo} object representing the resolved field. If the field cannot be resolved, an
+     *         exception is thrown.
+     *
+     * @throws UnableToParseMethodException
+     *         If the field cannot be resolved from the given field path expression, this exception is thrown with a
+     *         detailed error message.
+     * @throws IllegalStateException
+     *         If the resolved entity class referenced by the field is not found in the Quarkus index, or if a typed
+     *         field could not be resolved properly.
      */
     private FieldInfo resolveNestedField(String repositoryMethodDescription, String fieldPathExpression,
             StringBuilder fieldPathBuilder) {
@@ -499,13 +481,16 @@ public class MethodNameParser {
         ClassInfo parentFieldInfo = null;
         while (fieldStartIndex < fieldPathExpression.length()) {
             // The underscore character is treated as reserved character to manually define traversal points.
-            // This means that path expression may have multiple levels separated by the '_' character. For example: person_address_city.
+            // This means that path expression may have multiple levels separated by the '_' character. For example:
+            // person_address_city.
             if (fieldPathExpression.charAt(fieldStartIndex) == '_') {
                 // See issue #34395
-                // For resolving correctly nested fields added using '_' we need to get the previous fieldInfo which will be the class containing the field starting by '_' in this loop.
+                // For resolving correctly nested fields added using '_' we need to get the previous fieldInfo which
+                // will be the class containing the field starting by '_' in this loop.
                 DotName parentFieldInfoName;
                 if (fieldInfo != null && fieldInfo.type().kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                    parentFieldInfoName = fieldInfo.type().asParameterizedType().arguments().stream().findFirst().get().name();
+                    parentFieldInfoName = fieldInfo.type().asParameterizedType().arguments().stream().findFirst().get()
+                            .name();
                     parentFieldInfo = indexView.getClassByName(parentFieldInfoName);
                 }
                 fieldStartIndex++;
@@ -531,8 +516,7 @@ public class MethodNameParser {
                     String notMatched = lowerFirstLetter(fieldPathExpression.substring(fieldStartIndex));
                     detail = "Can not resolve " + parentClassInfo + "." + notMatched + ". ";
                 }
-                throw new UnableToParseMethodException(
-                        fieldNotResolvableMessage + detail + offendingMethodMessage);
+                throw new UnableToParseMethodException(fieldNotResolvableMessage + detail + offendingMethodMessage);
             }
             if (fieldPathBuilder.length() > 0) {
                 fieldPathBuilder.append('.');
@@ -545,19 +529,18 @@ public class MethodNameParser {
                     typed = true;
                     parentClassName = getParentNameFromTypedFieldViaHierarchy(fieldInfo, mappedSuperClassInfos);
                 } else if (fieldInfo.type().kind() == Type.Kind.PARAMETERIZED_TYPE) {
-                    parentClassName = fieldInfo.type().asParameterizedType().arguments().stream().findFirst().get().name();
+                    parentClassName = fieldInfo.type().asParameterizedType().arguments().stream().findFirst().get()
+                            .name();
                 } else {
                     parentClassName = fieldInfo.type().name();
                 }
                 parentClassInfo = indexView.getClassByName(parentClassName);
                 parentSuperClassInfos.set(null);
                 if (parentClassInfo == null) {
-                    throw new IllegalStateException(
-                            "Entity class " + fieldInfo.type().name() + " referenced by "
-                                    + this.entityClass + "." + fieldPathBuilder
-                                    + " was not part of the Quarkus index"
-                                    + (typed ? " or typed field could not be resolved properly. " : ". ")
-                                    + offendingMethodMessage);
+                    throw new IllegalStateException("Entity class " + fieldInfo.type().name() + " referenced by "
+                            + this.entityClass + "." + fieldPathBuilder + " was not part of the Quarkus index"
+                            + (typed ? " or typed field could not be resolved properly. " : ". ")
+                            + offendingMethodMessage);
                 }
 
             }
@@ -577,11 +560,9 @@ public class MethodNameParser {
     }
 
     /**
-     * Meant to be called with {@param operator} being {@code "And"} or {@code "Or"}
-     * and returns {@code true} if the string contains the logical operator
-     * and the next character is an uppercase character.
-     * The reasoning is that if the next character is not uppercase,
-     * then the operator string is just part of a word
+     * Meant to be called with {@param operator} being {@code "And"} or {@code "Or"} and returns {@code true} if the
+     * string contains the logical operator and the next character is an uppercase character. The reasoning is that if
+     * the next character is not uppercase, then the operator string is just part of a word
      */
     private boolean containsLogicOperator(String str, String operatorStr) {
         int index = str.indexOf(operatorStr);
@@ -708,13 +689,18 @@ public class MethodNameParser {
     /**
      * Retrieves the first field in the given entity class that is annotated with `@Id`.
      *
-     * @param entityClass the `ClassInfo` object representing the entity class.
+     * @param entityClass
+     *        the `ClassInfo` object representing the entity class.
+     *
      * @return the `FieldInfo` of the first field annotated with `@Id`.
-     * @throws NoSuchElementException if no field with the `@Id` annotation is found.
+     *
+     * @throws NoSuchElementException
+     *         if no field with the `@Id` annotation is found.
      */
     private FieldInfo getIdFieldInfo(ClassInfo entityClass) {
         return entityClass.fields().stream()
-                .filter(fieldInfo -> fieldInfo.hasAnnotation(DotName.createSimple(Id.class.getName()))).findFirst().get();
+                .filter(fieldInfo -> fieldInfo.hasAnnotation(DotName.createSimple(Id.class.getName()))).findFirst()
+                .get();
     }
 
     private List<ClassInfo> getSuperClassInfos(IndexView indexView, ClassInfo entityClass) {
@@ -746,7 +732,8 @@ public class MethodNameParser {
     // Without this method, type of Foo.id would be Serializable and therefore Foo.id.a (or b) would not be found.
     //
     // Note: This method is lenient in that it doesn't throw exceptions aggressively when an assumption is not met.
-    private DotName getParentNameFromTypedFieldViaHierarchy(FieldInfo fieldInfo, List<ClassInfo> parentSuperClassInfos) {
+    private DotName getParentNameFromTypedFieldViaHierarchy(FieldInfo fieldInfo,
+            List<ClassInfo> parentSuperClassInfos) {
         // find in the hierarchy the position of the class the fieldInfo belongs to
         int superClassIndex = parentSuperClassInfos.indexOf(fieldInfo.declaringClass());
         if (superClassIndex == -1) {
@@ -772,7 +759,8 @@ public class MethodNameParser {
                 }
                 Type type = resolveTypeParameters.get(typeParameterIndex);
                 if (type.kind() == Type.Kind.TYPE_VARIABLE) {
-                    // go on with the type variable from the child class (which is potentially more specific that the previous one)
+                    // go on with the type variable from the child class (which is potentially more specific that the
+                    // previous one)
                     typeVariable = type.asTypeVariable();
                 } else if (type.kind() == Type.Kind.CLASS) {
                     // ideal outcome: concrete class, doesn't get more specific than this
@@ -819,7 +807,8 @@ public class MethodNameParser {
         private final Sort sort;
         private final Integer topCount;
 
-        public Result(ClassInfo entityClass, String query, QueryType queryType, int paramCount, Sort sort, Integer topCount) {
+        public Result(ClassInfo entityClass, String query, QueryType queryType, int paramCount, Sort sort,
+                Integer topCount) {
             this.entityClass = entityClass;
             this.query = query;
             this.queryType = queryType;

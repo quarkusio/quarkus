@@ -18,11 +18,9 @@ public class DefaultFileDuplicateFoundTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("hi=Nazdar!"), "messages/msg.properties")
+            .withApplicationRoot(root -> root.addAsResource(new StringAsset("hi=Nazdar!"), "messages/msg.properties")
                     .addAsResource(new StringAsset("hi=Ahoj!"), "messages/msg_cs.properties"))
-            .overrideConfigKey("quarkus.default-locale", "cs")
-            .assertException(t -> {
+            .overrideConfigKey("quarkus.default-locale", "cs").assertException(t -> {
                 Throwable e = t;
                 MessageBundleException mbe = null;
                 while (e != null) {
@@ -33,7 +31,8 @@ public class DefaultFileDuplicateFoundTest {
                     e = e.getCause();
                 }
                 assertNotNull(mbe);
-                assertTrue(mbe.getMessage().contains("localized file already exists for locale [cs]"), mbe.getMessage());
+                assertTrue(mbe.getMessage().contains("localized file already exists for locale [cs]"),
+                        mbe.getMessage());
                 assertTrue(mbe.getMessage().contains("msg_cs.properties"), mbe.getMessage());
                 assertTrue(mbe.getMessage().contains("msg.properties"), mbe.getMessage());
             });

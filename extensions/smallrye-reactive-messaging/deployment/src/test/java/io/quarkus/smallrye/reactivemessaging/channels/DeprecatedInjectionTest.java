@@ -15,9 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DeprecatedInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class, DeprecatedChannelConsumer.class, DeprecatedEmitterExample.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(SimpleBean.class, DeprecatedChannelConsumer.class, DeprecatedEmitterExample.class));
 
     @Inject
     DeprecatedChannelConsumer deprecatedChannelConsumer;

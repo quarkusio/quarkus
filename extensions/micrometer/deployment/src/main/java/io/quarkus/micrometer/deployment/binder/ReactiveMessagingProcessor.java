@@ -18,16 +18,13 @@ public class ReactiveMessagingProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return MESSAGE_OBSERVATION_COLLECTOR_CLASS != null &&
-                    mConfig.checkBinderEnabledWithDefault(mConfig.binder().messaging());
+            return MESSAGE_OBSERVATION_COLLECTOR_CLASS != null
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().messaging());
         }
     }
 
     @BuildStep(onlyIf = ReactiveMessagingSupportEnabled.class)
     AdditionalBeanBuildItem createCDIEventConsumer() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(METRICS_BEAN_CLASS)
-                .setUnremovable()
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(METRICS_BEAN_CLASS).setUnremovable().build();
     }
 }

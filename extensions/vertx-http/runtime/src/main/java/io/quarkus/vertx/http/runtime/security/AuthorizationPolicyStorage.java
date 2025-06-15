@@ -17,7 +17,9 @@ public abstract class AuthorizationPolicyStorage {
     protected abstract Map<MethodDescription, String> getMethodToPolicyName();
 
     /**
-     * @param securedMethodDesc method description
+     * @param securedMethodDesc
+     *        method description
+     *
      * @return true if method is secured with {@link io.quarkus.vertx.http.security.AuthorizationPolicy}
      */
     public boolean requiresAuthorizationPolicy(MethodDescription securedMethodDesc) {

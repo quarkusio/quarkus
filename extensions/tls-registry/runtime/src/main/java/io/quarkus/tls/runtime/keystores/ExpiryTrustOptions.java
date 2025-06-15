@@ -161,15 +161,12 @@ public class ExpiryTrustOptions implements TrustOptions {
             return true;
         if (obj != null && obj.getClass() == getClass()) {
             ExpiryTrustOptions that = (ExpiryTrustOptions) obj;
-            return Objects.equals(delegate, that.delegate) &&
-                    Objects.equals(policy, that.policy);
+            return Objects.equals(delegate, that.delegate) && Objects.equals(policy, that.policy);
         }
         return false;
     }
 
     public String toString() {
-        return "ExpiryTrustOptions[" +
-                "delegate=" + delegate + ", " +
-                "policy=" + policy + ']';
+        return "ExpiryTrustOptions[" + "delegate=" + delegate + ", " + "policy=" + policy + ']';
     }
 }

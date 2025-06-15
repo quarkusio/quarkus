@@ -22,9 +22,8 @@ public interface DockerConfig extends CommonConfig {
     /**
      * Configuration for Docker Buildx options. These are only relevant if using Docker Buildx
      * (https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images) to build multi-platform (or
-     * cross-platform)
-     * images.
-     * If any of these configurations are set, it will add {@code buildx} to the {@code executableName}.
+     * cross-platform) images. If any of these configurations are set, it will add {@code buildx} to the
+     * {@code executableName}.
      */
     @ConfigGroup
     interface DockerBuildxConfig {
@@ -36,22 +35,20 @@ public interface DockerConfig extends CommonConfig {
 
         /**
          * Sets the export action for the build result. See
-         * https://docs.docker.com/engine/reference/commandline/buildx_build/#output. Note that any filesystem paths need to be
-         * absolute paths,
-         * not relative from where the command is executed from.
+         * https://docs.docker.com/engine/reference/commandline/buildx_build/#output. Note that any filesystem paths
+         * need to be absolute paths, not relative from where the command is executed from.
          */
         Optional<String> output();
 
         /**
-         * Set type of progress output ({@code auto}, {@code plain}, {@code tty}). Use {@code plain} to show container output
-         * (default “{@code auto}”). See https://docs.docker.com/engine/reference/commandline/buildx_build/#progress
+         * Set type of progress output ({@code auto}, {@code plain}, {@code tty}). Use {@code plain} to show container
+         * output (default “{@code auto}”). See
+         * https://docs.docker.com/engine/reference/commandline/buildx_build/#progress
          */
         Optional<String> progress();
 
         default boolean useBuildx() {
-            return platform().filter(p -> !p.isEmpty()).isPresent() ||
-                    output().isPresent() ||
-                    progress().isPresent();
+            return platform().filter(p -> !p.isEmpty()).isPresent() || output().isPresent() || progress().isPresent();
         }
     }
 }

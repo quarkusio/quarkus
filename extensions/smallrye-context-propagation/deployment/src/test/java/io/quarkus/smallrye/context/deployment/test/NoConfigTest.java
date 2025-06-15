@@ -12,8 +12,7 @@ import io.smallrye.context.impl.ThreadContextProviderPlan;
 
 public class NoConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication();
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication();
 
     @Inject
     SmallRyeThreadContext ctx;

@@ -44,24 +44,15 @@ public class AutoAddOpenApiEndpointFilter implements OASFilter {
         if (mediaTypeForEndpoints == MediaTypeForEndpoint.YAML || mediaTypeForEndpoints == MediaTypeForEndpoint.BOTH) {
             openApiContent.addMediaType("application/yaml", OASFactory.createMediaType());
         }
-        var openApiResponse = OASFactory.createAPIResponses()
-                .addAPIResponse(
-                        "200",
-                        OASFactory.createAPIResponse()
-                                .description(ENDPOINT_DESCRIPTION)
-                                .content(openApiContent));
+        var openApiResponse = OASFactory.createAPIResponses().addAPIResponse("200",
+                OASFactory.createAPIResponse().description(ENDPOINT_DESCRIPTION).content(openApiContent));
         var pathItemPath = this.path;
         // Strip off dot
         if (!suffix.isEmpty()) {
             pathItemPath += "." + suffix.toLowerCase();
         }
-        var pathItem = OASFactory.createPathItem()
-                .GET(
-                        OASFactory.createOperation()
-                                .description(ENDPOINT_DESCRIPTION)
-                                .addTag(OPENAPI_TAG)
-                                .operationId("getOpenAPISpecification" + suffix)
-                                .responses(openApiResponse));
+        var pathItem = OASFactory.createPathItem().GET(OASFactory.createOperation().description(ENDPOINT_DESCRIPTION)
+                .addTag(OPENAPI_TAG).operationId("getOpenAPISpecification" + suffix).responses(openApiResponse));
         paths.addPathItem(pathItemPath, pathItem);
     }
 }

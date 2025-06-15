@@ -20,8 +20,8 @@ public class ValidatorFactoryFromValidationTest {
     ValidatorFactory validatorFactoryFromInjection;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Test
     public void testValidatorFactoryManuallyCreatedIsManagedByQuarkus() {

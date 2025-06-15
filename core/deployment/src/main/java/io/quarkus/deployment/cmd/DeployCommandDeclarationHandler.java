@@ -10,7 +10,8 @@ public class DeployCommandDeclarationHandler implements BiConsumer<Object, Build
 
     @Override
     public void accept(Object o, BuildResult buildResult) {
-        DeployCommandDeclarationResultBuildItem result = buildResult.consume(DeployCommandDeclarationResultBuildItem.class);
+        DeployCommandDeclarationResultBuildItem result = buildResult
+                .consume(DeployCommandDeclarationResultBuildItem.class);
 
         // FYI: AugmentAction.performCustomBuild runs in its own classloader
         // so we can only pass back instances of those classes in the system classloader

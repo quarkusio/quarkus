@@ -29,11 +29,9 @@ public final class BeanUtils {
         return MongoClientBeanUtil.DEFAULT_MONGOCLIENT_NAME;
     }
 
-    public static <T> T clientFromArc(MongoEntity entity,
-            Class<T> clientClass, boolean isReactive) {
+    public static <T> T clientFromArc(MongoEntity entity, Class<T> clientClass, boolean isReactive) {
         T mongoClient = Arc.container()
-                .instance(clientClass, MongoClientBeanUtil.clientLiteral(beanName(entity), isReactive))
-                .get();
+                .instance(clientClass, MongoClientBeanUtil.clientLiteral(beanName(entity), isReactive)).get();
         if (mongoClient != null) {
             return mongoClient;
         }
@@ -52,7 +50,8 @@ public final class BeanUtils {
                     return handle.get();
                 }
             }
-            throw new IllegalStateException(String.format("Unable to find default %s bean", clientClass.getSimpleName()));
+            throw new IllegalStateException(
+                    String.format("Unable to find default %s bean", clientClass.getSimpleName()));
         } else {
             throw new IllegalStateException(
                     String.format("Unable to find %s bean for entity %s", clientClass.getSimpleName(), entity));
@@ -89,9 +88,7 @@ public final class BeanUtils {
 
     public static Optional<String> getDatabaseNameFromResolver() {
         return Optional.of(Arc.container().select(MongoDatabaseResolver.class))
-                .filter(Predicate.not(InjectableInstance::isUnsatisfied))
-                .map(InjectableInstance::get)
-                .map(MongoDatabaseResolver::resolve)
-                .filter(Predicate.not(String::isBlank));
+                .filter(Predicate.not(InjectableInstance::isUnsatisfied)).map(InjectableInstance::get)
+                .map(MongoDatabaseResolver::resolve).filter(Predicate.not(String::isBlank));
     }
 }

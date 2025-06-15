@@ -17,9 +17,9 @@ public class TestResource {
 
     private static final AtomicInteger ID_COUNTER = new AtomicInteger(0);
 
-    private static final List<TestRecord> RECORDS = new LinkedList<>(Arrays.asList(
-            new TestRecord(ID_COUNTER.incrementAndGet(), "first", "First value"),
-            new TestRecord(ID_COUNTER.incrementAndGet(), "second", "Second value")));
+    private static final List<TestRecord> RECORDS = new LinkedList<>(
+            Arrays.asList(new TestRecord(ID_COUNTER.incrementAndGet(), "first", "First value"),
+                    new TestRecord(ID_COUNTER.incrementAndGet(), "second", "Second value")));
 
     @GET
     @Produces({ MediaType.APPLICATION_JSON, "application/hal+json" })

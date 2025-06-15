@@ -18,11 +18,10 @@ public class ORMReactiveCompatbilityOnlyReactiveJDBCDisabledUnitTest extends Com
     // We disable the JDBC data source witht the quarkus.datasource.jdbc=false we keep the driver
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hero.class)
-                    .addAsResource("complexMultilineImports.sql", "import.sql"))
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Hero.class).addAsResource("complexMultilineImports.sql", "import.sql"))
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-jdbc-postgresql-deployment", Version.getVersion())))
             .withConfigurationResource("application-unittest-onlyreactive.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.jdbc", "false")

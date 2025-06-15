@@ -22,21 +22,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RequestScopedParamConverterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class, Model.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class, Model.class);
+        }
+    });
 
     @Test
     public void testNoAnnotation() {
-        given().header("foo", "bar").when().get("/test/test")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("test/bar"));
+        given().header("foo", "bar").when().get("/test/test").then().statusCode(200).body(Matchers.equalTo("test/bar"));
     }
 
     @Path("test")

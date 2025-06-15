@@ -39,7 +39,7 @@ abstract class AbstractTestHttpAuthenticationMechanism implements HttpAuthentica
     @PostConstruct
     public void check() {
         if (LaunchMode.current() != LaunchMode.TEST) {
-            //paranoid check
+            // paranoid check
             throw new RuntimeException("TestAuthController can only be used in tests");
         }
     }
@@ -75,7 +75,8 @@ abstract class AbstractTestHttpAuthenticationMechanism implements HttpAuthentica
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
         return authMechanism == null ? Uni.createFrom().nullItem()
-                : Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.TEST_SECURITY, authMechanism));
+                : Uni.createFrom()
+                        .item(new HttpCredentialTransport(HttpCredentialTransport.Type.TEST_SECURITY, authMechanism));
     }
 
     void setAuthMechanism(String authMechanism) {

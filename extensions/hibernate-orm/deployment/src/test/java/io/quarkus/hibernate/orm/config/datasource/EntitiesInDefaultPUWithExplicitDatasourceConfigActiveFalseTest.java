@@ -13,24 +13,20 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EntitiesInDefaultPUWithExplicitDatasourceConfigActiveFalseTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.datasource", "ds-1")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create")
             .overrideConfigKey("quarkus.datasource.\"ds-1\".active", "false")
             // We need at least one build-time property for the datasource,
             // otherwise it's considered unconfigured at build time...
             .overrideConfigKey("quarkus.datasource.\"ds-1\".db-kind", "h2")
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            "Unable to find datasource 'ds-1' for persistence unit '<default>'",
-                            "Datasource 'ds-1' was deactivated through configuration properties.",
-                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
-                            "To activate the datasource, set configuration property 'quarkus.datasource.\"ds-1\".active'"
-                                    + " to 'true' and configure datasource 'ds-1'",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class).hasMessageContainingAll(
+                    "Unable to find datasource 'ds-1' for persistence unit '<default>'",
+                    "Datasource 'ds-1' was deactivated through configuration properties.",
+                    "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                    "To activate the datasource, set configuration property 'quarkus.datasource.\"ds-1\".active'"
+                            + " to 'true' and configure datasource 'ds-1'",
+                    "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
     public void testInvalidConfiguration() {

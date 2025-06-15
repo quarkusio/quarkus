@@ -10,8 +10,8 @@ import org.hibernate.boot.jaxb.spi.JaxbBindableMappingDescriptor;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
 /**
- * A substitute to Hibernate ORM's "Binding",
- * which is actually a representation of a parsed XML mapping file (orm.xml or hbm.xml).
+ * A substitute to Hibernate ORM's "Binding", which is actually a representation of a parsed XML mapping file (orm.xml
+ * or hbm.xml).
  * <p>
  * On contrary to Binding, this class can be serialized/deserialized by the BytecodeRecorder.
  */
@@ -36,8 +36,8 @@ public class RecordableXmlMapping {
     }
 
     @RecordableConstructor
-    public RecordableXmlMapping(JaxbEntityMappingsImpl ormXmlRoot, JaxbHbmHibernateMapping hbmXmlRoot, SourceType originType,
-            String originName) {
+    public RecordableXmlMapping(JaxbEntityMappingsImpl ormXmlRoot, JaxbHbmHibernateMapping hbmXmlRoot,
+            SourceType originType, String originName) {
         this.ormXmlRoot = ormXmlRoot;
         this.hbmXmlRoot = hbmXmlRoot;
         this.originType = originType;
@@ -46,9 +46,7 @@ public class RecordableXmlMapping {
 
     @Override
     public String toString() {
-        return "RecordableXmlMapping{" +
-                "originName='" + originName + '\'' +
-                '}';
+        return "RecordableXmlMapping{" + "originName='" + originName + '\'' + '}';
     }
 
     public JaxbEntityMappingsImpl getOrmXmlRoot() {

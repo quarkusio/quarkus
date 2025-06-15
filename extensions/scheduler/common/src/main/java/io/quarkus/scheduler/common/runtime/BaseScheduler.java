@@ -22,9 +22,8 @@ public class BaseScheduler {
     protected final Instance<JobInstrumenter> jobInstrumenter;
     protected final ScheduledExecutorService blockingExecutor;
 
-    public BaseScheduler(Vertx vertx, CronParser cronParser,
-            Duration defaultOverdueGracePeriod, Events events, Instance<JobInstrumenter> jobInstrumenter,
-            ScheduledExecutorService blockingExecutor) {
+    public BaseScheduler(Vertx vertx, CronParser cronParser, Duration defaultOverdueGracePeriod, Events events,
+            Instance<JobInstrumenter> jobInstrumenter, ScheduledExecutorService blockingExecutor) {
         this.vertx = vertx;
         this.cronParser = cronParser;
         this.defaultOverdueGracePeriod = defaultOverdueGracePeriod;
@@ -38,9 +37,9 @@ public class BaseScheduler {
     }
 
     protected ScheduledInvoker initInvoker(ScheduledInvoker invoker, Events events,
-            ConcurrentExecution concurrentExecution, Scheduled.SkipPredicate skipPredicate, JobInstrumenter instrumenter,
-            Vertx vertx, boolean skipOffloadingInvoker,
-            OptionalLong delay, ScheduledExecutorService blockingExecutor) {
+            ConcurrentExecution concurrentExecution, Scheduled.SkipPredicate skipPredicate,
+            JobInstrumenter instrumenter, Vertx vertx, boolean skipOffloadingInvoker, OptionalLong delay,
+            ScheduledExecutorService blockingExecutor) {
         invoker = new StatusEmitterInvoker(invoker, events.successExecution, events.failedExecution);
         if (concurrentExecution == ConcurrentExecution.SKIP) {
             invoker = new SkipConcurrentExecutionInvoker(invoker, events.skippedExecution);
@@ -55,7 +54,8 @@ public class BaseScheduler {
             invoker = new OffloadingInvoker(invoker, vertx);
         }
         if (delay.isPresent()) {
-            invoker = new DelayedExecutionInvoker(invoker, delay.getAsLong(), blockingExecutor, events.delayedExecution);
+            invoker = new DelayedExecutionInvoker(invoker, delay.getAsLong(), blockingExecutor,
+                    events.delayedExecution);
         }
         return invoker;
     }

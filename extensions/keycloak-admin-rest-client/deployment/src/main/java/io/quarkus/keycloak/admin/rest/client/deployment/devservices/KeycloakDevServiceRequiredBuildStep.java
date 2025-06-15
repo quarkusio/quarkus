@@ -20,9 +20,8 @@ public class KeycloakDevServiceRequiredBuildStep {
 
     @BuildStep
     KeycloakDevServicesRequiredBuildItem requireKeycloakDevService() {
-        return KeycloakDevServicesRequiredBuildItem.of(
-                ctx -> Map.of(SERVER_URL_CONFIG_KEY, ctx.authServerInternalBaseUrl()),
-                SERVER_URL_CONFIG_KEY);
+        return KeycloakDevServicesRequiredBuildItem
+                .of(ctx -> Map.of(SERVER_URL_CONFIG_KEY, ctx.authServerInternalBaseUrl()), SERVER_URL_CONFIG_KEY);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

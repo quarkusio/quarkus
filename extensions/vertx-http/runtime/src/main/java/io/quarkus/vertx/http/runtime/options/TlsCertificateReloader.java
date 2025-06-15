@@ -44,14 +44,15 @@ public class TlsCertificateReloader {
     private static final Logger LOGGER = Logger.getLogger(TlsCertificateReloader.class);
 
     /**
-     * @throws IllegalArgumentException if any of the configuration is invalid
+     * @throws IllegalArgumentException
+     *         if any of the configuration is invalid
      */
-    public static long initCertReloadingAction(Vertx vertx, HttpServer server,
-            HttpServerOptions options, ServerSslConfig sslConfig,
-            TlsConfigurationRegistry registry, Optional<String> tlsConfigurationName) {
+    public static long initCertReloadingAction(Vertx vertx, HttpServer server, HttpServerOptions options,
+            ServerSslConfig sslConfig, TlsConfigurationRegistry registry, Optional<String> tlsConfigurationName) {
 
         if (options == null) {
-            throw new IllegalArgumentException("Unable to configure TLS reloading - The HTTP server options were not provided");
+            throw new IllegalArgumentException(
+                    "Unable to configure TLS reloading - The HTTP server options were not provided");
         }
 
         boolean useRegistry = false;
@@ -66,7 +67,8 @@ public class TlsCertificateReloader {
         if (!useRegistry) {
             ssl = options.getSslOptions();
             if (ssl == null) {
-                throw new IllegalArgumentException("Unable to configure TLS reloading - TLS/SSL is not enabled on the server");
+                throw new IllegalArgumentException(
+                        "Unable to configure TLS reloading - TLS/SSL is not enabled on the server");
             }
         } else {
             if (tlsConfigurationName.isPresent()) {
@@ -113,30 +115,28 @@ public class TlsCertificateReloader {
                             return c;
                         }
                     }
-                }, true)
-                        .flatMap(new Function<SSLOptions, Future<Boolean>>() {
-                            @Override
-                            public Future<Boolean> apply(SSLOptions res) {
-                                if (res != null) {
-                                    return server.updateSSLOptions(res);
-                                } else {
-                                    return Future.succeededFuture(false);
-                                }
+                }, true).flatMap(new Function<SSLOptions, Future<Boolean>>() {
+                    @Override
+                    public Future<Boolean> apply(SSLOptions res) {
+                        if (res != null) {
+                            return server.updateSSLOptions(res);
+                        } else {
+                            return Future.succeededFuture(false);
+                        }
+                    }
+                }).onComplete(new Handler<AsyncResult<Boolean>>() {
+                    @Override
+                    public void handle(AsyncResult<Boolean> ar) {
+                        if (ar.failed()) {
+                            LOGGER.error("Unable to reload the TLS certificate, keeping the current one.", ar.cause());
+                        } else {
+                            if (ar.result()) {
+                                LOGGER.debug("TLS certificates updated");
                             }
-                        })
-                        .onComplete(new Handler<AsyncResult<Boolean>>() {
-                            @Override
-                            public void handle(AsyncResult<Boolean> ar) {
-                                if (ar.failed()) {
-                                    LOGGER.error("Unable to reload the TLS certificate, keeping the current one.", ar.cause());
-                                } else {
-                                    if (ar.result()) {
-                                        LOGGER.debug("TLS certificates updated");
-                                    }
-                                    // Not updated, no change.
-                                }
-                            }
-                        });
+                            // Not updated, no change.
+                        }
+                    }
+                });
 
                 return future.toCompletionStage();
             }
@@ -164,8 +164,8 @@ public class TlsCertificateReloader {
     }
 
     /**
-     * Trigger all the reload tasks.
-     * This method is <strong>NOT</strong> part of the public API, and is only used for testing purpose.
+     * Trigger all the reload tasks. This method is <strong>NOT</strong> part of the public API, and is only used for
+     * testing purpose.
      *
      * @return a Uni that is completed when all the reload tasks have been executed
      */
@@ -201,9 +201,7 @@ public class TlsCertificateReloader {
                 keysBuffer.add(Buffer.buffer(key));
             }
 
-            PemKeyCertOptions opts = new PemKeyCertOptions()
-                    .setCertValues(certBuffer)
-                    .setKeyValues(keysBuffer);
+            PemKeyCertOptions opts = new PemKeyCertOptions().setCertValues(certBuffer).setKeyValues(keysBuffer);
             copy.setKeyCertOptions(opts);
         } else if (sslConfig.certificate().keyStoreFile().isPresent()) {
             var opts = ((KeyStoreOptions) copy.getKeyCertOptions());
@@ -244,8 +242,7 @@ public class TlsCertificateReloader {
             if (obj == null || obj.getClass() != this.getClass())
                 return false;
             var that = (ReloadCertificateTask) obj;
-            return this.it == that.it &&
-                    Objects.equals(this.action, that.action);
+            return this.it == that.it && Objects.equals(this.action, that.action);
         }
 
         @Override
@@ -255,9 +252,7 @@ public class TlsCertificateReloader {
 
         @Override
         public String toString() {
-            return "ReloadCertificateTask[" +
-                    "it=" + it + ", " +
-                    "action=" + action + ']';
+            return "ReloadCertificateTask[" + "it=" + it + ", " + "action=" + action + ']';
         }
 
     }

@@ -16,19 +16,17 @@ public record ContainerInfo(String id, String[] names, String imageName, String 
     }
 
     public String formatNetworks() {
-        return networks.entrySet().stream()
-                .map(e -> {
-                    String[] aliases = e.getValue();
-                    if (aliases == null || aliases.length == 0) {
-                        return e.getKey();
-                    }
-                    return e.getKey() + " (" + String.join(", ", aliases) + ")";
-                }).collect(Collectors.joining(", "));
+        return networks.entrySet().stream().map(e -> {
+            String[] aliases = e.getValue();
+            if (aliases == null || aliases.length == 0) {
+                return e.getKey();
+            }
+            return e.getKey() + " (" + String.join(", ", aliases) + ")";
+        }).collect(Collectors.joining(", "));
     }
 
     public String formatPorts() {
-        return Arrays.stream(exposedPorts)
-                .filter(p -> p.publicPort != null)
+        return Arrays.stream(exposedPorts).filter(p -> p.publicPort != null)
                 .map(c -> c.ip + ":" + c.publicPort + "->" + c.privatePort + "/" + c.type)
                 .collect(Collectors.joining(", "));
     }

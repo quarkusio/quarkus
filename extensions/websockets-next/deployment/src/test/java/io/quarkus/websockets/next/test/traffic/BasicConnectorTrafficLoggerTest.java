@@ -21,13 +21,10 @@ import io.vertx.core.Context;
 public class BasicConnectorTrafficLoggerTest extends TrafficLoggerTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class);
-                TrafficLoggerTest.addApplicationProperties(root, false);
-            })
-            .setLogRecordPredicate(TrafficLoggerTest::isTrafficLogRecord)
-            .assertLogRecords(logRecordsConsumer(true));
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class);
+        TrafficLoggerTest.addApplicationProperties(root, false);
+    }).setLogRecordPredicate(TrafficLoggerTest::isTrafficLogRecord).assertLogRecords(logRecordsConsumer(true));
 
     @Inject
     BasicWebSocketConnector connector;
@@ -37,16 +34,11 @@ public class BasicConnectorTrafficLoggerTest extends TrafficLoggerTest {
         List<String> messages = new CopyOnWriteArrayList<>();
         CountDownLatch closedLatch = new CountDownLatch(1);
         CountDownLatch messageLatch = new CountDownLatch(1);
-        WebSocketClientConnection conn = connector
-                .baseUri(endUri)
-                .path("end")
-                .onTextMessage((c, m) -> {
-                    assertTrue(Context.isOnWorkerThread());
-                    messages.add(m);
-                    messageLatch.countDown();
-                })
-                .onClose((c, s) -> closedLatch.countDown())
-                .connectAndAwait();
+        WebSocketClientConnection conn = connector.baseUri(endUri).path("end").onTextMessage((c, m) -> {
+            assertTrue(Context.isOnWorkerThread());
+            messages.add(m);
+            messageLatch.countDown();
+        }).onClose((c, s) -> closedLatch.countDown()).connectAndAwait();
         conn.sendTextAndAwait("dummy");
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
         assertEquals("ok", messages.get(0));

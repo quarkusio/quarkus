@@ -16,13 +16,11 @@ public class JsonArraySerializerTest {
     @Test
     void shouldSerializeEntity() {
         JsonArraySerializer serializer = new JsonArraySerializer();
-        byte[] result = serializer.serialize("topic", new JsonArray(List.of(
-                Map.of("id", 1, "name", "entity1"),
-                Map.of("id", 2, "name", "entity2"))));
+        byte[] result = serializer.serialize("topic",
+                new JsonArray(List.of(Map.of("id", 1, "name", "entity1"), Map.of("id", 2, "name", "entity2"))));
         assertNotNull(result);
         String actual = new String(result);
-        assertThat(actual)
-                .contains("\"id\"").contains("\"name\"").contains("\"entity1\"").contains("1")
+        assertThat(actual).contains("\"id\"").contains("\"name\"").contains("\"entity1\"").contains("1")
                 .contains("\"entity2\"").contains("2");
     }
 

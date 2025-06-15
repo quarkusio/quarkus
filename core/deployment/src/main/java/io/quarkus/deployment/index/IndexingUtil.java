@@ -52,7 +52,7 @@ public class IndexingUtil {
         try {
             version = Runtime.version().version().get(0);
         } catch (Exception e) {
-            //version 8
+            // version 8
         }
         JAVA_VERSION = version;
     }
@@ -91,14 +91,17 @@ public class IndexingUtil {
                     try {
                         int indexVersion = reader.getIndexVersion();
                         if (indexVersion < REQUIRED_INDEX_VERSION) {
-                            log.warnf("Reindexing %s, at least Jandex 3.0 must be used"
-                                    + " to index an application dependency (index version is %s)", file, indexVersion);
+                            log.warnf(
+                                    "Reindexing %s, at least Jandex 3.0 must be used"
+                                            + " to index an application dependency (index version is %s)",
+                                    file, indexVersion);
                             return indexJar(jarFile, removed);
                         }
                         return reader.read();
                     } catch (UnsupportedVersion e) {
-                        log.warnf("Reindexing %s, the index format is too new for the Jandex version"
-                                + " used by your application. Please report it to the author of this JAR (%s)",
+                        log.warnf(
+                                "Reindexing %s, the index format is too new for the Jandex version"
+                                        + " used by your application. Please report it to the author of this JAR (%s)",
                                 file, e.getMessage());
                         return indexJar(jarFile, removed);
                     }
@@ -184,8 +187,8 @@ public class IndexingUtil {
                         knownMissingClasses.add(annotationName);
                     } else {
                         log.debugf("Index annotation: %s", annotationName);
-                        indexClass(annotationName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses,
-                                classLoader);
+                        indexClass(annotationName.toString(), indexer, quarkusIndex, additionalIndex,
+                                knownMissingClasses, classLoader);
                     }
                 } catch (IOException e) {
                     throw new IllegalStateException("Failed to index: " + className, e);
@@ -193,18 +196,18 @@ public class IndexingUtil {
             }
         }
         if (superclassName != null && !superclassName.equals(OBJECT)) {
-            indexClass(superclassName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses, classLoader);
+            indexClass(superclassName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses,
+                    classLoader);
         }
     }
 
-    public static void indexClass(String className, Indexer indexer,
-            IndexView quarkusIndex, Set<DotName> additionalIndex, ClassLoader classLoader, byte[] beanData) {
+    public static void indexClass(String className, Indexer indexer, IndexView quarkusIndex,
+            Set<DotName> additionalIndex, ClassLoader classLoader, byte[] beanData) {
         indexClass(className, indexer, quarkusIndex, additionalIndex, new HashSet<>(), classLoader, beanData);
     }
 
-    public static void indexClass(String className, Indexer indexer,
-            IndexView quarkusIndex, Set<DotName> additionalIndex, Set<DotName> knownMissingClasses,
-            ClassLoader classLoader, byte[] beanData) {
+    public static void indexClass(String className, Indexer indexer, IndexView quarkusIndex,
+            Set<DotName> additionalIndex, Set<DotName> knownMissingClasses, ClassLoader classLoader, byte[] beanData) {
         DotName classDotName = DotName.createSimple(className);
         if (additionalIndex.contains(classDotName)) {
             return;
@@ -236,8 +239,8 @@ public class IndexingUtil {
                         knownMissingClasses.add(annotationName);
                     } else {
                         log.debugf("Index annotation: %s", annotationName);
-                        indexClass(annotationName.toString(), indexer, quarkusIndex, additionalIndex, knownMissingClasses,
-                                classLoader);
+                        indexClass(annotationName.toString(), indexer, quarkusIndex, additionalIndex,
+                                knownMissingClasses, classLoader);
                         additionalIndex.add(annotationName);
                     }
                 } catch (IOException e) {
@@ -260,10 +263,8 @@ public class IndexingUtil {
         @Override
         public void visitPath(PathVisit visit) {
             final Path fileName = visit.getPath().getFileName();
-            if (fileName == null ||
-                    !fileName.toString().endsWith(".class") ||
-                    Files.isDirectory(visit.getPath()) ||
-                    removed != null && removed.contains(visit.getRelativePath("/"))) {
+            if (fileName == null || !fileName.toString().endsWith(".class") || Files.isDirectory(visit.getPath())
+                    || removed != null && removed.contains(visit.getRelativePath("/"))) {
                 return;
             }
             try (InputStream inputStream = Files.newInputStream(visit.getPath())) {
@@ -291,15 +292,17 @@ public class IndexingUtil {
                 try {
                     int indexVersion = reader.getIndexVersion();
                     if (indexVersion < REQUIRED_INDEX_VERSION) {
-                        log.warnf("Reindexing %s, at least Jandex 3.0 must be used"
-                                + " to index an application dependency (index version is %s)",
+                        log.warnf(
+                                "Reindexing %s, at least Jandex 3.0 must be used"
+                                        + " to index an application dependency (index version is %s)",
                                 treeDescription, indexVersion);
                         return null;
                     }
                     return reader.read();
                 } catch (UnsupportedVersion e) {
-                    log.warnf("Reindexing %s, the index format is too new for the Jandex version"
-                            + " used by your application. Please report it to the author of this JAR (%s)",
+                    log.warnf(
+                            "Reindexing %s, the index format is too new for the Jandex version"
+                                    + " used by your application. Please report it to the author of this JAR (%s)",
                             treeDescription, e.getMessage());
                     return null;
                 }

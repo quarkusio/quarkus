@@ -27,7 +27,9 @@ public class ChangeStreamOptions {
     /**
      * Sets the fullDocument value.
      *
-     * @param fullDocument the fullDocument
+     * @param fullDocument
+     *        the fullDocument
+     *
      * @return this
      */
     public ChangeStreamOptions fullDocument(FullDocument fullDocument) {
@@ -38,7 +40,9 @@ public class ChangeStreamOptions {
     /**
      * Sets the fullDocumentBeforeChange value.
      *
-     * @param fullDocumentBeforeChange the fullDocumentBeforeChange
+     * @param fullDocumentBeforeChange
+     *        the fullDocumentBeforeChange
+     *
      * @return this
      */
     public ChangeStreamOptions fullDocumentBeforeChange(FullDocumentBeforeChange fullDocumentBeforeChange) {
@@ -49,7 +53,9 @@ public class ChangeStreamOptions {
     /**
      * Sets the logical starting point for the new change stream.
      *
-     * @param resumeToken the resume token
+     * @param resumeToken
+     *        the resume token
+     *
      * @return this
      */
     public ChangeStreamOptions resumeAfter(BsonDocument resumeToken) {
@@ -58,10 +64,12 @@ public class ChangeStreamOptions {
     }
 
     /**
-     * Sets the logical starting point for the new change stream.
-     * Unlike resumeAfter, startAfter can resume notifications after an invalidate event by creating a new change stream.
+     * Sets the logical starting point for the new change stream. Unlike resumeAfter, startAfter can resume
+     * notifications after an invalidate event by creating a new change stream.
      *
-     * @param resumeToken the resume token
+     * @param resumeToken
+     *        the resume token
+     *
      * @return this
      */
     public ChangeStreamOptions startAfter(BsonDocument resumeToken) {
@@ -71,7 +79,6 @@ public class ChangeStreamOptions {
 
     /**
      * The change stream will only provide changes that occurred after the specified timestamp.
-     *
      * <p>
      * Any command run against the server will return an operation time that can be used here.
      * </p>
@@ -79,7 +86,8 @@ public class ChangeStreamOptions {
      * The default value is an operation time obtained from the server before the change stream was created.
      * </p>
      *
-     * @param startAtOperationTime the start at operation time.
+     * @param startAtOperationTime
+     *        the start at operation time.
      */
     public ChangeStreamOptions startAtOperationTime(BsonTimestamp startAtOperationTime) {
         this.startAtOperationTime = startAtOperationTime;
@@ -89,10 +97,12 @@ public class ChangeStreamOptions {
     /**
      * Sets the maximum await execution time on the server for this operation.
      *
-     * @param maxAwaitTime the max await time. A zero value will be ignored, and indicates that the driver should respect the
-     *        server's
-     *        default value
-     * @param timeUnit the time unit, which may not be null
+     * @param maxAwaitTime
+     *        the max await time. A zero value will be ignored, and indicates that the driver should respect the
+     *        server's default value
+     * @param timeUnit
+     *        the time unit, which may not be null
+     *
      * @return this
      */
     public ChangeStreamOptions maxAwaitTime(long maxAwaitTime, TimeUnit timeUnit) {
@@ -103,12 +113,13 @@ public class ChangeStreamOptions {
 
     /**
      * Sets the collation options
-     *
      * <p>
      * A null value represents the server default.
      * </p>
      *
-     * @param collation the collation options to use
+     * @param collation
+     *        the collation options to use
+     *
      * @return this
      */
     public ChangeStreamOptions collation(Collation collation) {

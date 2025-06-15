@@ -11,10 +11,7 @@ class ContextProviderBuildItemTest {
     @Test
     void getContextProviderClassNames() {
         ContextProviderBuildItem item = new ContextProviderBuildItem(List.of("foo.bar"));
-        assertThat(item.getContextProviderClassNames())
-                .hasSize(1)
-                .first()
-                .isEqualTo("foo.bar");
+        assertThat(item.getContextProviderClassNames()).hasSize(1).first().isEqualTo("foo.bar");
     }
 
     @Test

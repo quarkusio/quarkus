@@ -17,8 +17,8 @@ public @interface MongoEntity {
     String collection() default "";
 
     /**
-     * The name of the database (if not set the default from the property
-     * <code>quarkus.mongodb.database</code> will be used).
+     * The name of the database (if not set the default from the property <code>quarkus.mongodb.database</code> will be
+     * used).
      */
     String database() default "";
 
@@ -28,8 +28,8 @@ public @interface MongoEntity {
     String clientName() default "";
 
     /**
-     * Configures the read preference for the collection of this entity.
-     * Supported values are: {@code primary|primaryPreferred|secondary|secondaryPreferred|nearest}
+     * Configures the read preference for the collection of this entity. Supported values are:
+     * {@code primary|primaryPreferred|secondary|secondaryPreferred|nearest}
      */
     String readPreference() default "";
 }

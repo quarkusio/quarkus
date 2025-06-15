@@ -9,7 +9,8 @@ public class QuarkusTransactionException extends RuntimeException {
         super(cause);
     }
 
-    public QuarkusTransactionException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
+    public QuarkusTransactionException(String message, Throwable cause, boolean enableSuppression,
+            boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

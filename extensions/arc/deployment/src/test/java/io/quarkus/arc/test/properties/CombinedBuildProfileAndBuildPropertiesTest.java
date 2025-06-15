@@ -23,11 +23,9 @@ public class CombinedBuildProfileAndBuildPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Producer.class, AnotherProducer.class,
-                            GreetingBean.class, Hello.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class))
-            .overrideConfigKey("some.prop1", "v1")
-            .overrideConfigKey("some.prop2", "v2");
+            .withApplicationRoot((jar) -> jar.addClasses(Producer.class, AnotherProducer.class, GreetingBean.class,
+                    Hello.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class))
+            .overrideConfigKey("some.prop1", "v1").overrideConfigKey("some.prop2", "v2");
 
     @Inject
     Hello hello;
@@ -127,7 +125,11 @@ public class CombinedBuildProfileAndBuildPropertiesTest {
     static class Producer {
 
         @Produces
-        @IfBuildProperty(name = "some.prop2", stringValue = "v", enableIfMissing = true) // won't be enabled because the property values don't match - enableIfMissing has no effect when the property does exist
+        @IfBuildProperty(name = "some.prop2", stringValue = "v", enableIfMissing = true) // won't be enabled because the
+                                                                                                   // property values don't match
+                                                                                                   // - enableIfMissing has no
+                                                                                                   // effect when the property
+                                                                                                   // does exist
         PingBean nonMatchingPingBean;
 
         public Producer() {
@@ -158,7 +160,8 @@ public class CombinedBuildProfileAndBuildPropertiesTest {
 
         // this will not be enabled since the first condition does not pass
         @Produces
-        @IfBuildProperty(name = "some.prop2", stringValue = "v") // won't be enabled because the property values don't match
+        @IfBuildProperty(name = "some.prop2", stringValue = "v") // won't be enabled because the property values don't
+        // match
         @IfBuildProfile("test")
         GreetingBean nonMatchingValueGreetingBean(BarBean barBean) {
             return new GreetingBean() {

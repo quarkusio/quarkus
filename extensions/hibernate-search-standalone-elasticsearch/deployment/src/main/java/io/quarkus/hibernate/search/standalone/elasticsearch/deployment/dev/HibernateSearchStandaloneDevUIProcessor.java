@@ -30,8 +30,7 @@ public class HibernateSearchStandaloneDevUIProcessor {
         recorder.initController(enabled.isPresent(), runtimeConfig);
 
         CardPageBuildItem card = new CardPageBuildItem();
-        card.addPage(Page.webComponentPageBuilder()
-                .title("Indexed Entity Types")
+        card.addPage(Page.webComponentPageBuilder().title("Indexed Entity Types")
                 .componentLink("hibernate-search-standalone-elasticsearch-indexed-entity-types.js")
                 .icon("font-awesome-solid:magnifying-glass")
                 .dynamicLabelJsonRPCMethodName("getNumberOfIndexedEntityTypes"));
@@ -41,12 +40,8 @@ public class HibernateSearchStandaloneDevUIProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem additionalBeans() {
-        return AdditionalBeanBuildItem
-                .builder()
-                .addBeanClass(HibernateSearchStandaloneDevJsonRpcService.class)
-                .setUnremovable()
-                .setDefaultScope(DotNames.APPLICATION_SCOPED)
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(HibernateSearchStandaloneDevJsonRpcService.class)
+                .setUnremovable().setDefaultScope(DotNames.APPLICATION_SCOPED).build();
     }
 
     @BuildStep

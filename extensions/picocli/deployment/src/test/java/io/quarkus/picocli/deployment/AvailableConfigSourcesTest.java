@@ -16,9 +16,8 @@ import io.smallrye.config.SmallRyeConfig;
 
 public class AvailableConfigSourcesTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
-            (jar) -> jar.addAsResource(new StringAsset("quarkus.config.sources.system-only=true\n" +
-                    "my.prop=1234\n"), "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addAsResource(
+            new StringAsset("quarkus.config.sources.system-only=true\n" + "my.prop=1234\n"), "application.properties"));
 
     @Inject
     SmallRyeConfig config;

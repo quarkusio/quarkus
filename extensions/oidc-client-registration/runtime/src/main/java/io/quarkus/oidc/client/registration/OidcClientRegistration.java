@@ -20,7 +20,9 @@ public interface OidcClientRegistration extends Closeable {
     /**
      * Register new client
      *
-     * @param client client metadata for registering a new client
+     * @param client
+     *        client metadata for registering a new client
+     *
      * @return Uni<RegisteredClient>
      */
     Uni<RegisteredClient> registerClient(ClientMetadata client);
@@ -28,7 +30,9 @@ public interface OidcClientRegistration extends Closeable {
     /**
      * Register one or more new clients
      *
-     * @param clients list of client metadata for registering new clients
+     * @param clients
+     *        list of client metadata for registering new clients
+     *
      * @return Uni<RegisteredClient>
      */
     Multi<RegisteredClient> registerClients(List<ClientMetadata> clients);
@@ -36,8 +40,11 @@ public interface OidcClientRegistration extends Closeable {
     /**
      * Read an already registered client.
      *
-     * @param registrationUri Address of the registration endpoint for the client.
-     * @param registrationToken Registration token of the client
+     * @param registrationUri
+     *        Address of the registration endpoint for the client.
+     * @param registrationToken
+     *        Registration token of the client
+     *
      * @return registered client.
      */
     Uni<RegisteredClient> readClient(String registrationUri, String registrationToken);

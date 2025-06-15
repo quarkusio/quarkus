@@ -26,19 +26,17 @@ public class RunCommandProcessor {
 
     @SuppressWarnings("deprecation") // legacy jar
     @BuildStep
-    public void defaultJavaCommand(PackageConfig packageConfig,
-            OutputTargetBuildItem jar,
-            BuildProducer<RunCommandActionBuildItem> cmds,
-            BuildSystemTargetBuildItem buildSystemTarget) {
+    public void defaultJavaCommand(PackageConfig packageConfig, OutputTargetBuildItem jar,
+            BuildProducer<RunCommandActionBuildItem> cmds, BuildSystemTargetBuildItem buildSystemTarget) {
 
         Path jarPath = switch (packageConfig.jar().type()) {
-            case UBER_JAR -> jar.getOutputDirectory()
-                    .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
+            case UBER_JAR ->
+                jar.getOutputDirectory().resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             // todo: legacy JAR should be using runnerSuffix()
-            case LEGACY_JAR -> jar.getOutputDirectory()
-                    .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
-            case FAST_JAR, MUTABLE_JAR -> jar.getOutputDirectory()
-                    .resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME).resolve(QUARKUS_RUN_JAR);
+            case LEGACY_JAR ->
+                jar.getOutputDirectory().resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
+            case FAST_JAR, MUTABLE_JAR ->
+                jar.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME).resolve(QUARKUS_RUN_JAR);
         };
 
         List<String> args = new ArrayList<>();

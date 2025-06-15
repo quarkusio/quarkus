@@ -21,41 +21,29 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NamespaceTemplateExtensionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "{#for state in domain:states}{state.foo}{/for}"),
-                            "templates/foo.html")
-                    .addClasses(StringExtensions.class, MyEnum.class, EnumExtensions.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("{#for state in domain:states}{state.foo}{/for}"), "templates/foo.html")
+            .addClasses(StringExtensions.class, MyEnum.class, EnumExtensions.class));
 
     @Inject
     Engine engine;
 
     @Test
     public void testTemplateExtensions() {
-        assertEquals("hello:1",
-                engine.parse("{str:format('%s:%s','hello', 1)}").render());
-        assertEquals("1",
-                engine.parse("{str:format('%s',1)}").render());
-        assertEquals("olleh",
-                engine.parse("{str:reverse('hello')}").render());
+        assertEquals("hello:1", engine.parse("{str:format('%s:%s','hello', 1)}").render());
+        assertEquals("1", engine.parse("{str:format('%s',1)}").render());
+        assertEquals("olleh", engine.parse("{str:reverse('hello')}").render());
         try {
             engine.parse("{str:reverse(null)}").render();
             fail();
         } catch (NullPointerException expected) {
         }
-        assertEquals("foolish:olleh",
-                engine.parse("{str:foolish('hello')}").render());
-        assertEquals("ONE=ONE",
-                engine.parse("{MyEnum:ONE}={MyEnum:one}").render());
-        assertEquals("IN_PROGRESS=0",
-                engine.parse("{txPhase:IN_PROGRESS}={txPhase:IN_PROGRESS.ordinal}").render());
-        assertEquals("Quark!",
-                engine.parse("{str:quark}").render());
-        assertEquals("QUARKUS!",
-                engine.parse("{str:quarkus}").render());
-        assertEquals("openclosed",
-                engine.getTemplate("foo").render());
+        assertEquals("foolish:olleh", engine.parse("{str:foolish('hello')}").render());
+        assertEquals("ONE=ONE", engine.parse("{MyEnum:ONE}={MyEnum:one}").render());
+        assertEquals("IN_PROGRESS=0", engine.parse("{txPhase:IN_PROGRESS}={txPhase:IN_PROGRESS.ordinal}").render());
+        assertEquals("Quark!", engine.parse("{str:quark}").render());
+        assertEquals("QUARKUS!", engine.parse("{str:quarkus}").render());
+        assertEquals("openclosed", engine.getTemplate("foo").render());
     }
 
     @TemplateExtension(namespace = "str")

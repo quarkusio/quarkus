@@ -32,192 +32,86 @@ public class ConsolidateReroutedRequestsTest {
 
     @Test
     public void testDisabledNoReroutesRequestLineOnly() {
-        test(
-                false,
-                Arrays.asList("%r", "%{REQUEST_LINE}"),
-                Optional.empty(),
-                HttpMethod.GET,
-                HttpVersion.HTTP_1_1,
-                "https",
-                new HostAndPortImpl("example.org", 443),
-                "/path1",
-                "q1=v1",
-                Collections.emptyList(),
-                Arrays.asList(
-                        "GET /path1?q1=v1 HTTP/1.1"));
+        test(false, Arrays.asList("%r", "%{REQUEST_LINE}"), Optional.empty(), HttpMethod.GET, HttpVersion.HTTP_1_1,
+                "https", new HostAndPortImpl("example.org", 443), "/path1", "q1=v1", Collections.emptyList(),
+                Arrays.asList("GET /path1?q1=v1 HTTP/1.1"));
     }
 
     @Test
     public void testDisabled2ReroutesRequestLineOnly() {
-        test(
-                false,
-                Arrays.asList("%r", "%{REQUEST_LINE}"),
-                Optional.empty(),
-                HttpMethod.GET,
-                HttpVersion.HTTP_1_1,
-                "https",
-                new HostAndPortImpl("example.org", 443),
-                "/path1",
-                "q1=v1",
-                Arrays.asList(
-                        new Reroute(null, "/path2", "q2=v2"),
-                        new Reroute(null, "/path3", "q3=v3")),
-                Arrays.asList(
-                        "GET /path3?q3=v3 HTTP/1.1",
-                        "GET /path3?q3=v3 HTTP/1.1",
-                        "GET /path3?q3=v3 HTTP/1.1"));
+        test(false, Arrays.asList("%r", "%{REQUEST_LINE}"), Optional.empty(), HttpMethod.GET, HttpVersion.HTTP_1_1,
+                "https", new HostAndPortImpl("example.org", 443), "/path1", "q1=v1",
+                Arrays.asList(new Reroute(null, "/path2", "q2=v2"), new Reroute(null, "/path3", "q3=v3")),
+                Arrays.asList("GET /path3?q3=v3 HTTP/1.1", "GET /path3?q3=v3 HTTP/1.1", "GET /path3?q3=v3 HTTP/1.1"));
     }
 
     @Test
     public void testDisabled1RerouteRequestPathOnly() {
-        test(
-                false,
-                Arrays.asList("%R", "%{REQUEST_PATH}"),
-                Optional.empty(),
-                HttpMethod.GET,
-                HttpVersion.HTTP_1_1,
-                "https",
-                new HostAndPortImpl("example.org", 443),
-                "/path1",
-                "q1=v1",
-                Arrays.asList(
-                        new Reroute(null, "/path2", "q2=v2")),
-                Arrays.asList(
-                        "/path2",
-                        "/path2"));
+        test(false, Arrays.asList("%R", "%{REQUEST_PATH}"), Optional.empty(), HttpMethod.GET, HttpVersion.HTTP_1_1,
+                "https", new HostAndPortImpl("example.org", 443), "/path1", "q1=v1",
+                Arrays.asList(new Reroute(null, "/path2", "q2=v2")), Arrays.asList("/path2", "/path2"));
     }
 
     @Test
     public void testDisabled2ReroutesOriginalRequestLineOnly() {
-        test(
-                false,
-                Arrays.asList("%<r", "%{<REQUEST_LINE}"),
-                Optional.empty(),
-                HttpMethod.GET,
-                HttpVersion.HTTP_1_1,
-                "https",
-                new HostAndPortImpl("example.org", 443),
-                "/path1",
-                "q1=v1",
-                Arrays.asList(
-                        new Reroute(null, "/path2", "q2=v2"),
-                        new Reroute(null, "/path3", "q3=v3")),
-                Arrays.asList(
-                        "-",
-                        "-",
-                        "-"));
+        test(false, Arrays.asList("%<r", "%{<REQUEST_LINE}"), Optional.empty(), HttpMethod.GET, HttpVersion.HTTP_1_1,
+                "https", new HostAndPortImpl("example.org", 443), "/path1", "q1=v1",
+                Arrays.asList(new Reroute(null, "/path2", "q2=v2"), new Reroute(null, "/path3", "q3=v3")),
+                Arrays.asList("-", "-", "-"));
     }
 
     @Test
     public void testDisabled2ReroutesAllOriginalAndFinal() {
-        test(
-                false,
-                Arrays.asList(
-                        "%<r %r %<R %R %<q %q %{<BARE_QUERY_STRING} %{BARE_QUERY_STRING} %{<q,q} %{q,q} %<U %U",
-                        "%{<REQUEST_LINE} %{REQUEST_LINE} %{<REQUEST_PATH} %{REQUEST_PATH} %{<QUERY_STRING} %{QUERY_STRING} %{<BARE_QUERY_STRING} %{BARE_QUERY_STRING} %{<q,q} %{q,q} %{<REQUEST_URL} %{REQUEST_URL}"),
-                Optional.empty(),
-                HttpMethod.GET,
-                HttpVersion.HTTP_1_1,
-                "https",
-                new HostAndPortImpl("example.org", 443),
-                "/path1",
-                "q=v1",
-                Arrays.asList(
-                        new Reroute(null, "/path2", "q=v2"),
-                        new Reroute(null, "/path3", "q=v3")),
-                Arrays.asList(
-                        "- GET /path3?q=v3 HTTP/1.1 - /path3 - ?q=v3 - q=v3 - v3 - /path3?q=v3",
+        test(false, Arrays.asList(
+                "%<r %r %<R %R %<q %q %{<BARE_QUERY_STRING} %{BARE_QUERY_STRING} %{<q,q} %{q,q} %<U %U",
+                "%{<REQUEST_LINE} %{REQUEST_LINE} %{<REQUEST_PATH} %{REQUEST_PATH} %{<QUERY_STRING} %{QUERY_STRING} %{<BARE_QUERY_STRING} %{BARE_QUERY_STRING} %{<q,q} %{q,q} %{<REQUEST_URL} %{REQUEST_URL}"),
+                Optional.empty(), HttpMethod.GET, HttpVersion.HTTP_1_1, "https",
+                new HostAndPortImpl("example.org", 443), "/path1", "q=v1",
+                Arrays.asList(new Reroute(null, "/path2", "q=v2"), new Reroute(null, "/path3", "q=v3")),
+                Arrays.asList("- GET /path3?q=v3 HTTP/1.1 - /path3 - ?q=v3 - q=v3 - v3 - /path3?q=v3",
                         "- GET /path3?q=v3 HTTP/1.1 - /path3 - ?q=v3 - q=v3 - v3 - /path3?q=v3",
                         "- GET /path3?q=v3 HTTP/1.1 - /path3 - ?q=v3 - q=v3 - v3 - /path3?q=v3"));
     }
 
     @Test
     public void testEnabledNoReroutesRequestLineOnly() {
-        test(
-                true,
-                Arrays.asList("%r", "%{REQUEST_LINE}"),
-                Optional.empty(),
-                HttpMethod.GET,
-                HttpVersion.HTTP_1_1,
-                "https",
-                new HostAndPortImpl("example.org", 443),
-                "/path1",
-                "q1=v1",
-                Collections.emptyList(),
-                Arrays.asList(
-                        "GET /path1?q1=v1 HTTP/1.1"));
+        test(true, Arrays.asList("%r", "%{REQUEST_LINE}"), Optional.empty(), HttpMethod.GET, HttpVersion.HTTP_1_1,
+                "https", new HostAndPortImpl("example.org", 443), "/path1", "q1=v1", Collections.emptyList(),
+                Arrays.asList("GET /path1?q1=v1 HTTP/1.1"));
     }
 
     @Test
     public void testEnabled2ReroutesOriginalAndFinalRequestLine() {
-        test(
-                true,
-                Arrays.asList("%<r %r", "%{<REQUEST_LINE} %{REQUEST_LINE}"),
-                Optional.empty(),
-                HttpMethod.GET,
-                HttpVersion.HTTP_1_1,
-                "https",
-                new HostAndPortImpl("example.org", 443),
-                "/path1",
-                "q1=v1",
-                Arrays.asList(
-                        new Reroute(null, "/path2", "q2=v2"),
-                        new Reroute(null, "/path3", "q3=v3")),
-                Arrays.asList(
-                        "GET /path1?q1=v1 HTTP/1.1 GET /path3?q3=v3 HTTP/1.1"));
+        test(true, Arrays.asList("%<r %r", "%{<REQUEST_LINE} %{REQUEST_LINE}"), Optional.empty(), HttpMethod.GET,
+                HttpVersion.HTTP_1_1, "https", new HostAndPortImpl("example.org", 443), "/path1", "q1=v1",
+                Arrays.asList(new Reroute(null, "/path2", "q2=v2"), new Reroute(null, "/path3", "q3=v3")),
+                Arrays.asList("GET /path1?q1=v1 HTTP/1.1 GET /path3?q3=v3 HTTP/1.1"));
     }
 
     @Test
     public void testEnabled2ReroutesAllOriginalAndFinal() {
-        test(
-                true,
-                Arrays.asList(
-                        "%<r %r %<R %R %<q %q %{<BARE_QUERY_STRING} %{BARE_QUERY_STRING} %{<q,q} %{q,q} %<U %U",
-                        "%{<REQUEST_LINE} %{REQUEST_LINE} %{<REQUEST_PATH} %{REQUEST_PATH} %{<QUERY_STRING} %{QUERY_STRING} %{<BARE_QUERY_STRING} %{BARE_QUERY_STRING} %{<q,q} %{q,q} %{<REQUEST_URL} %{REQUEST_URL}"),
-                Optional.empty(),
-                HttpMethod.GET,
-                HttpVersion.HTTP_1_1,
-                "https",
-                new HostAndPortImpl("example.org", 443),
-                "/path1",
-                "q=v1",
-                Arrays.asList(
-                        new Reroute(null, "/path2", "q=v2"),
-                        new Reroute(null, "/path3", "q=v3")),
-                Arrays.asList(
+        test(true, Arrays.asList(
+                "%<r %r %<R %R %<q %q %{<BARE_QUERY_STRING} %{BARE_QUERY_STRING} %{<q,q} %{q,q} %<U %U",
+                "%{<REQUEST_LINE} %{REQUEST_LINE} %{<REQUEST_PATH} %{REQUEST_PATH} %{<QUERY_STRING} %{QUERY_STRING} %{<BARE_QUERY_STRING} %{BARE_QUERY_STRING} %{<q,q} %{q,q} %{<REQUEST_URL} %{REQUEST_URL}"),
+                Optional.empty(), HttpMethod.GET, HttpVersion.HTTP_1_1, "https",
+                new HostAndPortImpl("example.org", 443), "/path1", "q=v1",
+                Arrays.asList(new Reroute(null, "/path2", "q=v2"), new Reroute(null, "/path3", "q=v3")), Arrays.asList(
                         "GET /path1?q=v1 HTTP/1.1 GET /path3?q=v3 HTTP/1.1 /path1 /path3 ?q=v1 ?q=v3 q=v1 q=v3 v1 v3 /path1?q=v1 /path3?q=v3"));
     }
 
-    private void test(
-            boolean consolidateReroutedRequests,
-            List<String> equivalentPatterns,
-            Optional<String> excludePattern,
-            HttpMethod httpMethod,
-            HttpVersion httpVersion,
-            String scheme,
-            HostAndPort authority,
-            String path,
-            String query,
-            List<Reroute> reroutes,
+    private void test(boolean consolidateReroutedRequests, List<String> equivalentPatterns,
+            Optional<String> excludePattern, HttpMethod httpMethod, HttpVersion httpVersion, String scheme,
+            HostAndPort authority, String path, String query, List<Reroute> reroutes,
             List<String> expectedAccessLogEntries) {
         for (String pattern : equivalentPatterns) {
-            test(consolidateReroutedRequests, pattern, excludePattern, httpMethod, httpVersion, scheme, authority, path, query,
-                    reroutes, expectedAccessLogEntries);
+            test(consolidateReroutedRequests, pattern, excludePattern, httpMethod, httpVersion, scheme, authority, path,
+                    query, reroutes, expectedAccessLogEntries);
         }
     }
 
-    private void test(
-            boolean consolidateReroutedRequests,
-            String pattern,
-            Optional<String> excludePattern,
-            HttpMethod httpMethod,
-            HttpVersion httpVersion,
-            String scheme,
-            HostAndPort authority,
-            String path,
-            String query,
-            List<Reroute> reroutes,
-            List<String> expectedAccessLogEntries) {
+    private void test(boolean consolidateReroutedRequests, String pattern, Optional<String> excludePattern,
+            HttpMethod httpMethod, HttpVersion httpVersion, String scheme, HostAndPort authority, String path,
+            String query, List<Reroute> reroutes, List<String> expectedAccessLogEntries) {
         List<String> accessLogEntries = new ArrayList<>();
         AccessLogReceiver receiver = new AccessLogReceiver() {
             @Override

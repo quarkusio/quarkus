@@ -35,8 +35,8 @@ public class LetsEncryptHelpers {
 
     static System.Logger LOGGER = System.getLogger("lets-encrypt");
 
-    public static void writePrivateKeyAndCertificateChainsAsPem(PrivateKey pk, X509Certificate[] chain, File privateKeyFile,
-            File certificateChainFile) throws Exception {
+    public static void writePrivateKeyAndCertificateChainsAsPem(PrivateKey pk, X509Certificate[] chain,
+            File privateKeyFile, File certificateChainFile) throws Exception {
         if (pk == null) {
             throw new IllegalArgumentException("The private key cannot be null");
         }
@@ -51,7 +51,8 @@ public class LetsEncryptHelpers {
             return;
         }
 
-        // For some reason the method from CertificateUtils distinguishes the first certificate and the rest of the chain
+        // For some reason the method from CertificateUtils distinguishes the first certificate and the rest of the
+        // chain
         X509Certificate[] restOfTheChain = new X509Certificate[chain.length - 1];
         System.arraycopy(chain, 1, restOfTheChain, 0, chain.length - 1);
         CertificateUtils.writeCertificateToPEM(chain[0], certificateChainFile, restOfTheChain);
@@ -69,28 +70,23 @@ public class LetsEncryptHelpers {
         }
     }
 
-    public static String createAccount(AcmeClient acmeClient,
-            String letsEncryptPath,
-            boolean staging,
+    public static String createAccount(AcmeClient acmeClient, String letsEncryptPath, boolean staging,
             String contactEmail) {
         LOGGER.log(INFO, "\uD83D\uDD35 Creating {0} Let's Encrypt account", (staging ? "staging" : "production"));
 
-        AcmeAccount acmeAccount = AcmeAccount.builder()
-                .setTermsOfServiceAgreed(true)
+        AcmeAccount acmeAccount = AcmeAccount.builder().setTermsOfServiceAgreed(true)
                 .setServerUrl("https://acme-v02.api.letsencrypt.org/directory") // TODO Should this be configurable?
-                .setStagingServerUrl("https://acme-staging-v02.api.letsencrypt.org/directory") // TODO Should this be configurable?
-                .setContactUrls(new String[] { "mailto:" + contactEmail })
-                .build();
+                .setStagingServerUrl("https://acme-staging-v02.api.letsencrypt.org/directory") // TODO Should this be
+                // configurable?
+                .setContactUrls(new String[] { "mailto:" + contactEmail }).build();
 
         try {
             if (!acmeClient.createAccount(acmeAccount, staging)) {
                 LOGGER.log(INFO, "\uD83D\uDD35 {0} Let's Encrypt account {1} already exists",
-                        (staging ? "Staging" : "Production"),
-                        contactEmail);
+                        (staging ? "Staging" : "Production"), contactEmail);
             } else {
                 LOGGER.log(INFO, "\uD83D\uDD35 {0} Let's Encrypt account {1} has been created",
-                        (staging ? "Staging" : "Production"),
-                        contactEmail);
+                        (staging ? "Staging" : "Production"), contactEmail);
             }
         } catch (AcmeException ex) {
             LOGGER.log(ERROR, "⚠\uFE0F Failed to create Let's Encrypt account");
@@ -112,8 +108,9 @@ public class LetsEncryptHelpers {
         }
         if (acmeAccount.getCertificate() != null) {
             try {
-                json.put("certificate", new String(Base64.getEncoder().encode(acmeAccount.getCertificate().getEncoded()),
-                        StandardCharsets.US_ASCII));
+                json.put("certificate",
+                        new String(Base64.getEncoder().encode(acmeAccount.getCertificate().getEncoded()),
+                                StandardCharsets.US_ASCII));
             } catch (CertificateEncodingException ex) {
                 LOGGER.log(INFO, "⚠\uFE0F Failed to get encoded certificate data");
                 throw new RuntimeException(ex);
@@ -140,13 +137,8 @@ public class LetsEncryptHelpers {
         }
     }
 
-    public static void issueCertificate(
-            AcmeClient acmeClient,
-            File letsEncryptPath,
-            boolean staging,
-            String domain,
-            File certChainPemLoc,
-            File privateKeyPemLoc) {
+    public static void issueCertificate(AcmeClient acmeClient, File letsEncryptPath, boolean staging, String domain,
+            File certChainPemLoc, File privateKeyPemLoc) {
         AcmeAccount acmeAccount = getAccount(letsEncryptPath);
         X509CertificateChainAndSigningKey certChainAndPrivateKey;
         try {
@@ -222,18 +214,15 @@ public class LetsEncryptHelpers {
         }
     }
 
-    public static void renewCertificate(AcmeClient acmeClient,
-            File letsEncryptPath,
-            boolean staging,
-            String domain,
-            File certChainPemLoc,
-            File privateKeyPemLoc) {
+    public static void renewCertificate(AcmeClient acmeClient, File letsEncryptPath, boolean staging, String domain,
+            File certChainPemLoc, File privateKeyPemLoc) {
         LOGGER.log(INFO, "\uD83D\uDD35 Renewing {0} Let's Encrypt certificate chain and private key",
                 (staging ? "staging" : "production"));
         issueCertificate(acmeClient, letsEncryptPath, staging, domain, certChainPemLoc, privateKeyPemLoc);
     }
 
-    public static void deactivateAccount(AcmeClient acmeClient, File letsEncryptPath, boolean staging) throws IOException {
+    public static void deactivateAccount(AcmeClient acmeClient, File letsEncryptPath, boolean staging)
+            throws IOException {
         AcmeAccount acmeAccount = getAccount(letsEncryptPath);
         LOGGER.log(INFO, "Deactivating {0} Let's Encrypt account", (staging ? "staging" : "production"));
         acmeClient.deactivateAccount(acmeAccount, staging);

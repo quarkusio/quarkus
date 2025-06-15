@@ -35,12 +35,13 @@ public class ArcTestSteps {
 
     @BuildStep
     AnnotationsTransformerBuildItem addInterceptorBinding() {
-        return new AnnotationsTransformerBuildItem(
-                AnnotationTransformation.forClasses().whenClass(ActivateSessionContextInterceptor.class).transform(tc -> tc.add(
-                        AnnotationInstance.builder(DotName.createSimple("io.quarkus.test.ActivateSessionContext")).build())));
+        return new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses()
+                .whenClass(ActivateSessionContextInterceptor.class).transform(tc -> tc.add(AnnotationInstance
+                        .builder(DotName.createSimple("io.quarkus.test.ActivateSessionContext")).build())));
     }
 
-    // For some reason the annotation literal generated for io.quarkus.test.ActivateSessionContext lives in app class loader.
+    // For some reason the annotation literal generated for io.quarkus.test.ActivateSessionContext lives in app class
+    // loader.
     // This predicates ensures that the generated bean is considered an app class too.
     // As a consequence, the type and all methods of ActivateSessionContextInterceptor must be public.
     @BuildStep

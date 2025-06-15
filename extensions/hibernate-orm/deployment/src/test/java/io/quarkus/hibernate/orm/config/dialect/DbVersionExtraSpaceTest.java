@@ -25,9 +25,7 @@ public class DbVersionExtraSpaceTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(MyEntity.class))
+            .withApplicationRoot((jar) -> jar.addClass(SmokeTestUtils.class).addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             // IMPORTANT: we insert spaces here -- both before and after, as this seems to trigger different behavior.
             // See https://github.com/quarkusio/quarkus/issues/39395
@@ -35,11 +33,16 @@ public class DbVersionExtraSpaceTest {
             // Expect no warnings (in particular from Hibernate ORM)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     // Ignore these particular warnings: they are not relevant to this test.
-                    && !record.getMessage().contains("has been blocked for") //sometimes CI has a super slow moment and this triggers the blocked thread detector
+                    && !record.getMessage().contains("has been blocked for") // sometimes CI has a super slow moment and
+                                                                             // this triggers the blocked thread
+                                                                             // detector
                     && !record.getMessage().contains("Agroal")
                     && !record.getMessage().contains("Netty DefaultChannelId initialization"))
-            .assertLogRecords(records -> assertThat(records)
-                    .extracting(LogRecord::getMessage) // This is just to get meaningful error messages, as LogRecord doesn't have a toString()
+            .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage) // This is just to get
+                    // meaningful error
+                    // messages, as LogRecord
+                    // doesn't have a
+                    // toString()
                     .isEmpty());
 
     @Inject
@@ -50,16 +53,15 @@ public class DbVersionExtraSpaceTest {
 
     @Test
     public void dialectVersion() {
-        var dialectVersion = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
+        var dialectVersion = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect()
+                .getVersion();
         assertThat(DialectVersions.toString(dialectVersion)).isEqualTo(ACTUAL_H2_VERSION);
     }
 
     @Test
     @Transactional
     public void smokeTest() {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(session,
-                MyEntity.class, MyEntity::new,
-                MyEntity::getId,
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(session, MyEntity.class, MyEntity::new, MyEntity::getId,
                 MyEntity::setName, MyEntity::getName);
     }
 }

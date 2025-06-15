@@ -3,9 +3,8 @@ package io.quarkus.deployment;
 import org.objectweb.asm.ClassVisitor;
 
 /**
- * A subclass of {@link ClassVisitor} that allows carrying around data
- * that are useful in the context of Quarkus bytecode transformations.
- * Class visitors that require access to these data should extend this class.
+ * A subclass of {@link ClassVisitor} that allows carrying around data that are useful in the context of Quarkus
+ * bytecode transformations. Class visitors that require access to these data should extend this class.
  */
 public abstract class QuarkusClassVisitor extends ClassVisitor {
     public QuarkusClassVisitor(int api) {

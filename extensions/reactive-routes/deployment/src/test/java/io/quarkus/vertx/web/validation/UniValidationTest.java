@@ -27,54 +27,31 @@ public class UniValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoutes.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyRoutes.class));
 
     @Test
     public void test() {
         // Valid result
-        get("/valid").then().statusCode(200)
-                .body("name", is("luke"))
-                .body("welcome", is("hello"));
+        get("/valid").then().statusCode(200).body("name", is("luke")).body("welcome", is("hello"));
 
         // Valid parameter
-        given()
-                .queryParam("name", "neo")
-                .when()
-                .get("/query")
-                .then().statusCode(200);
+        given().queryParam("name", "neo").when().get("/query").then().statusCode(200);
 
         // JSON output
-        given()
-                .header("Accept", "application/json")
-                .when()
-                .get("/invalid")
-                .then()
-                .statusCode(500)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(500))
+        given().header("Accept", "application/json").when().get("/invalid").then().statusCode(500)
+                .body("title", containsString("Constraint Violation")).body("status", is(500))
                 .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
 
         // JSON output as it\s a Uni of object
-        given()
-                .when()
-                .get("/invalid")
-                .then()
-                .statusCode(500)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(500))
-                .body("detail", containsString("validation constraint violations"))
+        given().when().get("/invalid").then().statusCode(500).body("title", containsString("Constraint Violation"))
+                .body("status", is(500)).body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));
 
-        given()
-                .header("Accept", "application/json")
-                .when()
-                .get("/invalid2").then().statusCode(500)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(500))
+        given().header("Accept", "application/json").when().get("/invalid2").then().statusCode(500)
+                .body("title", containsString("Constraint Violation")).body("status", is(500))
                 .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", anyOf(containsString("name"), containsString("welcome")))
                 .body("violations[0].message", is(not(emptyString())))
@@ -82,14 +59,8 @@ public class UniValidationTest {
                 .body("violations[1].message", is(not(emptyString())));
 
         // Input parameter violation - JSON
-        given()
-                .header("Accept", "application/json")
-                .queryParam("name", "doesNotMatch")
-                .when()
-                .get("/query")
-                .then().statusCode(400)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(400))
+        given().header("Accept", "application/json").queryParam("name", "doesNotMatch").when().get("/query").then()
+                .statusCode(400).body("title", containsString("Constraint Violation")).body("status", is(400))
                 .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));

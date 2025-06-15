@@ -13,17 +13,13 @@ import io.restassured.RestAssured;
 public class DevServicesElasticsearchDevModeCustomPortTestCase {
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TestResource.class)
-                    .addAsResource(new StringAsset("""
-                            quarkus.elasticsearch.devservices.port=19200
-                            """), "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(TestResource.class).addAsResource(new StringAsset("""
+                    quarkus.elasticsearch.devservices.port=19200
+                    """), "application.properties"));
 
     @Test
     public void checkConfiguredPort() {
-        RestAssured
-                .when().get("/fruits/configured-hosts")
-                .then().body(endsWith(":19200"));
+        RestAssured.when().get("/fruits/configured-hosts").then().body(endsWith(":19200"));
 
     }
 
@@ -34,14 +30,9 @@ public class DevServicesElasticsearchDevModeCustomPortTestCase {
         fruit.name = "banana";
         fruit.color = "yellow";
 
-        RestAssured
-                .given().body(fruit).contentType("application/json")
-                .when().post("/fruits")
-                .then().statusCode(204);
+        RestAssured.given().body(fruit).contentType("application/json").when().post("/fruits").then().statusCode(204);
 
-        RestAssured.when().get("/fruits/search?term=color&match=yellow")
-                .then()
-                .statusCode(200)
+        RestAssured.when().get("/fruits/search?term=color&match=yellow").then().statusCode(200)
                 .body(equalTo("[{\"id\":\"1\",\"name\":\"banana\",\"color\":\"yellow\"}]"));
     }
 }

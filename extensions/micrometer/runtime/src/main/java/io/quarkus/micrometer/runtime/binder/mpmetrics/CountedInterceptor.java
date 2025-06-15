@@ -37,9 +37,7 @@ class CountedInterceptor {
         Counted annotation = context.findIterceptorBinding(Counted.class);
         if (annotation != null) {
             MpMetadata metadata = new MpMetadata(annotation.name().replace("<method>", methodName),
-                    annotation.description().replace("<method>", methodName),
-                    annotation.unit(),
-                    MetricType.COUNTER);
+                    annotation.description().replace("<method>", methodName), annotation.unit(), MetricType.COUNTER);
 
             mpRegistry.interceptorCounter(metadata, annotation.tags()).inc();
         }

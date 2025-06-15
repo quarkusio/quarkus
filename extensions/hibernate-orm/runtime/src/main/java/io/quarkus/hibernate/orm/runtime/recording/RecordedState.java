@@ -25,10 +25,9 @@ public final class RecordedState {
     private final boolean isReactive;
     private final boolean fromPersistenceXml;
 
-    public RecordedState(Dialect dialect, PrevalidatedQuarkusMetadata metadata,
-            BuildTimeSettings settings, Collection<Integrator> integrators,
-            Collection<ProvidedService<?>> providedServices, IntegrationSettings integrationSettings,
-            ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy,
+    public RecordedState(Dialect dialect, PrevalidatedQuarkusMetadata metadata, BuildTimeSettings settings,
+            Collection<Integrator> integrators, Collection<ProvidedService<?>> providedServices,
+            IntegrationSettings integrationSettings, ProxyDefinitions classDefinitions, MultiTenancyStrategy strategy,
             boolean isReactive, boolean fromPersistenceXml) {
         this.dialect = dialect;
         this.metadata = metadata;

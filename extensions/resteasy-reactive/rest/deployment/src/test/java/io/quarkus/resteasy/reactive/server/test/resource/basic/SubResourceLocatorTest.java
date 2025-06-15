@@ -27,30 +27,33 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Regression test for RESTEASY-657
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Sub Resource Locator Test")
 public class SubResourceLocatorTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, SubResourceLocatorBaseCrudService.class,
-                            SubResourceLocatorBaseService.class,
-                            SubResourceLocatorFoo.class, SubResourceLocatorOhaUserModel.class,
-                            SubResourceLocatorPlatformServiceResource.class, SubResourceLocatorUserResource.class);
-                    war.addClasses(SubResourceLocatorImpFoo.class, SubResourceLocatorPlatformServiceImpl.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class, SubResourceLocatorBaseCrudService.class,
+                    SubResourceLocatorBaseService.class, SubResourceLocatorFoo.class,
+                    SubResourceLocatorOhaUserModel.class, SubResourceLocatorPlatformServiceResource.class,
+                    SubResourceLocatorUserResource.class);
+            war.addClasses(SubResourceLocatorImpFoo.class, SubResourceLocatorPlatformServiceImpl.class);
+            return war;
+        }
+    });
 
     /**
      * @tpTestDetails Sub resource locator should not fail
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

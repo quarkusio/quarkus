@@ -25,36 +25,34 @@ import io.quarkus.kubernetes.client.spi.KubernetesResourcesBuildItem;
 
 public class KubernetesResourceBuildStep {
     @BuildStep
-    void scanKubernetesResourceClasses(
-            BuildProducer<ServiceProviderBuildItem> serviceProviderProducer,
+    void scanKubernetesResourceClasses(BuildProducer<ServiceProviderBuildItem> serviceProviderProducer,
             BuildProducer<KubernetesResourcesBuildItem> kubernetesResourcesBuildItemBuildProducer) {
-        serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(KubernetesResource.class.getName()));
+        serviceProviderProducer
+                .produce(ServiceProviderBuildItem.allProvidersFromClassPath(KubernetesResource.class.getName()));
         final Set<String> resourceClasses = new HashSet<>();
         final var serviceLoader = ServiceLoader.load(KubernetesResource.class);
         for (var kr : serviceLoader) {
             final var className = kr.getClass().getName();
             // Filter build-time only available classes from those that are really available at runtime
-            // e.g. The Kubernetes extension provides KubernetesResource classes only for deployment purposes (not prod code)
+            // e.g. The Kubernetes extension provides KubernetesResource classes only for deployment purposes (not prod
+            // code)
             if (QuarkusClassLoader.isClassPresentAtRuntime(className)) {
                 resourceClasses.add(className);
             }
         }
-        kubernetesResourcesBuildItemBuildProducer.produce(
-                new KubernetesResourcesBuildItem(resourceClasses.toArray(String[]::new)));
+        kubernetesResourcesBuildItemBuildProducer
+                .produce(new KubernetesResourcesBuildItem(resourceClasses.toArray(String[]::new)));
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    SyntheticBeanBuildItem kubernetesResourceClasses(
-            KubernetesSerializationRecorder recorder,
+    SyntheticBeanBuildItem kubernetesResourceClasses(KubernetesSerializationRecorder recorder,
             KubernetesResourcesBuildItem kubernetesResourcesBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesResources.class));
         final var classArray = Type.create(DotName.createSimple(Class[].class.getName()), Type.Kind.ARRAY);
-        return SyntheticBeanBuildItem
-                .configure(Object.class).providerType(classArray).addType(classArray)
-                .scope(Singleton.class)
-                .qualifiers(AnnotationInstance.builder(KubernetesResources.class).build())
+        return SyntheticBeanBuildItem.configure(Object.class).providerType(classArray).addType(classArray)
+                .scope(Singleton.class).qualifiers(AnnotationInstance.builder(KubernetesResources.class).build())
                 .runtimeValue(recorder.initKubernetesResources(kubernetesResourcesBuildItem.getResourceClasses()))
                 .done();
     }

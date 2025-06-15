@@ -24,7 +24,8 @@ final class SecurityExceptionMapperUtil {
                 @Override
                 public Response apply(ChallengeData challengeData) {
                     if (challengeData == null) {
-                        return exceptionMessage != null ? createResponse(exceptionMessage) : DEFAULT_UNAUTHORIZED_RESPONSE;
+                        return exceptionMessage != null ? createResponse(exceptionMessage)
+                                : DEFAULT_UNAUTHORIZED_RESPONSE;
                     }
                     Response.ResponseBuilder responseBuilder = Response.status(challengeData.status);
                     if (challengeData.headerName != null) {

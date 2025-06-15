@@ -21,29 +21,19 @@ import io.restassured.RestAssured;
 class ResourceMethodSameSignatureTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(GreetingResource.class));
+            .withApplicationRoot((jar) -> jar.addClass(GreetingResource.class));
 
     @Test
     void basicTest() {
-        RestAssured.get("/greetings/Quarkus")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("Hello Quarkus"));
+        RestAssured.get("/greetings/Quarkus").then().statusCode(200).body(Matchers.equalTo("Hello Quarkus"));
 
-        RestAssured.get("/greetings/Quarkus/with-question")
-                .then()
-                .statusCode(200)
+        RestAssured.get("/greetings/Quarkus/with-question").then().statusCode(200)
                 .body(Matchers.equalTo("Hello [Quarkus], how are you?"));
 
-        RestAssured.given().contentType("text/plain").post("/greetings/Quarkus")
-                .then()
-                .statusCode(200)
+        RestAssured.given().contentType("text/plain").post("/greetings/Quarkus").then().statusCode(200)
                 .body(Matchers.equalTo("Hello Quarkus"));
 
-        RestAssured.given().contentType("application/xml").post("/greetings/Quarkus")
-                .then()
-                .statusCode(200)
+        RestAssured.given().contentType("application/xml").post("/greetings/Quarkus").then().statusCode(200)
                 .body(Matchers.equalTo("Hello [Quarkus], how are you?"));
     }
 

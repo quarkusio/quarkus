@@ -36,8 +36,7 @@ public final class TemplateDataBuildItem extends MultiBuildItem {
         this.targetClass = targetClass;
         String namespace = namespaceValue != null ? namespaceValue.asString() : TemplateData.UNDERSCORED_FQCN;
         if (namespace.equals(TemplateData.UNDERSCORED_FQCN)) {
-            namespace = ValueResolverGenerator
-                    .underscoredFullyQualifiedName(targetClass.name().toString());
+            namespace = ValueResolverGenerator.underscoredFullyQualifiedName(targetClass.name().toString());
         } else if (namespace.equals(TemplateData.SIMPLENAME)) {
             namespace = ValueResolverGenerator.simpleName(targetClass);
         }
@@ -113,8 +112,8 @@ public final class TemplateDataBuildItem extends MultiBuildItem {
     @Override
     public String toString() {
         return "TemplateDataBuildItem [targetClass=" + targetClass + ", namespace=" + namespace + ", ignore="
-                + Arrays.toString(ignore) + ", ignorePatterns=" + Arrays.toString(ignorePatterns) + ", ignoreSuperclasses="
-                + ignoreSuperclasses + ", properties=" + properties + "]";
+                + Arrays.toString(ignore) + ", ignorePatterns=" + Arrays.toString(ignorePatterns)
+                + ", ignoreSuperclasses=" + ignoreSuperclasses + ", properties=" + properties + "]";
     }
 
 }

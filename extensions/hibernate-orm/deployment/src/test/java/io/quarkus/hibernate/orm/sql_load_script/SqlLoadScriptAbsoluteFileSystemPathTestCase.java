@@ -16,15 +16,10 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Test that setting {@code quarkus.hibernate-orm.sql-load-script}
- * to the absolute path to a resource file on the filesystem
- * makes the build fail.
- *
- * The build used to run just fine because we were interpreting the "absolute" path
- * as relative to the FS root rather than relative to the classpath root,
- * and ended up deciding that it does exist... only to not be able to find it later and ignoring it.
- *
- * See https://github.com/quarkusio/quarkus/issues/23574
+ * Test that setting {@code quarkus.hibernate-orm.sql-load-script} to the absolute path to a resource file on the
+ * filesystem makes the build fail. The build used to run just fine because we were interpreting the "absolute" path as
+ * relative to the FS root rather than relative to the classpath root, and ended up deciding that it does exist... only
+ * to not be able to find it later and ignoring it. See https://github.com/quarkusio/quarkus/issues/23574
  */
 public class SqlLoadScriptAbsoluteFileSystemPathTestCase {
     private static final String sqlLoadScriptAbsolutePath;
@@ -47,21 +42,18 @@ public class SqlLoadScriptAbsoluteFileSystemPathTestCase {
         } else {
             escapedSqlLoadScriptAbsolutePath = sqlLoadScriptAbsolutePath;
         }
-        System.out.println("Escaped absolute filesystem path passed to sql-load-script: " + escapedSqlLoadScriptAbsolutePath);
+        System.out.println(
+                "Escaped absolute filesystem path passed to sql-load-script: " + escapedSqlLoadScriptAbsolutePath);
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.sql-load-script", escapedSqlLoadScriptAbsolutePath)
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            "Unable to interpret path referenced in 'quarkus.hibernate-orm.sql-load-script="
-                                    + sqlLoadScriptAbsolutePath + "'",
-                            "Expected a path relative to the root of the path tree"));
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class).hasMessageContainingAll(
+                    "Unable to interpret path referenced in 'quarkus.hibernate-orm.sql-load-script="
+                            + sqlLoadScriptAbsolutePath + "'",
+                    "Expected a path relative to the root of the path tree"));
 
     @Test
     public void testSqlLoadScriptAbsolutePath() {

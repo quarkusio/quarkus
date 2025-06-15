@@ -26,7 +26,8 @@ public class ResourceInterceptor<T>
 
     private String className;
 
-    public transient Map<String, Object> metadata; // by using 'public transient' we ensure that this field will not be populated at runtime  \
+    public transient Map<String, Object> metadata; // by using 'public transient' we ensure that this field will not be
+                                                   // populated at runtime \
 
     private RuntimeType runtimeType;
 
@@ -100,7 +101,7 @@ public class ResourceInterceptor<T>
         return this.priority().compareTo(o.priority());
     }
 
-    //Container response filters are reversed
+    // Container response filters are reversed
     public static class Reversed<T> extends ResourceInterceptor<T> {
 
         @Override

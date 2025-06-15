@@ -35,7 +35,8 @@ public class ApplySecuritySettingsDecorator extends NamedResourceDecorator<PodSp
         securityContext.sysctls().entrySet().stream()
                 .map(entry -> new SysctlBuilder().withName(entry.getKey()).withValue(entry.getValue()).build())
                 .forEach(securityContextBuilder::addToSysctls);
-        securityContext.fsGroupChangePolicy().map(e -> e.name()).ifPresent(securityContextBuilder::withFsGroupChangePolicy);
+        securityContext.fsGroupChangePolicy().map(e -> e.name())
+                .ifPresent(securityContextBuilder::withFsGroupChangePolicy);
         buildSeLinuxOptions().ifPresent(securityContextBuilder::withSeLinuxOptions);
         buildWindowsOptions().ifPresent(securityContextBuilder::withWindowsOptions);
 

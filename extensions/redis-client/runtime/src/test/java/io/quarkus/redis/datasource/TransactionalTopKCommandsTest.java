@@ -51,8 +51,8 @@ public class TransactionalTopKCommandsTest extends DatasourceTestBase {
         assertThat(result.size()).isEqualTo(7);
         assertThat(result.discarded()).isFalse();
         assertThat((Void) result.get(0)).isNull();
-        assertThat((List<String>) result.get(1)).containsExactly(null, null, null, null, null, null, null, null, null, null,
-                "c", null);
+        assertThat((List<String>) result.get(1)).containsExactly(null, null, null, null, null, null, null, null, null,
+                null, "c", null);
         assertThat((String) result.get(2)).isEqualTo("b");
         assertThat((boolean) result.get(3)).isEqualTo(true);
         assertThat((List<Boolean>) result.get(4)).containsExactly(true, false, true);
@@ -67,18 +67,15 @@ public class TransactionalTopKCommandsTest extends DatasourceTestBase {
             assertThat(topk.getDataSource()).isEqualTo(tx);
             return topk.topkReserve(key, 3)
                     .chain(() -> topk.topkAdd(key, "a", "a", "b", "b", "a", "c", "a", "b", "c", "d", "d", "d"))
-                    .chain(() -> topk.topkIncrBy(key, "c", 10))
-                    .chain(() -> topk.topkQuery(key, "a"))
-                    .chain(() -> topk.topkQuery(key, "a", "b", "c"))
-                    .chain(() -> topk.topkList(key))
-                    .chain(() -> topk.topkListWithCount(key))
-                    .replaceWithVoid();
+                    .chain(() -> topk.topkIncrBy(key, "c", 10)).chain(() -> topk.topkQuery(key, "a"))
+                    .chain(() -> topk.topkQuery(key, "a", "b", "c")).chain(() -> topk.topkList(key))
+                    .chain(() -> topk.topkListWithCount(key)).replaceWithVoid();
         }).await().indefinitely();
         assertThat(result.size()).isEqualTo(7);
         assertThat(result.discarded()).isFalse();
         assertThat((Void) result.get(0)).isNull();
-        assertThat((List<String>) result.get(1)).containsExactly(null, null, null, null, null, null, null, null, null, null,
-                "c", null);
+        assertThat((List<String>) result.get(1)).containsExactly(null, null, null, null, null, null, null, null, null,
+                null, "c", null);
         assertThat((String) result.get(2)).isEqualTo("b");
         assertThat((boolean) result.get(3)).isEqualTo(true);
         assertThat((List<Boolean>) result.get(4)).containsExactly(true, false, true);

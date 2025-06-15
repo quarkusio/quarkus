@@ -51,12 +51,12 @@ public class FaultToleranceJsonRpcService {
         result.put("method", operation.getMethodDescriptor().name);
 
         if (operation.hasApplyFaultTolerance()) {
-            result.put(ApplyFaultTolerance.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getApplyFaultTolerance().value()));
+            result.put(ApplyFaultTolerance.class.getSimpleName(),
+                    new JsonObject().put("value", operation.getApplyFaultTolerance().value()));
         }
         if (operation.hasApplyGuard()) {
-            result.put(ApplyGuard.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getApplyGuard().value()));
+            result.put(ApplyGuard.class.getSimpleName(),
+                    new JsonObject().put("value", operation.getApplyGuard().value()));
         }
 
         if (operation.hasAsynchronous()) {
@@ -73,80 +73,78 @@ public class FaultToleranceJsonRpcService {
         }
 
         if (operation.hasBulkhead()) {
-            result.put(Bulkhead.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getBulkhead().value())
+            result.put(Bulkhead.class.getSimpleName(), new JsonObject().put("value", operation.getBulkhead().value())
                     .put("waitingTaskQueue", operation.getBulkhead().waitingTaskQueue()));
         }
         if (operation.hasCircuitBreaker()) {
-            result.put(CircuitBreaker.class.getSimpleName(), new JsonObject()
-                    .put("delay", operation.getCircuitBreaker().delay())
-                    .put("delayUnit", operation.getCircuitBreaker().delayUnit())
-                    .put("requestVolumeThreshold", operation.getCircuitBreaker().requestVolumeThreshold())
-                    .put("failureRatio", operation.getCircuitBreaker().failureRatio())
-                    .put("successThreshold", operation.getCircuitBreaker().successThreshold())
-                    .put("failOn", convert(operation.getCircuitBreaker().failOn()))
-                    .put("skipOn", convert(operation.getCircuitBreaker().skipOn())));
+            result.put(CircuitBreaker.class.getSimpleName(),
+                    new JsonObject().put("delay", operation.getCircuitBreaker().delay())
+                            .put("delayUnit", operation.getCircuitBreaker().delayUnit())
+                            .put("requestVolumeThreshold", operation.getCircuitBreaker().requestVolumeThreshold())
+                            .put("failureRatio", operation.getCircuitBreaker().failureRatio())
+                            .put("successThreshold", operation.getCircuitBreaker().successThreshold())
+                            .put("failOn", convert(operation.getCircuitBreaker().failOn()))
+                            .put("skipOn", convert(operation.getCircuitBreaker().skipOn())));
         }
         if (operation.hasCircuitBreakerName()) {
-            result.put(CircuitBreakerName.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getCircuitBreakerName().value()));
+            result.put(CircuitBreakerName.class.getSimpleName(),
+                    new JsonObject().put("value", operation.getCircuitBreakerName().value()));
         }
         if (operation.hasFallback()) {
-            result.put(Fallback.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getFallback().value().getName())
-                    .put("fallbackMethod", operation.getFallback().fallbackMethod())
-                    .put("applyOn", convert(operation.getFallback().applyOn()))
-                    .put("skipOn", convert(operation.getFallback().skipOn())));
+            result.put(Fallback.class.getSimpleName(),
+                    new JsonObject().put("value", operation.getFallback().value().getName())
+                            .put("fallbackMethod", operation.getFallback().fallbackMethod())
+                            .put("applyOn", convert(operation.getFallback().applyOn()))
+                            .put("skipOn", convert(operation.getFallback().skipOn())));
         }
         if (operation.hasRateLimit()) {
-            result.put(RateLimit.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getRateLimit().value())
-                    .put("window", operation.getRateLimit().window())
-                    .put("windowUnit", operation.getRateLimit().windowUnit())
-                    .put("minSpacing", operation.getRateLimit().minSpacing())
-                    .put("minSpacingUnit", operation.getRateLimit().minSpacingUnit())
-                    .put("type", operation.getRateLimit().type()));
+            result.put(RateLimit.class.getSimpleName(),
+                    new JsonObject().put("value", operation.getRateLimit().value())
+                            .put("window", operation.getRateLimit().window())
+                            .put("windowUnit", operation.getRateLimit().windowUnit())
+                            .put("minSpacing", operation.getRateLimit().minSpacing())
+                            .put("minSpacingUnit", operation.getRateLimit().minSpacingUnit())
+                            .put("type", operation.getRateLimit().type()));
         }
         if (operation.hasRetry()) {
-            result.put(Retry.class.getSimpleName(), new JsonObject()
-                    .put("maxRetries", operation.getRetry().maxRetries())
-                    .put("delay", operation.getRetry().delay())
-                    .put("delayUnit", operation.getRetry().delayUnit())
-                    .put("maxDuration", operation.getRetry().maxDuration())
-                    .put("maxDurationUnit", operation.getRetry().durationUnit())
-                    .put("jitter", operation.getRetry().jitter())
-                    .put("jitterUnit", operation.getRetry().jitterDelayUnit())
-                    .put("retryOn", convert(operation.getRetry().retryOn()))
-                    .put("abortOn", convert(operation.getRetry().abortOn())));
+            result.put(Retry.class.getSimpleName(),
+                    new JsonObject().put("maxRetries", operation.getRetry().maxRetries())
+                            .put("delay", operation.getRetry().delay())
+                            .put("delayUnit", operation.getRetry().delayUnit())
+                            .put("maxDuration", operation.getRetry().maxDuration())
+                            .put("maxDurationUnit", operation.getRetry().durationUnit())
+                            .put("jitter", operation.getRetry().jitter())
+                            .put("jitterUnit", operation.getRetry().jitterDelayUnit())
+                            .put("retryOn", convert(operation.getRetry().retryOn()))
+                            .put("abortOn", convert(operation.getRetry().abortOn())));
         }
         if (operation.hasExponentialBackoff()) {
-            result.put(ExponentialBackoff.class.getSimpleName(), new JsonObject()
-                    .put("factor", operation.getExponentialBackoff().factor())
-                    .put("maxDelay", operation.getExponentialBackoff().maxDelay())
-                    .put("maxDelayUnit", operation.getExponentialBackoff().maxDelayUnit()));
+            result.put(ExponentialBackoff.class.getSimpleName(),
+                    new JsonObject().put("factor", operation.getExponentialBackoff().factor())
+                            .put("maxDelay", operation.getExponentialBackoff().maxDelay())
+                            .put("maxDelayUnit", operation.getExponentialBackoff().maxDelayUnit()));
         }
         if (operation.hasFibonacciBackoff()) {
-            result.put(FibonacciBackoff.class.getSimpleName(), new JsonObject()
-                    .put("maxDelay", operation.getFibonacciBackoff().maxDelay())
-                    .put("maxDelayUnit", operation.getFibonacciBackoff().maxDelayUnit()));
+            result.put(FibonacciBackoff.class.getSimpleName(),
+                    new JsonObject().put("maxDelay", operation.getFibonacciBackoff().maxDelay()).put("maxDelayUnit",
+                            operation.getFibonacciBackoff().maxDelayUnit()));
         }
         if (operation.hasCustomBackoff()) {
-            result.put(CustomBackoff.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getCustomBackoff().value().getName()));
+            result.put(CustomBackoff.class.getSimpleName(),
+                    new JsonObject().put("value", operation.getCustomBackoff().value().getName()));
         }
         if (operation.hasRetryWhen()) {
-            result.put(RetryWhen.class.getSimpleName(), new JsonObject()
-                    .put("result", operation.getRetryWhen().result().getName())
-                    .put("exception", operation.getRetryWhen().exception().getName()));
+            result.put(RetryWhen.class.getSimpleName(),
+                    new JsonObject().put("result", operation.getRetryWhen().result().getName()).put("exception",
+                            operation.getRetryWhen().exception().getName()));
         }
         if (operation.hasBeforeRetry()) {
-            result.put(BeforeRetry.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getBeforeRetry().value().getName())
-                    .put("methodName", operation.getBeforeRetry().methodName()));
+            result.put(BeforeRetry.class.getSimpleName(),
+                    new JsonObject().put("value", operation.getBeforeRetry().value().getName()).put("methodName",
+                            operation.getBeforeRetry().methodName()));
         }
         if (operation.hasTimeout()) {
-            result.put(Timeout.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getTimeout().value())
+            result.put(Timeout.class.getSimpleName(), new JsonObject().put("value", operation.getTimeout().value())
                     .put("valueUnit", operation.getTimeout().unit()));
         }
 

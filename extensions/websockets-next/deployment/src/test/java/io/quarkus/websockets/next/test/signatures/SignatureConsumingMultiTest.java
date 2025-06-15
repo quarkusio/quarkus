@@ -31,10 +31,9 @@ import io.vertx.core.buffer.Buffer;
 public class SignatureConsumingMultiTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(BiDirectional.class, WSClient.class, RequestScopedBean.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(BiDirectional.class, WSClient.class, RequestScopedBean.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -44,7 +43,8 @@ public class SignatureConsumingMultiTest {
 
     @Test
     void verifyExecutionOfOnMessageWhenConsumingAndReturningMultis() {
-        WSClient client = WSClient.create(vertx).connect(WSClient.toWS(uri, "/ws/%s/%d".formatted("bi-directional", 3)));
+        WSClient client = WSClient.create(vertx)
+                .connect(WSClient.toWS(uri, "/ws/%s/%d".formatted("bi-directional", 3)));
 
         for (int i = 0; i < 10; i++) {
             client.sendAndAwait("hello" + i);
@@ -52,9 +52,8 @@ public class SignatureConsumingMultiTest {
 
         await().until(() -> client.getMessages().size() == 10);
         assertThat(client.getMessages().stream().map(Buffer::toString).collect(Collectors.toList()))
-                .containsExactlyInAnyOrderElementsOf(
-                        IntStream.range(0, 10).mapToObj(id -> "WS " + 3 + " received: hello" + id)
-                                .collect(Collectors.toList()));
+                .containsExactlyInAnyOrderElementsOf(IntStream.range(0, 10)
+                        .mapToObj(id -> "WS " + 3 + " received: hello" + id).collect(Collectors.toList()));
     }
 
     @WebSocket(path = "/ws/bi-directional/{id}")
@@ -84,7 +83,8 @@ public class SignatureConsumingMultiTest {
             return multi.map(s -> {
                 assertThat(this.context).isSameAs(Vertx.currentContext());
                 // For bi-directional streams we subscribe to the returned Multi during onOpen
-                // As a result the same duplicated context is used but a new request context is activated/terminated per each message processing
+                // As a result the same duplicated context is used but a new request context is activated/terminated per
+                // each message processing
                 assertNotEquals(requestScopedBeanId, requestScopedBean.getId());
                 String id = connection.pathParam("id");
                 return "WS " + id + " received: " + s;

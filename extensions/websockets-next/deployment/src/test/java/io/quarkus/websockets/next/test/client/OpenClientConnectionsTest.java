@@ -29,10 +29,9 @@ import io.quarkus.websockets.next.WebSocketConnector;
 public class OpenClientConnectionsTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
+    });
 
     @Inject
     OpenClientConnections connections;
@@ -52,22 +51,13 @@ public class OpenClientConnectionsTest {
             fail("No connection should be found: " + c);
         }
 
-        WebSocketClientConnection connection1 = connector
-                .baseUri(uri)
-                .addHeader("X-Test", "foo")
-                .connectAndAwait();
+        WebSocketClientConnection connection1 = connector.baseUri(uri).addHeader("X-Test", "foo").connectAndAwait();
 
-        WebSocketClientConnection connection2 = connector
-                .baseUri(uri)
-                .addHeader("X-Test", "bar")
-                .connectAndAwait();
+        WebSocketClientConnection connection2 = connector.baseUri(uri).addHeader("X-Test", "bar").connectAndAwait();
 
         CountDownLatch CONN3_OPEN_LATCH = new CountDownLatch(1);
-        WebSocketClientConnection connection3 = basicConnector
-                .baseUri(uri)
-                .onOpen(c -> CONN3_OPEN_LATCH.countDown())
-                .path("end")
-                .connectAndAwait();
+        WebSocketClientConnection connection3 = basicConnector.baseUri(uri).onOpen(c -> CONN3_OPEN_LATCH.countDown())
+                .path("end").connectAndAwait();
 
         assertTrue(ServerEndpoint.OPEN_LATCH.await(5, TimeUnit.SECONDS));
         assertTrue(ClientEndpoint.OPEN_LATCH.await(5, TimeUnit.SECONDS));

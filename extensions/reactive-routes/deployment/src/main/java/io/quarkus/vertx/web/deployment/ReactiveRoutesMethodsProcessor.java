@@ -13,8 +13,7 @@ public class ReactiveRoutesMethodsProcessor {
         return new ExecutionModelAnnotationsAllowedBuildItem(new Predicate<MethodInfo>() {
             @Override
             public boolean test(MethodInfo method) {
-                return method.hasDeclaredAnnotation(DotNames.ROUTE)
-                        || method.hasDeclaredAnnotation(DotNames.ROUTES);
+                return method.hasDeclaredAnnotation(DotNames.ROUTE) || method.hasDeclaredAnnotation(DotNames.ROUTES);
             }
         });
     }

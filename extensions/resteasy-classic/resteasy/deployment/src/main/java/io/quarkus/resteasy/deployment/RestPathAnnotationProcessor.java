@@ -37,7 +37,8 @@ public class RestPathAnnotationProcessor {
     static final DotName REGISTER_REST_CLIENT = DotName
             .createSimple("org.eclipse.microprofile.rest.client.inject.RegisterRestClient");
     static final DotName TEMPLATE_PATH = DotName.createSimple(QuarkusRestPathTemplate.class.getName());
-    static final DotName TEMPLATE_PATH_INTERCEPTOR = DotName.createSimple(QuarkusRestPathTemplateInterceptor.class.getName());
+    static final DotName TEMPLATE_PATH_INTERCEPTOR = DotName
+            .createSimple(QuarkusRestPathTemplateInterceptor.class.getName());
 
     public static final Pattern MULTIPLE_SLASH_PATTERN = Pattern.compile("//+");
 
@@ -48,16 +49,13 @@ public class RestPathAnnotationProcessor {
             return null;
         }
 
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(TEMPLATE_PATH.toString())
-                .addBeanClass(TEMPLATE_PATH_INTERCEPTOR.toString())
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(TEMPLATE_PATH.toString())
+                .addBeanClass(TEMPLATE_PATH_INTERCEPTOR.toString()).build();
     }
 
     @BuildStep
-    void findRestPaths(
-            CombinedIndexBuildItem index,
-            Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability,
+    void findRestPaths(CombinedIndexBuildItem index, Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsCapability,
             BuildProducer<AnnotationsTransformerBuildItem> transformers,
             Optional<ResteasyJaxrsConfigBuildItem> restApplicationPathBuildItem) {
 
@@ -102,8 +100,8 @@ public class RestPathAnnotationProcessor {
                     stringBuilder = new StringBuilder(slashify(annotation.value().asString()));
                 } else {
                     // Fallback: look for @Path on interface-method with same name
-                    stringBuilder = searchPathAnnotationOnInterfaces(index, methodInfo)
-                            .map(annotationInstance -> new StringBuilder(slashify(annotationInstance.value().asString())))
+                    stringBuilder = searchPathAnnotationOnInterfaces(index, methodInfo).map(
+                            annotationInstance -> new StringBuilder(slashify(annotationInstance.value().asString())))
                             .orElse(new StringBuilder());
                 }
 
@@ -117,7 +115,8 @@ public class RestPathAnnotationProcessor {
                             .filter(interfaceClassInfo -> interfaceClassInfo.hasDeclaredAnnotation(REST_PATH))
                             .findFirst()
                             .map(interfaceClassInfo -> interfaceClassInfo.declaredAnnotation(REST_PATH).value())
-                            .ifPresent(annotationValue -> stringBuilder.insert(0, slashify(annotationValue.asString())));
+                            .ifPresent(
+                                    annotationValue -> stringBuilder.insert(0, slashify(annotationValue.asString())));
                 }
 
                 if (restPathPrefix != null) {
@@ -128,9 +127,7 @@ public class RestPathAnnotationProcessor {
                 String templatePath = MULTIPLE_SLASH_PATTERN.matcher('/' + stringBuilder.toString()).replaceAll("/");
 
                 // resulting path (used as observability attributes) should start with a '/'
-                ctx.transform()
-                        .add(TEMPLATE_PATH, AnnotationValue.createStringValue("value", templatePath))
-                        .done();
+                ctx.transform().add(TEMPLATE_PATH, AnnotationValue.createStringValue("value", templatePath)).done();
             }
         }));
     }
@@ -156,35 +153,39 @@ public class RestPathAnnotationProcessor {
      * Searches for the same method as passed in methodInfo parameter in all implemented interfaces and yields an
      * Optional containing the JAX-RS Path annotation.
      *
-     * @param index Jandex-Index for additional lookup
-     * @param methodInfo the method to find
+     * @param index
+     *        Jandex-Index for additional lookup
+     * @param methodInfo
+     *        the method to find
+     *
      * @return Optional with the annotation if found. Never null.
      */
-    static Optional<AnnotationInstance> searchPathAnnotationOnInterfaces(CombinedIndexBuildItem index, MethodInfo methodInfo) {
+    static Optional<AnnotationInstance> searchPathAnnotationOnInterfaces(CombinedIndexBuildItem index,
+            MethodInfo methodInfo) {
 
         Collection<ClassInfo> allClassInterfaces = getAllClassInterfaces(index, List.of(methodInfo.declaringClass()),
                 new ArrayList<>());
 
         return allClassInterfaces.stream()
-                .map(interfaceClassInfo -> interfaceClassInfo.method(
-                        methodInfo.name(),
+                .map(interfaceClassInfo -> interfaceClassInfo.method(methodInfo.name(),
                         methodInfo.parameterTypes().toArray(new Type[] {})))
-                .filter(Objects::nonNull)
-                .findFirst()
+                .filter(Objects::nonNull).findFirst()
                 .flatMap(resolvedMethodInfo -> Optional.ofNullable(resolvedMethodInfo.annotation(REST_PATH)));
     }
 
     /**
      * Recursively get all interfaces given as classInfo collection.
      *
-     * @param index Jandex-Index for additional lookup
-     * @param classInfos the class(es) to search. Ends the recursion when empty.
-     * @param resultAcc accumulator for tail-recursion
+     * @param index
+     *        Jandex-Index for additional lookup
+     * @param classInfos
+     *        the class(es) to search. Ends the recursion when empty.
+     * @param resultAcc
+     *        accumulator for tail-recursion
+     *
      * @return Collection of all interfaces und their parents. Never null.
      */
-    static Collection<ClassInfo> getAllClassInterfaces(
-            CombinedIndexBuildItem index,
-            Collection<ClassInfo> classInfos,
+    static Collection<ClassInfo> getAllClassInterfaces(CombinedIndexBuildItem index, Collection<ClassInfo> classInfos,
             List<ClassInfo> resultAcc) {
         Objects.requireNonNull(index);
         Objects.requireNonNull(classInfos);
@@ -192,10 +193,8 @@ public class RestPathAnnotationProcessor {
         if (classInfos.isEmpty()) {
             return resultAcc;
         }
-        List<ClassInfo> interfaces = classInfos.stream()
-                .flatMap(classInfo -> classInfo.interfaceNames().stream())
-                .map(dotName -> index.getIndex().getClassByName(dotName))
-                .filter(Objects::nonNull)
+        List<ClassInfo> interfaces = classInfos.stream().flatMap(classInfo -> classInfo.interfaceNames().stream())
+                .map(dotName -> index.getIndex().getClassByName(dotName)).filter(Objects::nonNull)
                 .collect(Collectors.toUnmodifiableList());
         resultAcc.addAll(interfaces);
         return getAllClassInterfaces(index, interfaces, resultAcc);
@@ -216,11 +215,9 @@ public class RestPathAnnotationProcessor {
         return true;
     }
 
-    private boolean notRequired(Capabilities capabilities,
-            Optional<MetricsCapabilityBuildItem> metricsCapability) {
-        return capabilities.isMissing(Capability.RESTEASY) ||
-                (capabilities.isMissing(Capability.OPENTELEMETRY_TRACER) &&
-                        !(metricsCapability.isPresent()
-                                && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
+    private boolean notRequired(Capabilities capabilities, Optional<MetricsCapabilityBuildItem> metricsCapability) {
+        return capabilities.isMissing(Capability.RESTEASY)
+                || (capabilities.isMissing(Capability.OPENTELEMETRY_TRACER) && !(metricsCapability.isPresent()
+                        && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
     }
 }

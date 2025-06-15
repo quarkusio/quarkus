@@ -18,10 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class PrincipalInjectionUnitTest {
-    private static Class<?>[] testClasses = {
-            PrincipalInjectionEndpoint.class,
-            TokenUtils.class
-    };
+    private static Class<?>[] testClasses = { PrincipalInjectionEndpoint.class, TokenUtils.class };
     /**
      * The test generated JWT token string
      */
@@ -30,13 +27,9 @@ public class PrincipalInjectionUnitTest {
     private Long authTimeClaim;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("publicKey.pem")
-                    .addAsResource("privateKey.pem")
-                    .addAsResource("Token1.json")
-                    .addAsResource("application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(testClasses).addAsResource("publicKey.pem").addAsResource("privateKey.pem")
+                    .addAsResource("Token1.json").addAsResource("application.properties"));
 
     @BeforeEach
     public void generateToken() throws Exception {
@@ -47,16 +40,12 @@ public class PrincipalInjectionUnitTest {
 
     /**
      * Verify that the injected authenticated principal is as expected
-     *
      */
     @Test()
     public void verifyInjectedPrincipal() {
-        io.restassured.response.Response response = RestAssured.given().auth()
-                .oauth2(token)
-                .when()
+        io.restassured.response.Response response = RestAssured.given().auth().oauth2(token).when()
                 .queryParam(Claims.iss.name(), "https://server.example.com")
-                .queryParam(Claims.auth_time.name(), authTimeClaim)
-                .get("/endp/verifyInjectedPrincipal").andReturn();
+                .queryParam(Claims.auth_time.name(), authTimeClaim).get("/endp/verifyInjectedPrincipal").andReturn();
 
         Assertions.assertEquals(HttpURLConnection.HTTP_OK, response.getStatusCode());
         String replyString = response.body().asString();

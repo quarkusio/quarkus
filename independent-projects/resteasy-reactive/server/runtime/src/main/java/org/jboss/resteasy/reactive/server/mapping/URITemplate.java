@@ -44,7 +44,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         int complexGroups = 0;
         int bracesCount = 0;
         StringBuilder sb = new StringBuilder();
-        int state = 0; //0 = start, 1 = parsing name, 2 = parsing regex
+        int state = 0; // 0 = start, 1 = parsing name, 2 = parsing regex
         for (int i = 0; i < template.length(); ++i) {
             char c = template.charAt(i);
             switch (state) {
@@ -67,9 +67,8 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         if (sb.length() > 0) {
                             capGroups++;
                             if (i + 1 == template.length() || template.charAt(i + 1) == '/') {
-                                components
-                                        .add(new TemplateComponent(Type.DEFAULT_REGEX, null, sb.toString().trim(), null, null,
-                                                null));
+                                components.add(new TemplateComponent(Type.DEFAULT_REGEX, null, sb.toString().trim(),
+                                        null, null, null));
                             } else {
                                 components.add(new TemplateComponent(Type.CUSTOM_REGEX, "[^/]+?", sb.toString().trim(),
                                         null, null, null));
@@ -92,9 +91,8 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                         if (sb.length() > 0) {
                             capGroups++;
                             complexGroups++;
-                            components
-                                    .add(new TemplateComponent(Type.CUSTOM_REGEX, sb.toString().trim(), name, null,
-                                            null, null));
+                            components.add(new TemplateComponent(Type.CUSTOM_REGEX, sb.toString().trim(), name, null,
+                                    null, null));
                         } else {
                             throw new IllegalArgumentException("Invalid template " + template);
                         }
@@ -125,9 +123,9 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
             throw new IllegalArgumentException("Invalid template " + template + " Unmatched { braces");
         }
 
-        //coalesce the components
-        //once we have a CUSTOM_REGEX everything goes out the window, so we need to turn the remainder of the
-        //template into a single CUSTOM_REGEX
+        // coalesce the components
+        // once we have a CUSTOM_REGEX everything goes out the window, so we need to turn the remainder of the
+        // template into a single CUSTOM_REGEX
         List<String> groupAggregator = null;
         List<String> nameAggregator = null;
         StringBuilder regexAggregator = null;
@@ -147,8 +145,10 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                     regexAggregator.append(Pattern.quote(component.literalText));
                 } else if (component.type == Type.DEFAULT_REGEX || component.type == Type.CUSTOM_REGEX) {
                     String groupName = component.name;
-                    // test if the component name is a valid java groupname according to the rules outlined in java.util.Pattern#groupName
-                    // Paths allow for parameter names with characters not allowed in group names. Generate a custom one in the form group + running number when the component name alone would be invalid.
+                    // test if the component name is a valid java groupname according to the rules outlined in
+                    // java.util.Pattern#groupName
+                    // Paths allow for parameter names with characters not allowed in group names. Generate a custom one
+                    // in the form group + running number when the component name alone would be invalid.
                     if (!GROUP_NAME_PATTERN.matcher(component.name).matches()) {
                         groupName = "group" + groupAggregator.size();
                     }
@@ -160,9 +160,7 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
                     }
 
                     groupAggregator.add(groupName + "");
-                    regexAggregator.append("(?<").append(groupName).append(">")
-                            .append(regex)
-                            .append(")");
+                    regexAggregator.append("(?<").append(groupName).append(">").append(regex).append(")");
                     nameAggregator.add(component.name);
                 }
             }
@@ -171,8 +169,9 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
             if (!this.prefixMatch) {
                 regexAggregator.append("$");
             }
-            components.add(new TemplateComponent(Type.CUSTOM_REGEX, null, null, Pattern.compile(regexAggregator.toString()),
-                    nameAggregator.toArray(new String[0]), groupAggregator.toArray(new String[0])));
+            components.add(
+                    new TemplateComponent(Type.CUSTOM_REGEX, null, null, Pattern.compile(regexAggregator.toString()),
+                            nameAggregator.toArray(new String[0]), groupAggregator.toArray(new String[0])));
         }
         this.stem = stem;
         this.literalCharacterCount = litChars;
@@ -186,10 +185,10 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         if (components.isEmpty()) {
             stem = literal;
             if (stem.endsWith("/") && stem.length() > 1) {
-                //we don't allow stem to end with a slash
-                //so if have /hello and /hello/ they can both be matched
-                //all JAX-RS paths have an implicit (/.*)? at the end of them
-                //to technically every path has an optional implicit slash
+                // we don't allow stem to end with a slash
+                // so if have /hello and /hello/ they can both be matched
+                // all JAX-RS paths have an implicit (/.*)? at the end of them
+                // to technically every path has an optional implicit slash
                 stem = stem.substring(0, stem.length() - 1);
                 components.add(new TemplateComponent(Type.LITERAL, stem, null, null, null, null));
                 components.add(new TemplateComponent(Type.LITERAL, "/", null, null, null, null));
@@ -202,8 +201,8 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         return stem;
     }
 
-    public URITemplate(String template, String stem, int literalCharacterCount,
-            int capturingGroups, int complexExpressions, TemplateComponent[] components, boolean prefixMatch) {
+    public URITemplate(String template, String stem, int literalCharacterCount, int capturingGroups,
+            int complexExpressions, TemplateComponent[] components, boolean prefixMatch) {
         this.template = template;
         this.stem = stem;
         this.literalCharacterCount = literalCharacterCount;
@@ -293,7 +292,8 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
          */
         public final String[] names;
 
-        public TemplateComponent(Type type, String literalText, String name, Pattern pattern, String[] names, String[] groups) {
+        public TemplateComponent(Type type, String literalText, String name, Pattern pattern, String[] names,
+                String[] groups) {
             this.type = type;
             this.literalText = literalText;
             this.name = name;
@@ -304,8 +304,8 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
 
         @Override
         public String toString() {
-            return "TemplateComponent{ name: " + name + ", type: " + type + ", literalText: " + literalText + ", pattern: "
-                    + pattern + "}";
+            return "TemplateComponent{ name: " + name + ", type: " + type + ", literalText: " + literalText
+                    + ", pattern: " + pattern + "}";
         }
 
         public String stringRepresentation() {
@@ -335,8 +335,8 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
 
     @Override
     public String toString() {
-        return "URITemplate{ stem: " + stem + ", template: " + template + ", literalCharacterCount: " + literalCharacterCount
-                + ", components: " + Arrays.toString(components) + " }";
+        return "URITemplate{ stem: " + stem + ", template: " + template + ", literalCharacterCount: "
+                + literalCharacterCount + ", components: " + Arrays.toString(components) + " }";
     }
 
     @Override

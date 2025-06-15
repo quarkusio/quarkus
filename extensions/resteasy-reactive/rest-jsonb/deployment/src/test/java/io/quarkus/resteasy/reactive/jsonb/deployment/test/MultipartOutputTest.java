@@ -24,20 +24,16 @@ public class MultipartOutputTest {
     private static final String EXPECTED_RESPONSE_NAME = "a name";
     private static final String EXPECTED_RESPONSE_PERSON_NAME = "Michal";
     private static final int EXPECTED_RESPONSE_PERSON_AGE = 23;
-    private static final String EXPECTED_RESPONSE_PERSON = "{\"age\":" + EXPECTED_RESPONSE_PERSON_AGE
-            + ",\"name\":\"" + EXPECTED_RESPONSE_PERSON_NAME + "\"}";
+    private static final String EXPECTED_RESPONSE_PERSON = "{\"age\":" + EXPECTED_RESPONSE_PERSON_AGE + ",\"name\":\""
+            + EXPECTED_RESPONSE_PERSON_NAME + "\"}";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MultipartOutputResource.class, MultipartOutputResponse.class, Person.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .addClasses(MultipartOutputResource.class, MultipartOutputResponse.class, Person.class));
 
     @Test
     public void testSimple() {
-        String response = RestAssured.get("/multipart/output")
-                .then()
-                .contentType(ContentType.MULTIPART)
-                .statusCode(200)
+        String response = RestAssured.get("/multipart/output").then().contentType(ContentType.MULTIPART).statusCode(200)
                 .extract().asString();
 
         assertContains(response, "name", MediaType.TEXT_PLAIN, EXPECTED_RESPONSE_NAME);

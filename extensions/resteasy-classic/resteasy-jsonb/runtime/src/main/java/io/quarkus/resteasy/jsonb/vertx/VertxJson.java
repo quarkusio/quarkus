@@ -20,10 +20,8 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
- * Provides Vert.x JSON Object/Array <-> JsonB serializers and deserializers.
- *
- * These are useful when you use a List of JsonObject or JsonArray, as the serialization use JSON-B to serializer the
- * contained items.
+ * Provides Vert.x JSON Object/Array <-> JsonB serializers and deserializers. These are useful when you use a List of
+ * JsonObject or JsonArray, as the serialization use JSON-B to serializer the contained items.
  */
 public class VertxJson {
 

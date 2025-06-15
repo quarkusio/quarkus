@@ -25,9 +25,9 @@ public class FieldOptions {
     private Integer blockSize;
 
     /**
-     * Numeric, tag (not supported with JSON) or text attributes can have the optional SORTABLE argument.
-     * As the user sorts the results by the value of this attribute, the results will be available with very low
-     * latency. (this adds memory overhead so consider not to declare it on large text attributes).
+     * Numeric, tag (not supported with JSON) or text attributes can have the optional SORTABLE argument. As the user
+     * sorts the results by the value of this attribute, the results will be available with very low latency. (this adds
+     * memory overhead so consider not to declare it on large text attributes).
      *
      * @return the current {@code FieldOptions}
      */
@@ -38,8 +38,8 @@ public class FieldOptions {
 
     /**
      * By default, {@code SORTABLE} applies a normalization to the indexed value (characters set to lowercase, removal
-     * of diacritics). When using un-normalized form (UNF), you can disable the normalization and keep the original
-     * form of the value.
+     * of diacritics). When using un-normalized form (UNF), you can disable the normalization and keep the original form
+     * of the value.
      *
      * @return the current {@code FieldOptions}
      */
@@ -49,8 +49,8 @@ public class FieldOptions {
     }
 
     /**
-     * Text attributes can have the {@code NOSTEM} argument which will disable stemming when indexing its values.
-     * This may be ideal for things like proper names.
+     * Text attributes can have the {@code NOSTEM} argument which will disable stemming when indexing its values. This
+     * may be ideal for things like proper names.
      *
      * @return the current {@code FieldOptions}
      */
@@ -73,10 +73,12 @@ public class FieldOptions {
     }
 
     /**
-     * Declaring a text attribute as {@code PHONETIC} will perform phonetic matching on it in searches by default.
-     * The obligatory argument specifies the phonetic algorithm and language used.
+     * Declaring a text attribute as {@code PHONETIC} will perform phonetic matching on it in searches by default. The
+     * obligatory argument specifies the phonetic algorithm and language used.
      *
-     * @param phonetic the phonetic algorithm
+     * @param phonetic
+     *        the phonetic algorithm
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions phonetic(String phonetic) {
@@ -85,10 +87,12 @@ public class FieldOptions {
     }
 
     /**
-     * For TEXT attributes, declares the importance of this attribute when calculating result accuracy.
-     * This is a multiplication factor, and defaults to 1 if not specified.
+     * For TEXT attributes, declares the importance of this attribute when calculating result accuracy. This is a
+     * multiplication factor, and defaults to 1 if not specified.
      *
-     * @param weight the weight
+     * @param weight
+     *        the weight
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions weight(double weight) {
@@ -97,10 +101,12 @@ public class FieldOptions {
     }
 
     /**
-     * For TAG attributes, indicates how the text contained in the attribute is to be split into individual tags.
-     * The default is {@code ,}. The value must be a single character.
+     * For TAG attributes, indicates how the text contained in the attribute is to be split into individual tags. The
+     * default is {@code ,}. The value must be a single character.
      *
-     * @param separator the separator
+     * @param separator
+     *        the separator
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions separator(char separator) {
@@ -121,8 +127,8 @@ public class FieldOptions {
 
     /**
      * For TEXT and TAG attributes, keeps a suffix trie with all terms which match the suffix. It is used to optimize
-     * contains (foo) and suffix (*foo) queries. Otherwise, a brute-force search on the trie is performed.
-     * If suffix trie exists for some fields, these queries will be disabled for other fields.
+     * contains (foo) and suffix (*foo) queries. Otherwise, a brute-force search on the trie is performed. If suffix
+     * trie exists for some fields, these queries will be disabled for other fields.
      *
      * @return the current {@code FieldOptions}
      */
@@ -134,7 +140,9 @@ public class FieldOptions {
     /**
      * For vector fields, specifies the vector algorithm to use when searching k most similar vectors in an index.
      *
-     * @param vectorAlgorithm the vector algorithm
+     * @param vectorAlgorithm
+     *        the vector algorithm
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions vectorAlgorithm(VectorAlgorithm vectorAlgorithm) {
@@ -145,7 +153,9 @@ public class FieldOptions {
     /**
      * For vector fields, specifies the vector type.
      *
-     * @param vectorType the vector type
+     * @param vectorType
+     *        the vector type
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions vectorType(VectorType vectorType) {
@@ -156,7 +166,9 @@ public class FieldOptions {
     /**
      * For vector fields, specifies the dimension.
      *
-     * @param dimension the dimension
+     * @param dimension
+     *        the dimension
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions dimension(int dimension) {
@@ -167,7 +179,9 @@ public class FieldOptions {
     /**
      * For vector fields, specifies the distance metric.
      *
-     * @param distanceMetric the distance metric
+     * @param distanceMetric
+     *        the distance metric
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions distanceMetric(DistanceMetric distanceMetric) {
@@ -178,7 +192,9 @@ public class FieldOptions {
     /**
      * For vector fields, specifies the initial vector capacity in the index.
      *
-     * @param initialCap the initial capacity
+     * @param initialCap
+     *        the initial capacity
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions initialCap(int initialCap) {
@@ -189,7 +205,9 @@ public class FieldOptions {
     /**
      * For vector fields, specifies the block size (the amount of vectors to store in a contiguous array).
      *
-     * @param blockSize the block size
+     * @param blockSize
+     *        the block size
+     *
      * @return the current {@code FieldOptions}
      */
     public FieldOptions blockSize(int blockSize) {

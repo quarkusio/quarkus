@@ -20,9 +20,7 @@ class AbstractHyperLogLogCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         notNullOrEmpty(values, "values");
         doesNotContainNull(values, "values");
-        RedisCommand cmd = RedisCommand.of(Command.PFADD)
-                .put(marshaller.encode(key))
-                .putAll(marshaller.encode(values));
+        RedisCommand cmd = RedisCommand.of(Command.PFADD).put(marshaller.encode(key)).putAll(marshaller.encode(values));
         return execute(cmd);
     }
 
@@ -30,8 +28,7 @@ class AbstractHyperLogLogCommands<K, V> extends AbstractRedisCommands {
         nonNull(destination, "destination");
         notNullOrEmpty(sources, "sources");
         doesNotContainNull(sources, "sources");
-        RedisCommand cmd = RedisCommand.of(Command.PFMERGE)
-                .put(marshaller.encode(destination))
+        RedisCommand cmd = RedisCommand.of(Command.PFMERGE).put(marshaller.encode(destination))
                 .putAll(marshaller.encode(sources));
         return execute(cmd);
     }

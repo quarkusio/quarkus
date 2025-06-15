@@ -16,8 +16,6 @@ public class EnableImageStreamLocalLookupPolicyDecorator extends NamedResourceDe
 
     @Override
     public void andThenVisit(ImageStreamSpecFluent<?> spec, ObjectMeta meta) {
-        spec.withNewLookupPolicy()
-                .withLocal()
-                .endLookupPolicy();
+        spec.withNewLookupPolicy().withLocal().endLookupPolicy();
     }
 }

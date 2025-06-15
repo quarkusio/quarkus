@@ -20,39 +20,24 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class PathParamOverlapTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        get("/hello/some/test")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello World!"));
+        get("/hello/some/test").then().statusCode(200).body(equalTo("Hello World!"));
 
-        get("/hello/other/test/new")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello other"));
+        get("/hello/other/test/new").then().statusCode(200).body(equalTo("Hello other"));
 
-        get("/hello/some/test/new")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello some"));
+        get("/hello/some/test/new").then().statusCode(200).body(equalTo("Hello some"));
 
-        get("/hello/some/test/wrong")
-                .then()
-                .statusCode(404);
+        get("/hello/some/test/wrong").then().statusCode(404);
 
-        get("/hello/other/test/wrong")
-                .then()
-                .statusCode(404);
+        get("/hello/other/test/wrong").then().statusCode(404);
     }
 
     @Path("/hello")

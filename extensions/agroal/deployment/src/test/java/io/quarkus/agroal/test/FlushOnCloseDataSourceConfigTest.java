@@ -29,10 +29,8 @@ class FlushOnCloseDataSourceConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
-                    .addClasses(FlushOnCloseDataSourceConfigTest.class)
-                    .addClasses(ClientUserTrackerInterceptor.class))
+            .withApplicationRoot((jar) -> jar.addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
+                    .addClasses(FlushOnCloseDataSourceConfigTest.class).addClasses(ClientUserTrackerInterceptor.class))
             .withConfigurationResource("base.properties")
             // Setting Compatibility MODE to MySQL to enable all the client-info properties on the connection
             .overrideConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:tcp://localhost/mem:flushing;MODE=MySQL")
@@ -43,7 +41,8 @@ class FlushOnCloseDataSourceConfigTest {
 
     @Test
     void testFlushOnCloseDataSourceConnection() throws SQLException {
-        AgroalConnectionPoolConfiguration configuration = defaultDataSource.getConfiguration().connectionPoolConfiguration();
+        AgroalConnectionPoolConfiguration configuration = defaultDataSource.getConfiguration()
+                .connectionPoolConfiguration();
 
         assertTrue(configuration.flushOnClose());
 

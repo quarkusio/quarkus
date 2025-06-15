@@ -21,39 +21,32 @@ import io.quarkus.kubernetes.spi.PolicyRule;
 public class KubernetesConfigProcessor {
 
     private static final String ANY_TARGET = null;
-    private static final List<PolicyRule> POLICY_RULE_FOR_ROLE = List.of(new PolicyRule(
-            List.of(""),
-            List.of("secrets"),
-            List.of("get")));
+    private static final List<PolicyRule> POLICY_RULE_FOR_ROLE = List
+            .of(new PolicyRule(List.of(""), List.of("secrets"), List.of("get")));
 
     @BuildStep
     void configFactory(BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
-        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(KubernetesConfigSourceFactoryBuilder.class.getName()));
+        runTimeConfigBuilder
+                .produce(new RunTimeConfigBuilderBuildItem(KubernetesConfigSourceFactoryBuilder.class.getName()));
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void handleAccessToSecrets(
-            KubernetesConfigBuildTimeConfig buildTimeConfig,
-            KubernetesConfigSourceConfig config,
-            BuildProducer<KubernetesRoleBuildItem> roleProducer,
+    public void handleAccessToSecrets(KubernetesConfigBuildTimeConfig buildTimeConfig,
+            KubernetesConfigSourceConfig config, BuildProducer<KubernetesRoleBuildItem> roleProducer,
             BuildProducer<KubernetesClusterRoleBuildItem> clusterRoleProducer,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccountProducer,
-            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer,
-            KubernetesConfigRecorder recorder) {
+            BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer, KubernetesConfigRecorder recorder) {
         if (buildTimeConfig.secretsEnabled()) {
             SecretsRoleConfig roleConfig = buildTimeConfig.secretsRoleConfig();
             String roleName = roleConfig.name();
             if (roleConfig.generate()) {
                 if (roleConfig.clusterWide()) {
-                    clusterRoleProducer.produce(new KubernetesClusterRoleBuildItem(roleName,
-                            POLICY_RULE_FOR_ROLE,
-                            ANY_TARGET));
+                    clusterRoleProducer
+                            .produce(new KubernetesClusterRoleBuildItem(roleName, POLICY_RULE_FOR_ROLE, ANY_TARGET));
                 } else {
-                    roleProducer.produce(new KubernetesRoleBuildItem(roleName,
-                            roleConfig.namespace().orElse(null),
-                            POLICY_RULE_FOR_ROLE,
-                            ANY_TARGET));
+                    roleProducer.produce(new KubernetesRoleBuildItem(roleName, roleConfig.namespace().orElse(null),
+                            POLICY_RULE_FOR_ROLE, ANY_TARGET));
                 }
             }
 

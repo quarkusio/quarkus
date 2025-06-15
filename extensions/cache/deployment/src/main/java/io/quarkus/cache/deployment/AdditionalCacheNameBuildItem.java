@@ -7,8 +7,8 @@ import io.quarkus.builder.item.MultiBuildItem;
  * <p>
  * This is used in order to create caches when means other than the standard cache annotations are used.
  *
- * @deprecated Use {@link io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem} instead. This build item will be removed
- *             at some time after Quarkus 3.0.
+ * @deprecated Use {@link io.quarkus.cache.deployment.spi.AdditionalCacheNameBuildItem} instead. This build item will be
+ *             removed at some time after Quarkus 3.0.
  */
 @Deprecated(forRemoval = true)
 public final class AdditionalCacheNameBuildItem extends MultiBuildItem {

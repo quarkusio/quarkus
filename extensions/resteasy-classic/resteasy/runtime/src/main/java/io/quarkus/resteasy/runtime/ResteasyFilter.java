@@ -16,8 +16,8 @@ import org.jboss.resteasy.plugins.server.servlet.Filter30Dispatcher;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 
 /**
- * A filter that will be mapped to the default servlet. At first content will attempt to be served from the
- * default servlet, and if it fails then a REST response will be attempted
+ * A filter that will be mapped to the default servlet. At first content will attempt to be served from the default
+ * servlet, and if it fails then a REST response will be attempted
  */
 public class ResteasyFilter extends Filter30Dispatcher {
 
@@ -26,8 +26,9 @@ public class ResteasyFilter extends Filter30Dispatcher {
             throws IOException, ServletException {
         HttpServletResponse response = (HttpServletResponse) servletResponse;
         HttpServletRequest request = (HttpServletRequest) servletRequest;
-        if (request.getMethod().equals("GET") || request.getMethod().equals("HEAD") || isCORSPreflightRequest(request)) {
-            //we only serve get requests from the default servlet and CORS preflight requests
+        if (request.getMethod().equals("GET") || request.getMethod().equals("HEAD")
+                || isCORSPreflightRequest(request)) {
+            // we only serve get requests from the default servlet and CORS preflight requests
             filterChain.doFilter(servletRequest, new ResteasyResponseWrapper(response, request));
         } else {
             CurrentVertxRequest currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
@@ -37,8 +38,7 @@ public class ResteasyFilter extends Filter30Dispatcher {
     }
 
     private boolean isCORSPreflightRequest(HttpServletRequest request) {
-        return request.getMethod().equals("OPTIONS")
-                && request.getHeader("Origin") != null
+        return request.getMethod().equals("OPTIONS") && request.getHeader("Origin") != null
                 && request.getHeader("Access-Control-Request-Method") != null
                 && request.getHeader("Access-Control-Request-Headers") != null;
     }

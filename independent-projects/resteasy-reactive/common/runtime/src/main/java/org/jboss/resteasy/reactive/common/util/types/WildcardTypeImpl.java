@@ -4,14 +4,10 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 
 /**
- * This code was mainly copied from Weld codebase.
- *
- * Implementation of {@link WildcardType}.
- *
- * Note that per JLS a wildcard may define either the upper bound or the lower bound. A wildcard may not have multiple bounds.
+ * This code was mainly copied from Weld codebase. Implementation of {@link WildcardType}. Note that per JLS a wildcard
+ * may define either the upper bound or the lower bound. A wildcard may not have multiple bounds.
  *
  * @author Jozef Hartinger
- *
  */
 public class WildcardTypeImpl implements WildcardType {
 

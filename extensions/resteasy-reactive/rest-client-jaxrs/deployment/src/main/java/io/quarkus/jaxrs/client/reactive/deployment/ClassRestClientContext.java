@@ -41,11 +41,10 @@ class ClassRestClientContext implements AutoCloseable {
     }
 
     public ClassRestClientContext(String name, MethodDescriptor constructorDesc,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            Class<?> superClass, String... interfaces) {
+            BuildProducer<GeneratedClassBuildItem> generatedClasses, Class<?> superClass, String... interfaces) {
 
-        this.classCreator = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true),
-                name, null, superClass.getName(), interfaces);
+        this.classCreator = new ClassCreator(new GeneratedClassGizmoAdaptor(generatedClasses, true), name, null,
+                superClass.getName(), interfaces);
         this.constructor = classCreator.getMethodCreator(constructorDesc);
         this.clinit = classCreator.getMethodCreator(MethodDescriptor.ofMethod(name, "<clinit>", void.class));
         this.clinit.setModifiers(Opcodes.ACC_STATIC);
@@ -79,8 +78,8 @@ class ClassRestClientContext implements AutoCloseable {
     }
 
     /**
-     * Generates "method.getParameterAnnotations()" and it will only be created if and only if the supplier is used
-     * in order to not have a penalty performance.
+     * Generates "method.getParameterAnnotations()" and it will only be created if and only if the supplier is used in
+     * order to not have a penalty performance.
      */
     protected Supplier<FieldDescriptor> getLazyJavaMethodParamAnnotationsField(int methodIndex) {
         return () -> {
@@ -89,13 +88,14 @@ class ClassRestClientContext implements AutoCloseable {
                 return methodParamAnnotationsField;
             }
 
-            ResultHandle javaMethodParamAnnotationsHandle = clinit.newInstance(MethodDescriptor.ofConstructor(
-                    ParameterAnnotationsSupplier.class, Method.class),
+            ResultHandle javaMethodParamAnnotationsHandle = clinit.newInstance(
+                    MethodDescriptor.ofConstructor(ParameterAnnotationsSupplier.class, Method.class),
                     clinit.readStaticField(methodStaticFields.get(methodIndex)));
             FieldDescriptor javaMethodParamAnnotationsField = FieldDescriptor.of(classCreator.getClassName(),
                     "javaMethodParameterAnnotations" + methodIndex, Supplier.class);
             classCreator.getFieldCreator(javaMethodParamAnnotationsField)
-                    .setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be package-private because it's used by subresources
+                    .setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be package-private because it's used by
+                                                                                                                                  // subresources
             clinit.writeStaticField(javaMethodParamAnnotationsField, javaMethodParamAnnotationsHandle);
 
             methodParamAnnotationsStaticFields.put(methodIndex, javaMethodParamAnnotationsField);
@@ -105,8 +105,8 @@ class ClassRestClientContext implements AutoCloseable {
     }
 
     /**
-     * Generates "method.getGenericParameterTypes()" and it will only be created if and only if the supplier is used
-     * in order to not have a penalty performance.
+     * Generates "method.getGenericParameterTypes()" and it will only be created if and only if the supplier is used in
+     * order to not have a penalty performance.
      */
     protected Supplier<FieldDescriptor> getLazyJavaMethodGenericParametersField(int methodIndex) {
         return () -> {
@@ -115,13 +115,14 @@ class ClassRestClientContext implements AutoCloseable {
                 return methodGenericTypeField;
             }
 
-            ResultHandle javaMethodGenericParametersHandle = clinit.newInstance(MethodDescriptor.ofConstructor(
-                    ParameterGenericTypesSupplier.class, Method.class),
+            ResultHandle javaMethodGenericParametersHandle = clinit.newInstance(
+                    MethodDescriptor.ofConstructor(ParameterGenericTypesSupplier.class, Method.class),
                     clinit.readStaticField(methodStaticFields.get(methodIndex)));
             FieldDescriptor javaMethodGenericParametersField = FieldDescriptor.of(classCreator.getClassName(),
                     "javaMethodGenericParameters" + methodIndex, Supplier.class);
             classCreator.getFieldCreator(javaMethodGenericParametersField)
-                    .setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be package-private because it's used by subresources
+                    .setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be package-private because it's used by
+                                                                                                                                   // subresources
             clinit.writeStaticField(javaMethodGenericParametersField, javaMethodGenericParametersHandle);
 
             methodGenericParametersStaticFields.put(methodIndex, javaMethodGenericParametersField);
@@ -131,8 +132,8 @@ class ClassRestClientContext implements AutoCloseable {
     }
 
     /**
-     * Generates "Class.forName(beanClass)" to generate the parameter descriptors. This method will only be created if and only
-     * if the supplier is used in order to not have a penalty performance.
+     * Generates "Class.forName(beanClass)" to generate the parameter descriptors. This method will only be created if
+     * and only if the supplier is used in order to not have a penalty performance.
      */
     protected Supplier<FieldDescriptor> getLazyBeanParameterDescriptors(String beanClass) {
         return () -> {
@@ -143,11 +144,14 @@ class ClassRestClientContext implements AutoCloseable {
 
             ResultHandle clazz = loadClass(beanClass);
 
-            ResultHandle mapWithAnnotationsHandle = clinit.newInstance(MethodDescriptor.ofConstructor(
-                    ParameterDescriptorFromClassSupplier.class, Class.class),
-                    clazz);
-            field = FieldDescriptor.of(classCreator.getClassName(), "beanParamDescriptors" + beanParamIndex, Supplier.class);
-            classCreator.getFieldCreator(field).setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be package-private because it's used by subresources
+            ResultHandle mapWithAnnotationsHandle = clinit.newInstance(
+                    MethodDescriptor.ofConstructor(ParameterDescriptorFromClassSupplier.class, Class.class), clazz);
+            field = FieldDescriptor.of(classCreator.getClassName(), "beanParamDescriptors" + beanParamIndex,
+                    Supplier.class);
+            classCreator.getFieldCreator(field).setModifiers(Modifier.FINAL | Modifier.STATIC); // needs to be
+                                                                                                // package-private
+                                                                                                // because it's used by
+                                                                                                // subresources
             clinit.writeStaticField(field, mapWithAnnotationsHandle);
 
             beanTypesParameterDescriptorsStaticFields.put(beanClass, field);

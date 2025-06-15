@@ -93,15 +93,10 @@ public abstract class Deploy extends QuarkusBuildTask {
         Properties sysProps = new Properties();
         sysProps.putAll(extension().buildEffectiveConfiguration(appModel).getValues());
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
-                .setBaseClassLoader(getClass().getClassLoader())
-                .setExistingModel(appModel)
-                .setTargetDirectory(getProject().getBuildDir().toPath())
-                .setBaseName(extension().finalName())
-                .setBuildSystemProperties(sysProps)
-                .setAppArtifact(appModel.getAppArtifact())
-                .setLocalProjectDiscovery(false)
-                .setIsolateDeployment(true)
-                .build().bootstrap()) {
+                .setBaseClassLoader(getClass().getClassLoader()).setExistingModel(appModel)
+                .setTargetDirectory(getProject().getBuildDir().toPath()).setBaseName(extension().finalName())
+                .setBuildSystemProperties(sysProps).setAppArtifact(appModel.getAppArtifact())
+                .setLocalProjectDiscovery(false).setIsolateDeployment(true).build().bootstrap()) {
             AtomicReference<List<String>> tooMany = new AtomicReference<>();
             AugmentAction action = curatedApplication.createAugmentor();
             action.performCustomBuild(DeployCommandDeclarationHandler.class.getName(), new Consumer<List<String>>() {
@@ -116,30 +111,26 @@ public abstract class Deploy extends QuarkusBuildTask {
                 // Currently forcedDependencies() is not implemented for gradle.
                 // So, let's give users a meaningful warning message.
                 Deployer deployer = getDeployer();
-                extension().forcedPropertiesProperty().convention(
-                        getProject().provider(() -> {
-                            Map<String, String> props = new HashMap<>();
-                            props.put("quarkus." + deployer.name() + ".deploy", "true");
-                            props.put("quarkus.container-image.build", String.valueOf(imageBuilder.isPresent() || imageBuild));
-                            imageBuilder.ifPresent(b -> props.put("quarkus.container-image.builder", b));
-                            return props;
-                        }));
+                extension().forcedPropertiesProperty().convention(getProject().provider(() -> {
+                    Map<String, String> props = new HashMap<>();
+                    props.put("quarkus." + deployer.name() + ".deploy", "true");
+                    props.put("quarkus.container-image.build", String.valueOf(imageBuilder.isPresent() || imageBuild));
+                    imageBuilder.ifPresent(b -> props.put("quarkus.container-image.builder", b));
+                    return props;
+                }));
                 String requiredDeployerExtension = deployer.getExtension();
                 Optional<String> requiredContainerImageExtension = requiredContainerImageExtension();
 
                 List<String> projectDependencies = getProject().getConfigurations().stream()
-                        .flatMap(c -> c.getDependencies().stream())
-                        .map(d -> d.getName())
-                        .collect(Collectors.toList());
+                        .flatMap(c -> c.getDependencies().stream()).map(d -> d.getName()).collect(Collectors.toList());
 
                 if (!projectDependencies.contains(requiredDeployerExtension)) {
-                    abort("Task: {} requires extensions: {}\n" +
-                            "To add the extensions to the project you can run the following command:\n" +
-                            "\tgradle addExtension --extensions={}",
-                            getName(), requiredDeployerExtension,
+                    abort("Task: {} requires extensions: {}\n"
+                            + "To add the extensions to the project you can run the following command:\n"
+                            + "\tgradle addExtension --extensions={}", getName(), requiredDeployerExtension,
                             requiredDeployerExtension);
-                } else if (!requiredContainerImageExtension.map(b -> projectDependencies.stream().anyMatch(d -> d.equals(b)))
-                        .orElse(true)) {
+                } else if (!requiredContainerImageExtension
+                        .map(b -> projectDependencies.stream().anyMatch(d -> d.equals(b))).orElse(true)) {
                     abort("Task: {} using: {} is explicitly configured with missing container image builder extension: {}. Aborting.",
                             getName(), deployer.name(), requiredContainerImageExtension.get());
                 } else if (imageBuild && deployer.getRequiresOneOf().length > 0) {
@@ -148,26 +139,23 @@ public abstract class Deploy extends QuarkusBuildTask {
                             .collect(Collectors.toList());
                     if (unsatisfied.size() == deployer.getRequiresOneOf().length) {
                         abort("Task: {} using: {} requires one of the following container image extensions: {}. Aborting.",
-                                getName(),
-                                deployer.name(), unsatisfied.stream().collect(Collectors.joining(", ", "[", "]")));
+                                getName(), deployer.name(),
+                                unsatisfied.stream().collect(Collectors.joining(", ", "[", "]")));
                     }
                 }
                 return;
             } else if (targets.size() > 1 && target == null) {
-                abort(
-                        "Too many installed extensions support quarkus:deploy.  You must choose one by setting quarkus.deploy.target."
-                                + " Extensions: " + targets.stream().collect(Collectors.joining(" ")));
+                abort("Too many installed extensions support quarkus:deploy.  You must choose one by setting quarkus.deploy.target."
+                        + " Extensions: " + targets.stream().collect(Collectors.joining(" ")));
             } else if (target != null && !targets.contains(target)) {
-                abort(
-                        "Unknown quarkus.deploy.target: " + target + " Extensions: "
-                                + targets.stream().collect(Collectors.joining(" ")));
+                abort("Unknown quarkus.deploy.target: " + target + " Extensions: "
+                        + targets.stream().collect(Collectors.joining(" ")));
             } else {
-                extension().forcedPropertiesProperty().convention(
-                        getProject().provider(() -> {
-                            Map<String, String> props = new HashMap<>();
-                            props.put(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD, "true");
-                            return props;
-                        }));
+                extension().forcedPropertiesProperty().convention(getProject().provider(() -> {
+                    Map<String, String> props = new HashMap<>();
+                    props.put(QUARKUS_IGNORE_LEGACY_DEPLOY_BUILD, "true");
+                    return props;
+                }));
                 if (target == null) {
                     target = targets.get(0);
                 }
@@ -193,11 +181,8 @@ public abstract class Deploy extends QuarkusBuildTask {
     }
 
     public Deployer getDeployer(Deployer defaultDeployer) {
-        return deployer
-                .or(() -> DeploymentUtil.getEnabledDeployer())
-                .or(() -> getProjectDeployers().stream().findFirst())
-                .map(Deployer::valueOf)
-                .orElse(defaultDeployer);
+        return deployer.or(() -> DeploymentUtil.getEnabledDeployer())
+                .or(() -> getProjectDeployers().stream().findFirst()).map(Deployer::valueOf).orElse(defaultDeployer);
     }
 
     public Optional<String> requiredContainerImageExtension() {
@@ -209,8 +194,7 @@ public abstract class Deploy extends QuarkusBuildTask {
         return getProject().getConfigurations().stream().flatMap(c -> c.getDependencies().stream())
                 .map(d -> d.getName())
                 .filter(d -> Arrays.stream(Deployer.values()).map(Deployer::getExtension).anyMatch(e -> d.equals(e)))
-                .map(d -> d.replaceAll("^quarkus\\-", ""))
-                .collect(Collectors.toSet());
+                .map(d -> d.replaceAll("^quarkus\\-", "")).collect(Collectors.toSet());
     }
 
 }

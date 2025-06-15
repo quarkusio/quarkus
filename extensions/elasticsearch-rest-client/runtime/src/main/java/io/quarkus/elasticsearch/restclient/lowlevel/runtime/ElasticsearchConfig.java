@@ -22,8 +22,7 @@ public interface ElasticsearchConfig {
     List<InetSocketAddress> hosts();
 
     /**
-     * The protocol to use when contacting Elasticsearch servers.
-     * Set to "https" to enable SSL/TLS.
+     * The protocol to use when contacting Elasticsearch servers. Set to "https" to enable SSL/TLS.
      */
     @WithDefault("http")
     String protocol();
@@ -63,13 +62,13 @@ public interface ElasticsearchConfig {
     int maxConnectionsPerRoute();
 
     /**
-     * The number of IO thread.
-     * By default, this is the number of locally detected processors.
+     * The number of IO thread. By default, this is the number of locally detected processors.
      * <p>
-     * Thread counts higher than the number of processors should not be necessary because the I/O threads rely on non-blocking
-     * operations, but you may want to use a thread count lower than the number of processors.
+     * Thread counts higher than the number of processors should not be necessary because the I/O threads rely on
+     * non-blocking operations, but you may want to use a thread count lower than the number of processors.
      *
-     * @see <a href="https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/_number_of_threads.html">
+     * @see <a href=
+     *      "https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/_number_of_threads.html">
      *      number of threads</a>
      */
     Optional<Integer> ioThreadCounts();

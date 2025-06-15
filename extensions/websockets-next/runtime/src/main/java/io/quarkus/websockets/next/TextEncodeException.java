@@ -1,7 +1,6 @@
 package io.quarkus.websockets.next;
 
 /**
- *
  * @see TextMessageCodec
  */
 public class TextEncodeException extends WebSocketException {

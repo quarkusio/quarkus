@@ -11,8 +11,7 @@ public class AsyncIOTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AsyncIOResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(AsyncIOResource.class))
             .withConfigurationResource("application-asyncio.properties");
 
     @Test

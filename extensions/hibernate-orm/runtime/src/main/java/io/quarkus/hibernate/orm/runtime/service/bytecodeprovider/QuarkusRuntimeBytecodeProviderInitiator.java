@@ -18,9 +18,9 @@ public final class QuarkusRuntimeBytecodeProviderInitiator implements StandardSe
 
     @Override
     public BytecodeProvider initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        //This one disables any use of bytecode enhancement at runtime, but is slightly more lenient
-        //than the "none" option which will throw an exception on any attempt of using it;
-        //also, needs to carry the statefulProxyFactory.
+        // This one disables any use of bytecode enhancement at runtime, but is slightly more lenient
+        // than the "none" option which will throw an exception on any attempt of using it;
+        // also, needs to carry the statefulProxyFactory.
         return new RuntimeBytecodeProvider(statefulProxyFactory);
     }
 

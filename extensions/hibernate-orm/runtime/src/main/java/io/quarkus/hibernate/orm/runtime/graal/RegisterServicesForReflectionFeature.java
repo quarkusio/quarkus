@@ -7,9 +7,8 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 /**
- * Makes methods of reachable hibernate services accessible through {@link Class#getMethods()}.
- *
- * See <a href="https://github.com/quarkusio/quarkus/issues/45525">Github issue #45525</a>.
+ * Makes methods of reachable hibernate services accessible through {@link Class#getMethods()}. See
+ * <a href="https://github.com/quarkusio/quarkus/issues/45525">Github issue #45525</a>.
  */
 public class RegisterServicesForReflectionFeature implements Feature {
 

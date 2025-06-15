@@ -26,16 +26,12 @@ public class LiquibaseDevUIProcessor {
         card.setCustomCard("qwc-liquibase-card.js");
 
         // pages
-        card.addPage(Page.externalPageBuilder("Version")
-                .icon("font-awesome-solid:book")
-                .url("https://www.liquibase.org/")
-                .doNotEmbed()
+        card.addPage(Page.externalPageBuilder("Version").icon("font-awesome-solid:book")
+                .url("https://www.liquibase.org/").doNotEmbed()
                 .staticLabel(getManifest(DatabaseChangeLog.class).getMainAttributes().getValue("Bundle-Version")));
 
-        card.addPage(Page.webComponentPageBuilder().title("Datasources")
-                .componentLink("qwc-liquibase-datasources.js")
-                .icon("font-awesome-solid:database")
-                .dynamicLabelJsonRPCMethodName("getDatasourceCount"));
+        card.addPage(Page.webComponentPageBuilder().title("Datasources").componentLink("qwc-liquibase-datasources.js")
+                .icon("font-awesome-solid:database").dynamicLabelJsonRPCMethodName("getDatasourceCount"));
 
         cardPageBuildItemBuildProducer.produce(card);
     }

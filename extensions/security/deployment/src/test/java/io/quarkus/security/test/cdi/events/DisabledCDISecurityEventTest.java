@@ -42,12 +42,10 @@ public class DisabledCDISecurityEventTest {
     Event<SecurityEvent> producer;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class,
-                            SecurityTestUtils.class, IdentityMock.class, SecurityEventObserver.class,
-                            AsyncAuthZFailureEventObserver.class)
-                    .addAsResource(new StringAsset("quarkus.security.events.enabled=false\n"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class, SecurityTestUtils.class,
+                    IdentityMock.class, SecurityEventObserver.class, AsyncAuthZFailureEventObserver.class)
+            .addAsResource(new StringAsset("quarkus.security.events.enabled=false\n"), "application.properties"));
 
     @Test
     public void testNoOpSecurityEventProducer() {

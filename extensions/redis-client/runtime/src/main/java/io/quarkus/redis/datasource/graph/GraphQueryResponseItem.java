@@ -18,21 +18,24 @@ public interface GraphQueryResponseItem {
         if (this instanceof ScalarItem) {
             return (ScalarItem) this;
         }
-        throw new ClassCastException("Cannot cast " + this + " of kind " + kind() + " to a " + ScalarItem.class.getName());
+        throw new ClassCastException(
+                "Cannot cast " + this + " of kind " + kind() + " to a " + ScalarItem.class.getName());
     }
 
     default NodeItem asNodeItem() {
         if (this instanceof NodeItem) {
             return (NodeItem) this;
         }
-        throw new ClassCastException("Cannot cast " + this + " of kind " + kind() + " to a " + NodeItem.class.getName());
+        throw new ClassCastException(
+                "Cannot cast " + this + " of kind " + kind() + " to a " + NodeItem.class.getName());
     }
 
     default RelationItem asRelationItem() {
         if (this instanceof RelationItem) {
             return (RelationItem) this;
         }
-        throw new ClassCastException("Cannot cast " + this + " of kind " + kind() + " to a " + RelationItem.class.getName());
+        throw new ClassCastException(
+                "Cannot cast " + this + " of kind " + kind() + " to a " + RelationItem.class.getName());
     }
 
     interface ScalarItem extends GraphQueryResponseItem {

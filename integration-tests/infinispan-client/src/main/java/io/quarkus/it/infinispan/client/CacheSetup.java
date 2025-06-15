@@ -108,16 +108,15 @@ public class CacheSetup {
                 Collections.singleton(rowling), Type.FANTASY, new BigDecimal("50.99"));
         Book got1Book = new Book("Game of Thrones", "Lots of people perish", 2010, Collections.singleton(gMartin),
                 Type.FANTASY, new BigDecimal("23.99"));
-        Book got2Book = new Book("Game of Thrones Path 2", "They win?", 2023,
-                Collections.singleton(sonM), Type.FANTASY, new BigDecimal("54.99"));
+        Book got2Book = new Book("Game of Thrones Path 2", "They win?", 2023, Collections.singleton(sonM), Type.FANTASY,
+                new BigDecimal("54.99"));
 
         defaultCache.put("book1", got1Book);
         defaultCache.put("book2", got2Book);
 
         Magazine mag1 = new Magazine("MAD", YearMonth.of(1952, 10), Collections.singletonList("Blob named Melvin"));
-        Magazine mag2 = new Magazine("TIME", YearMonth.of(1923, 3),
-                Arrays.asList("First helicopter", "Change in divorce law", "Adam's Rib movie released",
-                        "German Reparation Payments"));
+        Magazine mag2 = new Magazine("TIME", YearMonth.of(1923, 3), Arrays.asList("First helicopter",
+                "Change in divorce law", "Adam's Rib movie released", "German Reparation Payments"));
         Magazine map3 = new Magazine("TIME", YearMonth.of(1997, 4),
                 Arrays.asList("Yep, I'm gay", "Backlash against HMOS", "False Hope on Breast Cancer?"));
 

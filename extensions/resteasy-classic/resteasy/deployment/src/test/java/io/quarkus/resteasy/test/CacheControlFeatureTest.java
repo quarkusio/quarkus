@@ -12,8 +12,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CacheControlFeatureTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(CacheResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(CacheResource.class));
 
     @Test
     public void testNoCacheAnnotation() {

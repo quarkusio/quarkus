@@ -12,10 +12,9 @@ public record ImageName(String fullName, String registry, String repository, Ver
         String repository;
         Version version;
 
-        if (slashIndex == -1 ||
-                (!fullName.substring(0, slashIndex).contains(".") &&
-                        !fullName.substring(0, slashIndex).contains(":") &&
-                        !fullName.substring(0, slashIndex).equals("localhost"))) {
+        if (slashIndex == -1
+                || (!fullName.substring(0, slashIndex).contains(".") && !fullName.substring(0, slashIndex).contains(":")
+                        && !fullName.substring(0, slashIndex).equals("localhost"))) {
             registry = "";
             remoteName = fullName;
         } else {

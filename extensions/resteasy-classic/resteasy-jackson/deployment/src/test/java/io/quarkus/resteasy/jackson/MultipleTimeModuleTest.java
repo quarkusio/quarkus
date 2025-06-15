@@ -14,8 +14,7 @@ public class MultipleTimeModuleTest {
 
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TimeCustomizer.class, DateDto.class, HelloResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(TimeCustomizer.class, DateDto.class, HelloResource.class));
 
     @Test
     public void testDateIsAlwaysInTheExpectedFormat() {
@@ -32,14 +31,11 @@ public class MultipleTimeModuleTest {
     }
 
     private void verifyExpectedResult() {
-        RestAssured.get("/hello").then()
-                .statusCode(200)
-                .body(containsString("Z"), not(containsString("+")));
+        RestAssured.get("/hello").then().statusCode(200).body(containsString("Z"), not(containsString("+")));
     }
 
     private void modifyResource() {
-        TEST.modifySourceFile(TimeCustomizer.class, s -> s.replace("hello",
-                "hello2"));
+        TEST.modifySourceFile(TimeCustomizer.class, s -> s.replace("hello", "hello2"));
     }
 
 }

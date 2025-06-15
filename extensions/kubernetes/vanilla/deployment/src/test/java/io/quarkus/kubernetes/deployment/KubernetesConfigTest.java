@@ -23,8 +23,7 @@ import io.quarkus.test.QuarkusProdModeTest;
 class KubernetesConfigTest {
     @RegisterExtension
     static final QuarkusProdModeTest TEST = new QuarkusProdModeTest()
-            .withConfigurationResource("application-kubernetes.properties")
-            .setRun(true);
+            .withConfigurationResource("application-kubernetes.properties").setRun(true);
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -42,7 +41,8 @@ class KubernetesConfigTest {
     @SuppressWarnings("unchecked")
     void kubernetes() throws Exception {
         Path outputDir = prodModeTestResults.getBuildDir().resolve("kubernetes");
-        Iterable<Object> objects = new Yaml().loadAll(new String(Files.readAllBytes(outputDir.resolve("kubernetes.yml"))));
+        Iterable<Object> objects = new Yaml()
+                .loadAll(new String(Files.readAllBytes(outputDir.resolve("kubernetes.yml"))));
         for (Object object : objects) {
             if (((Map<String, Object>) object).get("kind").equals("Secret")) {
                 secret = (Map<String, Object>) object;
@@ -223,8 +223,8 @@ class KubernetesConfigTest {
         }
         assertTrue(assertEnvCount > 0);
 
-        Map<String, Object> hostAliases = deployment().map("spec").map("template").map("spec").map("hostAliases").list(0)
-                .asMap();
+        Map<String, Object> hostAliases = deployment().map("spec").map("template").map("spec").map("hostAliases")
+                .list(0).asMap();
         assertEquals("konoha", hostAliases.get("ip"));
         assertIterableEquals(List.of("dev", "qly", "prod"), (Iterable<String>) hostAliases.get("hostnames"));
 
@@ -258,7 +258,8 @@ class KubernetesConfigTest {
         assertEquals("tenten", ingress().map("metadata").map("annotations").asMap().get("tenten"));
         assertEquals("tenten", ingress().asMap("spec").get("ingressClassName"));
         assertEquals("tenten", ingress().map("spec").map("rules").list(0).asMap().get("host"));
-        assertEquals("/http", ingress().map("spec").map("rules").list(0).map("http").map("paths").list(0).asMap().get("path"));
+        assertEquals("/http",
+                ingress().map("spec").map("rules").list(0).map("http").map("paths").list(0).asMap().get("path"));
         assertEquals("Prefix",
                 ingress().map("spec").map("rules").list(0).map("http").map("paths").list(0).asMap().get("pathType"));
     }

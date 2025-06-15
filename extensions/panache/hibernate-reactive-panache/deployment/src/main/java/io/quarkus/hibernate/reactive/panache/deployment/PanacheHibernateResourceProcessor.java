@@ -75,7 +75,8 @@ public final class PanacheHibernateResourceProcessor {
     @BuildStep
     void collectEntityClasses(CombinedIndexBuildItem index, BuildProducer<PanacheEntityClassBuildItem> entityClasses) {
         // NOTE: we don't skip abstract/generic entities because they still need accessors
-        for (ClassInfo panacheEntityBaseSubclass : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
+        for (ClassInfo panacheEntityBaseSubclass : index.getIndex()
+                .getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
             // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
             if (!panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_ENTITY)) {
                 entityClasses.produce(new PanacheEntityClassBuildItem(panacheEntityBaseSubclass));
@@ -86,8 +87,7 @@ public final class PanacheHibernateResourceProcessor {
     @BuildStep
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
     @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
-    void build(CombinedIndexBuildItem index,
-            BuildProducer<BytecodeTransformerBuildItem> transformers,
+    void build(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<PanacheEntityClassBuildItem> entityClasses,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems) throws Exception {
 
@@ -113,9 +113,8 @@ public final class PanacheHibernateResourceProcessor {
             transformers.produce(new BytecodeTransformerBuildItem(daoClass, daoEnhancer));
         }
 
-        PanacheJpaEntityOperationsEnhancer entityOperationsEnhancer = new PanacheJpaEntityOperationsEnhancer(index.getIndex(),
-                methodCustomizers,
-                ReactiveJavaJpaTypeBundle.BUNDLE);
+        PanacheJpaEntityOperationsEnhancer entityOperationsEnhancer = new PanacheJpaEntityOperationsEnhancer(
+                index.getIndex(), methodCustomizers, ReactiveJavaJpaTypeBundle.BUNDLE);
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
             transformers.produce(new BytecodeTransformerBuildItem(entityClassName, entityOperationsEnhancer));
@@ -129,9 +128,9 @@ public final class PanacheHibernateResourceProcessor {
         for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_ID)) {
             ClassInfo info = JandexUtil.getEnclosingClass(annotationInstance);
             if (JandexUtil.isSubclassOf(index.getIndex(), info, DOTNAME_PANACHE_ENTITY)) {
-                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name() +
-                        "' but one is already provided by PanacheEntity, " +
-                        "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
+                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name()
+                        + "' but one is already provided by PanacheEntity, "
+                        + "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
                         Collections.emptyList());
                 return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
             }

@@ -37,19 +37,19 @@ public class CustomPseudoScopeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyPseudoScope.class, SimpleBean.class, MyPseudoContext.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyPseudoScope.class, SimpleBean.class, MyPseudoContext.class))
             .addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
                         ContextRegistrationPhaseBuildItem contextRegistrationPhase = context
                                 .consume(ContextRegistrationPhaseBuildItem.class);
-                        context.produce(new ContextConfiguratorBuildItem(contextRegistrationPhase.getContext()
-                                .configure(MyPseudoScope.class).param("message", "PONG").creator(MyPseudoContextCreator.class)
-                                .normal(false)));
+                        context.produce(new ContextConfiguratorBuildItem(
+                                contextRegistrationPhase.getContext().configure(MyPseudoScope.class)
+                                        .param("message", "PONG").creator(MyPseudoContextCreator.class).normal(false)));
                     }
-                }).produces(ContextConfiguratorBuildItem.class).consumes(ContextRegistrationPhaseBuildItem.class).build();
+                }).produces(ContextConfiguratorBuildItem.class).consumes(ContextRegistrationPhaseBuildItem.class)
+                        .build();
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {

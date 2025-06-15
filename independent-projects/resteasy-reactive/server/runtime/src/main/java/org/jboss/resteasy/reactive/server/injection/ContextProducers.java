@@ -24,9 +24,8 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 /**
- * Provides CDI producers for objects that can be injected via @Context
- * In quarkus-rest this works because @Context is considered an alias for @Inject
- * through the use of {@code AutoInjectAnnotationBuildItem}
+ * Provides CDI producers for objects that can be injected via @Context In quarkus-rest this works because @Context is
+ * considered an alias for @Inject through the use of {@code AutoInjectAnnotationBuildItem}
  */
 @Singleton
 public class ContextProducers {
@@ -74,26 +73,27 @@ public class ContextProducers {
     // HttpServerRequest, HttpServerRequest are Vert.x types so it's not necessary to have it injectable via @Context,
     // however we do use it in the Quickstarts so let's make it work
 
-    //    @RequestScoped
-    //    @Produces
-    //    HttpServerRequest httpServerRequest() {
-    //        return CurrentRequest.get().getContext().request();
-    //    }
+    // @RequestScoped
+    // @Produces
+    // HttpServerRequest httpServerRequest() {
+    // return CurrentRequest.get().getContext().request();
+    // }
 
-    //    @RequestScoped
-    //    @Produces
-    //    HttpServerResponse httpServerResponse() {
-    //        return CurrentRequest.get().getContext().response();
-    //    }
+    // @RequestScoped
+    // @Produces
+    // HttpServerResponse httpServerResponse() {
+    // return CurrentRequest.get().getContext().response();
+    // }
 
-    // TODO: ideally we would declare this bean with a lesser priority and let Quarkus override it using a higher priority,
-    //  however that is not possible because @Priority cannot be applied to methods
+    // TODO: ideally we would declare this bean with a lesser priority and let Quarkus override it using a higher
+    // priority,
+    // however that is not possible because @Priority cannot be applied to methods
 
-    //    @ApplicationScoped
-    //    @Produces
-    //    Providers providers() {
-    //        return getContext().getProviders();
-    //    }
+    // @ApplicationScoped
+    // @Produces
+    // Providers providers() {
+    // return getContext().getProviders();
+    // }
 
     @RequestScoped
     @Produces

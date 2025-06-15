@@ -51,7 +51,8 @@ public class VertxRedisClientFactory {
         // Avoid direct instantiation.
     }
 
-    public static Redis create(String name, Vertx vertx, RedisClientConfig config, TlsConfigurationRegistry tlsRegistry) {
+    public static Redis create(String name, Vertx vertx, RedisClientConfig config,
+            TlsConfigurationRegistry tlsRegistry) {
         RedisOptions options = new RedisOptions();
 
         Consumer<Set<URI>> configureOptions = new Consumer<Set<URI>>() {
@@ -79,8 +80,9 @@ public class VertxRedisClientFactory {
             hosts.addAll(computedHosts);
             configureOptions.accept(computedHosts);
         } else {
-            throw new ConfigurationException("Redis host not configured - you must either configure 'quarkus.redis.hosts` or" +
-                    " 'quarkus.redis.host-provider-name' and have a bean providing the hosts programmatically.");
+            throw new ConfigurationException(
+                    "Redis host not configured - you must either configure 'quarkus.redis.hosts` or"
+                            + " 'quarkus.redis.host-provider-name' and have a bean providing the hosts programmatically.");
         }
 
         if (RedisClientType.STANDALONE == config.clientType()) {
@@ -126,8 +128,8 @@ public class VertxRedisClientFactory {
     public static String applyClientQueryParam(String client, URI uri) {
 
         if (client.matches(".*" + NON_RESERVED_URI_PATTERN + ".*")) {
-            LOGGER.warn("The client query parameter contains reserved URI characters. " +
-                    "This may result in an incorrect client name after URI encoding.");
+            LOGGER.warn("The client query parameter contains reserved URI characters. "
+                    + "This may result in an incorrect client name after URI encoding.");
         }
 
         String query = uri.getQuery();
@@ -139,15 +141,15 @@ public class VertxRedisClientFactory {
             return uri.toString().trim();
         }
 
-        query = query == null ? "client=" + client
-                : uri.getQuery() + "&client=" + client;
+        query = query == null ? "client=" + client : uri.getQuery() + "&client=" + client;
 
         try {
-            return new URI(
-                    uri.getScheme(), uri.getAuthority(), uri.getPath(), query, uri.getFragment()).toString().trim();
+            return new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(), query, uri.getFragment()).toString()
+                    .trim();
         } catch (URISyntaxException e) {
-            LOGGER.warnf("Was not possible to generate a new Redis URL with client query parameter, " +
-                    "the value is: %s", client);
+            LOGGER.warnf(
+                    "Was not possible to generate a new Redis URL with client query parameter, " + "the value is: %s",
+                    client);
             return uri.toString().trim();
         }
     }
@@ -167,7 +169,8 @@ public class VertxRedisClientFactory {
 
     private static void customize(String name, RedisOptions options) {
         if (Arc.container() != null) {
-            List<InstanceHandle<RedisOptionsCustomizer>> customizers = Arc.container().listAll(RedisOptionsCustomizer.class);
+            List<InstanceHandle<RedisOptionsCustomizer>> customizers = Arc.container()
+                    .listAll(RedisOptionsCustomizer.class);
             for (InstanceHandle<RedisOptionsCustomizer> customizer : customizers) {
                 customizer.get().customize(name, options);
             }
@@ -261,13 +264,14 @@ public class VertxRedisClientFactory {
             defaultTrustAll = tlsRegistry.getDefault().get().isTrustAll();
             if (defaultTrustAll) {
                 LOGGER.warn("The default TLS configuration is set to trust all certificates. This is a security risk."
-                        + "Please use a named TLS configuration for the Redis client " + name + " to avoid this warning.");
+                        + "Please use a named TLS configuration for the Redis client " + name
+                        + " to avoid this warning.");
             }
         }
 
         if (configuration != null && !tlsFromHosts) {
-            LOGGER.warnf("The Redis client %s is configured with a named TLS configuration but the hosts are not " +
-                    "using the `rediss://` scheme - Disabling TLS", name);
+            LOGGER.warnf("The Redis client %s is configured with a named TLS configuration but the hosts are not "
+                    + "using the `rediss://` scheme - Disabling TLS", name);
         }
 
         // Apply the configuration

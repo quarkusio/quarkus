@@ -40,10 +40,8 @@ public class OpenApiResourceSecuredAtClassLevel {
         return "secret";
     }
 
-    @APIResponses({
-            @APIResponse(responseCode = "401", description = "Who are you?"),
-            @APIResponse(responseCode = "403", description = "You cannot do that.")
-    })
+    @APIResponses({ @APIResponse(responseCode = "401", description = "Who are you?"),
+            @APIResponse(responseCode = "403", description = "You cannot do that.") })
     @GET
     @Path("/test-security/classLevel/4")
     public String secureEndpoint4() {

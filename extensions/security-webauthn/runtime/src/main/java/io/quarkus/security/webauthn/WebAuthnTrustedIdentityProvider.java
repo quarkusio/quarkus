@@ -29,7 +29,8 @@ public class WebAuthnTrustedIdentityProvider implements IdentityProvider<Trusted
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(TrustedAuthenticationRequest request, AuthenticationRequestContext context) {
+    public Uni<SecurityIdentity> authenticate(TrustedAuthenticationRequest request,
+            AuthenticationRequestContext context) {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
         builder.setPrincipal(new QuarkusPrincipal(request.getPrincipal()));
         builder.addRoles(userProvider.getRoles(request.getPrincipal()));

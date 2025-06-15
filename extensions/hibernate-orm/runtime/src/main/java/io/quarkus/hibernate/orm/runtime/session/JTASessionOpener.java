@@ -10,8 +10,8 @@ import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode;
 /**
  * A delegate for opening a JTA-enabled Hibernate ORM session.
  * <p>
- * The main purpose of this class is to cache session options when possible;
- * if we didn't care about caching, we could just replace any call to
+ * The main purpose of this class is to cache session options when possible; if we didn't care about caching, we could
+ * just replace any call to
  */
 public class JTASessionOpener {
     public static JTASessionOpener create(SessionFactory sessionFactory) {
@@ -27,8 +27,8 @@ public class JTASessionOpener {
     }
 
     private static SessionBuilder createOptions(SessionFactory sessionFactory) {
-        return sessionFactory.withOptions()
-                .autoClose(true) // .owner() is deprecated as well, so it looks like we need to rely on deprecated code...
+        return sessionFactory.withOptions().autoClose(true) // .owner() is deprecated as well, so it looks like we need
+                // to rely on deprecated code...
                 .connectionHandlingMode(
                         PhysicalConnectionHandlingMode.DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION);
     }

@@ -12,8 +12,7 @@ public class OptionalTypeApplicationScopedBeanTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(OptionalTypeApplicationScopedEndpoint.class))
+            .withApplicationRoot((jar) -> jar.addClass(OptionalTypeApplicationScopedEndpoint.class))
             .assertException(t -> {
                 assertTrue(t.getMessage().startsWith(
                         "java.util.Optional type can not be used to represent JWT claims in @Singleton or @ApplicationScoped beans, make the bean @RequestScoped"

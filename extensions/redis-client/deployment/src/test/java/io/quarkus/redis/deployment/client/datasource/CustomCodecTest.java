@@ -27,9 +27,8 @@ public class CustomCodecTest {
 
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClass(Jedi.class).addClass(Sith.class)
-                            .addClass(CustomJediCodec.class).addClass(CustomSithCodec.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(Jedi.class).addClass(Sith.class)
+                    .addClass(CustomJediCodec.class).addClass(CustomSithCodec.class))
             .overrideConfigKey("quarkus.redis.hosts", "${quarkus.redis.tr}");
 
     @Inject

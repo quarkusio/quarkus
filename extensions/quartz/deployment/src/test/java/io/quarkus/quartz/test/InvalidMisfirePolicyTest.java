@@ -11,14 +11,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidMisfirePolicyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(IllegalArgumentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MisfirePolicyTest.Jobs.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.quartz.misfire-policy.\"simple_invalid_misfire_policy\"=cron-trigger-do-nothing\n" +
-                                    "quarkus.quartz.misfire-policy.\"cron_invalid_misfire_policy\"=simple-trigger-reschedule-now-with-existing-repeat-count\n"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(IllegalArgumentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MisfirePolicyTest.Jobs.class).addAsResource(new StringAsset(
+                    "quarkus.quartz.misfire-policy.\"simple_invalid_misfire_policy\"=cron-trigger-do-nothing\n"
+                            + "quarkus.quartz.misfire-policy.\"cron_invalid_misfire_policy\"=simple-trigger-reschedule-now-with-existing-repeat-count\n"),
+                    "application.properties"));
 
     @Test
     public void shouldFailWhenInvalidMisfirePolicyConfiguration() {

@@ -17,10 +17,12 @@ class UserFriendlyQuarkusRESTCapabilityCombinationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-rest-deployment", Version.getVersion())))
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-rest-deployment", Version.getVersion())))
             .assertException(t -> {
                 assertTrue(t.getMessage().contains("only one provider of the following capabilities"), t.getMessage());
-                assertTrue(t.getMessage().contains("capability %s is provided by".formatted(Capability.REST)), t.getMessage());
+                assertTrue(t.getMessage().contains("capability %s is provided by".formatted(Capability.REST)),
+                        t.getMessage());
             });
 
     @Test

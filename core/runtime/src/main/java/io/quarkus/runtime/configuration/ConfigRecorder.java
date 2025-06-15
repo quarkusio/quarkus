@@ -39,14 +39,13 @@ public class ConfigRecorder {
         for (Map.Entry<String, ConfigValue> entry : buildTimeRuntimeValues.entrySet()) {
             ConfigValue currentValue = config.getConfigValue(entry.getKey());
             // Check for changes. Also, we only have a change if the source ordinal is higher
-            // The config value can be null (for ex. if the property uses environment variables not available at build time)
+            // The config value can be null (for ex. if the property uses environment variables not available at build
+            // time)
             if (currentValue.getValue() != null && !Objects.equals(entry.getValue().getValue(), currentValue.getValue())
                     && entry.getValue().getSourceOrdinal() < currentValue.getSourceOrdinal()) {
-                mismatches.add(
-                        " - " + entry.getKey() + " is set to '" + currentValue.getValue()
-                                + "' but it is build time fixed to '"
-                                + entry.getValue().getValue() + "'. Did you change the property " + entry.getKey()
-                                + " after building the application?");
+                mismatches.add(" - " + entry.getKey() + " is set to '" + currentValue.getValue()
+                        + "' but it is build time fixed to '" + entry.getValue().getValue()
+                        + "'. Did you change the property " + entry.getKey() + " after building the application?");
             }
         }
 
@@ -60,7 +59,8 @@ public class ConfigRecorder {
 
         if (!mismatches.isEmpty()) {
             String msg = "Build time property cannot be changed at runtime:\n" + String.join("\n", mismatches);
-            // TODO - This should use ConfigConfig, but for some reason, the test fails sometimes with mapping not found when looking ConfigConfig
+            // TODO - This should use ConfigConfig, but for some reason, the test fails sometimes with mapping not found
+            // when looking ConfigConfig
             BuildTimeMismatchAtRuntime buildTimeMismatchAtRuntime = config
                     .getOptionalValue("quarkus.config.build-time-mismatch-at-runtime", BuildTimeMismatchAtRuntime.class)
                     .orElse(warn);
@@ -77,9 +77,9 @@ public class ConfigRecorder {
         List<String> runtimeProfiles = config.getProfiles();
 
         if (buildProfiles.size() != runtimeProfiles.size()) {
-            log.warn(
-                    "The profile '" + buildProfiles + "' used to build the native image is different from the runtime profile '"
-                            + runtimeProfiles + "'. This may lead to unexpected results.");
+            log.warn("The profile '" + buildProfiles
+                    + "' used to build the native image is different from the runtime profile '" + runtimeProfiles
+                    + "'. This may lead to unexpected results.");
             return;
         }
 

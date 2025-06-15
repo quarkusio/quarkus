@@ -8,9 +8,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to indicate the type of the <em>repeatable annotation
- * type</em> annotated with a {@link WithTestResource} annotations.
- *
+ * Used to indicate the type of the <em>repeatable annotation type</em> annotated with a {@link WithTestResource}
+ * annotations.
  * <p>
  */
 @Target(ElementType.ANNOTATION_TYPE)

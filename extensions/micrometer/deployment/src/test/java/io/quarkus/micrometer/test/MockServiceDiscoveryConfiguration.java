@@ -13,7 +13,8 @@ public class MockServiceDiscoveryConfiguration implements io.smallrye.stork.api.
     /**
      * Creates a new MockConfiguration
      *
-     * @param params the parameters, must not be {@code null}
+     * @param params
+     *        the parameters, must not be {@code null}
      */
     public MockServiceDiscoveryConfiguration(Map<String, String> params) {
         parameters = Collections.unmodifiableMap(params);

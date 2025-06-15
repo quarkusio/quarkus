@@ -19,12 +19,8 @@ public class ErrorThrowingCallback implements QuarkusTestAfterEachCallback {
         String throwableType = System.getProperty("quarkus.test.callback.throwableType");
 
         if ("AssertionError".equalsIgnoreCase(throwableType)) {
-            AssertionFailureBuilder
-                    .assertionFailure()
-                    .expected("a")
-                    .actual("b")
-                    .reason("Oh no, it broke! Here's an assertion error")
-                    .buildAndThrow();
+            AssertionFailureBuilder.assertionFailure().expected("a").actual("b")
+                    .reason("Oh no, it broke! Here's an assertion error").buildAndThrow();
         }
 
         if ("RuntimeException".equalsIgnoreCase(throwableType)) {

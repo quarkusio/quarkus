@@ -42,14 +42,13 @@ public class PubSubTest extends DatasourceTestBase {
     @Test
     void testWithSingleChannel() throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(3);
-        ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = ps.subscribe("people",
-                p -> latch.countDown()).await().indefinitely();
+        ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = ps.subscribe("people", p -> latch.countDown())
+                .await().indefinitely();
 
         ps.publish("people", person1).await().indefinitely();
         ps.publish("people", person2).await().indefinitely();
 
-        ds.value(String.class, String.class)
-                .set("hello", "foo").await().indefinitely();
+        ds.value(String.class, String.class).set("hello", "foo").await().indefinitely();
 
         ps.publish("people", person2).await().indefinitely();
 
@@ -68,8 +67,7 @@ public class PubSubTest extends DatasourceTestBase {
         ps.publish("people", person1).await().indefinitely();
         ps.publish("people", person2).await().indefinitely();
 
-        ds.value(String.class, String.class)
-                .set("hello", "foo").await().indefinitely();
+        ds.value(String.class, String.class).set("hello", "foo").await().indefinitely();
 
         ps.publish("people", person2).await().indefinitely();
 
@@ -87,8 +85,7 @@ public class PubSubTest extends DatasourceTestBase {
         ps.publish("people1", person1).await().indefinitely();
         ps.publish("people2", person2).await().indefinitely();
 
-        ds.value(String.class, String.class)
-                .set("hello", "foo").await().indefinitely();
+        ds.value(String.class, String.class).set("hello", "foo").await().indefinitely();
 
         ps.publish("people1", person2).await().indefinitely();
 
@@ -101,16 +98,15 @@ public class PubSubTest extends DatasourceTestBase {
     void testWithMultipleChannelsAndASinglePattern() throws InterruptedException {
         CountDownLatch latch1 = new CountDownLatch(3);
         CountDownLatch latch2 = new CountDownLatch(2);
-        ReactivePubSubCommands.ReactiveRedisSubscriber s1 = ps.subscribeToPattern("people*", p -> latch1.countDown()).await()
-                .indefinitely();
-        ReactivePubSubCommands.ReactiveRedisSubscriber s2 = ps.subscribeToPattern("p*ple1", p -> latch2.countDown()).await()
-                .indefinitely();
+        ReactivePubSubCommands.ReactiveRedisSubscriber s1 = ps.subscribeToPattern("people*", p -> latch1.countDown())
+                .await().indefinitely();
+        ReactivePubSubCommands.ReactiveRedisSubscriber s2 = ps.subscribeToPattern("p*ple1", p -> latch2.countDown())
+                .await().indefinitely();
 
         ps.publish("people1", person1).await().indefinitely();
         ps.publish("people2", person2).await().indefinitely();
 
-        ds.value(String.class, String.class)
-                .set("hello", "foo").await().indefinitely();
+        ds.value(String.class, String.class).set("hello", "foo").await().indefinitely();
 
         ps.publish("people1", person2).await().indefinitely();
 
@@ -132,8 +128,7 @@ public class PubSubTest extends DatasourceTestBase {
             ps.publish("people", new Person("p" + i, "")).await().indefinitely();
         }
 
-        ds.value(String.class, String.class)
-                .set("hello", "foo").await().indefinitely();
+        ds.value(String.class, String.class).set("hello", "foo").await().indefinitely();
 
         assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 

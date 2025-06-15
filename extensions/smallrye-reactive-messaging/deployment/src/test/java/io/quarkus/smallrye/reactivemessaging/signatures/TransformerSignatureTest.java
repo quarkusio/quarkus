@@ -30,14 +30,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TransformerSignatureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            BeanWithPublisherOfMessages.class,
-                            BeanWithPublisherBuilderOfMessages.class,
-                            BeanWithPublisherOfPayloads.class,
-                            BeanWithPublisherBuilderOfPayloads.class,
-                            Spy.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(BeanWithPublisherOfMessages.class, BeanWithPublisherBuilderOfMessages.class,
+                    BeanWithPublisherOfPayloads.class, BeanWithPublisherBuilderOfPayloads.class, Spy.class));
 
     @Inject
     BeanWithPublisherOfMessages beanWithPublisherOfMessages;
@@ -87,9 +82,8 @@ public class TransformerSignatureTest {
         @Incoming("A")
         @Outgoing("AA")
         public Publisher<Message<String>> process(Publisher<Message<Integer>> publisher) {
-            return ReactiveStreams.fromPublisher(publisher)
-                    .flatMapCompletionStage(m -> CompletableFuture
-                            .supplyAsync(() -> Message.of(Integer.toString(m.getPayload())), executor))
+            return ReactiveStreams.fromPublisher(publisher).flatMapCompletionStage(
+                    m -> CompletableFuture.supplyAsync(() -> Message.of(Integer.toString(m.getPayload())), executor))
                     .buildRs();
         }
 
@@ -140,9 +134,8 @@ public class TransformerSignatureTest {
         @Incoming("C")
         @Outgoing("CC")
         public PublisherBuilder<Message<String>> process(PublisherBuilder<Message<Integer>> publisher) {
-            return publisher
-                    .flatMapCompletionStage(m -> CompletableFuture
-                            .supplyAsync(() -> Message.of(Integer.toString(m.getPayload())), executor));
+            return publisher.flatMapCompletionStage(
+                    m -> CompletableFuture.supplyAsync(() -> Message.of(Integer.toString(m.getPayload())), executor));
         }
 
         @Incoming("CC")

@@ -92,7 +92,8 @@ public class QuartzProcessor {
 
     @BuildStep
     SchedulerImplementationBuildItem implementation() {
-        return new SchedulerImplementationBuildItem(Scheduled.QUARTZ, DotName.createSimple(QuartzSchedulerImpl.class), 1);
+        return new SchedulerImplementationBuildItem(Scheduled.QUARTZ, DotName.createSimple(QuartzSchedulerImpl.class),
+                1);
     }
 
     @BuildStep
@@ -138,16 +139,16 @@ public class QuartzProcessor {
             ClassInfo customDelegate = indexView.getClassByName(driverDelegate.get());
             if (customDelegate == null) {
                 String message = String.format(
-                        "Custom JDBC delegate implementation class '%s' was not found in Jandex index. " +
-                                "Make sure the dependency containing this class has proper marker file enabling discovery. " +
-                                "Alternatively, you can index a dependency using IndexDependencyBuildItem.",
+                        "Custom JDBC delegate implementation class '%s' was not found in Jandex index. "
+                                + "Make sure the dependency containing this class has proper marker file enabling discovery. "
+                                + "Alternatively, you can index a dependency using IndexDependencyBuildItem.",
                         driverDelegate.get());
                 throw new ConfigurationException(message);
             } else {
                 // any custom implementation needs to be a subclass of known Quarkus delegate
                 boolean implementsKnownDelegate = false;
-                for (DotName knownImplementation : Set.of(DELEGATE_MSSQL, DELEGATE_POSTGRESQL, DELEGATE_DB2V8, DELEGATE_STDJDBC,
-                        DELEGATE_HSQLDB)) {
+                for (DotName knownImplementation : Set.of(DELEGATE_MSSQL, DELEGATE_POSTGRESQL, DELEGATE_DB2V8,
+                        DELEGATE_STDJDBC, DELEGATE_HSQLDB)) {
                     for (ClassInfo classInfo : indexView.getAllKnownSubclasses(knownImplementation)) {
                         if (classInfo.name().equals(customDelegate.name())) {
                             implementsKnownDelegate = true;
@@ -207,19 +208,15 @@ public class QuartzProcessor {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
 
         if (config.serializeJobData()) {
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(
-                    String.class,
-                    JobDataMap.class,
-                    DirtyFlagMap.class,
-                    StringKeyDirtyFlagMap.class,
-                    HashMap.class)
-                    .reason(getClass().getName())
-                    .serialization(true).build());
+            reflectiveClasses.add(ReflectiveClassBuildItem.builder(String.class, JobDataMap.class, DirtyFlagMap.class,
+                    StringKeyDirtyFlagMap.class, HashMap.class).reason(getClass().getName()).serialization(true)
+                    .build());
         }
 
         Class<?> threadPoolClass;
         try {
-            threadPoolClass = Class.forName(config.threadPoolClass(), false, Thread.currentThread().getContextClassLoader());
+            threadPoolClass = Class.forName(config.threadPoolClass(), false,
+                    Thread.currentThread().getContextClassLoader());
             if (!ThreadPool.class.isAssignableFrom(threadPoolClass)) {
                 throw new ConfigurationException(
                         "Thread pool class does not implement ThreadPool interface spi: " + config.threadPoolClass());
@@ -229,44 +226,37 @@ public class QuartzProcessor {
         }
 
         reflectiveClasses.add(ReflectiveClassBuildItem.builder(threadPoolClass, SimpleInstanceIdGenerator.class)
-                .reason(getClass().getName())
-                .methods().build());
-        reflectiveClasses
-                .add(ReflectiveClassBuildItem.builder(CascadingClassLoadHelper.class, InitThreadContextClassLoadHelper.class)
-                        .reason(getClass().getName())
-                        .build());
-        reflectiveClasses.add(ReflectiveClassBuildItem.builder(config.storeType().clazz)
-                .reason(getClass().getName())
+                .reason(getClass().getName()).methods().build());
+        reflectiveClasses.add(
+                ReflectiveClassBuildItem.builder(CascadingClassLoadHelper.class, InitThreadContextClassLoadHelper.class)
+                        .reason(getClass().getName()).build());
+        reflectiveClasses.add(ReflectiveClassBuildItem.builder(config.storeType().clazz).reason(getClass().getName())
                 .methods().fields().build());
 
         if (config.storeType().isDbStore()) {
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(
-                    JobStoreSupport.class,
-                    AbstractTrigger.class,
-                    SimpleTriggerImpl.class,
-                    QuarkusQuartzConnectionPoolProvider.class)
-                    .reason(getClass().getName())
-                    .methods().build());
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(Connection.class)
-                    .reason(getClass().getName()).methods()
-                    .fields().build());
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(driverDialect.getDriver().get())
-                    .reason(getClass().getName())
-                    .methods().build());
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob")
-                    .reason(getClass().getName())
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem
+                            .builder(JobStoreSupport.class, AbstractTrigger.class, SimpleTriggerImpl.class,
+                                    QuarkusQuartzConnectionPoolProvider.class)
+                            .reason(getClass().getName()).methods().build());
+            reflectiveClasses.add(ReflectiveClassBuildItem.builder(Connection.class).reason(getClass().getName())
                     .methods().fields().build());
+            reflectiveClasses.add(ReflectiveClassBuildItem.builder(driverDialect.getDriver().get())
+                    .reason(getClass().getName()).methods().build());
+            reflectiveClasses
+                    .add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob")
+                            .reason(getClass().getName()).methods().fields().build());
         }
 
+        reflectiveClasses.addAll(
+                getAdditionalConfigurationReflectiveClasses(config.instanceIdGenerators(), InstanceIdGenerator.class));
         reflectiveClasses
-                .addAll(getAdditionalConfigurationReflectiveClasses(config.instanceIdGenerators(), InstanceIdGenerator.class));
-        reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners(), TriggerListener.class));
+                .addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners(), TriggerListener.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.jobListeners(), JobListener.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.plugins(), SchedulerPlugin.class));
-        reflectiveClasses
-                .add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$NonconcurrentInvokerJob")
-                        .reason(getClass().getName())
-                        .methods().build());
+        reflectiveClasses.add(ReflectiveClassBuildItem
+                .builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$NonconcurrentInvokerJob")
+                .reason(getClass().getName()).methods().build());
         return reflectiveClasses;
     }
 
@@ -275,17 +265,16 @@ public class QuartzProcessor {
         List<ReflectiveClassBuildItem> reflectiveClasses = new ArrayList<>();
         for (QuartzExtensionPointConfig props : config.values()) {
             try {
-                if (!clazz
-                        .isAssignableFrom(
-                                Class.forName(props.clazz(), false, Thread.currentThread().getContextClassLoader()))) {
-                    throw new IllegalArgumentException(String.format("%s does not implements %s", props.clazz(), clazz));
+                if (!clazz.isAssignableFrom(
+                        Class.forName(props.clazz(), false, Thread.currentThread().getContextClassLoader()))) {
+                    throw new IllegalArgumentException(
+                            String.format("%s does not implements %s", props.clazz(), clazz));
                 }
             } catch (ClassNotFoundException e) {
                 throw new IllegalArgumentException(e);
             }
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(props.clazz())
-                    .reason(getClass().getName())
-                    .methods().build());
+            reflectiveClasses.add(
+                    ReflectiveClassBuildItem.builder(props.clazz()).reason(getClass().getName()).methods().build());
         }
         return reflectiveClasses;
     }
@@ -293,23 +282,16 @@ public class QuartzProcessor {
     @BuildStep
     public List<LogCleanupFilterBuildItem> logCleanup(QuartzBuildTimeConfig config) {
         List<LogCleanupFilterBuildItem> logCleanUps = new ArrayList<>();
-        logCleanUps.add(new LogCleanupFilterBuildItem(StdSchedulerFactory.class.getName(),
-                Level.INFO,
-                "Quartz scheduler version:",
-                "Using default implementation for",
-                "Quartz scheduler '"));
+        logCleanUps.add(new LogCleanupFilterBuildItem(StdSchedulerFactory.class.getName(), Level.INFO,
+                "Quartz scheduler version:", "Using default implementation for", "Quartz scheduler '"));
 
-        logCleanUps.add(new LogCleanupFilterBuildItem(org.quartz.core.QuartzScheduler.class.getName(),
-                Level.INFO,
-                "Quartz Scheduler v",
-                "JobFactory set to:",
-                "Scheduler meta-data:",
-                "Scheduler "));
+        logCleanUps.add(new LogCleanupFilterBuildItem(org.quartz.core.QuartzScheduler.class.getName(), Level.INFO,
+                "Quartz Scheduler v", "JobFactory set to:", "Scheduler meta-data:", "Scheduler "));
 
-        logCleanUps.add(new LogCleanupFilterBuildItem(config.storeType().clazz, config.storeType().simpleName
-                + " initialized.", "Handling", "Using db table-based data access locking",
-                "JDBCJobStore threads will inherit ContextClassLoader of thread",
-                "Couldn't rollback jdbc connection", "Database connection shutdown unsuccessful"));
+        logCleanUps.add(new LogCleanupFilterBuildItem(config.storeType().clazz,
+                config.storeType().simpleName + " initialized.", "Handling", "Using db table-based data access locking",
+                "JDBCJobStore threads will inherit ContextClassLoader of thread", "Couldn't rollback jdbc connection",
+                "Database connection shutdown unsuccessful"));
         logCleanUps.add(new LogCleanupFilterBuildItem(SchedulerSignalerImpl.class.getName(),
                 "Initialized Scheduler Signaller of type"));
         logCleanUps.add(new LogCleanupFilterBuildItem(QuartzSchedulerThread.class.getName(),
@@ -332,8 +314,7 @@ public class QuartzProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     public void quartzSupportBean(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig,
-            QuartzRecorder recorder,
-            QuartzJDBCDriverDialectBuildItem driverDialect,
+            QuartzRecorder recorder, QuartzJDBCDriverDialectBuildItem driverDialect,
             List<ScheduledBusinessMethodItem> scheduledMethods,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
@@ -344,12 +325,14 @@ public class QuartzProcessor {
             }
         }
 
-        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(QuartzSupport.class)
-                .scope(Singleton.class) // this should be @ApplicationScoped but it fails for some reason
-                .setRuntimeInit()
-                .supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig, driverDialect.getDriver(),
-                        nonconcurrentMethods))
-                .done());
+        syntheticBeanBuildItemBuildProducer
+                .produce(SyntheticBeanBuildItem.configure(QuartzSupport.class).scope(Singleton.class) // this should be
+                        // @ApplicationScoped
+                        // but it fails
+                        // for some reason
+                        .setRuntimeInit().supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig,
+                                driverDialect.getDriver(), nonconcurrentMethods))
+                        .done());
     }
 
 }

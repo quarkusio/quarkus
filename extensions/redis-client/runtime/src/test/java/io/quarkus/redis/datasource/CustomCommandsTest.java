@@ -50,7 +50,8 @@ public class CustomCommandsTest extends DatasourceTestBase {
         io.vertx.redis.client.Command cmd = io.vertx.redis.client.Command.HSET;
         ds.execute(cmd, key, "field", "hello-bare");
 
-        Assertions.assertThat(ds.hash(String.class, String.class, String.class).hget(key, "field")).isEqualTo("hello-bare");
+        Assertions.assertThat(ds.hash(String.class, String.class, String.class).hget(key, "field"))
+                .isEqualTo("hello-bare");
     }
 
     @Test

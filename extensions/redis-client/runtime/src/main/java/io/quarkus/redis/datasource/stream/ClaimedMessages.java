@@ -5,9 +5,12 @@ import java.util.List;
 /**
  * Represents claimed messages
  *
- * @param <K> the type of the key
- * @param <F> the field type for the payload
- * @param <V> the value type for the payload
+ * @param <K>
+ *        the type of the key
+ * @param <F>
+ *        the field type for the payload
+ * @param <V>
+ *        the value type for the payload
  */
 public class ClaimedMessages<K, F, V> {
     private final String id;

@@ -16,8 +16,8 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 
 /**
- * This fixture provides access to read the expected and the actual configuration of flyway.
- * It also provides a method combining all assertions to be reused for multiple tests.
+ * This fixture provides access to read the expected and the actual configuration of flyway. It also provides a method
+ * combining all assertions to be reused for multiple tests.
  */
 @ApplicationScoped
 public class FlywayExtensionConfigFixture {
@@ -176,7 +176,7 @@ public class FlywayExtensionConfigFixture {
     }
 
     private void log(String content) {
-        //activate for debugging
+        // activate for debugging
         // System.out.println(content);
     }
 

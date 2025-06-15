@@ -17,7 +17,8 @@ public class ServerByteArrayMessageBodyHandler extends ByteArrayMessageBodyHandl
         implements ServerMessageBodyWriter<byte[]>, ServerMessageBodyReader<byte[]> {
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return true;
     }
 
@@ -28,7 +29,8 @@ public class ServerByteArrayMessageBodyHandler extends ByteArrayMessageBodyHandl
     }
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return true;
     }
 

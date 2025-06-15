@@ -41,8 +41,8 @@ public class FileSystemWatcherTestCase {
 
     @BeforeEach
     public void setup() throws Exception {
-        //this can be slow on other OS's
-        //as it just relies on polling
+        // this can be slow on other OS's
+        // as it just relies on polling
         Assumptions.assumeTrue(RuntimeUpdatesProcessor.IS_LINUX);
 
         rootDir = Path.of(System.getProperty("java.io.tmpdir"), DIR_NAME);
@@ -84,7 +84,7 @@ public class FileSystemWatcherTestCase {
                     secondResults.add(changes);
                 }
             });
-            //first add a file
+            // first add a file
             Path added = rootDir.resolve("newlyAddedFile.txt").toAbsolutePath();
             touchFile(added);
             checkResult(added, ADDED);
@@ -132,25 +132,22 @@ public class FileSystemWatcherTestCase {
         FileChangeEvent res = results.iterator().next();
         FileChangeEvent res2 = secondResults.iterator().next();
 
-        //sometime OS's will give a MODIFIED event before the REMOVED one
-        //We consume these events here
+        // sometime OS's will give a MODIFIED event before the REMOVED one
+        // We consume these events here
         long endTime = System.currentTimeMillis() + 10000;
-        while (type == REMOVED
-                && (res.getType() == MODIFIED || res2.getType() == MODIFIED)
+        while (type == REMOVED && (res.getType() == MODIFIED || res2.getType() == MODIFIED)
                 && System.currentTimeMillis() < endTime) {
             FileChangeEvent[] nextEvents = consumeEvents();
             res = nextEvents[0];
             res2 = nextEvents[1];
         }
 
-        //sometime OS's will give a MODIFIED event on its parent folder before the ADDED one
-        //We consume these events here
+        // sometime OS's will give a MODIFIED event on its parent folder before the ADDED one
+        // We consume these events here
         endTime = System.currentTimeMillis() + 10000;
-        while (type == ADDED
-                && (res.getType() == MODIFIED || res2.getType() == MODIFIED)
+        while (type == ADDED && (res.getType() == MODIFIED || res2.getType() == MODIFIED)
                 && (res.getFile().equals(file.getParent()) || res2.getFile().equals(file.getParent()))
-                && !Files.isDirectory(file)
-                && System.currentTimeMillis() < endTime) {
+                && !Files.isDirectory(file) && System.currentTimeMillis() < endTime) {
             FileChangeEvent[] nextEvents = consumeEvents();
             res = nextEvents[0];
             res2 = nextEvents[1];
@@ -181,10 +178,7 @@ public class FileSystemWatcherTestCase {
             return;
         }
 
-        Files.walk(path)
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(File::delete);
+        Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
     }
 
 }

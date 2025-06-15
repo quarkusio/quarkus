@@ -15,11 +15,9 @@ public class PropertyNotFoundOutputOriginalTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("foos:{foos}"), "templates/test.html")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("foos:{foos}"), "templates/test.html")
                     .addAsResource(new StringAsset("quarkus.qute.property-not-found-strategy=output-original"
-                            + "\nquarkus.qute.strict-rendering=false"),
-                            "application.properties"));
+                            + "\nquarkus.qute.strict-rendering=false"), "application.properties"));
 
     @Inject
     Template test;

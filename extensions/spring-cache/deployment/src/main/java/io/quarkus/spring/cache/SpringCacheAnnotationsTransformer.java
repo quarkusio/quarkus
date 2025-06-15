@@ -24,8 +24,7 @@ public class SpringCacheAnnotationsTransformer implements AnnotationsTransformer
 
     private static final Logger LOGGER = Logger.getLogger(SpringCacheAnnotationsTransformer.class);
 
-    private static final DotName CACHE_RESULT_INTERCEPTOR_BINDING = DotName
-            .createSimple(CacheResult.class.getName());
+    private static final DotName CACHE_RESULT_INTERCEPTOR_BINDING = DotName.createSimple(CacheResult.class.getName());
     private static final DotName CACHE_INVALIDATE_INTERCEPTOR_BINDING = DotName
             .createSimple(CacheInvalidate.class.getName());
     private static final DotName CACHE_INVALIDATE_ALL_INTERCEPTOR_BINDING = DotName
@@ -48,7 +47,8 @@ public class SpringCacheAnnotationsTransformer implements AnnotationsTransformer
             Optional<String> cacheName = getSpringCacheName(cacheable);
             if (cacheName.isPresent()) {
                 transformationContext.transform().add(CACHE_RESULT_INTERCEPTOR_BINDING,
-                        AnnotationValue.createStringValue(CacheDeploymentConstants.CACHE_NAME_PARAM, cacheName.get())).done();
+                        AnnotationValue.createStringValue(CacheDeploymentConstants.CACHE_NAME_PARAM, cacheName.get()))
+                        .done();
             } else {
                 warnAboutMissingCacheName(cacheable, methodInfo);
             }
@@ -64,25 +64,24 @@ public class SpringCacheAnnotationsTransformer implements AnnotationsTransformer
             if (allEntriesValue != null) {
                 allEntries = allEntriesValue.asBoolean();
             }
-            transformationContext.transform()
-                    .add(allEntries ? CACHE_INVALIDATE_ALL_INTERCEPTOR_BINDING
-                            : CACHE_INVALIDATE_INTERCEPTOR_BINDING,
-                            AnnotationValue.createStringValue(CacheDeploymentConstants.CACHE_NAME_PARAM, cacheName.get()))
+            transformationContext.transform().add(
+                    allEntries ? CACHE_INVALIDATE_ALL_INTERCEPTOR_BINDING : CACHE_INVALIDATE_INTERCEPTOR_BINDING,
+                    AnnotationValue.createStringValue(CacheDeploymentConstants.CACHE_NAME_PARAM, cacheName.get()))
                     .done();
         } else if (methodInfo.hasAnnotation(CACHE_PUT)) {
             /*
-             * @CachePut is just an operation that overrides the cache entry with the new result so it is
-             * equivalent of first invalidating the cache entry and then adding the new result
+             * @CachePut is just an operation that overrides the cache entry with the new result so it is equivalent of
+             * first invalidating the cache entry and then adding the new result
              */
             AnnotationInstance cachePut = methodInfo.annotation(CACHE_PUT);
             Optional<String> cacheName = getSpringCacheName(cachePut);
             if (cacheName.isPresent()) {
-                transformationContext
-                        .transform()
+                transformationContext.transform()
                         .add(CACHE_RESULT_INTERCEPTOR_BINDING,
-                                AnnotationValue.createStringValue(CacheDeploymentConstants.CACHE_NAME_PARAM, cacheName.get()))
-                        .add(CACHE_INVALIDATE_INTERCEPTOR_BINDING,
-                                AnnotationValue.createStringValue(CacheDeploymentConstants.CACHE_NAME_PARAM, cacheName.get()))
+                                AnnotationValue.createStringValue(CacheDeploymentConstants.CACHE_NAME_PARAM,
+                                        cacheName.get()))
+                        .add(CACHE_INVALIDATE_INTERCEPTOR_BINDING, AnnotationValue
+                                .createStringValue(CacheDeploymentConstants.CACHE_NAME_PARAM, cacheName.get()))
                         .done();
             } else {
                 warnAboutMissingCacheName(cachePut, methodInfo);
@@ -91,7 +90,7 @@ public class SpringCacheAnnotationsTransformer implements AnnotationsTransformer
     }
 
     private void warnAboutMissingCacheName(AnnotationInstance instance, MethodInfo methodInfo) {
-        LOGGER.warn(instance + " has no specified cache name, so it will be ignored. Offending method is '" + methodInfo.name()
-                + "' of class '" + methodInfo.declaringClass().name().toString() + "'");
+        LOGGER.warn(instance + " has no specified cache name, so it will be ignored. Offending method is '"
+                + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name().toString() + "'");
     }
 }

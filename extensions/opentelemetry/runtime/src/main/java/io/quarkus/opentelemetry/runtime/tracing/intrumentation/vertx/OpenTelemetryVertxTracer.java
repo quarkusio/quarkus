@@ -23,13 +23,8 @@ public class OpenTelemetryVertxTracer
     }
 
     @Override
-    public <R> SpanOperation receiveRequest(
-            final Context context,
-            final SpanKind kind,
-            final TracingPolicy policy,
-            final R request,
-            final String operation,
-            final Iterable<Map.Entry<String, String>> headers,
+    public <R> SpanOperation receiveRequest(final Context context, final SpanKind kind, final TracingPolicy policy,
+            final R request, final String operation, final Iterable<Map.Entry<String, String>> headers,
             final TagExtractor<R> tagExtractor) {
 
         return getTracer(request, tagExtractor).receiveRequest(context, kind, policy, request, operation, headers,
@@ -37,43 +32,30 @@ public class OpenTelemetryVertxTracer
     }
 
     @Override
-    public <R> void sendResponse(
-            final Context context,
-            final R response,
-            final SpanOperation spanOperation,
-            final Throwable failure,
-            final TagExtractor<R> tagExtractor) {
+    public <R> void sendResponse(final Context context, final R response, final SpanOperation spanOperation,
+            final Throwable failure, final TagExtractor<R> tagExtractor) {
 
         getTracer(spanOperation, tagExtractor).sendResponse(context, response, spanOperation, failure, tagExtractor);
     }
 
     @Override
-    public <R> SpanOperation sendRequest(
-            final Context context,
-            final SpanKind kind,
-            final TracingPolicy policy,
-            final R request,
-            final String operation,
-            final BiConsumer<String, String> headers,
+    public <R> SpanOperation sendRequest(final Context context, final SpanKind kind, final TracingPolicy policy,
+            final R request, final String operation, final BiConsumer<String, String> headers,
             final TagExtractor<R> tagExtractor) {
 
-        return getTracer(request, tagExtractor).sendRequest(context, kind, policy, request, operation, headers, tagExtractor);
+        return getTracer(request, tagExtractor).sendRequest(context, kind, policy, request, operation, headers,
+                tagExtractor);
     }
 
     @Override
-    public <R> void receiveResponse(
-            final Context context,
-            final R response,
-            final SpanOperation spanOperation,
-            final Throwable failure,
-            final TagExtractor<R> tagExtractor) {
+    public <R> void receiveResponse(final Context context, final R response, final SpanOperation spanOperation,
+            final Throwable failure, final TagExtractor<R> tagExtractor) {
 
         getTracer(spanOperation, tagExtractor).receiveResponse(context, response, spanOperation, failure, tagExtractor);
     }
 
     @SuppressWarnings("unchecked")
-    private <R> VertxTracer<SpanOperation, SpanOperation> getTracer(
-            final R request,
+    private <R> VertxTracer<SpanOperation, SpanOperation> getTracer(final R request,
             final TagExtractor<R> tagExtractor) {
 
         for (InstrumenterVertxTracer<?, ?> instrumenterVertxTracer : instrumenterVertxTracers) {
@@ -127,12 +109,8 @@ public class OpenTelemetryVertxTracer
             return scope;
         }
 
-        static SpanOperation span(
-                final Context context,
-                final Object request,
-                final MultiMap headers,
-                final io.opentelemetry.context.Context spanContext,
-                final Scope scope) {
+        static SpanOperation span(final Context context, final Object request, final MultiMap headers,
+                final io.opentelemetry.context.Context spanContext, final Scope scope) {
 
             return new SpanOperation(context, request, headers, spanContext, scope);
         }

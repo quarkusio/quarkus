@@ -47,18 +47,19 @@ public final class OidcClientsImpl implements OidcClients, Closeable {
 
     @Inject
     OidcClientsImpl(OidcClientsConfig oidcClientsConfig, Vertx vertx, TlsConfigurationRegistry registry) {
-        this(oidcClientsConfig, vertx, OidcClientsConfig.getDefaultClient(oidcClientsConfig), OidcTlsSupport.of(registry));
+        this(oidcClientsConfig, vertx, OidcClientsConfig.getDefaultClient(oidcClientsConfig),
+                OidcTlsSupport.of(registry));
     }
 
     private OidcClientsImpl(OidcClientsConfig oidcClientsConfig, Vertx vertx, OidcClientConfig defaultClientConfig,
             OidcTlsSupport tlsSupport) {
         this(createOidcClient(defaultClientConfig, defaultClientConfig.id().get(), vertx, tlsSupport),
-                createStaticOidcClients(oidcClientsConfig, vertx, tlsSupport, defaultClientConfig),
-                vertx, tlsSupport, createTokenRefreshPeriodicTask(oidcClientsConfig, vertx));
+                createStaticOidcClients(oidcClientsConfig, vertx, tlsSupport, defaultClientConfig), vertx, tlsSupport,
+                createTokenRefreshPeriodicTask(oidcClientsConfig, vertx));
     }
 
-    private OidcClientsImpl(OidcClient defaultClient, Map<String, OidcClient> staticOidcClients,
-            Vertx vertx, OidcTlsSupport tlsSupport, PeriodicTask tokenRefreshTask) {
+    private OidcClientsImpl(OidcClient defaultClient, Map<String, OidcClient> staticOidcClients, Vertx vertx,
+            OidcTlsSupport tlsSupport, PeriodicTask tokenRefreshTask) {
         this.defaultClient = defaultClient;
         this.staticOidcClients = staticOidcClients;
         this.vertx = vertx;

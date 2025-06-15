@@ -19,8 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DelayedExecutionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(Jobs.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class));
 
     @Test
     public void testSimpleScheduledJobs() throws InterruptedException {
@@ -41,12 +40,9 @@ public class DelayedExecutionTest {
         }
 
         void start(@Observes StartupEvent event, Scheduler scheduler) {
-            scheduler.newJob("bar")
-                    .setInterval("1s")
-                    .setExecutionMaxDelay("500ms")
-                    .setTask(se -> {
-                        LATCH2.countDown();
-                    }).schedule();
+            scheduler.newJob("bar").setInterval("1s").setExecutionMaxDelay("500ms").setTask(se -> {
+                LATCH2.countDown();
+            }).schedule();
         }
 
         void onDelay(@Observes DelayedExecution delayedExecution) {

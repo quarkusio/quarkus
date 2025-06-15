@@ -10,19 +10,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import io.quarkus.test.junit.QuarkusMainTestExtension;
 
 /**
- * Annotation that indicates that this test should run the Quarkus main method
- * inside the current JVM. A new in-memory quarkus application will be generated,
- * and will be run to completion.
- *
- * Injection of beans into a test class using {@code @Inject} is not supported
- * in {@code QuarkusMainTest}.
- *
- * Methods inside the test class must be annotated with {@link io.quarkus.test.junit.main.Launch} or have a
- * {@link io.quarkus.test.junit.main.QuarkusMainLauncher} parameter to be able to start the application manually.
- *
- * Note that this can be used in conjunction with other {@link io.quarkus.test.junit.QuarkusTest}
- * based tests. {@code QuarkusMainTest} is used to check a complete execution, while {@code QuarkusTest} can be
- * used to inject components and perform more fine-grained checks.
+ * Annotation that indicates that this test should run the Quarkus main method inside the current JVM. A new in-memory
+ * quarkus application will be generated, and will be run to completion. Injection of beans into a test class using
+ * {@code @Inject} is not supported in {@code QuarkusMainTest}. Methods inside the test class must be annotated with
+ * {@link io.quarkus.test.junit.main.Launch} or have a {@link io.quarkus.test.junit.main.QuarkusMainLauncher} parameter
+ * to be able to start the application manually. Note that this can be used in conjunction with other
+ * {@link io.quarkus.test.junit.QuarkusTest} based tests. {@code QuarkusMainTest} is used to check a complete execution,
+ * while {@code QuarkusTest} can be used to inject components and perform more fine-grained checks.
  */
 @Target(ElementType.TYPE)
 @ExtendWith({ QuarkusMainTestExtension.class })

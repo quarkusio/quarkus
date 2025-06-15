@@ -10,10 +10,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TypeErrorTest3 {
 
     @RegisterExtension
-    static final QuarkusUnitTest configError = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TypeErrorResource.class)
-                    .addAsResource("templates/TypeErrorResource/typeError3.txt"))
+    static final QuarkusUnitTest configError = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClass(TypeErrorResource.class).addAsResource("templates/TypeErrorResource/typeError3.txt"))
             .assertException(t -> {
                 assertTrue(t.getMessage().contains("Incorrect expression"));
                 assertTrue(t.getMessage().contains("name.foo()"));

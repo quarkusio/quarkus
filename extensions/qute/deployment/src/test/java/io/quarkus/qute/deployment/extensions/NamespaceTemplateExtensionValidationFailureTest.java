@@ -15,12 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NamespaceTemplateExtensionValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "{bro:surname}\n"
-                                    + "{bro:name.bubu}"),
-                            "templates/foo.html")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("{bro:surname}\n" + "{bro:name.bubu}"), "templates/foo.html")
                     .addClasses(SomeExtensions.class))
             .assertException(t -> {
                 Throwable e = t;

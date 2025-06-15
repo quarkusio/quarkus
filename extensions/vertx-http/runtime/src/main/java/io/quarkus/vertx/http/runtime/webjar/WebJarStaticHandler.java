@@ -56,7 +56,8 @@ public class WebJarStaticHandler implements Handler<RoutingContext>, Closeable {
         return webRootConfigurations;
     }
 
-    public void setWebRootConfigurations(List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations) {
+    public void setWebRootConfigurations(
+            List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations) {
         this.webRootConfigurations = webRootConfigurations;
     }
 
@@ -78,8 +79,7 @@ public class WebJarStaticHandler implements Handler<RoutingContext>, Closeable {
                 HANDLER_CREATION_LOCK.lock();
                 if (handler == null) {
                     if (finalDestination != null && finalDestination.startsWith("META-INF")) {
-                        handler = StaticHandler.create(finalDestination)
-                                .setDefaultContentEncoding("UTF-8");
+                        handler = StaticHandler.create(finalDestination).setDefaultContentEncoding("UTF-8");
                     } else if (webRootConfigurations != null) {
                         handler = new FileSystemStaticHandler(webRootConfigurations);
                     } else {

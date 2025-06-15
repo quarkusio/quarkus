@@ -11,8 +11,7 @@ import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 /**
- * Representation of a docker-compose file, with partial parsing for validation and extraction of a minimal set of
- * data.
+ * Representation of a docker-compose file, with partial parsing for validation and extraction of a minimal set of data.
  */
 public class ComposeFile {
 

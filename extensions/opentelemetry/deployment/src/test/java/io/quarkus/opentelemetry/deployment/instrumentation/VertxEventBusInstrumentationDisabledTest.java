@@ -32,11 +32,10 @@ import io.vertx.ext.web.Router;
 public class VertxEventBusInstrumentationDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Events.class, TestUtil.class, TestSpanExporter.class, TestSpanExporterProvider.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(Events.class, TestUtil.class, TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .overrideConfigKey("quarkus.otel.traces.exporter", "test-span-exporter")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
             .overrideConfigKey("quarkus.otel.logs.exporter", "none")
@@ -54,10 +53,7 @@ public class VertxEventBusInstrumentationDisabledTest {
     @Test
     void testTracingDisabled() throws Exception {
 
-        RestAssured.when().get("/hello/event")
-                .then()
-                .statusCode(HTTP_OK)
-                .body(equalTo("BAR"));
+        RestAssured.when().get("/hello/event").then().statusCode(HTTP_OK).body(equalTo("BAR"));
 
         // http request and dummy
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
@@ -76,8 +72,7 @@ public class VertxEventBusInstrumentationDisabledTest {
 
         @ConsumeEvent("foo")
         String echo(String foo) {
-            tracer.spanBuilder("io.quarkus.vertx.opentelemetry").startSpan()
-                    .setAttribute("test.message", "dummy")
+            tracer.spanBuilder("io.quarkus.vertx.opentelemetry").startSpan().setAttribute("test.message", "dummy")
                     .end();
             return foo.toUpperCase();
         }

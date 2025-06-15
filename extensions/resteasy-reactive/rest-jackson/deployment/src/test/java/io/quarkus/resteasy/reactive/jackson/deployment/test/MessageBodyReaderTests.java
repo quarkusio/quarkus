@@ -59,7 +59,8 @@ class MessageBodyReaderTests {
         }
 
         void deserializeMissingToken() throws IOException {
-            var stream = new ByteArrayInputStream("{\"model\": \"model\", \"cost\": 2".getBytes(StandardCharsets.UTF_8));
+            var stream = new ByteArrayInputStream(
+                    "{\"model\": \"model\", \"cost\": 2".getBytes(StandardCharsets.UTF_8));
             Object widget = new Widget("", 1d);
             reader.readFrom((Class<Object>) widget.getClass(), null, null, null, null, stream);
         }
@@ -72,10 +73,10 @@ class MessageBodyReaderTests {
         }
 
         void deserializeMissingReferenceProperty() throws IOException {
-            var json = "{\n" +
-                    "  \"id\" : 1,\n" +
-                    "  \"name\" : \"Learn HTML\",\n" +
-                    "  \"owner\" : 1\n" + // unresolved reference to student
+            var json = "{\n" + "  \"id\" : 1,\n" + "  \"name\" : \"Learn HTML\",\n" + "  \"owner\" : 1\n" + // unresolved
+                                                                                                            // reference
+                                                                                                            // to
+                                                                                                            // student
                     "}";
 
             var stream = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
@@ -84,9 +85,7 @@ class MessageBodyReaderTests {
         }
 
         void deserializeClassWithInvalidDefinition() throws IOException {
-            var json = "{\n" +
-                    "  \"arg\" : \"Learn HTML\"" +
-                    "}";
+            var json = "{\n" + "  \"arg\" : \"Learn HTML\"" + "}";
 
             var stream = new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8));
             Object invalid = new InvalidDefinition(null);
@@ -97,7 +96,8 @@ class MessageBodyReaderTests {
     @Nested
     @DisplayName("JacksonMessageBodyReader")
     class JacksonMessageBodyReaderTests {
-        private final CommonReaderTests tests = new CommonReaderTests(new JacksonBasicMessageBodyReader(new ObjectMapper()));
+        private final CommonReaderTests tests = new CommonReaderTests(
+                new JacksonBasicMessageBodyReader(new ObjectMapper()));
 
         @Test
         void shouldThrowStreamReadException() {
@@ -182,9 +182,7 @@ class MessageBodyReaderTests {
         public final double cost;
 
         @JsonCreator
-        public Widget(
-                @JsonProperty("model") String model,
-                @JsonProperty("cost") double cost) {
+        public Widget(@JsonProperty("model") String model, @JsonProperty("cost") double cost) {
             this.model = Objects.requireNonNull(model, "'model' must be supplied");
             this.cost = cost;
         }

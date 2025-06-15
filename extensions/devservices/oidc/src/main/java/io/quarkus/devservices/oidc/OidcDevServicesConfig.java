@@ -25,7 +25,8 @@ public interface OidcDevServicesConfig {
     /**
      * A map of roles for OIDC identity provider users.
      * <p>
-     * If empty, default roles are assigned: user `alice` receives `admin` and `user` roles and user `bob` receives role `user`.
+     * If empty, default roles are assigned: user `alice` receives `admin` and `user` roles and user `bob` receives role
+     * `user`.
      */
     @ConfigDocMapKey("role-name")
     Map<String, List<String>> roles();

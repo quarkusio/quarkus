@@ -13,12 +13,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ContextualErrorMessagesConfigTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class, HelloClient2.class)
-                    .addAsResource(new StringAsset(
+            .withApplicationRoot((jar) -> jar.addClasses(EchoResource.class, HelloClient2.class).addAsResource(
+                    new StringAsset(
                             "quarkus.rest-client.hello2.url=http://localhost:${quarkus.http.test-port:8081}/wrong-url\n"
                                     + "quarkus.rest-client.disable-contextual-error-messages=true\n"),
-                            "application.properties"));
+                    "application.properties"));
 
     @RestClient
     HelloClient2 client;

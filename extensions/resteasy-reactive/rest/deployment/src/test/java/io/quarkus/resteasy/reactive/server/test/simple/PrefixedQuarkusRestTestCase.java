@@ -13,68 +13,53 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 /**
- * This test makes sure that the http.root-path is honored by quarkus-rest
- * by running the same test as SimpleQuarkusRestTestCase
+ * This test makes sure that the http.root-path is honored by quarkus-rest by running the same test as
+ * SimpleQuarkusRestTestCase
  */
 public class PrefixedQuarkusRestTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.http.root-path", "/prefix")
+    static QuarkusUnitTest test = new QuarkusUnitTest().overrideConfigKey("quarkus.http.root-path", "/prefix")
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(SimpleQuarkusRestResource.class, Person.class,
-                                    TestRequestFilter.class, TestRequestFilterWithHighPriority.class,
-                                    TestRequestFilterWithHighestPriority.class,
-                                    Foo.class, Bar.class,
-                                    TestFooRequestFilter.class, TestBarRequestFilter.class, TestFooBarRequestFilter.class,
-                                    TestFooResponseFilter.class, TestBarResponseFilter.class, TestFooBarResponseFilter.class,
-                                    TestResponseFilter.class, HelloService.class, TestException.class,
-                                    TestExceptionMapper.class, TestPreMatchRequestFilter.class,
-                                    FeatureMappedException.class, FeatureMappedExceptionMapper.class,
-                                    FeatureRequestFilterWithNormalPriority.class, FeatureRequestFilterWithHighestPriority.class,
-                                    FeatureResponseFilter.class, DynamicFeatureRequestFilterWithLowPriority.class,
-                                    TestFeature.class, TestDynamicFeature.class,
-                                    SubResource.class, RootAResource.class, RootBResource.class,
-                                    TestWriter.class, TestClass.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(SimpleQuarkusRestResource.class,
+                            Person.class, TestRequestFilter.class, TestRequestFilterWithHighPriority.class,
+                            TestRequestFilterWithHighestPriority.class, Foo.class, Bar.class,
+                            TestFooRequestFilter.class, TestBarRequestFilter.class, TestFooBarRequestFilter.class,
+                            TestFooResponseFilter.class, TestBarResponseFilter.class, TestFooBarResponseFilter.class,
+                            TestResponseFilter.class, HelloService.class, TestException.class,
+                            TestExceptionMapper.class, TestPreMatchRequestFilter.class, FeatureMappedException.class,
+                            FeatureMappedExceptionMapper.class, FeatureRequestFilterWithNormalPriority.class,
+                            FeatureRequestFilterWithHighestPriority.class, FeatureResponseFilter.class,
+                            DynamicFeatureRequestFilterWithLowPriority.class, TestFeature.class,
+                            TestDynamicFeature.class, SubResource.class, RootAResource.class, RootBResource.class,
+                            TestWriter.class, TestClass.class);
                 }
             });
 
     @Test
     public void simpleTest() {
         Assertions.assertEquals("prefix", RestAssured.basePath);
-        RestAssured.get("/simple")
-                .then().body(Matchers.equalTo("GET"));
-        RestAssured.get("/simple/foo")
-                .then().body(Matchers.equalTo("GET:foo"));
+        RestAssured.get("/simple").then().body(Matchers.equalTo("GET"));
+        RestAssured.get("/simple/foo").then().body(Matchers.equalTo("GET:foo"));
 
-        RestAssured.post("/simple")
-                .then().body(Matchers.equalTo("POST"));
+        RestAssured.post("/simple").then().body(Matchers.equalTo("POST"));
 
-        RestAssured.get("/missing")
-                .then().statusCode(404);
+        RestAssured.get("/missing").then().statusCode(404);
 
-        RestAssured.post("/missing")
-                .then().statusCode(404);
+        RestAssured.post("/missing").then().statusCode(404);
 
-        RestAssured.delete("/missing")
-                .then().statusCode(404);
+        RestAssured.delete("/missing").then().statusCode(404);
 
-        RestAssured.delete("/simple")
-                .then().body(Matchers.equalTo("DELETE"));
+        RestAssured.delete("/simple").then().body(Matchers.equalTo("DELETE"));
 
-        RestAssured.put("/simple")
-                .then().body(Matchers.equalTo("PUT"));
+        RestAssured.put("/simple").then().body(Matchers.equalTo("PUT"));
 
-        RestAssured.head("/simple")
-                .then().header("Stef", "head");
+        RestAssured.head("/simple").then().header("Stef", "head");
 
-        RestAssured.options("/simple")
-                .then().body(Matchers.equalTo("OPTIONS"));
+        RestAssured.options("/simple").then().body(Matchers.equalTo("OPTIONS"));
 
-        RestAssured.patch("/simple")
-                .then().body(Matchers.equalTo("PATCH"));
+        RestAssured.patch("/simple").then().body(Matchers.equalTo("PATCH"));
     }
 }

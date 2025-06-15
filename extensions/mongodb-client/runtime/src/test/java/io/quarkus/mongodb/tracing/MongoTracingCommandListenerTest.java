@@ -34,24 +34,12 @@ class MongoTracingCommandListenerTest {
 
     @Test
     void commandStarted() {
-        var startEvent = new CommandStartedEvent(
-                null,
-                1L,
-                10,
-                connDescr,
-                "db",
-                "find",
-                command);
+        var startEvent = new CommandStartedEvent(null, 1L, 10, connDescr, "db", "find", command);
         assertThatNoException().isThrownBy(() -> listener.commandStarted(startEvent));
 
-        CommandSucceededEvent successEvent = new CommandSucceededEvent(null,
-                startEvent.getOperationId(),
-                startEvent.getRequestId(),
-                connDescr,
-                startEvent.getDatabaseName(),
-                startEvent.getCommandName(),
-                startEvent.getCommand(),
-                10L);
+        CommandSucceededEvent successEvent = new CommandSucceededEvent(null, startEvent.getOperationId(),
+                startEvent.getRequestId(), connDescr, startEvent.getDatabaseName(), startEvent.getCommandName(),
+                startEvent.getCommand(), 10L);
         assertThatNoException().isThrownBy(() -> listener.commandSucceeded(successEvent));
     }
 
@@ -60,65 +48,31 @@ class MongoTracingCommandListenerTest {
         RequestContext requestContext = new MongoRequestContext(Context.current());
         assertThat((Context) requestContext.get(MongoRequestContext.OTEL_CONTEXT_KEY)).isNotNull();
 
-        var startEvent = new CommandStartedEvent(
-                requestContext,
-                1L,
-                10,
-                connDescr,
-                "db",
-                "find",
-                command);
+        var startEvent = new CommandStartedEvent(requestContext, 1L, 10, connDescr, "db", "find", command);
         listener.commandStarted(startEvent);
         assertThat((Context) requestContext.get(MongoRequestContext.OTEL_CONTEXT_KEY))
-                .as("Must remove otel context from request context")
-                .isNull();
+                .as("Must remove otel context from request context").isNull();
     }
 
     @Test
     void commandSucceeded() {
-        CommandSucceededEvent cmd = new CommandSucceededEvent(null,
-                1L,
-                10,
-                connDescr,
-                "db",
-                "find",
-                command,
-                10L);
+        CommandSucceededEvent cmd = new CommandSucceededEvent(null, 1L, 10, connDescr, "db", "find", command, 10L);
         assertThatNoException().isThrownBy(() -> listener.commandSucceeded(cmd));
     }
 
     @Test
     void commandFailed() {
-        var startedEvent = new CommandStartedEvent(
-                null,
-                1L,
-                10,
-                connDescr,
-                "db",
-                "find",
-                command);
+        var startedEvent = new CommandStartedEvent(null, 1L, 10, connDescr, "db", "find", command);
         assertThatNoException().isThrownBy(() -> listener.commandStarted(startedEvent));
 
-        CommandFailedEvent failedEvent = new CommandFailedEvent(null,
-                1L,
-                10,
-                connDescr,
-                "db",
-                "find",
-                10L,
+        CommandFailedEvent failedEvent = new CommandFailedEvent(null, 1L, 10, connDescr, "db", "find", 10L,
                 new IllegalStateException("command failed"));
         assertThatNoException().isThrownBy(() -> listener.commandFailed(failedEvent));
     }
 
     @Test
     void commandFailedNoEvent() {
-        CommandFailedEvent cmd = new CommandFailedEvent(null,
-                1L,
-                10,
-                connDescr,
-                "db",
-                "find",
-                10L,
+        CommandFailedEvent cmd = new CommandFailedEvent(null, 1L, 10, connDescr, "db", "find", 10L,
                 new IllegalStateException("command failed"));
         assertThatNoException().isThrownBy(() -> listener.commandFailed(cmd));
     }

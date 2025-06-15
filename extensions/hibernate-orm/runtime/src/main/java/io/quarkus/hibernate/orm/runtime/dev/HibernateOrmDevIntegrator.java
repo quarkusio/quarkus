@@ -13,8 +13,7 @@ public class HibernateOrmDevIntegrator implements Integrator {
     @Override
     public void integrate(Metadata metadata, BootstrapContext bootstrapContext,
             SessionFactoryImplementor sessionFactoryImplementor) {
-        HibernateOrmDevController.get().pushPersistenceUnit(
-                sessionFactoryImplementor,
+        HibernateOrmDevController.get().pushPersistenceUnit(sessionFactoryImplementor,
                 (String) sessionFactoryImplementor.getProperties()
                         .get(org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME),
                 metadata, sessionFactoryImplementor.getServiceRegistry(),

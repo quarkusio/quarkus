@@ -14,8 +14,7 @@ public class MutinyDevUIProcessor {
     void createCard(BuildProducer<CardPageBuildItem> cardPageBuildItemBuildProducer) {
         final CardPageBuildItem card = new CardPageBuildItem();
 
-        card.addLibraryVersion("io.smallrye.reactive", "mutiny", "Mutiny",
-                "https://smallrye.io/smallrye-mutiny/");
+        card.addLibraryVersion("io.smallrye.reactive", "mutiny", "Mutiny", "https://smallrye.io/smallrye-mutiny/");
 
         card.setLogo("logo_dark.png", "logo_light.png");
 

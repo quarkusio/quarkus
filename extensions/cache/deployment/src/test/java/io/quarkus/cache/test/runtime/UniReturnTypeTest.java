@@ -27,7 +27,8 @@ public class UniReturnTypeTest {
     private static final String KEY_2 = "key-2";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;

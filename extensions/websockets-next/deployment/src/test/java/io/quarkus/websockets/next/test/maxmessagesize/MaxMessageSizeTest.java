@@ -22,10 +22,9 @@ import io.vertx.core.Vertx;
 public class MaxMessageSizeTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Echo.class, WSClient.class);
-            }).overrideConfigKey("quarkus.websockets-next.server.max-message-size", "10");
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Echo.class, WSClient.class);
+    }).overrideConfigKey("quarkus.websockets-next.server.max-message-size", "10");
 
     @Inject
     Vertx vertx;

@@ -26,8 +26,8 @@ public class NotifyingUserTransaction extends TransactionScopedNotifier implemen
     }
 
     @Override
-    public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SecurityException,
-            IllegalStateException, SystemException {
+    public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException,
+            SecurityException, IllegalStateException, SystemException {
         TransactionId id = getTransactionId();
         beforeDestroyed(id);
         try {

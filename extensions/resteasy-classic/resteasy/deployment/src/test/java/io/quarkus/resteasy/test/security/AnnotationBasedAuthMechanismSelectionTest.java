@@ -61,49 +61,45 @@ public class AnnotationBasedAuthMechanismSelectionTest {
             new AuthMechRequest("annotated-http-permissions/roles-allowed-jax-rs-policy").form());
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class,
-                            CustomBasicAuthMechanism.class, AbstractHttpPermissionsResource.class,
-                            AnnotatedHttpPermissionsResource.class, AbstractAnnotatedHttpPermissionsResource.class,
-                            UnannotatedHttpPermissionsResource.class, AuthMechRequest.class,
-                            TestTrustedIdentityProvider.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    """
-                                            quarkus.http.auth.proactive=false
-                                            quarkus.http.auth.form.enabled=true
-                                            quarkus.http.auth.form.login-page=
-                                            quarkus.http.auth.form.error-page=
-                                            quarkus.http.auth.form.landing-page=
-                                            quarkus.http.auth.basic=true
-                                            quarkus.http.auth.permission.roles1.paths=/annotated-http-permissions/roles-allowed,/unannotated-http-permissions/roles-allowed
-                                            quarkus.http.auth.permission.roles1.policy=roles1
-                                            quarkus.http.auth.permission.jax-rs.paths=/annotated-http-permissions/roles-allowed-jax-rs-policy
-                                            quarkus.http.auth.permission.jax-rs.policy=roles1
-                                            quarkus.http.auth.permission.jax-rs.applies-to=JAXRS
-                                            quarkus.http.auth.policy.roles1.roles-allowed=admin
-                                            quarkus.http.auth.permission.authenticated.auth-mechanism=basic
-                                            quarkus.http.auth.permission.authenticated.paths=/annotated-http-permissions/authenticated,/unannotated-http-permissions/authenticated
-                                            quarkus.http.auth.permission.authenticated.policy=authenticated
-                                            quarkus.http.auth.permission.same-mechanism.paths=/annotated-http-permissions/same-mech
-                                            quarkus.http.auth.permission.same-mechanism.policy=authenticated
-                                            quarkus.http.auth.permission.same-mechanism.auth-mechanism=custom
-                                            quarkus.http.auth.permission.diff-mechanism.paths=/annotated-http-permissions/diff-mech
-                                            quarkus.http.auth.permission.diff-mechanism.policy=authenticated
-                                            quarkus.http.auth.permission.diff-mechanism.auth-mechanism=basic
-                                            quarkus.http.auth.permission.permit1.paths=/annotated-http-permissions/permit,/unannotated-http-permissions/permit
-                                            quarkus.http.auth.permission.permit1.policy=permit
-                                            quarkus.http.auth.permission.deny1.paths=/annotated-http-permissions/deny,/unannotated-http-permissions/deny
-                                            quarkus.http.auth.permission.deny1.policy=deny
-                                            """),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestIdentityProvider.class, TestIdentityController.class, CustomBasicAuthMechanism.class,
+                    AbstractHttpPermissionsResource.class, AnnotatedHttpPermissionsResource.class,
+                    AbstractAnnotatedHttpPermissionsResource.class, UnannotatedHttpPermissionsResource.class,
+                    AuthMechRequest.class, TestTrustedIdentityProvider.class)
+            .addAsResource(
+                    new StringAsset(
+                            """
+                                    quarkus.http.auth.proactive=false
+                                    quarkus.http.auth.form.enabled=true
+                                    quarkus.http.auth.form.login-page=
+                                    quarkus.http.auth.form.error-page=
+                                    quarkus.http.auth.form.landing-page=
+                                    quarkus.http.auth.basic=true
+                                    quarkus.http.auth.permission.roles1.paths=/annotated-http-permissions/roles-allowed,/unannotated-http-permissions/roles-allowed
+                                    quarkus.http.auth.permission.roles1.policy=roles1
+                                    quarkus.http.auth.permission.jax-rs.paths=/annotated-http-permissions/roles-allowed-jax-rs-policy
+                                    quarkus.http.auth.permission.jax-rs.policy=roles1
+                                    quarkus.http.auth.permission.jax-rs.applies-to=JAXRS
+                                    quarkus.http.auth.policy.roles1.roles-allowed=admin
+                                    quarkus.http.auth.permission.authenticated.auth-mechanism=basic
+                                    quarkus.http.auth.permission.authenticated.paths=/annotated-http-permissions/authenticated,/unannotated-http-permissions/authenticated
+                                    quarkus.http.auth.permission.authenticated.policy=authenticated
+                                    quarkus.http.auth.permission.same-mechanism.paths=/annotated-http-permissions/same-mech
+                                    quarkus.http.auth.permission.same-mechanism.policy=authenticated
+                                    quarkus.http.auth.permission.same-mechanism.auth-mechanism=custom
+                                    quarkus.http.auth.permission.diff-mechanism.paths=/annotated-http-permissions/diff-mech
+                                    quarkus.http.auth.permission.diff-mechanism.policy=authenticated
+                                    quarkus.http.auth.permission.diff-mechanism.auth-mechanism=basic
+                                    quarkus.http.auth.permission.permit1.paths=/annotated-http-permissions/permit,/unannotated-http-permissions/permit
+                                    quarkus.http.auth.permission.permit1.policy=permit
+                                    quarkus.http.auth.permission.deny1.paths=/annotated-http-permissions/deny,/unannotated-http-permissions/deny
+                                    quarkus.http.auth.permission.deny1.policy=deny
+                                    """),
+                    "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
@@ -111,11 +107,7 @@ public class AnnotationBasedAuthMechanismSelectionTest {
     @ParameterizedTest
     public void testAuthMechanismSelection(final int idx) {
         var in = REQUESTS.get(idx);
-        in.requestSpecification.get()
-                .get(in.path)
-                .then()
-                .statusCode(in.expectedStatus)
-                .body(is(in.expectedBody))
+        in.requestSpecification.get().get(in.path).then().statusCode(in.expectedStatus).body(is(in.expectedBody))
                 .header(in.expectedHeaderKey, in.expectedHeaderVal);
         if (in.authRequired && in.unauthorizedRequestSpec != null) {
             in.unauthorizedRequestSpec.get().get(in.path).then().statusCode(403).header(in.expectedHeaderKey,
@@ -131,8 +123,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
                         in.expectedHeaderVal);
             } else {
                 // anonymous request - principal name is empty
-                in.requestUsingOtherAuthMech.get().get(in.path).then().header(in.expectedHeaderKey,
-                        in.expectedHeaderVal).body(is(""));
+                in.requestUsingOtherAuthMech.get().get(in.path).then()
+                        .header(in.expectedHeaderKey, in.expectedHeaderVal).body(is(""));
             }
         }
     }
@@ -164,8 +156,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
         requestWithBasicAuthUser().get("/annotated-http-permissions/authenticated").then().statusCode(401);
         requestWithFormAuth("user").get("/annotated-http-permissions/authenticated").then().statusCode(401);
         // send both form & basic credentials
-        requestWithFormAuth("user").auth().preemptive().basic("admin", "admin").get("/annotated-http-permissions/authenticated")
-                .then().statusCode(401);
+        requestWithFormAuth("user").auth().preemptive().basic("admin", "admin")
+                .get("/annotated-http-permissions/authenticated").then().statusCode(401);
     }
 
     @Test
@@ -190,7 +182,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
         @Path("deny-custom")
         @GET
         public String denyCustomAuthMechanism() {
-            // verifies custom auth mechanism is applied when authenticated requests comes in (by 403 and custom headers)
+            // verifies custom auth mechanism is applied when authenticated requests comes in (by 403 and custom
+            // headers)
             return "ignored";
         }
     }
@@ -334,7 +327,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
     }
 
     @Singleton
-    public static class CustomBasicAuthMechanism implements io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism {
+    public static class CustomBasicAuthMechanism
+            implements io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism {
 
         static final String CUSTOM_AUTH_HEADER_KEY = CustomBasicAuthMechanism.class.getName();
 
@@ -345,7 +339,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
         }
 
         @Override
-        public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             context.response().putHeader(CUSTOM_AUTH_HEADER_KEY, "true");
             return delegate.authenticate(context, identityProviderManager);
         }

@@ -24,15 +24,15 @@ public class EnversTestAuditTableSuffixResource {
 
     @GET
     public String getAuditTableName() {
-        Configuration auditEntitiesConfiguration = ((((SessionImpl) em.getDelegate())
-                .getFactory().getServiceRegistry()).getParentServiceRegistry())
-                .getService(EnversService.class).getConfig();
+        Configuration auditEntitiesConfiguration = ((((SessionImpl) em.getDelegate()).getFactory().getServiceRegistry())
+                .getParentServiceRegistry()).getService(EnversService.class).getConfig();
 
         String calculatedAuditTableName = auditEntitiesConfiguration.getAuditTableName("entity", "table");
         String expectedAuditTableName = "table" + configuredSuffix;
         if (expectedAuditTableName.equals(calculatedAuditTableName)) {
             return "OK";
         }
-        return "Obtained audit table name " + calculatedAuditTableName + " is not same as expected: " + expectedAuditTableName;
+        return "Obtained audit table name " + calculatedAuditTableName + " is not same as expected: "
+                + expectedAuditTableName;
     }
 }

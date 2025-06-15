@@ -44,15 +44,12 @@ public class ResteasyReactiveContextResolverScanner {
     public static ContextResolvers scanForContextResolvers(IndexView index, ApplicationScanningResult result) {
 
         ContextResolvers contextResolvers = new ContextResolvers();
-        Collection<ClassInfo> resolvers = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.CONTEXT_RESOLVER);
+        Collection<ClassInfo> resolvers = index.getAllKnownImplementors(ResteasyReactiveDotNames.CONTEXT_RESOLVER);
         for (ClassInfo resolverClass : resolvers) {
-            ApplicationScanningResult.KeepProviderResult keepProviderResult = result
-                    .keepProvider(resolverClass);
+            ApplicationScanningResult.KeepProviderResult keepProviderResult = result.keepProvider(resolverClass);
             if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
                 List<Type> typeParameters = JandexUtil.resolveTypeParameters(resolverClass.name(),
-                        ResteasyReactiveDotNames.CONTEXT_RESOLVER,
-                        index);
+                        ResteasyReactiveDotNames.CONTEXT_RESOLVER, index);
                 DotName typeParam = typeParameters.get(0).name();
                 ResourceContextResolver mapper = new ResourceContextResolver();
                 mapper.setClassName(resolverClass.name().toString());

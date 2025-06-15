@@ -45,9 +45,8 @@ public class TestingGraphQLApi {
     @Query
     public String getNameOfThePerson(PersonDto personDto) {
         if (!ctx.getQuery().equals(EXPECTED_QUERY_FOR_NAME_OF_THE_PERSON))
-            throw new RuntimeException(
-                    String.format("Wrong Query - expected: %s\n actual: %s", EXPECTED_QUERY_FOR_NAME_OF_THE_PERSON,
-                            ctx.getQuery()));
+            throw new RuntimeException(String.format("Wrong Query - expected: %s\n actual: %s",
+                    EXPECTED_QUERY_FOR_NAME_OF_THE_PERSON, ctx.getQuery()));
         return personDto.getName();
     }
 }

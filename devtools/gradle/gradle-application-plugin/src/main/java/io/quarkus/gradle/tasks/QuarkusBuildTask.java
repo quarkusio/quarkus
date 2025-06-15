@@ -37,7 +37,8 @@ import io.smallrye.config.Expressions;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
- * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild} tasks
+ * Base class for the {@link QuarkusBuildDependencies}, {@link QuarkusBuildCacheableAppParts}, {@link QuarkusBuild}
+ * tasks
  */
 public abstract class QuarkusBuildTask extends QuarkusTask {
     private static final String QUARKUS_BUILD_DIR = "quarkus-build";
@@ -187,12 +188,10 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
 
     /**
      * Runs the Quarkus-build in the "well known" location, Gradle's {@code build/} directory.
-     *
      * <p>
-     * It would be easier to run the Quarkus-build directly in {@code build/quarkus-build/gen} to have a "clean
-     * target directory", but that breaks already existing Gradle builds for users, which have for example
-     * {@code Dockerfile}s that rely on the fact that build artifacts are present in {@code build/}.
-     *
+     * It would be easier to run the Quarkus-build directly in {@code build/quarkus-build/gen} to have a "clean target
+     * directory", but that breaks already existing Gradle builds for users, which have for example {@code Dockerfile}s
+     * that rely on the fact that build artifacts are present in {@code build/}.
      * <p>
      * This requires this method to
      * <ol>
@@ -268,11 +267,8 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
         }
 
         if (getLogger().isEnabled(LogLevel.INFO)) {
-            getLogger().info("Effective properties: {}",
-                    quarkusProperties.entrySet().stream()
-                            .map(Object::toString)
-                            .sorted()
-                            .collect(Collectors.joining("\n    ", "\n    ", "")));
+            getLogger().info("Effective properties: {}", quarkusProperties.entrySet().stream().map(Object::toString)
+                    .sorted().collect(Collectors.joining("\n    ", "\n    ", "")));
         }
 
         WorkQueue workQueue = workQueue(quarkusProperties, getExtensionView().getBuildForkOptions().get());
@@ -328,11 +324,9 @@ public abstract class QuarkusBuildTask extends QuarkusTask {
 
     void abort(String message, Object... args) {
         getLogger().warn(message, args);
-        getProject().getTasks().stream()
-                .filter(t -> t != this)
-                .filter(t -> !t.getState().getExecuted()).forEach(t -> {
-                    t.setEnabled(false);
-                });
+        getProject().getTasks().stream().filter(t -> t != this).filter(t -> !t.getState().getExecuted()).forEach(t -> {
+            t.setEnabled(false);
+        });
         throw new StopExecutionException();
     }
 

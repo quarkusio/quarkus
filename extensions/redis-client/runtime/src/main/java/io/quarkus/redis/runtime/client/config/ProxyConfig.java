@@ -31,8 +31,7 @@ public interface ProxyConfig {
     Optional<String> host();
 
     /**
-     * Set proxy type.
-     * Accepted values are: {@code HTTP} (default), {@code SOCKS4} and {@code SOCKS5}.
+     * Set proxy type. Accepted values are: {@code HTTP} (default), {@code SOCKS4} and {@code SOCKS5}.
      */
     @WithDefault("http")
     ProxyType type();

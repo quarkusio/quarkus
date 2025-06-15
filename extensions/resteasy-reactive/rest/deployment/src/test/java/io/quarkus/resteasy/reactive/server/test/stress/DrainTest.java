@@ -53,10 +53,7 @@ public class DrainTest {
     void testAsyncHttp1() {
         client = createJavaHttpClient();
         long before = System.currentTimeMillis();
-        var sum = IntStream.range(0, 10000)
-                .parallel()
-                .map(i -> get("https://localhost:8444/test/bytesAsync"))
-                .sum();
+        var sum = IntStream.range(0, 10000).parallel().map(i -> get("https://localhost:8444/test/bytesAsync")).sum();
         System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
         Assertions.assertThat(sum).isEqualTo(1000000000);
     }
@@ -66,10 +63,7 @@ public class DrainTest {
     void testSyncHttp1() {
         client = createJavaHttpClient();
         long before = System.currentTimeMillis();
-        var sum = IntStream.range(0, 10000)
-                .parallel()
-                .map(i -> get("https://localhost:8444/test/bytesSync"))
-                .sum();
+        var sum = IntStream.range(0, 10000).parallel().map(i -> get("https://localhost:8444/test/bytesSync")).sum();
         System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
         Assertions.assertThat(sum).isEqualTo(1000000000);
     }
@@ -79,10 +73,8 @@ public class DrainTest {
     void testAsyncHttp2() {
         client = createJavaHttp2Client();
         long before = System.currentTimeMillis();
-        var sum = IntStream.range(0, 10000)
-                .parallel()
-                .map(i -> get("https://localhost:8444/test/bytesAsync"))
-                //.peek(i -> System.out.println(Instant.now() + " Got response: " + i))
+        var sum = IntStream.range(0, 10000).parallel().map(i -> get("https://localhost:8444/test/bytesAsync"))
+                // .peek(i -> System.out.println(Instant.now() + " Got response: " + i))
                 .sum();
         System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
         Assertions.assertThat(sum).isEqualTo(1000000000);
@@ -93,10 +85,7 @@ public class DrainTest {
     void testSyncHttp2() {
         client = createJavaHttp2Client();
         long before = System.currentTimeMillis();
-        var sum = IntStream.range(0, 10000)
-                .parallel()
-                .map(i -> get("https://localhost:8444/test/bytesSync"))
-                .sum();
+        var sum = IntStream.range(0, 10000).parallel().map(i -> get("https://localhost:8444/test/bytesSync")).sum();
         System.out.println("Request completed in " + (System.currentTimeMillis() - before) + " ms");
         Assertions.assertThat(sum).isEqualTo(1000000000);
     }
@@ -158,7 +147,8 @@ public class DrainTest {
     private static HttpClient createJavaHttpClient() {
         try {
             var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[] { AllowAllTrustManager.INSTANCE }, SecureRandom.getInstanceStrong());
+            sslContext.init(null, new TrustManager[] { AllowAllTrustManager.INSTANCE },
+                    SecureRandom.getInstanceStrong());
             return HttpClient.newBuilder().sslContext(sslContext).build();
         } catch (Throwable t) {
             throw new RuntimeException("Unable to create HTTP client");
@@ -168,7 +158,8 @@ public class DrainTest {
     private static HttpClient createJavaHttp2Client() {
         try {
             var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new TrustManager[] { AllowAllTrustManager.INSTANCE }, SecureRandom.getInstanceStrong());
+            sslContext.init(null, new TrustManager[] { AllowAllTrustManager.INSTANCE },
+                    SecureRandom.getInstanceStrong());
             return HttpClient.newBuilder().sslContext(sslContext).version(HttpClient.Version.HTTP_2).build();
         } catch (Throwable t) {
             throw new RuntimeException("Unable to create HTTP client");

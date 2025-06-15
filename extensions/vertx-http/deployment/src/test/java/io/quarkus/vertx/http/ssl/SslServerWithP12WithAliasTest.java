@@ -31,8 +31,7 @@ public class SslServerWithP12WithAliasTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-alias-keystore.p12"), "server-keystore.pkcs12"))
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.pkcs12")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-alias", "alias")
@@ -41,10 +40,8 @@ public class SslServerWithP12WithAliasTest {
 
     @Test
     public void testSslServerWithPkcs12() {
-        RestAssured
-                .given()
-                .trustStore(new File("target/certs/ssl-test-alias-truststore.jks"), "secret")
-                .get(url).then().statusCode(200).body(is("ssl"));
+        RestAssured.given().trustStore(new File("target/certs/ssl-test-alias-truststore.jks"), "secret").get(url).then()
+                .statusCode(200).body(is("ssl"));
     }
 
     @ApplicationScoped

@@ -37,16 +37,16 @@ class DevServicesConfigBuildStep {
             List<DevServicesResultBuildItem> devServicesResultBuildItems,
             List<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigBuildItems,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
-        Map<String, String> newProperties = new HashMap<>(devServicesConfigResultBuildItems.stream().collect(
-                Collectors.toMap(DevServicesConfigResultBuildItem::getKey, DevServicesConfigResultBuildItem::getValue)));
+        Map<String, String> newProperties = new HashMap<>(devServicesConfigResultBuildItems.stream().collect(Collectors
+                .toMap(DevServicesConfigResultBuildItem::getKey, DevServicesConfigResultBuildItem::getValue)));
         for (DevServicesResultBuildItem resultBuildItem : devServicesResultBuildItems) {
             newProperties.putAll(resultBuildItem.getConfig());
         }
         Config config = ConfigProvider.getConfig();
-        //check if there are existing already started dev services
-        //if there were no changes to the processors they don't produce config
-        //so we merge existing config from previous runs
-        //we also check the current config, as the dev service may have been disabled by explicit config
+        // check if there are existing already started dev services
+        // if there were no changes to the processors they don't produce config
+        // so we merge existing config from previous runs
+        // we also check the current config, as the dev service may have been disabled by explicit config
         if (oldConfig != null) {
             for (Map.Entry<String, String> entry : oldConfig.entrySet()) {
                 if (!newProperties.containsKey(entry.getKey())
@@ -75,6 +75,7 @@ class DevServicesConfigBuildStep {
         for (Map.Entry<String, String> entry : newPropertiesWithAdditionalConfig.entrySet()) {
             runtimeConfig.produce(new RunTimeConfigurationDefaultBuildItem(entry.getKey(), entry.getValue()));
         }
-        return new DevServicesLauncherConfigResultBuildItem(Collections.unmodifiableMap(newPropertiesWithAdditionalConfig));
+        return new DevServicesLauncherConfigResultBuildItem(
+                Collections.unmodifiableMap(newPropertiesWithAdditionalConfig));
     }
 }

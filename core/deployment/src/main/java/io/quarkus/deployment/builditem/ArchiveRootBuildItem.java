@@ -17,12 +17,11 @@ import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 
 /**
- * Represents a build item for an archive root, typically used in Quarkus build steps to
- * reference application classes directories or archives (like JARs) for indexing and processing.
- *
+ * Represents a build item for an archive root, typically used in Quarkus build steps to reference application classes
+ * directories or archives (like JARs) for indexing and processing.
  * <p>
- * This class contains the paths of directories or archives to be used as archive roots,
- * as well as paths that should be excluded from indexing.
+ * This class contains the paths of directories or archives to be used as archive roots, as well as paths that should be
+ * excluded from indexing.
  * </p>
  */
 public final class ArchiveRootBuildItem extends SimpleBuildItem {
@@ -41,7 +40,9 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
         /**
          * Adds a single archive root path to the builder.
          *
-         * @param root the archive root path to add
+         * @param root
+         *        the archive root path to add
+         *
          * @return this builder instance
          */
         public Builder addArchiveRoot(Path root) {
@@ -52,7 +53,9 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
         /**
          * Adds multiple archive root paths to the builder.
          *
-         * @param paths a {@link PathCollection} of archive root paths to add
+         * @param paths
+         *        a {@link PathCollection} of archive root paths to add
+         *
          * @return this builder instance
          */
         public Builder addArchiveRoots(PathCollection paths) {
@@ -63,7 +66,9 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
         /**
          * Sets the collection of paths to exclude from indexing.
          *
-         * @param excludedFromIndexing a collection of paths to be excluded
+         * @param excludedFromIndexing
+         *        a collection of paths to be excluded
+         *
          * @return this builder instance
          */
         public Builder setExcludedFromIndexing(Collection<Path> excludedFromIndexing) {
@@ -72,10 +77,12 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
         }
 
         /**
-         * @deprecated Use {@link #addArchiveRoot(Path)} instead to add archive roots.
-         *             This method clears previous archive roots before setting the new one.
+         * @deprecated Use {@link #addArchiveRoot(Path)} instead to add archive roots. This method clears previous
+         *             archive roots before setting the new one.
          *
-         * @param archiveLocation the archive location to set
+         * @param archiveLocation
+         *        the archive location to set
+         *
          * @return this builder instance
          */
         @Deprecated
@@ -88,9 +95,13 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
         /**
          * Builds the {@link ArchiveRootBuildItem} using the configured properties.
          *
-         * @param buildCloseables a {@link QuarkusBuildCloseablesBuildItem} to manage opened resources (e.g., zip file systems)
+         * @param buildCloseables
+         *        a {@link QuarkusBuildCloseablesBuildItem} to manage opened resources (e.g., zip file systems)
+         *
          * @return a new {@link ArchiveRootBuildItem} instance
-         * @throws IOException if an I/O error occurs when accessing the archive roots
+         *
+         * @throws IOException
+         *         if an I/O error occurs when accessing the archive roots
          */
         public ArchiveRootBuildItem build(QuarkusBuildCloseablesBuildItem buildCloseables) throws IOException {
             return new ArchiveRootBuildItem(this, buildCloseables);
@@ -114,18 +125,21 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     /**
      * Constructs an {@link ArchiveRootBuildItem} with a single application classes directory.
      *
-     * @param appClassesDir the path to the application classes directory
+     * @param appClassesDir
+     *        the path to the application classes directory
      */
     public ArchiveRootBuildItem(Path appClassesDir) {
         this(appClassesDir, appClassesDir);
     }
 
     /**
-     * @deprecated Use {@link Builder} instead.
-     *             Constructs an {@link ArchiveRootBuildItem} with a given archive location and root directory.
+     * @deprecated Use {@link Builder} instead. Constructs an {@link ArchiveRootBuildItem} with a given archive location
+     *             and root directory.
      *
-     * @param archiveLocation the archive location (e.g., JAR file path)
-     * @param archiveRoot the root directory of the archive
+     * @param archiveLocation
+     *        the archive location (e.g., JAR file path)
+     * @param archiveRoot
+     *        the root directory of the archive
      */
     @Deprecated
     public ArchiveRootBuildItem(Path archiveLocation, Path archiveRoot) {
@@ -166,8 +180,8 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * If this archive is a jar file it will return the path to the jar file on the file system,
-     * otherwise it will return the directory that this corresponds to.
+     * If this archive is a jar file it will return the path to the jar file on the file system, otherwise it will
+     * return the directory that this corresponds to.
      *
      * @deprecated in favor of {@link #getResolvedPaths()}
      */
@@ -182,10 +196,11 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Returns a path representing the archive root. Note that if this is a jar archive this is not the path to the
-     * jar, but rather a path to the root of the mounted {@link com.sun.nio.zipfs.ZipFileSystem}.
+     * Returns a path representing the archive root. Note that if this is a jar archive this is not the path to the jar,
+     * but rather a path to the root of the mounted {@link com.sun.nio.zipfs.ZipFileSystem}.
      *
      * @return The archive root.
+     *
      * @deprecated in favor of {@link #getRootDirectories()}
      */
     @Deprecated
@@ -194,12 +209,12 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Collection of paths representing the archive's root directories. If there is a JAR among the paths
-     * (returned by {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
-     * {@link java.nio.file.ZipFileSystem}
-     * instead.
+     * Collection of paths representing the archive's root directories. If there is a JAR among the paths (returned by
+     * {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
+     * {@link java.nio.file.ZipFileSystem} instead.
      *
      * @deprecated in favor of {@link #getRootDirectories()}
+     *
      * @return Collection of paths representing the archive's root directories
      */
     @Deprecated
@@ -208,10 +223,9 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Collection of paths representing the archive's root directories. If there is a JAR among the paths
-     * (returned by {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
-     * {@link java.nio.file.ZipFileSystem}
-     * instead.
+     * Collection of paths representing the archive's root directories. If there is a JAR among the paths (returned by
+     * {@link #getResolvedPaths()}) this method will return the path to the root of the mounted
+     * {@link java.nio.file.ZipFileSystem} instead.
      *
      * @return Collection of paths representing the archive's root directories
      */
@@ -223,6 +237,7 @@ public final class ArchiveRootBuildItem extends SimpleBuildItem {
      * Collection of paths that collectively constitute the application archive's content.
      *
      * @deprecated in favor of {@link #getResolvedPaths()}
+     *
      * @return collection of paths that collectively constitute the application archive content
      */
     @Deprecated

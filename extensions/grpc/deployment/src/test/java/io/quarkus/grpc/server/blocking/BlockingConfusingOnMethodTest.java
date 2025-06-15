@@ -21,12 +21,9 @@ import io.smallrye.mutiny.Uni;
 public class BlockingConfusingOnMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addPackage(Blocking2.class.getPackage())
-                            .addClasses(BlockingConfusingOnMethodTest.Blocking2Service.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(Blocking2.class.getPackage())
+                    .addClasses(BlockingConfusingOnMethodTest.Blocking2Service.class))
             .setExpectedException(DeploymentException.class);
 
     @Test
@@ -39,8 +36,7 @@ public class BlockingConfusingOnMethodTest {
         @Override
         public Uni<com.dam.Blocking.ThreadName> returnThread1(com.dam.Blocking.Empty request) {
             String message = Thread.currentThread().getName();
-            return Uni.createFrom().item(
-                    com.dam.Blocking.ThreadName.newBuilder().setName(message).build());
+            return Uni.createFrom().item(com.dam.Blocking.ThreadName.newBuilder().setName(message).build());
         }
 
         @Override
@@ -48,8 +44,7 @@ public class BlockingConfusingOnMethodTest {
         @Blocking
         public Uni<com.dam.Blocking.ThreadName> returnThread2(com.dam.Blocking.Empty request) {
             String message = Thread.currentThread().getName();
-            return Uni.createFrom().item(
-                    com.dam.Blocking.ThreadName.newBuilder().setName(message).build());
+            return Uni.createFrom().item(com.dam.Blocking.ThreadName.newBuilder().setName(message).build());
         }
     }
 }

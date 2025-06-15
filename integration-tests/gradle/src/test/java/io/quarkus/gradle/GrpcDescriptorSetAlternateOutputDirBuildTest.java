@@ -12,13 +12,9 @@ public class GrpcDescriptorSetAlternateOutputDirBuildTest extends QuarkusGradleW
         var buildResult = runGradleWrapper(projectDir, "clean", "build");
         assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":quarkusGenerateCode"))).isTrue();
 
-        var expectedOutputDir = projectDir.toPath()
-                .resolve("build")
-                .resolve("proto");
+        var expectedOutputDir = projectDir.toPath().resolve("build").resolve("proto");
 
         assertThat(expectedOutputDir).exists();
-        assertThat(expectedOutputDir.resolve("hello.dsc"))
-                .exists()
-                .isNotEmptyFile();
+        assertThat(expectedOutputDir.resolve("hello.dsc")).exists().isNotEmptyFile();
     }
 }

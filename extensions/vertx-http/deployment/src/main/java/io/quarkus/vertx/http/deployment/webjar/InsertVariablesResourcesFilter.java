@@ -9,8 +9,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.runtime.ApplicationConfig;
 
 /**
- * Filter for inserting variables into an InputStream.
- * Supported placeholders are:
+ * Filter for inserting variables into an InputStream. Supported placeholders are:
  * <ul>
  * <li>{applicationName}</li>
  * <li>{applicationVersion}</li>
@@ -44,7 +43,8 @@ public class InsertVariablesResourcesFilter implements WebJarResourcesFilter {
             String oldContents = new String(oldContentBytes);
             String contents = replaceHeaderVars(oldContents, applicationName, applicationVersion);
 
-            String header = replaceHeaderVars(applicationConfig.uiHeader().orElse(""), applicationName, applicationVersion);
+            String header = replaceHeaderVars(applicationConfig.uiHeader().orElse(""), applicationName,
+                    applicationVersion);
             contents = contents.replace("{applicationHeader}", header);
 
             boolean changed = contents.length() != oldContents.length() || !contents.equals(oldContents);

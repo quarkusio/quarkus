@@ -45,26 +45,16 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * The PgSQLXML implementation in the PostgreSQL JDBC
- * driver has a dependency on the JDK's XML parsers;
- * while the use of this type is a strong hint that the
- * application's nature is relying on XML processing via
- * the JDK standard libraries, we've observed that this type
- * is also often included in the analysis graph being
- * triggered via {@see java.sql.PreparedStatement#setObject},
- * which is widely used for other purposes as well.
- *
- * Considering that the efficiency costs of including all
- * resources and reflective registrations necessary to support the
- * XML parsers is non-trivial, we apply here a trick to help the
- * GraalVM native image compiler avoid this inclusion unless this
- * feature is actually is reachable, by isolating the construction of
- * the parsers and their supporting other types via a reflective call.
- *
- * This reflective invocation exists merely to give us a control knob
- * to toggle the inclusion of this code; it so happens that we can
- * trigger the toggle automatically so to not manifest as semantic changes
- * for the Quarkus users who don't need to know about this.
+ * The PgSQLXML implementation in the PostgreSQL JDBC driver has a dependency on the JDK's XML parsers; while the use of
+ * this type is a strong hint that the application's nature is relying on XML processing via the JDK standard libraries,
+ * we've observed that this type is also often included in the analysis graph being triggered via
+ * {@see java.sql.PreparedStatement#setObject}, which is widely used for other purposes as well. Considering that the
+ * efficiency costs of including all resources and reflective registrations necessary to support the XML parsers is
+ * non-trivial, we apply here a trick to help the GraalVM native image compiler avoid this inclusion unless this feature
+ * is actually is reachable, by isolating the construction of the parsers and their supporting other types via a
+ * reflective call. This reflective invocation exists merely to give us a control knob to toggle the inclusion of this
+ * code; it so happens that we can trigger the toggle automatically so to not manifest as semantic changes for the
+ * Quarkus users who don't need to know about this.
  *
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
@@ -158,8 +148,7 @@ public final class PgSQLXML implements SQLXML {
     //
     @Substitute
     @Override
-    public synchronized <T extends Source> T getSource(Class<T> sourceClass)
-            throws SQLException {
+    public synchronized <T extends Source> T getSource(Class<T> sourceClass) throws SQLException {
         checkFreed();
         ensureInitialized();
 
@@ -173,7 +162,7 @@ public final class PgSQLXML implements SQLXML {
                 DocumentBuilder builder = getXmlFactoryFactory().newDocumentBuilder();
                 InputSource input = new InputSource(new StringReader(data));
                 DOMSource domSource = new DOMSource(builder.parse(input));
-                //noinspection unchecked
+                // noinspection unchecked
                 return (T) domSource;
             } else if (SAXSource.class.equals(sourceClass)) {
                 XMLReader reader = getXmlFactoryFactory().createXMLReader();
@@ -190,8 +179,7 @@ public final class PgSQLXML implements SQLXML {
             throw new PSQLException(GT.tr("Unable to decode xml data."), PSQLState.DATA_ERROR, e);
         }
 
-        throw new PSQLException(GT.tr("Unknown XML Source class: {0}", sourceClass),
-                PSQLState.INVALID_PARAMETER_TYPE);
+        throw new PSQLException(GT.tr("Unknown XML Source class: {0}", sourceClass), PSQLState.INVALID_PARAMETER_TYPE);
     }
 
     @Substitute
@@ -231,7 +219,7 @@ public final class PgSQLXML implements SQLXML {
         if (resultClass == null || DOMResult.class.equals(resultClass)) {
             domResult = new DOMResult();
             active = true;
-            //noinspection unchecked
+            // noinspection unchecked
             return (T) domResult;
         } else if (SAXResult.class.equals(resultClass)) {
             try {
@@ -242,8 +230,8 @@ public final class PgSQLXML implements SQLXML {
                 active = true;
                 return resultClass.cast(new SAXResult(transformerHandler));
             } catch (TransformerException te) {
-                throw new PSQLException(GT.tr("Unable to create SAXResult for SQLXML."),
-                        PSQLState.UNEXPECTED_ERROR, te);
+                throw new PSQLException(GT.tr("Unable to create SAXResult for SQLXML."), PSQLState.UNEXPECTED_ERROR,
+                        te);
             }
         } else if (StreamResult.class.equals(resultClass)) {
             stringWriter = new StringWriter();
@@ -258,13 +246,12 @@ public final class PgSQLXML implements SQLXML {
                 active = true;
                 return resultClass.cast(new StAXResult(xsw));
             } catch (XMLStreamException xse) {
-                throw new PSQLException(GT.tr("Unable to create StAXResult for SQLXML"),
-                        PSQLState.UNEXPECTED_ERROR, xse);
+                throw new PSQLException(GT.tr("Unable to create StAXResult for SQLXML"), PSQLState.UNEXPECTED_ERROR,
+                        xse);
             }
         }
 
-        throw new PSQLException(GT.tr("Unknown XML Result class: {0}", resultClass),
-                PSQLState.INVALID_PARAMETER_TYPE);
+        throw new PSQLException(GT.tr("Unknown XML Result class: {0}", resultClass), PSQLState.INVALID_PARAMETER_TYPE);
     }
 
     @Substitute
@@ -278,8 +265,7 @@ public final class PgSQLXML implements SQLXML {
     @Substitute
     private void checkFreed() throws SQLException {
         if (freed) {
-            throw new PSQLException(GT.tr("This SQLXML object has already been freed."),
-                    PSQLState.OBJECT_NOT_IN_STATE);
+            throw new PSQLException(GT.tr("This SQLXML object has already been freed."), PSQLState.OBJECT_NOT_IN_STATE);
         }
     }
 
@@ -287,8 +273,7 @@ public final class PgSQLXML implements SQLXML {
     private void ensureInitialized() throws SQLException {
         if (!initialized) {
             throw new PSQLException(
-                    GT.tr(
-                            "This SQLXML object has not been initialized, so you cannot retrieve data from it."),
+                    GT.tr("This SQLXML object has not been initialized, so you cannot retrieve data from it."),
                     PSQLState.OBJECT_NOT_IN_STATE);
         }
 
@@ -301,8 +286,9 @@ public final class PgSQLXML implements SQLXML {
             try {
                 data = conn.getEncoding().decode(byteArrayOutputStream.toByteArray());
             } catch (IOException ioe) {
-                throw new PSQLException(GT.tr("Failed to convert binary xml data to encoding: {0}.",
-                        conn.getEncoding().name()), PSQLState.DATA_ERROR, ioe);
+                throw new PSQLException(
+                        GT.tr("Failed to convert binary xml data to encoding: {0}.", conn.getEncoding().name()),
+                        PSQLState.DATA_ERROR, ioe);
             } finally {
                 byteArrayOutputStream = null;
                 active = false;
@@ -329,8 +315,7 @@ public final class PgSQLXML implements SQLXML {
     private void initialize() throws SQLException {
         if (initialized) {
             throw new PSQLException(
-                    GT.tr(
-                            "This SQLXML object has already been initialized, so you cannot manipulate it further."),
+                    GT.tr("This SQLXML object has already been initialized, so you cannot manipulate it further."),
                     PSQLState.OBJECT_NOT_IN_STATE);
         }
         initialized = true;

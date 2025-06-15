@@ -49,8 +49,7 @@ public interface InfinispanClientBuildTimeConfig {
     /**
      * Dev Services.
      * <p>
-     * Dev Services allows Quarkus to automatically start an Infinispan Server in dev and test
-     * mode.
+     * Dev Services allows Quarkus to automatically start an Infinispan Server in dev and test mode.
      */
     @WithParentName
     DevServiceConfiguration devservices();

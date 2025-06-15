@@ -29,24 +29,22 @@ public interface RedisCacheRuntimeConfig {
     Optional<Duration> expireAfterAccess();
 
     /**
-     * The key prefix allowing to identify the keys belonging to the cache.
-     * If not set, the value "{@code cache:{cache-name}}" will be used. The variable
-     * "{@code {cache-name}}" is resolved from the value set in the cache annotations.
+     * The key prefix allowing to identify the keys belonging to the cache. If not set, the value
+     * "{@code cache:{cache-name}}" will be used. The variable "{@code {cache-name}}" is resolved from the value set in
+     * the cache annotations.
      */
     Optional<String> prefix();
 
     /**
-     * Whether the access to the cache should be using optimistic locking.
-     * See <a href="https://redis.io/docs/manual/transactions/#optimistic-locking-using-check-and-set">Redis Optimistic
-     * Locking</a> for details.
-     * Default is {@code false}.
+     * Whether the access to the cache should be using optimistic locking. See
+     * <a href="https://redis.io/docs/manual/transactions/#optimistic-locking-using-check-and-set">Redis Optimistic
+     * Locking</a> for details. Default is {@code false}.
      */
     Optional<Boolean> useOptimisticLocking();
 
     /**
-     * If set, the {@code SCAN} command (used to implement invalidation) will have
-     * the {@code COUNT} argument with given value. If not set (default),
-     * no {@code COUNT} argument is present.
+     * If set, the {@code SCAN} command (used to implement invalidation) will have the {@code COUNT} argument with given
+     * value. If not set (default), no {@code COUNT} argument is present.
      */
     OptionalInt invalidationScanSize();
 }

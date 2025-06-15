@@ -17,18 +17,15 @@ public class TemplateRecordConflictTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(monkFoo.class, monk_foo.class)
-                    .addAsResource(new StringAsset("Hello {name}!"), "templates/TemplateRecordConflictTest/monk_foo.txt"))
+            .withApplicationRoot((jar) -> jar.addClasses(monkFoo.class, monk_foo.class).addAsResource(
+                    new StringAsset("Hello {name}!"), "templates/TemplateRecordConflictTest/monk_foo.txt"))
             .assertException(t -> {
                 Throwable root = Throwables.getRootCause(t);
                 if (root == null) {
                     root = t;
                 }
-                assertThat(root)
-                        .isInstanceOf(TemplateException.class)
-                        .hasMessageStartingWith(
-                                "Multiple checked templates exist for the template path TemplateRecordConflictTest/monk_foo");
+                assertThat(root).isInstanceOf(TemplateException.class).hasMessageStartingWith(
+                        "Multiple checked templates exist for the template path TemplateRecordConflictTest/monk_foo");
             });
 
     @Test

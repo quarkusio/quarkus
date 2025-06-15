@@ -24,10 +24,8 @@ public final class AgroalDataSourceBuildUtil {
         if (DataSourceUtil.isDefault(dataSourceName)) {
             return new AnnotationInstance[] { AnnotationInstance.builder(Default.class).build() };
         } else {
-            return new AnnotationInstance[] {
-                    AnnotationInstance.builder(DotNames.NAMED).value(dataSourceName).build(),
-                    AnnotationInstance.builder(DataSource.class).value(dataSourceName).build(),
-            };
+            return new AnnotationInstance[] { AnnotationInstance.builder(DotNames.NAMED).value(dataSourceName).build(),
+                    AnnotationInstance.builder(DataSource.class).value(dataSourceName).build(), };
         }
     }
 }

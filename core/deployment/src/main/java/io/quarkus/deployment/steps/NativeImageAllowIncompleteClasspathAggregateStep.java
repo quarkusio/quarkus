@@ -26,11 +26,9 @@ public final class NativeImageAllowIncompleteClasspathAggregateStep {
             log.warn("The following extensions have required native-image to allow run-time resolution of classes: {"
                     + extensionsRequiringBrokenClasspath
                     + "}. This is a global requirement which might have unexpected effects on other extensions as well, and is a hint of the library "
-                    +
-                    "needing some additional refactoring to better support GraalVM native-image. In the case of 3rd party dependencies and/or"
-                    +
-                    " proprietary code there is not much we can do - please ask for support to your library vendor." +
-                    " If you incur in any problem with other Quarkus extensions, please try reproducing the problem without these extensions first.");
+                    + "needing some additional refactoring to better support GraalVM native-image. In the case of 3rd party dependencies and/or"
+                    + " proprietary code there is not much we can do - please ask for support to your library vendor."
+                    + " If you incur in any problem with other Quarkus extensions, please try reproducing the problem without these extensions first.");
             return new NativeImageAllowIncompleteClasspathAggregateBuildItem(true);
         }
     }

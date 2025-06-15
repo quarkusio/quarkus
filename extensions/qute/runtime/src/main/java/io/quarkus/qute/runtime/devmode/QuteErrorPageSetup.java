@@ -41,8 +41,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
     private static final String TEMPLATE_EXCEPTION = "io.quarkus.qute.TemplateException";
     private static final String ORIGIN = "io.quarkus.qute.TemplateNode$Origin";
 
-    private static final String PROBLEM_TEMPLATE = ""
-            + "<h3>#{problemIndex} {title}</h3>\n"
+    private static final String PROBLEM_TEMPLATE = "" + "<h3>#{problemIndex} {title}</h3>\n"
             + "<div style=\"margin-bottom:0.5em;\">{description}</div>\n"
             + "<div style=\"font-family:monospace;font-size:1em;background-color:#2E3436;color:white;padding:1em;margin-bottom:2em;\">\n"
             + "{#if realLines.get(0) > 1}<span style=\"color:silver;\">...</span><br>{/if}\n"
@@ -57,9 +56,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
             + "{#if lineNumber is realLines.get(line_index)}</div>{#else}<br>{/if}\n"
             // point to error
             + "{#if lineNumber is realLines.get(line_index)}{space.pad}<span style=\"color:red;\">{#for i in lineCharacterStart}={/for}^</span><br>{/if}\n"
-            + "{/for}\n"
-            + "{#if endLinesSkipped}<span style=\"color:silver;\">...</span>{/if}\n"
-            + "</div>";
+            + "{/for}\n" + "{#if endLinesSkipped}<span style=\"color:silver;\">...</span>{/if}\n" + "</div>";
 
     private HotReplacementContext hotReplacementContext;
 
@@ -70,8 +67,8 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
     }
 
     String generatePage(Throwable exception) {
-        Escaper escaper = Escaper.builder().add('"', "&quot;").add('\'', "&#39;")
-                .add('&', "&amp;").add('<', "&lt;").add('>', "&gt;").build();
+        Escaper escaper = Escaper.builder().add('"', "&quot;").add('\'', "&#39;").add('&', "&amp;").add('<', "&lt;")
+                .add('>', "&gt;").build();
         Template problemTemplate = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
                 .addValueResolver(new ValueResolver() {
 
@@ -83,9 +80,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
                     public CompletionStage<Object> resolve(EvalContext context) {
                         return CompletableFuture.completedFuture(htmlPadRight(context.getBase().toString(), 5));
                     }
-                })
-                .build()
-                .parse(PROBLEM_TEMPLATE);
+                }).build().parse(PROBLEM_TEMPLATE);
         TemplateHtmlBuilder builder;
         List<Throwable> problems;
         Throwable[] suppressed = exception.getSuppressed();
@@ -167,17 +162,11 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
             }
         }
 
-        return problemTemplate
-                .data("problemIndex", index)
-                .data("title", messageLines[0])
+        return problemTemplate.data("problemIndex", index).data("title", messageLines[0])
                 .data("description", Arrays.stream(messageLines).skip(1).collect(Collectors.joining("<br>")))
-                .data("sourceLines", sourceLines)
-                .data("lineNumber", lineNumber)
-                .data("lineCharacterStart", lineCharacterStart)
-                .data("realLines", realLines)
-                .data("endLinesSkipped", endLinesSkipped)
-                .data("space", " ")
-                .render();
+                .data("sourceLines", sourceLines).data("lineNumber", lineNumber)
+                .data("lineCharacterStart", lineCharacterStart).data("realLines", realLines)
+                .data("endLinesSkipped", endLinesSkipped).data("space", " ").render();
     }
 
     static String htmlPadRight(String s, int n) {

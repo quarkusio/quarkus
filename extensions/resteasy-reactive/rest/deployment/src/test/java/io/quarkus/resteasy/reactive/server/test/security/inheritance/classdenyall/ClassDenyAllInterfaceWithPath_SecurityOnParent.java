@@ -44,7 +44,8 @@ public interface ClassDenyAllInterfaceWithPath_SecurityOnParent {
     String classPathOnInterface_ImplOnParent_InterfaceMethodWithPath_ClassDenyAllMethodPermitAll(JsonObject array);
 
     @POST
-    @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
+    @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
     String classPathOnInterface_ImplOnParent_InterfaceMethodWithPath_ClassDenyAllMethodRolesAllowed(JsonObject array);
 
 }

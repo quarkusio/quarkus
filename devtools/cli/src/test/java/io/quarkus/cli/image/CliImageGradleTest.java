@@ -56,9 +56,7 @@ public class CliImageGradleTest {
         CliDriver.deleteDir(wrapperRoot);
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
-                "--no-code",
-                "-o", testProjectRoot.toString(),
-                "gradle-wrapper");
+                "--no-code", "-o", testProjectRoot.toString(), "gradle-wrapper");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         Assertions.assertTrue(result.getStdout().contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
@@ -89,7 +87,8 @@ public class CliImageGradleTest {
 
     @Test
     public void testUsage() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e",
+                "-B");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
 
         // 1 image --dry-run
@@ -131,8 +130,8 @@ public class CliImageGradleTest {
         assertTrue(result.getStdout().contains("--builder=openshift"));
         assertTrue(result.getStdout().contains("--init-script="));
 
-        result = CliDriver.execute(project, "image", "build", "--group=mygroup", "--name=myname", "--tag=1.0", "--native",
-                "--dry-run");
+        result = CliDriver.execute(project, "image", "build", "--group=mygroup", "--name=myname", "--tag=1.0",
+                "--native", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.group=mygroup"));
         assertTrue(result.getStdout().contains("-Dquarkus.container-image.name=myname"));

@@ -32,7 +32,8 @@ import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 import io.quarkus.runtime.util.HashUtil;
 
 /**
- * Implement a JAX-RS controller exposing a specific {@link io.quarkus.rest.data.panache.RestDataResource} implementation.
+ * Implement a JAX-RS controller exposing a specific {@link io.quarkus.rest.data.panache.RestDataResource}
+ * implementation.
  */
 class JaxRsResourceImplementor {
 
@@ -44,12 +45,9 @@ class JaxRsResourceImplementor {
 
     JaxRsResourceImplementor(Capabilities capabilities) {
         this.methodImplementors = Arrays.asList(new GetMethodImplementor(capabilities),
-                new ListMethodImplementor(capabilities),
-                new CountMethodImplementor(capabilities),
-                new AddMethodImplementor(capabilities),
-                new UpdateMethodImplementor(capabilities),
-                new DeleteMethodImplementor(capabilities),
-                new UserMethodsWithAnnotationsImplementor(capabilities),
+                new ListMethodImplementor(capabilities), new CountMethodImplementor(capabilities),
+                new AddMethodImplementor(capabilities), new UpdateMethodImplementor(capabilities),
+                new DeleteMethodImplementor(capabilities), new UserMethodsWithAnnotationsImplementor(capabilities),
                 // The list hal endpoint needs to be added for both resteasy classic and resteasy reactive
                 // because the pagination links are programmatically added.
                 new ListHalMethodImplementor(capabilities));
@@ -72,11 +70,11 @@ class JaxRsResourceImplementor {
      */
     void implement(ClassOutput classOutput, ResourceMetadata resourceMetadata, ResourceProperties resourceProperties,
             Capabilities capabilities) {
-        String controllerClassName = resourceMetadata.getResourceName() + "JaxRs_" +
-                HashUtil.sha1(resourceMetadata.getResourceName());
+        String controllerClassName = resourceMetadata.getResourceName() + "JaxRs_"
+                + HashUtil.sha1(resourceMetadata.getResourceName());
         LOGGER.tracef("Starting generation of '%s'", controllerClassName);
-        ClassCreator.Builder classCreatorBuilder = ClassCreator.builder()
-                .classOutput(classOutput).className(controllerClassName);
+        ClassCreator.Builder classCreatorBuilder = ClassCreator.builder().classOutput(classOutput)
+                .className(controllerClassName);
 
         if (resourceMetadata.getResourceInterface() != null) {
             classCreatorBuilder.interfaces(resourceMetadata.getResourceInterface().name().toString());
@@ -116,7 +114,8 @@ class JaxRsResourceImplementor {
     }
 
     private FieldDescriptor implementResourceField(ClassCreator classCreator, ResourceMetadata resourceMetadata) {
-        FieldCreator resourceFieldCreator = classCreator.getFieldCreator("resource", resourceMetadata.getResourceClass());
+        FieldCreator resourceFieldCreator = classCreator.getFieldCreator("resource",
+                resourceMetadata.getResourceClass());
         resourceFieldCreator.setModifiers(resourceFieldCreator.getModifiers() & ~Modifier.PRIVATE)
                 .addAnnotation(Inject.class);
         return resourceFieldCreator.getFieldDescriptor();

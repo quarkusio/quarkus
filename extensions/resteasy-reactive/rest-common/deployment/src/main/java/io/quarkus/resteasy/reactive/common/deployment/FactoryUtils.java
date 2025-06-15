@@ -12,20 +12,17 @@ import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorde
 
 public class FactoryUtils {
     public static <T> BeanFactory<T> factory(ClassInfo providerClass, Set<String> singletons,
-            ResteasyReactiveCommonRecorder recorder,
-            BeanContainerBuildItem beanContainerBuildItem) {
+            ResteasyReactiveCommonRecorder recorder, BeanContainerBuildItem beanContainerBuildItem) {
         return factory(providerClass.name().toString(), singletons, recorder, beanContainerBuildItem);
     }
 
     public static <T> BeanFactory<T> factory(String providerClass, Set<String> singletons,
-            ResteasyReactiveCommonRecorder recorder,
-            BeanContainerBuildItem beanContainerBuildItem) {
+            ResteasyReactiveCommonRecorder recorder, BeanContainerBuildItem beanContainerBuildItem) {
         Objects.requireNonNull(providerClass, "providerClass cannot be null");
         if (singletons.contains(providerClass)) {
             return new SingletonBeanFactory<>(providerClass);
         } else {
-            return recorder.factory(providerClass,
-                    beanContainerBuildItem.getValue());
+            return recorder.factory(providerClass, beanContainerBuildItem.getValue());
         }
     }
 }

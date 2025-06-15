@@ -32,10 +32,8 @@ public final class DevServicesComposeProjectBuildItem extends SimpleBuildItem {
         this(null, null, Collections.emptyMap(), Collections.emptyMap());
     }
 
-    public DevServicesComposeProjectBuildItem(String project,
-            String defaultNetworkId,
-            Map<String, List<RunningContainer>> composeServices,
-            Map<String, String> config) {
+    public DevServicesComposeProjectBuildItem(String project, String defaultNetworkId,
+            Map<String, List<RunningContainer>> composeServices, Map<String, String> config) {
         this.project = project;
         this.defaultNetworkId = defaultNetworkId;
         this.composeServices = composeServices;
@@ -59,28 +57,29 @@ public final class DevServicesComposeProjectBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Locate a running container by image partial and port
-     * The container image partial can be a substring of the full image name
+     * Locate a running container by image partial and port The container image partial can be a substring of the full
+     * image name
      *
-     * @param imagePartials image partials
-     * @param port exposed port
+     * @param imagePartials
+     *        image partials
+     * @param port
+     *        exposed port
+     *
      * @return the running container or null if not found
      */
     public Optional<RunningContainer> locate(List<String> imagePartials, int port) {
-        return locateContainers(imagePartials)
-                .filter(r -> Optional.ofNullable(r.containerInfo().exposedPorts())
-                        .map(ports -> Arrays.stream(ports)
-                                .anyMatch(p -> Objects.equals(p.privatePort(), port)))
-                        .isPresent())
+        return locateContainers(imagePartials).filter(r -> Optional.ofNullable(r.containerInfo().exposedPorts())
+                .map(ports -> Arrays.stream(ports).anyMatch(p -> Objects.equals(p.privatePort(), port))).isPresent())
                 .findFirst();
     }
 
     /**
-     * Locate a running container by image partial
-     * The container image partial can be a substring of the full image name
+     * Locate a running container by image partial The container image partial can be a substring of the full image name
      * Ignored services are not returned
      *
-     * @param imagePartials image partials
+     * @param imagePartials
+     *        image partials
+     *
      * @return the list of running containers
      */
     public List<RunningContainer> locate(List<String> imagePartials) {
@@ -88,11 +87,12 @@ public final class DevServicesComposeProjectBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Locate the first running container by image partial
-     * The container image partial can be a substring of the full image name
-     * Ignored services are not returned
+     * Locate the first running container by image partial The container image partial can be a substring of the full
+     * image name Ignored services are not returned
      *
-     * @param imagePartials image partials
+     * @param imagePartials
+     *        image partials
+     *
      * @return the first running container
      */
     public Optional<RunningContainer> locateFirst(List<String> imagePartials) {
@@ -100,21 +100,21 @@ public final class DevServicesComposeProjectBuildItem extends SimpleBuildItem {
     }
 
     private Stream<RunningContainer> locateContainers(List<String> imagePartials) {
-        return imagePartials.stream()
-                .flatMap(imagePartial -> composeServices.values().stream().flatMap(List::stream)
-                        // Ignore service if contains ignore label
-                        .filter(c -> !isContainerIgnored(c.containerInfo()))
-                        .filter(runningContainer -> {
-                            String imageName = runningContainer.containerInfo().imageName();
-                            return imageName.contains(imagePartial)
-                                    || ImageName.parse(imageName).withLibraryPrefix().toString().contains(imagePartial);
-                        }));
+        return imagePartials.stream().flatMap(imagePartial -> composeServices.values().stream().flatMap(List::stream)
+                // Ignore service if contains ignore label
+                .filter(c -> !isContainerIgnored(c.containerInfo())).filter(runningContainer -> {
+                    String imageName = runningContainer.containerInfo().imageName();
+                    return imageName.contains(imagePartial)
+                            || ImageName.parse(imageName).withLibraryPrefix().toString().contains(imagePartial);
+                }));
     }
 
     /**
      * Ignored services are not returned by locate
      *
-     * @param containerInfo container info
+     * @param containerInfo
+     *        container info
+     *
      * @return true if the container should be ignored
      */
     public static boolean isContainerIgnored(ContainerInfo containerInfo) {

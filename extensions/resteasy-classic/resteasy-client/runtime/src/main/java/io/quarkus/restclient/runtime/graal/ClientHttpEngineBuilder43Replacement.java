@@ -15,7 +15,8 @@ import com.oracle.svm.core.annotate.TargetClass;
 /**
  * This class is used to make sure that only the default SSLContext is requested when no SSLContext has been provided.
  * The reason this is necessary because, by default, the code requests
- * {@code SSLContext.getInstance(SSLConnectionSocketFactory.TLS)} which will fail in native when the SSL has been disabled
+ * {@code SSLContext.getInstance(SSLConnectionSocketFactory.TLS)} which will fail in native when the SSL has been
+ * disabled
  */
 @TargetClass(className = "org.jboss.resteasy.client.jaxrs.engines.ClientHttpEngineBuilder43")
 public final class ClientHttpEngineBuilder43Replacement implements ClientHttpEngineBuilder {

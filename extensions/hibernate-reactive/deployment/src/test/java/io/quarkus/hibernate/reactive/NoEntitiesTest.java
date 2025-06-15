@@ -8,8 +8,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoEntitiesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withEmptyApplication();
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withEmptyApplication();
 
     @Test
     public void testNoEntities() {

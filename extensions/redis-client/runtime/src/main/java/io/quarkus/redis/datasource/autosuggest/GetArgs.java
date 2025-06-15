@@ -26,7 +26,9 @@ public class GetArgs implements RedisCommandExtraArguments {
     /**
      * Limits the results to a maximum of num (default: 5).
      *
-     * @param max the max number of results, must be strictly positive
+     * @param max
+     *        the max number of results, must be strictly positive
+     *
      * @return the current {@code GetArgs}.
      */
     public GetArgs max(int max) {
@@ -36,8 +38,7 @@ public class GetArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Also to attach the score of each suggestion.
-     * This can be used to merge results from multiple instances.
+     * Also to attach the score of each suggestion. This can be used to merge results from multiple instances.
      *
      * @return the current {@code GetArgs}.
      */

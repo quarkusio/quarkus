@@ -24,8 +24,7 @@ public class QueryParamNoTemplateTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class));
 
     @TestHTTPResource
     URL url;
@@ -44,13 +43,8 @@ public class QueryParamNoTemplateTestCase {
 
     @Test
     public void testInjection() {
-        Object data = client.target(url.toExternalForm() + "/hello")
-                .queryParam("param", "{foo&bar}", "%FF")
-                .request()
-                .rx(UniInvoker.class)
-                .get()
-                .await()
-                .indefinitely();
+        Object data = client.target(url.toExternalForm() + "/hello").queryParam("param", "{foo&bar}", "%FF").request()
+                .rx(UniInvoker.class).get().await().indefinitely();
         Assertions.assertEquals("%FF,{foo&bar}", data);
     }
 
@@ -58,12 +52,7 @@ public class QueryParamNoTemplateTestCase {
     public void testEmptyQueryParam() {
         Object data = client.target(url.toExternalForm() + "/absoluteURI")
                 // Empty query param should be omitted in the generated URI
-                .queryParam("empty")
-                .queryParam("param", "a")
-                .request()
-                .rx(UniInvoker.class)
-                .get()
-                .await()
+                .queryParam("empty").queryParam("param", "a").request().rx(UniInvoker.class).get().await()
                 .indefinitely();
         Assertions.assertEquals("http://localhost:8081//absoluteURI?param=a", data);
     }
@@ -74,12 +63,7 @@ public class QueryParamNoTemplateTestCase {
             router.route("/hello").handler(new Handler<RoutingContext>() {
                 @Override
                 public void handle(RoutingContext event) {
-                    event.response()
-                            .end(
-                                    event.queryParam("param")
-                                            .stream()
-                                            .sorted()
-                                            .collect(Collectors.joining(",")));
+                    event.response().end(event.queryParam("param").stream().sorted().collect(Collectors.joining(",")));
                 }
             });
             router.route("/absoluteURI").handler(new Handler<RoutingContext>() {

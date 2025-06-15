@@ -20,10 +20,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RolesAllowedExpressionFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RolesAllowedBean.class, IdentityMock.class,
-                            AuthData.class, SecurityTestUtils.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(RolesAllowedBean.class, IdentityMock.class, AuthData.class, SecurityTestUtils.class))
             .assertException(t -> {
                 Throwable e = t;
                 NoSuchElementException te = null;

@@ -199,11 +199,12 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     }
 
     @Override
-    public QuarkusRestClientBuilder clientHeadersFactory(Class<? extends ClientHeadersFactory> clientHeadersFactoryClass) {
+    public QuarkusRestClientBuilder clientHeadersFactory(
+            Class<? extends ClientHeadersFactory> clientHeadersFactoryClass) {
         ClientHeadersFactory bean = BeanGrabber.getBeanIfDefined(clientHeadersFactoryClass);
         if (bean == null) {
-            throw new IllegalArgumentException("Failed to instantiate the client headers factory " + clientHeadersFactoryClass
-                    + ". Make sure the bean is properly configured for CDI injection.");
+            throw new IllegalArgumentException("Failed to instantiate the client headers factory "
+                    + clientHeadersFactoryClass + ". Make sure the bean is properly configured for CDI injection.");
         }
 
         return clientHeadersFactory(bean);

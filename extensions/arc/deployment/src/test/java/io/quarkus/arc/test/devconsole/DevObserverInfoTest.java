@@ -21,15 +21,15 @@ public class DevObserverInfoTest {
     public void testCompare() {
         List<DevObserverInfo> observers = new ArrayList<>();
         // Synthetic non-app - should be last
-        observers.add(new DevObserverInfo(false, null, null, new Name("Delta"),
-                Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
+        observers.add(new DevObserverInfo(false, null, null, new Name("Delta"), Collections.emptyList(), 0, false,
+                Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
         // App observers
         observers.add(new DevObserverInfo(true, new Name("Alpha"), "fooish", new Name("java.lang.String"),
                 Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
         observers.add(new DevObserverInfo(true, new Name("Alpha"), "blabla", new Name("java.lang.String"),
                 Collections.emptyList(), 1, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
-        observers.add(new DevObserverInfo(true, null, null, new Name("Charlie"),
-                Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
+        observers.add(new DevObserverInfo(true, null, null, new Name("Charlie"), Collections.emptyList(), 0, false,
+                Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
         observers.add(new DevObserverInfo(true, new Name("Bravo"), "hop", new Name("java.lang.String"),
                 Collections.emptyList(), 0, false, Reception.IF_EXISTS, TransactionPhase.IN_PROGRESS));
 

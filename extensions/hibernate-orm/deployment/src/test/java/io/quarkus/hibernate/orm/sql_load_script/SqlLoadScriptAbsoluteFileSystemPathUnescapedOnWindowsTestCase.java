@@ -18,14 +18,11 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Test that setting {@code quarkus.hibernate-orm.sql-load-script}
- * to the absolute path to a resource file on the filesystem on Windows,
- * while also forgetting about the fact that backslashes need to be escaped in properties files,
- * makes the build fail.
- *
- * Added while working on https://github.com/quarkusio/quarkus/issues/23574,
- * because we noticed such paths cannot be correctly detected as being absolute
- * (they cannot be distinguished from a weird relative path to a file starting with "C:" and not containing any backslash).
+ * Test that setting {@code quarkus.hibernate-orm.sql-load-script} to the absolute path to a resource file on the
+ * filesystem on Windows, while also forgetting about the fact that backslashes need to be escaped in properties files,
+ * makes the build fail. Added while working on https://github.com/quarkusio/quarkus/issues/23574, because we noticed
+ * such paths cannot be correctly detected as being absolute (they cannot be distinguished from a weird relative path to
+ * a file starting with "C:" and not containing any backslash).
  */
 @EnabledOnOs(OS.WINDOWS)
 public class SqlLoadScriptAbsoluteFileSystemPathUnescapedOnWindowsTestCase {
@@ -48,17 +45,15 @@ public class SqlLoadScriptAbsoluteFileSystemPathUnescapedOnWindowsTestCase {
         // in a Windows path in a properties file will still get an error message,
         // even though it's not that clear.
         sqlLoadScriptAbsolutePath = path.toString();
-        System.out.println("(Unescaped) absolute filesystem path passed to sql-load-script: " + sqlLoadScriptAbsolutePath);
+        System.out.println(
+                "(Unescaped) absolute filesystem path passed to sql-load-script: " + sqlLoadScriptAbsolutePath);
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.sql-load-script", sqlLoadScriptAbsolutePath)
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll("Unable to find file referenced in 'quarkus.hibernate-orm.sql-load-script="
                             // The path will appear without the backslashes in the error message;
                             // hopefully that'll be enough to hint at what went wrong.

@@ -5,8 +5,8 @@ import java.io.InputStream;
 import java.util.List;
 
 /**
- * WebJarResourcesFilter which combines several other filters. Each filter gets called with the inputstream of the previous
- * filter, or the original one if it is the first filter. Filters are processed in order.
+ * WebJarResourcesFilter which combines several other filters. Each filter gets called with the inputstream of the
+ * previous filter, or the original one if it is the first filter. Filters are processed in order.
  */
 public class CombinedWebJarResourcesFilter implements WebJarResourcesFilter {
     private final List<WebJarResourcesFilter> filters;

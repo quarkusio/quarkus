@@ -59,8 +59,7 @@ public abstract class ResourceMethodListenerImplementor {
     }
 
     protected void processEventListener(String methodName, BytecodeCreator methodCreator,
-            ResultHandle eventListenerContainer,
-            ResultHandle parameter) {
+            ResultHandle eventListenerContainer, ResultHandle parameter) {
         for (Map.Entry<FieldDescriptor, ClassInfo> eventListenerEntry : listenerFields.entrySet()) {
             MethodInfo method = findMethodByName(eventListenerEntry.getValue(), methodName);
             if (method != null) {

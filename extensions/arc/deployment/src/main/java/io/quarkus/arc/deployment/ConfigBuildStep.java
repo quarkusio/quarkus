@@ -87,7 +87,8 @@ public class ConfigBuildStep {
     private static final DotName MP_CONFIG_PROPERTIES_NAME = DotName.createSimple(ConfigProperties.class.getName());
     private static final DotName MP_CONFIG_VALUE_NAME = DotName.createSimple(ConfigValue.class.getName());
 
-    private static final DotName SR_CONFIG_VALUE_NAME = DotName.createSimple(io.smallrye.config.ConfigValue.class.getName());
+    private static final DotName SR_CONFIG_VALUE_NAME = DotName
+            .createSimple(io.smallrye.config.ConfigValue.class.getName());
 
     private static final DotName MAP_NAME = DotName.createSimple(Map.class.getName());
     private static final DotName SET_NAME = DotName.createSimple(Set.class.getName());
@@ -126,25 +127,19 @@ public class ConfigBuildStep {
         for (Type type : customBeanTypes) {
             if (type.kind() != Kind.ARRAY) {
                 // Implicit converters are most likely used
-                reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods()
-                                .reason(getClass().getName() + " Custom config bean")
-                                .build());
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods()
+                        .reason(getClass().getName() + " Custom config bean").build());
             }
             DotName implClazz = type.kind() == Kind.ARRAY ? DotName.createSimple(ConfigBeanCreator.class.getName())
                     : type.name();
-            syntheticBeans.produce(SyntheticBeanBuildItem.configure(implClazz)
-                    .creator(ConfigBeanCreator.class)
-                    .providerType(type)
-                    .types(type)
-                    .addQualifier(MP_CONFIG_PROPERTY_NAME)
+            syntheticBeans.produce(SyntheticBeanBuildItem.configure(implClazz).creator(ConfigBeanCreator.class)
+                    .providerType(type).types(type).addQualifier(MP_CONFIG_PROPERTY_NAME)
                     .param("requiredType", type.name().toString()).done());
         }
     }
 
     @BuildStep
-    void configPropertyInjectionPoints(
-            ValidationPhaseBuildItem validationPhase,
+    void configPropertyInjectionPoints(ValidationPhaseBuildItem validationPhase,
             BuildProducer<ConfigPropertyBuildItem> configProperties,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
@@ -180,7 +175,8 @@ public class ConfigBuildStep {
                         FieldInfo field = injectionPoint.getAnnotationTarget().asField();
                         propertyName = getPropertyName(field.name(), field.declaringClass());
                     } else if (injectionPoint.isParam()) {
-                        MethodParameterInfo methodParameterInfo = injectionPoint.getAnnotationTarget().asMethodParameter();
+                        MethodParameterInfo methodParameterInfo = injectionPoint.getAnnotationTarget()
+                                .asMethodParameter();
                         propertyName = getPropertyName(methodParameterInfo.name(),
                                 methodParameterInfo.method().declaringClass());
                     } else {
@@ -189,13 +185,11 @@ public class ConfigBuildStep {
                 }
 
                 Type injectedType = injectionPoint.getType();
-                if (DotNames.OPTIONAL.equals(injectedType.name())
-                        || DotNames.OPTIONAL_INT.equals(injectedType.name())
+                if (DotNames.OPTIONAL.equals(injectedType.name()) || DotNames.OPTIONAL_INT.equals(injectedType.name())
                         || DotNames.OPTIONAL_LONG.equals(injectedType.name())
                         || DotNames.OPTIONAL_DOUBLE.equals(injectedType.name())
                         || DotNames.INSTANCE.equals(injectedType.name())
-                        || DotNames.PROVIDER.equals(injectedType.name())
-                        || SUPPLIER_NAME.equals(injectedType.name())
+                        || DotNames.PROVIDER.equals(injectedType.name()) || SUPPLIER_NAME.equals(injectedType.name())
                         || SR_CONFIG_VALUE_NAME.equals(injectedType.name())
                         || MP_CONFIG_VALUE_NAME.equals(injectedType.name())) {
                     // Never validate container objects
@@ -208,47 +202,39 @@ public class ConfigBuildStep {
                     propertyDefaultValue = defaultValue.asString();
                 }
 
-                if (injectionPoint.getAnnotationTarget().kind().equals(METHOD_PARAMETER)
-                        && observerMethods.contains(injectionPoint.getAnnotationTarget().asMethodParameter().method())) {
-                    configProperties
-                            .produce(ConfigPropertyBuildItem.staticInit(propertyName, injectedType, propertyDefaultValue));
+                if (injectionPoint.getAnnotationTarget().kind().equals(METHOD_PARAMETER) && observerMethods
+                        .contains(injectionPoint.getAnnotationTarget().asMethodParameter().method())) {
+                    configProperties.produce(
+                            ConfigPropertyBuildItem.staticInit(propertyName, injectedType, propertyDefaultValue));
                 }
 
-                configProperties.produce(ConfigPropertyBuildItem.runtimeInit(propertyName, injectedType, propertyDefaultValue));
+                configProperties
+                        .produce(ConfigPropertyBuildItem.runtimeInit(propertyName, injectedType, propertyDefaultValue));
             }
         }
     }
 
     @BuildStep
     @Record(STATIC_INIT)
-    void validateStaticInitConfigProperty(
-            ConfigRecorder recorder,
-            List<ConfigPropertyBuildItem> configProperties,
+    void validateStaticInitConfigProperty(ConfigRecorder recorder, List<ConfigPropertyBuildItem> configProperties,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
-        recorder.validateConfigProperties(
-                configProperties.stream()
-                        .filter(ConfigPropertyBuildItem::isStaticInit)
-                        .map(p -> configPropertyToConfigValidation(p, reflectiveClass))
-                        .collect(toSet()));
+        recorder.validateConfigProperties(configProperties.stream().filter(ConfigPropertyBuildItem::isStaticInit)
+                .map(p -> configPropertyToConfigValidation(p, reflectiveClass)).collect(toSet()));
     }
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void validateRuntimeConfigProperty(
-            ConfigRecorder recorder,
-            List<ConfigPropertyBuildItem> configProperties,
+    void validateRuntimeConfigProperty(ConfigRecorder recorder, List<ConfigPropertyBuildItem> configProperties,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
-        recorder.validateConfigProperties(
-                configProperties.stream()
-                        .filter(ConfigPropertyBuildItem::isRuntimeInit)
-                        .map(p -> configPropertyToConfigValidation(p, reflectiveClass))
-                        .collect(toSet()));
+        recorder.validateConfigProperties(configProperties.stream().filter(ConfigPropertyBuildItem::isRuntimeInit)
+                .map(p -> configPropertyToConfigValidation(p, reflectiveClass)).collect(toSet()));
     }
 
     @BuildStep
-    void registerConfigRootsAsBeans(ConfigurationBuildItem configItem, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+    void registerConfigRootsAsBeans(ConfigurationBuildItem configItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         for (RootDefinition rootDefinition : configItem.getReadResult().getAllRoots()) {
             if (rootDefinition.getConfigPhase() == ConfigPhase.BUILD_AND_RUN_TIME_FIXED
                     || rootDefinition.getConfigPhase() == ConfigPhase.RUN_TIME) {
@@ -257,7 +243,8 @@ public class ConfigBuildStep {
                         .scope(Dependent.class).creator(mc -> {
                             // e.g. return Config.ApplicationConfig
                             ResultHandle configRoot = mc.readStaticField(rootDefinition.getDescriptor());
-                            // BUILD_AND_RUN_TIME_FIXED roots are always set before the container is started (in the static initializer of the generated Config class)
+                            // BUILD_AND_RUN_TIME_FIXED roots are always set before the container is started (in the
+                            // static initializer of the generated Config class)
                             // However, RUN_TIME roots may be not be set when the bean instance is created
                             mc.ifNull(configRoot).trueBranch().throwException(CreationException.class,
                                     String.format("Config root [%s] with config phase [%s] not initialized yet.",
@@ -278,18 +265,14 @@ public class ConfigBuildStep {
             public void transform(TransformationContext context) {
                 if (context.getAnnotations().stream()
                         .anyMatch(annotation -> annotation.name().equals(MP_CONFIG_PROPERTIES_NAME))) {
-                    context.transform()
-                            .add(DotNames.VETOED)
-                            .add(DotNames.UNREMOVABLE)
-                            .done();
+                    context.transform().add(DotNames.VETOED).add(DotNames.UNREMOVABLE).done();
                 }
             }
         });
     }
 
     @BuildStep
-    void generateConfigProperties(
-            CombinedIndexBuildItem combinedIndex,
+    void generateConfigProperties(CombinedIndexBuildItem combinedIndex,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
@@ -301,10 +284,8 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    void registerConfigMappingsBean(
-            BeanRegistrationPhaseBuildItem beanRegistration,
-            List<ConfigClassBuildItem> configClasses,
-            CombinedIndexBuildItem combinedIndex,
+    void registerConfigMappingsBean(BeanRegistrationPhaseBuildItem beanRegistration,
+            List<ConfigClassBuildItem> configClasses, CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
 
         if (configClasses.isEmpty()) {
@@ -332,13 +313,10 @@ public class ConfigBuildStep {
 
         // Generate the mappings beans
         for (ConfigClassBuildItem configClass : configMappings) {
-            BeanConfigurator<Object> bean = beanRegistration.getContext()
-                    .configure(configClass.getConfigClass())
-                    .types(configClass.getTypes().toArray(new Type[] {}))
-                    .creator(ConfigMappingCreator.class)
+            BeanConfigurator<Object> bean = beanRegistration.getContext().configure(configClass.getConfigClass())
+                    .types(configClass.getTypes().toArray(new Type[] {})).creator(ConfigMappingCreator.class)
                     .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
-                    .param("type", configClass.getConfigClass())
-                    .param("prefix", configClass.getPrefix());
+                    .param("type", configClass.getConfigClass()).param("prefix", configClass.getPrefix());
 
             if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)) {
                 bean.unremovable();
@@ -349,10 +327,8 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    void registerConfigPropertiesBean(
-            BeanRegistrationPhaseBuildItem beanRegistration,
-            List<ConfigClassBuildItem> configClasses,
-            CombinedIndexBuildItem combinedIndex,
+    void registerConfigPropertiesBean(BeanRegistrationPhaseBuildItem beanRegistration,
+            List<ConfigClassBuildItem> configClasses, CombinedIndexBuildItem combinedIndex,
             BuildProducer<BeanConfiguratorBuildItem> beanConfigurator) {
 
         if (configClasses.isEmpty()) {
@@ -375,27 +351,18 @@ public class ConfigBuildStep {
         }
 
         for (ConfigClassBuildItem configClass : configProperties) {
-            beanConfigurator.produce(new BeanConfiguratorBuildItem(
-                    beanRegistration.getContext()
-                            .configure(configClass.getConfigClass())
-                            .types(configClass.getTypes().toArray(new Type[] {}))
-                            .addQualifier(create(MP_CONFIG_PROPERTIES_NAME, null,
-                                    new AnnotationValue[] {
-                                            createStringValue("prefix", configClass.getPrefix())
-                                    }))
-                            .creator(ConfigMappingCreator.class)
-                            .addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
-                            .param("type", configClass.getConfigClass())
-                            .param("prefix", configClass.getPrefix())));
+            beanConfigurator.produce(new BeanConfiguratorBuildItem(beanRegistration.getContext()
+                    .configure(configClass.getConfigClass()).types(configClass.getTypes().toArray(new Type[] {}))
+                    .addQualifier(create(MP_CONFIG_PROPERTIES_NAME, null,
+                            new AnnotationValue[] { createStringValue("prefix", configClass.getPrefix()) }))
+                    .creator(ConfigMappingCreator.class).addInjectionPoint(ClassType.create(DotNames.INJECTION_POINT))
+                    .param("type", configClass.getConfigClass()).param("prefix", configClass.getPrefix())));
         }
     }
 
     @BuildStep
-    void validateConfigMappingsInjectionPoints(
-            ArcConfig arcConfig,
-            ValidationPhaseBuildItem validationPhase,
-            List<UnremovableBeanBuildItem> unremovableBeans,
-            List<ConfigClassBuildItem> configClasses,
+    void validateConfigMappingsInjectionPoints(ArcConfig arcConfig, ValidationPhaseBuildItem validationPhase,
+            List<UnremovableBeanBuildItem> unremovableBeans, List<ConfigClassBuildItem> configClasses,
             BuildProducer<ConfigMappingBuildItem> configMappings) {
 
         if (configClasses.isEmpty()) {
@@ -437,10 +404,8 @@ public class ConfigBuildStep {
         }
 
         if (arcConfig.shouldEnableBeanRemoval()) {
-            Set<String> unremovableClassNames = unremovableBeans.stream()
-                    .map(UnremovableBeanBuildItem::getClassNames)
-                    .flatMap(Collection::stream)
-                    .collect(toSet());
+            Set<String> unremovableClassNames = unremovableBeans.stream().map(UnremovableBeanBuildItem::getClassNames)
+                    .flatMap(Collection::stream).collect(toSet());
 
             for (ConfigClassBuildItem configClass : configMappingTypes.values()) {
                 if (configClass.getConfigClass().isAnnotationPresent(Unremovable.class)
@@ -454,11 +419,8 @@ public class ConfigBuildStep {
     }
 
     @BuildStep
-    void validateConfigPropertiesInjectionPoints(
-            ArcConfig arcConfig,
-            ValidationPhaseBuildItem validationPhase,
-            List<ConfigClassBuildItem> configClasses,
-            BuildProducer<ConfigPropertiesBuildItem> configProperties) {
+    void validateConfigPropertiesInjectionPoints(ArcConfig arcConfig, ValidationPhaseBuildItem validationPhase,
+            List<ConfigClassBuildItem> configClasses, BuildProducer<ConfigPropertiesBuildItem> configProperties) {
 
         if (configClasses.isEmpty()) {
             return;
@@ -493,22 +455,16 @@ public class ConfigBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void registerConfigClasses(
-            RecorderContext context,
-            ConfigRecorder recorder,
-            List<ConfigMappingBuildItem> configMappings,
-            List<ConfigPropertiesBuildItem> configProperties) throws Exception {
+    void registerConfigClasses(RecorderContext context, ConfigRecorder recorder,
+            List<ConfigMappingBuildItem> configMappings, List<ConfigPropertiesBuildItem> configProperties)
+            throws Exception {
 
         // TODO - Register ConfigProperties during build time
-        context.registerNonDefaultConstructor(
-                ConfigClass.class.getDeclaredConstructor(Class.class, String.class),
-                configClass -> Stream.of(configClass.getType(), configClass.getPrefix())
-                        .collect(toList()));
+        context.registerNonDefaultConstructor(ConfigClass.class.getDeclaredConstructor(Class.class, String.class),
+                configClass -> Stream.of(configClass.getType(), configClass.getPrefix()).collect(toList()));
 
         recorder.registerConfigProperties(
-                configProperties.stream()
-                        .map(p -> configClass(p.getConfigClass(), p.getPrefix()))
-                        .collect(toSet()));
+                configProperties.stream().map(p -> configClass(p.getConfigClass(), p.getPrefix())).collect(toSet()));
     }
 
     private static String getPropertyName(String name, ClassInfo declaringClass) {
@@ -528,25 +484,15 @@ public class ConfigBuildStep {
         if (type.kind() == Kind.PRIMITIVE) {
             return true;
         }
-        return DotNames.STRING.equals(type.name()) ||
-                DotNames.OPTIONAL.equals(type.name()) ||
-                DotNames.OPTIONAL_INT.equals(type.name()) ||
-                DotNames.OPTIONAL_LONG.equals(type.name()) ||
-                DotNames.OPTIONAL_DOUBLE.equals(type.name()) ||
-                MAP_NAME.equals(type.name()) ||
-                SET_NAME.equals(type.name()) ||
-                LIST_NAME.equals(type.name()) ||
-                DotNames.LONG.equals(type.name()) ||
-                DotNames.FLOAT.equals(type.name()) ||
-                DotNames.INTEGER.equals(type.name()) ||
-                DotNames.BOOLEAN.equals(type.name()) ||
-                DotNames.DOUBLE.equals(type.name()) ||
-                DotNames.SHORT.equals(type.name()) ||
-                DotNames.BYTE.equals(type.name()) ||
-                DotNames.CHARACTER.equals(type.name()) ||
-                SUPPLIER_NAME.equals(type.name()) ||
-                SR_CONFIG_VALUE_NAME.equals(type.name()) ||
-                MP_CONFIG_VALUE_NAME.equals(type.name());
+        return DotNames.STRING.equals(type.name()) || DotNames.OPTIONAL.equals(type.name())
+                || DotNames.OPTIONAL_INT.equals(type.name()) || DotNames.OPTIONAL_LONG.equals(type.name())
+                || DotNames.OPTIONAL_DOUBLE.equals(type.name()) || MAP_NAME.equals(type.name())
+                || SET_NAME.equals(type.name()) || LIST_NAME.equals(type.name()) || DotNames.LONG.equals(type.name())
+                || DotNames.FLOAT.equals(type.name()) || DotNames.INTEGER.equals(type.name())
+                || DotNames.BOOLEAN.equals(type.name()) || DotNames.DOUBLE.equals(type.name())
+                || DotNames.SHORT.equals(type.name()) || DotNames.BYTE.equals(type.name())
+                || DotNames.CHARACTER.equals(type.name()) || SUPPLIER_NAME.equals(type.name())
+                || SR_CONFIG_VALUE_NAME.equals(type.name()) || MP_CONFIG_VALUE_NAME.equals(type.name());
     }
 
     private static ConfigValidationMetadata configPropertyToConfigValidation(ConfigPropertyBuildItem configProperty,
@@ -556,8 +502,7 @@ public class ConfigBuildStep {
 
         if (configProperty.getPropertyType().kind() != Kind.PRIMITIVE) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(typeName)
-                    .reason(ConfigBuildStep.class.getSimpleName() + " Configuration property")
-                    .build());
+                    .reason(ConfigBuildStep.class.getSimpleName() + " Configuration property").build());
         }
 
         if (configProperty.getPropertyType().kind() == Kind.PARAMETERIZED_TYPE) {

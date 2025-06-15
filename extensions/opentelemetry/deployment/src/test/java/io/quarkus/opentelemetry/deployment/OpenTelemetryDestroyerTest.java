@@ -18,27 +18,19 @@ import io.restassured.RestAssured;
 public class OpenTelemetryDestroyerTest {
 
     @RegisterExtension
-    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestSpanExporter.class,
-                            TestSpanExporterProvider.class,
-                            HelloResource.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .add(new StringAsset(
-                            """
-                                    quarkus.otel.traces.exporter=test-span-exporter
-                                    quarkus.otel.metrics.exporter=none
-                                    quarkus.otel.experimental.shutdown-wait-time=PT60S
-                                    """),
-                            "application.properties"));
+    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, HelloResource.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .add(new StringAsset("""
+                    quarkus.otel.traces.exporter=test-span-exporter
+                    quarkus.otel.metrics.exporter=none
+                    quarkus.otel.experimental.shutdown-wait-time=PT60S
+                    """), "application.properties"));
 
     @Test
     void getShutdownWaitTime() {
-        RestAssured.when()
-                .get("/hello").then()
-                .statusCode(200)
-                .body(is("PT1M"));
+        RestAssured.when().get("/hello").then().statusCode(200).body(is("PT1M"));
     }
 
     @Path("/hello")

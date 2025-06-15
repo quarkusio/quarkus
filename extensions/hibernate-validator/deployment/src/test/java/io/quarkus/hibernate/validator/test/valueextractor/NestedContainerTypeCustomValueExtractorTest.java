@@ -24,9 +24,9 @@ public class NestedContainerTypeCustomValueExtractorTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(TestBean.class, NestedContainerType.class, NestedContainerClassValueExtractor.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestBean.class,
+                    NestedContainerType.class, NestedContainerClassValueExtractor.class));
 
     @Test
     public void testNestedContainerTypeValueExtractor() {

@@ -20,9 +20,8 @@ public interface VertxConfiguration {
     boolean caching();
 
     /**
-     * Configure the file cache directory.
-     * When not set, the cache is stored in the system temporary directory (read from the `java.io.tmpdir` system property).
-     * If the `java.io.tmpdir` is not set `.` is used.
+     * Configure the file cache directory. When not set, the cache is stored in the system temporary directory (read
+     * from the `java.io.tmpdir` system property). If the `java.io.tmpdir` is not set `.` is used.
      * <p>
      * Note that this property is ignored if the `vertx.cacheDirBase` system property is set.
      */
@@ -78,10 +77,10 @@ public interface VertxConfiguration {
     /**
      * The executor growth resistance.
      * <p>
-     * A resistance factor applied after the core pool is full; values applied here will cause that fraction
-     * of submissions to create new threads when no idle thread is available. A value of {@code 0.0f} implies that
-     * threads beyond the core size should be created as aggressively as threads within it; a value of {@code 1.0f}
-     * implies that threads beyond the core size should never be created.
+     * A resistance factor applied after the core pool is full; values applied here will cause that fraction of
+     * submissions to create new threads when no idle thread is available. A value of {@code 0.0f} implies that threads
+     * beyond the core size should be created as aggressively as threads within it; a value of {@code 1.0f} implies that
+     * threads beyond the core size should never be created.
      */
     @WithDefault("0")
     float growthResistance();
@@ -93,9 +92,9 @@ public interface VertxConfiguration {
     Duration keepAliveTime();
 
     /**
-     * Prefill thread pool when creating a new Executor.
-     * When {@link io.vertx.core.spi.ExecutorServiceFactory#createExecutor} is called,
-     * initialise with the number of defined threads at startup
+     * Prefill thread pool when creating a new Executor. When
+     * {@link io.vertx.core.spi.ExecutorServiceFactory#createExecutor} is called, initialise with the number of defined
+     * threads at startup
      */
     @WithDefault("false")
     boolean prefill();

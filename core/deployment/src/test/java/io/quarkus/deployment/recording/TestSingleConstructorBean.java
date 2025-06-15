@@ -33,9 +33,7 @@ public class TestSingleConstructorBean {
         if (o == null || getClass() != o.getClass())
             return false;
         TestSingleConstructorBean that = (TestSingleConstructorBean) o;
-        return age == that.age &&
-                Objects.equals(first, that.first) &&
-                Objects.equals(last, that.last);
+        return age == that.age && Objects.equals(first, that.first) && Objects.equals(last, that.last);
     }
 
     @Override

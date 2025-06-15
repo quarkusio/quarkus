@@ -13,7 +13,8 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 @SuppressWarnings({ "unchecked", "rawtypes" })
-public class JavaReactiveMongoOperations extends ReactiveMongoOperations<ReactivePanacheQuery<?>, ReactivePanacheUpdate> {
+public class JavaReactiveMongoOperations
+        extends ReactiveMongoOperations<ReactivePanacheQuery<?>, ReactivePanacheUpdate> {
     public static final JavaReactiveMongoOperations INSTANCE = new JavaReactiveMongoOperations();
 
     @Override

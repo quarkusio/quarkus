@@ -18,16 +18,13 @@ import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 
 /**
- * Checks that public field access is correctly replaced with getter/setter calls,
- * regardless of the field type.
+ * Checks that public field access is correctly replaced with getter/setter calls, regardless of the field type.
  */
 public class PublicFieldAccessFieldTypesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(FieldAccessEnhancedDelegate.class))
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addClass(FieldAccessEnhancedDelegate.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -44,22 +41,20 @@ public class PublicFieldAccessFieldTypesTest {
     }
 
     private void doTestFieldAccess(final FieldAccessEnhancedDelegate delegate, final UniAsserter asserter) {
-        //First verify we don't pass the assertion when not modifying the entity:
+        // First verify we don't pass the assertion when not modifying the entity:
         asserter.assertThat(() -> sessionFactory.withTransaction((session, tx) -> {
             MyEntity entity = new MyEntity();
             return session.persist(entity).replaceWith(() -> entity.id);
-        })
-                .chain(id -> sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id))),
+        }).chain(id -> sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id))),
                 loadedEntity -> notPassingAssertion(loadedEntity, delegate));
 
         // Now again, but modify the entity and assert dirtiness was detected:
         asserter.assertThat(() -> sessionFactory.withTransaction((session, tx) -> {
             MyEntity entity = new MyEntity();
             return session.persist(entity).replaceWith(() -> entity.id);
-        })
-                .chain(id -> sessionFactory
-                        .withTransaction((session, tx) -> session.find(MyEntity.class, id).invoke(delegate::setValue))
-                        .replaceWith(id))
+        }).chain(id -> sessionFactory
+                .withTransaction((session, tx) -> session.find(MyEntity.class, id).invoke(delegate::setValue))
+                .replaceWith(id))
                 .chain(id -> sessionFactory.withTransaction((session, tx) -> session.find(MyEntity.class, id))),
                 delegate::assertValue);
     }

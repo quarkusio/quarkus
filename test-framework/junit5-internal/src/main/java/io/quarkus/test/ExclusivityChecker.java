@@ -12,9 +12,8 @@ public class ExclusivityChecker {
         if (testType != null) {
             if (testType != QuarkusUnitTest.class && testType != QuarkusDevModeTest.class
                     && testType != QuarkusProdModeTest.class) {
-                throw new IllegalStateException(
-                        "Cannot mix both " + current.getName() + " based tests and " + testType.getName()
-                                + " based tests in the same run");
+                throw new IllegalStateException("Cannot mix both " + current.getName() + " based tests and "
+                        + testType.getName() + " based tests in the same run");
             }
         } else {
             store.put(IO_QUARKUS_TESTING_TYPE, current);

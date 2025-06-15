@@ -34,8 +34,7 @@ public class VertxContextSupportTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Alpha.class));
+            .withApplicationRoot(root -> root.addClasses(Alpha.class));
 
     @Inject
     Alpha alpha;

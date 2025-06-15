@@ -10,25 +10,22 @@ import io.quarkus.deployment.Capability;
 
 public final class ContainerImageCapabilitiesUtil {
 
-    public final static Map<String, String> CAPABILITY_TO_EXTENSION_NAME = Map.of(
-            Capability.CONTAINER_IMAGE_JIB, "quarkus-container-image-jib",
-            Capability.CONTAINER_IMAGE_DOCKER, "quarkus-container-image-docker",
-            Capability.CONTAINER_IMAGE_PODMAN, "quarkus-container-image-podman",
-            Capability.CONTAINER_IMAGE_OPENSHIFT, "quarkus-container-image-openshift",
-            Capability.CONTAINER_IMAGE_BUILDPACK, "quarkus-container-image-buildpack");
+    public final static Map<String, String> CAPABILITY_TO_EXTENSION_NAME = Map.of(Capability.CONTAINER_IMAGE_JIB,
+            "quarkus-container-image-jib", Capability.CONTAINER_IMAGE_DOCKER, "quarkus-container-image-docker",
+            Capability.CONTAINER_IMAGE_PODMAN, "quarkus-container-image-podman", Capability.CONTAINER_IMAGE_OPENSHIFT,
+            "quarkus-container-image-openshift", Capability.CONTAINER_IMAGE_BUILDPACK,
+            "quarkus-container-image-buildpack");
 
-    private final static Map<String, String> CAPABILITY_TO_BUILDER_NAME = Map.of(
-            Capability.CONTAINER_IMAGE_JIB, "jib",
-            Capability.CONTAINER_IMAGE_DOCKER, "docker",
-            Capability.CONTAINER_IMAGE_PODMAN, "podman",
-            Capability.CONTAINER_IMAGE_OPENSHIFT, "openshift",
-            Capability.CONTAINER_IMAGE_BUILDPACK, "buildpack");
+    private final static Map<String, String> CAPABILITY_TO_BUILDER_NAME = Map.of(Capability.CONTAINER_IMAGE_JIB, "jib",
+            Capability.CONTAINER_IMAGE_DOCKER, "docker", Capability.CONTAINER_IMAGE_PODMAN, "podman",
+            Capability.CONTAINER_IMAGE_OPENSHIFT, "openshift", Capability.CONTAINER_IMAGE_BUILDPACK, "buildpack");
 
     private ContainerImageCapabilitiesUtil() {
     }
 
     /**
-     * Returns the active container image capability or throws an {@code IllegalStateException} if more than one are active
+     * Returns the active container image capability or throws an {@code IllegalStateException} if more than one are
+     * active
      */
     public static Optional<String> getActiveContainerImageCapability(Capabilities capabilities) {
         Set<String> activeContainerImageCapabilities = ContainerImageCapabilitiesUtil

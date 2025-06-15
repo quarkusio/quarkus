@@ -15,14 +15,14 @@ import io.smallrye.config.WithDefault;
 public interface ApplicationConfig {
 
     /**
-     * The name of the application.
-     * If not set, defaults to the name of the project (except for tests where it is not set at all).
+     * The name of the application. If not set, defaults to the name of the project (except for tests where it is not
+     * set at all).
      */
     Optional<String> name();
 
     /**
-     * The version of the application.
-     * If not set, defaults to the version of the project (except for tests where it is not set at all).
+     * The version of the application. If not set, defaults to the version of the project (except for tests where it is
+     * not set at all).
      */
     Optional<String> version();
 

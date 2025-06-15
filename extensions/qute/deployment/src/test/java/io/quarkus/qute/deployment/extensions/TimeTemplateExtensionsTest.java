@@ -25,11 +25,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TimeTemplateExtensionsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "{now.format('d uuuu')}:{nowLocalDate.format('d MMM uuuu',myLocale)}:{time:format(nowDate,'d MMM uuuu',myLocale)}:{time:format(nowCalendar,'d uuuu')}"),
-                            "templates/foo.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addAsResource(
+            new StringAsset(
+                    "{now.format('d uuuu')}:{nowLocalDate.format('d MMM uuuu',myLocale)}:{time:format(nowDate,'d MMM uuuu',myLocale)}:{time:format(nowCalendar,'d uuuu')}"),
+            "templates/foo.html"));
 
     @Inject
     Template foo;
@@ -44,23 +43,23 @@ public class TimeTemplateExtensionsTest {
         nowCal.set(Calendar.MONTH, Calendar.SEPTEMBER);
         nowCal.set(Calendar.DAY_OF_MONTH, 10);
         Date nowDate = nowCal.getTime();
-        assertEquals("10 2020:10 Sep 2020:10 Sep 2020:10 2020", foo
-                .data("now", LocalDateTime.of(2020, 9, 10, 11, 12))
-                .data("nowLocalDate", LocalDate.of(2020, 9, 10))
-                .data("nowDate", nowDate)
-                .data("nowCalendar", nowCal)
-                .data("myLocale", Locale.ENGLISH).render());
+        assertEquals("10 2020:10 Sep 2020:10 Sep 2020:10 2020",
+                foo.data("now", LocalDateTime.of(2020, 9, 10, 11, 12)).data("nowLocalDate", LocalDate.of(2020, 9, 10))
+                        .data("nowDate", nowDate).data("nowCalendar", nowCal).data("myLocale", Locale.ENGLISH)
+                        .render());
     }
 
     @Test
     public void testInvalidParameter() {
         try {
             // input.birthday cannot be resolved
-            engine.parse("{time:format(input.birthday, 'uuuu')}").data("input", Map.of("name", "Quarkus Qute")).render();
+            engine.parse("{time:format(input.birthday, 'uuuu')}").data("input", Map.of("name", "Quarkus Qute"))
+                    .render();
             fail();
         } catch (TemplateException expected) {
             assertTrue(
-                    expected.getMessage().startsWith("Rendering error: Key \"birthday\" not found in the map with keys [name]"),
+                    expected.getMessage()
+                            .startsWith("Rendering error: Key \"birthday\" not found in the map with keys [name]"),
                     expected.getMessage());
         }
     }

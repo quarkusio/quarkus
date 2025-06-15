@@ -14,15 +14,13 @@ public class EntitiesInNamedPUWithoutDatasourceTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(MyEntity.class.getPackage().getName()))
+            .withApplicationRoot((jar) -> jar.addPackage(MyEntity.class.getPackage().getName()))
             // There will still be a default datasource if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             // We need at least one build-time property, otherwise the PU gets ignored...
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.packages", MyEntity.class.getPackageName())
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'."));;
 
     @Test

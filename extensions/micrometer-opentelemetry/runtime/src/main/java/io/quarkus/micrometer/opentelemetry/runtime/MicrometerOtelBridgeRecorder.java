@@ -32,11 +32,8 @@ public class MicrometerOtelBridgeRecorder {
                 }
 
                 MeterRegistry meterRegistry = OpenTelemetryMeterRegistry.builder(openTelemetry.get())
-                        .setPrometheusMode(false)
-                        .setMicrometerHistogramGaugesEnabled(true)
-                        .setBaseTimeUnit(TimeUnit.MILLISECONDS)
-                        .setClock(Clock.SYSTEM)
-                        .build();
+                        .setPrometheusMode(false).setMicrometerHistogramGaugesEnabled(true)
+                        .setBaseTimeUnit(TimeUnit.MILLISECONDS).setClock(Clock.SYSTEM).build();
                 Metrics.addRegistry(meterRegistry);
                 return meterRegistry;
             }

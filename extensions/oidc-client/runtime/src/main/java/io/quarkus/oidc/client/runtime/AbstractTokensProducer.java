@@ -96,14 +96,15 @@ public abstract class AbstractTokensProducer {
 
     public Tokens awaitTokens() {
         if (isClientFeatureDisabled()) {
-            throw new IllegalStateException("OIDC client feature is disabled with `quarkus.oidc-client.enabled=false`.");
+            throw new IllegalStateException(
+                    "OIDC client feature is disabled with `quarkus.oidc-client.enabled=false`.");
         }
         return getTokens().await().indefinitely();
     }
 
     /**
-     * @return optional ID of OIDC client to use for token acquisition.
-     *         Defaults to default OIDC client when {@link Optional#empty() empty}.
+     * @return optional ID of OIDC client to use for token acquisition. Defaults to default OIDC client when
+     *         {@link Optional#empty() empty}.
      */
     protected Optional<String> clientId() {
         return Optional.empty();
@@ -117,8 +118,8 @@ public abstract class AbstractTokensProducer {
     }
 
     /**
-     * @return {@code true} if the OIDC client must acquire a new set of tokens, discarding
-     *         previously obtained access and refresh tokens.
+     * @return {@code true} if the OIDC client must acquire a new set of tokens, discarding previously obtained access
+     *         and refresh tokens.
      */
     protected boolean isForceNewTokens() {
         return false;

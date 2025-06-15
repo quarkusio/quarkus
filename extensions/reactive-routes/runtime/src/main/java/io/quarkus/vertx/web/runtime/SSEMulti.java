@@ -8,7 +8,8 @@ import io.smallrye.mutiny.subscription.MultiSubscriber;
 /**
  * Just a wrapped to capture the fact that the items must be written as SSE.
  *
- * @param <T> the type of item.
+ * @param <T>
+ *        the type of item.
  */
 public class SSEMulti<T> extends AbstractMulti<T> {
 

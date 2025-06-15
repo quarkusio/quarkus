@@ -26,16 +26,14 @@ import io.restassured.RestAssured;
 
 public class VertxOpenTelemetryXForwardedTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(TestSpanExporter.class.getPackage())
-                    .addClasses(TracerRouter.class, SemconvResolver.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
-                    .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addPackage(TestSpanExporter.class.getPackage()).addClasses(TracerRouter.class, SemconvResolver.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties");
 
     @Inject
@@ -43,10 +41,8 @@ public class VertxOpenTelemetryXForwardedTest {
 
     @Test
     void trace() {
-        RestAssured.given().header("X-Forwarded-For", "203.0.113.195, 70.41.3.18, 150.172.238.178")
-                .when().get("/tracer").then()
-                .statusCode(200)
-                .body(is("Hello Tracer!"));
+        RestAssured.given().header("X-Forwarded-For", "203.0.113.195, 70.41.3.18, 150.172.238.178").when()
+                .get("/tracer").then().statusCode(200).body(is("Hello Tracer!"));
 
         List<SpanData> spans = testSpanExporter.getFinishedSpanItems(2);
 

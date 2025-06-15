@@ -4,7 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * Exchange attribute that represents a fixed value
- *
  */
 public class ConstantExchangeAttribute implements ExchangeAttribute {
 

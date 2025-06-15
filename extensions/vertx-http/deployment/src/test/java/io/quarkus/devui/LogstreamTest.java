@@ -15,8 +15,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class LogstreamTest extends DevUIJsonRPCTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withEmptyApplication();
+    static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
     public LogstreamTest() {
         super("devui-logstream");
@@ -49,15 +48,13 @@ public class LogstreamTest extends DevUIJsonRPCTest {
 
         // Update the level
         JsonNode updateLogLevelResponse = super.executeJsonRPCMethod("updateLogLevel",
-                Map.of("loggerName", "io.quarkus.devui.runtime.DevUIWebSocket",
-                        "levelValue", "DEBUG"));
+                Map.of("loggerName", "io.quarkus.devui.runtime.DevUIWebSocket", "levelValue", "DEBUG"));
         Assertions.assertNotNull(updateLogLevelResponse);
         Assertions.assertEquals("DEBUG", updateLogLevelResponse.get("effectiveLevel").asText());
 
         // Restore the level
         JsonNode restoreLogLevelResponse = super.executeJsonRPCMethod("updateLogLevel",
-                Map.of("loggerName", "io.quarkus.devui.runtime.DevUIWebSocket",
-                        "levelValue", "INFO"));
+                Map.of("loggerName", "io.quarkus.devui.runtime.DevUIWebSocket", "levelValue", "INFO"));
         Assertions.assertNotNull(restoreLogLevelResponse);
         Assertions.assertEquals("INFO", restoreLogLevelResponse.get("effectiveLevel").asText());
 

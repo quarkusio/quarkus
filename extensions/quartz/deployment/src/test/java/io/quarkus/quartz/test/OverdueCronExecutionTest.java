@@ -20,10 +20,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OverdueCronExecutionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.overdue-grace-period=2H\njob.gracePeriod=2H"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("quarkus.scheduler.overdue-grace-period=2H\njob.gracePeriod=2H"),
+                    "application.properties"));
 
     @Inject
     Scheduler scheduler;

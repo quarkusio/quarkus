@@ -8,11 +8,10 @@ import org.jboss.jandex.IndexView;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Represent a Jandex {@link IndexView} on the whole deployment that has a complete CDI-related information.
- * As such, this index should be used for any CDI-oriented work.
- *
- * Compared to {@link io.quarkus.deployment.builditem.CombinedIndexBuildItem} this index can contain additional classes
- * that were indexed while bean discovery was in progress.
+ * Represent a Jandex {@link IndexView} on the whole deployment that has a complete CDI-related information. As such,
+ * this index should be used for any CDI-oriented work. Compared to
+ * {@link io.quarkus.deployment.builditem.CombinedIndexBuildItem} this index can contain additional classes that were
+ * indexed while bean discovery was in progress.
  *
  * @see GeneratedBeanBuildItem
  * @see io.quarkus.deployment.builditem.CombinedIndexBuildItem
@@ -39,7 +38,6 @@ public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @return an immutable index that represents the bean archive
      */
     public IndexView getImmutableIndex() {
@@ -47,7 +45,6 @@ public final class BeanArchiveIndexBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @return the set of classes generated via {@link GeneratedBeanBuildItem}
      */
     public Set<DotName> getGeneratedClassNames() {

@@ -11,7 +11,9 @@ public interface KeyStoreProvider {
     /**
      * Returns the keystore and options to be used for [re]loading the state of a TLS configuration
      *
-     * @param vertx the managed vertx instance
+     * @param vertx
+     *        the managed vertx instance
+     *
      * @return the keystore and options
      */
     KeyStoreAndKeyCertOptions getKeyStore(Vertx vertx);

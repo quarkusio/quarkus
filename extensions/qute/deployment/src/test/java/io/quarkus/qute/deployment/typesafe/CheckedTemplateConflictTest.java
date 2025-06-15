@@ -15,8 +15,7 @@ public class CheckedTemplateConflictTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Templates.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Templates.class)
                     .addAsResource(new StringAsset("Hello {name}!"), "templates/CheckedTemplateConflictTest/monk.txt"))
             .setExpectedException(TemplateException.class);
 

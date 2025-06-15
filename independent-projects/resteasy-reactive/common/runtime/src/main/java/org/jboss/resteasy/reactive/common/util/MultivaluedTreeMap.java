@@ -27,7 +27,8 @@ public class MultivaluedTreeMap<K, V> implements QuarkusMultivaluedMap<K, V>, Se
     /**
      * Used to create a CaseInsensitiveMap.
      *
-     * @param keyComparator key comparator
+     * @param keyComparator
+     *        key comparator
      */
 
     public MultivaluedTreeMap(final Comparator<K> keyComparator) {

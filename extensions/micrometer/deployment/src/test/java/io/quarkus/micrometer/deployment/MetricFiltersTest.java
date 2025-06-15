@@ -19,9 +19,8 @@ public class MetricFiltersTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AnnotatedFilter.class, NonAnnotatedFilter.class,
-                            MeterFilterProducer.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(AnnotatedFilter.class, NonAnnotatedFilter.class, MeterFilterProducer.class))
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false");
 
     @Test

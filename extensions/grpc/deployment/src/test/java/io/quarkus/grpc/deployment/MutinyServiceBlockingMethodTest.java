@@ -13,7 +13,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.grpc.server.services.BlockingMutinyHelloService;
 
 /**
- * Verify that methods annotated with @Blocking from services implementing the MutinyService interface are considered blocking.
+ * Verify that methods annotated with @Blocking from services implementing the MutinyService interface are considered
+ * blocking.
  */
 public class MutinyServiceBlockingMethodTest {
 

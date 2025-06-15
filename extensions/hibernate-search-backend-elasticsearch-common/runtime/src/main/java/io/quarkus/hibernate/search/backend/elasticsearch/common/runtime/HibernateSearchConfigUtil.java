@@ -23,24 +23,24 @@ public class HibernateSearchConfigUtil {
         }
     }
 
-    public static <T> void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName, String configPath,
-            T value) {
+    public static <T> void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName,
+            String configPath, T value) {
         propertyCollector.accept(BackendSettings.backendKey(backendName, configPath), value);
     }
 
-    public static void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName, String configPath,
-            Optional<?> value) {
+    public static void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName,
+            String configPath, Optional<?> value) {
         addBackendConfig(propertyCollector, backendName, configPath, value, Optional::isPresent, Optional::get);
     }
 
-    public static void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName, String configPath,
-            OptionalInt value) {
-        addBackendConfig(propertyCollector, backendName, configPath, value, OptionalInt::isPresent, OptionalInt::getAsInt);
+    public static void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName,
+            String configPath, OptionalInt value) {
+        addBackendConfig(propertyCollector, backendName, configPath, value, OptionalInt::isPresent,
+                OptionalInt::getAsInt);
     }
 
-    public static <T> void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName, String configPath,
-            T value,
-            Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
+    public static <T> void addBackendConfig(BiConsumer<String, Object> propertyCollector, String backendName,
+            String configPath, T value, Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
         if (shouldBeAdded.apply(value)) {
             addBackendConfig(propertyCollector, backendName, configPath, getValue.apply(value));
         }
@@ -48,7 +48,8 @@ public class HibernateSearchConfigUtil {
 
     public static void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
             String indexName, String configPath, Optional<?> value) {
-        addBackendIndexConfig(propertyCollector, backendName, indexName, configPath, value, Optional::isPresent, Optional::get);
+        addBackendIndexConfig(propertyCollector, backendName, indexName, configPath, value, Optional::isPresent,
+                Optional::get);
     }
 
     public static void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
@@ -58,12 +59,11 @@ public class HibernateSearchConfigUtil {
     }
 
     public static <T> void addBackendIndexConfig(BiConsumer<String, Object> propertyCollector, String backendName,
-            String indexName, String configPath, T value,
-            Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
+            String indexName, String configPath, T value, Function<T, Boolean> shouldBeAdded, Function<T, ?> getValue) {
         if (shouldBeAdded.apply(value)) {
             if (indexName != null) {
-                propertyCollector.accept(
-                        IndexSettings.indexKey(backendName, indexName, configPath), getValue.apply(value));
+                propertyCollector.accept(IndexSettings.indexKey(backendName, indexName, configPath),
+                        getValue.apply(value));
             } else {
                 addBackendConfig(propertyCollector, backendName, configPath, getValue.apply(value));
             }
@@ -77,7 +77,6 @@ public class HibernateSearchConfigUtil {
     }
 
     public static void mergeInto(Map<String, Set<String>> target, String key, Set<String> values) {
-        target.computeIfAbsent(key, ignored -> new LinkedHashSet<>())
-                .addAll(values);
+        target.computeIfAbsent(key, ignored -> new LinkedHashSet<>()).addAll(values);
     }
 }

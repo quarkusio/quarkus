@@ -70,9 +70,9 @@ class AttachmentTest {
 
     @Test
     void testAttachmentCreationFromStream() {
-        Flow.Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().transformToMulti(af -> af.toMulti()
-                        .onItem().transformToIterable(this::getBytes));
+        Flow.Publisher<Byte> publisher = vertx.fileSystem()
+                .open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true)).onItem()
+                .transformToMulti(af -> af.toMulti().onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain");
         assertThat(attachment.getFile()).isNull();
@@ -109,9 +109,9 @@ class AttachmentTest {
 
     @Test
     void testInlineAttachmentCreationFromStream() {
-        Flow.Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().transformToMulti(af -> af.toMulti()
-                        .onItem().transformToIterable(this::getBytes));
+        Flow.Publisher<Byte> publisher = vertx.fileSystem()
+                .open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true)).onItem()
+                .transformToMulti(af -> af.toMulti().onItem().transformToIterable(this::getBytes));
 
         Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain", "<my-id>");
         assertThat(attachment.getFile()).isNull();
@@ -128,12 +128,12 @@ class AttachmentTest {
 
     @Test
     void testAttachmentCreationWithDescription() {
-        Flow.Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().transformToMulti(af -> af.toMulti()
-                        .onItem().transformToIterable(this::getBytes));
+        Flow.Publisher<Byte> publisher = vertx.fileSystem()
+                .open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true)).onItem()
+                .transformToMulti(af -> af.toMulti().onItem().transformToIterable(this::getBytes));
 
-        Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain",
-                DESCRIPTION, Attachment.DISPOSITION_ATTACHMENT);
+        Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain", DESCRIPTION,
+                Attachment.DISPOSITION_ATTACHMENT);
         assertThat(attachment.getFile()).isNull();
         assertThat(attachment.getName()).isEqualTo("lorem.txt");
         assertThat(attachment.getDisposition()).isEqualTo(Attachment.DISPOSITION_ATTACHMENT);
@@ -147,19 +147,18 @@ class AttachmentTest {
     }
 
     private String getContent(Attachment attachment) {
-        return MutinyMailerImpl.getAttachmentStream(vertx, attachment)
-                .map(buffer -> buffer.toString("UTF-8"))
-                .await().indefinitely();
+        return MutinyMailerImpl.getAttachmentStream(vertx, attachment).map(buffer -> buffer.toString("UTF-8")).await()
+                .indefinitely();
     }
 
     @Test
     void testInlineAttachmentCreationWithDescription() {
-        Flow.Publisher<Byte> publisher = vertx.fileSystem().open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true))
-                .onItem().transformToMulti(af -> af.toMulti()
-                        .onItem().transformToIterable(this::getBytes));
+        Flow.Publisher<Byte> publisher = vertx.fileSystem()
+                .open(LOREM.getAbsolutePath(), new OpenOptions().setRead(true)).onItem()
+                .transformToMulti(af -> af.toMulti().onItem().transformToIterable(this::getBytes));
 
-        Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain",
-                DESCRIPTION, Attachment.DISPOSITION_INLINE);
+        Attachment attachment = new Attachment("lorem.txt", publisher, "text/plain", DESCRIPTION,
+                Attachment.DISPOSITION_INLINE);
         assertThat(attachment.getFile()).isNull();
         assertThat(attachment.getName()).isEqualTo("lorem.txt");
         assertThat(attachment.getDisposition()).isEqualTo(Attachment.DISPOSITION_INLINE);
@@ -177,8 +176,8 @@ class AttachmentTest {
         String payload = UUID.randomUUID().toString();
         byte[] bytes = payload.getBytes(StandardCharsets.UTF_8);
 
-        Attachment attachment = new Attachment("lorem.txt", bytes, "text/plain",
-                DESCRIPTION, Attachment.DISPOSITION_ATTACHMENT);
+        Attachment attachment = new Attachment("lorem.txt", bytes, "text/plain", DESCRIPTION,
+                Attachment.DISPOSITION_ATTACHMENT);
         assertThat(attachment.getFile()).isNull();
         assertThat(attachment.getName()).isEqualTo("lorem.txt");
         assertThat(attachment.getDisposition()).isEqualTo(Attachment.DISPOSITION_ATTACHMENT);
@@ -197,9 +196,12 @@ class AttachmentTest {
         Attachment attachment2 = new Attachment("attachment-2", new byte[0], "text/plain");
         Attachment attachment3 = new Attachment("attachment-3", Multi.createFrom().empty(), "text/plain");
 
-        assertThat(Multi.createFrom().publisher(attachment1.getData()).collect().first().await().indefinitely()).isNull();
-        assertThat(Multi.createFrom().publisher(attachment2.getData()).collect().first().await().indefinitely()).isNull();
-        assertThat(Multi.createFrom().publisher(attachment3.getData()).collect().first().await().indefinitely()).isNull();
+        assertThat(Multi.createFrom().publisher(attachment1.getData()).collect().first().await().indefinitely())
+                .isNull();
+        assertThat(Multi.createFrom().publisher(attachment2.getData()).collect().first().await().indefinitely())
+                .isNull();
+        assertThat(Multi.createFrom().publisher(attachment3.getData()).collect().first().await().indefinitely())
+                .isNull();
     }
 
     @Test

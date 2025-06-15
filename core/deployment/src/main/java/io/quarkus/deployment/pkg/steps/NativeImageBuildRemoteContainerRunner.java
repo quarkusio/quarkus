@@ -39,15 +39,16 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
         // docker create -v <volumeID>:/project <image-name>
         final List<String> containerRuntimeArgs = Arrays.asList("-v",
                 CONTAINER_BUILD_VOLUME_NAME + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH);
-        final String[] createTempContainerCommand = buildCommand("create", containerRuntimeArgs, Collections.emptyList());
+        final String[] createTempContainerCommand = buildCommand("create", containerRuntimeArgs,
+                Collections.emptyList());
         try {
             containerId = runCommandAndReadOutput(createTempContainerCommand).get(0);
         } catch (RuntimeException | InterruptedException | IOException e) {
             throw new RuntimeException("Failed to create temp container.", e);
         }
         // docker cp <files> <containerID>:/project
-        final String[] copyCommand = new String[] {
-                containerRuntime.getExecutableName(), "cp", outputDir.toAbsolutePath() + "/.",
+        final String[] copyCommand = new String[] { containerRuntime.getExecutableName(), "cp",
+                outputDir.toAbsolutePath() + "/.",
                 containerId + ":" + NativeImageBuildStep.CONTAINER_BUILD_VOLUME_PATH };
         runCommand(copyCommand, "Failed to copy source-jar and libs from host to builder container");
         super.preBuild(outputDir, buildArgs);

@@ -11,11 +11,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ErroneousConfigTest2 {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.swagger-ui.path=/api\n"
-                            + "quarkus.smallrye-openapi.path=/api\n"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addAsResource(
+                    new StringAsset("quarkus.swagger-ui.path=/api\n" + "quarkus.smallrye-openapi.path=/api\n"),
+                    "application.properties"));
 
     @Test
     public void shouldNotStartApplicationIfSwaggerPathIsSameAsOpenAPIPath() {

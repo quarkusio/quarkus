@@ -51,13 +51,13 @@ public class ReflectiveHierarchyStep {
 
     @BuildStep
     public ReflectiveHierarchyIgnoreWarningBuildItem ignoreJavaClassWarnings() {
-        return new ReflectiveHierarchyIgnoreWarningBuildItem(ReflectiveHierarchyBuildItem.IgnoreAllowListedPredicate.INSTANCE);
+        return new ReflectiveHierarchyIgnoreWarningBuildItem(
+                ReflectiveHierarchyBuildItem.IgnoreAllowListedPredicate.INSTANCE);
     }
 
     @BuildStep
     public void build(CombinedIndexBuildItem combinedIndexBuildItem, Capabilities capabilities,
-            List<ReflectiveHierarchyBuildItem> hierarchy,
-            List<ReflectiveHierarchyIgnoreWarningBuildItem> ignored,
+            List<ReflectiveHierarchyBuildItem> hierarchy, List<ReflectiveHierarchyIgnoreWarningBuildItem> ignored,
             List<ReflectiveClassFinalFieldsWritablePredicateBuildItem> finalFieldsWritablePredicates,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
         Set<DotName> processedReflectiveHierarchies = new HashSet<>();
@@ -65,25 +65,21 @@ public class ReflectiveHierarchyStep {
 
         final Predicate<ClassInfo> finalFieldsWritable = finalFieldsWritablePredicates.isEmpty() ?
         // no need to make final fields writable by default
-                (c) -> false
-                :
-                // create a predicate that returns true if any of the predicates says that final fields need to be writable
-                finalFieldsWritablePredicates
-                        .stream()
+                (c) -> false :
+                // create a predicate that returns true if any of the predicates says that final fields need to be
+                // writable
+                finalFieldsWritablePredicates.stream()
                         .map(ReflectiveClassFinalFieldsWritablePredicateBuildItem::getPredicate)
                         .reduce(c -> false, Predicate::or);
 
-        // to avoid recursive processing of the hierarchy (which could lead to a StackOverflowError) we are going to be scheduling type visits instead
+        // to avoid recursive processing of the hierarchy (which could lead to a StackOverflowError) we are going to be
+        // scheduling type visits instead
         final Deque<ReflectiveHierarchyVisitor> visits = new ArrayDeque<>();
 
         for (ReflectiveHierarchyBuildItem i : hierarchy) {
-            addReflectiveHierarchy(combinedIndexBuildItem, capabilities,
-                    i,
-                    i.hasSource() ? i.getSource() : i.getType().name().toString(),
-                    i.getType(),
-                    processedReflectiveHierarchies,
-                    unindexedClasses,
-                    finalFieldsWritable, reflectiveClass, visits);
+            addReflectiveHierarchy(combinedIndexBuildItem, capabilities, i,
+                    i.hasSource() ? i.getSource() : i.getType().name().toString(), i.getType(),
+                    processedReflectiveHierarchies, unindexedClasses, finalFieldsWritable, reflectiveClass, visits);
         }
 
         while (!visits.isEmpty()) {
@@ -120,9 +116,10 @@ public class ReflectiveHierarchyStep {
         if (ignored.isEmpty()) {
             return;
         }
-        // the final predicate ignores a DotName if and only if at least one of the predicates indicates that warning should be ignored
-        Predicate<DotName> finalPredicate = ignored.stream().map(ReflectiveHierarchyIgnoreWarningBuildItem::getPredicate)
-                .reduce(x -> false, Predicate::or);
+        // the final predicate ignores a DotName if and only if at least one of the predicates indicates that warning
+        // should be ignored
+        Predicate<DotName> finalPredicate = ignored.stream()
+                .map(ReflectiveHierarchyIgnoreWarningBuildItem::getPredicate).reduce(x -> false, Predicate::or);
         Set<DotName> unindexedDotNames = new HashSet<>(unindexedClasses.keySet());
         for (DotName unindexedDotName : unindexedDotNames) {
             if (finalPredicate.test(unindexedDotName)) {
@@ -131,76 +128,57 @@ public class ReflectiveHierarchyStep {
         }
     }
 
-    private void addReflectiveHierarchy(CombinedIndexBuildItem combinedIndexBuildItem,
-            Capabilities capabilities, ReflectiveHierarchyBuildItem reflectiveHierarchyBuildItem, String source, Type type,
+    private void addReflectiveHierarchy(CombinedIndexBuildItem combinedIndexBuildItem, Capabilities capabilities,
+            ReflectiveHierarchyBuildItem reflectiveHierarchyBuildItem, String source, Type type,
             Set<DotName> processedReflectiveHierarchies, Map<DotName, Set<String>> unindexedClasses,
             Predicate<ClassInfo> finalFieldsWritable, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             Deque<ReflectiveHierarchyVisitor> visits) {
         final String newSource = source + " > " + type.name().toString();
-        if (type instanceof VoidType ||
-                type instanceof PrimitiveType ||
-                type instanceof UnresolvedTypeVariable ||
-                type instanceof TypeVariableReference) {
+        if (type instanceof VoidType || type instanceof PrimitiveType || type instanceof UnresolvedTypeVariable
+                || type instanceof TypeVariableReference) {
             return;
         } else if (type instanceof ClassType) {
             if (reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
                 return;
             }
 
-            addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, newSource, type.name(),
-                    type.name(),
-                    processedReflectiveHierarchies, unindexedClasses,
-                    finalFieldsWritable, reflectiveClass, visits);
+            addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, newSource,
+                    type.name(), type.name(), processedReflectiveHierarchies, unindexedClasses, finalFieldsWritable,
+                    reflectiveClass, visits);
 
             for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownSubclasses(type.name())) {
                 addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, newSource,
-                        subclass.name(),
-                        subclass.name(),
-                        processedReflectiveHierarchies,
-                        unindexedClasses, finalFieldsWritable, reflectiveClass, visits);
+                        subclass.name(), subclass.name(), processedReflectiveHierarchies, unindexedClasses,
+                        finalFieldsWritable, reflectiveClass, visits);
             }
             for (ClassInfo subclass : combinedIndexBuildItem.getIndex().getAllKnownImplementors(type.name())) {
                 addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, newSource,
-                        subclass.name(),
-                        subclass.name(),
-                        processedReflectiveHierarchies,
-                        unindexedClasses, finalFieldsWritable, reflectiveClass, visits);
+                        subclass.name(), subclass.name(), processedReflectiveHierarchies, unindexedClasses,
+                        finalFieldsWritable, reflectiveClass, visits);
             }
         } else if (type instanceof ArrayType) {
             visits.addLast(() -> addReflectiveHierarchy(combinedIndexBuildItem, capabilities,
-                    reflectiveHierarchyBuildItem, newSource,
-                    type.asArrayType().constituent(),
-                    processedReflectiveHierarchies,
-                    unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
+                    reflectiveHierarchyBuildItem, newSource, type.asArrayType().constituent(),
+                    processedReflectiveHierarchies, unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
         } else if (type instanceof ParameterizedType) {
             if (!reflectiveHierarchyBuildItem.getIgnoreTypePredicate().test(type.name())) {
                 addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, newSource,
-                        type.name(),
-                        type.name(),
-                        processedReflectiveHierarchies,
-                        unindexedClasses, finalFieldsWritable, reflectiveClass, visits);
+                        type.name(), type.name(), processedReflectiveHierarchies, unindexedClasses, finalFieldsWritable,
+                        reflectiveClass, visits);
             }
             final ParameterizedType parameterizedType = (ParameterizedType) type;
             for (Type typeArgument : parameterizedType.arguments()) {
-                visits.addLast(
-                        () -> addReflectiveHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
-                                newSource,
-                                typeArgument,
-                                processedReflectiveHierarchies,
-                                unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
+                visits.addLast(() -> addReflectiveHierarchy(combinedIndexBuildItem, capabilities,
+                        reflectiveHierarchyBuildItem, newSource, typeArgument, processedReflectiveHierarchies,
+                        unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
             }
         }
     }
 
     private void addClassTypeHierarchy(CombinedIndexBuildItem combinedIndexBuildItem, Capabilities capabilities,
-            ReflectiveHierarchyBuildItem reflectiveHierarchyBuildItem,
-            String source,
-            DotName name,
-            DotName initialName,
-            Set<DotName> processedReflectiveHierarchies,
-            Map<DotName, Set<String>> unindexedClasses,
-            Predicate<ClassInfo> finalFieldsWritable,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            ReflectiveHierarchyBuildItem reflectiveHierarchyBuildItem, String source, DotName name, DotName initialName,
+            Set<DotName> processedReflectiveHierarchies, Map<DotName, Set<String>> unindexedClasses,
+            Predicate<ClassInfo> finalFieldsWritable, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             Deque<ReflectiveHierarchyVisitor> visits) {
         if (name == null) {
             return;
@@ -221,17 +199,11 @@ public class ReflectiveHierarchyStep {
             return;
         }
 
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem
-                        .builder(name.toString())
-                        .constructors(reflectiveHierarchyBuildItem.isConstructors())
-                        .methods(reflectiveHierarchyBuildItem.isMethods())
-                        .fields(reflectiveHierarchyBuildItem.isFields())
-                        .classes()
-                        .serialization(reflectiveHierarchyBuildItem.isSerialization())
-                        .unsafeAllocated(reflectiveHierarchyBuildItem.isUnsafeAllocated())
-                        .reason(source)
-                        .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(name.toString())
+                .constructors(reflectiveHierarchyBuildItem.isConstructors())
+                .methods(reflectiveHierarchyBuildItem.isMethods()).fields(reflectiveHierarchyBuildItem.isFields())
+                .classes().serialization(reflectiveHierarchyBuildItem.isSerialization())
+                .unsafeAllocated(reflectiveHierarchyBuildItem.isUnsafeAllocated()).reason(source).build());
 
         processedReflectiveHierarchies.add(name);
 
@@ -239,41 +211,37 @@ public class ReflectiveHierarchyStep {
             return;
         }
 
-        visits.addLast(() -> addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, source,
-                info.superName(), initialName,
-                processedReflectiveHierarchies,
-                unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
+        visits.addLast(() -> addClassTypeHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem,
+                source, info.superName(), initialName, processedReflectiveHierarchies, unindexedClasses,
+                finalFieldsWritable, reflectiveClass, visits));
         for (FieldInfo field : info.fields()) {
             if (reflectiveHierarchyBuildItem.getIgnoreFieldPredicate().test(field) ||
             // skip the static fields (especially loggers)
                     Modifier.isStatic(field.flags()) ||
-                    // also skip the outer class elements (unfortunately, we don't have a way to test for synthetic fields in Jandex)
+                    // also skip the outer class elements (unfortunately, we don't have a way to test for synthetic
+                    // fields in Jandex)
                     field.name().startsWith("this$") || field.name().startsWith("val$")) {
                 continue;
             }
             final Type fieldType = getFieldType(combinedIndexBuildItem, initialName, info, field);
-            visits.addLast(
-                    () -> addReflectiveHierarchy(combinedIndexBuildItem, capabilities, reflectiveHierarchyBuildItem, source,
-                            fieldType,
-                            processedReflectiveHierarchies,
-                            unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
+            visits.addLast(() -> addReflectiveHierarchy(combinedIndexBuildItem, capabilities,
+                    reflectiveHierarchyBuildItem, source, fieldType, processedReflectiveHierarchies, unindexedClasses,
+                    finalFieldsWritable, reflectiveClass, visits));
         }
         for (MethodInfo method : info.methods()) {
             if (reflectiveHierarchyBuildItem.getIgnoreMethodPredicate().test(method) ||
             // we will only consider potential getters
-                    method.parametersCount() > 0 ||
-                    Modifier.isStatic(method.flags()) ||
-                    method.returnType().kind() == Kind.VOID) {
+                    method.parametersCount() > 0 || Modifier.isStatic(method.flags())
+                    || method.returnType().kind() == Kind.VOID) {
                 continue;
             }
             visits.addLast(() -> addReflectiveHierarchy(combinedIndexBuildItem, capabilities,
-                    reflectiveHierarchyBuildItem, source,
-                    method.returnType(),
-                    processedReflectiveHierarchies,
+                    reflectiveHierarchyBuildItem, source, method.returnType(), processedReflectiveHierarchies,
                     unindexedClasses, finalFieldsWritable, reflectiveClass, visits));
         }
 
-        // for Kotlin classes, we need to register the nested classes as well because companion classes are very often necessary at runtime
+        // for Kotlin classes, we need to register the nested classes as well because companion classes are very often
+        // necessary at runtime
         if (!reflectiveHierarchyBuildItem.isIgnoreNested()
                 || (capabilities.isPresent(Capability.KOTLIN) && isKotlinClass(info))) {
             for (DotName memberClassName : info.memberClasses()) {

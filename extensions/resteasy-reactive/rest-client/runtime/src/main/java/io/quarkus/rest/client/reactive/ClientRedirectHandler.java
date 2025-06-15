@@ -8,16 +8,14 @@ import java.lang.annotation.Target;
 import jakarta.ws.rs.Priorities;
 
 /**
- * Used to easily define a custom redirect handler for the specific REST Client on which it's used.
- * This method is called when the HTTP response from the invoked service has a status code of 300 or higher.
- *
- * The annotation MUST be placed on a method of the REST Client interface that meets the following criteria:
+ * Used to easily define a custom redirect handler for the specific REST Client on which it's used. This method is
+ * called when the HTTP response from the invoked service has a status code of 300 or higher. The annotation MUST be
+ * placed on a method of the REST Client interface that meets the following criteria:
  * <ul>
  * <li>Is a {@code static} method</li>
  * <li>Returns any subclass of {@link java.net.URI}</li>
  * <li>Takes a single parameter of type {@link jakarta.ws.rs.core.Response}</li>
  * </ul>
- *
  * An example method could look like the following:
  *
  * <pre>

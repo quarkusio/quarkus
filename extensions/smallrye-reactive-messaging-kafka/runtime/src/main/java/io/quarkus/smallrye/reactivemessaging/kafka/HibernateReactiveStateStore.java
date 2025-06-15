@@ -58,28 +58,24 @@ public class HibernateReactiveStateStore implements CheckpointStateStore {
     @Override
     public Uni<Map<TopicPartition, ProcessingState<?>>> fetchProcessingState(Collection<TopicPartition> partitions) {
         return Uni.createFrom().<Map<TopicPartition, ProcessingState<?>>> deferred(() -> {
-            Object[] ids = partitions.stream()
-                    .map(tp -> new CheckpointEntityId(consumerGroupId, tp))
+            Object[] ids = partitions.stream().map(tp -> new CheckpointEntityId(consumerGroupId, tp))
                     .toArray(Object[]::new);
-            return sf.withTransaction((s) -> s.find(stateType, ids))
-                    .map(fetched -> {
-                        if (fetched == null) {
-                            return Collections.emptyMap();
-                        } else {
-                            return fetched.stream()
-                                    .filter(e -> e != null && CheckpointEntity.topicPartition(e) != null)
-                                    .collect(Collectors.toMap(CheckpointEntity::topicPartition,
-                                            e -> new ProcessingState<CheckpointEntity>(e, e.offset)));
-                        }
-                    });
+            return sf.withTransaction((s) -> s.find(stateType, ids)).map(fetched -> {
+                if (fetched == null) {
+                    return Collections.emptyMap();
+                } else {
+                    return fetched.stream().filter(e -> e != null && CheckpointEntity.topicPartition(e) != null)
+                            .collect(Collectors.toMap(CheckpointEntity::topicPartition,
+                                    e -> new ProcessingState<CheckpointEntity>(e, e.offset)));
+                }
+            });
         }).runSubscriptionOn(HibernateReactiveStateStore::runOnSafeContext);
     }
 
     @Override
     public Uni<Void> persistProcessingState(Map<TopicPartition, ProcessingState<?>> state) {
         return Uni.createFrom().deferred(() -> {
-            Object[] entities = state.entrySet().stream()
-                    .filter(e -> !ProcessingState.isEmptyOrNull(e.getValue()))
+            Object[] entities = state.entrySet().stream().filter(e -> !ProcessingState.isEmptyOrNull(e.getValue()))
                     .map(e -> CheckpointEntity.from((ProcessingState<? extends CheckpointEntity>) e.getValue(),
                             new CheckpointEntityId(consumerGroupId, e.getKey())))
                     .toArray();

@@ -34,7 +34,8 @@ public class PreMatchInterceptorContainer<T> extends InterceptorContainer<T> {
     }
 
     /**
-     * Validates that any {@code ContainerRequestFilter} that has {@code nonBlockingRequired} set, comes before any other filter
+     * Validates that any {@code ContainerRequestFilter} that has {@code nonBlockingRequired} set, comes before any
+     * other filter
      */
     public void validateThreadModel() {
         boolean unsetNonBlockingInterceptorFound = false;

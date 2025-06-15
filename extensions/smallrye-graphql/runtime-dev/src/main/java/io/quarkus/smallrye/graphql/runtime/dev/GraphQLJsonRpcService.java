@@ -32,12 +32,9 @@ public class GraphQLJsonRpcService {
         if (assistant.isPresent()) {
             String schemaDocument = getGraphQLSchema();
 
-            return assistant.get().assistBuilder()
-                    .userMessage(USER_MESSAGE)
-                    .addVariable("schemaDocument", schemaDocument)
-                    .addVariable("language", language)
-                    .addVariable("extraContext", extraContext)
-                    .assist();
+            return assistant.get().assistBuilder().userMessage(USER_MESSAGE)
+                    .addVariable("schemaDocument", schemaDocument).addVariable("language", language)
+                    .addVariable("extraContext", extraContext).assist();
         }
         return CompletableFuture.failedStage(new RuntimeException("Assistant is not available"));
     }

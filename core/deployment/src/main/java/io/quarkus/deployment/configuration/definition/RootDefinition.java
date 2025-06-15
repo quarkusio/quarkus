@@ -35,26 +35,15 @@ public final class RootDefinition extends ClassDefinition {
             trimmedSegments = withoutSuffix(
                     withoutSuffix(
                             withoutSuffix(
-                                    withoutSuffix(
-                                            withoutSuffix(
-                                                    withoutSuffix(
-                                                            segments,
-                                                            "Runtime", "Configuration"),
-                                                    "Runtime", "Config"),
-                                            "Run", "Time", "Configuration"),
+                                    withoutSuffix(withoutSuffix(withoutSuffix(segments, "Runtime", "Configuration"),
+                                            "Runtime", "Config"), "Run", "Time", "Configuration"),
                                     "Run", "Time", "Config"),
                             "Configuration"),
                     "Config");
         } else {
-            trimmedSegments = withoutSuffix(
-                    withoutSuffix(
-                            withoutSuffix(
-                                    withoutSuffix(
-                                            segments,
-                                            "Build", "Time", "Configuration"),
-                                    "Build", "Time", "Config"),
-                            "Configuration"),
-                    "Config");
+            trimmedSegments = withoutSuffix(withoutSuffix(
+                    withoutSuffix(withoutSuffix(segments, "Build", "Time", "Configuration"), "Build", "Time", "Config"),
+                    "Configuration"), "Config");
         }
         if (rootName.equals(ConfigItem.PARENT)) {
             rootName = "";

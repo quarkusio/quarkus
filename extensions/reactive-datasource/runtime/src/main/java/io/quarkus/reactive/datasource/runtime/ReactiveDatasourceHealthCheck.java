@@ -55,38 +55,38 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                 if (context != null) {
                     log.debug("Run health check on the current Vert.x context");
                     context.runOnContext(v -> {
-                        pool.query(healthCheckSQL)
-                                .execute(ar -> {
-                                    checkFailure(ar, builder, dataSourceName);
-                                    databaseConnectionAttempt.complete(null);
-                                });
+                        pool.query(healthCheckSQL).execute(ar -> {
+                            checkFailure(ar, builder, dataSourceName);
+                            databaseConnectionAttempt.complete(null);
+                        });
                     });
                 } else {
-                    log.warn("Vert.x context unavailable to perform health check of reactive datasource `" + dataSourceName
-                            + "`. This is unlikely to work correctly.");
-                    pool.query(healthCheckSQL)
-                            .execute(ar -> {
-                                checkFailure(ar, builder, dataSourceName);
-                                databaseConnectionAttempt.complete(null);
-                            });
+                    log.warn("Vert.x context unavailable to perform health check of reactive datasource `"
+                            + dataSourceName + "`. This is unlikely to work correctly.");
+                    pool.query(healthCheckSQL).execute(ar -> {
+                        checkFailure(ar, builder, dataSourceName);
+                        databaseConnectionAttempt.complete(null);
+                    });
                 }
 
-                //20 seconds is rather high, but using just 10 is often not enough on slow CI
-                //systems, especially if the connections have to be established for the first time.
+                // 20 seconds is rather high, but using just 10 is often not enough on slow CI
+                // systems, especially if the connections have to be established for the first time.
                 databaseConnectionAttempt.get(20, TimeUnit.SECONDS);
             } catch (RuntimeException | ExecutionException exception) {
                 operationsError(dataSourceName, exception);
                 builder.down();
                 builder.withData(dataSourceName, "down - connection failed: " + exception.getMessage());
             } catch (InterruptedException e) {
-                log.warn("Interrupted while obtaining database connection for healthcheck of datasource " + dataSourceName);
+                log.warn("Interrupted while obtaining database connection for healthcheck of datasource "
+                        + dataSourceName);
                 Thread.currentThread().interrupt();
                 return builder.build();
             } catch (TimeoutException e) {
                 log.warn("Timed out while waiting for an available connection to perform healthcheck of datasource "
                         + dataSourceName);
                 builder.down();
-                builder.withData(dataSourceName, "timed out, unable to obtain connection to perform healthcheck of datasource");
+                builder.withData(dataSourceName,
+                        "timed out, unable to obtain connection to perform healthcheck of datasource");
             }
         }
 

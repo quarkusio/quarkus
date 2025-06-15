@@ -44,13 +44,15 @@ public class ValidationSupport {
     /**
      * Generates a JSON response following https://opensource.zalando.com/problem/constraint-violation/
      *
-     * @param violations the violations
+     * @param violations
+     *        the violations
+     *
      * @return the json object
      */
-    private static JsonObject generateJsonResponse(Set<ConstraintViolation<?>> violations, boolean violationInProducedItem) {
-        JsonObject json = new JsonObject()
-                .put(PROBLEM_TITLE, "Constraint Violation")
-                .put(PROBLEM_DETAIL, "validation constraint violations");
+    private static JsonObject generateJsonResponse(Set<ConstraintViolation<?>> violations,
+            boolean violationInProducedItem) {
+        JsonObject json = new JsonObject().put(PROBLEM_TITLE, "Constraint Violation").put(PROBLEM_DETAIL,
+                "validation constraint violations");
 
         JsonArray array = new JsonArray();
         boolean isProduced = false;
@@ -68,7 +70,8 @@ public class ValidationSupport {
         return json;
     }
 
-    public static void handleViolationException(ConstraintViolationException ex, RoutingContext rc, boolean forceJsonEncoding) {
+    public static void handleViolationException(ConstraintViolationException ex, RoutingContext rc,
+            boolean forceJsonEncoding) {
         String accept = rc.request().getHeader(ACCEPT_HEADER);
         if (forceJsonEncoding || accept != null && accept.contains(APPLICATION_JSON)) {
             rc.response().putHeader(HttpHeaders.CONTENT_TYPE, APPLICATION_JSON);

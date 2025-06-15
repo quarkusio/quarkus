@@ -19,8 +19,7 @@ public class NoConnectorAttachmentTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MySource.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MySource.class));
 
     @Inject
     MySource source;
@@ -28,8 +27,7 @@ public class NoConnectorAttachmentTest {
     @Test
     public void testAutoAttachmentOfOutgoingChannel() {
         // TODO We could detect this at built time - emitter won't be injectable.
-        assertThatThrownBy(() -> source.generate())
-                .hasCauseInstanceOf(DefinitionException.class);
+        assertThatThrownBy(() -> source.generate()).hasCauseInstanceOf(DefinitionException.class);
     }
 
     @ApplicationScoped

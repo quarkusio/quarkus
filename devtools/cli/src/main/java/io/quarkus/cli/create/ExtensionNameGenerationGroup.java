@@ -49,10 +49,7 @@ public class ExtensionNameGenerationGroup {
 
     @Override
     public String toString() {
-        return "ExtensionNameGenerationGroup ["
-                + "extensionName=" + extensionName
-                + ", extensionDescription=" + extensionDescription
-                + ", namespaceId=" + namespaceId
-                + ", namespaceName=" + namespaceName + "]";
+        return "ExtensionNameGenerationGroup [" + "extensionName=" + extensionName + ", extensionDescription="
+                + extensionDescription + ", namespaceId=" + namespaceId + ", namespaceName=" + namespaceName + "]";
     }
 }

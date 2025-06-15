@@ -19,8 +19,9 @@ public class JsonValueHandler implements MessageBodyReader<JsonValue>, MessageBo
         return JsonValue.class.isAssignableFrom(type);
     }
 
-    public void writeTo(JsonValue jsonValue, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(JsonValue jsonValue, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         try (JsonWriter writer = JsonpUtil.writer(entityStream, mediaType)) {
             writer.write(jsonValue);
         }
@@ -33,7 +34,8 @@ public class JsonValueHandler implements MessageBodyReader<JsonValue>, MessageBo
 
     @Override
     public JsonValue readFrom(Class<JsonValue> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return JsonpUtil.reader(entityStream, mediaType).readValue();
     }
 }

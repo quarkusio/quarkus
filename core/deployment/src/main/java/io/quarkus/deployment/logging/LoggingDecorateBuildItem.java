@@ -11,10 +11,8 @@ import org.jboss.jandex.CompositeIndex;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Contains information to decorate the Log output. Can be used by extensions that output the log / stacktraces,
- * for example the error page.
- *
- * Also see io.quarkus.runtime.logging.DecorateStackUtil to assist with the decoration
+ * Contains information to decorate the Log output. Can be used by extensions that output the log / stacktraces, for
+ * example the error page. Also see io.quarkus.runtime.logging.DecorateStackUtil to assist with the decoration
  */
 public final class LoggingDecorateBuildItem extends SimpleBuildItem {
     private final Path srcMainJava;

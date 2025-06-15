@@ -25,8 +25,7 @@ import io.vertx.core.Vertx;
 public class DuplicatedContextWithRunOnQuartzThreadTest {
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyScheduledClass.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyScheduledClass.class))
             .overrideConfigKey("quarkus.quartz.run-blocking-scheduled-method-on-quartz-thread", "true");
 
     @Inject
@@ -34,16 +33,12 @@ public class DuplicatedContextWithRunOnQuartzThreadTest {
 
     @Test
     public void testBlocking() {
-        await()
-                .atMost(Duration.ofSeconds(3))
-                .until(() -> scheduled.blockingCalled() > 0);
+        await().atMost(Duration.ofSeconds(3)).until(() -> scheduled.blockingCalled() > 0);
     }
 
     @Test
     public void testNonBlocking() {
-        await()
-                .atMost(Duration.ofSeconds(3))
-                .until(() -> scheduled.nonBlockingCalled() > 0);
+        await().atMost(Duration.ofSeconds(3)).until(() -> scheduled.nonBlockingCalled() > 0);
     }
 
     public static class MyScheduledClass {

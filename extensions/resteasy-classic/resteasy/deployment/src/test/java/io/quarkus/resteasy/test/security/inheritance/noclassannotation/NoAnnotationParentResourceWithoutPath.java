@@ -23,7 +23,8 @@ public abstract class NoAnnotationParentResourceWithoutPath implements NoAnnotat
 
     @Path(CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + NO_SECURITY_ANNOTATION_PATH)
     @POST
-    public abstract String test_ClassPathOnResource_ImplOnBase_ParentMethodWithPath_NoSecurityAnnotation(JsonObject array);
+    public abstract String test_ClassPathOnResource_ImplOnBase_ParentMethodWithPath_NoSecurityAnnotation(
+            JsonObject array);
 
     @Path(CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + METHOD_ROLES_ALLOWED_PATH)
     @POST
@@ -89,7 +90,7 @@ public abstract class NoAnnotationParentResourceWithoutPath implements NoAnnotat
 
     public String get_ClassPathOnResource_ImplOnBase_ImplMethodWithPath_MethodRolesAllowed(JsonObject array) {
         // hint: purpose of this method is to ensure that existence of overridden parent method
-        //   has no effect on a secured method (like: correct secured resource method is identified)
+        // has no effect on a secured method (like: correct secured resource method is identified)
         throw new IllegalStateException("Implementation should be used");
     }
 }

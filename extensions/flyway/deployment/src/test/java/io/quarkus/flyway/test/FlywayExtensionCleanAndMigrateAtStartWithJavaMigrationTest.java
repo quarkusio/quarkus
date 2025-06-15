@@ -32,9 +32,8 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
     AgroalDataSource defaultDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(V1_0_1__Update.class, V1_0_2__Update.class, V9_9_9__Update.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(V1_0_1__Update.class, V1_0_2__Update.class, V9_9_9__Update.class)
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("clean-and-migrate-at-start-config.properties", "application.properties"));
 
@@ -42,11 +41,11 @@ public class FlywayExtensionCleanAndMigrateAtStartWithJavaMigrationTest {
     @DisplayName("Clean and migrate at start correctly")
     public void testFlywayConfigInjection() throws SQLException {
 
-        try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
+        try (Connection connection = defaultDataSource.getConnection();
+                Statement stat = connection.createStatement()) {
             try (ResultSet countQuery = stat.executeQuery("select count(1) from quarked_flyway")) {
                 assertTrue(countQuery.first());
-                assertEquals(2,
-                        countQuery.getInt(1),
+                assertEquals(2, countQuery.getInt(1),
                         "Table 'quarked_flyway' does not contain the expected number of rows");
             }
         }

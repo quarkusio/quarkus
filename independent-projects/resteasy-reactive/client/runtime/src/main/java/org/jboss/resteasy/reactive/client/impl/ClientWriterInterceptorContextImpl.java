@@ -25,7 +25,7 @@ import io.vertx.core.buffer.Buffer;
 public class ClientWriterInterceptorContextImpl extends AbstractClientInterceptorContextImpl
         implements WriterInterceptorContext {
 
-    private final ByteArrayOutputStream baos = new ByteArrayOutputStream(); //TODO: real bloocking IO
+    private final ByteArrayOutputStream baos = new ByteArrayOutputStream(); // TODO: real bloocking IO
     boolean done = false;
     private int index = 0;
     private OutputStream outputStream = baos;
@@ -43,8 +43,8 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
     private Buffer result;
 
     public ClientWriterInterceptorContextImpl(WriterInterceptor[] writerInterceptors, MessageBodyWriter writer,
-            Annotation[] annotations, Class<?> entityClass, Type entityType, Object entity,
-            MediaType mediaType, MultivaluedMap<String, String> headers, Map<String, Object> properties,
+            Annotation[] annotations, Class<?> entityClass, Type entityType, Object entity, MediaType mediaType,
+            MultivaluedMap<String, String> headers, Map<String, Object> properties,
             RestClientRequestContext clientRequestContext, Serialisers serialisers, ConfigurationImpl configuration) {
         super(annotations, entityClass, entityType, mediaType, properties);
         this.clientRequestContext = clientRequestContext;
@@ -71,11 +71,10 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
             }
 
             if (effectiveWriter instanceof ClientMessageBodyWriter cw) {
-                cw.writeTo(entity, entityClass, entityType,
-                        annotations, mediaType, headers, outputStream, clientRequestContext);
+                cw.writeTo(entity, entityClass, entityType, annotations, mediaType, headers, outputStream,
+                        clientRequestContext);
             } else {
-                effectiveWriter.writeTo(entity, entityClass, entityType,
-                        annotations, mediaType, headers, outputStream);
+                effectiveWriter.writeTo(entity, entityClass, entityType, annotations, mediaType, headers, outputStream);
             }
 
             outputStream.close();

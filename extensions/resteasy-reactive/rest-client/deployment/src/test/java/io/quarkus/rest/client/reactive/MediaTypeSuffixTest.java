@@ -23,17 +23,13 @@ public class MediaTypeSuffixTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, Client.class, TestJacksonBasicMessageBodyReader.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(HelloResource.class, Client.class, TestJacksonBasicMessageBodyReader.class))
             .withConfigurationResource("media-type-suffix-application.properties");
 
     @Test
     public void test() {
-        when()
-                .get("/hello")
-                .then()
-                .statusCode(200)
-                .body("foo", is("bar"));
+        when().get("/hello").then().statusCode(200).body("foo", is("bar"));
     }
 
     @RegisterRestClient(configKey = "test")

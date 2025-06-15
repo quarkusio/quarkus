@@ -12,9 +12,8 @@ import io.restassured.RestAssured;
 class CustomConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.smallrye-health.ui.root-path=/custom"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.smallrye-health.ui.root-path=/custom"), "application.properties"));
 
     @Test
     void shouldUseCustomConfig() {

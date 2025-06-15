@@ -39,7 +39,8 @@ public class NativeCheckedTemplateEnhancer implements BiFunction<String, ClassVi
 
     public void implement(MethodInfo methodInfo, String templatePath, String fragmentId, List<String> parameterNames,
             CheckedTemplateAdapter adaptor) {
-        // FIXME: this should support overloading by using the method signature as key, but requires moving JandexUtil stuff around
+        // FIXME: this should support overloading by using the method signature as key, but requires moving JandexUtil
+        // stuff around
         methods.put(methodInfo.name(), new NativeMethod(methodInfo, templatePath, fragmentId, parameterNames, adaptor));
     }
 
@@ -59,7 +60,8 @@ public class NativeCheckedTemplateEnhancer implements BiFunction<String, ClassVi
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             NativeMethod nativeMethod = methods.get(name);
             if (nativeMethod != null) {
                 // remove the native bit
@@ -85,22 +87,22 @@ public class NativeCheckedTemplateEnhancer implements BiFunction<String, ClassVi
             public void visitEnd() {
                 visitCode();
                 /*
-                 * Template template =
-                 * Arc.container().instance(TemplateProducer.class).get().getInjectableTemplate("HelloResource/typedTemplate");
+                 * Template template = Arc.container().instance(TemplateProducer.class).get().getInjectableTemplate(
+                 * "HelloResource/typedTemplate");
                  */
-                visitMethodInsn(Opcodes.INVOKESTATIC, "io/quarkus/arc/Arc", "container", "()Lio/quarkus/arc/ArcContainer;",
-                        false);
+                visitMethodInsn(Opcodes.INVOKESTATIC, "io/quarkus/arc/Arc", "container",
+                        "()Lio/quarkus/arc/ArcContainer;", false);
                 visitLdcInsn(org.objectweb.asm.Type.getType(TemplateProducer.class));
                 visitLdcInsn(0);
                 visitTypeInsn(Opcodes.ANEWARRAY, "java/lang/annotation/Annotation");
                 visitMethodInsn(Opcodes.INVOKEINTERFACE, "io/quarkus/arc/ArcContainer", "instance",
                         "(Ljava/lang/Class;[Ljava/lang/annotation/Annotation;)Lio/quarkus/arc/InstanceHandle;", true);
-                visitMethodInsn(Opcodes.INVOKEINTERFACE, "io/quarkus/arc/InstanceHandle", "get",
-                        "()Ljava/lang/Object;", true);
+                visitMethodInsn(Opcodes.INVOKEINTERFACE, "io/quarkus/arc/InstanceHandle", "get", "()Ljava/lang/Object;",
+                        true);
                 visitTypeInsn(Opcodes.CHECKCAST, "io/quarkus/qute/runtime/TemplateProducer");
                 visitLdcInsn(nativeMethod.templateId);
-                visitMethodInsn(Opcodes.INVOKEVIRTUAL, "io/quarkus/qute/runtime/TemplateProducer", "getInjectableTemplate",
-                        "(Ljava/lang/String;)Lio/quarkus/qute/Template;", false);
+                visitMethodInsn(Opcodes.INVOKEVIRTUAL, "io/quarkus/qute/runtime/TemplateProducer",
+                        "getInjectableTemplate", "(Ljava/lang/String;)Lio/quarkus/qute/Template;", false);
 
                 if (nativeMethod.fragmentId != null) {
                     /*

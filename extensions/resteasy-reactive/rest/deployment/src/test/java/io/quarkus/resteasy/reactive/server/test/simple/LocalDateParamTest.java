@@ -18,19 +18,16 @@ public class LocalDateParamTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class));
 
     @Test
     public void localDateAsQueryParam() {
-        RestAssured.get("/hello?date=1984-08-08")
-                .then().body(Matchers.equalTo("hello#1984-08-08"));
+        RestAssured.get("/hello?date=1984-08-08").then().body(Matchers.equalTo("hello#1984-08-08"));
     }
 
     @Test
     public void localDateAsPathParam() {
-        RestAssured.get("/hello/1995-09-21")
-                .then().body(Matchers.equalTo("hello@1995-09-21"));
+        RestAssured.get("/hello/1995-09-21").then().body(Matchers.equalTo("hello@1995-09-21"));
     }
 
     @Path("hello")

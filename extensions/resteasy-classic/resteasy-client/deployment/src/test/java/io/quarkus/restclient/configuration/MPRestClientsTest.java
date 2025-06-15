@@ -11,8 +11,7 @@ public class MPRestClientsTest extends AbstractRestClientsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class,
-                            EchoClient.class, EchoClientWithConfigKey.class, ShortNameEchoClient.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EchoResource.class, EchoClient.class,
+                    EchoClientWithConfigKey.class, ShortNameEchoClient.class))
             .withConfigurationResource("mp-restclients-test-application.properties");
 }

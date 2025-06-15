@@ -15,8 +15,8 @@ public class ConfigurationException extends RuntimeException implements Configur
     private final Set<String> configKeys;
 
     /**
-     * Constructs a new {@code ConfigurationException} instance. The message is left blank ({@code null}), and no
-     * cause is specified.
+     * Constructs a new {@code ConfigurationException} instance. The message is left blank ({@code null}), and no cause
+     * is specified.
      *
      * @param configKeys
      */
@@ -25,20 +25,20 @@ public class ConfigurationException extends RuntimeException implements Configur
     }
 
     /**
-     * Constructs a new {@code ConfigurationException} instance with an initial message. No
-     * cause is specified.
+     * Constructs a new {@code ConfigurationException} instance with an initial message. No cause is specified.
      *
-     * @param msg the message
+     * @param msg
+     *        the message
      */
     public ConfigurationException(final String msg) {
         this(msg, Collections.emptySet());
     }
 
     /**
-     * Constructs a new {@code ConfigurationException} instance with an initial message. No
-     * cause is specified.
+     * Constructs a new {@code ConfigurationException} instance with an initial message. No cause is specified.
      *
-     * @param msg the message
+     * @param msg
+     *        the message
      * @param configKeys
      */
     public ConfigurationException(final String msg, Set<String> configKeys) {
@@ -47,11 +47,12 @@ public class ConfigurationException extends RuntimeException implements Configur
     }
 
     /**
-     * Constructs a new {@code ConfigurationException} instance with an initial cause. If
-     * a non-{@code null} cause is specified, its message is used to initialize the message of this
-     * {@code ConfigurationException}; otherwise the message is left blank ({@code null}).
+     * Constructs a new {@code ConfigurationException} instance with an initial cause. If a non-{@code null} cause is
+     * specified, its message is used to initialize the message of this {@code ConfigurationException}; otherwise the
+     * message is left blank ({@code null}).
      *
-     * @param cause the cause
+     * @param cause
+     *        the cause
      * @param configKeys
      */
     public ConfigurationException(final Throwable cause, Set<String> configKeys) {
@@ -62,8 +63,10 @@ public class ConfigurationException extends RuntimeException implements Configur
     /**
      * Constructs a new {@code ConfigurationException} instance with an initial message and cause.
      *
-     * @param msg the message
-     * @param cause the cause
+     * @param msg
+     *        the message
+     * @param cause
+     *        the cause
      */
     public ConfigurationException(final String msg, final Throwable cause) {
         this(msg, cause, Collections.emptySet());
@@ -72,8 +75,10 @@ public class ConfigurationException extends RuntimeException implements Configur
     /**
      * Constructs a new {@code ConfigurationException} instance with an initial message and cause.
      *
-     * @param msg the message
-     * @param cause the cause
+     * @param msg
+     *        the message
+     * @param cause
+     *        the cause
      * @param configKeys
      */
     public ConfigurationException(final String msg, final Throwable cause, Set<String> configKeys) {

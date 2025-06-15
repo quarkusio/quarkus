@@ -61,8 +61,7 @@ class QuarkusSecurityJpaReactiveProcessor {
     }
 
     @BuildStep
-    void configureJpaAuthConfig(ApplicationIndexBuildItem index,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer,
+    void configureJpaAuthConfig(ApplicationIndexBuildItem index, BuildProducer<GeneratedBeanBuildItem> beanProducer,
             Optional<JpaSecurityDefinitionBuildItem> jpaSecurityDefinitionBuildItem,
             PanacheEntityPredicateBuildItem panacheEntityPredicate) {
 
@@ -72,8 +71,8 @@ class QuarkusSecurityJpaReactiveProcessor {
             generateIdentityProvider(index.getIndex(), jpaSecurityDefinition, jpaSecurityDefinition.passwordType(),
                     jpaSecurityDefinition.customPasswordProvider(), beanProducer, panacheEntityPredicate);
 
-            generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition,
-                    beanProducer, panacheEntityPredicate);
+            generateTrustedIdentityProvider(index.getIndex(), jpaSecurityDefinition, beanProducer,
+                    panacheEntityPredicate);
         }
     }
 
@@ -82,7 +81,8 @@ class QuarkusSecurityJpaReactiveProcessor {
         return new PanacheEntityPredicateBuildItem(collectPanacheEntities(panacheEntityClasses));
     }
 
-    private static Set<String> collectPanacheEntities(List<PanacheEntityClassesBuildItem> panacheEntityClassesBuildItems) {
+    private static Set<String> collectPanacheEntities(
+            List<PanacheEntityClassesBuildItem> panacheEntityClassesBuildItems) {
         Set<String> modelClasses = new HashSet<>();
         for (PanacheEntityClassesBuildItem panacheEntityClasses : panacheEntityClassesBuildItems) {
             modelClasses.addAll(panacheEntityClasses.getEntityClasses());
@@ -92,18 +92,19 @@ class QuarkusSecurityJpaReactiveProcessor {
 
     private static void generateIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
             AnnotationValue passwordTypeValue, AnnotationValue passwordProviderValue,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
+            BuildProducer<GeneratedBeanBuildItem> beanProducer,
+            PanacheEntityPredicateBuildItem panacheEntityPredicate) {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveIdentityProviderImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(name)
-                .superClass(JpaReactiveIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
-                .build()) {
+        try (ClassCreator classCreator = ClassCreator.builder().className(name)
+                .superClass(JpaReactiveIdentityProvider.class).classOutput(gizmoAdaptor).build()) {
             classCreator.addAnnotation(Singleton.class);
-            FieldDescriptor passwordProviderField = classCreator.getFieldCreator("passwordProvider", PasswordProvider.class)
-                    .setModifiers(0) // removes default modifier => makes field package-private
+            FieldDescriptor passwordProviderField = classCreator
+                    .getFieldCreator("passwordProvider", PasswordProvider.class).setModifiers(0) // removes default
+                    // modifier => makes
+                    // field
+                    // package-private
                     .getFieldDescriptor();
 
             MethodDescriptor methodToImpl = MethodDescriptor.ofMethod(JpaReactiveIdentityProvider.class, "authenticate",
@@ -119,8 +120,9 @@ class QuarkusSecurityJpaReactiveProcessor {
 
                 // .map(user -> { /* build identity */ })
                 ResultHandle identityUni = uniMap(methodCreator, userUni,
-                        (body, user) -> buildIdentity(index, jpaSecurityDefinition, passwordTypeValue, passwordProviderValue,
-                                panacheEntityPredicate, passwordProviderField, methodCreator, user, body));
+                        (body, user) -> buildIdentity(index, jpaSecurityDefinition, passwordTypeValue,
+                                passwordProviderValue, panacheEntityPredicate, passwordProviderField, methodCreator,
+                                user, body));
 
                 methodCreator.returnValue(identityUni);
             }
@@ -128,19 +130,17 @@ class QuarkusSecurityJpaReactiveProcessor {
     }
 
     private static void generateTrustedIdentityProvider(Index index, JpaSecurityDefinition jpaSecurityDefinition,
-            BuildProducer<GeneratedBeanBuildItem> beanProducer, PanacheEntityPredicateBuildItem panacheEntityPredicate) {
+            BuildProducer<GeneratedBeanBuildItem> beanProducer,
+            PanacheEntityPredicateBuildItem panacheEntityPredicate) {
         GeneratedBeanGizmoAdaptor gizmoAdaptor = new GeneratedBeanGizmoAdaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveTrustedIdentityProviderImpl";
-        try (ClassCreator classCreator = ClassCreator.builder()
-                .className(name)
-                .superClass(JpaReactiveTrustedIdentityProvider.class)
-                .classOutput(gizmoAdaptor)
-                .build()) {
+        try (ClassCreator classCreator = ClassCreator.builder().className(name)
+                .superClass(JpaReactiveTrustedIdentityProvider.class).classOutput(gizmoAdaptor).build()) {
             classCreator.addAnnotation(Singleton.class);
 
-            MethodDescriptor methodToImpl = MethodDescriptor.ofMethod(JpaReactiveTrustedIdentityProvider.class, "authenticate",
-                    Uni.class, Mutiny.Session.class, TrustedAuthenticationRequest.class);
+            MethodDescriptor methodToImpl = MethodDescriptor.ofMethod(JpaReactiveTrustedIdentityProvider.class,
+                    "authenticate", Uni.class, Mutiny.Session.class, TrustedAuthenticationRequest.class);
             try (MethodCreator methodCreator = classCreator.getMethodCreator(methodToImpl)) {
                 methodCreator.setModifiers(Modifier.PUBLIC);
 
@@ -151,9 +151,8 @@ class QuarkusSecurityJpaReactiveProcessor {
                 ResultHandle userUni = lookupUserById(jpaSecurityDefinition, methodCreator, username);
 
                 // .map(user -> { /* build identity */ })
-                ResultHandle identityUni = uniMap(methodCreator, userUni,
-                        (body, user) -> buildTrustedIdentity(index, jpaSecurityDefinition, panacheEntityPredicate,
-                                methodCreator, user, body));
+                ResultHandle identityUni = uniMap(methodCreator, userUni, (body, user) -> buildTrustedIdentity(index,
+                        jpaSecurityDefinition, panacheEntityPredicate, methodCreator, user, body));
 
                 methodCreator.returnValue(identityUni);
             }
@@ -184,15 +183,14 @@ class QuarkusSecurityJpaReactiveProcessor {
 
             // session.find(PlainUserEntity.class, Identifier.id("name", username))
             user = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.Session.class, "find", Uni.class, Class.class, Identifier.class),
-                    session, userEntityClass, id);
+                    ofMethod(Mutiny.Session.class, "find", Uni.class, Class.class, Identifier.class), session,
+                    userEntityClass, id);
 
             if (fetchJoinRoles) {
                 // .flatMap(user -> session.fetch(user))
                 String userClassName = jpaSecurityDefinition.annotatedClass.name().toString();
                 user = uniFlatMap(methodCreator, user, (body, user1) -> body.invokeInterfaceMethod(
-                        ofMethod(Mutiny.Session.class, "fetch", Uni.class, userClassName),
-                        session, user1));
+                        ofMethod(Mutiny.Session.class, "fetch", Uni.class, userClassName), session, user1));
             }
         } else {
 
@@ -200,8 +198,8 @@ class QuarkusSecurityJpaReactiveProcessor {
             if (fetchJoinRoles) {
                 // "FROM Entity en LEFT JOIN FETCH en.rolesField WHERE en.field = :name"
                 hql = "FROM " + jpaSecurityDefinition.annotatedClass.simpleName() + " en LEFT JOIN FETCH en."
-                        + jpaSecurityDefinition.roles.name() + " WHERE en."
-                        + jpaSecurityDefinition.username.name() + " = :name";
+                        + jpaSecurityDefinition.roles.name() + " WHERE en." + jpaSecurityDefinition.username.name()
+                        + " = :name";
             } else {
                 // "FROM Entity WHERE field = :name"
                 hql = "FROM " + jpaSecurityDefinition.annotatedClass.simpleName() + " WHERE "
@@ -209,30 +207,26 @@ class QuarkusSecurityJpaReactiveProcessor {
             }
 
             // session.createQuery("<<HQL>>", UserEntity.class)
-            ResultHandle query1 = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.Session.class, "createQuery", Mutiny.SelectionQuery.class, String.class, Class.class),
-                    session, methodCreator.load(hql), userEntityClass);
+            ResultHandle query1 = methodCreator.invokeInterfaceMethod(ofMethod(Mutiny.Session.class, "createQuery",
+                    Mutiny.SelectionQuery.class, String.class, Class.class), session, methodCreator.load(hql),
+                    userEntityClass);
 
             // .setParameter("name", username)
-            ResultHandle query2 = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.SelectionQuery.class, "setParameter", Mutiny.SelectionQuery.class, String.class,
-                            Object.class),
-                    query1, methodCreator.load("name"), username);
+            ResultHandle query2 = methodCreator.invokeInterfaceMethod(ofMethod(Mutiny.SelectionQuery.class,
+                    "setParameter", Mutiny.SelectionQuery.class, String.class, Object.class), query1,
+                    methodCreator.load("name"), username);
 
             // .getSingleResultOrNull()
             user = methodCreator.invokeInterfaceMethod(
-                    ofMethod(Mutiny.SelectionQuery.class, "getSingleResultOrNull", Uni.class),
-                    query2);
+                    ofMethod(Mutiny.SelectionQuery.class, "getSingleResultOrNull", Uni.class), query2);
         }
 
         return user;
     }
 
     private static boolean shouldFetchJoinRoles(JpaSecurityDefinition jpaSecurityDefinition) {
-        return jpaSecurityDefinition.haveRolesAnnotation(
-                DotName.createSimple(CollectionTable.class),
-                DotName.createSimple(ManyToMany.class),
-                DotName.createSimple(OneToMany.class),
+        return jpaSecurityDefinition.haveRolesAnnotation(DotName.createSimple(CollectionTable.class),
+                DotName.createSimple(ManyToMany.class), DotName.createSimple(OneToMany.class),
                 DotName.createSimple(ManyToOne.class));
     }
 
@@ -253,7 +247,7 @@ class QuarkusSecurityJpaReactiveProcessor {
         ResultHandle user = body.getMethodParam(0);
         function.accept(body, user);
 
-        return creator.invokeInterfaceMethod(ofMethod(Uni.class, name, Uni.class, Function.class),
-                uniInstance, lambda.getInstance());
+        return creator.invokeInterfaceMethod(ofMethod(Uni.class, name, Uni.class, Function.class), uniInstance,
+                lambda.getInstance());
     }
 }

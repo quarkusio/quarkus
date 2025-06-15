@@ -66,9 +66,9 @@ public class SearchCommandsTest extends DatasourceTestBase {
     @Test
     void testCreationOfIndexAndSimpleSearches() {
         assertThat(search.ft_list()).isEmpty();
-        search.ftCreate(key, new CreateArgs().indexedField("foo", FieldType.TEXT)
-                .indexedField("test", "content", FieldType.TEXT)
-                .indexedField("bar", FieldType.NUMERIC).payloadField("p"));
+        search.ftCreate(key,
+                new CreateArgs().indexedField("foo", FieldType.TEXT).indexedField("test", "content", FieldType.TEXT)
+                        .indexedField("bar", FieldType.NUMERIC).payloadField("p"));
         assertThat(search.ft_list()).containsExactly(key);
 
         hash.hset("a", Map.of("foo", "hello world", "bar", "2", "test", "some text", "p", "a"));
@@ -78,78 +78,75 @@ public class SearchCommandsTest extends DatasourceTestBase {
         var res = search.ftSearch(key, "hello");
         assertThat(res.count()).isEqualTo(2);
         assertThat(res.documents()).hasSize(2);
-        assertThat(res.documents())
-                .anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("a");
-                    assertThat(d.property("foo").asString()).isEqualTo("hello world");
-                    assertThat(d.property("bar").asInteger()).isEqualTo(2);
-                    assertThat(d.property("test").asString()).isEqualTo("some text");
-                }).anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("b");
-                    assertThat(d.property("foo").asString()).isEqualTo("hello monde");
-                    assertThat(d.property("bar").asInteger()).isEqualTo(3);
-                    assertThat(d.property("test").asString()).isEqualTo("some text");
-                });
+        assertThat(res.documents()).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("a");
+            assertThat(d.property("foo").asString()).isEqualTo("hello world");
+            assertThat(d.property("bar").asInteger()).isEqualTo(2);
+            assertThat(d.property("test").asString()).isEqualTo("some text");
+        }).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("b");
+            assertThat(d.property("foo").asString()).isEqualTo("hello monde");
+            assertThat(d.property("bar").asInteger()).isEqualTo(3);
+            assertThat(d.property("test").asString()).isEqualTo("some text");
+        });
 
         res = search.ftSearch(key, "(@bar:[3,4] | %ipsum%)", new QueryArgs().withScores());
         assertThat(res.count()).isEqualTo(2);
         assertThat(res.documents()).hasSize(2);
-        assertThat(res.documents())
-                .anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("b");
-                    assertThat(d.score()).isEqualTo(1.0);
-                    assertThat(d.property("foo").asString()).isEqualTo("hello monde");
-                    assertThat(d.property("bar").asInteger()).isEqualTo(3);
-                    assertThat(d.property("test").asString()).isEqualTo("some text");
-                    assertThat(d.payload()).isNull();
-                }).anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("c");
-                    assertThat(d.score()).isEqualTo(3.0);
-                    assertThat(d.property("foo").asString()).isEqualTo("bonjour monde");
-                    assertThat(d.property("bar").asInteger()).isEqualTo(4);
-                    assertThat(d.property("test").asString()).isEqualTo("lorem ipsum");
-                    assertThat(d.payload()).isNull();
-                });
+        assertThat(res.documents()).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("b");
+            assertThat(d.score()).isEqualTo(1.0);
+            assertThat(d.property("foo").asString()).isEqualTo("hello monde");
+            assertThat(d.property("bar").asInteger()).isEqualTo(3);
+            assertThat(d.property("test").asString()).isEqualTo("some text");
+            assertThat(d.payload()).isNull();
+        }).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("c");
+            assertThat(d.score()).isEqualTo(3.0);
+            assertThat(d.property("foo").asString()).isEqualTo("bonjour monde");
+            assertThat(d.property("bar").asInteger()).isEqualTo(4);
+            assertThat(d.property("test").asString()).isEqualTo("lorem ipsum");
+            assertThat(d.payload()).isNull();
+        });
 
         res = search.ftSearch(key, "(@bar:[3,4] | %ipsum%)", new QueryArgs().withScores().withPayloads());
         assertThat(res.count()).isEqualTo(2);
         assertThat(res.documents()).hasSize(2);
-        assertThat(res.documents())
-                .anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("b");
-                    assertThat(d.score()).isEqualTo(1.0);
-                    assertThat(d.property("foo").asString()).isEqualTo("hello monde");
-                    assertThat(d.property("bar").asInteger()).isEqualTo(3);
-                    assertThat(d.property("test").asString()).isEqualTo("some text");
-                    assertThat(d.payload().toString()).isEqualTo("b");
-                }).anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("c");
-                    assertThat(d.score()).isEqualTo(3.0);
-                    assertThat(d.property("foo").asString()).isEqualTo("bonjour monde");
-                    assertThat(d.property("bar").asInteger()).isEqualTo(4);
-                    assertThat(d.property("test").asString()).isEqualTo("lorem ipsum");
-                    assertThat(d.payload().toString()).isEqualTo("c");
-                });
+        assertThat(res.documents()).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("b");
+            assertThat(d.score()).isEqualTo(1.0);
+            assertThat(d.property("foo").asString()).isEqualTo("hello monde");
+            assertThat(d.property("bar").asInteger()).isEqualTo(3);
+            assertThat(d.property("test").asString()).isEqualTo("some text");
+            assertThat(d.payload().toString()).isEqualTo("b");
+        }).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("c");
+            assertThat(d.score()).isEqualTo(3.0);
+            assertThat(d.property("foo").asString()).isEqualTo("bonjour monde");
+            assertThat(d.property("bar").asInteger()).isEqualTo(4);
+            assertThat(d.property("test").asString()).isEqualTo("lorem ipsum");
+            assertThat(d.payload().toString()).isEqualTo("c");
+        });
 
-        res = search.ftSearch(key, "(@bar:[3,4] | %ipsum%)", new QueryArgs().withScores().withPayloads().withSortKeys());
+        res = search.ftSearch(key, "(@bar:[3,4] | %ipsum%)",
+                new QueryArgs().withScores().withPayloads().withSortKeys());
         assertThat(res.count()).isEqualTo(2);
         assertThat(res.documents()).hasSize(2);
-        assertThat(res.documents())
-                .anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("b");
-                    assertThat(d.score()).isEqualTo(1.0);
-                    assertThat(d.property("foo").asString()).isEqualTo("hello monde");
-                    assertThat(d.property("bar").asInteger()).isEqualTo(3);
-                    assertThat(d.property("test").asString()).isEqualTo("some text");
-                    assertThat(d.payload().toString()).isEqualTo("b");
-                }).anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("c");
-                    assertThat(d.score()).isEqualTo(3.0);
-                    assertThat(d.property("foo").asString()).isEqualTo("bonjour monde");
-                    assertThat(d.property("bar").asInteger()).isEqualTo(4);
-                    assertThat(d.property("test").asString()).isEqualTo("lorem ipsum");
-                    assertThat(d.payload().toString()).isEqualTo("c");
-                });
+        assertThat(res.documents()).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("b");
+            assertThat(d.score()).isEqualTo(1.0);
+            assertThat(d.property("foo").asString()).isEqualTo("hello monde");
+            assertThat(d.property("bar").asInteger()).isEqualTo(3);
+            assertThat(d.property("test").asString()).isEqualTo("some text");
+            assertThat(d.payload().toString()).isEqualTo("b");
+        }).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("c");
+            assertThat(d.score()).isEqualTo(3.0);
+            assertThat(d.property("foo").asString()).isEqualTo("bonjour monde");
+            assertThat(d.property("bar").asInteger()).isEqualTo(4);
+            assertThat(d.property("test").asString()).isEqualTo("lorem ipsum");
+            assertThat(d.payload().toString()).isEqualTo("c");
+        });
 
         res = search.ftSearch(key, "missing");
         assertThat(res.count()).isEqualTo(0);
@@ -158,18 +155,17 @@ public class SearchCommandsTest extends DatasourceTestBase {
         res = search.ftSearch(key, "hello", new QueryArgs().returnAttribute("foo", "val"));
         assertThat(res.count()).isEqualTo(2);
         assertThat(res.documents()).hasSize(2);
-        assertThat(res.documents())
-                .anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("a");
-                    assertThat(d.property("val").asString()).isEqualTo("hello world");
-                    assertThat(d.property("bar")).isNull();
-                    assertThat(d.property("test")).isNull();
-                }).anySatisfy(d -> {
-                    assertThat(d.key()).isEqualTo("b");
-                    assertThat(d.property("val").asString()).isEqualTo("hello monde");
-                    assertThat(d.property("bar")).isNull();
-                    assertThat(d.property("test")).isNull();
-                });
+        assertThat(res.documents()).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("a");
+            assertThat(d.property("val").asString()).isEqualTo("hello world");
+            assertThat(d.property("bar")).isNull();
+            assertThat(d.property("test")).isNull();
+        }).anySatisfy(d -> {
+            assertThat(d.key()).isEqualTo("b");
+            assertThat(d.property("val").asString()).isEqualTo("hello monde");
+            assertThat(d.property("bar")).isNull();
+            assertThat(d.property("test")).isNull();
+        });
 
     }
 
@@ -179,10 +175,10 @@ public class SearchCommandsTest extends DatasourceTestBase {
     @Test
     void testSearchQuickstart() {
         // > FT.CREATE myIdx ON HASH PREFIX 1 doc: SCHEMA title TEXT WEIGHT 5.0 body TEXT url TEXT
-        search.ftCreate("myIdx", new CreateArgs().onHash().prefixes("doc")
-                .indexedField("title", FieldType.TEXT, new FieldOptions().weight(5.0))
-                .indexedField("body", FieldType.TEXT)
-                .indexedField("url", FieldType.TEXT));
+        search.ftCreate("myIdx",
+                new CreateArgs().onHash().prefixes("doc")
+                        .indexedField("title", FieldType.TEXT, new FieldOptions().weight(5.0))
+                        .indexedField("body", FieldType.TEXT).indexedField("url", FieldType.TEXT));
         // > HSET doc:1 title "hello world" body "lorem ipsum" url "http://redis.io"
         hash.hset("doc:1", Map.of("title", "hello world", "body", "lorem ipsum", "url", "https://redis.io"));
 
@@ -204,31 +200,29 @@ public class SearchCommandsTest extends DatasourceTestBase {
      */
     @Test
     void testJsonIndexing() {
-        // > FT.CREATE itemIdx ON JSON PREFIX 1 item: SCHEMA $.name AS name TEXT $.description as description TEXT $.price AS price NUMERIC
-        search.ftCreate("itemIdx", new CreateArgs()
-                .onJson()
-                .prefixes("item:")
-                .indexedField("$.name", "name", FieldType.TEXT)
-                .indexedField("$.description", "description", FieldType.TEXT)
-                .indexedField("$.price", "price", FieldType.NUMERIC));
+        // > FT.CREATE itemIdx ON JSON PREFIX 1 item: SCHEMA $.name AS name TEXT $.description as description TEXT
+        // $.price AS price NUMERIC
+        search.ftCreate("itemIdx",
+                new CreateArgs().onJson().prefixes("item:").indexedField("$.name", "name", FieldType.TEXT)
+                        .indexedField("$.description", "description", FieldType.TEXT)
+                        .indexedField("$.price", "price", FieldType.NUMERIC));
 
         var json = ds.json();
 
         // > JSON.SET item:1 $ '{"name":"Noise-cancelling Bluetooth headphones",
         // "description":"Wireless Bluetooth headphones with noise-cancelling technology",
         // "connection":{"wireless":true,"type":"Bluetooth"},"price":99.98,"stock":25,"colors":["black","silver"]}'
-        JsonObject json1 = JsonObject.of("name", "Noise-cancelling Bluetooth headphones",
-                "description", "Wireless Bluetooth headphones with noise-cancelling technology",
-                "connection", JsonObject.of("wireless", true, "type", "Bluetooth"),
-                "price", 99.98, "stock", 25,
-                "colors", JsonArray.of("black", "silver"));
+        JsonObject json1 = JsonObject.of("name", "Noise-cancelling Bluetooth headphones", "description",
+                "Wireless Bluetooth headphones with noise-cancelling technology", "connection",
+                JsonObject.of("wireless", true, "type", "Bluetooth"), "price", 99.98, "stock", 25, "colors",
+                JsonArray.of("black", "silver"));
         json.jsonSet("item:1", json1);
         // > JSON.SET item:2 $ '{"name":"Wireless earbuds","description":"Wireless Bluetooth in-ear headphones",
         // "connection":{"wireless":true,"type":"Bluetooth"},"price":64.99,"stock":17,"colors":["black","white"]}'
         JsonObject json2 = JsonObject.of("name", "Wireless earbuds", "description",
-                "Wireless Bluetooth in-ear headphones",
-                "connection", JsonObject.of("wireless", true, "type", "Bluetooth"),
-                "price", 64.99, "stock", 17, "colors", JsonArray.of("black", "white"));
+                "Wireless Bluetooth in-ear headphones", "connection",
+                JsonObject.of("wireless", true, "type", "Bluetooth"), "price", 64.99, "stock", 17, "colors",
+                JsonArray.of("black", "white"));
         json.jsonSet("item:2", json2);
 
         // > FT.SEARCH itemIdx '@name:(earbuds)'
@@ -249,7 +243,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
             assertThat(result.documents().get(1).property("$").asJsonObject()).isEqualTo(json2);
         });
 
-        // >  FT.SEARCH itemIdx '@description:(bluetooth headphones) @price:[0 70]'
+        // > FT.SEARCH itemIdx '@description:(bluetooth headphones) @price:[0 70]'
         await().untilAsserted(() -> {
             var result = search.ftSearch("itemIdx", "@description:(bluetooth headphones) @price:[0 70]");
             assertThat(result.count()).isEqualTo(1);
@@ -258,12 +252,12 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         // Part 2 - Tags
-        // > > FT.CREATE itemIdx2 ON JSON PREFIX 1 item: SCHEMA $.colors.* AS colors TAG $.name AS name TEXT $.description as description TEXT
-        search.ftCreate("itemIdx2", new CreateArgs().onJson()
-                .prefixes("item:")
-                .indexedField("$.colors.*", "colors", FieldType.TAG)
-                .indexedField("$.name", "name", FieldType.TEXT)
-                .indexedField("$.description", "description", FieldType.TEXT));
+        // > > FT.CREATE itemIdx2 ON JSON PREFIX 1 item: SCHEMA $.colors.* AS colors TAG $.name AS name TEXT
+        // $.description as description TEXT
+        search.ftCreate("itemIdx2",
+                new CreateArgs().onJson().prefixes("item:").indexedField("$.colors.*", "colors", FieldType.TAG)
+                        .indexedField("$.name", "name", FieldType.TEXT)
+                        .indexedField("$.description", "description", FieldType.TEXT));
 
         // > FT.SEARCH itemIdx2 "@colors:{silver} (@name:(headphones)|@description:(headphones))"
         await().untilAsserted(() -> {
@@ -276,9 +270,11 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         // Part 3 - Index JSON objects
-        // > FT.CREATE itemIdx3 ON JSON SCHEMA $.connection.wireless AS wireless TAG $.connection.type AS connectionType TEXT
-        search.ftCreate("itemIdx3", new CreateArgs().onJson().indexedField("$.connection.wireless", "wireless", FieldType.TAG)
-                .indexedField("$.connection.type", "connectionType", FieldType.TEXT));
+        // > FT.CREATE itemIdx3 ON JSON SCHEMA $.connection.wireless AS wireless TAG $.connection.type AS connectionType
+        // TEXT
+        search.ftCreate("itemIdx3",
+                new CreateArgs().onJson().indexedField("$.connection.wireless", "wireless", FieldType.TAG)
+                        .indexedField("$.connection.type", "connectionType", FieldType.TEXT));
         // > FT.SEARCH itemIdx3 '@wireless:{true}'
         await().untilAsserted(() -> {
             var res = search.ftSearch("itemIdx3", "@wireless:{true}");
@@ -319,8 +315,8 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         // >> FT.SEARCH itemIdx '@description:(headphones)' RETURN 3 name price $.stock AS stock
         await().untilAsserted(() -> {
-            var result = search.ftSearch("itemIdx", "@description:(headphones)",
-                    new QueryArgs().returnAttribute("name").returnAttribute("price").returnAttribute("$.stock", "stock"));
+            var result = search.ftSearch("itemIdx", "@description:(headphones)", new QueryArgs().returnAttribute("name")
+                    .returnAttribute("price").returnAttribute("$.stock", "stock"));
             assertThat(result.count()).isEqualTo(2);
             assertThat(result.documents()).hasSize(2).allSatisfy(d -> {
                 assertThat(d.property("name").asString()).isNotNull();
@@ -329,11 +325,12 @@ public class SearchCommandsTest extends DatasourceTestBase {
             });
         });
 
-        // > FT.SEARCH itemIdx '(@name:(bluetooth))|(@description:(bluetooth))' RETURN 3 name description price HIGHLIGHT FIELDS 2 name description TAGS '<b>' '</b>'
+        // > FT.SEARCH itemIdx '(@name:(bluetooth))|(@description:(bluetooth))' RETURN 3 name description price
+        // HIGHLIGHT FIELDS 2 name description TAGS '<b>' '</b>'
         await().untilAsserted(() -> {
-            var result = search.ftSearch("itemIdx", "(@name:(bluetooth))|(@description:(bluetooth))", new QueryArgs()
-                    .returnAttribute("name").returnAttribute("description").returnAttribute("price")
-                    .highlight(new HighlightArgs().fields("name", "description").tags("<b>", "</b>")));
+            var result = search.ftSearch("itemIdx", "(@name:(bluetooth))|(@description:(bluetooth))",
+                    new QueryArgs().returnAttribute("name").returnAttribute("description").returnAttribute("price")
+                            .highlight(new HighlightArgs().fields("name", "description").tags("<b>", "</b>")));
             assertThat(result.count()).isEqualTo(2);
             assertThat(result.documents()).hasSize(2).allSatisfy(d -> {
                 assertThat(d.property("name").asString()).isNotNull();
@@ -343,11 +340,13 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         // Part 4 - Aggregation
-        // > FT.AGGREGATE itemIdx '*' LOAD 4 name $.price AS originalPrice APPLY '@originalPrice - (@originalPrice * 0.10)' AS salePrice SORTBY 2 @salePrice ASC
+        // > FT.AGGREGATE itemIdx '*' LOAD 4 name $.price AS originalPrice APPLY '@originalPrice - (@originalPrice *
+        // 0.10)' AS salePrice SORTBY 2 @salePrice ASC
         await().untilAsserted(() -> {
-            var r = search.ftAggregate("itemIdx", "*", new AggregateArgs().field("name").field("$.price", "originalPrice")
-                    .apply(new AggregateArgs.Apply("@originalPrice - (@originalPrice * 0.10)", "salePrice"))
-                    .sortBy(new AggregateArgs.SortBy().ascending("@salePrice")));
+            var r = search.ftAggregate("itemIdx", "*",
+                    new AggregateArgs().field("name").field("$.price", "originalPrice")
+                            .apply(new AggregateArgs.Apply("@originalPrice - (@originalPrice * 0.10)", "salePrice"))
+                            .sortBy(new AggregateArgs.SortBy().ascending("@salePrice")));
             assertThat(r.documents().size()).isEqualTo(2);
             assertThat(r.documents()).hasSize(2).allSatisfy(d -> {
                 assertThat(d.property("name").asString()).isNotNull();
@@ -359,22 +358,22 @@ public class SearchCommandsTest extends DatasourceTestBase {
     }
 
     void setupTraffic() {
-        hash.hset("entry:1", Map.of("url", "about.html", "timestamp", Long.toString(System.currentTimeMillis() / 1000 - 10000),
-                "country", "fr", "user_id", "user1"));
-        hash.hset("entry:2", Map.of("url", "about.html", "timestamp", Long.toString(System.currentTimeMillis() / 1000 - 5000),
-                "country", "de", "user_id", "user1"));
-        hash.hset("entry:3", Map.of("url", "test.html", "timestamp", Long.toString(System.currentTimeMillis() / 1000 - 2000),
-                "country", "fr", "user_id", "user2"));
-        hash.hset("entry:4", Map.of("url", "about.html", "timestamp", Long.toString(System.currentTimeMillis() / 1000 - 4000),
-                "country", "uk", "user_id", "user3"));
-        hash.hset("entry:5", Map.of("url", "about.html", "timestamp", Long.toString(System.currentTimeMillis() / 1000 - 4000),
-                "country", "fr", "user_id", "user4"));
+        hash.hset("entry:1", Map.of("url", "about.html", "timestamp",
+                Long.toString(System.currentTimeMillis() / 1000 - 10000), "country", "fr", "user_id", "user1"));
+        hash.hset("entry:2", Map.of("url", "about.html", "timestamp",
+                Long.toString(System.currentTimeMillis() / 1000 - 5000), "country", "de", "user_id", "user1"));
+        hash.hset("entry:3", Map.of("url", "test.html", "timestamp",
+                Long.toString(System.currentTimeMillis() / 1000 - 2000), "country", "fr", "user_id", "user2"));
+        hash.hset("entry:4", Map.of("url", "about.html", "timestamp",
+                Long.toString(System.currentTimeMillis() / 1000 - 4000), "country", "uk", "user_id", "user3"));
+        hash.hset("entry:5", Map.of("url", "about.html", "timestamp",
+                Long.toString(System.currentTimeMillis() / 1000 - 4000), "country", "fr", "user_id", "user4"));
 
-        search.ftCreate("myIndex", new CreateArgs().prefixes("entry:")
-                .indexedField("url", FieldType.TEXT, new FieldOptions().sortable())
-                .indexedField("timestamp", FieldType.NUMERIC, new FieldOptions().sortable())
-                .indexedField("country", FieldType.TAG, new FieldOptions().sortable())
-                .indexedField("user_id", FieldType.TEXT, new FieldOptions().sortable().noIndex()));
+        search.ftCreate("myIndex",
+                new CreateArgs().prefixes("entry:").indexedField("url", FieldType.TEXT, new FieldOptions().sortable())
+                        .indexedField("timestamp", FieldType.NUMERIC, new FieldOptions().sortable())
+                        .indexedField("country", FieldType.TAG, new FieldOptions().sortable())
+                        .indexedField("user_id", FieldType.TEXT, new FieldOptions().sortable().noIndex()));
     }
 
     /**
@@ -401,15 +400,16 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         // FT.AGGREGATE myIndex "*"
-        //  APPLY "@timestamp - (@timestamp % 3600)" AS hour
-        //  GROUPBY 1 @hour
-        //  	REDUCE COUNT_DISTINCT 1 @user_id AS num_users
+        // APPLY "@timestamp - (@timestamp % 3600)" AS hour
+        // GROUPBY 1 @hour
+        // REDUCE COUNT_DISTINCT 1 @user_id AS num_users
         await().untilAsserted(() -> {
-            var result = search.ftAggregate("myIndex", "*", new AggregateArgs().allFields()
-                    .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 3600)", "hour"))
-                    .groupBy(new AggregateArgs.GroupBy().addProperty("@hour").addReduceFunction("COUNT_DISTINCT", "num_users",
-                            "@user_id"))
-                    .verbatim());
+            var result = search.ftAggregate("myIndex", "*",
+                    new AggregateArgs().allFields()
+                            .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 3600)", "hour"))
+                            .groupBy(new AggregateArgs.GroupBy().addProperty("@hour")
+                                    .addReduceFunction("COUNT_DISTINCT", "num_users", "@user_id"))
+                            .verbatim());
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("hour").asDouble()).isPositive();
                 assertThat(d.property("num_users").asInteger()).isPositive();
@@ -417,16 +417,17 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         // FT.AGGREGATE myIndex "*"
-        //  APPLY "@timestamp - (@timestamp % 3600)" AS hour
-        //  GROUPBY 1 @hour
-        //  	REDUCE COUNT_DISTINCT 1 @user_id AS num_users
-        //  SORTBY 2 @hour ASC
+        // APPLY "@timestamp - (@timestamp % 3600)" AS hour
+        // GROUPBY 1 @hour
+        // REDUCE COUNT_DISTINCT 1 @user_id AS num_users
+        // SORTBY 2 @hour ASC
         await().untilAsserted(() -> {
-            var result = search.ftAggregate("myIndex", "*", new AggregateArgs().allFields()
-                    .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 3600)", "hour"))
-                    .groupBy(new AggregateArgs.GroupBy().addProperty("@hour").addReduceFunction("COUNT_DISTINCT", "num_users",
-                            "@user_id"))
-                    .sortBy(new AggregateArgs.SortBy().ascending("@hour")));
+            var result = search.ftAggregate("myIndex", "*",
+                    new AggregateArgs().allFields()
+                            .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 3600)", "hour"))
+                            .groupBy(new AggregateArgs.GroupBy().addProperty("@hour")
+                                    .addReduceFunction("COUNT_DISTINCT", "num_users", "@user_id"))
+                            .sortBy(new AggregateArgs.SortBy().ascending("@hour")));
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("hour").asDouble()).isPositive();
                 assertThat(d.property("num_users").asInteger()).isPositive();
@@ -434,16 +435,16 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         // FT.AGGREGATE myIndex "*"
-        //  APPLY "@timestamp - (@timestamp % 3600)" AS hour
-        //  GROUPBY 1 @hour
-        //  	REDUCE COUNT_DISTINCT 1 @user_id AS num_users
-        //  SORTBY 2 @hour ASC
-        //  APPLY timefmt(@hour) AS hour
+        // APPLY "@timestamp - (@timestamp % 3600)" AS hour
+        // GROUPBY 1 @hour
+        // REDUCE COUNT_DISTINCT 1 @user_id AS num_users
+        // SORTBY 2 @hour ASC
+        // APPLY timefmt(@hour) AS hour
         await().untilAsserted(() -> {
             var result = search.ftAggregate("myIndex", "*", new AggregateArgs().allFields()
                     .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 3600)", "hour"))
-                    .groupBy(new AggregateArgs.GroupBy().addProperty("@hour").addReduceFunction("COUNT_DISTINCT", "num_users",
-                            "@user_id"))
+                    .groupBy(new AggregateArgs.GroupBy().addProperty("@hour").addReduceFunction("COUNT_DISTINCT",
+                            "num_users", "@user_id"))
                     .sortBy(new AggregateArgs.SortBy().ascending("@hour"))
                     .apply(new AggregateArgs.Apply("timefmt(@hour)", "hour")));
             assertThat(result.documents()).allSatisfy(d -> {
@@ -453,16 +454,16 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         // FT.AGGREGATE myIndex "@url:\"about.html\""
-        //    APPLY "@timestamp - (@timestamp % 86400)" AS day
-        //    GROUPBY 2 @day @country
-        //    	REDUCE count 0 AS num_visits
-        //    SORTBY 4 @day ASC @country DESC
+        // APPLY "@timestamp - (@timestamp % 86400)" AS day
+        // GROUPBY 2 @day @country
+        // REDUCE count 0 AS num_visits
+        // SORTBY 4 @day ASC @country DESC
         await().untilAsserted(() -> {
-            var result = search.ftAggregate("myIndex", "@url:\"about.html\"", new AggregateArgs()
-                    .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
-                    .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country").addReduceFunction("count",
-                            "num_visits"))
-                    .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country")));
+            var result = search.ftAggregate("myIndex", "@url:\"about.html\"",
+                    new AggregateArgs().apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
+                            .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country")
+                                    .addReduceFunction("count", "num_visits"))
+                            .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country")));
             assertThat(result.count()).isGreaterThanOrEqualTo(3);
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("day").asInteger()).isPositive();
@@ -473,13 +474,13 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         // EXTRA - Filters
         await().untilAsserted(() -> {
-            var result = search.ftAggregate("myIndex", "@url:\"about.html\"", new AggregateArgs()
-                    .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
-                    .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country").addReduceFunction("count",
-                            "num_visits"))
-                    .filter("@country=='fr'")
-                    .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
-                    .filter("@num_visits>=1"));
+            var result = search.ftAggregate("myIndex", "@url:\"about.html\"",
+                    new AggregateArgs().apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
+                            .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country")
+                                    .addReduceFunction("count", "num_visits"))
+                            .filter("@country=='fr'")
+                            .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
+                            .filter("@num_visits>=1"));
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("day").asInteger()).isPositive();
                 assertThat(d.property("country").asString()).isEqualTo("fr");
@@ -488,12 +489,12 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         await().untilAsserted(() -> {
-            var result = search.ftAggregate("myIndex", "@url:\"about.html\"", new AggregateArgs()
-                    .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
-                    .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country").addReduceFunction("count",
-                            "num_visits"))
-                    .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
-                    .withCursor().cursorCount(2));
+            var result = search.ftAggregate("myIndex", "@url:\"about.html\"",
+                    new AggregateArgs().apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
+                            .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country")
+                                    .addReduceFunction("count", "num_visits"))
+                            .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country")).withCursor()
+                            .cursorCount(2));
             assertThat(result.count()).isBetween(0, 2);
             assertThat(result.documents()).allSatisfy(d -> {
                 assertThat(d.property("day").asInteger()).isPositive();
@@ -518,22 +519,22 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         await().untilAsserted(() -> {
-            var result = search.ftAggregate("myIndex", "@url:\"about.html\"", new AggregateArgs()
-                    .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
-                    .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country").addReduceFunction("count",
-                            "num_visits"))
-                    .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
-                    .withCursor().cursorCount(10));
+            var result = search.ftAggregate("myIndex", "@url:\"about.html\"",
+                    new AggregateArgs().apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
+                            .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country")
+                                    .addReduceFunction("count", "num_visits"))
+                            .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country")).withCursor()
+                            .cursorCount(10));
             assertThat(result.cursor()).isEqualTo(0);
         });
 
         await().untilAsserted(() -> {
-            var result = search.ftAggregate("myIndex", "@url:\"about.html\"", new AggregateArgs()
-                    .apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
-                    .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country").addReduceFunction("count",
-                            "num_visits"))
-                    .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country"))
-                    .withCursor().cursorCount(1));
+            var result = search.ftAggregate("myIndex", "@url:\"about.html\"",
+                    new AggregateArgs().apply(new AggregateArgs.Apply("@timestamp - (@timestamp % 86400)", "day"))
+                            .groupBy(new AggregateArgs.GroupBy().addProperty("@day").addProperty("@country")
+                                    .addReduceFunction("count", "num_visits"))
+                            .sortBy(new AggregateArgs.SortBy().ascending("@day").descending("@country")).withCursor()
+                            .cursorCount(1));
             assertThat(result.cursor()).isPositive();
             var c = result.cursor();
             search.ftCursorDel("myIndex", result.cursor());
@@ -554,7 +555,8 @@ public class SearchCommandsTest extends DatasourceTestBase {
         await().untilAsserted(() -> {
             var result = search.ftSearch("idx:movie", "war");
             assertThat(result.count()).isEqualTo(2);
-            assertThat(result.documents()).allSatisfy(d -> assertThat(d.property("title").asString()).contains("Star Wars"));
+            assertThat(result.documents())
+                    .allSatisfy(d -> assertThat(d.property("title").asString()).contains("Star Wars"));
         });
 
         // FT.SEARCH idx:movie "war" RETURN 2 title release_year
@@ -621,8 +623,8 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         // > FT.SEARCH idx:movie * FILTER release_year 1970 1980 RETURN 2 title release_year
         await().untilAsserted(() -> {
-            var result = search.ftSearch("idx:movie", "*", new QueryArgs()
-                    .filter(new NumericFilter("release_year", 1970, 1980)));
+            var result = search.ftSearch("idx:movie", "*",
+                    new QueryArgs().filter(new NumericFilter("release_year", 1970, 1980)));
             assertThat(result.count()).isEqualTo(2);
         });
 
@@ -639,13 +641,10 @@ public class SearchCommandsTest extends DatasourceTestBase {
             assertThat(result.documents()).isEmpty();
         });
 
-        hash.hset("movie:11033", Map.of("title", "Tomorrow Never Dies",
-                "plot", "James Bond sets out to stop a media mogul's plan to...",
-                "release_year", "1997",
-                "genre", "Action",
-                "rating", "6.5",
-                "votes", "177732",
-                "imbd_id", "tt0120347"));
+        hash.hset("movie:11033",
+                Map.of("title", "Tomorrow Never Dies", "plot", "James Bond sets out to stop a media mogul's plan to...",
+                        "release_year", "1997", "genre", "Action", "rating", "6.5", "votes", "177732", "imbd_id",
+                        "tt0120347"));
 
         // > FT.SEARCH idx:movie "never" RETURN 2 title release_year
         await().untilAsserted(() -> {
@@ -655,7 +654,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         // > HSET movie:11033 title "Tomorrow Never Dies - 007"
         hash.hset("movie:11033", "title", "Tomorrow Never Dies - 007");
-        //> FT.SEARCH idx:movie "007" RETURN 2 title release_year
+        // > FT.SEARCH idx:movie "007" RETURN 2 title release_year
         await().untilAsserted(() -> {
             var result = search.ftSearch("idx:movie", "007");
             assertThat(result.count()).isEqualTo(1);
@@ -725,8 +724,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
         setupMovies();
         assertThatThrownBy(() -> search.ftAlter("missing", IndexedField.from("test", FieldType.TEXT)));
         search.ftAlter("idx:movie", IndexedField.from("plot", FieldType.TEXT, new FieldOptions().weight(0.5)));
-        await()
-                .untilAsserted(() -> assertThat(search.ftSearch("idx:movie", "brutally").count()).isEqualTo(1));
+        await().untilAsserted(() -> assertThat(search.ftSearch("idx:movie", "brutally").count()).isEqualTo(1));
     }
 
     @Test
@@ -777,13 +775,14 @@ public class SearchCommandsTest extends DatasourceTestBase {
         assertThat(search.ftDictDump("my-dict")).hasSize(4);
         search.ftDictAdd("my-dict", "another");
         assertThat(search.ftDictDump("my-dict")).hasSize(5);
-        assertThat(search.ftSpellCheck("my-index", "bonjour hockey", new SpellCheckArgs().includes("my-dict")).isCorrect())
-                .isTrue();
         assertThat(
-                search.ftSpellCheck("my-index", "bonjour hockey", new SpellCheckArgs().includes("my-dict")).misspelledWords())
-                .isEmpty();
+                search.ftSpellCheck("my-index", "bonjour hockey", new SpellCheckArgs().includes("my-dict")).isCorrect())
+                .isTrue();
+        assertThat(search.ftSpellCheck("my-index", "bonjour hockey", new SpellCheckArgs().includes("my-dict"))
+                .misspelledWords()).isEmpty();
 
-        res = search.ftSpellCheck("my-index", "bonjour magyc hocky", new SpellCheckArgs().includes("my-dict").distance(3));
+        res = search.ftSpellCheck("my-index", "bonjour magyc hocky",
+                new SpellCheckArgs().includes("my-dict").distance(3));
         assertThat(res.suggestions("bonjour")).isNull();
         assertThat(res.suggestions("magyc")).hasSize(1).allSatisfy(su -> {
             assertThat(su.word()).isEqualTo("magic");
@@ -794,7 +793,8 @@ public class SearchCommandsTest extends DatasourceTestBase {
         });
 
         search.ftDictDel("my-dict", "bonjour");
-        res = search.ftSpellCheck("my-index", "bonjour magyc hocky", new SpellCheckArgs().includes("my-dict").distance(3));
+        res = search.ftSpellCheck("my-index", "bonjour magyc hocky",
+                new SpellCheckArgs().includes("my-dict").distance(3));
         assertThat(res.misspelledWords()).containsExactlyInAnyOrder("bonjour", "magyc", "hocky");
         assertThat(res.suggestions("bonjour")).isEmpty();
         assertThat(res.suggestions("magyc")).hasSize(1).allSatisfy(su -> {
@@ -808,41 +808,29 @@ public class SearchCommandsTest extends DatasourceTestBase {
     }
 
     void setupMovies() {
-        // FT.CREATE idx:movie ON hash PREFIX 1 "movie:" SCHEMA title TEXT SORTABLE release_year NUMERIC SORTABLE rating NUMERIC SORTABLE genre TAG SORTABLE
-        search.ftCreate("idx:movie", new CreateArgs().onHash().prefixes("movie:")
-                .indexedField("title", FieldType.TEXT, new FieldOptions().sortable())
-                .indexedField("release_year", FieldType.NUMERIC, new FieldOptions().sortable())
-                .indexedField("rating", FieldType.NUMERIC, new FieldOptions().sortable())
-                .indexedField("genre", FieldType.TAG, new FieldOptions().sortable()));
+        // FT.CREATE idx:movie ON hash PREFIX 1 "movie:" SCHEMA title TEXT SORTABLE release_year NUMERIC SORTABLE rating
+        // NUMERIC SORTABLE genre TAG SORTABLE
+        search.ftCreate("idx:movie",
+                new CreateArgs().onHash().prefixes("movie:")
+                        .indexedField("title", FieldType.TEXT, new FieldOptions().sortable())
+                        .indexedField("release_year", FieldType.NUMERIC, new FieldOptions().sortable())
+                        .indexedField("rating", FieldType.NUMERIC, new FieldOptions().sortable())
+                        .indexedField("genre", FieldType.TAG, new FieldOptions().sortable()));
 
-        hash.hset("movie:11002", Map.of("title", "Star Wars: Episode V - The Empire Strikes Back",
-                "plot", "After the Rebels are brutally overpowered by the Empire on the ice planet Hoth, ...",
-                "release_year", "1972",
-                "genre", "Action",
-                "rating", "8.7",
-                "votes", "1127635",
-                "imbd_id", "tt0080684"));
-        hash.hset("movie:11003", Map.of("title", "The Godfather",
-                "plot", "The aging patriarch of an organized crime dynasty transfers control of his ...",
-                "release_year", "1972",
-                "genre", "Drama",
-                "rating", "9.2",
-                "votes", "1563839",
-                "imbd_id", "tt0068646"));
-        hash.hset("movie:11004", Map.of("title", "Heat",
-                "plot", "A group of professional bank robbers start to feel the heat ...",
-                "release_year", "1995",
-                "genre", "Thriller",
-                "rating", "8.2",
-                "votes", "559490",
-                "imbd_id", "tt0113277"));
-        hash.hset("movie:11005", Map.of("title", "Star Wars: Episode VI - Return of the Jedi",
-                "plot", "The Rebels dispatch to Endor to destroy the second Empire's Death Star.",
-                "release_year", "1983",
-                "genre", "Action",
-                "rating", "8.3",
-                "votes", "906260",
-                "imbd_id", "tt0086190"));
+        hash.hset("movie:11002", Map.of("title", "Star Wars: Episode V - The Empire Strikes Back", "plot",
+                "After the Rebels are brutally overpowered by the Empire on the ice planet Hoth, ...", "release_year",
+                "1972", "genre", "Action", "rating", "8.7", "votes", "1127635", "imbd_id", "tt0080684"));
+        hash.hset("movie:11003", Map.of("title", "The Godfather", "plot",
+                "The aging patriarch of an organized crime dynasty transfers control of his ...", "release_year",
+                "1972", "genre", "Drama", "rating", "9.2", "votes", "1563839", "imbd_id", "tt0068646"));
+        hash.hset("movie:11004",
+                Map.of("title", "Heat", "plot", "A group of professional bank robbers start to feel the heat ...",
+                        "release_year", "1995", "genre", "Thriller", "rating", "8.2", "votes", "559490", "imbd_id",
+                        "tt0113277"));
+        hash.hset("movie:11005",
+                Map.of("title", "Star Wars: Episode VI - Return of the Jedi", "plot",
+                        "The Rebels dispatch to Endor to destroy the second Empire's Death Star.", "release_year",
+                        "1983", "genre", "Action", "rating", "8.3", "votes", "906260", "imbd_id", "tt0086190"));
     }
 
     @Test
@@ -873,15 +861,9 @@ public class SearchCommandsTest extends DatasourceTestBase {
     @Test
     void testKNearestNeighborsDouble() {
         ds.search().ftCreate("IDX:double",
-                new CreateArgs()
-                        .onJson()
-                        .prefixes("indexed:")
-                        .indexedField("$.vector", "vector", FieldType.VECTOR,
-                                new FieldOptions()
-                                        .vectorAlgorithm(VectorAlgorithm.HNSW)
-                                        .dimension(6)
-                                        .distanceMetric(DistanceMetric.COSINE)
-                                        .vectorType(VectorType.FLOAT64)));
+                new CreateArgs().onJson().prefixes("indexed:").indexedField("$.vector", "vector", FieldType.VECTOR,
+                        new FieldOptions().vectorAlgorithm(VectorAlgorithm.HNSW).dimension(6)
+                                .distanceMetric(DistanceMetric.COSINE).vectorType(VectorType.FLOAT64)));
 
         double[] queryVector = new double[] { 0.0, 0.0, 1.0, 0.0, 0.0, 0.0 };
 
@@ -892,10 +874,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
 
         String query = "*=>[ KNN 1 @vector $BLOB AS vector_score ]";
 
-        QueryArgs args = new QueryArgs()
-                .sortByAscending("vector_score")
-                .dialect(2)
-                .param("BLOB", queryVector);
+        QueryArgs args = new QueryArgs().sortByAscending("vector_score").dialect(2).param("BLOB", queryVector);
         SearchQueryResponse response = ds.search().ftSearch("IDX:double", query, args);
         assertEquals(1, response.count());
         Document foundEntry = response.documents().get(0);
@@ -905,15 +884,9 @@ public class SearchCommandsTest extends DatasourceTestBase {
     @Test
     void testKNearestNeighborsFloat() {
         ds.search().ftCreate("IDX:float",
-                new CreateArgs()
-                        .onJson()
-                        .prefixes("indexed:")
-                        .indexedField("$.vector", "vector", FieldType.VECTOR,
-                                new FieldOptions()
-                                        .vectorAlgorithm(VectorAlgorithm.HNSW)
-                                        .dimension(6)
-                                        .distanceMetric(DistanceMetric.COSINE)
-                                        .vectorType(VectorType.FLOAT32)));
+                new CreateArgs().onJson().prefixes("indexed:").indexedField("$.vector", "vector", FieldType.VECTOR,
+                        new FieldOptions().vectorAlgorithm(VectorAlgorithm.HNSW).dimension(6)
+                                .distanceMetric(DistanceMetric.COSINE).vectorType(VectorType.FLOAT32)));
 
         float[] queryVector = new float[] { 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f };
 
@@ -923,10 +896,7 @@ public class SearchCommandsTest extends DatasourceTestBase {
         ds.json().jsonSet("indexed:4", "$", createDocument(new float[] { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f }));
 
         String query = "*=>[ KNN 1 @vector $BLOB AS vector_score ]";
-        QueryArgs args = new QueryArgs()
-                .sortByAscending("vector_score")
-                .dialect(2)
-                .param("BLOB", queryVector);
+        QueryArgs args = new QueryArgs().sortByAscending("vector_score").dialect(2).param("BLOB", queryVector);
 
         SearchQueryResponse response = ds.search().ftSearch("IDX:float", query, args);
         assertEquals(1, response.count());

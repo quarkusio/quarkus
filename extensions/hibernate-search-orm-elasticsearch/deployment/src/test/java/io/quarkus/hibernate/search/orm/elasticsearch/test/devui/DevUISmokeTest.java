@@ -7,10 +7,8 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class DevUISmokeTest extends AbstractDevUITest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot(
-                    (jar) -> jar.addAsResource("application-devui.properties", "application.properties")
-                            .addClasses(MyIndexedEntity.class));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addAsResource("application-devui.properties", "application.properties").addClasses(MyIndexedEntity.class));
 
     public DevUISmokeTest() {
         super("<default>", MyIndexedEntity.class.getName());

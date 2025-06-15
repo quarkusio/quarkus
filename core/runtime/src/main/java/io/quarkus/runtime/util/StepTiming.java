@@ -29,8 +29,7 @@ public class StepTiming {
         String currentBuildStepName = startupContext.getCurrentBuildStepName();
         System.out.printf("%1$tF %1$tT,%1$tL Build step %2$s completed in: %3$sms%n",
                 LocalDateTime.ofInstant(Instant.ofEpochMilli(System.currentTimeMillis()), ZoneId.systemDefault()),
-                currentBuildStepName,
-                duration(System.nanoTime(), stepTimingStart));
+                currentBuildStepName, duration(System.nanoTime(), stepTimingStart));
         stepTimingStart = System.nanoTime();
     }
 

@@ -95,9 +95,10 @@ public class StreamResource {
         // Same as sseJson but set mediaType in builder
         sseBroadcaster.register(sink);
         sseBroadcaster
-                .broadcast(sse.newEventBuilder().data(new Message("hello")).mediaType(MediaType.APPLICATION_JSON_TYPE).build())
-                .thenCompose(v -> sseBroadcaster.broadcast(
-                        sse.newEventBuilder().mediaType(MediaType.APPLICATION_JSON_TYPE).data(new Message("stef")).build()))
+                .broadcast(sse.newEventBuilder().data(new Message("hello")).mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .build())
+                .thenCompose(v -> sseBroadcaster.broadcast(sse.newEventBuilder()
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE).data(new Message("stef")).build()))
                 .thenAccept(v -> sseBroadcaster.close());
     }
 
@@ -133,18 +134,11 @@ public class StreamResource {
 
         Multi<Object> inner = Multi.createBy().merging()
                 // Add some messages
-                .streams(Multi.createFrom().items(
-                        new Message("hello"),
-                        new Message("stef"),
-                        new Message("snazy"),
-                        new Message("stef"),
-                        new Message("elani"),
-                        new Message("foo"),
-                        new Message("bar"),
+                .streams(Multi.createFrom().items(new Message("hello"), new Message("stef"), new Message("snazy"),
+                        new Message("stef"), new Message("elani"), new Message("foo"), new Message("bar"),
                         new Message("baz")));
 
-        Multi<Object> items = Multi.createBy().concatenating().streams(
-                inner,
+        Multi<Object> items = Multi.createBy().concatenating().streams(inner,
                 // Add "collected" demand values as the last JSON object, produce "lazily" to
                 // make sure that we "see" the demands signaled via Publisher.request(long).
                 Multi.createFrom().item(() -> new Demands(demands)));
@@ -152,8 +146,8 @@ public class StreamResource {
         Multi<Object> outer = new AbstractMultiOperator<>(items) {
             @Override
             public void subscribe(Flow.Subscriber<? super Object> subscriber) {
-                this.upstream.subscribe()
-                        .withSubscriber(new MultiOperatorProcessor<Object, Object>(new StrictMultiSubscriber<>(subscriber)) {
+                this.upstream.subscribe().withSubscriber(
+                        new MultiOperatorProcessor<Object, Object>(new StrictMultiSubscriber<>(subscriber)) {
                             @Override
                             public void request(long numberOfItems) {
                                 // Collect the "demands" to return to the test case
@@ -164,11 +158,8 @@ public class StreamResource {
             }
         }.log("outer");
 
-        return RestMulti.fromMultiData(
-                Multi.createBy().concatenating().streams(outer).log())
-                .withDemand(5)
-                .encodeAsJsonArray(false)
-                .header("foo", "bar").build();
+        return RestMulti.fromMultiData(Multi.createBy().concatenating().streams(outer).log()).withDemand(5)
+                .encodeAsJsonArray(false).header("foo", "bar").build();
     }
 
     @Path("json/multi2")
@@ -191,25 +182,22 @@ public class StreamResource {
     public Multi<Message> multiNdJson2() {
 
         return RestMulti.fromUniResponse(
-                Uni.createFrom().item(
-                        () -> new Wrapper(Multi.createFrom().items(new Message("hello"), new Message("stef")),
+                Uni.createFrom()
+                        .item(() -> new Wrapper(Multi.createFrom().items(new Message("hello"), new Message("stef")),
                                 new AbstractMap.SimpleEntry<>("foo", "bar"), 222)),
-                Wrapper::getData,
-                Wrapper::getHeaders,
-                Wrapper::getStatus);
+                Wrapper::getData, Wrapper::getHeaders, Wrapper::getStatus);
     }
 
     @Path("restmulti/empty")
     @GET
     @Produces(RestMediaType.APPLICATION_JSON)
     public Multi<Message> restMultiEmptyJson() {
-        return RestMulti.fromUniResponse(
-                Uni.createFrom().item(
-                        () -> new Wrapper(Multi.createFrom().empty(),
-                                new AbstractMap.SimpleEntry<>("foo", "bar"), 222)),
-                Wrapper::getData,
-                Wrapper::getHeaders,
-                Wrapper::getStatus);
+        return RestMulti
+                .fromUniResponse(
+                        Uni.createFrom()
+                                .item(() -> new Wrapper(Multi.createFrom().empty(),
+                                        new AbstractMap.SimpleEntry<>("foo", "bar"), 222)),
+                        Wrapper::getData, Wrapper::getHeaders, Wrapper::getStatus);
     }
 
     @Path("stream-json/multi")
@@ -232,9 +220,10 @@ public class StreamResource {
         for (int i = 0; i < 5000; i++) {
             ids.add(UUID.randomUUID());
         }
-        return RestMulti.fromMultiData(Multi.createFrom().items(ids::stream)
-                .onItem().transform(id -> new Message(id.toString()))
-                .onOverflow().buffer(81920)).header("foo", "bar").build();
+        return RestMulti
+                .fromMultiData(Multi.createFrom().items(ids::stream).onItem()
+                        .transform(id -> new Message(id.toString())).onOverflow().buffer(81920))
+                .header("foo", "bar").build();
     }
 
     private static final class Wrapper {

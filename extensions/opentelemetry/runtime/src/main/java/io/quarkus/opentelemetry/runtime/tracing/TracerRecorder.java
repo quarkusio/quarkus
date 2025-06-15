@@ -14,9 +14,7 @@ public class TracerRecorder {
     public static final Set<String> dropStaticResourceTargets = new HashSet<>();
 
     @StaticInit
-    public void setupSampler(
-            List<String> dropNonApplicationUris,
-            List<String> dropStaticResources) {
+    public void setupSampler(List<String> dropNonApplicationUris, List<String> dropStaticResources) {
         dropNonApplicationUriTargets.addAll(dropNonApplicationUris);
         dropStaticResourceTargets.addAll(dropStaticResources);
     }

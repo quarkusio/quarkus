@@ -17,10 +17,8 @@ import io.quarkus.test.common.RestAssuredURLManager;
 public class QuarkusProdModeTestTest {
 
     @RegisterExtension
-    static final QuarkusProdModeTest simpleApp = new QuarkusProdModeTest()
-            .setApplicationName("simple-app")
-            .setApplicationVersion("0.1-SNAPSHOT")
-            .setRun(true);
+    static final QuarkusProdModeTest simpleApp = new QuarkusProdModeTest().setApplicationName("simple-app")
+            .setApplicationVersion("0.1-SNAPSHOT").setRun(true);
 
     @Test
     @Order(1)

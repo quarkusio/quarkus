@@ -30,9 +30,9 @@ public interface SubPaths {
     String SECURED_SUB_RESOURCE_ENDPOINT_PATH = "/secured";
 
     /**
-     * Following 3 constants refer to where method like {@code @Override SubResource subResource() { return new SubResource();
-     * }}
-     * is implemented. That is whether actually invoked sub-resource endpoint is placed on a base, parent or an interface.
+     * Following 3 constants refer to where method like
+     * {@code @Override SubResource subResource() { return new SubResource(); }} is implemented. That is whether
+     * actually invoked sub-resource endpoint is placed on a base, parent or an interface.
      */
     String SUB_IMPL_ON_BASE = "/sub-impl-on-base";
     String SUB_IMPL_ON_PARENT = "/sub-impl-on-parent";
@@ -67,7 +67,10 @@ public interface SubPaths {
     SubPath CLASS_ROLES_ALLOWED = new SubPath(CLASS_ROLES_ALLOWED_PREFIX, CLASS_ROLES_ALLOWED_PATH);
     SubPath CLASS_DENY_ALL = new SubPath(CLASS_DENY_ALL_PREFIX, CLASS_DENY_ALL_PATH);
     SubPath CLASS_PERMIT_ALL = new SubPath(CLASS_PERMIT_ALL_PREFIX, CLASS_PERMIT_ALL_PATH);
-    SubPath CLASS_DENY_ALL_METHOD_ROLES_ALLOWED = new SubPath(CLASS_DENY_ALL_PREFIX, CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH);
-    SubPath CLASS_DENY_ALL_METHOD_PERMIT_ALL = new SubPath(CLASS_DENY_ALL_PREFIX, CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH);
-    SubPath CLASS_PERMIT_ALL_METHOD_PERMIT_ALL = new SubPath(CLASS_PERMIT_ALL_PREFIX, CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH);
+    SubPath CLASS_DENY_ALL_METHOD_ROLES_ALLOWED = new SubPath(CLASS_DENY_ALL_PREFIX,
+            CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH);
+    SubPath CLASS_DENY_ALL_METHOD_PERMIT_ALL = new SubPath(CLASS_DENY_ALL_PREFIX,
+            CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH);
+    SubPath CLASS_PERMIT_ALL_METHOD_PERMIT_ALL = new SubPath(CLASS_PERMIT_ALL_PREFIX,
+            CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH);
 }

@@ -10,10 +10,8 @@ import io.quarkus.grpc.ExceptionHandler;
 import io.quarkus.security.AuthenticationException;
 
 /**
- * Exception mapper for authentication and authorization exceptions
- *
- * To alter mapping exceptions, create a subclass of this handler and create an appropriate
- * {@link AuthExceptionHandlerProvider}
+ * Exception mapper for authentication and authorization exceptions To alter mapping exceptions, create a subclass of
+ * this handler and create an appropriate {@link AuthExceptionHandlerProvider}
  */
 public class AuthExceptionHandler<ReqT, RespT> extends ExceptionHandler<ReqT, RespT> implements Prioritized {
 
@@ -33,9 +31,12 @@ public class AuthExceptionHandler<ReqT, RespT> extends ExceptionHandler<ReqT, Re
     /**
      * Maps exception to a gRPC error. Override this method to customize the mapping
      *
-     * @param exception exception thrown
-     * @param serverCall server call to close with error
-     * @param metadata call metadata
+     * @param exception
+     *        exception thrown
+     * @param serverCall
+     *        server call to close with error
+     * @param metadata
+     *        call metadata
      */
     protected void handleException(Throwable exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
         if (exception instanceof AuthenticationException || exception instanceof SecurityException) {

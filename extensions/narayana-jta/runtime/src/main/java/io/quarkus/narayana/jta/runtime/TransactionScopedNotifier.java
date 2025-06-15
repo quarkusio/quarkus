@@ -21,24 +21,24 @@ public abstract class TransactionScopedNotifier {
 
     void initialized(TransactionId transactionId) {
         if (initialized == null) {
-            initialized = Arc.container().beanManager().getEvent()
-                    .select(TransactionId.class, Initialized.Literal.of(TransactionScoped.class));
+            initialized = Arc.container().beanManager().getEvent().select(TransactionId.class,
+                    Initialized.Literal.of(TransactionScoped.class));
         }
         initialized.fire(transactionId);
     }
 
     void beforeDestroyed(TransactionId transactionId) {
         if (beforeDestroyed == null) {
-            beforeDestroyed = Arc.container().beanManager().getEvent()
-                    .select(TransactionId.class, BeforeDestroyed.Literal.of(TransactionScoped.class));
+            beforeDestroyed = Arc.container().beanManager().getEvent().select(TransactionId.class,
+                    BeforeDestroyed.Literal.of(TransactionScoped.class));
         }
         beforeDestroyed.fire(transactionId);
     }
 
     void destroyed(TransactionId transactionId) {
         if (destroyed == null) {
-            destroyed = Arc.container().beanManager().getEvent()
-                    .select(TransactionId.class, Destroyed.Literal.of(TransactionScoped.class));
+            destroyed = Arc.container().beanManager().getEvent().select(TransactionId.class,
+                    Destroyed.Literal.of(TransactionScoped.class));
         }
         destroyed.fire(transactionId);
     }
@@ -51,7 +51,8 @@ public abstract class TransactionScopedNotifier {
         }
     }
 
-    // we use this wrapper because if we fire an event with string payload then any "@Observes String payload" would be notified
+    // we use this wrapper because if we fire an event with string payload then any "@Observes String payload" would be
+    // notified
     public static final class TransactionId {
 
         private final String value;

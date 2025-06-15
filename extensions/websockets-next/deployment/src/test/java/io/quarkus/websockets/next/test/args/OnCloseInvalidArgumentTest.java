@@ -15,11 +15,9 @@ import io.quarkus.websockets.next.WebSocketException;
 public class OnCloseInvalidArgumentTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class);
-            })
-            .setExpectedException(WebSocketException.class);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class);
+    }).setExpectedException(WebSocketException.class);
 
     @Test
     void testInvalidArgument() {

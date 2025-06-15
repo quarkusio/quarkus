@@ -33,11 +33,12 @@ public class WebAuthnAndBasicAuthnTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class, WebAuthnHardware.class,
-                            TestResource.class, ManualResource.class, TestUtil.class, TestIdentityProvider.class,
-                            MultipleAuthMechResource.class, TestIdentityController.class)
-                    .addAsResource(new StringAsset("quarkus.http.auth.basic=true\n" +
-                            "quarkus.http.auth.proactive=false\n"), "application.properties"));
+                    .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class,
+                            WebAuthnHardware.class, TestResource.class, ManualResource.class, TestUtil.class,
+                            TestIdentityProvider.class, MultipleAuthMechResource.class, TestIdentityController.class)
+                    .addAsResource(
+                            new StringAsset("quarkus.http.auth.basic=true\n" + "quarkus.http.auth.proactive=false\n"),
+                            "application.properties"));
 
     @Inject
     WebAuthnUserProvider userProvider;
@@ -47,8 +48,7 @@ public class WebAuthnAndBasicAuthnTest {
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("basic", "basic", "basic");
+        TestIdentityController.resetRoles().add("basic", "basic", "basic");
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
@@ -62,19 +62,11 @@ public class WebAuthnAndBasicAuthnTest {
         JsonObject registration = hardwareKey.makeRegistrationJson(challenge);
 
         // now finalise
-        RequestSpecification request = RestAssured
-                .given()
-                .filter(cookieFilter);
+        RequestSpecification request = RestAssured.given().filter(cookieFilter);
         WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registration);
-        var config = new SmallRyeConfigBuilder()
-                .withMapping(WebAuthnRunTimeConfig.class)
-                .build()
+        var config = new SmallRyeConfigBuilder().withMapping(WebAuthnRunTimeConfig.class).build()
                 .getConfigMapping(WebAuthnRunTimeConfig.class);
-        request
-                .queryParam("username", "stev")
-                .post("/register")
-                .then().statusCode(200)
-                .body(Matchers.is("OK"))
+        request.queryParam("username", "stev").post("/register").then().statusCode(200).body(Matchers.is("OK"))
                 .cookie(config.challengeCookieName(), Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
@@ -90,8 +82,8 @@ public class WebAuthnAndBasicAuthnTest {
         // check that when an endpoint is annotated with @Basic, web auth won't work
         RestAssured.given().filter(cookieFilter).post("/multiple-auth-mech/basic").then().statusCode(401);
         // check that when an endpoint is annotated with @Basic, basic auth works
-        RestAssured.given().auth().preemptive().basic("basic", "basic").post("/multiple-auth-mech/basic").then().statusCode(200)
-                .body(Matchers.is("basic"));
+        RestAssured.given().auth().preemptive().basic("basic", "basic").post("/multiple-auth-mech/basic").then()
+                .statusCode(200).body(Matchers.is("basic"));
 
         // check that when an endpoint is annotated with @WebAuthn, webuauth works
         RestAssured.given().filter(cookieFilter).post("/multiple-auth-mech/webauth").then().statusCode(200)
@@ -102,12 +94,7 @@ public class WebAuthnAndBasicAuthnTest {
     }
 
     private void checkLoggedIn(CookieFilter cookieFilter) {
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .get("/secure")
-                .then()
-                .statusCode(200)
+        RestAssured.given().filter(cookieFilter).get("/secure").then().statusCode(200)
                 .body(Matchers.is("stev: [admin]"));
     }
 }

@@ -53,19 +53,16 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                 log.infof("Checking status of builder image '%s'", effectiveBuilderImage);
                 Process imageInspectProcess = null;
                 try {
-                    final ProcessBuilder pb = new ProcessBuilder(
-                            Arrays.asList(containerRuntime.getExecutableName(), "image", "inspect",
-                                    "-f", "{{ .Id }}",
-                                    effectiveBuilderImage))
+                    final ProcessBuilder pb = new ProcessBuilder(Arrays.asList(containerRuntime.getExecutableName(),
+                            "image", "inspect", "-f", "{{ .Id }}", effectiveBuilderImage))
                             // We only need the command's return status
                             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
                             .redirectError(ProcessBuilder.Redirect.DISCARD);
                     imageInspectProcess = pb.start();
                     if (imageInspectProcess.waitFor() != 0) {
                         if (builderImagePull == NativeConfig.ImagePullStrategy.NEVER) {
-                            throw new RuntimeException(
-                                    "Could not find builder image '" + effectiveBuilderImage
-                                            + "' locally and 'quarkus.native.builder-image.pull' is set to 'never'.");
+                            throw new RuntimeException("Could not find builder image '" + effectiveBuilderImage
+                                    + "' locally and 'quarkus.native.builder-image.pull' is set to 'never'.");
                         } else {
                             log.infof("Could not find builder image '%s' locally, pulling the builder image",
                                     effectiveBuilderImage);
@@ -75,7 +72,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                         return;
                     }
                 } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException("Failed to check status of builder image '" + effectiveBuilderImage + "'", e);
+                    throw new RuntimeException(
+                            "Failed to check status of builder image '" + effectiveBuilderImage + "'", e);
                 } finally {
                     if (imageInspectProcess != null) {
                         imageInspectProcess.destroy();
@@ -160,8 +158,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                     Process removeProcess = new ProcessBuilder(
                             List.of(containerRuntime.getExecutableName(), "rm", "-f", containerName))
                             .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                            .redirectError(ProcessBuilder.Redirect.DISCARD)
-                            .start();
+                            .redirectError(ProcessBuilder.Redirect.DISCARD).start();
                     removeProcess.waitFor(2, TimeUnit.SECONDS);
                 } catch (IOException | InterruptedException e) {
                     log.debug("Unable to stop running container", e);
@@ -183,9 +180,9 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
 
     protected String[] buildCommand(String dockerCmd, List<String> containerRuntimeArgs, List<String> command) {
         return Stream
-                .of(Stream.of(containerRuntime.getExecutableName()), Stream.of(dockerCmd), Stream.of(baseContainerRuntimeArgs),
-                        containerRuntimeArgs.stream(), Stream.of(nativeConfig.builderImage().getEffectiveImage()),
-                        command.stream())
+                .of(Stream.of(containerRuntime.getExecutableName()), Stream.of(dockerCmd),
+                        Stream.of(baseContainerRuntimeArgs), containerRuntimeArgs.stream(),
+                        Stream.of(nativeConfig.builderImage().getEffectiveImage()), command.stream())
                 .flatMap(Function.identity()).toArray(String[]::new);
     }
 

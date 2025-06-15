@@ -29,36 +29,27 @@ import io.restassured.RestAssured;
 public class StaticFileWithResourcesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(RootResource.class)
-                    .addAsResource(new File("src/test/resources/lorem.txt"), "META-INF/resources/lorem.txt")
-                    .addAsResource(new File("src/test/resources/index.html"), "META-INF/resources/web/index.html"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(RootResource.class)
+            .addAsResource(new File("src/test/resources/lorem.txt"), "META-INF/resources/lorem.txt")
+            .addAsResource(new File("src/test/resources/index.html"), "META-INF/resources/web/index.html"));
 
     @Test
     public void test() {
-        RestAssured.get("/").then()
-                .statusCode(200)
-                .body(containsString("Root Resource"));
+        RestAssured.get("/").then().statusCode(200).body(containsString("Root Resource"));
 
-        RestAssured.get("/web/index.html").then()
-                .statusCode(200)
-                .body(containsString("<h1>Hello</h1>"));
+        RestAssured.get("/web/index.html").then().statusCode(200).body(containsString("<h1>Hello</h1>"));
 
-        RestAssured.get("/web/").then()
-                .statusCode(200)
-                .body(containsString("<h1>Hello</h1>"));
+        RestAssured.get("/web/").then().statusCode(200).body(containsString("<h1>Hello</h1>"));
 
-        RestAssured.get("/lorem.txt").then()
-                .statusCode(200)
-                .body(containsString("Lorem"));
+        RestAssured.get("/lorem.txt").then().statusCode(200).body(containsString("Lorem"));
     }
 
     /**
-     * Tests that multiple simultaneous requests to a static resource, with each request
-     * using the {@code If-Modified-Since} header, doesn't cause server side errors.
+     * Tests that multiple simultaneous requests to a static resource, with each request using the
+     * {@code If-Modified-Since} header, doesn't cause server side errors.
      *
      * @throws Exception
+     *
      * @see <a href="https://github.com/quarkusio/quarkus/issues/4627"/>
      */
     @Test
@@ -78,11 +69,8 @@ public class StaticFileWithResourcesTest {
                 results.add(executorService.submit(new Callable<Void>() {
                     @Override
                     public Void call() throws Exception {
-                        RestAssured.given().header("If-Modified-Since", modifiedSinceHeader)
-                                .get("/web/index.html")
-                                .then()
-                                .body(containsString("<h1>Hello</h1>"))
-                                .statusCode(200);
+                        RestAssured.given().header("If-Modified-Since", modifiedSinceHeader).get("/web/index.html")
+                                .then().body(containsString("<h1>Hello</h1>")).statusCode(200);
                         return null;
                     }
                 }));

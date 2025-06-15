@@ -13,10 +13,9 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStati
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 
 /**
- * Not to be confused with PersistenceXmlDescriptorBuildItem, which holds
- * items of the same type.
- * This build item represents a later phase, and might include the implicit
- * configuration definitions that are automatically defined by Quarkus.
+ * Not to be confused with PersistenceXmlDescriptorBuildItem, which holds items of the same type. This build item
+ * represents a later phase, and might include the implicit configuration definitions that are automatically defined by
+ * Quarkus.
  */
 public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
@@ -30,12 +29,10 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final Optional<FormatMapperKind> jsonMapper;
     private final Optional<FormatMapperKind> xmlMapper;
 
-    public PersistenceUnitDescriptorBuildItem(QuarkusPersistenceUnitDescriptor descriptor,
-            RecordedConfig config,
-            String multiTenancySchemaDataSource,
-            List<RecordableXmlMapping> xmlMappings,
-            boolean fromPersistenceXml,
-            boolean isHibernateValidatorPresent, Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper) {
+    public PersistenceUnitDescriptorBuildItem(QuarkusPersistenceUnitDescriptor descriptor, RecordedConfig config,
+            String multiTenancySchemaDataSource, List<RecordableXmlMapping> xmlMappings, boolean fromPersistenceXml,
+            boolean isHibernateValidatorPresent, Optional<FormatMapperKind> jsonMapper,
+            Optional<FormatMapperKind> xmlMapper) {
         this.descriptor = descriptor;
         this.config = config;
         this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
@@ -88,8 +85,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
-        return new QuarkusPersistenceUnitDefinition(descriptor, config,
-                xmlMappings, fromPersistenceXml, isHibernateValidatorPresent, jsonMapper, xmlMapper,
-                integrationStaticDescriptors);
+        return new QuarkusPersistenceUnitDefinition(descriptor, config, xmlMappings, fromPersistenceXml,
+                isHibernateValidatorPresent, jsonMapper, xmlMapper, integrationStaticDescriptors);
     }
 }

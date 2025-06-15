@@ -40,17 +40,11 @@ public class EndpointsProcessor {
         endpointsPage.addBuildTimeData("swaggerUiPath", swaggerUiPath);
 
         // Page
-        endpointsPage.addPage(Page.webComponentPageBuilder()
-                .namespace(NAMESPACE)
-                .title("Endpoints")
-                .icon("font-awesome-solid:plug")
-                .componentLink("qwc-endpoints.js"));
+        endpointsPage.addPage(Page.webComponentPageBuilder().namespace(NAMESPACE).title("Endpoints")
+                .icon("font-awesome-solid:plug").componentLink("qwc-endpoints.js"));
 
-        endpointsPage.addPage(Page.webComponentPageBuilder()
-                .namespace(NAMESPACE)
-                .title("Routes")
-                .icon("font-awesome-solid:route")
-                .componentLink("qwc-routes.js"));
+        endpointsPage.addPage(Page.webComponentPageBuilder().namespace(NAMESPACE).title("Routes")
+                .icon("font-awesome-solid:route").componentLink("qwc-routes.js"));
 
         return endpointsPage;
     }

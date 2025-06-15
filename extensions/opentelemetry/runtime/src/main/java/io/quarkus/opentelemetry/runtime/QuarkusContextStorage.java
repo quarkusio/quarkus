@@ -31,7 +31,9 @@ public enum QuarkusContextStorage implements ContextStorage {
      * Vert.x Context the OpenTelemetry Context is attached to the Vert.x Context. Otherwise, fallback to the
      * OpenTelemetry default ContextStorage.
      *
-     * @param toAttach the OpenTelemetry Context to attach
+     * @param toAttach
+     *        the OpenTelemetry Context to attach
+     *
      * @return the Scope of the OpenTelemetry Context
      */
     @Override
@@ -44,8 +46,11 @@ public enum QuarkusContextStorage implements ContextStorage {
     /**
      * Attach the OpenTelemetry Context in the Vert.x Context if it is a duplicated Vert.x Context.
      *
-     * @param vertxContext the Vert.x Context to attach the OpenTelemetry Context
-     * @param toAttach the OpenTelemetry Context to attach
+     * @param vertxContext
+     *        the Vert.x Context to attach the OpenTelemetry Context
+     * @param toAttach
+     *        the OpenTelemetry Context to attach
+     *
      * @return the Scope of the OpenTelemetry Context
      */
     public Scope attach(io.vertx.core.Context vertxContext, Context toAttach) {
@@ -72,9 +77,10 @@ public enum QuarkusContextStorage implements ContextStorage {
             public void close() {
                 final Context before = getContext(vertxContext);
                 if (before != toAttach) {
-                    log.info("Context in storage not the expected context, Scope.close was not called correctly. Details:" +
-                            " OTel context before: " + OpenTelemetryUtil.getSpanData(before) +
-                            ". OTel context toAttach: " + OpenTelemetryUtil.getSpanData(toAttach));
+                    log.info(
+                            "Context in storage not the expected context, Scope.close was not called correctly. Details:"
+                                    + " OTel context before: " + OpenTelemetryUtil.getSpanData(before)
+                                    + ". OTel context toAttach: " + OpenTelemetryUtil.getSpanData(toAttach));
                 }
 
                 if (beforeAttach == null) {
@@ -107,7 +113,9 @@ public enum QuarkusContextStorage implements ContextStorage {
     /**
      * Gets the OpenTelemetry Context in a Vert.x Context. The Vert.x Context has to be a duplicate context.
      *
-     * @param vertxContext a Vert.x Context.
+     * @param vertxContext
+     *        a Vert.x Context.
+     *
      * @return the OpenTelemetry Context if exists in the Vert.x Context or null.
      */
     public static Context getContext(io.vertx.core.Context vertxContext) {

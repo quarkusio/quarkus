@@ -27,16 +27,10 @@ public class QuarkusDevDependencyDevModeAnalyticsTest extends QuarkusDevGradleTe
     @BeforeAll
     static void start() {
         wireMockServer.start();
-        wireMockServer.stubFor(post(urlEqualTo("/" + IDENTITY_ENDPOINT))
-                .willReturn(aResponse()
-                        .withStatus(201)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"status\":\"ok\"}")));
-        wireMockServer.stubFor(post(urlEqualTo("/" + TRACK_ENDPOINT))
-                .willReturn(aResponse()
-                        .withStatus(201)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody("{\"status\":\"ok\"}")));
+        wireMockServer.stubFor(post(urlEqualTo("/" + IDENTITY_ENDPOINT)).willReturn(aResponse().withStatus(201)
+                .withHeader("Content-Type", "application/json").withBody("{\"status\":\"ok\"}")));
+        wireMockServer.stubFor(post(urlEqualTo("/" + TRACK_ENDPOINT)).willReturn(aResponse().withStatus(201)
+                .withHeader("Content-Type", "application/json").withBody("{\"status\":\"ok\"}")));
     }
 
     @AfterAll
@@ -52,16 +46,18 @@ public class QuarkusDevDependencyDevModeAnalyticsTest extends QuarkusDevGradleTe
     @Override
     protected void testDevMode() throws Exception {
         assertThat(getHttpResponse("/hello")).contains("Quarkus");
-        wireMockServer.verify(postRequestedFor(urlEqualTo("/" + TRACK_ENDPOINT))
-                .withRequestBody(notMatching("\\A\\s*\\z")) // Match non-empty body
-                .withRequestBody(matchingJsonPath("$.userId"))); // Match request with the specified field
+        wireMockServer
+                .verify(postRequestedFor(urlEqualTo("/" + TRACK_ENDPOINT)).withRequestBody(notMatching("\\A\\s*\\z")) // Match
+                        // non-empty
+                        // body
+                        .withRequestBody(matchingJsonPath("$.userId"))); // Match request with the specified field
     }
 
     @Override
     protected BuildResult build() throws Exception {
         String[] args = { "clean", "quarkusDev", "-Dquarkus.analytics.enabled=true",
-                "-Dquarkus.analytics.uri.base=http://localhost:9300/", "-Dorg.gradle.debug=true",
-                "--no-daemon", "-Dorg.gradle.debug.port=7000" };
+                "-Dquarkus.analytics.uri.base=http://localhost:9300/", "-Dorg.gradle.debug=true", "--no-daemon",
+                "-Dorg.gradle.debug.port=7000" };
         return runGradleWrapper(false, projectDir, false, args);
     }
 }

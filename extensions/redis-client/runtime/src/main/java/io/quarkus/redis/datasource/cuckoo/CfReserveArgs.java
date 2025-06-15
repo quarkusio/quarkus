@@ -17,7 +17,9 @@ public class CfReserveArgs implements RedisCommandExtraArguments {
      * Set the number of items in each bucket. A higher bucket size value improves the fill rate but also causes a
      * higher error rate and slightly slower performance. The default value is 2.
      *
-     * @param bucketSize the bucket size
+     * @param bucketSize
+     *        the bucket size
+     *
      * @return the current {@link CfReserveArgs}
      */
     public CfReserveArgs bucketSize(long bucketSize) {
@@ -27,10 +29,12 @@ public class CfReserveArgs implements RedisCommandExtraArguments {
 
     /**
      * Sets the number of attempts to swap items between buckets before declaring filter as full and creating an
-     * additional filter. A low value is better for performance and a higher number is better for filter fill rate.
-     * The default value is 20.
+     * additional filter. A low value is better for performance and a higher number is better for filter fill rate. The
+     * default value is 20.
      *
-     * @param maxIterations the iterations
+     * @param maxIterations
+     *        the iterations
+     *
      * @return the current {@link CfReserveArgs}
      */
     public CfReserveArgs maxIterations(int maxIterations) {
@@ -42,7 +46,9 @@ public class CfReserveArgs implements RedisCommandExtraArguments {
      * When a new filter is created, its size is the size of the current filter multiplied by expansion. Expansion is
      * rounded to the next 2^n number. The default value is 1.
      *
-     * @param expansion the expansion factor
+     * @param expansion
+     *        the expansion factor
+     *
      * @return the current {@link CfReserveArgs}
      */
     public CfReserveArgs expansion(int expansion) {

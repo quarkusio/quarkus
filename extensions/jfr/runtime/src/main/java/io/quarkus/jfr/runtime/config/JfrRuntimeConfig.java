@@ -11,18 +11,16 @@ import io.smallrye.config.WithName;
 public interface JfrRuntimeConfig {
 
     /**
-     * If false, only quarkus-jfr events are not recorded even if JFR is enabled.
-     * In this case, Java standard API and virtual machine information will be recorded according to the setting.
-     * Default value is <code>true</code>
+     * If false, only quarkus-jfr events are not recorded even if JFR is enabled. In this case, Java standard API and
+     * virtual machine information will be recorded according to the setting. Default value is <code>true</code>
      */
     @WithDefault("true")
     boolean enabled();
 
     /**
-     * If false, only REST events in quarkus-jfr are not recorded even if JFR is enabled.
-     * In this case, other quarkus-jfr, Java standard API and virtual machine information will be recorded according to the
-     * setting.
-     * Default value is <code>true</code>
+     * If false, only REST events in quarkus-jfr are not recorded even if JFR is enabled. In this case, other
+     * quarkus-jfr, Java standard API and virtual machine information will be recorded according to the setting. Default
+     * value is <code>true</code>
      */
     @WithName("rest.enabled")
     @WithDefault("true")

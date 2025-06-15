@@ -111,8 +111,7 @@ public class EngineProducer {
         this.templatePathExcludes = excludesBuilder.build();
 
         LOGGER.debugf("Initializing Qute [templates: %s, tags: %s, resolvers: %s", context.getTemplatePaths(),
-                context.getTags(),
-                context.getResolverClasses());
+                context.getTags(), context.getResolverClasses());
 
         EngineBuilder builder = Engine.builder();
 
@@ -313,8 +312,7 @@ public class EngineProducer {
         Qute.setEngine(engine);
     }
 
-    private void registerCustomLocators(EngineBuilder builder,
-            List<TemplateLocator> locators) {
+    private void registerCustomLocators(EngineBuilder builder, List<TemplateLocator> locators) {
         if (locators != null && !locators.isEmpty()) {
             for (TemplateLocator locator : locators) {
                 builder.addLocator(locator);
@@ -335,8 +333,7 @@ public class EngineProducer {
 
     private Resolver createResolver(String resolverClassName) {
         try {
-            Class<?> resolverClazz = Thread.currentThread()
-                    .getContextClassLoader().loadClass(resolverClassName);
+            Class<?> resolverClazz = Thread.currentThread().getContextClassLoader().loadClass(resolverClassName);
             if (Resolver.class.isAssignableFrom(resolverClazz)) {
                 return (Resolver) resolverClazz.getDeclaredConstructor().newInstance();
             }
@@ -349,8 +346,7 @@ public class EngineProducer {
 
     private TemplateGlobalProvider createGlobalProvider(String initializerClassName) {
         try {
-            Class<?> initializerClazz = Thread.currentThread()
-                    .getContextClassLoader().loadClass(initializerClassName);
+            Class<?> initializerClazz = Thread.currentThread().getContextClassLoader().loadClass(initializerClassName);
             if (TemplateGlobalProvider.class.isAssignableFrom(initializerClazz)) {
                 return (TemplateGlobalProvider) initializerClazz.getDeclaredConstructor().newInstance();
             }

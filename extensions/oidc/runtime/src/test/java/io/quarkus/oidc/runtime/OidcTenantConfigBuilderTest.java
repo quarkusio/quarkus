@@ -260,171 +260,66 @@ public class OidcTenantConfigBuilderTest {
     public void testSetEveryProperty() {
         var config = OidcTenantConfig.builder()
                 // OidcTenantConfig methods
-                .tenantId("set-every-property-test")
-                .disableTenant()
-                .applicationType(ApplicationType.HYBRID)
-                .authorizationPath("authorization-path-test")
-                .userInfoPath("user-info-path-test")
-                .introspectionPath("introspection-path-test")
-                .jwksPath("jwks-path-test")
-                .endSessionPath("end-session-path-test")
-                .tenantPaths("tenant-path-test")
-                .publicKey("public-key-test")
-                .allowTokenIntrospectionCache()
-                .allowUserInfoCache()
-                .cacheUserInfoInIdtoken()
-                .provider(Provider.FACEBOOK)
-                .introspectionCredentials().name("i-name").secret("i-secret").includeClientId(false).end()
-                .roles().roleClaimSeparator("@#$").roleClaimPath("separator-23").source(idtoken).end()
-                .token()
-                .verifyAccessTokenWithUserInfo()
-                .customizerName("customizer-name-8")
-                .allowOpaqueTokenIntrospection(false)
-                .requireJwtIntrospectionOnly()
-                .allowJwtIntrospection(false)
-                .decryptionKeyLocation("decryption-key-location-test")
-                .signatureAlgorithm(PS384)
-                .authorizationScheme("bearer-1234")
-                .header("doloris")
-                .forcedJwkRefreshInterval(Duration.ofMinutes(100))
-                .refreshTokenTimeSkew(Duration.ofMinutes(99))
-                .refreshExpired()
-                .principalClaim("potter")
-                .issuedAtRequired(false)
-                .age(Duration.ofMinutes(68))
-                .lifespanGrace(99)
-                .tokenType("McGonagall")
+                .tenantId("set-every-property-test").disableTenant().applicationType(ApplicationType.HYBRID)
+                .authorizationPath("authorization-path-test").userInfoPath("user-info-path-test")
+                .introspectionPath("introspection-path-test").jwksPath("jwks-path-test")
+                .endSessionPath("end-session-path-test").tenantPaths("tenant-path-test").publicKey("public-key-test")
+                .allowTokenIntrospectionCache().allowUserInfoCache().cacheUserInfoInIdtoken()
+                .provider(Provider.FACEBOOK).introspectionCredentials().name("i-name").secret("i-secret")
+                .includeClientId(false).end().roles().roleClaimSeparator("@#$").roleClaimPath("separator-23")
+                .source(idtoken).end().token().verifyAccessTokenWithUserInfo().customizerName("customizer-name-8")
+                .allowOpaqueTokenIntrospection(false).requireJwtIntrospectionOnly().allowJwtIntrospection(false)
+                .decryptionKeyLocation("decryption-key-location-test").signatureAlgorithm(PS384)
+                .authorizationScheme("bearer-1234").header("doloris").forcedJwkRefreshInterval(Duration.ofMinutes(100))
+                .refreshTokenTimeSkew(Duration.ofMinutes(99)).refreshExpired().principalClaim("potter")
+                .issuedAtRequired(false).age(Duration.ofMinutes(68)).lifespanGrace(99).tokenType("McGonagall")
                 .requiredClaims("req-claim-name", "req-claim-val")
-                .requiredClaims("req-array-claim-name", Set.of("item-1", "item-2"))
-                .subjectRequired()
-                .audience("professor hagrid")
-                .issuer("issuer-3")
-                .end()
-                .logout()
-                .path("logout-path-1")
-                .extraParam("extra-param-key-8", "extra-param-val-8")
-                .frontchannelPath("front-channel-path-7")
-                .postLogoutPath("post-logout-path-4")
-                .postLogoutUriParam("post-logout-uri-param-1")
-                .backchannel()
-                .path("backchannel-path-6")
-                .tokenCacheTimeToLive(Duration.ofMinutes(3))
-                .cleanUpTimerInterval(Duration.ofMinutes(5))
-                .logoutTokenKey("logout-token-key-6")
-                .tokenCacheSize(9)
-                .endLogout()
-                .certificateChain()
-                .trustStoreFile(Path.of("here"))
+                .requiredClaims("req-array-claim-name", Set.of("item-1", "item-2")).subjectRequired()
+                .audience("professor hagrid").issuer("issuer-3").end().logout().path("logout-path-1")
+                .extraParam("extra-param-key-8", "extra-param-val-8").frontchannelPath("front-channel-path-7")
+                .postLogoutPath("post-logout-path-4").postLogoutUriParam("post-logout-uri-param-1").backchannel()
+                .path("backchannel-path-6").tokenCacheTimeToLive(Duration.ofMinutes(3))
+                .cleanUpTimerInterval(Duration.ofMinutes(5)).logoutTokenKey("logout-token-key-6").tokenCacheSize(9)
+                .endLogout().certificateChain().trustStoreFile(Path.of("here"))
                 .trustStoreCertAlias("trust-store-cert-alias-test-30")
-                .trustStorePassword("trust-store-password-test-64")
-                .trustStoreFileType("trust-store-file-type-test-636")
-                .leafCertificateName("leaf-certificate-name-test-875")
-                .end()
-                .codeGrant()
-                .extraParam("2", "two")
-                .extraParam("4", "three!")
-                .header("1", "123")
-                .header("3", "321")
-                .header("5", "222")
-                .end()
-                .tokenStateManager()
-                .strategy(Strategy.ID_REFRESH_TOKENS)
-                .splitTokens()
-                .encryptionRequired(false)
-                .encryptionSecret("encryption-secret-test-999")
-                .encryptionAlgorithm(EncryptionAlgorithm.DIR)
-                .end()
-                .jwks()
-                .tryAll()
-                .cleanUpTimerInterval(Duration.ofMinutes(1))
-                .cacheTimeToLive(Duration.ofMinutes(2))
-                .cacheSize(55)
-                .resolveEarly(false)
-                .end()
+                .trustStorePassword("trust-store-password-test-64").trustStoreFileType("trust-store-file-type-test-636")
+                .leafCertificateName("leaf-certificate-name-test-875").end().codeGrant().extraParam("2", "two")
+                .extraParam("4", "three!").header("1", "123").header("3", "321").header("5", "222").end()
+                .tokenStateManager().strategy(Strategy.ID_REFRESH_TOKENS).splitTokens().encryptionRequired(false)
+                .encryptionSecret("encryption-secret-test-999").encryptionAlgorithm(EncryptionAlgorithm.DIR).end()
+                .jwks().tryAll().cleanUpTimerInterval(Duration.ofMinutes(1)).cacheTimeToLive(Duration.ofMinutes(2))
+                .cacheSize(55).resolveEarly(false).end()
                 // OidcClientCommonConfig methods
-                .tokenPath("token-path-yep")
-                .revokePath("revoke-path-yep")
-                .clientId("client-id-yep")
-                .clientName("client-name-yep")
-                .credentials()
-                .secret("secret-yep")
-                .clientSecret()
-                .method(Method.QUERY)
-                .value("value-yep")
-                .provider("key-yep", "name-yep", "keyring-name-yep")
-                .end()
-                .jwt()
-                .source(Source.BEARER)
-                .tokenPath(Path.of("my-super-bearer-path"))
-                .secretProvider()
-                .keyringName("jwt-keyring-name-yep")
-                .key("jwt-key-yep")
-                .name("jwt-name-yep")
-                .end()
-                .secret("jwt-secret-yep")
-                .key("jwt-key-yep")
-                .keyFile("jwt-key-file-yep")
-                .keyStoreFile("jwt-key-store-file-yep")
-                .keyStorePassword("jwt-key-store-password-yep")
-                .keyId("jwt-key-id-yep")
-                .keyPassword("jwt-key-pwd-yep")
-                .audience("jwt-audience-yep")
-                .tokenKeyId("jwt-token-key-id-yep")
-                .issuer("jwt-issuer")
-                .subject("jwt-subject")
-                .claim("claim-one-name", "claim-one-value")
-                .claims(Map.of("claim-two-name", "claim-two-value"))
-                .signatureAlgorithm("ES512")
-                .lifespan(852)
-                .assertion(true)
-                .endCredentials()
-                .authentication()
-                .responseMode(QUERY)
-                .redirectPath("/redirect-path-auth-yep")
-                .restorePathAfterRedirect()
-                .removeRedirectParameters(false)
-                .errorPath("/error-path-auth-yep")
-                .sessionExpiredPath("/session-expired-path-auth-yep")
-                .verifyAccessToken()
-                .forceRedirectHttpsScheme()
-                .scopes(List.of("scope-one", "scope-two", "scope-three"))
-                .scopeSeparator("scope-separator-654456")
-                .nonceRequired()
-                .addOpenidScope(false)
-                .extraParam("ex-auth-param-6-key", "ex-auth-param-6-val")
+                .tokenPath("token-path-yep").revokePath("revoke-path-yep").clientId("client-id-yep")
+                .clientName("client-name-yep").credentials().secret("secret-yep").clientSecret().method(Method.QUERY)
+                .value("value-yep").provider("key-yep", "name-yep", "keyring-name-yep").end().jwt()
+                .source(Source.BEARER).tokenPath(Path.of("my-super-bearer-path")).secretProvider()
+                .keyringName("jwt-keyring-name-yep").key("jwt-key-yep").name("jwt-name-yep").end()
+                .secret("jwt-secret-yep").key("jwt-key-yep").keyFile("jwt-key-file-yep")
+                .keyStoreFile("jwt-key-store-file-yep").keyStorePassword("jwt-key-store-password-yep")
+                .keyId("jwt-key-id-yep").keyPassword("jwt-key-pwd-yep").audience("jwt-audience-yep")
+                .tokenKeyId("jwt-token-key-id-yep").issuer("jwt-issuer").subject("jwt-subject")
+                .claim("claim-one-name", "claim-one-value").claims(Map.of("claim-two-name", "claim-two-value"))
+                .signatureAlgorithm("ES512").lifespan(852).assertion(true).endCredentials().authentication()
+                .responseMode(QUERY).redirectPath("/redirect-path-auth-yep").restorePathAfterRedirect()
+                .removeRedirectParameters(false).errorPath("/error-path-auth-yep")
+                .sessionExpiredPath("/session-expired-path-auth-yep").verifyAccessToken().forceRedirectHttpsScheme()
+                .scopes(List.of("scope-one", "scope-two", "scope-three")).scopeSeparator("scope-separator-654456")
+                .nonceRequired().addOpenidScope(false).extraParam("ex-auth-param-6-key", "ex-auth-param-6-val")
                 .extraParam("ex-auth-param-7-key", "ex-auth-param-7-val")
                 .forwardParams("forward-param-6-key", "forward-param-6-val")
-                .forwardParams("forward-param-7-key", "forward-param-7-val")
-                .cookieForceSecure()
-                .cookieSuffix("cookie-suffix-auth-whatever")
-                .cookiePath("/cookie-path-auth-whatever")
-                .cookiePathHeader("cookie-path-header-auth-whatever")
-                .cookieDomain("cookie-domain-auth-whatever")
-                .cookieSameSite(CookieSameSite.STRICT)
-                .allowMultipleCodeFlows(false)
-                .failOnMissingStateParam()
-                .userInfoRequired()
-                .sessionAgeExtension(Duration.ofMinutes(77))
-                .stateCookieAge(Duration.ofMinutes(88))
-                .javaScriptAutoRedirect(false)
-                .idTokenRequired(false)
-                .internalIdTokenLifespan(Duration.ofMinutes(357))
-                .pkceRequired()
-                .stateSecret("state-secret-auth-whatever")
-                .end()
+                .forwardParams("forward-param-7-key", "forward-param-7-val").cookieForceSecure()
+                .cookieSuffix("cookie-suffix-auth-whatever").cookiePath("/cookie-path-auth-whatever")
+                .cookiePathHeader("cookie-path-header-auth-whatever").cookieDomain("cookie-domain-auth-whatever")
+                .cookieSameSite(CookieSameSite.STRICT).allowMultipleCodeFlows(false).failOnMissingStateParam()
+                .userInfoRequired().sessionAgeExtension(Duration.ofMinutes(77)).stateCookieAge(Duration.ofMinutes(88))
+                .javaScriptAutoRedirect(false).idTokenRequired(false).internalIdTokenLifespan(Duration.ofMinutes(357))
+                .pkceRequired().stateSecret("state-secret-auth-whatever").end()
                 // OidcCommonConfig methods
-                .authServerUrl("we")
-                .discoveryEnabled(false)
-                .registrationPath("don't")
-                .connectionDelay(Duration.ofSeconds(656))
-                .connectionRetryCount(565)
-                .connectionTimeout(Duration.ofSeconds(673))
-                .useBlockingDnsLookup(true)
-                .maxPoolSize(376)
-                .followRedirects(false)
-                .proxy("need", 55, "no", "education")
-                .tlsConfigurationName("Teacher!")
-                .build();
+                .authServerUrl("we").discoveryEnabled(false).registrationPath("don't")
+                .connectionDelay(Duration.ofSeconds(656)).connectionRetryCount(565)
+                .connectionTimeout(Duration.ofSeconds(673)).useBlockingDnsLookup(true).maxPoolSize(376)
+                .followRedirects(false).proxy("need", 55, "no", "education").tlsConfigurationName("Teacher!").build();
 
         // OidcTenantConfig methods
         assertEquals("set-every-property-test", config.tenantId().orElse(null));
@@ -668,13 +563,9 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testCopyProxyProperties() {
-        var previousConfig = OidcTenantConfig.builder()
-                .tenantId("copy-proxy-properties-test")
-                .proxy("need", 55, "no", "education")
-                .build();
-        var newConfig = OidcTenantConfig.builder(previousConfig)
-                .proxy("fast-car", 22)
-                .build();
+        var previousConfig = OidcTenantConfig.builder().tenantId("copy-proxy-properties-test")
+                .proxy("need", 55, "no", "education").build();
+        var newConfig = OidcTenantConfig.builder(previousConfig).proxy("fast-car", 22).build();
 
         assertNotNull(previousConfig.proxy());
         assertEquals("copy-proxy-properties-test", newConfig.tenantId().orElse(null));
@@ -688,20 +579,11 @@ public class OidcTenantConfigBuilderTest {
     public void testCopyOidcTenantConfigProperties() {
         var existingConfig = OidcTenantConfig.builder()
                 // OidcTenantConfig methods
-                .tenantId("test-copy-tenant-props")
-                .tenantEnabled(false)
-                .authorizationPath("authorization-path-test-1")
-                .userInfoPath("user-info-path-test-1")
-                .introspectionPath("introspection-path-test-1")
-                .jwksPath("jwks-path-test-1")
-                .endSessionPath("end-session-path-test-1")
-                .tenantPath("tenant-path-test-1")
-                .tenantPaths("tenant-path-test-2", "tenant-path-test-3")
-                .publicKey("public-key-test-1")
-                .allowTokenIntrospectionCache()
-                .allowUserInfoCache()
-                .cacheUserInfoInIdtoken()
-                .provider(Provider.GOOGLE)
+                .tenantId("test-copy-tenant-props").tenantEnabled(false).authorizationPath("authorization-path-test-1")
+                .userInfoPath("user-info-path-test-1").introspectionPath("introspection-path-test-1")
+                .jwksPath("jwks-path-test-1").endSessionPath("end-session-path-test-1").tenantPath("tenant-path-test-1")
+                .tenantPaths("tenant-path-test-2", "tenant-path-test-3").publicKey("public-key-test-1")
+                .allowTokenIntrospectionCache().allowUserInfoCache().cacheUserInfoInIdtoken().provider(Provider.GOOGLE)
                 // the rest of c&p tests for the OidcTenantConfig are tested in their dedicated builder tests below
                 .build();
 
@@ -719,12 +601,8 @@ public class OidcTenantConfigBuilderTest {
 
         var newConfig = OidcTenantConfig.builder(existingConfig)
                 // OidcTenantConfig methods
-                .enableTenant()
-                .tenantPaths(List.of("tenant-path-test-4", "tenant-path-test-5"))
-                .allowTokenIntrospectionCache(false)
-                .allowUserInfoCache(false)
-                .cacheUserInfoInIdtoken(false)
-                .build();
+                .enableTenant().tenantPaths(List.of("tenant-path-test-4", "tenant-path-test-5"))
+                .allowTokenIntrospectionCache(false).allowUserInfoCache(false).cacheUserInfoInIdtoken(false).build();
 
         // OidcTenantConfig methods
         assertEquals("test-copy-tenant-props", newConfig.tenantId().orElse(null));
@@ -754,43 +632,17 @@ public class OidcTenantConfigBuilderTest {
                 // OidcTenantConfig methods
                 .tenantId("copy-oidc-client-common-props")
                 // OidcClientCommonConfig methods
-                .tokenPath("token-path-yep")
-                .revokePath("revoke-path-yep")
-                .clientId("client-id-yep")
-                .clientName("client-name-yep")
-                .credentials()
-                .secret("secret-yep")
-                .clientSecret()
-                .method(Method.QUERY)
-                .value("value-yep")
-                .provider("key-yep", "name-yep", "keyring-name-yep")
-                .end()
-                .jwt()
-                .source(Source.BEARER)
-                .tokenPath(Path.of("jwt-bearer-token-path-test-1"))
-                .secretProvider()
-                .keyringName("jwt-keyring-name-yep")
-                .key("jwt-key-yep")
-                .name("jwt-name-yep")
-                .end()
-                .secret("jwt-secret-yep")
-                .key("jwt-key-yep")
-                .keyFile("jwt-key-file-yep")
-                .keyStoreFile("jwt-key-store-file-yep")
-                .keyStorePassword("jwt-key-store-password-yep")
-                .keyId("jwt-key-id-yep")
-                .keyPassword("jwt-key-pwd-yep")
-                .audience("jwt-audience-yep")
-                .tokenKeyId("jwt-token-key-id-yep")
-                .issuer("jwt-issuer")
-                .subject("jwt-subject")
-                .claim("claim-one-name", "claim-one-value")
-                .claims(Map.of("claim-two-name", "claim-two-value"))
-                .signatureAlgorithm("ES512")
-                .lifespan(852)
-                .assertion(true)
-                .endCredentials()
-                .build();
+                .tokenPath("token-path-yep").revokePath("revoke-path-yep").clientId("client-id-yep")
+                .clientName("client-name-yep").credentials().secret("secret-yep").clientSecret().method(Method.QUERY)
+                .value("value-yep").provider("key-yep", "name-yep", "keyring-name-yep").end().jwt()
+                .source(Source.BEARER).tokenPath(Path.of("jwt-bearer-token-path-test-1")).secretProvider()
+                .keyringName("jwt-keyring-name-yep").key("jwt-key-yep").name("jwt-name-yep").end()
+                .secret("jwt-secret-yep").key("jwt-key-yep").keyFile("jwt-key-file-yep")
+                .keyStoreFile("jwt-key-store-file-yep").keyStorePassword("jwt-key-store-password-yep")
+                .keyId("jwt-key-id-yep").keyPassword("jwt-key-pwd-yep").audience("jwt-audience-yep")
+                .tokenKeyId("jwt-token-key-id-yep").issuer("jwt-issuer").subject("jwt-subject")
+                .claim("claim-one-name", "claim-one-value").claims(Map.of("claim-two-name", "claim-two-value"))
+                .signatureAlgorithm("ES512").lifespan(852).assertion(true).endCredentials().build();
 
         assertEquals("copy-oidc-client-common-props", existingConfig.tenantId().orElse(null));
 
@@ -843,26 +695,12 @@ public class OidcTenantConfigBuilderTest {
 
         var newConfig = OidcTenantConfig.builder(existingConfig)
                 // OidcClientCommonConfig methods
-                .tokenPath("token-path-yep-CHANGED")
-                .clientId("client-id-yep-CHANGED")
-                .credentials()
-                .secret("secret-yep-CHANGED")
-                .clientSecret("val-1", Method.POST_JWT)
-                .jwt()
-                .secret("different-secret")
-                .secretProvider()
-                .key("jwt-key-yep-CHANGED")
-                .end()
-                .key("jwt-key-yep-CHANGED-2")
-                .keyStoreFile("jwt-key-store-file-yep-CHANGED")
-                .keyPassword("jwt-key-pwd-yep-CHANGED")
-                .issuer("jwt-issuer-CHANGED")
-                .claim("aaa", "bbb")
-                .lifespan(333)
-                .end()
-                .clientSecret("val-1", Method.POST_JWT)
-                .end()
-                .build();
+                .tokenPath("token-path-yep-CHANGED").clientId("client-id-yep-CHANGED").credentials()
+                .secret("secret-yep-CHANGED").clientSecret("val-1", Method.POST_JWT).jwt().secret("different-secret")
+                .secretProvider().key("jwt-key-yep-CHANGED").end().key("jwt-key-yep-CHANGED-2")
+                .keyStoreFile("jwt-key-store-file-yep-CHANGED").keyPassword("jwt-key-pwd-yep-CHANGED")
+                .issuer("jwt-issuer-CHANGED").claim("aaa", "bbb").lifespan(333).end()
+                .clientSecret("val-1", Method.POST_JWT).end().build();
 
         assertEquals("copy-oidc-client-common-props", newConfig.tenantId().orElse(null));
 
@@ -919,27 +757,14 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testCopyOidcCommonConfigProperties() {
-        var previousConfig = OidcTenantConfig.builder()
-                .tenantId("common-props-test")
-                .authServerUrl("we")
-                .discoveryEnabled(false)
-                .registrationPath("don't")
-                .connectionDelay(Duration.ofSeconds(656))
-                .connectionRetryCount(565)
-                .connectionTimeout(Duration.ofSeconds(673))
-                .useBlockingDnsLookup(true)
-                .maxPoolSize(376)
-                .followRedirects(false)
-                .proxy("need", 55, "no", "education")
-                .tlsConfigurationName("Teacher!")
-                .build();
-        var newConfig = OidcTenantConfig.builder(previousConfig)
-                .discoveryEnabled(true)
-                .connectionDelay(Duration.ofSeconds(753))
-                .connectionTimeout(Duration.ofSeconds(357))
-                .maxPoolSize(1988)
-                .proxy("cross", 44, "the", "boarder")
-                .build();
+        var previousConfig = OidcTenantConfig.builder().tenantId("common-props-test").authServerUrl("we")
+                .discoveryEnabled(false).registrationPath("don't").connectionDelay(Duration.ofSeconds(656))
+                .connectionRetryCount(565).connectionTimeout(Duration.ofSeconds(673)).useBlockingDnsLookup(true)
+                .maxPoolSize(376).followRedirects(false).proxy("need", 55, "no", "education")
+                .tlsConfigurationName("Teacher!").build();
+        var newConfig = OidcTenantConfig.builder(previousConfig).discoveryEnabled(true)
+                .connectionDelay(Duration.ofSeconds(753)).connectionTimeout(Duration.ofSeconds(357)).maxPoolSize(1988)
+                .proxy("cross", 44, "the", "boarder").build();
 
         assertEquals("common-props-test", newConfig.tenantId().orElse(null));
         assertEquals("we", newConfig.authServerUrl().orElse(null));
@@ -989,17 +814,9 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testCredentialsBuilder() {
-        var jwt = new JwtBuilder<>()
-                .secret("hush-hush")
-                .build();
-        var clientSecret = new SecretBuilder<>()
-                .value("harry")
-                .build();
-        var credentials = new CredentialsBuilder<>()
-                .secret("1234")
-                .jwt(jwt)
-                .clientSecret(clientSecret)
-                .build();
+        var jwt = new JwtBuilder<>().secret("hush-hush").build();
+        var clientSecret = new SecretBuilder<>().value("harry").build();
+        var credentials = new CredentialsBuilder<>().secret("1234").jwt(jwt).clientSecret(clientSecret).build();
         var config = OidcTenantConfig.builder().tenantId("1").credentials(credentials).build();
         var buildCredentials = config.credentials();
         assertEquals("1", config.tenantId().orElse(null));
@@ -1063,16 +880,9 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testTokenBuilder() {
-        var first = new TokenConfigBuilder()
-                .audience(List.of("one", "two"))
-                .requiredClaims(Map.of("I", "II"))
-                .subjectRequired()
-                .refreshExpired()
-                .allowJwtIntrospection(false)
-                .requireJwtIntrospectionOnly()
-                .allowOpaqueTokenIntrospection(false)
-                .verifyAccessTokenWithUserInfo()
-                .build();
+        var first = new TokenConfigBuilder().audience(List.of("one", "two")).requiredClaims(Map.of("I", "II"))
+                .subjectRequired().refreshExpired().allowJwtIntrospection(false).requireJwtIntrospectionOnly()
+                .allowOpaqueTokenIntrospection(false).verifyAccessTokenWithUserInfo().build();
         var config1Builder = new OidcTenantConfigBuilder().token(first).tenantId("haha");
         var config1 = config1Builder.build();
         var builtFirst = config1.token();
@@ -1088,12 +898,8 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(builtFirst.audience().orElseThrow().contains("one"));
         assertTrue(builtFirst.audience().orElseThrow().contains("two"));
 
-        var second = new TokenConfigBuilder(config1Builder)
-                .requiredClaims(Map.of("III", "IV"))
-                .audience("extra");
-        var config2 = second.end()
-                .token().verifyAccessTokenWithUserInfo(false).principalClaim("prince").end()
-                .build();
+        var second = new TokenConfigBuilder(config1Builder).requiredClaims(Map.of("III", "IV")).audience("extra");
+        var config2 = second.end().token().verifyAccessTokenWithUserInfo(false).principalClaim("prince").end().build();
         var builtSecond = config2.token();
         assertFalse(builtSecond.verifyAccessTokenWithUserInfo().orElseThrow());
         assertFalse(builtSecond.allowOpaqueTokenIntrospection());
@@ -1132,7 +938,8 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("uri-param-44", builtFirst.postLogoutUriParam());
         assertEquals("log-me-out", builtFirst.backchannel().logoutTokenKey());
 
-        var second = new LogoutConfigBuilder(OidcTenantConfig.builder(config1)).backchannel().path("path-CCC").endLogout();
+        var second = new LogoutConfigBuilder(OidcTenantConfig.builder(config1)).backchannel().path("path-CCC")
+                .endLogout();
         var config2 = second.build();
         var builtSecond = config2.logout();
 
@@ -1149,7 +956,7 @@ public class OidcTenantConfigBuilderTest {
         var third = new LogoutConfigBuilder().backchannel(newBackchannel).build();
         var config3 = OidcTenantConfig.builder(config2).logout(third).build();
 
-        // expect defaults everywhere except for the backchannel  token cache size
+        // expect defaults everywhere except for the backchannel token cache size
         var builtThird = config3.logout();
         assertNotNull(builtThird);
         assertTrue(builtThird.path().isEmpty());
@@ -1174,13 +981,8 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testCertificateChainBuilder() {
-        var first = new CertificateChainBuilder()
-                .leafCertificateName("ent")
-                .trustStoreFileType("try")
-                .trustStoreFile(Path.of("march"))
-                .trustStoreCertAlias("to")
-                .trustStorePassword("Isengard")
-                .build();
+        var first = new CertificateChainBuilder().leafCertificateName("ent").trustStoreFileType("try")
+                .trustStoreFile(Path.of("march")).trustStoreCertAlias("to").trustStorePassword("Isengard").build();
         var config1 = OidcTenantConfig.builder().tenantId("2").certificateChain(first).build();
         var builtFirst = config1.certificateChain();
 
@@ -1215,40 +1017,20 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testCopyOfAuthenticationConfigBuilder() {
-        var first = new AuthenticationConfigBuilder()
-                .responseMode(QUERY)
-                .redirectPath("/redirect-path-auth-yep")
-                .restorePathAfterRedirect()
-                .removeRedirectParameters(false)
-                .errorPath("/error-path-auth-yep")
-                .sessionExpiredPath("/session-expired-path-auth-yep")
-                .verifyAccessToken()
-                .forceRedirectHttpsScheme()
-                .scopes(List.of("scope-one", "scope-two", "scope-three"))
-                .scopeSeparator("scope-separator-654456")
-                .nonceRequired()
-                .addOpenidScope(false)
-                .extraParam("ex-auth-param-6-key", "ex-auth-param-6-val")
+        var first = new AuthenticationConfigBuilder().responseMode(QUERY).redirectPath("/redirect-path-auth-yep")
+                .restorePathAfterRedirect().removeRedirectParameters(false).errorPath("/error-path-auth-yep")
+                .sessionExpiredPath("/session-expired-path-auth-yep").verifyAccessToken().forceRedirectHttpsScheme()
+                .scopes(List.of("scope-one", "scope-two", "scope-three")).scopeSeparator("scope-separator-654456")
+                .nonceRequired().addOpenidScope(false).extraParam("ex-auth-param-6-key", "ex-auth-param-6-val")
                 .extraParam("ex-auth-param-7-key", "ex-auth-param-7-val")
                 .forwardParams("forward-param-6-key", "forward-param-6-val")
-                .forwardParams("forward-param-7-key", "forward-param-7-val")
-                .cookieForceSecure()
-                .cookieSuffix("cookie-suffix-auth-whatever")
-                .cookiePath("/cookie-path-auth-whatever")
-                .cookiePathHeader("cookie-path-header-auth-whatever")
-                .cookieDomain("cookie-domain-auth-whatever")
-                .cookieSameSite(CookieSameSite.NONE)
-                .allowMultipleCodeFlows(false)
-                .failOnMissingStateParam()
-                .userInfoRequired()
-                .sessionAgeExtension(Duration.ofMinutes(77))
-                .stateCookieAge(Duration.ofMinutes(88))
-                .javaScriptAutoRedirect(false)
-                .idTokenRequired(false)
-                .internalIdTokenLifespan(Duration.ofMinutes(357))
-                .pkceRequired()
-                .stateSecret("state-secret-auth-whatever")
-                .build();
+                .forwardParams("forward-param-7-key", "forward-param-7-val").cookieForceSecure()
+                .cookieSuffix("cookie-suffix-auth-whatever").cookiePath("/cookie-path-auth-whatever")
+                .cookiePathHeader("cookie-path-header-auth-whatever").cookieDomain("cookie-domain-auth-whatever")
+                .cookieSameSite(CookieSameSite.NONE).allowMultipleCodeFlows(false).failOnMissingStateParam()
+                .userInfoRequired().sessionAgeExtension(Duration.ofMinutes(77)).stateCookieAge(Duration.ofMinutes(88))
+                .javaScriptAutoRedirect(false).idTokenRequired(false).internalIdTokenLifespan(Duration.ofMinutes(357))
+                .pkceRequired().stateSecret("state-secret-auth-whatever").build();
         var config1Builder = OidcTenantConfig.builder().tenantId("3").authentication(first);
         var config1 = config1Builder.build();
         var builtFirst = config1.authentication();
@@ -1349,10 +1131,8 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testCodeGrantBuilder() {
-        var first = new CodeGrantBuilder()
-                .extraParams(Map.of("code-grant-param", "code-grant-param-val"))
-                .headers(Map.of("code-grant-header", "code-grant-header-val"))
-                .build();
+        var first = new CodeGrantBuilder().extraParams(Map.of("code-grant-param", "code-grant-param-val"))
+                .headers(Map.of("code-grant-header", "code-grant-header-val")).build();
         var config1 = new OidcTenantConfigBuilder().tenantId("7").codeGrant(first).build();
         var builtFirst = config1.codeGrant();
         assertEquals(1, builtFirst.extraParams().size());
@@ -1360,11 +1140,8 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(1, builtFirst.headers().size());
         assertEquals("code-grant-header-val", builtFirst.headers().get("code-grant-header"));
 
-        var config2 = new CodeGrantBuilder(OidcTenantConfig.builder(config1))
-                .extraParam("1", "one")
-                .header("2", "two")
-                .end()
-                .build();
+        var config2 = new CodeGrantBuilder(OidcTenantConfig.builder(config1)).extraParam("1", "one").header("2", "two")
+                .end().build();
         var builtSecond = config2.codeGrant();
         assertEquals(2, builtSecond.extraParams().size());
         assertEquals("code-grant-param-val", builtSecond.extraParams().get("code-grant-param"));
@@ -1383,7 +1160,8 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("two", builtThird.headers().get("2"));
         assertEquals("header", builtThird.headers().get("new"));
 
-        var config4 = OidcTenantConfig.builder(config3).codeGrant(Map.of("old", "header"), Map.of("new", "extra")).build();
+        var config4 = OidcTenantConfig.builder(config3).codeGrant(Map.of("old", "header"), Map.of("new", "extra"))
+                .build();
         var builtFourth = config4.codeGrant();
         assertEquals(3, builtFourth.extraParams().size());
         assertEquals("code-grant-param-val", builtFourth.extraParams().get("code-grant-param"));
@@ -1400,12 +1178,8 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testTokenStateManagerBuilder() {
-        var first = new TokenStateManagerBuilder()
-                .strategy(Strategy.ID_REFRESH_TOKENS)
-                .splitTokens()
-                .encryptionRequired(false)
-                .encryptionSecret("1-enc-secret")
-                .encryptionAlgorithm(EncryptionAlgorithm.DIR)
+        var first = new TokenStateManagerBuilder().strategy(Strategy.ID_REFRESH_TOKENS).splitTokens()
+                .encryptionRequired(false).encryptionSecret("1-enc-secret").encryptionAlgorithm(EncryptionAlgorithm.DIR)
                 .build();
         var config1 = new OidcTenantConfigBuilder().tenantId("6").tokenStateManager(first).build();
         var builtFirst = config1.tokenStateManager();
@@ -1415,8 +1189,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("1-enc-secret", builtFirst.encryptionSecret().orElse(null));
         assertEquals(EncryptionAlgorithm.DIR, builtFirst.encryptionAlgorithm());
 
-        var second = new TokenStateManagerBuilder(new OidcTenantConfigBuilder(config1))
-                .encryptionRequired()
+        var second = new TokenStateManagerBuilder(new OidcTenantConfigBuilder(config1)).encryptionRequired()
                 .splitTokens(false);
         var config2 = second.end().build();
         var builtSecond = config2.tokenStateManager();
@@ -1431,13 +1204,8 @@ public class OidcTenantConfigBuilderTest {
 
     @Test
     public void testJwksBuilder() {
-        var first = new JwksBuilder()
-                .resolveEarly(false)
-                .cacheSize(67)
-                .cacheTimeToLive(Duration.ofMinutes(5784))
-                .cleanUpTimerInterval(Duration.ofMinutes(47568))
-                .tryAll()
-                .build();
+        var first = new JwksBuilder().resolveEarly(false).cacheSize(67).cacheTimeToLive(Duration.ofMinutes(5784))
+                .cleanUpTimerInterval(Duration.ofMinutes(47568)).tryAll().build();
         var config1 = new OidcTenantConfigBuilder().tenantId("87").jwks(first).build();
         var builtFirst = config1.jwks();
         assertTrue(builtFirst.tryAll());
@@ -1446,10 +1214,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(5784, builtFirst.cacheTimeToLive().toMinutes());
         assertEquals(47568, builtFirst.cleanUpTimerInterval().orElseThrow().toMinutes());
 
-        var config2 = new JwksBuilder(new OidcTenantConfigBuilder(config1))
-                .resolveEarly()
-                .tryAll(false)
-                .end().build();
+        var config2 = new JwksBuilder(new OidcTenantConfigBuilder(config1)).resolveEarly().tryAll(false).end().build();
         var builtSecond = config2.jwks();
         assertFalse(builtSecond.tryAll());
         assertTrue(builtSecond.resolveEarly());

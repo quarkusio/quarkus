@@ -19,17 +19,20 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
-public class MapAsFormUrlEncodedProvider implements MessageBodyWriter<MultivaluedMap>, MessageBodyReader<MultivaluedMap> {
+public class MapAsFormUrlEncodedProvider
+        implements MessageBodyWriter<MultivaluedMap>, MessageBodyReader<MultivaluedMap> {
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return MultivaluedMap.class.equals(type);
     }
 
-    public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
+    public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException {
         return doReadFrom(mediaType, entityStream);
     }
 
-    protected MultivaluedMap<String, String> doReadFrom(MediaType mediaType, InputStream entityStream) throws IOException {
+    protected MultivaluedMap<String, String> doReadFrom(MediaType mediaType, InputStream entityStream)
+            throws IOException {
         String charset = MessageReaderUtil.charsetFromMediaType(mediaType);
         return Encode.decode(MapAsFormUrlEncodedProvider.parseForm(entityStream, mediaType), charset);
     }
@@ -64,7 +67,8 @@ public class MapAsFormUrlEncodedProvider implements MessageBodyWriter<Multivalue
         return sb.toString();
     }
 
-    public static MultivaluedMap<String, String> parseForm(InputStream entityStream, MediaType charset) throws IOException {
+    public static MultivaluedMap<String, String> parseForm(InputStream entityStream, MediaType charset)
+            throws IOException {
         String form = MessageReaderUtil.readString(entityStream, charset);
 
         MultivaluedMap<String, String> formData = new QuarkusMultivaluedHashMap<String, String>();

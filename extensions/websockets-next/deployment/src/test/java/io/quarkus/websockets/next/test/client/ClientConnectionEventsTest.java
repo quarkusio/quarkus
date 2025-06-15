@@ -32,10 +32,9 @@ import io.quarkus.websockets.next.test.utils.WSClient;
 public class ClientConnectionEventsTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, ObservingBean.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, ObservingBean.class, WSClient.class);
+    });
 
     @TestHTTPResource("/")
     URI baseUri;
@@ -46,9 +45,7 @@ public class ClientConnectionEventsTest {
     @Test
     void testEvents() throws Exception {
         // Open connection, EndpointClient sends a message with client connection id
-        WebSocketClientConnection connection = connector
-                .baseUri(baseUri)
-                .connectAndAwait();
+        WebSocketClientConnection connection = connector.baseUri(baseUri).connectAndAwait();
         // Wait for the message
         assertTrue(Endpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));
         // Assert the @Open event was fired

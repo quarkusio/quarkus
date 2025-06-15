@@ -46,13 +46,13 @@ public class JPAConfig {
 
     void startAll() {
         List<CompletableFuture<?>> start = new ArrayList<>();
-        //by using a dedicated thread for starting up the PR,
-        //we work around https://github.com/quarkusio/quarkus/issues/17304 to some extent
-        //as the main thread is now no longer polluted with ThreadLocals by default
-        //this is not a complete fix, but will help as long as the test methods
-        //don't access the datasource directly, but only over HTTP calls
+        // by using a dedicated thread for starting up the PR,
+        // we work around https://github.com/quarkusio/quarkus/issues/17304 to some extent
+        // as the main thread is now no longer polluted with ThreadLocals by default
+        // this is not a complete fix, but will help as long as the test methods
+        // don't access the datasource directly, but only over HTTP calls
         boolean moreThanOneThread = persistenceUnits.size() > 1;
-        //start PUs in parallel, for faster startup
+        // start PUs in parallel, for faster startup
         for (Map.Entry<String, LazyPersistenceUnit> i : persistenceUnits.entrySet()) {
             CompletableFuture<Object> future = new CompletableFuture<>();
             start.add(future);
@@ -93,12 +93,11 @@ public class JPAConfig {
         if (lazyPersistenceUnit == null) {
             if (deactivatedPersistenceUnitNames.contains(unitName)) {
                 throw new IllegalStateException(
-                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit "
-                                + unitName
+                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit " + unitName
                                 + ": Hibernate ORM was deactivated through configuration properties");
             }
-            throw new IllegalArgumentException(
-                    String.format(Locale.ROOT, "Unable to find an EntityManagerFactory for persistence unit '%s'", unitName));
+            throw new IllegalArgumentException(String.format(Locale.ROOT,
+                    "Unable to find an EntityManagerFactory for persistence unit '%s'", unitName));
         }
 
         return lazyPersistenceUnit.get();
@@ -131,7 +130,8 @@ public class JPAConfig {
 
     public static class Destroyer implements BeanDestroyer<JPAConfig> {
         @Override
-        public void destroy(JPAConfig instance, CreationalContext<JPAConfig> creationalContext, Map<String, Object> params) {
+        public void destroy(JPAConfig instance, CreationalContext<JPAConfig> creationalContext,
+                Map<String, Object> params) {
             for (LazyPersistenceUnit factory : instance.persistenceUnits.values()) {
                 try {
                     factory.close();

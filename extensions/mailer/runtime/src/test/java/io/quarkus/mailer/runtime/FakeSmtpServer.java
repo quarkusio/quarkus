@@ -26,20 +26,9 @@ public class FakeSmtpServer {
      * set up server with a default reply that works for EHLO and no login with one recipient
      */
     public FakeSmtpServer(Vertx vertx, boolean ssl, String keystore) {
-        setDialogue("220 example.com ESMTP",
-                "EHLO",
-                "250-example.com\n"
-                        + "250-SIZE 1000000\n"
-                        + "250 PIPELINING",
-                "MAIL FROM:",
-                "250 2.1.0 Ok",
-                "RCPT TO:",
-                "250 2.1.5 Ok",
-                "DATA",
-                "354 End data with <CR><LF>.<CR><LF>",
-                "250 2.0.0 Ok: queued as ABCDDEF0123456789",
-                "QUIT",
-                "221 2.0.0 Bye");
+        setDialogue("220 example.com ESMTP", "EHLO", "250-example.com\n" + "250-SIZE 1000000\n" + "250 PIPELINING",
+                "MAIL FROM:", "250 2.1.0 Ok", "RCPT TO:", "250 2.1.5 Ok", "DATA", "354 End data with <CR><LF>.<CR><LF>",
+                "250 2.0.0 Ok: queued as ABCDDEF0123456789", "QUIT", "221 2.0.0 Bye");
         this.ssl = ssl;
         this.keystore = keystore;
         startServer(vertx);
@@ -86,7 +75,8 @@ public class FakeSmtpServer {
                             if (inputLineIndex.get() < dialogue[currentLine].length) {
                                 String thisLine = dialogue[currentLine][inputLineIndex.get()];
                                 boolean isRegexp = thisLine.startsWith("^");
-                                if (!isRegexp && inputLine.contains(thisLine) || isRegexp && inputLine.matches(thisLine)) {
+                                if (!isRegexp && inputLine.contains(thisLine)
+                                        || isRegexp && inputLine.matches(thisLine)) {
                                     inputValid = true;
                                     if (inputLineIndex.get() == dialogue[currentLine].length - 1) {
                                         holdFire.compareAndSet(true, false);
@@ -98,8 +88,8 @@ public class FakeSmtpServer {
                                 }
                             }
                             if (!inputValid) {
-                                socket.writeAndForget("500 didn't expect commands (\"" + String.join(",", dialogue[currentLine])
-                                        + "\"/\"" + inputLine + "\")\r\n");
+                                socket.writeAndForget("500 didn't expect commands (\""
+                                        + String.join(",", dialogue[currentLine]) + "\"/\"" + inputLine + "\")\r\n");
                                 // stop here
                                 lines.set(dialogue.length);
                             }
@@ -147,11 +137,11 @@ public class FakeSmtpServer {
     }
 
     /**
-     * Sets the dialogue array.
+     * Sets the dialogue array. This is useful in case of pipelining is supported to group commands and responses.
      *
-     * This is useful in case of pipelining is supported to group commands and responses.
+     * @param dialogue
+     *        the dialogues
      *
-     * @param dialogue the dialogues
      * @return a reference to this, so the API can be used fluently
      */
     public FakeSmtpServer setDialogueArray(String[][] dialogue) {

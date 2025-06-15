@@ -4,7 +4,8 @@ import io.quarkus.runtime.ObjectSubstitution;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
 import io.undertow.servlet.api.ServletSecurityInfo;
 
-public class ServletSecurityInfoSubstitution implements ObjectSubstitution<ServletSecurityInfo, ServletSecurityInfoProxy> {
+public class ServletSecurityInfoSubstitution
+        implements ObjectSubstitution<ServletSecurityInfo, ServletSecurityInfoProxy> {
     @Override
     public ServletSecurityInfoProxy serialize(ServletSecurityInfo obj) {
         ServletSecurityInfoProxy sub = new ServletSecurityInfoProxy();

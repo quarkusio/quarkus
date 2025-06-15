@@ -30,8 +30,8 @@ public class Invocation {
     private final String message;
     private final List<Invocation> children;
 
-    Invocation(InjectableBean<?> interceptedBean, long start, long duration,
-            Method method, Kind kind, String message, List<Invocation> children) {
+    Invocation(InjectableBean<?> interceptedBean, long start, long duration, Method method, Kind kind, String message,
+            List<Invocation> children) {
         this.interceptedBean = interceptedBean;
         this.start = start;
         this.duration = duration;
@@ -116,7 +116,8 @@ public class Invocation {
         private long start;
         private long duration;
         private Method method;
-        // If async processing and the request context is not propagated a new child can be added when/after the builder is built
+        // If async processing and the request context is not propagated a new child can be added when/after the builder
+        // is built
         private final List<Builder> children = new CopyOnWriteArrayList<>();
         private Builder parent;
         private Kind kind;

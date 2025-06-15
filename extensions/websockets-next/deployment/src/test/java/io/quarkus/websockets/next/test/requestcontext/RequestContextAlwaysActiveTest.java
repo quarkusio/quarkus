@@ -20,11 +20,9 @@ import io.vertx.core.Vertx;
 public class RequestContextAlwaysActiveTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, WSClient.class);
-            })
-            .overrideConfigKey("quarkus.websockets-next.server.activate-request-context", "always");
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, WSClient.class);
+    }).overrideConfigKey("quarkus.websockets-next.server.activate-request-context", "always");
 
     @Inject
     Vertx vertx;

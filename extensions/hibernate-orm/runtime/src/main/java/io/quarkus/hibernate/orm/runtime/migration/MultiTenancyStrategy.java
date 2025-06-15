@@ -8,13 +8,12 @@ import org.hibernate.internal.CoreMessageLogger;
 import org.jboss.logging.Logger;
 
 /**
- * This class is temporarily useful to facilitate the migration to Hibernate ORM 6;
- * we should get rid of it afterwards as we adapt to the new details of configuring multi-tenancy.
- * Copied from Hibernate ORM 5.x
- *
- * Describes the methods for multi-tenancy understood by Hibernate.
+ * This class is temporarily useful to facilitate the migration to Hibernate ORM 6; we should get rid of it afterwards
+ * as we adapt to the new details of configuring multi-tenancy. Copied from Hibernate ORM 5.x Describes the methods for
+ * multi-tenancy understood by Hibernate.
  *
  * @author Steve Ebersole
+ *
  * @deprecated This class should be removed after we're done migrating to Jakarta APIs and Hibernate ORM v6.
  */
 @Deprecated
@@ -37,13 +36,12 @@ public enum MultiTenancyStrategy {
     NONE;
 
     private static final CoreMessageLogger LOG = Logger.getMessageLogger(MethodHandles.lookup(),
-            CoreMessageLogger.class,
-            MultiTenancyStrategy.class.getName());
+            CoreMessageLogger.class, MultiTenancyStrategy.class.getName());
 
     /**
      * Does this strategy indicate a requirement for the specialized
-     * {@link org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider}, rather than the
-     * traditional {@link org.hibernate.engine.jdbc.connections.spi.ConnectionProvider}?
+     * {@link org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider}, rather than the traditional
+     * {@link org.hibernate.engine.jdbc.connections.spi.ConnectionProvider}?
      *
      * @return {@code true} indicates a MultiTenantConnectionProvider is required; {@code false} indicates it is not.
      */
@@ -54,12 +52,14 @@ public enum MultiTenancyStrategy {
     /**
      * Extract the MultiTenancyStrategy from the setting map.
      *
-     * @param properties The map of settings.
+     * @param properties
+     *        The map of settings.
      *
      * @return The selected strategy. {@link #NONE} is always the default.
      */
     public static MultiTenancyStrategy determineMultiTenancyStrategy(Map properties) {
-        final Object strategy = properties.get("hibernate.multiTenancy");//FIXME this property is meaningless in Hibernate ORM 6
+        final Object strategy = properties.get("hibernate.multiTenancy");// FIXME this property is meaningless in
+                                                                         // Hibernate ORM 6
         if (strategy == null) {
             return MultiTenancyStrategy.NONE;
         }

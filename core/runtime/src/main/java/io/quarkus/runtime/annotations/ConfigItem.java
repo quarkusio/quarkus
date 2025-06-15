@@ -32,14 +32,14 @@ public @interface ConfigItem {
     String HYPHENATED_ELEMENT_NAME = "<<hyphenated element name>>";
 
     /**
-     * Constant value for {@link #name()} indicating that the parent's name for the member referencing this item's
-     * group should be used as the name of this item. This value is only valid for members of configuration groups.
+     * Constant value for {@link #name()} indicating that the parent's name for the member referencing this item's group
+     * should be used as the name of this item. This value is only valid for members of configuration groups.
      */
     String PARENT = "<<parent>>";
 
     /**
-     * Constant value for {@link #defaultValue()} indicating that no default value should be used (the value is
-     * a configuration group or it is {@link Optional}).
+     * Constant value for {@link #defaultValue()} indicating that no default value should be used (the value is a
+     * configuration group or it is {@link Optional}).
      */
     String NO_DEFAULT = "<<no default>>";
 
@@ -58,8 +58,8 @@ public @interface ConfigItem {
     String defaultValue() default NO_DEFAULT;
 
     /**
-     * Specify the default value documentation, when it cannot be expressed by {@link #defaultValue()}. For example,
-     * if your default only exists for the DEV mode, you can use {@code "true (DEV)"}.
+     * Specify the default value documentation, when it cannot be expressed by {@link #defaultValue()}. For example, if
+     * your default only exists for the DEV mode, you can use {@code "true (DEV)"}.
      *
      * @return the default value documentation
      */
@@ -68,9 +68,8 @@ public @interface ConfigItem {
     /**
      * Specify whether documentation should be generated for this config item.
      * <p>
-     * This is only useful in very niche use cases where the build-time and runtime config
-     * both contain a configuration property with the exact same name,
-     * and we only want to generate documentation from one of them.
+     * This is only useful in very niche use cases where the build-time and runtime config both contain a configuration
+     * property with the exact same name, and we only want to generate documentation from one of them.
      *
      * @return whether documentation should be generated
      */

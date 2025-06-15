@@ -51,12 +51,10 @@ public class VertxMDCTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClass(VerticleDeployer.class)
-                            .addClass(InMemoryLogHandler.class)
-                            .addClass(InMemoryLogHandlerProducer.class))
-            .overrideConfigKey("quarkus.log.console.format", "%d{HH:mm:ss} %-5p requestId=%X{requestId} [%c{2.}] (%t) %s%e%n");
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(VerticleDeployer.class)
+                    .addClass(InMemoryLogHandler.class).addClass(InMemoryLogHandlerProducer.class))
+            .overrideConfigKey("quarkus.log.console.format",
+                    "%d{HH:mm:ss} %-5p requestId=%X{requestId} [%c{2.}] (%t) %s%e%n");
 
     @Inject
     Vertx vertx;
@@ -75,13 +73,12 @@ public class VertxMDCTest {
         await().until(() -> producer.isInitialized());
         await().until(InitialConfigurator.DELAYED_HANDLER::isActivated);
         await().until(() -> {
-            return Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers()).anyMatch(h -> h == inMemoryLogHandler);
+            return Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers())
+                    .anyMatch(h -> h == inMemoryLogHandler);
         });
         ;
 
-        List<String> requestIds = IntStream.range(0, 1)
-                .mapToObj(i -> UUID.randomUUID().toString())
-                .collect(toList());
+        List<String> requestIds = IntStream.range(0, 1).mapToObj(i -> UUID.randomUUID().toString()).collect(toList());
 
         CountDownLatch done = new CountDownLatch(1);
         sendRequests(requestIds, done);
@@ -89,23 +86,15 @@ public class VertxMDCTest {
         Assertions.assertTrue(done.await(20, TimeUnit.SECONDS));
 
         await().untilAsserted(() -> {
-            Map<String, List<String>> allMessagesById = inMemoryLogHandler.logRecords()
-                    .stream()
-                    .map(line -> line.split(" ### "))
-                    .peek(split -> assertEquals(split[0], split[2]))
-                    .collect(groupingBy(split -> split[0],
-                            mapping(split -> split[1], toList())));
+            Map<String, List<String>> allMessagesById = inMemoryLogHandler.logRecords().stream()
+                    .map(line -> line.split(" ### ")).peek(split -> assertEquals(split[0], split[2]))
+                    .collect(groupingBy(split -> split[0], mapping(split -> split[1], toList())));
 
             assertEquals(requestIds.size(), allMessagesById.size());
             assertTrue(requestIds.containsAll(allMessagesById.keySet()));
 
-            List<String> expected = Stream.<String> builder()
-                    .add("Received HTTP request")
-                    .add("Timer fired")
-                    .add("Blocking task executed")
-                    .add("Received Web Client response")
-                    .build()
-                    .collect(toList());
+            List<String> expected = Stream.<String> builder().add("Received HTTP request").add("Timer fired")
+                    .add("Blocking task executed").add("Received Web Client response").build().collect(toList());
 
             for (List<String> messages : allMessagesById.values()) {
                 assertEquals(expected, messages);
@@ -119,7 +108,8 @@ public class VertxMDCTest {
         await().until(() -> producer.isInitialized());
         await().until(InitialConfigurator.DELAYED_HANDLER::isActivated);
         await().until(() -> {
-            return Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers()).anyMatch(h -> h == inMemoryLogHandler);
+            return Arrays.stream(InitialConfigurator.DELAYED_HANDLER.getHandlers())
+                    .anyMatch(h -> h == inMemoryLogHandler);
         });
         ;
 
@@ -150,11 +140,9 @@ public class VertxMDCTest {
     private void sendRequests(List<String> ids, CountDownLatch done) {
         WebClient webClient = WebClient.create(vertx, new WebClientOptions().setDefaultPort(VERTICLE_PORT));
 
-        HttpRequest<Buffer> request = webClient.get("/")
-                .expect(ResponsePredicate.SC_OK);
+        HttpRequest<Buffer> request = webClient.get("/").expect(ResponsePredicate.SC_OK);
 
-        List<? extends Future<?>> futures = ids.stream()
-                .map(id -> request.putHeader(REQUEST_ID_HEADER, id).send())
+        List<? extends Future<?>> futures = ids.stream().map(id -> request.putHeader(REQUEST_ID_HEADER, id).send())
                 .collect(toList());
 
         Future.all(futures).mapEmpty().onComplete(x -> {

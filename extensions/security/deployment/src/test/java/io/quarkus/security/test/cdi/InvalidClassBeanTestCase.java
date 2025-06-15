@@ -13,19 +13,17 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class InvalidClassBeanTestCase {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(InvalidBean.class);
-                }
-            }).assertException(new Consumer<Throwable>() {
-                @Override
-                public void accept(Throwable throwable) {
-                    Assertions.assertEquals(IllegalStateException.class, throwable.getClass());
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(InvalidBean.class);
+        }
+    }).assertException(new Consumer<Throwable>() {
+        @Override
+        public void accept(Throwable throwable) {
+            Assertions.assertEquals(IllegalStateException.class, throwable.getClass());
+        }
+    });
 
     @Test
     public void testRejected() {

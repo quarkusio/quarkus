@@ -11,8 +11,7 @@ public class ContentLengthTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ContentLengthResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(ContentLengthResource.class))
             .overrideConfigKey("quarkus.resteasy.vertx.response-buffer-size", "100");
 
     @Test
@@ -43,8 +42,7 @@ public class ContentLengthTestCase {
         for (int i = 0; i < 101; ++i) {
             sb.append("A");
         }
-        RestAssured.given().body(sb.toString()).post("/length").then()
-                .header("Content-Length", Matchers.nullValue()).and()
-                .header("Transfer-Encoding", "chunked");
+        RestAssured.given().body(sb.toString()).post("/length").then().header("Content-Length", Matchers.nullValue())
+                .and().header("Transfer-Encoding", "chunked");
     }
 }

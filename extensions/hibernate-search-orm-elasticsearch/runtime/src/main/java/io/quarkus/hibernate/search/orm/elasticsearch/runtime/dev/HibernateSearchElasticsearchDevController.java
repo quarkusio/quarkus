@@ -42,28 +42,26 @@ public class HibernateSearchElasticsearchDevController {
                         mapping.getValue().allIndexedEntities().stream()
                                 .map(HibernateSearchElasticsearchDevInfo.IndexedEntity::new).sorted()
                                 .collect(Collectors.toList())))
-                .collect(Collector.of(HibernateSearchElasticsearchDevInfo::new, HibernateSearchElasticsearchDevInfo::add,
-                        (left, right) -> {
+                .collect(Collector.of(HibernateSearchElasticsearchDevInfo::new,
+                        HibernateSearchElasticsearchDevInfo::add, (left, right) -> {
                             left.addAll(right);
                             return left;
                         }));
     }
 
     public SearchMapping searchMapping(String persistenceUnitName) {
-        return Arc.container()
-                .select(SearchMapping.class,
-                        new io.quarkus.hibernate.orm.PersistenceUnit.PersistenceUnitLiteral(persistenceUnitName))
-                .get();
+        return Arc.container().select(SearchMapping.class,
+                new io.quarkus.hibernate.orm.PersistenceUnit.PersistenceUnitLiteral(persistenceUnitName)).get();
     }
 
     public Map<String, SearchMapping> searchMappings(Set<String> persistenceUnitNames) {
-        return persistenceUnitNames.stream().map(this::searchMapping)
-                .collect(Collectors.toMap(HibernateSearchElasticsearchDevController::getPersistenceUnitName,
-                        mapping -> mapping));
+        return persistenceUnitNames.stream().map(this::searchMapping).collect(Collectors
+                .toMap(HibernateSearchElasticsearchDevController::getPersistenceUnitName, mapping -> mapping));
     }
 
     private static String getPersistenceUnitName(SearchMapping searchMapping) {
-        SessionFactoryImplementor sessionFactory = searchMapping.toOrmSessionFactory().unwrap(SessionFactoryImplementor.class);
+        SessionFactoryImplementor sessionFactory = searchMapping.toOrmSessionFactory()
+                .unwrap(SessionFactoryImplementor.class);
         String name = sessionFactory.getName();
         if (name != null) {
             return name;

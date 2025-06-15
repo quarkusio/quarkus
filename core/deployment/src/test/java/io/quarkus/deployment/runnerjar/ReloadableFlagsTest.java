@@ -43,28 +43,25 @@ public class ReloadableFlagsTest extends BootstrapFromOriginalJarTestBase {
         var myExt = new TsQuarkusExt("my-ext");
         addToExpectedLib(myExt.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(common)
-                .addDependency(lib)
-                .addDependency(externalLib)
-                .addDependency(myExt);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(common).addDependency(lib)
+                .addDependency(externalLib).addDependency(myExt);
     }
 
     @Override
     protected void assertAppModel(ApplicationModel model) {
         assertThat(model.getWorkspaceModules().stream().map(WorkspaceModule::getId).collect(Collectors.toSet()))
                 .isEqualTo(Set.of(
-                        WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "acme-transitive", TsArtifact.DEFAULT_VERSION),
+                        WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "acme-transitive",
+                                TsArtifact.DEFAULT_VERSION),
                         WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "acme-common", TsArtifact.DEFAULT_VERSION),
                         WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "acme-lib", TsArtifact.DEFAULT_VERSION),
                         WorkspaceModuleId.of(TsArtifact.DEFAULT_GROUP_ID, "app", TsArtifact.DEFAULT_VERSION)));
 
-        final Set<Dependency> expected = Set.of(
-                new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "acme-lib", "1"), JavaScopes.COMPILE,
-                        DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP, DependencyFlags.DIRECT,
-                        DependencyFlags.RELOADABLE, DependencyFlags.WORKSPACE_MODULE));
+        final Set<Dependency> expected = Set
+                .of(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "acme-lib", "1"),
+                        JavaScopes.COMPILE, DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP,
+                        DependencyFlags.DIRECT, DependencyFlags.RELOADABLE, DependencyFlags.WORKSPACE_MODULE));
 
         assertThat(getDependenciesWithFlag(model, DependencyFlags.RELOADABLE)).isEqualTo(expected);
     }

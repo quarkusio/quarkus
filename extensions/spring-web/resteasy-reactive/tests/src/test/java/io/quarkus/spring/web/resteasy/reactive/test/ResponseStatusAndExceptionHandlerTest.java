@@ -18,8 +18,7 @@ public class ResponseStatusAndExceptionHandlerTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ExceptionController.class, RestExceptionHandler.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ExceptionController.class, RestExceptionHandler.class));
 
     @Test
     public void testRestControllerAdvice() {

@@ -13,19 +13,17 @@ import io.smallrye.config.WithDefault;
 public interface WriteConcernConfig {
 
     /**
-     * Configures the safety.
-     * If set to {@code true}: the driver ensures that all writes are acknowledged by the MongoDB server, or else
-     * throws an exception. (see also {@code w} and {@code wtimeoutMS}).
-     * If set fo
+     * Configures the safety. If set to {@code true}: the driver ensures that all writes are acknowledged by the MongoDB
+     * server, or else throws an exception. (see also {@code w} and {@code wtimeoutMS}). If set fo
      * <li>{@code false}: the driver does not ensure that all writes are acknowledged by the MongoDB server.
      */
     @WithDefault("true")
     boolean safe();
 
     /**
-     * Configures the journal writing aspect.
-     * If set to {@code true}: the driver waits for the server to group commit to the journal file on disk.
-     * If set to {@code false}: the driver does not wait for the server to group commit to the journal file on disk.
+     * Configures the journal writing aspect. If set to {@code true}: the driver waits for the server to group commit to
+     * the journal file on disk. If set to {@code false}: the driver does not wait for the server to group commit to the
+     * journal file on disk.
      */
     @WithDefault("true")
     boolean journal();

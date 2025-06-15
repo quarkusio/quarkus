@@ -10,12 +10,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DuplicateIdentityExpressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(IllegalStateException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DuplicateIdentityExpressionTest.InvalidBean.class)
-                    .addAsResource(new StringAsset("my.identity=my_name"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(IllegalStateException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(DuplicateIdentityExpressionTest.InvalidBean.class)
+                    .addAsResource(new StringAsset("my.identity=my_name"), "application.properties"));
 
     @Test
     public void test() {

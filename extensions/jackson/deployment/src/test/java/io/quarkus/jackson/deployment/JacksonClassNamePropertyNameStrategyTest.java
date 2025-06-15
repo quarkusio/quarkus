@@ -14,8 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class JacksonClassNamePropertyNameStrategyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClass(Pojo.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(Pojo.class))
             .withConfigurationResource("application-class-name-property-name-strategy.properties");
 
     @Inject
@@ -23,7 +22,8 @@ public class JacksonClassNamePropertyNameStrategyTest {
 
     @Test
     public void test() throws JsonProcessingException {
-        Assertions.assertThat(objectMapper.writeValueAsString(new Pojo("test"))).isEqualTo("{\"test.property\":\"test\"}");
+        Assertions.assertThat(objectMapper.writeValueAsString(new Pojo("test")))
+                .isEqualTo("{\"test.property\":\"test\"}");
     }
 
     public static class Pojo {

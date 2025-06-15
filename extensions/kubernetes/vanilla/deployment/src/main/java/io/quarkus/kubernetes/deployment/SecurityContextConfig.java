@@ -50,8 +50,8 @@ public interface SecurityContextConfig {
     Map<String, String> sysctls();
 
     /**
-     * It holds policies that will be used for applying fsGroup to a volume when volume is mounted.
-     * Values: OnRootMismatch, Always
+     * It holds policies that will be used for applying fsGroup to a volume when volume is mounted. Values:
+     * OnRootMismatch, Always
      */
     Optional<PodFSGroupChangePolicy> fsGroupChangePolicy();
 
@@ -95,8 +95,8 @@ public interface SecurityContextConfig {
 
         /**
          * GMSACredentialSpec is where the GMSA admission webhook
-         * (<a href="https://github.com/kubernetes-sigs/windows-gmsa">windows-gsma</a>) inlines the contents of the
-         * GMSA credential spec named by the GMSACredentialSpecName field.
+         * (<a href="https://github.com/kubernetes-sigs/windows-gmsa">windows-gsma</a>) inlines the contents of the GMSA
+         * credential spec named by the GMSACredentialSpecName field.
          */
         Optional<String> gmsaCredentialSpec();
 
@@ -111,20 +111,20 @@ public interface SecurityContextConfig {
         Optional<Boolean> hostProcess();
 
         default boolean isAnyPropertySet() {
-            return gmsaCredentialSpecName().isPresent() || gmsaCredentialSpec().isPresent() || runAsUserName().isPresent()
-                    || hostProcess().isPresent();
+            return gmsaCredentialSpecName().isPresent() || gmsaCredentialSpec().isPresent()
+                    || runAsUserName().isPresent() || hostProcess().isPresent();
         }
     }
 
     enum PodFSGroupChangePolicy {
         /**
-         * It indicates that volume's ownership and permissions will be changed only when permission and ownership of root
-         * directory does not match with expected permissions on the volume.
+         * It indicates that volume's ownership and permissions will be changed only when permission and ownership of
+         * root directory does not match with expected permissions on the volume.
          */
         OnRootMismatch,
         /**
-         * It indicates that volume's ownership and permissions should always be changed whenever volume is mounted inside a
-         * Pod. This the default behavior.
+         * It indicates that volume's ownership and permissions should always be changed whenever volume is mounted
+         * inside a Pod. This the default behavior.
          */
         Always;
     }

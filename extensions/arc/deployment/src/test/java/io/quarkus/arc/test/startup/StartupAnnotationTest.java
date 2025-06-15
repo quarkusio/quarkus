@@ -34,9 +34,8 @@ public class StartupAnnotationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(StartMe.class, SingletonStartMe.class, DependentStartMe.class, ProducerStartMe.class,
-                            StartupMethods.class))
+            .withApplicationRoot((jar) -> jar.addClasses(StartMe.class, SingletonStartMe.class, DependentStartMe.class,
+                    ProducerStartMe.class, StartupMethods.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {

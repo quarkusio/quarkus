@@ -36,7 +36,8 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 /**
- * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security objects.
+ * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security
+ * objects.
  */
 @Recorder
 public class ElytronPropertiesFileRecorder {
@@ -47,11 +48,15 @@ public class ElytronPropertiesFileRecorder {
     /**
      * Load the user.properties and roles.properties files into the {@linkplain SecurityRealm}
      *
-     * @param realm - a {@linkplain LegacyPropertiesSecurityRealm}
-     * @param propertiesConfig - properties config with a realm configuration info
+     * @param realm
+     *        - a {@linkplain LegacyPropertiesSecurityRealm}
+     * @param propertiesConfig
+     *        - properties config with a realm configuration info
+     *
      * @throws Exception
      */
-    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, SecurityUsersConfig propertiesConfig) throws Exception {
+    public Runnable loadRealm(RuntimeValue<SecurityRealm> realm, SecurityUsersConfig propertiesConfig)
+            throws Exception {
         return new Runnable() {
             @Override
             public void run() {
@@ -109,13 +114,15 @@ public class ElytronPropertiesFileRecorder {
     /**
      * Load the embedded user and role information into the {@linkplain SecurityRealm}
      *
-     * @param realm - a {@linkplain SimpleMapBackedSecurityRealm}
-     * @param propertiesConfig - properties config with the realm config
+     * @param realm
+     *        - a {@linkplain SimpleMapBackedSecurityRealm}
+     * @param propertiesConfig
+     *        - properties config with the realm config
+     *
      * @throws Exception
      */
     public Runnable loadEmbeddedRealm(RuntimeValue<SecurityRealm> realm, SecurityUsersConfig propertiesConfig,
-            MPRealmRuntimeConfig runtimeConfig)
-            throws Exception {
+            MPRealmRuntimeConfig runtimeConfig) throws Exception {
         return new Runnable() {
             @Override
             public void run() {
@@ -139,7 +146,8 @@ public class ElytronPropertiesFileRecorder {
                                 userPasswordEntry.getValue().toCharArray());
                     } else {
                         try {
-                            byte[] hashed = ByteIterator.ofBytes(userPasswordEntry.getValue().getBytes(StandardCharsets.UTF_8))
+                            byte[] hashed = ByteIterator
+                                    .ofBytes(userPasswordEntry.getValue().getBytes(StandardCharsets.UTF_8))
                                     .asUtf8String().hexDecode().drain();
 
                             password = PasswordFactory
@@ -174,32 +182,35 @@ public class ElytronPropertiesFileRecorder {
     /**
      * Create a runtime value for a {@linkplain LegacyPropertiesSecurityRealm}
      *
-     * @param propertiesConfig - properties config
+     * @param propertiesConfig
+     *        - properties config
+     *
      * @return - runtime value wrapper for the SecurityRealm
+     *
      * @throws Exception
      */
     public RuntimeValue<SecurityRealm> createRealm(SecurityUsersConfig propertiesConfig) throws Exception {
         PropertiesRealmConfig config = propertiesConfig.file();
         log.debugf("createRealm, config=%s", config);
 
-        SecurityRealm realm = LegacyPropertiesSecurityRealm.builder()
-                .setDefaultRealm(config.realmName())
+        SecurityRealm realm = LegacyPropertiesSecurityRealm.builder().setDefaultRealm(config.realmName())
                 .setProviders(new Supplier<Provider[]>() {
                     @Override
                     public Provider[] get() {
                         return PROVIDERS;
                     }
-                })
-                .setPlainText(config.plainText())
-                .build();
+                }).setPlainText(config.plainText()).build();
         return new RuntimeValue<>(realm);
     }
 
     /**
      * Create a runtime value for a {@linkplain SimpleMapBackedSecurityRealm}
      *
-     * @param propertiesConfig - properties config with the realm config
+     * @param propertiesConfig
+     *        - properties config with the realm config
+     *
      * @return - runtime value wrapper for the SecurityRealm
+     *
      * @throws Exception
      */
     public RuntimeValue<SecurityRealm> createEmbeddedRealm(SecurityUsersConfig propertiesConfig) {

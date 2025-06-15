@@ -15,9 +15,7 @@ import picocli.CommandLine;
 public class RegistryRemoveCommand extends BaseRegistryCommand {
 
     @CommandLine.Parameters(arity = "1..*", split = ",", paramLabel = "REGISTRY-ID[,REGISTRY-ID]", description = "Registry ID to remove from the registry client configuration%n"
-            + "  Example:%n"
-            + "    registry.quarkus.io%n"
-            + "    registry.quarkus.acme.com,registry.quarkus.io%n")
+            + "  Example:%n" + "    registry.quarkus.io%n" + "    registry.quarkus.acme.com,registry.quarkus.io%n")
     List<String> registryIds;
 
     @Override

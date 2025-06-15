@@ -20,8 +20,8 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * This object represents the claims property in the authorizer context of a request. The claims object is normally populated
- * by a Cognito User Pool authorizer and contains the following fields:
+ * This object represents the claims property in the authorizer context of a request. The claims object is normally
+ * populated by a Cognito User Pool authorizer and contains the following fields:
  *
  * <pre>
  * "claims": {
@@ -40,9 +40,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class CognitoAuthorizerClaims {
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Variables - Private
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     @JsonAnySetter
     @JsonAnyGetter
@@ -68,9 +68,9 @@ public class CognitoAuthorizerClaims {
     @JsonProperty(value = "iat")
     private String issuedAt;
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Methods - Getter/Setter
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     @JsonAnyGetter
     public String getClaim(String claim) {

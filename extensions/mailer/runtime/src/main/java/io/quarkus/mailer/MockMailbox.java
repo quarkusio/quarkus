@@ -12,8 +12,11 @@ public interface MockMailbox {
     /**
      * Returns a list of mails sent to the given address, whether it was via To, Cc or Bcc.
      *
-     * @param address the email address we want to retrieve mail from
+     * @param address
+     *        the email address we want to retrieve mail from
+     *
      * @return a list of messages sent to the given address, possibly empty.
+     *
      * @deprecated use {@link #getMailMessagesSentTo(String)}
      */
     @Deprecated(forRemoval = true, since = "3.0")
@@ -22,7 +25,9 @@ public interface MockMailbox {
     /**
      * Returns a list of mails sent to the given address, whether it was via To, Cc or Bcc.
      *
-     * @param address the email address we want to retrieve mail from
+     * @param address
+     *        the email address we want to retrieve mail from
+     *
      * @return a list of mails sent to the given address, possibly empty.
      */
     List<Mail> getMailsSentTo(String address);
@@ -30,7 +35,9 @@ public interface MockMailbox {
     /**
      * Returns a list of mail messages sent to the given address, whether it was via To, Cc or Bcc.
      *
-     * @param address the email address we want to retrieve mail from
+     * @param address
+     *        the email address we want to retrieve mail from
+     *
      * @return a list of mail messages sent to the given address, possibly empty.
      */
     List<MailMessage> getMailMessagesSentTo(String address);

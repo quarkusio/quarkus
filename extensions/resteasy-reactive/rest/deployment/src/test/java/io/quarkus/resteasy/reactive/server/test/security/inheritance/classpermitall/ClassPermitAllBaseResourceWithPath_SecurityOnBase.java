@@ -25,7 +25,8 @@ import io.vertx.core.json.JsonObject;
 @Consumes(MediaType.APPLICATION_JSON)
 @PermitAll
 @Path(CLASS_PERMIT_ALL_PREFIX + CLASS_SECURITY_ON_BASE + CLASS_PATH_ON_RESOURCE)
-public class ClassPermitAllBaseResourceWithPath_SecurityOnBase extends ClassPermitAllParentResourceWithoutPath_SecurityOnBase {
+public class ClassPermitAllBaseResourceWithPath_SecurityOnBase
+        extends ClassPermitAllParentResourceWithoutPath_SecurityOnBase {
 
     @POST
     @Path(CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_PATH)
@@ -36,7 +37,8 @@ public class ClassPermitAllBaseResourceWithPath_SecurityOnBase extends ClassPerm
     @PermitAll
     @POST
     @Path(CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
-    public String get_ClassPathOnResource_ImplOnBase_ImplMethodWithPath_ClassPermitAllMethodPermitAllPath(JsonObject array) {
+    public String get_ClassPathOnResource_ImplOnBase_ImplMethodWithPath_ClassPermitAllMethodPermitAllPath(
+            JsonObject array) {
         return CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
@@ -47,8 +49,10 @@ public class ClassPermitAllBaseResourceWithPath_SecurityOnBase extends ClassPerm
 
     @PermitAll
     @Override
-    public String classPathOnResource_ImplOnBase_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    public String classPathOnResource_ImplOnBase_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @Override
@@ -58,8 +62,10 @@ public class ClassPermitAllBaseResourceWithPath_SecurityOnBase extends ClassPerm
 
     @PermitAll
     @Override
-    public String test_ClassPathOnResource_ImplOnBase_ParentMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    public String test_ClassPathOnResource_ImplOnBase_ParentMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @Path(CLASS_PATH_ON_RESOURCE + SUB_DECLARED_ON_BASE + SUB_IMPL_ON_BASE + CLASS_PERMIT_ALL_PATH)
@@ -71,7 +77,7 @@ public class ClassPermitAllBaseResourceWithPath_SecurityOnBase extends ClassPerm
     @PermitAll
     @Path(CLASS_PATH_ON_RESOURCE + SUB_DECLARED_ON_BASE + SUB_IMPL_ON_BASE + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
     public ClassPermitAllSubResourceWithoutPath classPathOnResource_SubDeclaredOnBase_SubImplOnBase_ClassPermitAllMethodPermitAll() {
-        return new ClassPermitAllSubResourceWithoutPath(
-                CLASS_PATH_ON_RESOURCE + SUB_DECLARED_ON_BASE + SUB_IMPL_ON_BASE + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH);
+        return new ClassPermitAllSubResourceWithoutPath(CLASS_PATH_ON_RESOURCE + SUB_DECLARED_ON_BASE + SUB_IMPL_ON_BASE
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH);
     }
 }

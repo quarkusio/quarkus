@@ -26,8 +26,7 @@ import io.vertx.ext.web.client.WebClientOptions;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "expired-test-formats", password = "password", formats = { Format.JKS, Format.PEM,
-                Format.PKCS12 }, duration = -5)
-})
+                Format.PKCS12 }, duration = -5) })
 public class ExpiredP12TrustStoreTest {
 
     private static final String configuration = """
@@ -47,8 +46,7 @@ public class ExpiredP12TrustStoreTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;
@@ -61,14 +59,13 @@ public class ExpiredP12TrustStoreTest {
         TlsConfiguration cf = certificates.get("warn").orElseThrow();
         assertThat(cf.getTrustStoreOptions()).isNotNull();
 
-        WebClient client = WebClient.create(vertx, new WebClientOptions()
-                .setSsl(true)
-                .setTrustOptions(cf.getTrustStoreOptions()));
+        WebClient client = WebClient.create(vertx,
+                new WebClientOptions().setSsl(true).setTrustOptions(cf.getTrustStoreOptions()));
 
-        vertx.createHttpServer(new HttpServerOptions()
-                .setSsl(true)
+        vertx.createHttpServer(new HttpServerOptions().setSsl(true)
                 .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
-                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture().join();
+                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture()
+                .join();
 
         CountDownLatch latch = new CountDownLatch(1);
         client.get(8081, "localhost", "/").send(ar -> {
@@ -85,16 +82,16 @@ public class ExpiredP12TrustStoreTest {
         TlsConfiguration cf = certificates.get("reject").orElseThrow();
         assertThat(cf.getTrustStoreOptions()).isNotNull();
 
-        WebClient client = WebClient.create(vertx, new WebClientOptions()
-                .setSsl(true)
-                .setTrustOptions(cf.getTrustStoreOptions()));
+        WebClient client = WebClient.create(vertx,
+                new WebClientOptions().setSsl(true).setTrustOptions(cf.getTrustStoreOptions()));
 
-        vertx.createHttpServer(new HttpServerOptions()
-                .setSsl(true)
+        vertx.createHttpServer(new HttpServerOptions().setSsl(true)
                 .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
-                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture().join();
+                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture()
+                .join();
 
-        assertThatThrownBy(() -> client.get(8081, "localhost", "/")
-                .send().toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
+        assertThatThrownBy(
+                () -> client.get(8081, "localhost", "/").send().toCompletionStage().toCompletableFuture().join())
+                .hasCauseInstanceOf(SSLHandshakeException.class);
     }
 }

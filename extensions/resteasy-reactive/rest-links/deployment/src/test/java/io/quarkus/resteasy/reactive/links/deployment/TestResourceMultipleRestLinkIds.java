@@ -20,9 +20,9 @@ import io.smallrye.mutiny.Uni;
 @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
 public class TestResourceMultipleRestLinkIds {
 
-    private static final List<TestRecordMultipleRestLinkIds> RECORDS = new LinkedList<>(Arrays.asList(
-            new TestRecordMultipleRestLinkIds(10, 20, "first_value"),
-            new TestRecordMultipleRestLinkIds(11, 22, "second_value")));
+    private static final List<TestRecordMultipleRestLinkIds> RECORDS = new LinkedList<>(
+            Arrays.asList(new TestRecordMultipleRestLinkIds(10, 20, "first_value"),
+                    new TestRecordMultipleRestLinkIds(11, 22, "second_value")));
 
     @GET
     @RestLink(entityType = TestRecordMultipleRestLinkIds.class)

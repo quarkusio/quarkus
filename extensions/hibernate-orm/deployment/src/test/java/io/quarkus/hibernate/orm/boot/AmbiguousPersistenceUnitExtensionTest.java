@@ -15,15 +15,11 @@ public class AmbiguousPersistenceUnitExtensionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(PersistenceUnitInterceptor.class)
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addClass(PersistenceUnitInterceptor.class)
                     .addClass(AnotherPersistenceUnitInterceptor.class))
-            .withConfigurationResource("application.properties")
-            .assertException(throwable -> assertThat(throwable)
-                    .hasNoSuppressedExceptions()
-                    .rootCause()
-                    .hasMessageContainingAll("Multiple instances of Interceptor were found for persistence unit <default>.",
+            .withConfigurationResource("application.properties").assertException(
+                    throwable -> assertThat(throwable).hasNoSuppressedExceptions().rootCause().hasMessageContainingAll(
+                            "Multiple instances of Interceptor were found for persistence unit <default>.",
                             "At most one instance can be assigned to each persistence unit. Instances found:",
                             "io.quarkus.hibernate.orm.boot.AmbiguousPersistenceUnitExtensionTest.PersistenceUnitInterceptor",
                             "io.quarkus.hibernate.orm.boot.AmbiguousPersistenceUnitExtensionTest.AnotherPersistenceUnitInterceptor"));

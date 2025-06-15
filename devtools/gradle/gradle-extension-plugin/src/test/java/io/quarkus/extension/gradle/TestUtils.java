@@ -25,72 +25,47 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 public class TestUtils {
 
-    public static String getDefaultGradleBuildFileContent(boolean disableValidation, List<String> implementationDependencies,
-            String customPluginConfiguration)
-            throws IOException {
+    public static String getDefaultGradleBuildFileContent(boolean disableValidation,
+            List<String> implementationDependencies, String customPluginConfiguration) throws IOException {
         StringBuilder implementationBuilder = new StringBuilder();
         for (String implementationDependency : implementationDependencies) {
             implementationBuilder.append("implementation(\"").append(implementationDependency).append("\")\n");
         }
-        return "plugins {\n" +
-                "id 'java'\n" +
-                "id 'io.quarkus.extension'\n" +
-                "}\n" +
-                "group 'org.acme'\n" +
-                "version '1.0.0'\n" +
-                "repositories { \n" +
-                "mavenCentral()\n" +
-                "mavenLocal()\n" +
-                "}\n" +
-                QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { \n" +
-                "disableValidation = " + disableValidation + "\n" +
-                customPluginConfiguration +
-                "}\n" +
-                "dependencies { \n" +
-                "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n" +
-                "implementation \"io.quarkus:quarkus-arc\" \n" +
-                implementationBuilder +
-                "}\n";
+        return "plugins {\n" + "id 'java'\n" + "id 'io.quarkus.extension'\n" + "}\n" + "group 'org.acme'\n"
+                + "version '1.0.0'\n" + "repositories { \n" + "mavenCentral()\n" + "mavenLocal()\n" + "}\n"
+                + QuarkusExtensionPlugin.EXTENSION_CONFIGURATION_NAME + " { \n" + "disableValidation = "
+                + disableValidation + "\n" + customPluginConfiguration + "}\n" + "dependencies { \n"
+                + "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n"
+                + "implementation \"io.quarkus:quarkus-arc\" \n" + implementationBuilder + "}\n";
     }
 
-    public static String getDefaultDeploymentBuildFileContent(List<String> implementationDependencies) throws IOException {
+    public static String getDefaultDeploymentBuildFileContent(List<String> implementationDependencies)
+            throws IOException {
 
         StringBuilder implementationBuilder = new StringBuilder();
         for (String implementationDependency : implementationDependencies) {
             implementationBuilder.append("implementation(\"").append(implementationDependency).append("\")\n");
         }
 
-        return "plugins {\n" +
-                "id 'java'\n" +
-                "}\n" +
-                "group 'org.acme'\n" +
-                "version '1.0.0'\n" +
-                "repositories { \n" +
-                "mavenCentral()\n" +
-                "mavenLocal()\n" +
-                "}\n" +
-                "dependencies {\n" +
-                "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n" +
-                "implementation \"io.quarkus:quarkus-arc-deployment\" \n" +
-                "implementation project(\":runtime\") \n" +
-                implementationBuilder +
-                "}\n";
+        return "plugins {\n" + "id 'java'\n" + "}\n" + "group 'org.acme'\n" + "version '1.0.0'\n" + "repositories { \n"
+                + "mavenCentral()\n" + "mavenLocal()\n" + "}\n" + "dependencies {\n"
+                + "implementation enforcedPlatform(\"io.quarkus:quarkus-bom:" + getCurrentQuarkusVersion() + "\")\n"
+                + "implementation \"io.quarkus:quarkus-arc-deployment\" \n" + "implementation project(\":runtime\") \n"
+                + implementationBuilder + "}\n";
     }
 
     public static BuildResult runExtensionDescriptorTask(File testProjectDir) {
-        BuildResult extensionDescriptorResult = GradleRunner.create()
-                .withPluginClasspath()
+        BuildResult extensionDescriptorResult = GradleRunner.create().withPluginClasspath()
                 .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME, "-S")
-                .build();
+                .withArguments(QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME, "-S").build();
 
-        assertThat(extensionDescriptorResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
-                .isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(extensionDescriptorResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME)
+                .getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
         return extensionDescriptorResult;
     }
 
-    public static void createExtensionProject(File testProjectDir, boolean disableValidation, List<String> runtimeDependencies,
-            List<String> deploymentDependencies) throws IOException {
+    public static void createExtensionProject(File testProjectDir, boolean disableValidation,
+            List<String> runtimeDependencies, List<String> deploymentDependencies) throws IOException {
         File runtimeModule = new File(testProjectDir, "runtime");
         runtimeModule.mkdir();
         writeFile(new File(runtimeModule, "build.gradle"),
@@ -101,7 +76,8 @@ public class TestUtils {
 
         File deploymentModule = new File(testProjectDir, "deployment");
         deploymentModule.mkdir();
-        writeFile(new File(deploymentModule, "build.gradle"), getDefaultDeploymentBuildFileContent(deploymentDependencies));
+        writeFile(new File(deploymentModule, "build.gradle"),
+                getDefaultDeploymentBuildFileContent(deploymentDependencies));
         File deploymentTestFile = new File(deploymentModule, "src/main/java/deployment/Test.java");
         deploymentTestFile.getParentFile().mkdirs();
         writeFile(deploymentTestFile, "package deployment; public class Test {}");
@@ -132,8 +108,7 @@ public class TestUtils {
 
     public static ObjectNode readExtensionFile(Path extensionFile) throws IOException {
         YAMLFactory yf = new YAMLFactory();
-        ObjectMapper mapper = new ObjectMapper(yf)
-                .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+        ObjectMapper mapper = new ObjectMapper(yf).setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
         try (InputStream is = Files.newInputStream(extensionFile)) {
             return mapper.readValue(is, ObjectNode.class);
         } catch (IOException io) {

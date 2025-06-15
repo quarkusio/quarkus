@@ -8,15 +8,11 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.PrimitiveType;
 
 public class ByteCodeType {
-    private static final Map<String, org.jboss.jandex.Type> WRAPPER_TO_PRIMITIVE = Map.of(
-            Boolean.class.getName(), PrimitiveType.BOOLEAN,
-            Byte.class.getName(), PrimitiveType.BYTE,
-            Short.class.getName(), PrimitiveType.SHORT,
-            Integer.class.getName(), PrimitiveType.INT,
-            Long.class.getName(), PrimitiveType.LONG,
-            Float.class.getName(), PrimitiveType.FLOAT,
-            Double.class.getName(), PrimitiveType.DOUBLE,
-            Character.class.getName(), PrimitiveType.CHAR);
+    private static final Map<String, org.jboss.jandex.Type> WRAPPER_TO_PRIMITIVE = Map.of(Boolean.class.getName(),
+            PrimitiveType.BOOLEAN, Byte.class.getName(), PrimitiveType.BYTE, Short.class.getName(), PrimitiveType.SHORT,
+            Integer.class.getName(), PrimitiveType.INT, Long.class.getName(), PrimitiveType.LONG, Float.class.getName(),
+            PrimitiveType.FLOAT, Double.class.getName(), PrimitiveType.DOUBLE, Character.class.getName(),
+            PrimitiveType.CHAR);
 
     private final org.jboss.jandex.Type type;
 
@@ -50,9 +46,7 @@ public class ByteCodeType {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", ByteCodeType.class.getSimpleName() + "[", "]")
-                .add(type.toString())
-                .toString();
+        return new StringJoiner(", ", ByteCodeType.class.getSimpleName() + "[", "]").add(type.toString()).toString();
     }
 
     public org.objectweb.asm.Type type() {

@@ -14,7 +14,8 @@ public class LocalizedFileDuplicateFoundTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addAsResource(new StringAsset("hello=Ahoj!"), "messages/messages_cs.properties"))
+            .withApplicationRoot(
+                    root -> root.addAsResource(new StringAsset("hello=Ahoj!"), "messages/messages_cs.properties"))
             .withAdditionalDependency(
                     d -> d.addAsResource(new StringAsset("hello=Cau!"), "messages/messages_cs.properties"))
             .assertException(t -> {

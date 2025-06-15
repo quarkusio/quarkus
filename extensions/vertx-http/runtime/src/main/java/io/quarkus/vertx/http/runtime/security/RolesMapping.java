@@ -20,8 +20,7 @@ public class RolesMapping implements Function<SecurityIdentity, SecurityIdentity
     protected final boolean grantPermissions;
     protected final boolean grantRoles;
 
-    RolesMapping(Map<String, Set<Permission>> roleToPermissions,
-            Map<String, List<String>> roleToRoles) {
+    RolesMapping(Map<String, Set<Permission>> roleToPermissions, Map<String, List<String>> roleToRoles) {
         if (roleToPermissions != null && !roleToPermissions.isEmpty()) {
             this.grantPermissions = true;
             this.roleToPermissions = Map.copyOf(roleToPermissions);

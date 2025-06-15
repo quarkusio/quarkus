@@ -38,7 +38,8 @@ public class ValidateExtensionTask extends DefaultTask {
 
         // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
         // cache will be at least degraded, but the build will not fail.
-        notCompatibleWithConfigurationCache("The Quarkus Extension Plugin isn't compatible with the configuration cache");
+        notCompatibleWithConfigurationCache(
+                "The Quarkus Extension Plugin isn't compatible with the configuration cache");
     }
 
     @Internal
@@ -57,10 +58,12 @@ public class ValidateExtensionTask extends DefaultTask {
 
     @TaskAction
     public void validateExtension() {
-        Set<ResolvedArtifact> runtimeArtifacts = getRuntimeModuleClasspath().getResolvedConfiguration().getResolvedArtifacts();
+        Set<ResolvedArtifact> runtimeArtifacts = getRuntimeModuleClasspath().getResolvedConfiguration()
+                .getResolvedArtifacts();
 
         List<AppArtifactKey> deploymentModuleKeys = collectRuntimeExtensionsDeploymentKeys(runtimeArtifacts);
-        List<AppArtifactKey> invalidRuntimeArtifacts = findExtensionInConfiguration(runtimeArtifacts, deploymentModuleKeys);
+        List<AppArtifactKey> invalidRuntimeArtifacts = findExtensionInConfiguration(runtimeArtifacts,
+                deploymentModuleKeys);
 
         Set<ResolvedArtifact> deploymentArtifacts = getDeploymentModuleClasspath().getResolvedConfiguration()
                 .getResolvedArtifacts();
@@ -89,9 +92,8 @@ public class ValidateExtensionTask extends DefaultTask {
                 if (extension instanceof ProjectExtensionDependency) {
                     final ProjectExtensionDependency ped = (ProjectExtensionDependency) extension;
 
-                    runtimeExtensions
-                            .add(new AppArtifactKey(ped.getDeploymentModule().getGroup().toString(),
-                                    ped.getDeploymentModule().getName()));
+                    runtimeExtensions.add(new AppArtifactKey(ped.getDeploymentModule().getGroup().toString(),
+                            ped.getDeploymentModule().getName()));
                 } else if (extension instanceof ArtifactExtensionDependency) {
                     final ArtifactExtensionDependency aed = (ArtifactExtensionDependency) extension;
 

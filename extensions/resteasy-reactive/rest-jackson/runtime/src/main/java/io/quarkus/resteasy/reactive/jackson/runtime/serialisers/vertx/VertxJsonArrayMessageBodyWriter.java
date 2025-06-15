@@ -17,7 +17,8 @@ public class VertxJsonArrayMessageBodyWriter extends VertxJsonArrayBasicMessageB
         implements ServerMessageBodyWriter<JsonArray> {
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return isWriteable(type);
     }
 

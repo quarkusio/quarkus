@@ -179,7 +179,7 @@ public class WebAuthnHelper {
             try (CBORParser parser = factory.createParser(bytes, offset, bytes.length - offset)) {
                 JsonToken t;
                 while ((t = parser.nextToken()) != null) {
-                    //					System.err.println("Token: "+t);
+                    // System.err.println("Token: "+t);
                     handleToken(parser, t);
                 }
                 lastReadByte = parser.currentLocation().getByteOffset();
@@ -217,7 +217,7 @@ public class WebAuthnHelper {
         try (CBORParser parser = factory.createParser(Base64UrlUtil.decode(attestationObject))) {
             JsonToken t;
             while ((t = parser.nextToken()) != null) {
-                //				System.err.println("Token: "+t);
+                // System.err.println("Token: "+t);
                 printer.handleToken(parser, t);
             }
         }
@@ -246,13 +246,15 @@ public class WebAuthnHelper {
     }
 
     public static void main(String[] args) {
-        //		WebAuthnRegisterResponse response = new WebAuthnRegisterResponse();
-        //		response.webAuthnId = "N3P8WalYEtlUPMcD8q7C8hfY9tZ-DZBl7oPZNGMBxjk";
-        //		response.webAuthnRawId = "N3P8WalYEtlUPMcD8q7C8hfY9tZ-DZBl7oPZNGMBxjk";
-        //		response.webAuthnResponseAttestationObject = "v2NmbXRkbm9uZWdhdHRTdG10v_9oYXV0aERhdGFYxUmWDeWIDoxodDQXD2R2YFuP5K65ooYyx5lc87qDHZdjQQAAAAEAAAAAAAAAAAAAAAAAAAAAACA3c_xZqVgS2VQ8xwPyrsLyF9j21n4NkGXug9k0YwHGOb9hMQJhMyZiLTEBYi0yeCxGR0hxMHlCTWJ5X1RuOGpmWlU4XzZSTDlFNFg4ZnhJSkVOY05NN3UtSEFRPWItM3gsQUtNVEtFRG5DSzhnVVNxamRtdU45bnVzbTRRRXJNY0pBNjV6OWhJOW5TWlP__w==";
-        //		response.webAuthnResponseClientDataJSON = "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoibk9uVHRac1diSE5rRWNhOEZYY29NVUdIanJOY1c4S1BybWg0REFPQXFxaUVvRDNYdHhVT09TcXFiVXFndHlEbkEzU1VCM25YS21PRUp2WGNFZTBfVnciLCJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0IiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ==";
-        //		response.webAuthnType = "public-key";
-        //		dumpWebAuthnRequest(response);
+        // WebAuthnRegisterResponse response = new WebAuthnRegisterResponse();
+        // response.webAuthnId = "N3P8WalYEtlUPMcD8q7C8hfY9tZ-DZBl7oPZNGMBxjk";
+        // response.webAuthnRawId = "N3P8WalYEtlUPMcD8q7C8hfY9tZ-DZBl7oPZNGMBxjk";
+        // response.webAuthnResponseAttestationObject =
+        // "v2NmbXRkbm9uZWdhdHRTdG10v_9oYXV0aERhdGFYxUmWDeWIDoxodDQXD2R2YFuP5K65ooYyx5lc87qDHZdjQQAAAAEAAAAAAAAAAAAAAAAAAAAAACA3c_xZqVgS2VQ8xwPyrsLyF9j21n4NkGXug9k0YwHGOb9hMQJhMyZiLTEBYi0yeCxGR0hxMHlCTWJ5X1RuOGpmWlU4XzZSTDlFNFg4ZnhJSkVOY05NN3UtSEFRPWItM3gsQUtNVEtFRG5DSzhnVVNxamRtdU45bnVzbTRRRXJNY0pBNjV6OWhJOW5TWlP__w==";
+        // response.webAuthnResponseClientDataJSON =
+        // "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoibk9uVHRac1diSE5rRWNhOEZYY29NVUdIanJOY1c4S1BybWg0REFPQXFxaUVvRDNYdHhVT09TcXFiVXFndHlEbkEzU1VCM25YS21PRUp2WGNFZTBfVnciLCJvcmlnaW4iOiJodHRwOi8vbG9jYWxob3N0IiwiY3Jvc3NPcmlnaW4iOmZhbHNlfQ==";
+        // response.webAuthnType = "public-key";
+        // dumpWebAuthnRequest(response);
         WebAuthnLoginResponse response = new WebAuthnLoginResponse();
         response.webAuthnId = "cmokxFnWpNiqBDgI8qL41usvkUCeZC_J8EVS_jD0Brw";
         response.webAuthnRawId = "cmokxFnWpNiqBDgI8qL41usvkUCeZC_J8EVS_jD0Brw";

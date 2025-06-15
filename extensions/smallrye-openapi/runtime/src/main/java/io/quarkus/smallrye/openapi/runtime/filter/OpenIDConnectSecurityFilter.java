@@ -16,8 +16,7 @@ public class OpenIDConnectSecurityFilter extends AutoSecurityFilter {
     }
 
     public OpenIDConnectSecurityFilter(String securitySchemeName, String securitySchemeDescription,
-            Map<String, String> securitySchemeExtensions,
-            AutoUrl openIdConnectUrl) {
+            Map<String, String> securitySchemeExtensions, AutoUrl openIdConnectUrl) {
         super(securitySchemeName, securitySchemeDescription, securitySchemeExtensions);
         this.openIdConnectUrl = openIdConnectUrl;
     }

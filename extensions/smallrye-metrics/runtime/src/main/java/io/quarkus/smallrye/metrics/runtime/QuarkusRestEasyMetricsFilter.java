@@ -34,8 +34,8 @@ import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * A JAX-RS filter that computes the REST.request metrics from REST traffic over time.
- * This one depends on Vert.x to be able to hook into response even in cases when the request ended with an unmapped exception.
+ * A JAX-RS filter that computes the REST.request metrics from REST traffic over time. This one depends on Vert.x to be
+ * able to hook into response even in cases when the request ended with an unmapped exception.
  */
 public class QuarkusRestEasyMetricsFilter implements ContainerRequestFilter, ContainerResponseFilter {
 
@@ -50,16 +50,14 @@ public class QuarkusRestEasyMetricsFilter implements ContainerRequestFilter, Con
         maybeCreateMetrics(resourceClass, resourceMethod);
 
         /*
-         * The reason for using a Vert.x handler instead of ContainerResponseFilter is that
-         * RESTEasy does not call the response filter for requests that ended up with an unmapped exception.
-         * This way we can capture these responses as well and update the metrics accordingly.
-         *
+         * The reason for using a Vert.x handler instead of ContainerResponseFilter is that RESTEasy does not call the
+         * response filter for requests that ended up with an unmapped exception. This way we can capture these
+         * responses as well and update the metrics accordingly.
          */
         RoutingContext routingContext = CDI.current().select(CurrentVertxRequest.class).get().getCurrent();
-        routingContext.addBodyEndHandler(
-                event -> FilterUtil.finishRequest(start, resourceClass, resourceMethod.getName(),
-                        resourceMethod.getParameterTypes(),
-                        () -> requestContext.getProperty("smallrye.metrics.jaxrs.successful") != null));
+        routingContext.addBodyEndHandler(event -> FilterUtil.finishRequest(start, resourceClass,
+                resourceMethod.getName(), resourceMethod.getParameterTypes(),
+                () -> requestContext.getProperty("smallrye.metrics.jaxrs.successful") != null));
     }
 
     @Override

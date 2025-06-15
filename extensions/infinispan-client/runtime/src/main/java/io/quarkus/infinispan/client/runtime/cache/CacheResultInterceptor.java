@@ -33,8 +33,8 @@ public class CacheResultInterceptor extends CacheInterceptor {
     @AroundInvoke
     public Object intercept(InvocationContext invocationContext) throws Throwable {
         /*
-         * io.smallrye.mutiny.Multi values are never cached.
-         * There's already a WARN log entry at build time so we don't need to log anything at run time.
+         * io.smallrye.mutiny.Multi values are never cached. There's already a WARN log entry at build time so we don't
+         * need to log anything at run time.
          */
         if (Multi.class.isAssignableFrom(invocationContext.getMethod().getReturnType())) {
             return invocationContext.proceed();
@@ -50,10 +50,10 @@ public class CacheResultInterceptor extends CacheInterceptor {
         }
 
         CacheResult binding = interceptionContext.getInterceptorBindings().get(0);
-        RemoteCache remoteCache = getRemoteCacheManager()
-                .getCache(binding.cacheName());
+        RemoteCache remoteCache = getRemoteCacheManager().getCache(binding.cacheName());
         Object key = getCacheKey(invocationContext.getParameters());
-        InfinispanGetWrapper cache = new InfinispanGetWrapper(remoteCache, syncronousInfinispanGet.get(remoteCache.getName()));
+        InfinispanGetWrapper cache = new InfinispanGetWrapper(remoteCache,
+                syncronousInfinispanGet.get(remoteCache.getName()));
         LOGGER.debugf("Loading entry with key [%s] from cache [%s]", key, binding.cacheName());
 
         ReturnType returnType = determineReturnType(invocationContext.getMethod().getReturnType());
@@ -61,8 +61,7 @@ public class CacheResultInterceptor extends CacheInterceptor {
             Uni<Object> cacheValue = cache.get(key, new Function<Object, Object>() {
                 @Override
                 public Object apply(Object k) {
-                    LOGGER.debugf("Loading entry with key [%s] from cache [%s]",
-                            key, binding.cacheName());
+                    LOGGER.debugf("Loading entry with key [%s] from cache [%s]", key, binding.cacheName());
                     return UnresolvedUniValue.INSTANCE;
                 }
             }).onItem().transformToUni(new Function<Object, Uni<?>>() {
@@ -124,9 +123,8 @@ public class CacheResultInterceptor extends CacheInterceptor {
             } else {
                 try {
                     /*
-                     * If the current thread started the cache value computation, then the computation is already finished
-                     * since
-                     * it was done synchronously and the following call will never time out.
+                     * If the current thread started the cache value computation, then the computation is already
+                     * finished since it was done synchronously and the following call will never time out.
                      */
                     value = cacheValue.await().atMost(Duration.ofMillis(binding.lockTimeout()));
                 } catch (TimeoutException e) {

@@ -97,9 +97,10 @@ public class PluginCatalogServiceTest {
         assertTrue(catalog.getPlugins().containsKey("bar"));
         assertTrue(catalog.getPlugins().containsKey("baz"));
 
-        //The project catalog should alway override the user catalog, so `foo` that is used in both should be read from project
-        assertEquals(catalog.getPlugins().get("foo").getCatalogLocation().map(Path::toAbsolutePath).map(Path::toString).get(),
-                projectCatalog.toAbsolutePath().toString());
+        // The project catalog should alway override the user catalog, so `foo` that is used in both should be read from
+        // project
+        assertEquals(catalog.getPlugins().get("foo").getCatalogLocation().map(Path::toAbsolutePath).map(Path::toString)
+                .get(), projectCatalog.toAbsolutePath().toString());
     }
 
     @Test
@@ -124,15 +125,14 @@ public class PluginCatalogServiceTest {
 
         Map<String, Plugin> plugins = new HashMap<>();
 
-        //Let's populate a few commands
+        // Let's populate a few commands
         for (String command : commands) {
-            plugins.put(command,
-                    new Plugin(command, PluginType.jbang, Optional.of(command), Optional.empty()));
+            plugins.put(command, new Plugin(command, PluginType.jbang, Optional.of(command), Optional.empty()));
             PluginCatalog catalog = new PluginCatalog(plugins).withCatalogLocation(catalogFile);
             service.writeCatalog(catalog);
         }
 
-        //Let's read the catalog and verify it's content
+        // Let's read the catalog and verify it's content
         assertTrue(catalogFile.exists());
         PluginCatalog catalog = service.readCatalog(catalogPath);
         for (String command : commands) {

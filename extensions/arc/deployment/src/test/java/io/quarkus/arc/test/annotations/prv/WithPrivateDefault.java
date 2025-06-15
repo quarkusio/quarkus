@@ -8,8 +8,8 @@ public class WithPrivateDefault {
 
     public static final Class<?> PRIVATE_STRING_SUPPLIER = PrivateStringSupplier.class;
 
-    public static final Class<?>[] TO_IMPORT = { WithPrivateDefault.class,
-            HasPrivateDefault.class, PrivateStringSupplier.class, PublicStringSupplier.class };
+    public static final Class<?>[] TO_IMPORT = { WithPrivateDefault.class, HasPrivateDefault.class,
+            PrivateStringSupplier.class, PublicStringSupplier.class };
 
     @Retention(RetentionPolicy.RUNTIME)
     public @interface HasPrivateDefault {

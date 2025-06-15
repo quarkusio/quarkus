@@ -24,7 +24,7 @@ public class RequestContextLifecycle {
     private Instance<QuarkusDeployment> deployment;
 
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) Before event) throws Throwable {
-        //we are outside the runtime class loader, so we don't have direct access to the container
+        // we are outside the runtime class loader, so we don't have direct access to the container
         QuarkusDeployment deployment = this.deployment.get();
         if (deployment != null && deployment.hasAppClassLoader()) {
             ClassLoader classLoader = deployment.getAppClassLoader();
@@ -42,7 +42,7 @@ public class RequestContextLifecycle {
     }
 
     public void on(@Observes(precedence = DEFAULT_PRECEDENCE) After event) throws Throwable {
-        //we are outside the runtime class loader, so we don't have direct access to the container
+        // we are outside the runtime class loader, so we don't have direct access to the container
         QuarkusDeployment deployment = this.deployment.get();
         if (deployment != null && deployment.hasAppClassLoader()) {
             ClassLoader classLoader = deployment.getAppClassLoader();

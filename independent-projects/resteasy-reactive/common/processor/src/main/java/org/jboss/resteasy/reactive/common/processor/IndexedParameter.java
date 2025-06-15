@@ -35,11 +35,8 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
     protected String separator;
 
     public boolean isObtainedAsCollection() {
-        return !single
-                && (type == ParameterType.HEADER
-                        || type == ParameterType.MATRIX
-                        || type == ParameterType.FORM
-                        || type == ParameterType.QUERY);
+        return !single && (type == ParameterType.HEADER || type == ParameterType.MATRIX || type == ParameterType.FORM
+                || type == ParameterType.QUERY);
     }
 
     public ClassInfo getCurrentClassInfo() {

@@ -12,9 +12,7 @@ import org.graalvm.nativeimage.hosted.Feature;
  */
 public class DisableLoggingFeature implements Feature {
 
-    private static final String[] CATEGORIES = {
-            "com.arjuna.ats.arjuna"
-    };
+    private static final String[] CATEGORIES = { "com.arjuna.ats.arjuna" };
 
     private final Map<String, Level> categoryMap = new HashMap<>(CATEGORIES.length);
 

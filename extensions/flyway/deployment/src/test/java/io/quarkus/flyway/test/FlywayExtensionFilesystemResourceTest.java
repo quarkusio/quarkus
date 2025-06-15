@@ -32,15 +32,15 @@ public class FlywayExtensionFilesystemResourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(V1_0_1__Update.class, V1_0_2__Update.class)
-                    .addAsResource("clean-and-migrate-at-start-with-fs-resource-config.properties", "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(V1_0_1__Update.class, V1_0_2__Update.class).addAsResource(
+                    "clean-and-migrate-at-start-with-fs-resource-config.properties", "application.properties"));
 
     @Test
     @DisplayName("Clean and migrate at start correctly")
     public void testFlywayConfigInjection() throws SQLException {
 
-        try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
+        try (Connection connection = defaultDataSource.getConnection();
+                Statement stat = connection.createStatement()) {
             try (ResultSet executeQuery = stat.executeQuery("select * from fake_existing_tbl")) {
                 fail("fake_existing_tbl should not exist. Clean was run at start");
             } catch (JdbcSQLSyntaxErrorException e) {
@@ -48,8 +48,7 @@ public class FlywayExtensionFilesystemResourceTest {
             }
             try (ResultSet countQuery = stat.executeQuery("select count(1) from quarked_flyway")) {
                 assertTrue(countQuery.first());
-                assertEquals(2,
-                        countQuery.getInt(1),
+                assertEquals(2, countQuery.getInt(1),
                         "Table 'quarked_flyway' does not contain the expected number of rows");
             }
         }

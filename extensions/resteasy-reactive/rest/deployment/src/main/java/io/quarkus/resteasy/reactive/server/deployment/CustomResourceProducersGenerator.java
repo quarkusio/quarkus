@@ -45,11 +45,8 @@ final class CustomResourceProducersGenerator {
     }
 
     /**
-     * We generate a class that contains as many CDI producer methods as there are JAX-RS Resources that use JAX-RS params.
-     *
-     * If for example there was a single such JAX-RS resource looking like:
-     *
-     * <code><pre>
+     * We generate a class that contains as many CDI producer methods as there are JAX-RS Resources that use JAX-RS
+     * params. If for example there was a single such JAX-RS resource looking like: <code><pre>
      *
      * &#64;Path("/query")
      * public class QueryParamResource {
@@ -67,12 +64,7 @@ final class CustomResourceProducersGenerator {
      *   }
      * }
      *
-     *  </pre></code>
-     *
-     *
-     * then the generated producer would look like this:
-     *
-     * <code><pre>
+     *  </pre></code> then the generated producer would look like this: <code><pre>
      *
      *  &#64;Singleton
      * public class ResourcesWithParamProducer {
@@ -115,89 +107,101 @@ final class CustomResourceProducersGenerator {
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
         GeneratedBeanGizmoAdaptor classOutput = new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer);
-        try (ClassCreator c = new ClassCreator(classOutput, "io.quarkus.rest.cdi.ResourceWithJaxRsCtorParamsProducer", null,
-                Object.class.getName())) {
+        try (ClassCreator c = new ClassCreator(classOutput, "io.quarkus.rest.cdi.ResourceWithJaxRsCtorParamsProducer",
+                null, Object.class.getName())) {
             c.addAnnotation(Singleton.class);
 
-            MethodCreator getContextMethodCreator = c.getMethodCreator("getContext", ResteasyReactiveRequestContext.class);
-            MethodCreator getHeaderParamMethodCreator = c.getMethodCreator("getHeaderParam", String.class, String.class);
+            MethodCreator getContextMethodCreator = c.getMethodCreator("getContext",
+                    ResteasyReactiveRequestContext.class);
+            MethodCreator getHeaderParamMethodCreator = c.getMethodCreator("getHeaderParam", String.class,
+                    String.class);
             MethodCreator getQueryParamMethodCreator = c.getMethodCreator("getQueryParam", String.class, String.class);
             MethodCreator getPathParamMethodCreator = c.getMethodCreator("getPathParam", String.class, int.class);
-            MethodCreator getMatrixParamMethodCreator = c.getMethodCreator("getMatrixParam", String.class, String.class);
-            MethodCreator getCookieParamMethodCreator = c.getMethodCreator("getCookieParam", String.class, String.class);
+            MethodCreator getMatrixParamMethodCreator = c.getMethodCreator("getMatrixParam", String.class,
+                    String.class);
+            MethodCreator getCookieParamMethodCreator = c.getMethodCreator("getCookieParam", String.class,
+                    String.class);
 
             try (MethodCreator m = getContextMethodCreator) {
                 m.setModifiers(Modifier.PRIVATE);
 
-                ResultHandle otherHttpContextObjectHandle = m.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(CurrentRequestManager.class, "get", ResteasyReactiveRequestContext.class));
+                ResultHandle otherHttpContextObjectHandle = m.invokeStaticMethod(MethodDescriptor
+                        .ofMethod(CurrentRequestManager.class, "get", ResteasyReactiveRequestContext.class));
                 ResultHandle result = m.checkCast(otherHttpContextObjectHandle, ResteasyReactiveRequestContext.class);
                 m.returnValue(result);
             }
 
             try (MethodCreator m = getHeaderParamMethodCreator) {
                 m.setModifiers(Modifier.PRIVATE);
-                ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
-                        m.getThis());
+                ResultHandle quarkusRestContextHandle = m
+                        .invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(), m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
                         MethodDescriptor.ofConstructor(HeaderParamExtractor.class, String.class, boolean.class),
                         m.getMethodParam(0), m.load(true));
-                ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(HeaderParamExtractor.class,
-                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
-                        quarkusRestContextHandle);
+                ResultHandle resultHandle = m
+                        .invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(HeaderParamExtractor.class, "extractParameter", Object.class,
+                                        ResteasyReactiveRequestContext.class),
+                                extractorHandle, quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
 
             try (MethodCreator m = getQueryParamMethodCreator) {
                 m.setModifiers(Modifier.PRIVATE);
-                ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
-                        m.getThis());
+                ResultHandle quarkusRestContextHandle = m
+                        .invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(), m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(QueryParamExtractor.class, String.class, boolean.class, boolean.class,
-                                String.class),
+                        MethodDescriptor.ofConstructor(QueryParamExtractor.class, String.class, boolean.class,
+                                boolean.class, String.class),
                         m.getMethodParam(0), m.load(true), m.load(false), m.loadNull());
-                ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(QueryParamExtractor.class,
-                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
-                        quarkusRestContextHandle);
+                ResultHandle resultHandle = m
+                        .invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(QueryParamExtractor.class, "extractParameter", Object.class,
+                                        ResteasyReactiveRequestContext.class),
+                                extractorHandle, quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
 
             try (MethodCreator m = getPathParamMethodCreator) {
                 m.setModifiers(Modifier.PRIVATE);
-                ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
-                        m.getThis());
-                ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(PathParamExtractor.class, int.class, boolean.class, boolean.class),
-                        m.getMethodParam(0), m.load(false), m.load(true));
-                ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(PathParamExtractor.class,
-                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
-                        quarkusRestContextHandle);
+                ResultHandle quarkusRestContextHandle = m
+                        .invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(), m.getThis());
+                ResultHandle extractorHandle = m.newInstance(MethodDescriptor.ofConstructor(PathParamExtractor.class,
+                        int.class, boolean.class, boolean.class), m.getMethodParam(0), m.load(false), m.load(true));
+                ResultHandle resultHandle = m
+                        .invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(PathParamExtractor.class, "extractParameter", Object.class,
+                                        ResteasyReactiveRequestContext.class),
+                                extractorHandle, quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
 
             try (MethodCreator m = getMatrixParamMethodCreator) {
                 m.setModifiers(Modifier.PRIVATE);
-                ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
-                        m.getThis());
-                ResultHandle extractorHandle = m.newInstance(
-                        MethodDescriptor.ofConstructor(MatrixParamExtractor.class, String.class, boolean.class, boolean.class),
-                        m.getMethodParam(0), m.load(true), m.load(false));
-                ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(MatrixParamExtractor.class,
-                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
-                        quarkusRestContextHandle);
+                ResultHandle quarkusRestContextHandle = m
+                        .invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(), m.getThis());
+                ResultHandle extractorHandle = m.newInstance(MethodDescriptor.ofConstructor(MatrixParamExtractor.class,
+                        String.class, boolean.class, boolean.class), m.getMethodParam(0), m.load(true), m.load(false));
+                ResultHandle resultHandle = m
+                        .invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(MatrixParamExtractor.class, "extractParameter", Object.class,
+                                        ResteasyReactiveRequestContext.class),
+                                extractorHandle, quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
 
             try (MethodCreator m = getCookieParamMethodCreator) {
                 m.setModifiers(Modifier.PRIVATE);
-                ResultHandle quarkusRestContextHandle = m.invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(),
-                        m.getThis());
+                ResultHandle quarkusRestContextHandle = m
+                        .invokeVirtualMethod(getContextMethodCreator.getMethodDescriptor(), m.getThis());
                 ResultHandle extractorHandle = m.newInstance(
                         MethodDescriptor.ofConstructor(CookieParamExtractor.class, String.class, String.class),
                         m.getMethodParam(0), m.loadNull());
-                ResultHandle resultHandle = m.invokeVirtualMethod(MethodDescriptor.ofMethod(CookieParamExtractor.class,
-                        "extractParameter", Object.class, ResteasyReactiveRequestContext.class), extractorHandle,
-                        quarkusRestContextHandle);
+                ResultHandle resultHandle = m
+                        .invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(CookieParamExtractor.class, "extractParameter", Object.class,
+                                        ResteasyReactiveRequestContext.class),
+                                extractorHandle, quarkusRestContextHandle);
                 m.returnValue(resultHandle);
             }
 
@@ -213,7 +217,8 @@ final class CustomResourceProducersGenerator {
                         continue;
                     }
                     MethodParameterInfo methodParameterInfo = annotation.target().asMethodParameter();
-                    List<AnnotationInstance> annotationsOfParam = paramIndexToAnnotations.get(methodParameterInfo.position());
+                    List<AnnotationInstance> annotationsOfParam = paramIndexToAnnotations
+                            .get(methodParameterInfo.position());
                     if (annotationsOfParam == null) {
                         annotationsOfParam = new ArrayList<>(1);
                         annotationsOfParam.add(annotation);
@@ -228,7 +233,8 @@ final class CustomResourceProducersGenerator {
                 for (short i = 0; i < ctor.parametersCount(); i++) {
                     Type parameterType = ctor.parameterType(i);
                     if (!paramIndexToAnnotations.containsKey(i)) {
-                        ctorParamData.add(new CtorParamData(CtorParamData.CustomProducerParameterType.OTHER, parameterType));
+                        ctorParamData
+                                .add(new CtorParamData(CtorParamData.CustomProducerParameterType.OTHER, parameterType));
                     } else {
                         List<AnnotationInstance> paramAnnotations = paramIndexToAnnotations.get(i);
                         List<AnnotationInstance> jaxRSAnnotationsOfParam = new ArrayList<>(paramAnnotations.size());
@@ -239,8 +245,8 @@ final class CustomResourceProducersGenerator {
                             }
                         }
                         if (jaxRSAnnotationsOfParam.isEmpty()) {
-                            ctorParamData
-                                    .add(new CtorParamData(CtorParamData.CustomProducerParameterType.OTHER, parameterType));
+                            ctorParamData.add(
+                                    new CtorParamData(CtorParamData.CustomProducerParameterType.OTHER, parameterType));
                         } else if (jaxRSAnnotationsOfParam.size() > 1) {
                             throw new IllegalArgumentException("Parameter: " + i + " of the constructor of class '"
                                     + resourceDotName + "' contains multiple JAX-RS annotations, which is not valid");
@@ -249,8 +255,8 @@ final class CustomResourceProducersGenerator {
                             if (!parameterType.name().equals(ResteasyReactiveDotNames.STRING)) {
                                 // TODO: do we need to support converters here?
                                 throw new IllegalArgumentException("Parameter: " + i + " of the constructor of class '"
-                                        + resourceDotName + "' which is annotated with '" + jaxRSAnnotationOfParam.name()
-                                        + "' can only be of type String");
+                                        + resourceDotName + "' which is annotated with '"
+                                        + jaxRSAnnotationOfParam.name() + "' can only be of type String");
                             }
                             CtorParamData.CustomProducerParameterType customProducerParameterType;
                             if (jaxRSAnnotationOfParam.name().equals(ResteasyReactiveDotNames.QUERY_PARAM)) {
@@ -267,14 +273,16 @@ final class CustomResourceProducersGenerator {
                                 throw new IllegalStateException("Unsupported type '" + jaxRSAnnotationOfParam.name()
                                         + "' used as an annotation in constructor of class '" + resourceDotName + "'");
                             }
-                            String name = jaxRSAnnotationOfParam.value().asString(); // all the types we handle have the same annotation method
+                            String name = jaxRSAnnotationOfParam.value().asString(); // all the types we handle have the
+                                                                                     // same annotation method
                             ctorParamData.add(new CtorParamData(customProducerParameterType, parameterType, name));
                         }
                     }
                 }
                 List<String> producerMethodParameterTypes = new ArrayList<>(ctor.parametersCount());
                 for (CtorParamData ctorParamDatum : ctorParamData) {
-                    if (ctorParamDatum.getCustomProducerParameterType() == CtorParamData.CustomProducerParameterType.OTHER) {
+                    if (ctorParamDatum
+                            .getCustomProducerParameterType() == CtorParamData.CustomProducerParameterType.OTHER) {
                         producerMethodParameterTypes.add(ctorParamDatum.getParameterType().name().toString());
                     }
                 }
@@ -285,32 +293,35 @@ final class CustomResourceProducersGenerator {
                         producerMethodParameterTypes.toArray(new String[0]))) {
                     m.addAnnotation(Produces.class);
                     m.addAnnotation(RequestScoped.class);
-                    // we need this to be unremovable because the Resource itself does not get referenced in any injection point
+                    // we need this to be unremovable because the Resource itself does not get referenced in any
+                    // injection point
                     m.addAnnotation(Unremovable.class);
 
                     List<ResultHandle> ctorParamHandles = new ArrayList<>(ctorParamData.size());
                     int otherParamIndex = 0;
                     for (CtorParamData ctorParamDatum : ctorParamData) {
-                        CtorParamData.CustomProducerParameterType type = ctorParamDatum.getCustomProducerParameterType();
+                        CtorParamData.CustomProducerParameterType type = ctorParamDatum
+                                .getCustomProducerParameterType();
                         ResultHandle resultHandle;
                         if (type == CtorParamData.CustomProducerParameterType.OTHER) {
                             resultHandle = m.getMethodParam(otherParamIndex);
                             otherParamIndex++;
                         } else if (type == CtorParamData.CustomProducerParameterType.HEADER) {
-                            resultHandle = m.invokeVirtualMethod(getHeaderParamMethodCreator.getMethodDescriptor(), m.getThis(),
-                                    m.load(ctorParamDatum.getAnnotationValue()));
+                            resultHandle = m.invokeVirtualMethod(getHeaderParamMethodCreator.getMethodDescriptor(),
+                                    m.getThis(), m.load(ctorParamDatum.getAnnotationValue()));
                         } else if (type == CtorParamData.CustomProducerParameterType.QUERY) {
-                            resultHandle = m.invokeVirtualMethod(getQueryParamMethodCreator.getMethodDescriptor(), m.getThis(),
-                                    m.load(ctorParamDatum.getAnnotationValue()));
+                            resultHandle = m.invokeVirtualMethod(getQueryParamMethodCreator.getMethodDescriptor(),
+                                    m.getThis(), m.load(ctorParamDatum.getAnnotationValue()));
                         } else if (type == CtorParamData.CustomProducerParameterType.PATH) {
-                            resultHandle = m.invokeVirtualMethod(getPathParamMethodCreator.getMethodDescriptor(), m.getThis(),
-                                    m.load(0)); // TODO: this is not correct, we really need to look up the index
+                            resultHandle = m.invokeVirtualMethod(getPathParamMethodCreator.getMethodDescriptor(),
+                                    m.getThis(), m.load(0)); // TODO: this is not correct, we really need to look up the
+                                                                                                                                                   // index
                         } else if (type == CtorParamData.CustomProducerParameterType.MATRIX) {
-                            resultHandle = m.invokeVirtualMethod(getMatrixParamMethodCreator.getMethodDescriptor(), m.getThis(),
-                                    m.load(ctorParamDatum.getAnnotationValue()));
+                            resultHandle = m.invokeVirtualMethod(getMatrixParamMethodCreator.getMethodDescriptor(),
+                                    m.getThis(), m.load(ctorParamDatum.getAnnotationValue()));
                         } else if (type == CtorParamData.CustomProducerParameterType.COOKIE) {
-                            resultHandle = m.invokeVirtualMethod(getCookieParamMethodCreator.getMethodDescriptor(), m.getThis(),
-                                    m.load(ctorParamDatum.getAnnotationValue()));
+                            resultHandle = m.invokeVirtualMethod(getCookieParamMethodCreator.getMethodDescriptor(),
+                                    m.getThis(), m.load(ctorParamDatum.getAnnotationValue()));
                         } else {
                             throw new IllegalStateException("Unknown type '" + type
                                     + "' used as an annotation in constructor of class '" + resourceDotName + "'");
@@ -323,13 +334,12 @@ final class CustomResourceProducersGenerator {
                 }
             }
             // FIXME: support constructors for bean params too
-            additionalBeanBuildItemBuildProducer
-                    .produce(AdditionalBeanBuildItem.builder()
-                            .addBeanClasses(parameterContainersThatNeedCustomProducer.stream().map(DotName::toString).toList())
-                            // FIXME: we should add this, but for that we also need to make the resource class request-scoped
-                            //                                                         .setDefaultScope(DOTNAME_REQUEST_SCOPED)
-                            //                                                         .setUnremovable()
-                            .build());
+            additionalBeanBuildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(parameterContainersThatNeedCustomProducer.stream().map(DotName::toString).toList())
+                    // FIXME: we should add this, but for that we also need to make the resource class request-scoped
+                    // .setDefaultScope(DOTNAME_REQUEST_SCOPED)
+                    // .setUnremovable()
+                    .build());
         }
     }
 

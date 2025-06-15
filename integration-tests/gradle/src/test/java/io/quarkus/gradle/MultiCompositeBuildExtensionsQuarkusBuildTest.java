@@ -20,7 +20,8 @@ public class MultiCompositeBuildExtensionsQuarkusBuildTest extends QuarkusGradle
         final File appProperties = new File(projectDir, "application/gradle.properties");
         final File libsProperties = new File(projectDir, "libraries/gradle.properties");
         final File extensionProperties = new File(projectDir, "extensions/example-extension/gradle.properties");
-        final File anotherExtensionProperties = new File(projectDir, "extensions/another-example-extension/gradle.properties");
+        final File anotherExtensionProperties = new File(projectDir,
+                "extensions/another-example-extension/gradle.properties");
 
         final Path projectProperties = projectDir.toPath().resolve("gradle.properties");
 
@@ -36,14 +37,12 @@ public class MultiCompositeBuildExtensionsQuarkusBuildTest extends QuarkusGradle
         runGradleWrapper(projectDir, ":application:quarkusBuild");
 
         final Path extension = projectDir.toPath().resolve("extensions").resolve("example-extension").resolve("runtime")
-                .resolve("build")
-                .resolve("libs");
+                .resolve("build").resolve("libs");
         assertThat(extension).exists();
         assertThat(extension.resolve("example-extension-1.0-SNAPSHOT.jar")).exists();
 
         final Path anotherExtension = projectDir.toPath().resolve("extensions").resolve("another-example-extension")
-                .resolve("runtime")
-                .resolve("build");
+                .resolve("runtime").resolve("build");
 
         assertThat(anotherExtension).exists();
         assertThat(anotherExtension.resolve("resources/main/META-INF/quarkus-extension.yaml")).exists();
@@ -57,8 +56,10 @@ public class MultiCompositeBuildExtensionsQuarkusBuildTest extends QuarkusGradle
         assertThat(libB.resolve("libraryB-1.0-SNAPSHOT.jar")).exists();
 
         final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("quarkus-app");
-        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryA-1.0-SNAPSHOT.jar")).exists();
-        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryB-1.0-SNAPSHOT.jar")).exists();
+        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryA-1.0-SNAPSHOT.jar"))
+                .exists();
+        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryB-1.0-SNAPSHOT.jar"))
+                .exists();
         assertThat(applicationLib.resolve("lib").resolve("main")
                 .resolve("org.acme.extensions.example-extension-1.0-SNAPSHOT.jar")).exists();
         assertThat(applicationLib.resolve("lib").resolve("main")

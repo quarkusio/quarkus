@@ -4,7 +4,6 @@ package io.quarkus.hibernate.orm.runtime.tenant;
  * Resolves tenant identifier dynamically so that the proper configuration can be used.
  *
  * @author Michael Schnell
- *
  */
 public interface TenantResolver {
 
@@ -26,7 +25,8 @@ public interface TenantResolver {
     /**
      * Does the given tenant id represent a "root" tenant with access to all partitions?
      *
-     * @param tenantId a tenant id produced by {@link #resolveTenantId()}
+     * @param tenantId
+     *        a tenant id produced by {@link #resolveTenantId()}
      *
      * @return true is this is root tenant
      */

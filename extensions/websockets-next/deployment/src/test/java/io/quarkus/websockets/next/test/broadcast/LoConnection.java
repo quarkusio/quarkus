@@ -16,8 +16,7 @@ public class LoConnection {
     void open() {
         // Send the message only to the current connection
         // This does not make much sense but it's good enough to test the filter
-        connection.broadcast()
-                .filter(c -> connection.id().equals(c.id()))
+        connection.broadcast().filter(c -> connection.id().equals(c.id()))
                 .sendTextAndAwait(connection.pathParam("client").toLowerCase());
     }
 

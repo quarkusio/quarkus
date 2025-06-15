@@ -21,8 +21,7 @@ public abstract class AbstractInterceptorContext implements InterceptorContext {
     // as the interceptors can change the type or mediaType, when that happens we need to find a new reader/writer
     protected boolean rediscoveryNeeded = false;
 
-    public AbstractInterceptorContext(ResteasyReactiveRequestContext context, Annotation[] annotations,
-            Class<?> type,
+    public AbstractInterceptorContext(ResteasyReactiveRequestContext context, Annotation[] annotations, Class<?> type,
             Type genericType, MediaType mediaType, ServerSerialisers serialisers) {
         this.context = context;
         this.annotations = annotations;

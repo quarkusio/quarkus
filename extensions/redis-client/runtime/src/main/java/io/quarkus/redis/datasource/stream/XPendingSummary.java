@@ -53,8 +53,8 @@ public class XPendingSummary {
     }
 
     /**
-     * Get the list of every consumer in the consumer group with at least one pending message,
-     * and the number of pending messages it has.
+     * Get the list of every consumer in the consumer group with at least one pending message, and the number of pending
+     * messages it has.
      *
      * @return the map composed of consumer -> number of message; may be empty
      */

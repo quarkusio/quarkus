@@ -27,9 +27,12 @@ public class TrustedProxyCheckPartConverterTest {
         Assertions.assertNull(part.hostName);
         Assertions.assertNotNull(part.proxyCheck);
         Assertions.assertEquals(0, part.port);
-        Assertions.assertTrue(part.proxyCheck.test(InetAddress.getByName("2001:4860:4860:0000:0000:0000:0000:8888"), 0));
-        Assertions.assertTrue(part.proxyCheck.test(InetAddress.getByName("2001:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
-        Assertions.assertFalse(part.proxyCheck.test(InetAddress.getByName("2005:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
+        Assertions
+                .assertTrue(part.proxyCheck.test(InetAddress.getByName("2001:4860:4860:0000:0000:0000:0000:8888"), 0));
+        Assertions
+                .assertTrue(part.proxyCheck.test(InetAddress.getByName("2001:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
+        Assertions
+                .assertFalse(part.proxyCheck.test(InetAddress.getByName("2005:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
     }
 
     @Test
@@ -61,9 +64,12 @@ public class TrustedProxyCheckPartConverterTest {
         Assertions.assertNull(part.hostName);
         Assertions.assertNotNull(part.proxyCheck);
         Assertions.assertEquals(0, part.port);
-        Assertions.assertTrue(part.proxyCheck.test(InetAddress.getByName("2001:4860:4860:0000:0000:0000:0000:8888"), 0));
-        Assertions.assertFalse(part.proxyCheck.test(InetAddress.getByName("2001:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
-        Assertions.assertFalse(part.proxyCheck.test(InetAddress.getByName("2005:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
+        Assertions
+                .assertTrue(part.proxyCheck.test(InetAddress.getByName("2001:4860:4860:0000:0000:0000:0000:8888"), 0));
+        Assertions
+                .assertFalse(part.proxyCheck.test(InetAddress.getByName("2001:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
+        Assertions
+                .assertFalse(part.proxyCheck.test(InetAddress.getByName("2005:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
 
         // test short form
         part = CONVERTER.convert("[::]");
@@ -72,8 +78,10 @@ public class TrustedProxyCheckPartConverterTest {
         Assertions.assertEquals(0, part.port);
         Assertions.assertTrue(part.proxyCheck.test(InetAddress.getByName("0:0:0:0:0:0:0:0"), 0));
         Assertions.assertTrue(part.proxyCheck.test(InetAddress.getByName("0:0:0:0:0:0:0:0"), 99));
-        Assertions.assertFalse(part.proxyCheck.test(InetAddress.getByName("2001:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
-        Assertions.assertFalse(part.proxyCheck.test(InetAddress.getByName("2005:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
+        Assertions
+                .assertFalse(part.proxyCheck.test(InetAddress.getByName("2001:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
+        Assertions
+                .assertFalse(part.proxyCheck.test(InetAddress.getByName("2005:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 0));
     }
 
     @Test
@@ -81,10 +89,14 @@ public class TrustedProxyCheckPartConverterTest {
         var part = CONVERTER.convert("[2001:4860:4860:0000:0000:0000:0000:8888]:8085");
         Assertions.assertNull(part.hostName);
         Assertions.assertNotNull(part.proxyCheck);
-        Assertions.assertTrue(part.proxyCheck.test(InetAddress.getByName("2001:4860:4860:0000:0000:0000:0000:8888"), 8085));
-        Assertions.assertFalse(part.proxyCheck.test(InetAddress.getByName("2001:4860:4860:0000:0000:0000:0000:8888"), 8000));
-        Assertions.assertFalse(part.proxyCheck.test(InetAddress.getByName("2001:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 8085));
-        Assertions.assertFalse(part.proxyCheck.test(InetAddress.getByName("2005:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 8085));
+        Assertions.assertTrue(
+                part.proxyCheck.test(InetAddress.getByName("2001:4860:4860:0000:0000:0000:0000:8888"), 8085));
+        Assertions.assertFalse(
+                part.proxyCheck.test(InetAddress.getByName("2001:4860:4860:0000:0000:0000:0000:8888"), 8000));
+        Assertions.assertFalse(
+                part.proxyCheck.test(InetAddress.getByName("2001:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 8085));
+        Assertions.assertFalse(
+                part.proxyCheck.test(InetAddress.getByName("2005:4860:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF"), 8085));
     }
 
     @Test

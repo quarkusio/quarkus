@@ -9,8 +9,8 @@ import org.jboss.jandex.MethodInfo;
 
 /**
  * Tests whether a class is a data class (based on this answer:
- * https://discuss.kotlinlang.org/t/detect-data-class-in-runtime/6155/2)
- * and whether the class has default values for fields (default values leads to having multiple constructors in bytecode)
+ * https://discuss.kotlinlang.org/t/detect-data-class-in-runtime/6155/2) and whether the class has default values for
+ * fields (default values leads to having multiple constructors in bytecode)
  */
 public class IsDataClassWithDefaultValuesPredicate implements Predicate<ClassInfo> {
 

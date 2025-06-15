@@ -102,9 +102,9 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
             @Override
             public Boolean apply(List<?> o) {
                 Boolean result = null;
-                //if any are true we return true
-                //otherwise if all are null we return null
-                //if some are false and some null we return false
+                // if any are true we return true
+                // otherwise if all are null we return null
+                // if some are false and some null we return false
                 for (Object i : o) {
                     if (i != null) {
                         boolean val = (boolean) i;
@@ -125,19 +125,15 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
     }
 
     public static Builder builder(SecurityIdentity identity) {
-        Builder builder = new Builder()
-                .addAttributes(identity.getAttributes())
-                .addCredentials(identity.getCredentials())
-                .addRoles(identity.getRoles())
+        Builder builder = new Builder().addAttributes(identity.getAttributes())
+                .addCredentials(identity.getCredentials()).addRoles(identity.getRoles())
                 .addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
                     @Override
                     public Uni<Boolean> apply(Permission permission) {
                         // sustain previous permission checks
                         return identity.checkPermission(permission);
                     }
-                })
-                .setPrincipal(identity.getPrincipal())
-                .setAnonymous(identity.isAnonymous());
+                }).setPrincipal(identity.getPrincipal()).setAnonymous(identity.isAnonymous());
         return builder;
     }
 
@@ -211,7 +207,9 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         /**
          * Adds a permission as String.
          *
-         * @param permission The permission in a String format.
+         * @param permission
+         *        The permission in a String format.
+         *
          * @return This builder
          */
         public Builder addPermissionAsString(String permission) {
@@ -221,18 +219,21 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         /**
          * Adds permissions as String
          *
-         * @param permissions The permissions in a String format.
+         * @param permissions
+         *        The permissions in a String format.
+         *
          * @return This builder
          */
         public Builder addPermissionsAsString(Set<String> permissions) {
-            return addPermissions(permissions.stream().map(p -> toPermission(p))
-                    .collect(Collectors.toSet()));
+            return addPermissions(permissions.stream().map(p -> toPermission(p)).collect(Collectors.toSet()));
         }
 
         /**
          * Adds a permission.
          *
-         * @param permission The permission
+         * @param permission
+         *        The permission
+         *
          * @return This builder
          */
         public Builder addPermission(Permission permission) {
@@ -242,7 +243,9 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         /**
          * Adds permissions.
          *
-         * @param permissions The permissions
+         * @param permissions
+         *        The permissions
+         *
          * @return This builder
          */
         public Builder addPermissions(Set<Permission> permissions) {
@@ -251,13 +254,13 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         }
 
         /**
-         * Adds a permission checker function. This permission checker has the following semantics:
+         * Adds a permission checker function. This permission checker has the following semantics: If it returns null,
+         * or the CompletionStage evaluates to null then this check is ignored If every function returns null or false
+         * then the check is failed If any function returns true the check passes
          *
-         * If it returns null, or the CompletionStage evaluates to null then this check is ignored
-         * If every function returns null or false then the check is failed
-         * If any function returns true the check passes
+         * @param function
+         *        The permission checker function
          *
-         * @param function The permission checker function
          * @return This builder
          */
         public Builder addPermissionChecker(Function<Permission, Uni<Boolean>> function) {
@@ -271,8 +274,11 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         /**
          * Adds a permission check functions.
          *
-         * @param functions The permission check functions
+         * @param functions
+         *        The permission check functions
+         *
          * @return This builder
+         *
          * @see #addPermissionChecker(Function)
          */
         public Builder addPermissionCheckers(List<Function<Permission, Uni<Boolean>>> functions) {
@@ -288,7 +294,9 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         /**
          * Sets an anonymous identity status.
          *
-         * @param anonymous the anonymous status
+         * @param anonymous
+         *        the anonymous status
+         *
          * @return This builder
          */
         public Builder setAnonymous(boolean anonymous) {
@@ -311,21 +319,20 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
 
         private void addPossesedPermissionsChecker() {
             if (!permissions.isEmpty()) {
-                addPermissionChecker(
-                        new Function<Permission, Uni<Boolean>>() {
+                addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
 
-                            @Override
-                            public Uni<Boolean> apply(Permission requiredPermission) {
+                    @Override
+                    public Uni<Boolean> apply(Permission requiredPermission) {
 
-                                for (Permission possessedPermission : permissions) {
-                                    if (possessedPermission.implies(requiredPermission)) {
-                                        return Uni.createFrom().item(true);
-                                    }
-                                }
-                                return Uni.createFrom().item(false);
-
+                        for (Permission possessedPermission : permissions) {
+                            if (possessedPermission.implies(requiredPermission)) {
+                                return Uni.createFrom().item(true);
                             }
-                        });
+                        }
+                        return Uni.createFrom().item(false);
+
+                    }
+                });
             }
 
         }

@@ -29,8 +29,7 @@ public class CombinePermissionCheckerWithPossessedPermissionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     AdminOnlyMethodArgSecuredBean securedBean;
@@ -82,8 +81,7 @@ public class CombinePermissionCheckerWithPossessedPermissionTest {
                 ADMIN_WITH_AUGMENTORS);
 
         assertSuccess(() -> securedBean.secured_inclusiveAllOf(1, 2, 3, 4, 5), "secured", adminWithSecuredPerm);
-        assertSuccess(() -> securedBean.secured2_inclusiveAllOf("1", "2", 3, 4, 5), "secured2",
-                adminWithSecured2Perm);
+        assertSuccess(() -> securedBean.secured2_inclusiveAllOf("1", "2", 3, 4, 5), "secured2", adminWithSecured2Perm);
         // wrong value of the param 'one'
         assertFailureFor(() -> securedBean.secured2_inclusiveAllOf("9", "2", 3, 4, 5), ForbiddenException.class,
                 adminWithSecured2Perm);
@@ -170,10 +168,10 @@ public class CombinePermissionCheckerWithPossessedPermissionTest {
     public static class AdminOnlyMethodArgPermissionChecker {
 
         @PermissionChecker("admin-only-method-arg-checker")
-        boolean canAccess(SecurityIdentity securityIdentity, Object three, Object one,
-                Object five, Object two) {
+        boolean canAccess(SecurityIdentity securityIdentity, Object three, Object one, Object five, Object two) {
             boolean methodArgsOk = equals(1, one) && equals(2, two) && equals(3, three) && equals(5, five);
-            return methodArgsOk && !securityIdentity.isAnonymous() && "admin".equals(securityIdentity.getPrincipal().getName());
+            return methodArgsOk && !securityIdentity.isAnonymous()
+                    && "admin".equals(securityIdentity.getPrincipal().getName());
         }
 
         private static boolean equals(int expected, Object actual) {

@@ -32,9 +32,9 @@ import io.vertx.core.Vertx;
 public class RequestLeakDetectionTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
-            .addClasses(RequestLeakDetectionTest.MyGraphQLApi.class, MyRequestScopeBean.class, Barrier.class, Task.class)
-            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(RequestLeakDetectionTest.MyGraphQLApi.class, MyRequestScopeBean.class,
+                    Barrier.class, Task.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
     Barrier barrier;

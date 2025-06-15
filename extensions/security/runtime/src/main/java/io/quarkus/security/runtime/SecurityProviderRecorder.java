@@ -57,9 +57,10 @@ public class SecurityProviderRecorder {
             SecureRandom secRandom = new SecureRandom();
             String origStrongAlgorithms = Security.getProperty("securerandom.strongAlgorithms");
             String usedAlgorithm = secRandom.getAlgorithm() + ":" + secRandom.getProvider().getName();
-            String strongAlgorithms = origStrongAlgorithms == null ? usedAlgorithm : usedAlgorithm + "," + origStrongAlgorithms;
-            LOG.debugf("Strong SecureRandom algorithm '%s' is not available. "
-                    + "Using fallback algorithm '%s'.", origStrongAlgorithms, usedAlgorithm);
+            String strongAlgorithms = origStrongAlgorithms == null ? usedAlgorithm
+                    : usedAlgorithm + "," + origStrongAlgorithms;
+            LOG.debugf("Strong SecureRandom algorithm '%s' is not available. " + "Using fallback algorithm '%s'.",
+                    origStrongAlgorithms, usedAlgorithm);
             Security.setProperty("securerandom.strongAlgorithms", strongAlgorithms);
         }
     }

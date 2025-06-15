@@ -17,11 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DisabledSchedulerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.enabled=false"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("quarkus.scheduler.enabled=false"), "application.properties"));
 
     @Inject
     Scheduler scheduler;

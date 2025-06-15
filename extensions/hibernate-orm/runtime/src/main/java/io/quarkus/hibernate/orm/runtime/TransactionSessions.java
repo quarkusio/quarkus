@@ -42,10 +42,10 @@ public class TransactionSessions {
         if (session != null) {
             return session;
         }
-        return sessions.computeIfAbsent(unitName, (un) -> new TransactionScopedSession(
-                getTransactionManager(), getTransactionSynchronizationRegistry(),
-                jpaConfig.getEntityManagerFactory(un).unwrap(SessionFactory.class), un,
-                jpaConfig.getRequestScopedSessionEnabled(), requestScopedSession));
+        return sessions.computeIfAbsent(unitName,
+                (un) -> new TransactionScopedSession(getTransactionManager(), getTransactionSynchronizationRegistry(),
+                        jpaConfig.getEntityManagerFactory(un).unwrap(SessionFactory.class), un,
+                        jpaConfig.getRequestScopedSessionEnabled(), requestScopedSession));
     }
 
     public StatelessSession getStatelessSession(String unitName) {
@@ -53,20 +53,19 @@ public class TransactionSessions {
         if (session != null) {
             return session;
         }
-        return staleSessions.computeIfAbsent(unitName, (un) -> new TransactionScopedStatelessSession(
-                getTransactionManager(), getTransactionSynchronizationRegistry(),
-                jpaConfig.getEntityManagerFactory(un).unwrap(SessionFactory.class), un,
-                jpaConfig.getRequestScopedSessionEnabled(), requestScopedStatelessSession));
+        return staleSessions.computeIfAbsent(unitName,
+                (un) -> new TransactionScopedStatelessSession(getTransactionManager(),
+                        getTransactionSynchronizationRegistry(),
+                        jpaConfig.getEntityManagerFactory(un).unwrap(SessionFactory.class), un,
+                        jpaConfig.getRequestScopedSessionEnabled(), requestScopedStatelessSession));
     }
 
     private TransactionManager getTransactionManager() {
-        return Arc.container()
-                .instance(TransactionManager.class).get();
+        return Arc.container().instance(TransactionManager.class).get();
     }
 
     private TransactionSynchronizationRegistry getTransactionSynchronizationRegistry() {
-        return Arc.container()
-                .instance(TransactionSynchronizationRegistry.class).get();
+        return Arc.container().instance(TransactionSynchronizationRegistry.class).get();
     }
 
 }

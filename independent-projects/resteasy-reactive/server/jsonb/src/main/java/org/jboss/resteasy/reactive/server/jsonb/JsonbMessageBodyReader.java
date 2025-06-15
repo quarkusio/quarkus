@@ -29,7 +29,8 @@ public class JsonbMessageBodyReader extends AbstractJsonMessageBodyReader implem
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return doReadFrom(type, genericType, entityStream);
     }
 
@@ -45,7 +46,8 @@ public class JsonbMessageBodyReader extends AbstractJsonMessageBodyReader implem
     }
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return isReadable(mediaType, type);
     }
 

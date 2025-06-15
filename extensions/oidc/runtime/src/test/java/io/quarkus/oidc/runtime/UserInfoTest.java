@@ -13,21 +13,11 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.UserInfo;
 
 public class UserInfoTest {
-    UserInfo userInfo = new UserInfo(
-            "{"
-                    + "\"sub\": \"alice123456\","
-                    + "\"name\": \"alice\","
-                    + "\"first_name\": \"Alice\","
-                    + "\"family_name\": \"Brown\","
-                    + "\"preferred_username\": \"Alice Alice\","
-                    + "\"display_name\": \"Alice Brown\","
-                    + "\"email\": \"alice@email.com\","
-                    + "\"admin\": true,"
-                    + "\"custom\": null,"
-                    + "\"id\": 1234,"
-                    + "\"permissions\": [\"read\", \"write\"],"
-                    + "\"scopes\": {\"scope\": \"see\"}"
-                    + "}");
+    UserInfo userInfo = new UserInfo("{" + "\"sub\": \"alice123456\"," + "\"name\": \"alice\","
+            + "\"first_name\": \"Alice\"," + "\"family_name\": \"Brown\"," + "\"preferred_username\": \"Alice Alice\","
+            + "\"display_name\": \"Alice Brown\"," + "\"email\": \"alice@email.com\"," + "\"admin\": true,"
+            + "\"custom\": null," + "\"id\": 1234," + "\"permissions\": [\"read\", \"write\"],"
+            + "\"scopes\": {\"scope\": \"see\"}" + "}");
 
     @Test
     public void testGetName() {

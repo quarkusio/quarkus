@@ -20,20 +20,20 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 public class UserEntityIdentityProvider extends JpaIdentityProvider {
 
     @Override
-    public SecurityIdentity authenticate(EntityManager em,
-            UsernamePasswordAuthenticationRequest request) {
+    public SecurityIdentity authenticate(EntityManager em, UsernamePasswordAuthenticationRequest request) {
 
         Session session = em.unwrap(Session.class);
-        SimpleNaturalIdLoadAccess<PlainUserEntity> naturalIdLoadAccess = session.bySimpleNaturalId(PlainUserEntity.class);
+        SimpleNaturalIdLoadAccess<PlainUserEntity> naturalIdLoadAccess = session
+                .bySimpleNaturalId(PlainUserEntity.class);
         PlainUserEntity user = naturalIdLoadAccess.load(request.getUsername());
-        //        Query query = em.createQuery("FROM PlainUserEntity WHERE name = :name");
-        //        query.setParameter("name", request.getUsername());
-        //        PlainUserEntity user = getSingleUser(query);
+        // Query query = em.createQuery("FROM PlainUserEntity WHERE name = :name");
+        // query.setParameter("name", request.getUsername());
+        // PlainUserEntity user = getSingleUser(query);
         if (user == null)
             return null;
 
         // for MCF:
-        //               Password storedPassword = getMcfPasword(user.pass);
+        // Password storedPassword = getMcfPasword(user.pass);
         // for clear:
         Password storedPassword = getClearPassword(user.pass);
 

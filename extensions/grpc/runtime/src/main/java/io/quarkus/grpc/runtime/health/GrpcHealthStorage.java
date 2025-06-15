@@ -74,9 +74,7 @@ public class GrpcHealthStorage {
     }
 
     public HealthCheckResponse resultForStatus(ServingStatus servingStatus) {
-        return HealthCheckResponse.newBuilder()
-                .setStatus(servingStatus)
-                .build();
+        return HealthCheckResponse.newBuilder().setStatus(servingStatus).build();
     }
 
     BroadcastProcessor<ServingStatus> createStatusBroadcastProcessor(String serviceName) {

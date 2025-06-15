@@ -8,7 +8,7 @@ import io.quarkus.kubernetes.service.binding.runtime.KubernetesServiceBindingCon
 public class KubernetesServiceBindingProcessor {
     @BuildStep
     void configFactory(BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
-        runTimeConfigBuilder
-                .produce(new RunTimeConfigBuilderBuildItem(KubernetesServiceBindingConfigSourceFactoryBuilder.class.getName()));
+        runTimeConfigBuilder.produce(
+                new RunTimeConfigBuilderBuildItem(KubernetesServiceBindingConfigSourceFactoryBuilder.class.getName()));
     }
 }

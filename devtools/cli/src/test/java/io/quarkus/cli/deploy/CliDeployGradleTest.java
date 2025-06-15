@@ -56,9 +56,7 @@ public class CliDeployGradleTest {
         CliDriver.deleteDir(wrapperRoot);
 
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B",
-                "--no-code",
-                "-o", testProjectRoot.toString(),
-                "gradle-wrapper");
+                "--no-code", "-o", testProjectRoot.toString(), "gradle-wrapper");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         Assertions.assertTrue(result.getStdout().contains("SUCCESS"),
                 "Expected confirmation that the project has been created." + result);
@@ -89,7 +87,8 @@ public class CliDeployGradleTest {
 
     @Test
     public void testUsage() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e", "-B");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--gradle", "--verbose", "-e",
+                "-B");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
 
         result = CliDriver.execute(project, "deploy", "--dry-run");
@@ -139,8 +138,7 @@ public class CliDeployGradleTest {
         if ("knative".equals(deployer)) {
             return;
         }
-        result = CliDriver.execute(project, "deploy", deployer, "--deployment-kind", "Deployment",
-                "--dry-run");
+        result = CliDriver.execute(project, "deploy", deployer, "--deployment-kind", "Deployment", "--dry-run");
         assertEquals(CommandLine.ExitCode.OK, result.getExitCode(), "Expected OK return code." + result);
         assertTrue(result.getStdout().contains("deploy"));
         assertTrue(result.getStdout().contains("--no-daemon"));

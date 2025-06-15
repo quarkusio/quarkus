@@ -47,12 +47,9 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Consume(CoreVertxBuildItem.class) // metadata discovery requires Vertx instance
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
-    void prepareOidcDevConsole(Capabilities capabilities,
-            VertxHttpConfig httpConfig,
-            BeanContainerBuildItem beanContainer,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BuildProducer<CardPageBuildItem> cardPageProducer,
-            OidcDevUiRecorder recorder,
+    void prepareOidcDevConsole(Capabilities capabilities, VertxHttpConfig httpConfig,
+            BeanContainerBuildItem beanContainer, NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BuildProducer<CardPageBuildItem> cardPageProducer, OidcDevUiRecorder recorder,
             Optional<OidcDevServicesConfigBuildItem> oidcDevServicesConfigBuildItem) {
         if (!isOidcTenantEnabled() || (!isClientIdSet() && oidcDevServicesConfigBuildItem.isEmpty())) {
             return;
@@ -72,25 +69,15 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
             } else {
                 keycloakAdminUrl = null;
             }
-            var cardPage = createProviderWebComponent(recorder,
-                    capabilities,
-                    providerName,
+            var cardPage = createProviderWebComponent(recorder, capabilities, providerName,
                     getApplicationType(providerConfig),
-                    oidcConfig.devui().grant().type().isPresent() ? oidcConfig.devui().grant().type().get().getGrantType()
+                    oidcConfig.devui().grant().type().isPresent()
+                            ? oidcConfig.devui().grant().type().get().getGrantType()
                             : "code",
-                    null,
-                    null,
-                    null,
-                    checkProviderUserInfoRequired(providerConfig),
-                    beanContainer,
-                    oidcConfig.devui().webClientTimeout(),
-                    oidcConfig.devui().grantOptions(),
-                    nonApplicationRootPathBuildItem,
-                    keycloakAdminUrl,
-                    null,
-                    null,
-                    true,
-                    httpConfig, discoverMetadata, authServerUrl);
+                    null, null, null, checkProviderUserInfoRequired(providerConfig), beanContainer,
+                    oidcConfig.devui().webClientTimeout(), oidcConfig.devui().grantOptions(),
+                    nonApplicationRootPathBuildItem, keycloakAdminUrl, null, null, true, httpConfig, discoverMetadata,
+                    authServerUrl);
             cardPageProducer.produce(cardPage);
         }
     }
@@ -153,10 +140,8 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
 
     private static OidcTenantConfig getProviderConfig() {
         try {
-            return ConfigProvider.getConfig()
-                    .getOptionalValue(OIDC_PROVIDER_CONFIG_KEY, Provider.class)
-                    .map(KnownOidcProviders::provider)
-                    .orElse(null);
+            return ConfigProvider.getConfig().getOptionalValue(OIDC_PROVIDER_CONFIG_KEY, Provider.class)
+                    .map(KnownOidcProviders::provider).orElse(null);
         } catch (Exception ex) {
             return null;
         }

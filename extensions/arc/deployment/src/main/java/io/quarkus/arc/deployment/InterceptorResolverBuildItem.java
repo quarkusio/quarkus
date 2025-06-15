@@ -24,8 +24,8 @@ public final class InterceptorResolverBuildItem extends SimpleBuildItem {
 
     InterceptorResolverBuildItem(BeanDeployment beanDeployment) {
         this.resolver = beanDeployment.getInterceptorResolver();
-        this.interceptorBindings = Collections.unmodifiableSet(
-                beanDeployment.getInterceptorBindings().stream().map(ClassInfo::name).collect(Collectors.toUnmodifiableSet()));
+        this.interceptorBindings = Collections.unmodifiableSet(beanDeployment.getInterceptorBindings().stream()
+                .map(ClassInfo::name).collect(Collectors.toUnmodifiableSet()));
         this.beanDeployment = beanDeployment;
     }
 
@@ -34,7 +34,6 @@ public final class InterceptorResolverBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @return the set of all known interceptor bindings
      */
     public Set<DotName> getInterceptorBindings() {
@@ -42,9 +41,10 @@ public final class InterceptorResolverBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @param annotation
+     *
      * @return the collection of interceptor bindings
+     *
      * @see BeanDeployment#extractInterceptorBindings(AnnotationInstance)
      */
     public Collection<AnnotationInstance> extractInterceptorBindings(AnnotationInstance annotation) {

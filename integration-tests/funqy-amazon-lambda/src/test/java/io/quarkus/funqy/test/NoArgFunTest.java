@@ -14,11 +14,6 @@ public class NoArgFunTest {
 
     @Test
     public void testNoArgFun() throws Exception {
-        given()
-                .when()
-                .post()
-                .then()
-                .statusCode(200)
-                .body(containsString("noArgFun"));
+        given().when().post().then().statusCode(200).body(containsString("noArgFun"));
     }
 }

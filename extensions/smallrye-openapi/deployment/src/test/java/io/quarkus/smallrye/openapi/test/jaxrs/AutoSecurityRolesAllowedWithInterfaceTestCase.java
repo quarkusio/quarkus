@@ -20,16 +20,11 @@ class AutoSecurityRolesAllowedWithInterfaceTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ApplicationContext.class,
-                            FooAPI.class, FooResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ApplicationContext.class, FooAPI.class, FooResource.class));
 
     static Matcher<Iterable<Object>> schemeArray(String schemeName, String... roles) {
-        return allOf(
-                iterableWithSize(1),
-                hasItem(allOf(
-                        aMapWithSize(1),
-                        hasEntry(equalTo(schemeName), containsInAnyOrder(roles)))));
+        return allOf(iterableWithSize(1),
+                hasItem(allOf(aMapWithSize(1), hasEntry(equalTo(schemeName), containsInAnyOrder(roles)))));
     }
 
     @Test
@@ -37,16 +32,10 @@ class AutoSecurityRolesAllowedWithInterfaceTestCase {
 
         var oidcAuth = schemeArray("oidc_auth", "RoleXY");
 
-        RestAssured.given()
-                .header("Accept", "application/json")
-                .when()
-                .get("/q/openapi")
-                .then()
-                .log().body()
-                .and()
-                .body("components.securitySchemes.oidc_auth.$ref", equalToObject("#/components/securitySchemes/oidc_auth"))
-                .and()
-                .body("paths.'/secured/foo'.get.security", oidcAuth);
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then().log().body().and()
+                .body("components.securitySchemes.oidc_auth.$ref",
+                        equalToObject("#/components/securitySchemes/oidc_auth"))
+                .and().body("paths.'/secured/foo'.get.security", oidcAuth);
 
     }
 

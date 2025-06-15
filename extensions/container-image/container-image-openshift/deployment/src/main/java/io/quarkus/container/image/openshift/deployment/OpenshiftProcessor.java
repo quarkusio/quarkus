@@ -96,40 +96,35 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)
-    public void openshiftPrepareJvmDockerBuild(ContainerImageOpenshiftConfig config,
-            OutputTargetBuildItem out,
+    public void openshiftPrepareJvmDockerBuild(ContainerImageOpenshiftConfig config, OutputTargetBuildItem out,
             BuildProducer<DecoratorBuildItem> decorator) {
         if (config.buildStrategy() == BuildStrategy.DOCKER) {
             decorator.produce(new DecoratorBuildItem(new ApplyDockerfileToBuildConfigDecorator(null,
                     findMainSourcesRoot(out.getOutputDirectory()).getValue().resolve(config.jvmDockerfile()))));
-            //When using the docker build strategy, we can't possibly know these values, so it's the image responsibility to work without them.
+            // When using the docker build strategy, we can't possibly know these values, so it's the image
+            // responsibility to work without them.
             decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, "JAVA_APP_JAR")));
             decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, "JAVA_APP_LIB")));
         }
     }
 
     @BuildStep(onlyIf = { OpenshiftBuild.class, NativeBuild.class })
-    public void openshiftPrepareNativeDockerBuild(ContainerImageOpenshiftConfig config,
-            OutputTargetBuildItem out,
+    public void openshiftPrepareNativeDockerBuild(ContainerImageOpenshiftConfig config, OutputTargetBuildItem out,
             BuildProducer<DecoratorBuildItem> decorator) {
         if (config.buildStrategy() == BuildStrategy.DOCKER) {
             decorator.produce(new DecoratorBuildItem(new ApplyDockerfileToBuildConfigDecorator(null,
                     findMainSourcesRoot(out.getOutputDirectory()).getValue().resolve(config.nativeDockerfile()))));
         }
-        //Let's remove this for all kinds of native build
+        // Let's remove this for all kinds of native build
         decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, "JAVA_APP_JAR")));
         decorator.produce(new DecoratorBuildItem(new RemoveEnvVarDecorator(null, "JAVA_APP_LIB")));
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)
     public void openshiftRequirementsJvm(ContainerImageOpenshiftConfig config,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem out,
-            PackageConfig packageConfig,
-            JarBuildItem jarBuildItem,
-            CompiledJavaVersionBuildItem compiledJavaVersion,
-            BuildProducer<DecoratorBuildItem> decorator,
-            BuildProducer<KubernetesEnvBuildItem> envProducer,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, OutputTargetBuildItem out, PackageConfig packageConfig,
+            JarBuildItem jarBuildItem, CompiledJavaVersionBuildItem compiledJavaVersion,
+            BuildProducer<DecoratorBuildItem> decorator, BuildProducer<KubernetesEnvBuildItem> envProducer,
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
@@ -150,7 +145,7 @@ public class OpenshiftProcessor {
             String jarDirectory = config.jarDirectory().orElse(ContainerImageOpenshiftConfig.FALLBACK_JAR_DIRECTORY);
             String pathToJar = concatUnixPaths(jarDirectory, jarFileName);
 
-            //In all other cases its the responsibility of the image to set those up correctly.
+            // In all other cases its the responsibility of the image to set those up correctly.
             if (hasCustomJarPath || hasCustomJvmArguments) {
                 List<String> cmd = new ArrayList<>();
                 cmd.add("java");
@@ -164,11 +159,8 @@ public class OpenshiftProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class, NativeBuild.class })
     public void openshiftRequirementsNative(ContainerImageOpenshiftConfig config,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem out,
-            PackageConfig packageConfig,
-            NativeImageBuildItem nativeImage,
-            BuildProducer<KubernetesEnvBuildItem> envProducer,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, OutputTargetBuildItem out, PackageConfig packageConfig,
+            NativeImageBuildItem nativeImage, BuildProducer<KubernetesEnvBuildItem> envProducer,
             BuildProducer<BaseImageInfoBuildItem> builderImageProducer,
             BuildProducer<KubernetesCommandBuildItem> commandProducer) {
 
@@ -178,11 +170,12 @@ public class OpenshiftProcessor {
 
         String nativeBinaryFileName = null;
 
-        boolean hasCustomNativePath = config.nativeBinaryFileName().isPresent() || config.nativeBinaryDirectory().isPresent();
+        boolean hasCustomNativePath = config.nativeBinaryFileName().isPresent()
+                || config.nativeBinaryDirectory().isPresent();
         boolean hasCustomNativeArguments = config.nativeArguments().isPresent();
 
-        //The default openshift builder for native builds, renames the native binary.
-        //To make things easier for the user, we need to handle it.
+        // The default openshift builder for native builds, renames the native binary.
+        // To make things easier for the user, we need to handle it.
         if (usingDefaultBuilder && !config.nativeBinaryFileName().isPresent()) {
             nativeBinaryFileName = ContainerImageOpenshiftConfig.DEFAULT_NATIVE_TARGET_FILENAME;
         } else {
@@ -195,20 +188,19 @@ public class OpenshiftProcessor {
             // 1. explicitly specified by the user.
             // 2. fallback vale
 
-            String nativeBinaryDirectory = config.nativeBinaryDirectory().orElse(config.FALLBACK_NATIVE_BINARY_DIRECTORY);
+            String nativeBinaryDirectory = config.nativeBinaryDirectory()
+                    .orElse(config.FALLBACK_NATIVE_BINARY_DIRECTORY);
             String pathToNativeBinary = concatUnixPaths(nativeBinaryDirectory, nativeBinaryFileName);
             if (hasCustomNativePath || hasCustomNativeArguments) {
-                commandProducer
-                        .produce(
-                                KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments().get()));
+                commandProducer.produce(
+                        KubernetesCommandBuildItem.commandWithArgs(pathToNativeBinary, config.nativeArguments().get()));
             }
         }
     }
 
     @BuildStep(onlyIf = { OpenshiftBuild.class })
     public void configureExternalRegistry(ApplicationInfoBuildItem applicationInfo,
-            ContainerImageOpenshiftConfig openshiftConfig,
-            ContainerImageInfoBuildItem containerImageInfo,
+            ContainerImageOpenshiftConfig openshiftConfig, ContainerImageInfoBuildItem containerImageInfo,
             BuildProducer<DecoratorBuildItem> decorator) {
         containerImageInfo.registry.ifPresent(registry -> {
             final String name = applicationInfo.getName();
@@ -216,12 +208,12 @@ public class OpenshiftProcessor {
             String repositoryWithRegistry = registry + "/" + containerImageInfo.getRepository();
 
             if (openshiftConfig.imagePushSecret().isPresent()) {
-                //if a push secret has been specified, we need to apply it.
+                // if a push secret has been specified, we need to apply it.
                 String imagePushSecret = openshiftConfig.imagePushSecret().get();
                 decorator.produce(new DecoratorBuildItem(OPENSHIFT, new ApplyDockerImageOutputToBuildConfigDecorator(
                         applicationInfo.getName(), containerImageInfo.getImage(), imagePushSecret)));
             } else if (registry.contains(OPENSHIFT_INTERNAL_REGISTRY)) {
-                //no special handling of secrets is really needed.
+                // no special handling of secrets is really needed.
             } else if (containerImageInfo.username.isPresent() && containerImageInfo.password.isPresent()) {
                 String imagePushSecret = applicationInfo.getName() + "-push-secret";
                 decorator.produce(new DecoratorBuildItem(OPENSHIFT,
@@ -239,10 +231,8 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class }, onlyIfNot = NativeBuild.class)
-    public void openshiftBuildFromJar(ContainerImageOpenshiftConfig config,
-            ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClientBuilder,
-            ContainerImageInfoBuildItem containerImage,
+    public void openshiftBuildFromJar(ContainerImageOpenshiftConfig config, ContainerImageConfig containerImageConfig,
+            KubernetesClientBuildItem kubernetesClientBuilder, ContainerImageInfoBuildItem containerImage,
             ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
             List<GeneratedFileSystemResourceBuildItem> generatedResources,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
@@ -261,24 +251,23 @@ public class OpenshiftProcessor {
             return;
         }
 
-        Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
-                .stream()
-                .filter(r -> r.getName().endsWith(File.separator + "openshift.yml"))
-                .findFirst();
+        Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources.stream()
+                .filter(r -> r.getName().endsWith(File.separator + "openshift.yml")).findFirst();
 
         if (openshiftYml.isEmpty()) {
-            LOG.warn(
-                    "No OpenShift manifests were generated so no OpenShift build process will be taking place");
+            LOG.warn("No OpenShift manifests were generated so no OpenShift build process will be taking place");
             return;
         }
 
         try (KubernetesClient kubernetesClient = buildClient(kubernetesClientBuilder)) {
             String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
-            LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy() + " on server: "
-                    + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
-            //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
-            //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
-            //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
+            LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy()
+                    + " on server: " + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
+            // The contextRoot is where inside the tarball we will add the jars. A null value means everything will be
+            // added under '/' while "target" means everything will be added under '/target'.
+            // For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using
+            // '/target' is a requirement.
+            // For s2i kind of builds where jars are expected directly in the '/' we have to use null.
             String outputDirName = out.getOutputDirectory().getFileName().toString();
             PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
             String contextRoot = getContextRoot(outputDirName, jarType == FAST_JAR || jarType == MUTABLE_JAR,
@@ -288,7 +277,8 @@ public class OpenshiftProcessor {
             if (jarType == FAST_JAR || jarType == MUTABLE_JAR) {
                 createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                         jar.getPath().getParent());
-            } else if (jar.getLibraryDir() != null) { //When using uber-jar the libraryDir is going to be null, potentially causing NPE.
+            } else if (jar.getLibraryDir() != null) { // When using uber-jar the libraryDir is going to be null,
+                                                      // potentially causing NPE.
                 createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
                         jar.getPath(), jar.getLibraryDir());
             } else {
@@ -312,16 +302,13 @@ public class OpenshiftProcessor {
 
     @BuildStep(onlyIf = { IsNormalNotRemoteDev.class, OpenshiftBuild.class, NativeBuild.class })
     public void openshiftBuildFromNative(ContainerImageOpenshiftConfig config,
-            ContainerImageConfig containerImageConfig,
-            KubernetesClientBuildItem kubernetesClientBuilder,
-            ContainerImageInfoBuildItem containerImage,
-            ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out, PackageConfig packageConfig,
-            List<GeneratedFileSystemResourceBuildItem> generatedResources,
+            ContainerImageConfig containerImageConfig, KubernetesClientBuildItem kubernetesClientBuilder,
+            ContainerImageInfoBuildItem containerImage, ArchiveRootBuildItem archiveRoot, OutputTargetBuildItem out,
+            PackageConfig packageConfig, List<GeneratedFileSystemResourceBuildItem> generatedResources,
             Optional<ContainerImageBuildRequestBuildItem> buildRequest,
             Optional<ContainerImagePushRequestBuildItem> pushRequest,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer,
-            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder,
-            NativeImageBuildItem nativeImage) {
+            BuildProducer<ContainerImageBuilderBuildItem> containerImageBuilder, NativeImageBuildItem nativeImage) {
 
         if (containerImageConfig.isBuildExplicitlyDisabled()) {
             return;
@@ -335,42 +322,39 @@ public class OpenshiftProcessor {
         try (KubernetesClient kubernetesClient = buildClient(kubernetesClientBuilder)) {
             String namespace = Optional.ofNullable(kubernetesClient.getNamespace()).orElse("default");
 
-            LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy() + " on server: "
-                    + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
-            Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources
-                    .stream()
-                    .filter(r -> r.getName().endsWith(File.separator + "openshift.yml"))
-                    .findFirst();
+            LOG.info("Starting (in-cluster) container image build for jar using: " + config.buildStrategy()
+                    + " on server: " + kubernetesClient.getMasterUrl() + " in namespace:" + namespace + ".");
+            Optional<GeneratedFileSystemResourceBuildItem> openshiftYml = generatedResources.stream()
+                    .filter(r -> r.getName().endsWith(File.separator + "openshift.yml")).findFirst();
 
             if (openshiftYml.isEmpty()) {
-                LOG.warn(
-                        "No OpenShift manifests were generated so no OpenShift build process will be taking place");
+                LOG.warn("No OpenShift manifests were generated so no OpenShift build process will be taking place");
                 return;
             }
-            //The contextRoot is where inside the tarball we will add the jars. A null value means everything will be added under '/' while "target" means everything will be added under '/target'.
-            //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
-            //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
+            // The contextRoot is where inside the tarball we will add the jars. A null value means everything will be
+            // added under '/' while "target" means everything will be added under '/target'.
+            // For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using
+            // '/target' is a requirement.
+            // For s2i kind of builds where jars are expected directly in the '/' we have to use null.
             String contextRoot = config.buildStrategy() == BuildStrategy.DOCKER ? "target" : null;
             createContainerImage(
                     newClientBuilderWithoutHttp2(kubernetesClient.getConfiguration(),
                             kubernetesClientBuilder.getHttpClientFactory()),
                     openshiftYml.get(), config, contextRoot, out.getOutputDirectory(), nativeImage.getPath());
-            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+            artifactResultProducer
+                    .produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
         }
     }
 
     public static void createContainerImage(KubernetesClientBuilder kubernetesClientBuilder,
-            GeneratedFileSystemResourceBuildItem openshiftManifests,
-            ContainerImageOpenshiftConfig openshiftConfig,
-            String base,
-            Path output,
-            Path... additional) {
+            GeneratedFileSystemResourceBuildItem openshiftManifests, ContainerImageOpenshiftConfig openshiftConfig,
+            String base, Path output, Path... additional) {
 
         File tar;
         try {
             File original = Packaging.packageFile(output, base, additional);
-            //Let's rename the archive and give it a more descriptive name, as it may appear in the logs.
+            // Let's rename the archive and give it a more descriptive name, as it may appear in the logs.
             tar = Files.createTempFile("quarkus-", "-openshift").toFile();
             Files.move(original.toPath(), tar.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (Exception e) {
@@ -409,8 +393,10 @@ public class OpenshiftProcessor {
     /**
      * Apply the openshift resources and wait until ImageStreamTags are created.
      *
-     * @param client the client instance
-     * @param buildResources resources to apply
+     * @param client
+     *        the client instance
+     * @param buildResources
+     *        resources to apply
      */
     private static void applyOpenshiftResources(OpenShiftClient client, List<HasMetadata> buildResources) {
         // Apply build resource requirements
@@ -422,8 +408,8 @@ public class OpenshiftProcessor {
             try {
                 OpenshiftUtils.waitForImageStreamTags(client, buildResources, 2, TimeUnit.MINUTES);
             } catch (KubernetesClientException e) {
-                //User may not have permission to get / list `ImageStreamTag` or this step may fail for any reason.
-                //As this is not an integral part of the build we should catch and log.
+                // User may not have permission to get / list `ImageStreamTag` or this step may fail for any reason.
+                // As this is not an integral part of the build we should catch and log.
                 LOG.debug("Waiting for ImageStream tag failed. Ignoring.");
             }
         } catch (KubernetesClientException e) {
@@ -441,23 +427,24 @@ public class OpenshiftProcessor {
     }
 
     /**
-     * Performs the binary build of the specified {@link BuildConfig} with the given
-     * binary input.
+     * Performs the binary build of the specified {@link BuildConfig} with the given binary input.
      *
-     * @param buildConfig The build config
-     * @param binaryFile The binary file
-     * @param openshiftConfig The openshift configuration
-     * @param kubernetesClientBuilder The kubernetes client builder
+     * @param buildConfig
+     *        The build config
+     * @param binaryFile
+     *        The binary file
+     * @param openshiftConfig
+     *        The openshift configuration
+     * @param kubernetesClientBuilder
+     *        The kubernetes client builder
      */
     private static Build startOpenshiftBuild(BuildConfig buildConfig, File binaryFile,
             ContainerImageOpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
         try (KubernetesClient kubernetesClient = kubernetesClientBuilder.build()) {
             OpenShiftClient client = toOpenshiftClient(kubernetesClient);
             try {
-                return client.buildConfigs().withName(buildConfig.getMetadata().getName())
-                        .instantiateBinary()
-                        .withTimeoutInMillis(openshiftConfig.buildTimeout().toMillis())
-                        .fromFile(binaryFile);
+                return client.buildConfigs().withName(buildConfig.getMetadata().getName()).instantiateBinary()
+                        .withTimeoutInMillis(openshiftConfig.buildTimeout().toMillis()).fromFile(binaryFile);
             } catch (Exception e) {
                 Optional<Build> running = buildsOf(client, buildConfig).stream().findFirst();
                 if (running.isPresent()) {
@@ -480,7 +467,8 @@ public class OpenshiftProcessor {
                 OpenShiftClient client = toOpenshiftClient(kubernetesClient);
                 Build updated = client.builds().withName(buildName).get();
                 if (updated == null) {
-                    throw new IllegalStateException("Build:" + build.getMetadata().getName() + " is no longer present!");
+                    throw new IllegalStateException(
+                            "Build:" + build.getMetadata().getName() + " is no longer present!");
                 } else if (updated.getStatus() == null) {
                     throw new IllegalStateException("Build:" + build.getMetadata().getName() + " has no status!");
                 } else if (isNew(updated) || isPending(updated) || isRunning(updated)) {
@@ -544,7 +532,7 @@ public class OpenshiftProcessor {
 
     private static KubernetesClientBuilder newClientBuilderWithoutHttp2(Config configuration,
             HttpClient.Factory httpClientFactory) {
-        //Let's disable http2 as it causes issues with duplicate build triggers.
+        // Let's disable http2 as it causes issues with duplicate build triggers.
         configuration.setHttp2Disable(true);
 
         return new KubernetesClientBuilder().withConfig(configuration).withHttpClientFactory(httpClientFactory);
@@ -567,10 +555,8 @@ public class OpenshiftProcessor {
         if (r instanceof ImageStream) {
             ImageStream is = (ImageStream) r;
             ImageStream existing = client.imageStreams().withName(metadata.getMetadata().getName()).get();
-            if (existing != null &&
-                    existing.getSpec() != null &&
-                    existing.getSpec().getDockerImageRepository() != null &&
-                    existing.getSpec().getDockerImageRepository().equals(is.getSpec().getDockerImageRepository())) {
+            if (existing != null && existing.getSpec() != null && existing.getSpec().getDockerImageRepository() != null
+                    && existing.getSpec().getDockerImageRepository().equals(is.getSpec().getDockerImageRepository())) {
                 LOG.info("Found: " + metadata.getKind() + " " + metadata.getMetadata().getName() + " repository: "
                         + existing.getSpec().getDockerImageRepository());
                 return;
@@ -594,7 +580,8 @@ public class OpenshiftProcessor {
         }
     }
 
-    private static void deleteBuildConfig(OpenShiftClient client, HasMetadata metadata, NamespaceableResource<HasMetadata> r) {
+    private static void deleteBuildConfig(OpenShiftClient client, HasMetadata metadata,
+            NamespaceableResource<HasMetadata> r) {
         r.cascading(true).delete();
         try {
             client.resource(metadata).waitUntilCondition(d -> d == null, 10, TimeUnit.SECONDS);

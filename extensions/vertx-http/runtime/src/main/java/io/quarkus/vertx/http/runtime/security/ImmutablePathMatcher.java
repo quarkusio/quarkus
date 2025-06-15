@@ -48,7 +48,9 @@ public class ImmutablePathMatcher<T> {
     /**
      * Matches a path against the registered handlers.
      *
-     * @param path The relative path to match
+     * @param path
+     *        The relative path to match
+     *
      * @return The match. This will never be null, however if none matched its value field will be
      */
     public PathMatch<T> match(String path) {
@@ -73,7 +75,7 @@ public class ImmutablePathMatcher<T> {
                 // one path with inner wildcard, we need to check for paths like /*/one
                 if (c == '/' || (hasPathWithInnerWildcard && pathLength == 1)) {
 
-                    //String part = path.substring(0, pathLength);
+                    // String part = path.substring(0, pathLength);
                     SubstringMatch<T> next = paths.get(path, pathLength);
                     if (next != null) {
                         return new PathMatch<>(next.getKey(), next.getValue());
@@ -111,11 +113,11 @@ public class ImmutablePathMatcher<T> {
         private static final String STRING_PATH_SEPARATOR = "/";
         private final Map<String, T> exactPathMatches = new HashMap<>();
         /**
-         * Exact paths we proactively secure when more specify permissions are not specified.
-         * For example path for exact path '/api/hello' we add extra pattern for the '/api/hello/'.
-         * This helps to secure Jakarta REST endpoints by default as both paths may point to the same endpoint there.
-         * However, we only do that when user didn't declare any permission for the '/api/hello/'.
-         * This way, user can still forbid access to the `/api/hello' path and permit access to the '/api/hello/' path.
+         * Exact paths we proactively secure when more specify permissions are not specified. For example path for exact
+         * path '/api/hello' we add extra pattern for the '/api/hello/'. This helps to secure Jakarta REST endpoints by
+         * default as both paths may point to the same endpoint there. However, we only do that when user didn't declare
+         * any permission for the '/api/hello/'. This way, user can still forbid access to the `/api/hello' path and
+         * permit access to the '/api/hello/' path.
          */
         private final Map<String, T> additionalExactPathMatches = new HashMap<>();
         private final Map<String, Path<T>> pathsWithWildcard = new HashMap<>();
@@ -127,8 +129,10 @@ public class ImmutablePathMatcher<T> {
         }
 
         /**
-         * @param handlerAccumulator policies defined with same path are accumulated, this way, you can define
-         *        more than one policy of one path (e.g. one for POST method, one for GET method)
+         * @param handlerAccumulator
+         *        policies defined with same path are accumulated, this way, you can define more than one policy of
+         *        one path (e.g. one for POST method, one for GET method)
+         *
          * @return ImmutablePathMatcherBuilder
          */
         public ImmutablePathMatcherBuilder<T> handlerAccumulator(BiConsumer<T, T> handlerAccumulator) {
@@ -141,7 +145,9 @@ public class ImmutablePathMatcher<T> {
         }
 
         /**
-         * @param rootPath Path to which relative patterns (paths not starting with a separator) are linked.
+         * @param rootPath
+         *        Path to which relative patterns (paths not starting with a separator) are linked.
+         *
          * @return ImmutablePathMatcherBuilder
          */
         public ImmutablePathMatcherBuilder<T> rootPath(String rootPath) {
@@ -176,20 +182,19 @@ public class ImmutablePathMatcher<T> {
                     // create path matcher for sub-path after inner wildcard: /one/*/three/four => /three/four
                     var builder = new ImmutablePathMatcherBuilder<SubstringMatch<T>>();
                     if (handlerAccumulator != null) {
-                        builder.handlerAccumulator(
-                                new BiConsumer<SubstringMatch<T>, SubstringMatch<T>>() {
-                                    @Override
-                                    public void accept(SubstringMatch<T> match1, SubstringMatch<T> match2) {
-                                        if (match2.hasSubPathMatcher()) {
-                                            // this should be impossible to happen since these matches are created
-                                            // right in this 'build()' method, but let's make sure of that
-                                            throw new IllegalStateException(
-                                                    String.format("Failed to merge sub-matches with key '%s' for path '%s'",
-                                                            match1.getKey(), p.originalPath));
-                                        }
-                                        handlerAccumulator.accept(match1.getValue(), match2.getValue());
-                                    }
-                                });
+                        builder.handlerAccumulator(new BiConsumer<SubstringMatch<T>, SubstringMatch<T>>() {
+                            @Override
+                            public void accept(SubstringMatch<T> match1, SubstringMatch<T> match2) {
+                                if (match2.hasSubPathMatcher()) {
+                                    // this should be impossible to happen since these matches are created
+                                    // right in this 'build()' method, but let's make sure of that
+                                    throw new IllegalStateException(
+                                            String.format("Failed to merge sub-matches with key '%s' for path '%s'",
+                                                    match1.getKey(), p.originalPath));
+                                }
+                                handlerAccumulator.accept(match1.getValue(), match2.getValue());
+                            }
+                        });
                     }
                     for (PathWithInnerWildcard<T> p1 : p.pathsWithInnerWildcard) {
                         builder.addPath(p.originalPath, p1.remaining, new SubstringMatch<>(p1.remaining, p1.handler));
@@ -208,25 +213,23 @@ public class ImmutablePathMatcher<T> {
         }
 
         /**
-         * Two sorts of paths are accepted:
-         * - exact path matches (without wildcard); these are matched first and Quarkus does no magic,
-         * request path must exactly match
-         * - paths with one or more wildcard:
-         * - ending wildcard matches zero or more path segment
-         * - inner wildcard matches exactly one path segment
-         * few notes:
-         * - it's key to understand only segments are matched, for example '/one*' will not match request path '/ones'
-         * - path patterns '/one*' and '/one/*' are one and the same thing as we only match path segments and '/one*'
-         * in fact means 'either /one or /one/any-number-of-path-segments'
-         * - paths are matched on longer-prefix-wins basis
-         * - what we call 'prefix' is in fact path to the first wildcard
-         * - if there is a path after first wildcard like in the '/one/*\/three' pattern ('/three' is remainder)
-         * path pattern is considered longer than the '/one/*' pattern and wins for request path '/one/two/three'
-         * - more specific pattern wins and wildcard is always less specific than any other path segment character,
-         * therefore path '/one/two/three*' will win over '/one/*\/three*' for request path '/one/two/three/four'
+         * Two sorts of paths are accepted: - exact path matches (without wildcard); these are matched first and Quarkus
+         * does no magic, request path must exactly match - paths with one or more wildcard: - ending wildcard matches
+         * zero or more path segment - inner wildcard matches exactly one path segment few notes: - it's key to
+         * understand only segments are matched, for example '/one*' will not match request path '/ones' - path patterns
+         * '/one*' and '/one/*' are one and the same thing as we only match path segments and '/one*' in fact means
+         * 'either /one or /one/any-number-of-path-segments' - paths are matched on longer-prefix-wins basis - what we
+         * call 'prefix' is in fact path to the first wildcard - if there is a path after first wildcard like in the
+         * '/one/*\/three' pattern ('/three' is remainder) path pattern is considered longer than the '/one/*' pattern
+         * and wins for request path '/one/two/three' - more specific pattern wins and wildcard is always less specific
+         * than any other path segment character, therefore path '/one/two/three*' will win over '/one/*\/three*' for
+         * request path '/one/two/three/four'
          *
-         * @param path normalized path
-         * @param handler prefix path handler
+         * @param path
+         *        normalized path
+         * @param handler
+         *        prefix path handler
+         *
          * @return self
          */
         public ImmutablePathMatcherBuilder<T> addPath(String path, T handler) {

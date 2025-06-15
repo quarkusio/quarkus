@@ -20,9 +20,8 @@ public class SmallRyeBlockingPublisherTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanReturningPayloadsUsingSmallRyeBlocking.class,
-                            BeanReturningMessagesUsingSmallRyeBlocking.class, InfiniteSubscriber.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanReturningPayloadsUsingSmallRyeBlocking.class,
+                    BeanReturningMessagesUsingSmallRyeBlocking.class, InfiniteSubscriber.class));
 
     @Inject
     BeanReturningPayloadsUsingSmallRyeBlocking beanReturningPayloads;

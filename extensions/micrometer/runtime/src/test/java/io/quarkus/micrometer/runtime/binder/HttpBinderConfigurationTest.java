@@ -21,13 +21,11 @@ public class HttpBinderConfigurationTest {
     public void testHttpServerMetricsIgnorePatterns() {
         HttpServerConfig httpServerConfig = Mockito.mock(HttpServerConfig.class);
         Mockito.doReturn(Optional.of(new ArrayList<>(Arrays.asList(" /item/.* ", " /oranges/.* "))))
-                .when(httpServerConfig)
-                .ignorePatterns();
+                .when(httpServerConfig).ignorePatterns();
         VertxConfig vertxConfig = Mockito.mock(VertxConfig.class);
         HttpClientConfig httpClientConfig = Mockito.mock(HttpClientConfig.class);
-        HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
-                true, false,
-                httpServerConfig, httpClientConfig, vertxConfig);
+        HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(true, false, httpServerConfig,
+                httpClientConfig, vertxConfig);
         List<Pattern> ignorePatterns = binderConfig.getServerIgnorePatterns();
 
         Assertions.assertEquals(2, ignorePatterns.size());
@@ -44,14 +42,13 @@ public class HttpBinderConfigurationTest {
     @Test
     public void testHttpServerMetricsMatchPatterns() {
         HttpServerConfig httpServerConfig = Mockito.mock(HttpServerConfig.class);
-        Mockito.doReturn(Optional
-                .of(new ArrayList<>(Arrays.asList(" /item/\\d+=/item/{id} ", "  /msg/\\d+=/msg/{other} "))))
+        Mockito.doReturn(
+                Optional.of(new ArrayList<>(Arrays.asList(" /item/\\d+=/item/{id} ", "  /msg/\\d+=/msg/{other} "))))
                 .when(httpServerConfig).matchPatterns();
         HttpClientConfig httpClientConfig = Mockito.mock(HttpClientConfig.class);
         VertxConfig vertxConfig = Mockito.mock(VertxConfig.class);
-        HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
-                true, false,
-                httpServerConfig, httpClientConfig, vertxConfig);
+        HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(true, false, httpServerConfig,
+                httpClientConfig, vertxConfig);
         Map<Pattern, String> matchPatterns = binderConfig.getServerMatchPatterns();
 
         Assertions.assertFalse(matchPatterns.isEmpty());

@@ -11,9 +11,8 @@ public class ConstructorInjectionResourceTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ConstructorInjectionResource.class, SingletonConstructorInjectionResource.class,
-                            Service.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ConstructorInjectionResource.class,
+                    SingletonConstructorInjectionResource.class, Service.class));
 
     @Test
     public void testConstructorInjectionResource() {

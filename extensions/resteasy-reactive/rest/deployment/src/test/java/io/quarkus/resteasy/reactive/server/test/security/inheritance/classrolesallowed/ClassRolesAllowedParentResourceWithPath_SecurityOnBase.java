@@ -25,7 +25,8 @@ public abstract class ClassRolesAllowedParentResourceWithPath_SecurityOnBase
 
     @POST
     @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + CLASS_ROLES_ALLOWED_PATH)
-    public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassRolesAllowed(JsonObject array);
+    public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassRolesAllowed(
+            JsonObject array);
 
     @Path(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_BASE + CLASS_ROLES_ALLOWED_PATH)
     public abstract ClassRolesAllowedSubResourceWithoutPath classPathOnParentResource_SubDeclaredOnParent_SubImplOnBaseResource_ClassRolesAllowed();

@@ -29,11 +29,9 @@ public class ArcDevProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void registerRoutes(ArcConfig arcConfig, ArcDevRecorder recorder,
-            BuildProducer<RouteBuildItem> routes,
+    void registerRoutes(ArcConfig arcConfig, ArcDevRecorder recorder, BuildProducer<RouteBuildItem> routes,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ValidationPhaseBuildItem validationPhase,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationErrorBuildItem> errors) {
 
         List<BeanInfo> removed = new ArrayList<>();
@@ -42,7 +40,8 @@ public class ArcDevProcessor {
         if (removedInterceptors != null) {
             removed.addAll(removedInterceptors);
         }
-        Collection<DecoratorInfo> removedDecorators = validationPhase.getContext().get(BuildExtension.Key.REMOVED_DECORATORS);
+        Collection<DecoratorInfo> removedDecorators = validationPhase.getContext()
+                .get(BuildExtension.Key.REMOVED_DECORATORS);
         if (removedDecorators != null) {
             removed.addAll(removedDecorators);
         }
@@ -52,8 +51,11 @@ public class ArcDevProcessor {
         } else {
             removedInterceptorsDecorators = new ArrayList<>();
             for (BeanInfo r : removed) {
-                removedInterceptorsDecorators.add(new String[] { r.isInterceptor() ? InjectableBean.Kind.INTERCEPTOR.toString()
-                        : InjectableBean.Kind.DECORATOR.toString(), r.getImplClazz().name().toString() });
+                removedInterceptorsDecorators
+                        .add(new String[] {
+                                r.isInterceptor() ? InjectableBean.Kind.INTERCEPTOR.toString()
+                                        : InjectableBean.Kind.DECORATOR.toString(),
+                                r.getImplClazz().name().toString() });
             }
         }
 
@@ -61,26 +63,21 @@ public class ArcDevProcessor {
         String beansPath = basePath + "/beans";
         String removedBeansPath = basePath + "/removed-beans";
         String observersPath = basePath + "/observers";
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(basePath)
-                .displayOnNotFoundPage("CDI Overview")
-                .handler(recorder.createSummaryHandler(getConfigProperties(arcConfig),
-                        nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
-                        removedInterceptorsDecorators.size()))
+        routes.produce(
+                nonApplicationRootPathBuildItem.routeBuilder().route(basePath).displayOnNotFoundPage("CDI Overview")
+                        .handler(recorder.createSummaryHandler(getConfigProperties(arcConfig),
+                                nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
+                                removedInterceptorsDecorators.size()))
+                        .build());
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder().route(beansPath)
+                .displayOnNotFoundPage("Active CDI Beans").handler(recorder.createBeansHandler(BEAN_DEPENDENCIES))
                 .build());
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(beansPath)
-                .displayOnNotFoundPage("Active CDI Beans")
-                .handler(recorder.createBeansHandler(BEAN_DEPENDENCIES)).build());
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(removedBeansPath)
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder().route(removedBeansPath)
                 .displayOnNotFoundPage("Removed CDI Beans")
                 .handler(recorder.createRemovedBeansHandler(removedInterceptorsDecorators)).build());
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(observersPath)
-                .displayOnNotFoundPage("Active CDI Observers")
-                .handler(recorder.createObserversHandler()).build());
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder().route(observersPath)
+                .displayOnNotFoundPage("Active CDI Observers").handler(recorder.createObserversHandler()).build());
     }
 
     // Note that we can't turn ArcConfig into BUILD_AND_RUN_TIME_FIXED because it's referencing IndexDependencyConfig
@@ -93,7 +90,8 @@ public class ArcDevProcessor {
         props.put("quarkus.arc.transform-unproxyable-classes", "" + arcConfig.transformUnproxyableClasses());
         props.put("quarkus.arc.auto-inject-fields", "" + arcConfig.autoInjectFields());
         props.put("quarkus.arc.auto-producer-methods", "" + arcConfig.autoProducerMethods());
-        props.put("quarkus.arc.selected-alternatives", "" + arcConfig.selectedAlternatives().map(Object::toString).orElse(""));
+        props.put("quarkus.arc.selected-alternatives",
+                "" + arcConfig.selectedAlternatives().map(Object::toString).orElse(""));
         props.put("quarkus.arc.exclude-types", "" + arcConfig.excludeTypes().map(Object::toString).orElse(""));
         return props;
     }

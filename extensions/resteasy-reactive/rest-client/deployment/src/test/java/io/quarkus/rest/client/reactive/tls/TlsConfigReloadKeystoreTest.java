@@ -41,8 +41,7 @@ import io.vertx.core.net.PfxOptions;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "wrong-test-reload", password = "password", formats = Format.PKCS12, client = true),
-        @Certificate(name = "test-reload", password = "password", formats = Format.PKCS12, client = true)
-})
+        @Certificate(name = "test-reload", password = "password", formats = Format.PKCS12, client = true) })
 public class TlsConfigReloadKeystoreTest {
 
     private static final int PORT = 63806;
@@ -54,16 +53,14 @@ public class TlsConfigReloadKeystoreTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Client.class, SSLTools.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Client.class, SSLTools.class))
             .overrideRuntimeConfigKey("loc", temp.getAbsolutePath())
             .overrideRuntimeConfigKey("quarkus.rest-client.my-client.tls-configuration-name", "my-tls-client")
-            .overrideRuntimeConfigKey("quarkus.tls.my-tls-client.key-store.p12.path", temp.getAbsolutePath() + "/tls.p12")
+            .overrideRuntimeConfigKey("quarkus.tls.my-tls-client.key-store.p12.path",
+                    temp.getAbsolutePath() + "/tls.p12")
             .overrideRuntimeConfigKey("quarkus.tls.my-tls-client.key-store.p12.password", "password")
             .overrideRuntimeConfigKey("quarkus.rest-client.my-client.url", "https://127.0.0.1:" + PORT)
-            .overrideRuntimeConfigKey("quarkus.tls.my-tls-client.trust-all", "true")
-            .setBeforeAllCustomizer(() -> {
+            .overrideRuntimeConfigKey("quarkus.tls.my-tls-client.trust-all", "true").setBeforeAllCustomizer(() -> {
                 try {
                     temp.mkdirs();
                     Files.copy(new File("target/certs/wrong-test-reload-client-keystore.p12").toPath(),
@@ -94,9 +91,8 @@ public class TlsConfigReloadKeystoreTest {
     @BeforeAll
     static void setupServer() throws Exception {
         testVertx = Vertx.vertx();
-        testServer = runServer(testVertx, "target/certs/test-reload-keystore.p12",
-                "password", "target/certs/test-reload-server-truststore.p12",
-                "password");
+        testServer = runServer(testVertx, "target/certs/test-reload-keystore.p12", "password",
+                "target/certs/test-reload-server-truststore.p12", "password");
     }
 
     @AfterAll
@@ -133,9 +129,8 @@ public class TlsConfigReloadKeystoreTest {
         throw new RuntimeException("Unexpected exception", t);
     }
 
-    static HttpServer runServer(Vertx vertx, String keystorePath, String keystorePassword,
-            String truststorePath, String truststorePassword)
-            throws InterruptedException, ExecutionException, TimeoutException {
+    static HttpServer runServer(Vertx vertx, String keystorePath, String keystorePassword, String truststorePath,
+            String truststorePassword) throws InterruptedException, ExecutionException, TimeoutException {
         HttpServerOptions options = new HttpServerOptions();
         options.setSsl(true);
         options.setHost("localhost");

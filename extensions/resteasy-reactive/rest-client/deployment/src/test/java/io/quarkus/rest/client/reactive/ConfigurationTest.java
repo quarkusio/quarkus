@@ -27,9 +27,8 @@ import io.quarkus.test.QuarkusUnitTest;
 class ConfigurationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(HelloClientWithBaseUri.class, EchoResource.class, EchoClientWithEmptyPath.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            jar -> jar.addClasses(HelloClientWithBaseUri.class, EchoResource.class, EchoClientWithEmptyPath.class))
             .withConfigurationResource("configuration-test-application.properties");
 
     @RestClient

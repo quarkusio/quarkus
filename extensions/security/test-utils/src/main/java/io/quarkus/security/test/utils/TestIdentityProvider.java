@@ -32,11 +32,8 @@ public class TestIdentityProvider implements IdentityProvider<UsernamePasswordAu
             return Uni.createFrom().failure(new AuthenticationFailedException());
         }
         QuarkusSecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal(ident.username))
-                .addRoles(ident.roles)
-                .addCredential(request.getPassword())
-                .addPermissionCheckers(ident.permissionCheckers)
-                .build();
+                .setPrincipal(new QuarkusPrincipal(ident.username)).addRoles(ident.roles)
+                .addCredential(request.getPassword()).addPermissionCheckers(ident.permissionCheckers).build();
         return Uni.createFrom().item(identity);
     }
 

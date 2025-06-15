@@ -20,7 +20,8 @@ public class RouteMethodDescription {
         this.consumes = consumes;
     }
 
-    public RouteMethodDescription(String javaMethod, String httpMethod, String fullPath, String produces, String consumes) {
+    public RouteMethodDescription(String javaMethod, String httpMethod, String fullPath, String produces,
+            String consumes) {
         super();
         this.javaMethod = javaMethod;
         this.httpMethod = httpMethod;
@@ -71,7 +72,7 @@ public class RouteMethodDescription {
 
     @Override
     public String toString() {
-        return "RouteMethodDescription{" + "javaMethod=" + javaMethod + ", httpMethod=" + httpMethod + ", fullPath=" + fullPath
-                + ", produces=" + produces + ", consumes=" + consumes + '}';
+        return "RouteMethodDescription{" + "javaMethod=" + javaMethod + ", httpMethod=" + httpMethod + ", fullPath="
+                + fullPath + ", produces=" + produces + ", consumes=" + consumes + '}';
     }
 }

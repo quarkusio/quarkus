@@ -14,13 +14,11 @@ public class WhitespaceInPathTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class));
+            .withApplicationRoot((jar) -> jar.addClass(HelloResource.class));
 
     @Test
     public void test() {
-        RestAssured.when().get("/hello dear world/ yolo /foo").then().statusCode(200)
-                .body(Matchers.is("yolo foo"));
+        RestAssured.when().get("/hello dear world/ yolo /foo").then().statusCode(200).body(Matchers.is("yolo foo"));
     }
 
     @Path("hello dear world")

@@ -66,12 +66,11 @@ public class DefaultMongoClientConfigTest extends MongoWithReplicasTestBase {
         response = health.call();
         assertThat(response.getStatus()).isEqualTo(HealthCheckResponse.Status.DOWN);
         assertThat(response.getData()).isNotEmpty();
-        assertThat(response.getData().get()).hasSize(2)
-                .allSatisfy(new BiConsumer<String, Object>() {
-                    @Override
-                    public void accept(String s, Object o) {
-                        assertThat(o.toString()).startsWith("KO, reason:");
-                    }
-                });
+        assertThat(response.getData().get()).hasSize(2).allSatisfy(new BiConsumer<String, Object>() {
+            @Override
+            public void accept(String s, Object o) {
+                assertThat(o.toString()).startsWith("KO, reason:");
+            }
+        });
     }
 }

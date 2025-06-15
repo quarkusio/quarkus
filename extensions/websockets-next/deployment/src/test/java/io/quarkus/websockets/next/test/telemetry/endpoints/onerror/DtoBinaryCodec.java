@@ -10,8 +10,7 @@ import io.vertx.core.buffer.Buffer;
 
 @Priority(15)
 @Singleton
-public class DtoBinaryCodec
-        implements BinaryMessageCodec<Dto> {
+public class DtoBinaryCodec implements BinaryMessageCodec<Dto> {
     @Override
     public boolean supports(Type type) {
         return type.equals(Dto.class);

@@ -74,15 +74,13 @@ public class ContextualEmitterImpl<T> extends AbstractEmitter<T> implements Cont
         // emit the message, skip context propagation as it is unnecessary here
         Uni<Void> uni = transformToUni(msgUni, message -> ContextualEmitterImpl.emitter(e -> {
             try {
-                emit(message
-                        .withAck(() -> {
-                            e.complete(null);
-                            return msg.ack();
-                        })
-                        .withNack(t -> {
-                            e.fail(t);
-                            return msg.nack(t);
-                        }));
+                emit(message.withAck(() -> {
+                    e.complete(null);
+                    return msg.ack();
+                }).withNack(t -> {
+                    e.fail(t);
+                    return msg.nack(t);
+                }));
             } catch (Exception t) {
                 // Capture synchronous exception and nack the message.
                 msg.nack(t);

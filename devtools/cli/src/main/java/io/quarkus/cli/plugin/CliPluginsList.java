@@ -49,8 +49,7 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
             printHints(!installable && installedPlugins.isEmpty(), installable);
             return exitCode;
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to list plugins: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to list plugins: " + e.getMessage());
         }
     }
 
@@ -75,18 +74,13 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
         Map<String, PluginListItem> items = new HashMap<>();
         if (installable) {
             Map<String, Plugin> availablePlugins = pluginManager.getInstallablePlugins();
-            items.putAll(availablePlugins
-                    .values().stream()
-                    .filter(p -> !installedPlugins.containsKey(p.getName()))
-                    .filter(pluginFilter)
-                    .map(p -> new PluginListItem(installedPlugins.containsKey(p.getName()), p))
+            items.putAll(availablePlugins.values().stream().filter(p -> !installedPlugins.containsKey(p.getName()))
+                    .filter(pluginFilter).map(p -> new PluginListItem(installedPlugins.containsKey(p.getName()), p))
                     .collect(Collectors.toMap(p -> p.getName(), p -> p)));
         }
 
-        items.putAll(installedPlugins.entrySet().stream()
-                .filter(e -> pluginFilter.test(e.getValue()))
-                .map(e -> new PluginListItem(true, e.getValue()))
-                .collect(Collectors.toMap(p -> p.getName(), p -> p)));
+        items.putAll(installedPlugins.entrySet().stream().filter(e -> pluginFilter.test(e.getValue()))
+                .map(e -> new PluginListItem(true, e.getValue())).collect(Collectors.toMap(p -> p.getName(), p -> p)));
 
         if (items.isEmpty()) {
             output.info("No plugins " + (installable ? "installable" : "installed") + "!");
@@ -125,9 +119,6 @@ public class CliPluginsList extends CliPluginsBase implements Callable<Integer> 
 
     @Override
     public String toString() {
-        return "CliPluginsList ["
-                + ", output=" + output
-                + ", runMode=" + runMode
-                + "]";
+        return "CliPluginsList [" + ", output=" + output + ", runMode=" + runMode + "]";
     }
 }

@@ -16,12 +16,10 @@ public class MultiplePgPoolCreatorsForSameDatasourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(CustomCredentialsProvider.class)
-                    .addClass(CredentialsTestResource.class)
-                    .addClass(LocalhostPgPoolCreator.class)
-                    .addClass(AnotherPgPoolCreator.class)
-                    .addAsResource("application-credentials-with-erroneous-url.properties", "application.properties"))
+            .withApplicationRoot(
+                    (jar) -> jar.addClass(CustomCredentialsProvider.class).addClass(CredentialsTestResource.class)
+                            .addClass(LocalhostPgPoolCreator.class).addClass(AnotherPgPoolCreator.class).addAsResource(
+                                    "application-credentials-with-erroneous-url.properties", "application.properties"))
             .setExpectedException(DeploymentException.class);
 
     @Test

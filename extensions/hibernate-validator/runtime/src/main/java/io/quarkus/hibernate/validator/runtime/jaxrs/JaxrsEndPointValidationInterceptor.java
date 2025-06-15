@@ -24,7 +24,8 @@ import io.quarkus.hibernate.validator.runtime.interceptor.AbstractMethodValidati
 @Priority(Interceptor.Priority.PLATFORM_AFTER + 800)
 public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidationInterceptor {
 
-    private static final List<MediaType> JSON_MEDIA_TYPE_LIST = Collections.singletonList(MediaType.APPLICATION_JSON_TYPE);
+    private static final List<MediaType> JSON_MEDIA_TYPE_LIST = Collections
+            .singletonList(MediaType.APPLICATION_JSON_TYPE);
 
     private final ConcurrentHashMap<Method, List<MediaType>> producedMediaTypesCache = new ConcurrentHashMap<>();
 
@@ -70,8 +71,8 @@ public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidation
     }
 
     /**
-     * Ideally, we would be able to get the information from RESTEasy so that we can follow strictly the inheritance rules.
-     * But, given RESTEasy Reactive is our new default REST layer, I think we can live with this limitation.
+     * Ideally, we would be able to get the information from RESTEasy so that we can follow strictly the inheritance
+     * rules. But, given RESTEasy Reactive is our new default REST layer, I think we can live with this limitation.
      * <p>
      * Superclass method annotations have precedence, then interface methods and finally class annotations.
      */
@@ -99,7 +100,8 @@ public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidation
             }
         }
 
-        List<MediaType> classProducedMediaTypes = getProduces(originalMethod.getDeclaringClass().getAnnotation(Produces.class));
+        List<MediaType> classProducedMediaTypes = getProduces(
+                originalMethod.getDeclaringClass().getAnnotation(Produces.class));
         if (!classProducedMediaTypes.isEmpty()) {
             return classProducedMediaTypes;
         }
@@ -120,8 +122,8 @@ public class JaxrsEndPointValidationInterceptor extends AbstractMethodValidation
         }
 
         try {
-            return getProduces(currentClass
-                    .getMethod(originalMethod.getName(), originalMethod.getParameterTypes()).getAnnotation(Produces.class));
+            return getProduces(currentClass.getMethod(originalMethod.getName(), originalMethod.getParameterTypes())
+                    .getAnnotation(Produces.class));
         } catch (NoSuchMethodException | SecurityException e) {
             // we don't have a visible method around, let's ignore this class
             return Collections.emptyList();

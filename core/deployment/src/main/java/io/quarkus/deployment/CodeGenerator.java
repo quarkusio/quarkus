@@ -50,26 +50,21 @@ public class CodeGenerator {
 
     private static final String META_INF_SERVICES = "META-INF/services/";
 
-    private static final List<String> CONFIG_SERVICES = List.of(
-            "org.eclipse.microprofile.config.spi.Converter",
+    private static final List<String> CONFIG_SERVICES = List.of("org.eclipse.microprofile.config.spi.Converter",
             "org.eclipse.microprofile.config.spi.ConfigSource",
-            "org.eclipse.microprofile.config.spi.ConfigSourceProvider",
-            "io.smallrye.config.ConfigSourceInterceptor",
-            "io.smallrye.config.ConfigSourceInterceptorFactory",
-            "io.smallrye.config.ConfigSourceFactory",
-            "io.smallrye.config.SecretKeysHandler",
-            "io.smallrye.config.SecretKeysHandlerFactory",
+            "org.eclipse.microprofile.config.spi.ConfigSourceProvider", "io.smallrye.config.ConfigSourceInterceptor",
+            "io.smallrye.config.ConfigSourceInterceptorFactory", "io.smallrye.config.ConfigSourceFactory",
+            "io.smallrye.config.SecretKeysHandler", "io.smallrye.config.SecretKeysHandlerFactory",
             "io.smallrye.config.ConfigValidator");
 
     // used by Gradle and Maven
-    public static void initAndRun(QuarkusClassLoader classLoader,
-            PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
-            Consumer<Path> sourceRegistrar, ApplicationModel appModel, Properties properties,
-            String launchMode, boolean test) throws CodeGenException {
+    public static void initAndRun(QuarkusClassLoader classLoader, PathCollection sourceParentDirs,
+            Path generatedSourcesDir, Path buildDir, Consumer<Path> sourceRegistrar, ApplicationModel appModel,
+            Properties properties, String launchMode, boolean test) throws CodeGenException {
         Map<String, String> props = new HashMap<>();
         properties.entrySet().stream().forEach(e -> props.put((String) e.getKey(), (String) e.getValue()));
-        final List<CodeGenData> generators = init(appModel, props, classLoader, sourceParentDirs, generatedSourcesDir, buildDir,
-                sourceRegistrar);
+        final List<CodeGenData> generators = init(appModel, props, classLoader, sourceParentDirs, generatedSourcesDir,
+                buildDir, sourceRegistrar);
         if (generators.isEmpty()) {
             return;
         }
@@ -81,13 +76,8 @@ public class CodeGenerator {
         }
     }
 
-    private static List<CodeGenData> init(
-            ApplicationModel model,
-            Map<String, String> properties,
-            ClassLoader deploymentClassLoader,
-            PathCollection sourceParentDirs,
-            Path generatedSourcesDir,
-            Path buildDir,
+    private static List<CodeGenData> init(ApplicationModel model, Map<String, String> properties,
+            ClassLoader deploymentClassLoader, PathCollection sourceParentDirs, Path generatedSourcesDir, Path buildDir,
             Consumer<Path> sourceRegistrar) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
             final List<CodeGenProvider> codeGenProviders = loadCodeGenProviders(deploymentClassLoader);
@@ -103,8 +93,7 @@ public class CodeGenerator {
                     if (in == null) {
                         in = sourceParentDir.resolve(provider.inputDirectory());
                     }
-                    result.add(
-                            new CodeGenData(provider, outputDir, in, buildDir));
+                    result.add(new CodeGenData(provider, outputDir, in, buildDir));
                 }
             }
             return result;
@@ -112,13 +101,13 @@ public class CodeGenerator {
     }
 
     public static List<CodeGenData> init(ApplicationModel model, Map<String, String> properties,
-            ClassLoader deploymentClassLoader, Collection<ModuleInfo> modules)
-            throws CodeGenException {
+            ClassLoader deploymentClassLoader, Collection<ModuleInfo> modules) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
             List<CodeGenProvider> codeGenProviders = null;
             List<CodeGenData> codeGens = List.of();
             for (DevModeContext.ModuleInfo module : modules) {
-                if (!module.getSourceParents().isEmpty() && module.getPreBuildOutputDir() != null) { // it's null for remote dev
+                if (!module.getSourceParents().isEmpty() && module.getPreBuildOutputDir() != null) { // it's null for
+                                                                                                     // remote dev
                     if (codeGenProviders == null) {
                         codeGenProviders = loadCodeGenProviders(deploymentClassLoader);
                         if (codeGenProviders.isEmpty()) {
@@ -138,9 +127,7 @@ public class CodeGenerator {
                             if (in == null) {
                                 in = sourceParentDir.resolve(provider.inputDirectory());
                             }
-                            codeGens.add(
-                                    new CodeGenData(provider, outputDir, in,
-                                            Path.of(module.getTargetDir())));
+                            codeGens.add(new CodeGenData(provider, outputDir, in, Path.of(module.getTargetDir())));
                         }
 
                     }
@@ -155,7 +142,7 @@ public class CodeGenerator {
             throws CodeGenException {
         Class<? extends CodeGenProvider> codeGenProviderClass;
         try {
-            //noinspection unchecked
+            // noinspection unchecked
             codeGenProviderClass = (Class<? extends CodeGenProvider>) deploymentClassLoader
                     .loadClass(CodeGenProvider.class.getName());
         } catch (ClassNotFoundException e) {
@@ -187,42 +174,51 @@ public class CodeGenerator {
     /**
      * generate sources for given code gen
      *
-     * @param deploymentClassLoader deployment classloader
-     * @param data code gen
-     * @param appModel app model
-     * @param config config instance
-     * @param test whether the sources are generated for production code or tests
+     * @param deploymentClassLoader
+     *        deployment classloader
+     * @param data
+     *        code gen
+     * @param appModel
+     *        app model
+     * @param config
+     *        config instance
+     * @param test
+     *        whether the sources are generated for production code or tests
+     *
      * @return true if sources have been created
-     * @throws CodeGenException on failure
+     *
+     * @throws CodeGenException
+     *         on failure
      */
-    public static boolean trigger(ClassLoader deploymentClassLoader,
-            CodeGenData data,
-            ApplicationModel appModel,
-            Config config,
-            boolean test) throws CodeGenException {
+    public static boolean trigger(ClassLoader deploymentClassLoader, CodeGenData data, ApplicationModel appModel,
+            Config config, boolean test) throws CodeGenException {
         return callWithClassloader(deploymentClassLoader, () -> {
             CodeGenProvider provider = data.provider;
-            return provider.shouldRun(data.sourceDir, config)
-                    && provider.trigger(
-                            new CodeGenContext(appModel, data.outPath, data.buildDir, data.sourceDir, data.redirectIO, config,
-                                    test));
+            return provider.shouldRun(data.sourceDir, config) && provider.trigger(new CodeGenContext(appModel,
+                    data.outPath, data.buildDir, data.sourceDir, data.redirectIO, config, test));
         });
     }
 
     /**
-     * Initializes an application build time configuration and dumps current values of properties
-     * passed in as {@code previouslyRecordedProperties} to a file.
+     * Initializes an application build time configuration and dumps current values of properties passed in as
+     * {@code previouslyRecordedProperties} to a file.
      *
-     * @param appModel application model
-     * @param launchMode launch mode
-     * @param buildSystemProps build system (or project) properties
-     * @param deploymentClassLoader build classloader
-     * @param previouslyRecordedProperties properties to read from the initialized configuration
-     * @param outputFile output file
+     * @param appModel
+     *        application model
+     * @param launchMode
+     *        launch mode
+     * @param buildSystemProps
+     *        build system (or project) properties
+     * @param deploymentClassLoader
+     *        build classloader
+     * @param previouslyRecordedProperties
+     *        properties to read from the initialized configuration
+     * @param outputFile
+     *        output file
      */
-    public static void dumpCurrentConfigValues(ApplicationModel appModel, String launchMode, Properties buildSystemProps,
-            QuarkusClassLoader deploymentClassLoader, Properties previouslyRecordedProperties,
-            Path outputFile) {
+    public static void dumpCurrentConfigValues(ApplicationModel appModel, String launchMode,
+            Properties buildSystemProps, QuarkusClassLoader deploymentClassLoader,
+            Properties previouslyRecordedProperties, Path outputFile) {
         final LaunchMode mode = LaunchMode.valueOf(launchMode);
         if (previouslyRecordedProperties.isEmpty()) {
             try {
@@ -235,8 +231,7 @@ public class CodeGenerator {
                     }
                     ConfigTrackingWriter.write(allProps,
                             config.unwrap(SmallRyeConfig.class).getConfigMapping(ConfigTrackingConfig.class),
-                            configReader.readConfiguration(config),
-                            outputFile);
+                            configReader.readConfiguration(config), outputFile);
                     return null;
                 });
             } catch (CodeGenException e) {
@@ -258,7 +253,8 @@ public class CodeGenerator {
             final String current = valueTransformer.transform(name, currentValue);
             var originalValue = prevProp.getValue();
             if (!originalValue.equals(current)) {
-                log.info("Option " + name + " has changed since the last build from " + originalValue + " to " + current);
+                log.info("Option " + name + " has changed since the last build from " + originalValue + " to "
+                        + current);
             }
             if (current != null) {
                 currentValues.put(name, current);
@@ -287,16 +283,15 @@ public class CodeGenerator {
 
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
-        return readConfig(appModel, launchMode, buildSystemProps, deploymentClassLoader,
-                configReader -> configReader.initConfiguration(launchMode, buildSystemProps, new Properties(),
-                        appModel.getPlatformProperties()));
+        return readConfig(appModel, launchMode, buildSystemProps, deploymentClassLoader, configReader -> configReader
+                .initConfiguration(launchMode, buildSystemProps, new Properties(), appModel.getPlatformProperties()));
     }
 
     public static <T> T readConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader, Function<BuildTimeConfigurationReader, T> function)
             throws CodeGenException {
-        final Map<String, List<String>> unavailableConfigServices = getUnavailableConfigServices(appModel.getAppArtifact(),
-                deploymentClassLoader);
+        final Map<String, List<String>> unavailableConfigServices = getUnavailableConfigServices(
+                appModel.getAppArtifact(), deploymentClassLoader);
         final ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         if (!unavailableConfigServices.isEmpty()) {
             var sb = new StringBuilder();
@@ -339,8 +334,8 @@ public class CodeGenerator {
             }
 
             // we don't want to load config services from the current module because they haven't been compiled yet
-            final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader.builder("CodeGenerator Config ClassLoader",
-                    deploymentClassLoader, false);
+            final QuarkusClassLoader.Builder configClBuilder = QuarkusClassLoader
+                    .builder("CodeGenerator Config ClassLoader", deploymentClassLoader, false);
             if (!allowedConfigServices.isEmpty()) {
                 configClBuilder.addNormalPriorityElement(new MemoryClassPathElement(allowedConfigServices, true));
             }
@@ -362,8 +357,8 @@ public class CodeGenerator {
         }
     }
 
-    private static Map<String, List<String>> getUnavailableConfigServices(ResolvedDependency dep, ClassLoader classLoader)
-            throws CodeGenException {
+    private static Map<String, List<String>> getUnavailableConfigServices(ResolvedDependency dep,
+            ClassLoader classLoader) throws CodeGenException {
         try (OpenPathTree openTree = dep.getContentTree().open()) {
             var unavailableServices = new HashMap<String, List<String>>();
             openTree.apply(META_INF_SERVICES, visit -> {
@@ -381,11 +376,11 @@ public class CodeGenerator {
                     var unavailableList = unavailableServices.computeIfAbsent(META_INF_SERVICES + serviceClass,
                             k -> new ArrayList<>());
                     try {
-                        Files.readAllLines(serviceFile).stream()
-                                .map(String::trim)
+                        Files.readAllLines(serviceFile).stream().map(String::trim)
                                 // skip comments and empty lines
                                 .filter(line -> !line.startsWith("#") && !line.isEmpty())
-                                .filter(className -> classLoader.getResource(fromClassNameToResourceName(className)) == null)
+                                .filter(className -> classLoader
+                                        .getResource(fromClassNameToResourceName(className)) == null)
                                 .forEach(unavailableList::add);
                     } catch (IOException e) {
                         throw new UncheckedIOException("Failed to read " + serviceFile, e);
@@ -400,8 +395,7 @@ public class CodeGenerator {
         }
     }
 
-    private static Path codeGenOutDir(Path generatedSourcesDir,
-            CodeGenProvider provider,
+    private static Path codeGenOutDir(Path generatedSourcesDir, CodeGenProvider provider,
             Consumer<Path> sourceRegistrar) throws CodeGenException {
         Path outputDir = generatedSourcesDir.resolve(provider.providerId());
         try {

@@ -18,10 +18,10 @@ import io.smallrye.certs.junit5.Certificates;
 class HelloWorldTlsEndpointTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HelloWorldTlsEndpoint.class.getPackage())
-                    .addPackage(io.grpc.examples.helloworld.GreeterGrpc.class.getPackage()))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addPackage(HelloWorldTlsEndpoint.class.getPackage())
+                            .addPackage(io.grpc.examples.helloworld.GreeterGrpc.class.getPackage()))
             .withConfigurationResource("grpc-client-tls-configuration.properties");
 
     @Test

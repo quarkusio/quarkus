@@ -12,8 +12,7 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.Assertions;
 
 /**
- * This is a general utility to assert via
- * unit testing which classes have been included in a native-image.
+ * This is a general utility to assert via unit testing which classes have been included in a native-image.
  */
 public final class ClassInclusionReport {
 
@@ -26,9 +25,8 @@ public final class ClassInclusionReport {
     }
 
     /**
-     * This will load the class inclusions report assuming the native-image
-     * was built in the current module and following Maven conventions:
-     * by walking into the '/target' directory from the current directory.
+     * This will load the class inclusions report assuming the native-image was built in the current module and
+     * following Maven conventions: by walking into the '/target' directory from the current directory.
      *
      * @return An assertable report of all classes included in the current app
      */
@@ -59,8 +57,7 @@ public final class ClassInclusionReport {
     public void assertContains(final String typeName) {
         final boolean contains = includedClasses.contains(typeName);
         if (!contains) {
-            Assertions.fail(
-                    "Type '" + typeName + "' was not found in the report in " + usedClassesReport);
+            Assertions.fail("Type '" + typeName + "' was not found in the report in " + usedClassesReport);
         }
     }
 
@@ -73,8 +70,8 @@ public final class ClassInclusionReport {
 
     private static Path getUsedClassesReport() {
         final Path reportsPath = nativeImageReportsPath();
-        final File[] usedClassesReports = reportsPath.toFile().listFiles((dir, name) -> name.toLowerCase(Locale.ROOT)
-                .startsWith("used_classes_"));
+        final File[] usedClassesReports = reportsPath.toFile()
+                .listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).startsWith("used_classes_"));
         Assertions.assertNotNull(usedClassesReports, "Could not identify the native image build directory");
         Assertions.assertEquals(1, usedClassesReports.length, "Could not identify the native image build directory");
         return usedClassesReports[0].toPath();
@@ -90,8 +87,8 @@ public final class ClassInclusionReport {
 
     private static Path locateNativeImageBuildDirectory() {
         Path buildPath = Paths.get("target");
-        final File[] files = buildPath.toFile().listFiles((dir, name) -> name.toLowerCase(Locale.ROOT)
-                .endsWith("-native-image-source-jar"));
+        final File[] files = buildPath.toFile()
+                .listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith("-native-image-source-jar"));
         Assertions.assertNotNull(files, "Could not identify the native image build directory");
         Assertions.assertEquals(1, files.length, "Could not identify the native image build directory");
         return files[0].toPath();

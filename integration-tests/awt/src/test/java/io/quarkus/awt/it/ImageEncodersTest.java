@@ -28,9 +28,8 @@ import io.quarkus.test.junit.QuarkusTest;
 public class ImageEncodersTest {
 
     /**
-     * When comparing pixel colour values, how much difference
-     * from the expected value is allowed.
-     * 0 means no difference is tolerated.
+     * When comparing pixel colour values, how much difference from the expected value is allowed. 0 means no difference
+     * is tolerated.
      */
     private static final int[] PIXEL_DIFFERENCE_THRESHOLD_RGBA_VEC = new int[] { 2, 2, 2, 0 };
 
@@ -69,10 +68,7 @@ public class ImageEncodersTest {
                 final String[] segments = line.split("█");
                 // Config for the image encoder, type, format, color space, compression
                 final String path = segments[0];
-                final byte[] imgBytes = given()
-                        .when()
-                        .get("/generate/" + path)
-                        .asByteArray();
+                final byte[] imgBytes = given().when().get("/generate/" + path).asByteArray();
                 final BufferedImage image = ImageIO.read(new ByteArrayInputStream(imgBytes));
 
                 // Check the image is actually readable.
@@ -85,13 +81,13 @@ public class ImageEncodersTest {
                 final int[][] pixelsCoordinates = new int[][] { { 25, 25 }, { 2, 2 } };
                 for (int i = 0; i < pixelsCoordinates.length; i++) {
                     final int[] expected = decodeArray4(segments[i + 1]);
-                    final int[] actual = new int[4]; //4BYTE RGBA
+                    final int[] actual = new int[4]; // 4BYTE RGBA
                     image.getData().getPixel(pixelsCoordinates[i][0], pixelsCoordinates[i][1], actual);
                     if (!compareArrays(expected, actual, PIXEL_DIFFERENCE_THRESHOLD_RGBA_VEC)) {
-                        errors.add(String.format("%s: Wrong pixel at %dx%d. Expected: [%d,%d,%d,%d] Actual: [%d,%d,%d,%d]",
-                                path, pixelsCoordinates[i][0], pixelsCoordinates[i][1],
-                                expected[0], expected[1], expected[2], expected[3],
-                                actual[0], actual[1], actual[2], actual[3]));
+                        errors.add(String.format(
+                                "%s: Wrong pixel at %dx%d. Expected: [%d,%d,%d,%d] Actual: [%d,%d,%d,%d]", path,
+                                pixelsCoordinates[i][0], pixelsCoordinates[i][1], expected[0], expected[1], expected[2],
+                                expected[3], actual[0], actual[1], actual[2], actual[3]));
                     }
                 }
             }

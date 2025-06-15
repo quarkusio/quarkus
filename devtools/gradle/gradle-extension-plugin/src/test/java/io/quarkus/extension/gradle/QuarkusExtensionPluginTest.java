@@ -39,11 +39,8 @@ public class QuarkusExtensionPluginTest {
     public void jarShouldContainsExtensionPropertiesFile() throws IOException {
         TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
 
-        BuildResult jarResult = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir)
-                .withArguments("jar", "-S")
-                .build();
+        BuildResult jarResult = GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir)
+                .withArguments("jar", "-S").build();
         assertThat(jarResult.task(":jar").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
         assertThat(jarResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SUCCESS);
@@ -67,11 +64,8 @@ public class QuarkusExtensionPluginTest {
     @Test
     public void pluginShouldAddAnnotationProcessor() throws IOException {
         TestUtils.createExtensionProject(testProjectDir, false, Collections.emptyList(), Collections.emptyList());
-        BuildResult dependencies = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir)
-                .withArguments("build", ":runtime:dependencies", "--configuration", "annotationProcessor")
-                .build();
+        BuildResult dependencies = GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir)
+                .withArguments("build", ":runtime:dependencies", "--configuration", "annotationProcessor").build();
 
         assertThat(dependencies.getOutput()).contains(QuarkusExtensionPlugin.QUARKUS_ANNOTATION_PROCESSOR);
     }
@@ -79,11 +73,8 @@ public class QuarkusExtensionPluginTest {
     @Test
     public void pluginShouldAddAnnotationProcessorToDeploymentModule() throws IOException {
         TestUtils.createExtensionProject(testProjectDir, false, Collections.emptyList(), Collections.emptyList());
-        BuildResult dependencies = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir)
-                .withArguments("build", ":deployment:dependencies", "--configuration", "annotationProcessor")
-                .build();
+        BuildResult dependencies = GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir)
+                .withArguments("build", ":deployment:dependencies", "--configuration", "annotationProcessor").build();
         assertThat(dependencies.getOutput()).contains(QuarkusExtensionPlugin.QUARKUS_ANNOTATION_PROCESSOR);
     }
 }

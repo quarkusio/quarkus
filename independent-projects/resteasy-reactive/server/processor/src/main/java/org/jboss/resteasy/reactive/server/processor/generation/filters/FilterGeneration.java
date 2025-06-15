@@ -25,15 +25,14 @@ public class FilterGeneration {
     public static List<GeneratedFilter> generate(IndexView index, Set<DotName> unwrappableTypes,
             Set<String> additionalBeanAnnotations, Predicate<MethodInfo> isOptionalFilter) {
         List<GeneratedFilter> ret = new ArrayList<>();
-        for (AnnotationInstance instance : index
-                .getAnnotations(SERVER_REQUEST_FILTER)) {
+        for (AnnotationInstance instance : index.getAnnotations(SERVER_REQUEST_FILTER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
             MethodInfo methodInfo = instance.target().asMethod();
             GeneratedClassOutput output = new GeneratedClassOutput();
-            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations, isOptionalFilter)
-                    .generateContainerRequestFilter(methodInfo, output);
+            String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations,
+                    isOptionalFilter).generateContainerRequestFilter(methodInfo, output);
             Integer priority = null;
             boolean preMatching = false;
             boolean nonBlockingRequired = false;
@@ -86,11 +85,11 @@ public class FilterGeneration {
                 }
             }
 
-            ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    true, priority, preMatching, nonBlockingRequired, nameBindingNames, withFormRead || readBody, methodInfo));
+            ret.add(new GeneratedFilter(output.getOutput(), generatedClassName,
+                    methodInfo.declaringClass().name().toString(), true, priority, preMatching, nonBlockingRequired,
+                    nameBindingNames, withFormRead || readBody, methodInfo));
         }
-        for (AnnotationInstance instance : index
-                .getAnnotations(SERVER_RESPONSE_FILTER)) {
+        for (AnnotationInstance instance : index.getAnnotations(SERVER_RESPONSE_FILTER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
@@ -99,8 +98,7 @@ public class FilterGeneration {
             Set<String> nameBindingNames = new HashSet<>();
             GeneratedClassOutput output = new GeneratedClassOutput();
             String generatedClassName = new CustomFilterGenerator(unwrappableTypes, additionalBeanAnnotations,
-                    isOptionalFilter)
-                    .generateContainerResponseFilter(methodInfo, output);
+                    isOptionalFilter).generateContainerResponseFilter(methodInfo, output);
 
             AnnotationValue priorityValue = instance.value("priority");
             if (priorityValue != null) {
@@ -121,8 +119,9 @@ public class FilterGeneration {
                 }
             }
 
-            ret.add(new GeneratedFilter(output.getOutput(), generatedClassName, methodInfo.declaringClass().name().toString(),
-                    false, priority, false, false, nameBindingNames, false, methodInfo));
+            ret.add(new GeneratedFilter(output.getOutput(), generatedClassName,
+                    methodInfo.declaringClass().name().toString(), false, priority, false, false, nameBindingNames,
+                    false, methodInfo));
 
         }
         return ret;
@@ -142,9 +141,9 @@ public class FilterGeneration {
         final MethodInfo filterSourceMethod;
 
         public GeneratedFilter(List<GeneratedClass> generatedClasses, String generatedClassName,
-                String declaringClassName,
-                boolean requestFilter, Integer priority, boolean preMatching, boolean nonBlocking,
-                Set<String> nameBindingNames, boolean withFormRead, MethodInfo filterSourceMethod) {
+                String declaringClassName, boolean requestFilter, Integer priority, boolean preMatching,
+                boolean nonBlocking, Set<String> nameBindingNames, boolean withFormRead,
+                MethodInfo filterSourceMethod) {
             this.generatedClasses = generatedClasses;
             this.generatedClassName = generatedClassName;
             this.declaringClassName = declaringClassName;

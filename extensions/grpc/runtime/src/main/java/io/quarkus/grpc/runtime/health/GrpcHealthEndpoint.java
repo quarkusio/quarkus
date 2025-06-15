@@ -32,14 +32,13 @@ public class GrpcHealthEndpoint extends MutinyHealthGrpc.HealthImplBase {
         String service = request.getService();
 
         BroadcastProcessor<ServingStatus> broadcastProcessor = healthStorage.createStatusBroadcastProcessor(service);
-        return Multi.createBy().concatenating().streams(
-                Multi.createFrom().item(new Supplier<HealthOuterClass.HealthCheckResponse>() {
+        return Multi.createBy().concatenating()
+                .streams(Multi.createFrom().item(new Supplier<HealthOuterClass.HealthCheckResponse>() {
                     @Override
                     public HealthOuterClass.HealthCheckResponse get() {
                         return healthStorage.statusForService(service);
                     }
-                }),
-                broadcastProcessor.map(new Function<ServingStatus, HealthOuterClass.HealthCheckResponse>() {
+                }), broadcastProcessor.map(new Function<ServingStatus, HealthOuterClass.HealthCheckResponse>() {
                     @Override
                     public HealthOuterClass.HealthCheckResponse apply(ServingStatus servingStatus) {
                         return healthStorage.resultForStatus(servingStatus);

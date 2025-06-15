@@ -32,9 +32,7 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
     public GrpcTracingClientInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         this.openTelemetry = openTelemetry;
 
-        InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(
-                openTelemetry,
-                INSTRUMENTATION_NAME,
+        InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(openTelemetry, INSTRUMENTATION_NAME,
                 new GrpcSpanNameExtractor());
 
         builder.setEnabled(!runtimeConfig.sdkDisabled());
@@ -47,8 +45,8 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
     }
 
     @Override
-    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-            final MethodDescriptor<ReqT, RespT> method, final CallOptions callOptions, final Channel next) {
+    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(final MethodDescriptor<ReqT, RespT> method,
+            final CallOptions callOptions, final Channel next) {
 
         GrpcRequest grpcRequest = GrpcRequest.client(method, callOptions.getAuthority());
         Context parentContext = Context.current();

@@ -22,8 +22,7 @@ public class BlockingValidationErrorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanReturningASubscriberOfMessages.class))
+            .withApplicationRoot((jar) -> jar.addClasses(BeanReturningASubscriberOfMessages.class))
             .setExpectedException(DefinitionException.class);
 
     @Test
@@ -38,8 +37,7 @@ public class BlockingValidationErrorTest {
         @Blocking
         @Incoming("count")
         public Subscriber<Message<String>> create() {
-            return ReactiveStreams.<Message<String>> builder().forEach(m -> list.add(m.getPayload()))
-                    .build();
+            return ReactiveStreams.<Message<String>> builder().forEach(m -> list.add(m.getPayload())).build();
         }
     }
 }

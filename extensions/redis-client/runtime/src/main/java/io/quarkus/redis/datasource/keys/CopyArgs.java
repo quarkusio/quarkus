@@ -17,7 +17,9 @@ public class CopyArgs implements RedisCommandExtraArguments {
     /**
      * Specify an alternative logical database index for the destination key.
      *
-     * @param destinationDb logical database index to apply for {@literal DB}.
+     * @param destinationDb
+     *        logical database index to apply for {@literal DB}.
+     *
      * @return the current {@code CopyArgs}.
      */
     public CopyArgs destinationDb(long destinationDb) {
@@ -28,7 +30,9 @@ public class CopyArgs implements RedisCommandExtraArguments {
     /**
      * Hint redis to remove the destination key before copying the value to it.
      *
-     * @param replace remove destination key before copying the value {@literal REPLACE}.
+     * @param replace
+     *        remove destination key before copying the value {@literal REPLACE}.
+     *
      * @return {@code this}.
      */
     public CopyArgs replace(boolean replace) {

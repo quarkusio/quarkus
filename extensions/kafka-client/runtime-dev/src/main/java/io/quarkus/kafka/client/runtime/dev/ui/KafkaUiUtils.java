@@ -65,10 +65,8 @@ public class KafkaUiUtils {
         this.kafkaAdminClient = kafkaAdminClient;
         this.kafkaTopicClient = kafkaTopicClient;
         this.config = config;
-        this.objectMapper = JsonMapper.builder()
-                .disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                .build();
+        this.objectMapper = JsonMapper.builder().disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build();
     }
 
     public KafkaInfo getKafkaInfo() throws ExecutionException, InterruptedException {
@@ -107,11 +105,7 @@ public class KafkaUiUtils {
             aclOperationsStr = new StringBuilder("NONE");
         }
 
-        return new KafkaClusterInfo(
-                dcr.clusterId().get(),
-                controller,
-                nodes,
-                aclOperationsStr.toString());
+        return new KafkaClusterInfo(dcr.clusterId().get(), controller, nodes, aclOperationsStr.toString());
     }
 
     public List<KafkaTopic> getTopics() throws InterruptedException, ExecutionException {
@@ -124,20 +118,14 @@ public class KafkaUiUtils {
 
     private KafkaTopic kafkaTopic(TopicListing tl) throws ExecutionException, InterruptedException {
         var partitions = partitions(tl.name());
-        return new KafkaTopic(
-                tl.name(),
-                tl.topicId().toString(),
-                partitions.size(),
-                tl.isInternal(),
+        return new KafkaTopic(tl.name(), tl.topicId().toString(), partitions.size(), tl.isInternal(),
                 getTopicMessageCount(tl.name(), partitions));
     }
 
     public long getTopicMessageCount(String topicName, Collection<Integer> partitions)
             throws ExecutionException, InterruptedException {
         var maxPartitionOffsetMap = kafkaTopicClient.getPagePartitionOffset(topicName, partitions, Order.NEW_FIRST);
-        return maxPartitionOffsetMap.values().stream()
-                .reduce(Long::sum)
-                .orElse(0L);
+        return maxPartitionOffsetMap.values().stream().reduce(Long::sum).orElse(0L);
     }
 
     public Collection<Integer> partitions(String topicName) throws ExecutionException, InterruptedException {
@@ -145,8 +133,8 @@ public class KafkaUiUtils {
     }
 
     public KafkaMessagePage getMessages(KafkaMessagesRequest request) throws ExecutionException, InterruptedException {
-        return kafkaTopicClient.getTopicMessages(request.getTopicName(), request.getOrder(), request.getPartitionOffset(),
-                request.getPageSize());
+        return kafkaTopicClient.getTopicMessages(request.getTopicName(), request.getOrder(),
+                request.getPartitionOffset(), request.getPageSize());
     }
 
     public void createMessage(KafkaMessageCreateRequest request) {
@@ -157,35 +145,22 @@ public class KafkaUiUtils {
         List<KafkaConsumerGroup> res = new ArrayList<>();
         for (ConsumerGroupDescription cgd : kafkaAdminClient.getConsumerGroups()) {
 
-            var metadata = kafkaAdminClient.listConsumerGroupOffsets(cgd.groupId())
-                    .partitionsToOffsetAndMetadata().get();
-            var members = cgd.members().stream()
-                    .map(member -> new KafkaConsumerGroupMember(
-                            member.consumerId(),
-                            member.clientId(),
-                            member.host(),
-                            getPartitionAssignments(metadata, member)))
+            var metadata = kafkaAdminClient.listConsumerGroupOffsets(cgd.groupId()).partitionsToOffsetAndMetadata()
+                    .get();
+            var members = cgd
+                    .members().stream().map(member -> new KafkaConsumerGroupMember(member.consumerId(),
+                            member.clientId(), member.host(), getPartitionAssignments(metadata, member)))
                     .collect(Collectors.toSet());
 
-            res.add(new KafkaConsumerGroup(
-                    cgd.groupId(),
-                    cgd.state().name(),
-                    cgd.coordinator().host(),
-                    cgd.coordinator().id(),
-                    cgd.partitionAssignor(),
-                    getTotalLag(members),
-                    members));
+            res.add(new KafkaConsumerGroup(cgd.groupId(), cgd.state().name(), cgd.coordinator().host(),
+                    cgd.coordinator().id(), cgd.partitionAssignor(), getTotalLag(members), members));
         }
         return res;
     }
 
     private long getTotalLag(Set<KafkaConsumerGroupMember> members) {
-        return members.stream()
-                .map(KafkaConsumerGroupMember::getPartitions)
-                .flatMap(Collection::stream)
-                .map(KafkaConsumerGroupMemberPartitionAssignment::getLag)
-                .reduce(Long::sum)
-                .orElse(0L);
+        return members.stream().map(KafkaConsumerGroupMember::getPartitions).flatMap(Collection::stream)
+                .map(KafkaConsumerGroupMemberPartitionAssignment::getLag).reduce(Long::sum).orElse(0L);
     }
 
     private Set<KafkaConsumerGroupMemberPartitionAssignment> getPartitionAssignments(
@@ -194,15 +169,11 @@ public class KafkaUiUtils {
         try (var consumer = createConsumer(topicPartitions, config)) {
             var endOffsets = consumer.endOffsets(topicPartitions);
 
-            return topicPartitions.stream()
-                    .map(tp -> {
-                        var topicOffset = Optional.ofNullable(topicOffsetMap.get(tp))
-                                .map(OffsetAndMetadata::offset)
-                                .orElse(0L);
-                        return new KafkaConsumerGroupMemberPartitionAssignment(tp.partition(), tp.topic(),
-                                getLag(topicOffset, endOffsets.get(tp)));
-                    })
-                    .collect(Collectors.toSet());
+            return topicPartitions.stream().map(tp -> {
+                var topicOffset = Optional.ofNullable(topicOffsetMap.get(tp)).map(OffsetAndMetadata::offset).orElse(0L);
+                return new KafkaConsumerGroupMemberPartitionAssignment(tp.partition(), tp.topic(),
+                        getLag(topicOffset, endOffsets.get(tp)));
+            }).collect(Collectors.toSet());
         }
     }
 
@@ -218,25 +189,19 @@ public class KafkaUiUtils {
     public KafkaAclInfo getAclInfo() throws InterruptedException, ExecutionException {
         var clusterInfo = clusterInfo(kafkaAdminClient.getCluster());
         var entries = new ArrayList<KafkaAclEntry>();
-        //TODO: fix it after proper error message impl
+        // TODO: fix it after proper error message impl
         try {
             var acls = kafkaAdminClient.getAclInfo();
             for (var acl : acls) {
-                var entry = new KafkaAclEntry(
-                        acl.entry().operation().name(),
-                        acl.entry().principal(),
-                        acl.entry().permissionType().name(),
-                        acl.pattern().toString());
+                var entry = new KafkaAclEntry(acl.entry().operation().name(), acl.entry().principal(),
+                        acl.entry().permissionType().name(), acl.pattern().toString());
                 entries.add(entry);
             }
         } catch (Exception e) {
             // this mostly means that ALC controller is absent
         }
-        return new KafkaAclInfo(
-                clusterInfo.getId(),
-                clusterInfo.getController().asFullNodeName(),
-                clusterInfo.getAclOperations(),
-                entries);
+        return new KafkaAclInfo(clusterInfo.getId(), clusterInfo.getController().asFullNodeName(),
+                clusterInfo.getAclOperations(), entries);
     }
 
     public String toJson(Object o) {

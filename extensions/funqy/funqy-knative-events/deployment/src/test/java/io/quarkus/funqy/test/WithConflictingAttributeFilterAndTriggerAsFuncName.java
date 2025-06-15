@@ -15,8 +15,7 @@ public class WithConflictingAttributeFilterAndTriggerAsFuncName {
     }
 
     @Funq
-    @CloudEventMapping(trigger = "listOfStrings", attributes = {
-            @EventAttribute(name = "source", value = "test") })
+    @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "test") })
     public String bar(List<Identity> identityList) {
         return "";
     }

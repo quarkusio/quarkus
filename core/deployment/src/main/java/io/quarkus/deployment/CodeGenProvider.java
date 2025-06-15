@@ -20,8 +20,7 @@ public interface CodeGenProvider {
     String providerId();
 
     /**
-     * File extension that CodeGenProvider will generate code from
-     * Deprecated: use inputExtensions instead
+     * File extension that CodeGenProvider will generate code from Deprecated: use inputExtensions instead
      *
      * @return file extension
      */
@@ -43,26 +42,25 @@ public interface CodeGenProvider {
     }
 
     /**
-     * Name of the directory containing input files for a given {@link CodeGenProvider} implementation
-     * relative to a sources root directory. For example, if an input directory is configured as <code>foo</code>,
-     * for a production build of an application the sources will be looked up at <code>src/main/foo</code> path
-     * and at <code>src/test/foo</code> for tests.
+     * Name of the directory containing input files for a given {@link CodeGenProvider} implementation relative to a
+     * sources root directory. For example, if an input directory is configured as <code>foo</code>, for a production
+     * build of an application the sources will be looked up at <code>src/main/foo</code> path and at
+     * <code>src/test/foo</code> for tests.
      *
      * @return the input directory
      */
     String inputDirectory();
 
     /**
-     * Provides the possibility for the provider to override the default input directory.
-     * This method is called after {@link #init(ApplicationModel, Map)}.
-     * Returning {@code null} will result in the {@code inputDirectory} method being called to retrieve the default input
-     * directory.
+     * Provides the possibility for the provider to override the default input directory. This method is called after
+     * {@link #init(ApplicationModel, Map)}. Returning {@code null} will result in the {@code inputDirectory} method
+     * being called to retrieve the default input directory.
      * <p>
-     * The returned path must be an absolute path. However, pointing to a directory outside of the project structure should
-     * be avoided for security purposes.
+     * The returned path must be an absolute path. However, pointing to a directory outside of the project structure
+     * should be avoided for security purposes.
      *
-     * @return the input directory, must be an absolute path. {@code null} would result in the default input directory being
-     *         used.
+     * @return the input directory, must be an absolute path. {@code null} would result in the default input directory
+     *         being used.
      */
     default Path getInputDirectory() {
         return null;
@@ -71,8 +69,10 @@ public interface CodeGenProvider {
     /**
      * Provides the possibility for the provider to initialize itself using the application model and properties.
      *
-     * @param model the application model
-     * @param properties the build time properties defined in the application build file (pom.xml or gradle.build)
+     * @param model
+     *        the application model
+     * @param properties
+     *        the build time properties defined in the application build file (pom.xml or gradle.build)
      */
     default void init(ApplicationModel model, Map<String, String> properties) {
         // No-op
@@ -81,7 +81,9 @@ public interface CodeGenProvider {
     /**
      * Trigger code generation
      *
-     * @param context code generation context
+     * @param context
+     *        code generation context
+     *
      * @return true if files were generated/modified
      */
     boolean trigger(CodeGenContext context) throws CodeGenException;
@@ -93,7 +95,9 @@ public interface CodeGenProvider {
     /**
      * Resolve path; e.g. symlinks, etc
      *
-     * @param path the path to resolve
+     * @param path
+     *        the path to resolve
+     *
      * @return resolved path
      */
     static Path resolve(Path path) {

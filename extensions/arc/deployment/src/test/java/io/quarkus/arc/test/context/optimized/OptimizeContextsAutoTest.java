@@ -18,8 +18,7 @@ public class OptimizeContextsAutoTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SimpleBean.class))
+            .withApplicationRoot(root -> root.addClasses(SimpleBean.class))
             .overrideConfigKey("quarkus.arc.optimize-contexts", "auto");
 
     @Inject
@@ -30,8 +29,8 @@ public class OptimizeContextsAutoTest {
         assertTrue(bean.ping());
         for (ComponentsProvider componentsProvider : ServiceLoader.load(ComponentsProvider.class)) {
             // We have less than 1000 beans
-            assertFalse(componentsProvider.getComponents(Arc.container().getCurrentContextFactory()).getContextInstances()
-                    .isEmpty());
+            assertFalse(componentsProvider.getComponents(Arc.container().getCurrentContextFactory())
+                    .getContextInstances().isEmpty());
         }
     }
 }

@@ -52,7 +52,8 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
             }
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Unable to reset TestAuthController, TestIdentityAssociation and TestHttpAuthenticationMechanism", e);
+                    "Unable to reset TestAuthController, TestIdentityAssociation and TestHttpAuthenticationMechanism",
+                    e);
         }
 
     }
@@ -106,10 +107,12 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
                     var augmentorInstance = container.select(augmentorClass);
                     if (!augmentorInstance.isResolvable()) {
                         var testMethodName = context.getTestMethod() == null ? "" : context.getTestMethod().getName();
-                        throw new RuntimeException("""
-                                SecurityIdentityAugmentor class '%s' specified with '@TestSecurity#augmentors' annotation
-                                attribute on method '%s' is not available as a CDI bean.
-                                """.formatted(augmentorClass, testMethodName));
+                        throw new RuntimeException(
+                                """
+                                        SecurityIdentityAugmentor class '%s' specified with '@TestSecurity#augmentors' annotation
+                                        attribute on method '%s' is not available as a CDI bean.
+                                        """
+                                        .formatted(augmentorClass, testMethodName));
                     }
                     augmentors.add(augmentorInstance);
                 }
@@ -159,13 +162,13 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
         }
         var possessedPermissions = permissionToActions.values().stream()
                 .map(pa -> new StringPermission(pa.permission(), pa.actions().toArray(String[]::new))).toList();
-        return requiredPermission -> Uni.createFrom().item(
-                possessedPermissions.stream().anyMatch(possessedPermission -> possessedPermission.implies(requiredPermission)));
+        return requiredPermission -> Uni.createFrom().item(possessedPermissions.stream()
+                .anyMatch(possessedPermission -> possessedPermission.implies(requiredPermission)));
     }
 
     private Optional<AnnotationContainer<TestSecurity>> getAnnotationContainer(QuarkusTestMethodContext context)
             throws Exception {
-        //the usual ClassLoader hacks to get our copy of the TestSecurity annotation
+        // the usual ClassLoader hacks to get our copy of the TestSecurity annotation
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         Class<?> original = cl.loadClass(context.getTestMethod().getDeclaringClass().getName());
         Method method = original.getDeclaredMethod(context.getTestMethod().getName(),

@@ -16,12 +16,8 @@ import io.smallrye.certs.junit5.Alias;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
-@Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-sni-pem", formats = { PEM }, aliases = {
-                @Alias(name = "sni-1", cn = "acme.org"),
-                @Alias(name = "sni-2", cn = "example.com"),
-        })
-})
+@Certificates(baseDir = "target/certs", certificates = { @Certificate(name = "test-sni-pem", formats = {
+        PEM }, aliases = { @Alias(name = "sni-1", cn = "acme.org"), @Alias(name = "sni-2", cn = "example.com"), }) })
 public class PemKeyStoreWithSniTest {
 
     private static final String configuration = """
@@ -34,8 +30,7 @@ public class PemKeyStoreWithSniTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry registry;

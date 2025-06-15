@@ -12,8 +12,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OtlpExporterBadEndpointTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.otel.traces.exporter", "cdi")
             .overrideConfigKey("quarkus.otel.exporter.otlp.endpoint", "httz://nada:zero")
             .setExpectedException(IllegalArgumentException.class);

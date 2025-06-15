@@ -26,8 +26,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CacheConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
-            jar -> jar.addClass(TestResource.class).addAsResource("cache-config-test.properties", "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar
+            .addClass(TestResource.class).addAsResource("cache-config-test.properties", "application.properties"));
 
     private static final String CACHE_NAME = "test-cache";
 

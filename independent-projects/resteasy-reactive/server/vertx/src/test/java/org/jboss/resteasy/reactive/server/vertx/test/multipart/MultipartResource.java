@@ -30,10 +30,9 @@ public class MultipartResource {
         if (BlockingOperationSupport.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
-        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - " + formData.getStatus()
-                + " - "
-                + formData.getHtmlPart().contentType() + " - " + Files.exists(formData.xmlPart) + " - "
-                + formData.txtFile.exists();
+        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - "
+                + formData.getStatus() + " - " + formData.getHtmlPart().contentType() + " - "
+                + Files.exists(formData.xmlPart) + " - " + formData.txtFile.exists();
     }
 
     @POST
@@ -51,8 +50,7 @@ public class MultipartResource {
                 .header("xml-size", Files.readAllBytes(formData.xmlPart).length)
                 .header("xml-path", formData.xmlPart.toAbsolutePath().toString())
                 .header("txt-size", Files.readAllBytes(formData.txtFile.toPath()).length)
-                .header("txt-path", formData.txtFile.toPath().toAbsolutePath().toString())
-                .build();
+                .header("txt-path", formData.txtFile.toPath().toAbsolutePath().toString()).build();
     }
 
     @POST

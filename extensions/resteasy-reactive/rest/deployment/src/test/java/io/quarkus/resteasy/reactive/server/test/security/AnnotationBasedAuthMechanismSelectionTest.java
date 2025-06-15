@@ -59,16 +59,18 @@ public class AnnotationBasedAuthMechanismSelectionTest {
                     .pathAnnotationDeclaredOnInterface(),
             new AuthMechRequest("annotated-http-permissions/basic-class-level-interface").basic().noRbacAnnotation()
                     .pathAnnotationDeclaredOnInterface(),
-            new AuthMechRequest("annotated-http-permissions/overridden-parent-class-endpoint").custom().noRbacAnnotation(),
+            new AuthMechRequest("annotated-http-permissions/overridden-parent-class-endpoint").custom()
+                    .noRbacAnnotation(),
             new AuthMechRequest("annotated-http-permissions/default-impl-custom-class-level-interface").custom()
                     .noRbacAnnotation(),
-            new AuthMechRequest("unannotated-http-permissions/overridden-parent-class-endpoint").form().noRbacAnnotation(),
+            new AuthMechRequest("unannotated-http-permissions/overridden-parent-class-endpoint").form()
+                    .noRbacAnnotation(),
             new AuthMechRequest("unannotated-http-permissions/default-impl-custom-class-level-interface").basic()
                     .noRbacAnnotation().pathAnnotationDeclaredOnInterface(),
-            new AuthMechRequest("annotated-http-permissions/default-form-method-level-interface").form().noRbacAnnotation()
-                    .defaultAuthMech(),
-            new AuthMechRequest("unannotated-http-permissions/default-form-method-level-interface").form().noRbacAnnotation()
-                    .defaultAuthMech(),
+            new AuthMechRequest("annotated-http-permissions/default-form-method-level-interface").form()
+                    .noRbacAnnotation().defaultAuthMech(),
+            new AuthMechRequest("unannotated-http-permissions/default-form-method-level-interface").form()
+                    .noRbacAnnotation().defaultAuthMech(),
             new AuthMechRequest("annotated-http-permissions/basic-method-level-interface").basic().noRbacAnnotation()
                     .defaultAuthMech(),
             new AuthMechRequest("unannotated-http-permissions/basic-method-level-interface").basic().noRbacAnnotation()
@@ -133,14 +135,11 @@ public class AnnotationBasedAuthMechanismSelectionTest {
                     }
                 }
                 return false;
-            })
-            .assertLogRecords(logRecords -> Assertions.assertTrue(logRecords.isEmpty()));
+            }).assertLogRecords(logRecords -> Assertions.assertTrue(logRecords.isEmpty()));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
@@ -148,11 +147,7 @@ public class AnnotationBasedAuthMechanismSelectionTest {
     @ParameterizedTest
     public void testAuthMechanismSelection(final int idx) {
         var in = REQUESTS.get(idx);
-        in.requestSpecification.get()
-                .get(in.path)
-                .then()
-                .statusCode(in.expectedStatus)
-                .body(is(in.expectedBody))
+        in.requestSpecification.get().get(in.path).then().statusCode(in.expectedStatus).body(is(in.expectedBody))
                 .header(in.expectedHeaderKey, in.expectedHeaderVal);
         if (in.authRequired && in.unauthorizedRequestSpec != null) {
             in.unauthorizedRequestSpec.get().get(in.path).then().statusCode(403).header(in.expectedHeaderKey,
@@ -168,8 +163,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
                         in.expectedHeaderVal);
             } else {
                 // anonymous request - principal name is empty
-                in.requestUsingOtherAuthMech.get().get(in.path).then().header(in.expectedHeaderKey,
-                        in.expectedHeaderVal).statusCode(401);
+                in.requestUsingOtherAuthMech.get().get(in.path).then()
+                        .header(in.expectedHeaderKey, in.expectedHeaderVal).statusCode(401);
             }
         }
     }
@@ -202,8 +197,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
         requestWithBasicAuthUser().get("/annotated-http-permissions/authenticated").then().statusCode(401);
         requestWithFormAuth("user").get("/annotated-http-permissions/authenticated").then().statusCode(401);
         // send both form & basic credentials
-        requestWithFormAuth("user").auth().preemptive().basic("admin", "admin").get("/annotated-http-permissions/authenticated")
-                .then().statusCode(401);
+        requestWithFormAuth("user").auth().preemptive().basic("admin", "admin")
+                .get("/annotated-http-permissions/authenticated").then().statusCode(401);
     }
 
     @Test
@@ -230,7 +225,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
         @Path("deny-custom")
         @GET
         public String denyCustomAuthMechanism() {
-            // verifies custom auth mechanism is applied when authenticated requests comes in (by 403 and custom headers)
+            // verifies custom auth mechanism is applied when authenticated requests comes in (by 403 and custom
+            // headers)
             return "ignored";
         }
 
@@ -449,7 +445,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
     }
 
     @Singleton
-    public static class CustomBasicAuthMechanism implements io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism {
+    public static class CustomBasicAuthMechanism
+            implements io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism {
 
         static final String CUSTOM_AUTH_HEADER_KEY = CustomBasicAuthMechanism.class.getName();
 
@@ -460,7 +457,8 @@ public class AnnotationBasedAuthMechanismSelectionTest {
         }
 
         @Override
-        public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             context.response().putHeader(CUSTOM_AUTH_HEADER_KEY, "true");
             return delegate.authenticate(context, identityProviderManager);
         }

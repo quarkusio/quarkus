@@ -25,12 +25,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GlobalClientInterceptorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MutinyHelloService.class, MyFirstClientInterceptor.class, Calls.class,
-                            GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
-                            MutinyGreeterGrpc.class,
-                            HelloRequestOrBuilder.class, HelloReplyOrBuilder.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MutinyHelloService.class,
+                    MyFirstClientInterceptor.class, Calls.class, GreeterGrpc.class, Greeter.class, GreeterBean.class,
+                    HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class, HelloRequestOrBuilder.class,
+                    HelloReplyOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @GrpcClient("hello-service")
@@ -40,8 +39,7 @@ public class GlobalClientInterceptorTest {
     public void testInterceptorRegistration() {
         Calls.LIST.clear();
 
-        HelloReply reply = client
-                .sayHello(HelloRequest.newBuilder().setName("neo").build());
+        HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("neo").build());
         assertThat(reply.getMessage()).isEqualTo("Hello neo");
 
         List<String> calls = Calls.LIST;

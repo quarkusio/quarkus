@@ -33,15 +33,13 @@ public class PathMatchingHttpSecurityPolicyTest {
     private static WebClient client;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("test", "test", "test");
+        TestIdentityController.resetRoles().add("test", "test", "test");
     }
 
     @AfterAll
@@ -65,10 +63,8 @@ public class PathMatchingHttpSecurityPolicyTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "/q/health", "/q/health/live", "/q/health/ready", "//q/health", "///q/health", "///q///health",
-            "/q/health/", "/q///health/", "/q///health////live"
-    })
+    @ValueSource(strings = { "/q/health", "/q/health/live", "/q/health/ready", "//q/health", "///q/health",
+            "///q///health", "/q/health/", "/q///health/", "/q///health////live" })
     public void testHealthCheckPaths(String path) {
         assurePath(path, 401);
         assurePathAuthenticated(path, "UP");

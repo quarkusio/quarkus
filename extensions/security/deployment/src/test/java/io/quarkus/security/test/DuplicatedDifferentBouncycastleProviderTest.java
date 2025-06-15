@@ -8,10 +8,9 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class DuplicatedDifferentBouncycastleProviderTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setExpectedException(IllegalStateException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-duplicated-different-providers.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setExpectedException(IllegalStateException.class)
+            .withApplicationRoot((jar) -> jar.addAsResource("application-duplicated-different-providers.properties",
+                    "application.properties"));
 
     @Test
     void shouldThrow() {

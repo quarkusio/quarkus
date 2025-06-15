@@ -29,7 +29,8 @@ public class ConstraintTypeUtil20 implements ConstraintTypeUtil {
             case METHOD:
                 Node secondNode = nodes.next();
 
-                if (secondNode.getKind() == ElementKind.PARAMETER || secondNode.getKind() == ElementKind.CROSS_PARAMETER) {
+                if (secondNode.getKind() == ElementKind.PARAMETER
+                        || secondNode.getKind() == ElementKind.CROSS_PARAMETER) {
                     return ConstraintType.Type.PARAMETER;
                 } else if (secondNode.getKind() == ElementKind.RETURN_VALUE) {
                     return ConstraintType.Type.RETURN_VALUE;

@@ -14,9 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class SystemPropertyProxyWithAuthTest extends ProxyTestBase {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Client1.class, Client2.class, Client3.class, ViaHeaderReturningResource.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            jar -> jar.addClasses(Client1.class, Client2.class, Client3.class, ViaHeaderReturningResource.class))
             .withConfigurationResource("system-props-proxy-test-application.properties");
 
     @RestClient
@@ -25,9 +24,9 @@ public class SystemPropertyProxyWithAuthTest extends ProxyTestBase {
     Client2 client2;
 
     /*
-     * - client1 should use JVM settings, set with -Dhttp.proxyHost, etc (8183, with auth)
-     * - CDI managed client2 should use client specific settings as configured in the properties (8181)
-     * - client created with builder should use system settings by default (8183, with auth)
+     * - client1 should use JVM settings, set with -Dhttp.proxyHost, etc (8183, with auth) - CDI managed client2 should
+     * use client specific settings as configured in the properties (8181) - client created with builder should use
+     * system settings by default (8183, with auth)
      */
     @Test
     @SetSystemProperty(key = "http.proxyHost", value = "localhost")

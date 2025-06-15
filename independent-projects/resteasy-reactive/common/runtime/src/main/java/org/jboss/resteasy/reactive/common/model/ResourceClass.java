@@ -40,8 +40,7 @@ public class ResourceClass {
     private Set<String> pathParameters = new HashSet<>();
 
     /**
-     * Contains class level exception mappers
-     * The key is the exception type and the value is the exception mapper class
+     * Contains class level exception mappers The key is the exception type and the value is the exception mapper class
      */
     private Map<String, String> classLevelExceptionMappers = new HashMap<>();
 

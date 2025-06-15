@@ -20,10 +20,9 @@ import io.vertx.core.Vertx;
 public class RequestContextNotActiveTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

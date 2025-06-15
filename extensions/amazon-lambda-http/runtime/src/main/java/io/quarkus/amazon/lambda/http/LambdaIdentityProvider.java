@@ -10,8 +10,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Helper interface that removes some boilerplate for creating
- * an IdentityProvider that processes APIGatewayV2HTTPEvent
+ * Helper interface that removes some boilerplate for creating an IdentityProvider that processes APIGatewayV2HTTPEvent
  */
 public interface LambdaIdentityProvider extends IdentityProvider<LambdaAuthenticationRequest> {
     @Override
@@ -20,7 +19,8 @@ public interface LambdaIdentityProvider extends IdentityProvider<LambdaAuthentic
     }
 
     @Override
-    default Uni<SecurityIdentity> authenticate(LambdaAuthenticationRequest request, AuthenticationRequestContext context) {
+    default Uni<SecurityIdentity> authenticate(LambdaAuthenticationRequest request,
+            AuthenticationRequestContext context) {
         APIGatewayV2HTTPEvent event = request.getEvent();
         SecurityIdentity identity = authenticate(event);
         if (identity == null) {
@@ -30,10 +30,10 @@ public interface LambdaIdentityProvider extends IdentityProvider<LambdaAuthentic
     }
 
     /**
-     * You must override this method unless you directly override
-     * IdentityProvider.authenticate
+     * You must override this method unless you directly override IdentityProvider.authenticate
      *
      * @param event
+     *
      * @return
      */
     default SecurityIdentity authenticate(APIGatewayV2HTTPEvent event) {

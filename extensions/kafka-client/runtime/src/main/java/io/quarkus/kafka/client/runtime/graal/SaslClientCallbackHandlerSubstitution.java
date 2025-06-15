@@ -81,12 +81,11 @@ final class Target_org_apache_kafka_common_security_authenticator_SaslClientCall
                 }
             } else if (callback instanceof PasswordCallback) {
                 if (subject != null && !subject.getPrivateCredentials(String.class).isEmpty()) {
-                    char[] password = subject.getPrivateCredentials(String.class).iterator().next()
-                            .toCharArray();
+                    char[] password = subject.getPrivateCredentials(String.class).iterator().next().toCharArray();
                     ((PasswordCallback) callback).setPassword(password);
                 } else {
-                    String errorMessage = "Could not login: the client is being asked for a password, but the Kafka" +
-                            " client code does not currently support obtaining a password from the user.";
+                    String errorMessage = "Could not login: the client is being asked for a password, but the Kafka"
+                            + " client code does not currently support obtaining a password from the user.";
                     throw new UnsupportedCallbackException(callback, errorMessage);
                 }
             } else if (callback instanceof RealmCallback) {
@@ -101,18 +100,17 @@ final class Target_org_apache_kafka_common_security_authenticator_SaslClientCall
                     ac.setAuthorizedID(authzId);
                 }
             } else if (callback instanceof ScramExtensionsCallback) {
-                if (ScramMechanism.isScram(mechanism) && subject != null && !subject
-                        .getPublicCredentials(Map.class).isEmpty()) {
+                if (ScramMechanism.isScram(mechanism) && subject != null
+                        && !subject.getPublicCredentials(Map.class).isEmpty()) {
                     @SuppressWarnings("unchecked")
-                    Map<String, String> extensions = (Map<String, String>) subject
-                            .getPublicCredentials(Map.class).iterator().next();
+                    Map<String, String> extensions = (Map<String, String>) subject.getPublicCredentials(Map.class)
+                            .iterator().next();
                     ((ScramExtensionsCallback) callback).extensions(extensions);
                 }
             } else if (callback instanceof SaslExtensionsCallback) {
-                if (!SaslConfigs.GSSAPI_MECHANISM.equals(mechanism) &&
-                        subject != null && !subject.getPublicCredentials(SaslExtensions.class).isEmpty()) {
-                    SaslExtensions extensions = subject.getPublicCredentials(SaslExtensions.class).iterator()
-                            .next();
+                if (!SaslConfigs.GSSAPI_MECHANISM.equals(mechanism) && subject != null
+                        && !subject.getPublicCredentials(SaslExtensions.class).isEmpty()) {
+                    SaslExtensions extensions = subject.getPublicCredentials(SaslExtensions.class).iterator().next();
                     ((SaslExtensionsCallback) callback).extensions(extensions);
                 }
             } else {

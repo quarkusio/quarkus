@@ -22,26 +22,24 @@ public class EmptyInputTest {
 
     @Test
     public void emptyBlocking() {
-        RestAssured.with().contentType(ContentType.XML).post("/greeting/blocking")
-                .then().statusCode(200);
+        RestAssured.with().contentType(ContentType.XML).post("/greeting/blocking").then().statusCode(200);
     }
 
     @Test
     public void emptyNonBlocking() {
-        RestAssured.with().contentType(ContentType.XML).post("/greeting/nonBlocking")
-                .then().statusCode(200);
+        RestAssured.with().contentType(ContentType.XML).post("/greeting/nonBlocking").then().statusCode(200);
     }
 
     @Test
     public void nonEmptyBlocking() {
-        RestAssured.with().contentType(ContentType.XML).body(new Greeting("Hi")).post("/greeting/blocking")
-                .then().statusCode(200).body(equalTo("Hi"));
+        RestAssured.with().contentType(ContentType.XML).body(new Greeting("Hi")).post("/greeting/blocking").then()
+                .statusCode(200).body(equalTo("Hi"));
     }
 
     @Test
     public void nonEmptyNonBlocking() {
-        RestAssured.with().contentType(ContentType.XML).body(new Greeting("Hey")).post("/greeting/nonBlocking")
-                .then().statusCode(200).body(equalTo("Hey"));
+        RestAssured.with().contentType(ContentType.XML).body(new Greeting("Hey")).post("/greeting/nonBlocking").then()
+                .statusCode(200).body(equalTo("Hey"));
     }
 
     @Path("greeting")

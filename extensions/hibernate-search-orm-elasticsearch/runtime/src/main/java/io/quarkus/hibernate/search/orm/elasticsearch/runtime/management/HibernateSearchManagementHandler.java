@@ -31,13 +31,15 @@ public class HibernateSearchManagementHandler implements Handler<RoutingContext>
         HttpServerRequest request = ctx.request();
 
         if (!HttpMethod.POST.equals(request.method())) {
-            errorResponse(ctx, 406, "Http method [" + request.method().name() + "] is not supported. Use [POST] instead.");
+            errorResponse(ctx, 406,
+                    "Http method [" + request.method().name() + "] is not supported. Use [POST] instead.");
             return;
         }
 
         String contentType = request.getHeader(HttpHeaders.CONTENT_TYPE);
         if (contentType != null && !contentType.toLowerCase(Locale.ROOT).startsWith("application/json")) {
-            errorResponse(ctx, 406, "Content type [" + contentType + " is not supported. Use [application/json] instead.");
+            errorResponse(ctx, 406,
+                    "Content type [" + contentType + " is not supported. Use [application/json] instead.");
             return;
         }
 
@@ -45,9 +47,6 @@ public class HibernateSearchManagementHandler implements Handler<RoutingContext>
     }
 
     private void errorResponse(RoutingContext ctx, int code, String message) {
-        ctx.response()
-                .setStatusCode(code)
-                .setStatusMessage(message)
-                .end();
+        ctx.response().setStatusCode(code).setStatusMessage(message).end();
     }
 }

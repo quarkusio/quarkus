@@ -19,16 +19,13 @@ public class InterfaceWithImplTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Greeting.class, GreetingImpl.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Greeting.class, GreetingImpl.class));
 
     @Test
     public void test() {
-        RestAssured.get("/hello/greeting/universe")
-                .then().body(Matchers.equalTo("name: universe / blocking: true"));
+        RestAssured.get("/hello/greeting/universe").then().body(Matchers.equalTo("name: universe / blocking: true"));
 
-        RestAssured.get("/hello/greeting2/universe")
-                .then().body(Matchers.equalTo("name: universe / blocking: false"));
+        RestAssured.get("/hello/greeting2/universe").then().body(Matchers.equalTo("name: universe / blocking: false"));
     }
 
     @Path("/hello")

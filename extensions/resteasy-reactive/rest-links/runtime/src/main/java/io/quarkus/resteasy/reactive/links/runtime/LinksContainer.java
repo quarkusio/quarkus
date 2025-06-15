@@ -15,8 +15,8 @@ import io.quarkus.runtime.annotations.RecordableConstructor;
 public final class LinksContainer {
 
     /**
-     * Links mapped by their entity type.
-     * In order to be recorded this field name has to match the constructor parameter name and have a getter.
+     * Links mapped by their entity type. In order to be recorded this field name has to match the constructor parameter
+     * name and have a getter.
      */
     private final MultivaluedMap<String, LinkInfo> linksMap;
 

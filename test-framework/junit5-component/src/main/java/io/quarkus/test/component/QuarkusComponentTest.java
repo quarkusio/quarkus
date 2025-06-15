@@ -28,12 +28,13 @@ public @interface QuarkusComponentTest {
      * The set of additional components under test.
      * <p>
      * The initial set of components is derived from the test class. The types of all fields annotated with
-     * {@link jakarta.inject.Inject} are considered the component types. Furthermore, all types of parameters of test methods
-     * that are not annotated with {@link InjectMock} or {@link SkipInject} are also considered the component types. Finally, if
-     * {@link #addNestedClassesAsComponents()} is set to {@code true} then all static nested classes declared on the test class
-     * are components too.
+     * {@link jakarta.inject.Inject} are considered the component types. Furthermore, all types of parameters of test
+     * methods that are not annotated with {@link InjectMock} or {@link SkipInject} are also considered the component
+     * types. Finally, if {@link #addNestedClassesAsComponents()} is set to {@code true} then all static nested classes
+     * declared on the test class are components too.
      *
      * @return the additional components under test
+     *
      * @see QuarkusComponentTest#addNestedClassesAsComponents()
      */
     Class<?>[] value() default {};

@@ -19,7 +19,8 @@ public class GelfLogHandlerRecorder {
 
         String previousSkipHostnameResolution = null;
         if (config.skipHostnameResolution()) {
-            previousSkipHostnameResolution = System.setProperty(PROPERTY_LOGSTASH_GELF_SKIP_HOSTNAME_RESOLUTION, "true");
+            previousSkipHostnameResolution = System.setProperty(PROPERTY_LOGSTASH_GELF_SKIP_HOSTNAME_RESOLUTION,
+                    "true");
         }
         final JBoss7GelfLogHandler handler = new JBoss7GelfLogHandler();
         if (config.skipHostnameResolution()) {
@@ -60,12 +61,14 @@ public class GelfLogHandlerRecorder {
                 if (additionalFieldsValue.length() > 0) {
                     additionalFieldsValue.append(',');
                 }
-                additionalFieldsValue.append(additionalField.getKey()).append('=').append(additionalField.getValue().value());
+                additionalFieldsValue.append(additionalField.getKey()).append('=')
+                        .append(additionalField.getValue().value());
 
                 if (additionalFieldsType.length() > 0) {
                     additionalFieldsType.append(',');
                 }
-                additionalFieldsType.append(additionalField.getKey()).append('=').append(additionalField.getValue().type());
+                additionalFieldsType.append(additionalField.getKey()).append('=')
+                        .append(additionalField.getValue().type());
             }
 
             handler.setAdditionalFields(additionalFieldsValue.toString());

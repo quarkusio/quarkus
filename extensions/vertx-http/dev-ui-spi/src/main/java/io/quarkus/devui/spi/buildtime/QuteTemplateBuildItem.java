@@ -7,13 +7,10 @@ import java.util.Map;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 
 /**
- * Contains info on the build time template used to build static content for Dev UI
- * All files are relative to dev-ui-templates/build-time/{extensionName} (in src/main/resources)
- *
- * This contain the fileName to the template, and the template data (variables)
- *
- * This allows extensions developers to add "static files" that they generate with Qute at build time.
- * From a runtime p.o.v this is file served from "disk"
+ * Contains info on the build time template used to build static content for Dev UI All files are relative to
+ * dev-ui-templates/build-time/{extensionName} (in src/main/resources) This contain the fileName to the template, and
+ * the template data (variables) This allows extensions developers to add "static files" that they generate with Qute at
+ * build time. From a runtime p.o.v this is file served from "disk"
  */
 public final class QuteTemplateBuildItem extends AbstractDevUIBuildItem {
     private final List<TemplateData> templateDatas;
@@ -33,7 +30,8 @@ public final class QuteTemplateBuildItem extends AbstractDevUIBuildItem {
     }
 
     public void add(String templatename, Map<String, Object> data) {
-        templateDatas.add(new TemplateData(templatename, templatename, data)); // By default the template is used for only one file.
+        templateDatas.add(new TemplateData(templatename, templatename, data)); // By default the template is used for
+                                                                               // only one file.
     }
 
     public void add(String templatename, String fileName, Map<String, Object> data) {

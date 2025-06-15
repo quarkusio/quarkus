@@ -18,20 +18,16 @@ import io.smallrye.faulttolerance.api.BeforeRetry;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface SmallRyeFaultToleranceBuildTimeConfig {
     /**
-     * Configuration of fault tolerance strategies; either global, per class, or per method.
-     * Keys are:
-     *
+     * Configuration of fault tolerance strategies; either global, per class, or per method. Keys are:
      * <ul>
      * <li>{@code global}: for global configuration</li>
      * <li>{@code "<classname>"}: for per class configuration</li>
      * <li>{@code "<classname>/<methodname>"}: for per method configuration</li>
      * </ul>
-     *
-     * Note that configuration follows the MicroProfile Fault Tolerance specification.
-     * That is, if an annotation is present on a method, the configuration must be per method;
-     * if an annotation is present on a class, the configuration must be per class.
-     * Global configuration is a fallback for both per method and per class configuration,
-     * but per class configuration is <em>not</em> a fallback for per method configuration.
+     * Note that configuration follows the MicroProfile Fault Tolerance specification. That is, if an annotation is
+     * present on a method, the configuration must be per method; if an annotation is present on a class, the
+     * configuration must be per class. Global configuration is a fallback for both per method and per class
+     * configuration, but per class configuration is <em>not</em> a fallback for per method configuration.
      */
     @WithParentName
     @ConfigDocMapKey("<identifier>")
@@ -50,8 +46,8 @@ public interface SmallRyeFaultToleranceBuildTimeConfig {
 
         interface BeforeRetryConfig {
             /**
-             * The name of the method to call before retrying. The method belongs to the same class
-             * as the guarded method. The method must have no parameters and return {@code void}.
+             * The name of the method to call before retrying. The method belongs to the same class as the guarded
+             * method. The method must have no parameters and return {@code void}.
              *
              * @see BeforeRetry#methodName()
              */
@@ -60,9 +56,8 @@ public interface SmallRyeFaultToleranceBuildTimeConfig {
 
         interface FallbackConfig {
             /**
-             * The name of the method to call on fallback. The method belongs to the same class
-             * as the guarded method. The method must have a signature matching the signature
-             * of the guarded method.
+             * The name of the method to call on fallback. The method belongs to the same class as the guarded method.
+             * The method must have a signature matching the signature of the guarded method.
              *
              * @see Fallback#fallbackMethod()
              */

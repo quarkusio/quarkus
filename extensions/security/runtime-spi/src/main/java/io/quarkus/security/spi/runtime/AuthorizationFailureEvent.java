@@ -5,12 +5,11 @@ import java.util.Map;
 import io.quarkus.security.identity.SecurityIdentity;
 
 /**
- * Security event that should be fired when the {@link SecurityIdentity} failed security constrain,
- * such as {@link SecurityCheck} or HTTP Security policy.
+ * Security event that should be fired when the {@link SecurityIdentity} failed security constrain, such as
+ * {@link SecurityCheck} or HTTP Security policy.
  */
 public final class AuthorizationFailureEvent extends AbstractSecurityEvent {
-    public static final String AUTHORIZATION_FAILURE_KEY = AuthorizationFailureEvent.class.getName()
-            + ".FAILURE";
+    public static final String AUTHORIZATION_FAILURE_KEY = AuthorizationFailureEvent.class.getName() + ".FAILURE";
     public static final String AUTHORIZATION_CONTEXT_KEY = AuthorizationFailureEvent.class.getName() + ".CONTEXT";
     public static final String SECURED_METHOD_KEY = AuthorizationFailureEvent.class.getName() + ".SECURED_METHOD";
 

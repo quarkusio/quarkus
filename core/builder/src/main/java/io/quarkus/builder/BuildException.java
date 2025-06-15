@@ -15,10 +15,11 @@ public class BuildException extends Exception {
     private final List<Diagnostic> diagnostics;
 
     /**
-     * Constructs a new {@code BuildException} instance. The message is left blank ({@code null}), and no
-     * cause is specified.
+     * Constructs a new {@code BuildException} instance. The message is left blank ({@code null}), and no cause is
+     * specified.
      *
-     * @param diagnostics the diagnostics associated with the build failure (not {@code null})
+     * @param diagnostics
+     *        the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final List<Diagnostic> diagnostics) {
         super(constructMessage(null, Assert.checkNotNullParam("diagnostics", diagnostics)));
@@ -26,21 +27,23 @@ public class BuildException extends Exception {
     }
 
     /**
-     * Constructs a new {@code BuildException} instance. The diagnostics is left blank ({@code null}), and no
-     * cause is specified.
+     * Constructs a new {@code BuildException} instance. The diagnostics is left blank ({@code null}), and no cause is
+     * specified.
      *
-     * @param msg the message
+     * @param msg
+     *        the message
      */
     public BuildException(String msg) {
         this(msg, Collections.emptyList());
     }
 
     /**
-     * Constructs a new {@code BuildException} instance with an initial message. No
-     * cause is specified.
+     * Constructs a new {@code BuildException} instance with an initial message. No cause is specified.
      *
-     * @param msg the message
-     * @param diagnostics the diagnostics associated with the build failure (not {@code null})
+     * @param msg
+     *        the message
+     * @param diagnostics
+     *        the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final String msg, final List<Diagnostic> diagnostics) {
         super(constructMessage(msg, Assert.checkNotNullParam("diagnostics", diagnostics)));
@@ -52,12 +55,14 @@ public class BuildException extends Exception {
     }
 
     /**
-     * Constructs a new {@code BuildException} instance with an initial cause. If
-     * a non-{@code null} cause is specified, its message is used to initialize the message of this
-     * {@code BuildException}; otherwise the message is left blank ({@code null}).
+     * Constructs a new {@code BuildException} instance with an initial cause. If a non-{@code null} cause is specified,
+     * its message is used to initialize the message of this {@code BuildException}; otherwise the message is left blank
+     * ({@code null}).
      *
-     * @param cause the cause
-     * @param diagnostics the diagnostics associated with the build failure (not {@code null})
+     * @param cause
+     *        the cause
+     * @param diagnostics
+     *        the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final Throwable cause, final List<Diagnostic> diagnostics) {
         super(constructMessage(null, Assert.checkNotNullParam("diagnostics", diagnostics)), cause);
@@ -68,9 +73,12 @@ public class BuildException extends Exception {
     /**
      * Constructs a new {@code BuildException} instance with an initial message and cause.
      *
-     * @param msg the message
-     * @param cause the cause
-     * @param diagnostics the diagnostics associated with the build failure (not {@code null})
+     * @param msg
+     *        the message
+     * @param cause
+     *        the cause
+     * @param diagnostics
+     *        the diagnostics associated with the build failure (not {@code null})
      */
     public BuildException(final String msg, final Throwable cause, final List<Diagnostic> diagnostics) {
         super(constructMessage(msg, Assert.checkNotNullParam("diagnostics", diagnostics)), cause);

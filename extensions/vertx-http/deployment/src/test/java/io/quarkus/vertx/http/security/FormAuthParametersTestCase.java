@@ -22,113 +22,61 @@ import io.restassured.matcher.RestAssuredMatchers;
 
 public class FormAuthParametersTestCase {
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.auth.form.enabled=true\n" +
-            "quarkus.http.auth.form.login-page=login\n" +
-            "quarkus.http.auth.form.post-location=auth\n" +
-            "quarkus.http.auth.form.username-parameter=username\n" +
-            "quarkus.http.auth.form.password-parameter=password\n" +
-            "quarkus.http.auth.form.location-cookie=redirect-location\n" +
-            "quarkus.http.auth.form.error-page=error\n" +
-            "quarkus.http.auth.form.landing-page=landing\n" +
-            "quarkus.http.auth.policy.r1.roles-allowed=admin\n" +
-            "quarkus.http.auth.permission.roles1.paths=/admin\n" +
-            "quarkus.http.auth.permission.roles1.policy=r1\n";
+    private static final String APP_PROPS = "" + "quarkus.http.auth.form.enabled=true\n"
+            + "quarkus.http.auth.form.login-page=login\n" + "quarkus.http.auth.form.post-location=auth\n"
+            + "quarkus.http.auth.form.username-parameter=username\n"
+            + "quarkus.http.auth.form.password-parameter=password\n"
+            + "quarkus.http.auth.form.location-cookie=redirect-location\n" + "quarkus.http.auth.form.error-page=error\n"
+            + "quarkus.http.auth.form.landing-page=landing\n" + "quarkus.http.auth.policy.r1.roles-allowed=admin\n"
+            + "quarkus.http.auth.permission.roles1.paths=/admin\n" + "quarkus.http.auth.permission.roles1.policy=r1\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class,
-                            PathHandler.class)
+                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class,
+                            TestIdentityController.class, PathHandler.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties");
         }
     });
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin");
     }
 
     @Test
     public void testFormBasedAuthSuccess() {
         CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/login"))
-                .cookie("redirect-location",
+        RestAssured.given().filter(cookies).redirects().follow(false).when().get("/admin").then().assertThat()
+                .statusCode(302).header("location", containsString("/login")).cookie("redirect-location",
                         RestAssuredMatchers.detailedCookie().value(containsString("/admin")).secured(false));
 
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .formParam("username", "admin")
-                .formParam("password", "admin")
-                .post("/auth")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/admin"))
-                .cookie("quarkus-credential",
+        RestAssured.given().filter(cookies).redirects().follow(false).when().formParam("username", "admin")
+                .formParam("password", "admin").post("/auth").then().assertThat().statusCode(302)
+                .header("location", containsString("/admin")).cookie("quarkus-credential",
                         RestAssuredMatchers.detailedCookie().value(notNullValue()).secured(false));
 
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("admin:/admin"));
+        RestAssured.given().filter(cookies).redirects().follow(false).when().get("/admin").then().assertThat()
+                .statusCode(200).body(equalTo("admin:/admin"));
 
     }
 
     @Test
     public void testFormBasedAuthSuccessLandingPage() {
         CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .formParam("username", "admin")
-                .formParam("password", "admin")
-                .post("/auth")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/landing"))
-                .cookie("quarkus-credential", notNullValue());
+        RestAssured.given().filter(cookies).redirects().follow(false).when().formParam("username", "admin")
+                .formParam("password", "admin").post("/auth").then().assertThat().statusCode(302)
+                .header("location", containsString("/landing")).cookie("quarkus-credential", notNullValue());
 
     }
 
     @Test
     public void testFormAuthFailureWrongPassword() {
         CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .formParam("username", "admin")
-                .formParam("password", "wrongpassword")
-                .post("/auth")
-                .then()
-                .assertThat()
-                .statusCode(302)
+        RestAssured.given().filter(cookies).redirects().follow(false).when().formParam("username", "admin")
+                .formParam("password", "wrongpassword").post("/auth").then().assertThat().statusCode(302)
                 .header("location", containsString("/error"));
 
     }
@@ -136,16 +84,8 @@ public class FormAuthParametersTestCase {
     @Test
     public void testFormAuthFailureWrongRedirect() {
         CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .when()
-                .cookies("redirect-location", "http://localhost")
-                .formParam("username", "admin")
-                .formParam("password", "admin")
-                .post("/auth")
-                .then()
-                .assertThat()
+        RestAssured.given().filter(cookies).when().cookies("redirect-location", "http://localhost")
+                .formParam("username", "admin").formParam("password", "admin").post("/auth").then().assertThat()
                 .statusCode(401);
     }
 }

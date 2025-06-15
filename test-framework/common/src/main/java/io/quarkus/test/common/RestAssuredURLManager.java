@@ -26,7 +26,8 @@ public class RestAssuredURLManager {
     private static int oldPort;
     private static String oldBaseURI;
     private static String oldBasePath;
-    private static Object oldRestAssuredConfig; // we can't declare the type here as that would prevent this class for being loaded if RestAssured is not present
+    private static Object oldRestAssuredConfig; // we can't declare the type here as that would prevent this class for
+                                                // being loaded if RestAssured is not present
     private static Object oldRequestSpecification;
 
     private static final boolean REST_ASSURED_PRESENT;
@@ -89,8 +90,7 @@ public class RestAssuredURLManager {
         RestAssured.baseURI = protocol + host;
 
         oldBasePath = RestAssured.basePath;
-        Optional<String> basePath = ConfigProvider.getConfig().getOptionalValue("quarkus.http.root-path",
-                String.class);
+        Optional<String> basePath = ConfigProvider.getConfig().getOptionalValue("quarkus.http.root-path", String.class);
         if (basePath.isPresent() || additionalPath != null) {
             StringBuilder bp = new StringBuilder();
             if (basePath.isPresent()) {
@@ -117,8 +117,8 @@ public class RestAssuredURLManager {
 
         oldRestAssuredConfig = RestAssured.config();
 
-        Duration timeout = ConfigProvider.getConfig()
-                .getOptionalValue("quarkus.http.test-timeout", Duration.class).orElse(Duration.ofSeconds(30));
+        Duration timeout = ConfigProvider.getConfig().getOptionalValue("quarkus.http.test-timeout", Duration.class)
+                .orElse(Duration.ofSeconds(30));
         configureTimeouts(timeout);
 
         oldRequestSpecification = RestAssured.requestSpecification;
@@ -126,10 +126,11 @@ public class RestAssuredURLManager {
     }
 
     private static void configureTimeouts(Duration d) {
-        RestAssured.config = RestAssured.config().httpClient(new HttpClientConfig()
-                .setParam("http.conn-manager.timeout", d.toMillis()) // this needs to be long
-                .setParam("http.connection.timeout", (int) d.toMillis()) // this needs to be int
-                .setParam("http.socket.timeout", (int) d.toMillis())); // same here
+        RestAssured.config = RestAssured.config()
+                .httpClient(new HttpClientConfig().setParam("http.conn-manager.timeout", d.toMillis()) // this needs to
+                        // be long
+                        .setParam("http.connection.timeout", (int) d.toMillis()) // this needs to be int
+                        .setParam("http.socket.timeout", (int) d.toMillis())); // same here
     }
 
     public static void clearURL() {

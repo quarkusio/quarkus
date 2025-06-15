@@ -18,10 +18,8 @@ public class VertxProducerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new File("src/test/resources/lorem.txt"), "files/lorem.txt")
-                    .addClasses(BeanUsingBareVertx.class)
-                    .addClasses(BeanUsingMutinyVertx.class));
+            .withApplicationRoot((jar) -> jar.addAsResource(new File("src/test/resources/lorem.txt"), "files/lorem.txt")
+                    .addClasses(BeanUsingBareVertx.class).addClasses(BeanUsingMutinyVertx.class));
 
     @Inject
     BeanUsingBareVertx beanUsingVertx;

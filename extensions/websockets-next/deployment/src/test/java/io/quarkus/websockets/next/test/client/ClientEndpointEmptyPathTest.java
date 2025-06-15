@@ -26,10 +26,9 @@ import io.quarkus.websockets.next.WebSocketConnector;
 public class ClientEndpointEmptyPathTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
+    });
 
     @Inject
     WebSocketConnector<ClientEndpoint> connector;
@@ -39,9 +38,7 @@ public class ClientEndpointEmptyPathTest {
 
     @Test
     void testClient() throws InterruptedException {
-        WebSocketClientConnection connection = connector
-                .baseUri(uri)
-                .connectAndAwait();
+        WebSocketClientConnection connection = connector.baseUri(uri).connectAndAwait();
         connection.sendTextAndAwait("Hi!");
 
         assertTrue(ClientEndpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));

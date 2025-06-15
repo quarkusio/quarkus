@@ -35,12 +35,11 @@ public class HalServerResponseFilter {
     public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext, Throwable t) {
         if (t == null) {
             Object entity = responseContext.getEntity();
-            if (isHttpStatusSuccessful(responseContext.getStatusInfo())
-                    && acceptsHalMediaType(requestContext)
+            if (isHttpStatusSuccessful(responseContext.getStatusInfo()) && acceptsHalMediaType(requestContext)
                     && canEntityBeProcessed(entity)) {
                 if (entity instanceof Collection) {
-                    responseContext.setEntity(service.toHalCollectionWrapper((Collection<Object>) entity, COLLECTION_NAME,
-                            findEntityClass()));
+                    responseContext.setEntity(service.toHalCollectionWrapper((Collection<Object>) entity,
+                            COLLECTION_NAME, findEntityClass()));
                 } else {
                     responseContext.setEntity(service.toHalWrapper(entity));
                 }
@@ -49,8 +48,7 @@ public class HalServerResponseFilter {
     }
 
     private boolean canEntityBeProcessed(Object entity) {
-        return entity != null
-                && !(entity instanceof String)
+        return entity != null && !(entity instanceof String)
                 && !(entity instanceof HalEntityWrapper || entity instanceof HalCollectionWrapper);
     }
 
@@ -59,8 +57,8 @@ public class HalServerResponseFilter {
     }
 
     private boolean acceptsHalMediaType(ContainerRequestContext requestContext) {
-        List<String> acceptMediaType = requestContext.getAcceptableMediaTypes().stream().map(MediaType::toString).collect(
-                Collectors.toList());
+        List<String> acceptMediaType = requestContext.getAcceptableMediaTypes().stream().map(MediaType::toString)
+                .collect(Collectors.toList());
         return acceptMediaType.contains(RestMediaType.APPLICATION_HAL_JSON);
     }
 

@@ -3,9 +3,8 @@ package io.quarkus.kubernetes.service.binding.spi;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Build item that describes a service that the application needs to bind to.
- * The qualifier does not encapsulate the target service coordinates, but information that given the right context can be mapped
- * to coordinates.
+ * Build item that describes a service that the application needs to bind to. The qualifier does not encapsulate the
+ * target service coordinates, but information that given the right context can be mapped to coordinates.
  */
 public final class ServiceBindingQualifierBuildItem extends MultiBuildItem {
 

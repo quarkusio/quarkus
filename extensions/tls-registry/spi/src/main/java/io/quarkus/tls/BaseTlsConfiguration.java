@@ -69,8 +69,8 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
     }
 
     /**
-     * Returns the hostname verification algorithm for this configuration.
-     * {@code "NONE"} means no hostname verification.
+     * Returns the hostname verification algorithm for this configuration. {@code "NONE"} means no hostname
+     * verification.
      *
      * @return the hostname verification algorithm.
      */
@@ -79,9 +79,8 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
     }
 
     /**
-     * Returns whether the key store is configured to use SNI.
-     * When SNI is used, the client indicate the server name during the TLS handshake, allowing the server to select the
-     * right certificate.
+     * Returns whether the key store is configured to use SNI. When SNI is used, the client indicate the server name
+     * during the TLS handshake, allowing the server to select the right certificate.
      *
      * @return {@code true} if the key store is configured to use SNI, {@code false} otherwise.
      */
@@ -90,8 +89,8 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
     }
 
     /**
-     * Reloads the configuration.
-     * It usually means reloading the key store and trust store, especially when they are files.
+     * Reloads the configuration. It usually means reloading the key store and trust store, especially when they are
+     * files.
      *
      * @return {@code true} if the configuration has been reloaded, {@code false} otherwise.
      */

@@ -34,8 +34,7 @@ import io.smallrye.stork.api.observability.StorkObservation;
 public class StorkMetricsLoadBalancerFailTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "static")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.address-list", "${test.url}")
@@ -45,11 +44,10 @@ public class StorkMetricsLoadBalancerFailTest {
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.address-list", "${test.url}")
             .overrideConfigKey("quarkus.stork.greeting-service.load-balancer.type", "mock")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class,
-                            MockServiceSelectorProvider.class, MockServiceSelectorConfiguration.class,
-                            MockServiceSelectorProviderLoader.class, GreetingResource.class,
-                            GreetingResource.GreetingRestClient.class, Util.class));
+            .withApplicationRoot((jar) -> jar.addClasses(PingPongResource.class,
+                    PingPongResource.PingPongRestClient.class, MockServiceSelectorProvider.class,
+                    MockServiceSelectorConfiguration.class, MockServiceSelectorProviderLoader.class,
+                    GreetingResource.class, GreetingResource.GreetingRestClient.class, Util.class));
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
@@ -74,7 +72,7 @@ public class StorkMetricsLoadBalancerFailTest {
         RestAssured.when().get("/ping/one").then().statusCode(500);
         RestAssured.when().get("/greeting/hola").then().statusCode(500);
 
-        //Stork metrics
+        // Stork metrics
         assertStorkMetrics("pingpong-service");
         assertStorkMetrics("greeting-service");
 
@@ -91,8 +89,7 @@ public class StorkMetricsLoadBalancerFailTest {
         Assertions.assertThat(metrics.getServiceName()).isEqualTo(serviceName);
         Assertions.assertThat(metrics.isDone()).isTrue();
         Assertions.assertThat(metrics.isServiceDiscoverySuccessful()).isTrue();
-        Assertions.assertThat(metrics.failure().getMessage())
-                .isEqualTo("Load Balancer induced failure");
+        Assertions.assertThat(metrics.failure().getMessage()).isEqualTo("Load Balancer induced failure");
         Assertions.assertThat(metrics.getOverallDuration()).isNotNull();
         Assertions.assertThat(metrics.getServiceDiscoveryType()).isEqualTo("static");
         Assertions.assertThat(metrics.getServiceSelectionType()).isEqualTo("mock");
@@ -101,16 +98,16 @@ public class StorkMetricsLoadBalancerFailTest {
     }
 
     private void assertStorkMetricsInMicrometerRegistry(String serviceName) {
-        Counter instanceCounter = registry.find("stork.service-discovery.instances.count").tag("service-name", serviceName)
-                .counter();
-        Timer serviceDiscoveryDuration = registry.find("stork.service-discovery.duration").tag("service-name", serviceName)
-                .timer();
-        Timer serviceSelectionDuration = registry.find("stork.service-selection.duration").tag("service-name", serviceName)
-                .timer();
-        Counter serviceDiscoveryFailures = registry.find("stork.service-discovery.failures").tag("service-name", serviceName)
-                .counter();
-        Counter loadBalancerFailures = registry.find("stork.service-selection.failures").tag("service-name", serviceName)
-                .counter();
+        Counter instanceCounter = registry.find("stork.service-discovery.instances.count")
+                .tag("service-name", serviceName).counter();
+        Timer serviceDiscoveryDuration = registry.find("stork.service-discovery.duration")
+                .tag("service-name", serviceName).timer();
+        Timer serviceSelectionDuration = registry.find("stork.service-selection.duration")
+                .tag("service-name", serviceName).timer();
+        Counter serviceDiscoveryFailures = registry.find("stork.service-discovery.failures")
+                .tag("service-name", serviceName).counter();
+        Counter loadBalancerFailures = registry.find("stork.service-selection.failures")
+                .tag("service-name", serviceName).counter();
 
         Util.assertTags(Tag.of("service-name", serviceName), instanceCounter, serviceDiscoveryDuration,
                 serviceSelectionDuration);

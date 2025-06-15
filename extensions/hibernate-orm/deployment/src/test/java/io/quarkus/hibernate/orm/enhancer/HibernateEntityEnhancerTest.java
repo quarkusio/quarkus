@@ -49,10 +49,9 @@ public class HibernateEntityEnhancerTest {
 
     private boolean isEnhanced(final Class<?> modifiedClass) {
         Set<Class> interfaces = new HashSet<Class>(Arrays.asList(modifiedClass.getInterfaces()));
-        //Assert it now implements these three interfaces:
-        return interfaces.contains(ManagedEntity.class) &&
-                interfaces.contains(PersistentAttributeInterceptable.class) &&
-                interfaces.contains(SelfDirtinessTracker.class);
+        // Assert it now implements these three interfaces:
+        return interfaces.contains(ManagedEntity.class) && interfaces.contains(PersistentAttributeInterceptable.class)
+                && interfaces.contains(SelfDirtinessTracker.class);
     }
 
 }

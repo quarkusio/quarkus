@@ -18,9 +18,8 @@ public class ORMReactiveCompatbilityNamedDataSourceReactiveUnitTest extends Comp
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hero.class)
-                    .addAsResource("complexMultilineImports.sql", "import.sql"))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Hero.class).addAsResource("complexMultilineImports.sql", "import.sql"))
             .withConfigurationResource("application-unittest-onlyreactive-named.properties")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.hibernate-orm.datasource", "named-datasource")

@@ -151,8 +151,7 @@ public class QuarkusExtensionConfiguration {
         if (project.getParent() != null && projectName.equals("runtime")) {
             projectName = project.getParent().getName();
         }
-        return String.format("%s:%s-deployment:%s", project.getGroup(), projectName,
-                project.getVersion());
+        return String.format("%s:%s-deployment:%s", project.getGroup(), projectName, project.getVersion());
     }
 
 }

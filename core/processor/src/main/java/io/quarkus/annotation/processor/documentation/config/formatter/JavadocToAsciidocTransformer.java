@@ -149,8 +149,8 @@ public final class JavadocToAsciidocTransformer {
 
         // not very optimal and could be included in htmlToAsciidoc() but simpler so let's go for it
         if (!inlineTagsReplacements.isEmpty()) {
-            asciidoc = INLINE_TAG_MARKER_PATTERN.matcher(asciidoc)
-                    .replaceAll(mr -> Matcher.quoteReplacement(inlineTagsReplacements.get(Integer.valueOf(mr.group(1)))));
+            asciidoc = INLINE_TAG_MARKER_PATTERN.matcher(asciidoc).replaceAll(
+                    mr -> Matcher.quoteReplacement(inlineTagsReplacements.get(Integer.valueOf(mr.group(1)))));
         }
 
         return asciidoc.isBlank() ? null : asciidoc;
@@ -340,10 +340,12 @@ public final class JavadocToAsciidocTransformer {
     }
 
     /**
-     * Trim the content of the given {@link StringBuilder} holding also AsciiDoc had line break {@code " +\n"}
-     * for whitespace in addition to characters <= {@code ' '}.
+     * Trim the content of the given {@link StringBuilder} holding also AsciiDoc had line break {@code " +\n"} for
+     * whitespace in addition to characters <= {@code ' '}.
      *
-     * @param sb the {@link StringBuilder} to trim
+     * @param sb
+     *        the {@link StringBuilder} to trim
+     *
      * @return the trimmed content of the given {@link StringBuilder}
      */
     static String trim(StringBuilder sb) {
@@ -351,10 +353,7 @@ public final class JavadocToAsciidocTransformer {
         int offset = 0;
         while (offset < length) {
             final char ch = sb.charAt(offset);
-            if (ch == ' '
-                    && offset + 2 < length
-                    && sb.charAt(offset + 1) == '+'
-                    && sb.charAt(offset + 2) == '\n') {
+            if (ch == ' ' && offset + 2 < length && sb.charAt(offset + 1) == '+' && sb.charAt(offset + 2) == '\n') {
                 /* Space followed by + and newline is AsciiDoc hard break that we consider whitespace */
                 offset += 3;
                 continue;
@@ -371,10 +370,7 @@ public final class JavadocToAsciidocTransformer {
             offset = sb.length() - 1;
             while (offset >= 0) {
                 final char ch = sb.charAt(offset);
-                if (ch == '\n'
-                        && offset - 2 >= 0
-                        && sb.charAt(offset - 1) == '+'
-                        && sb.charAt(offset - 2) == ' ') {
+                if (ch == '\n' && offset - 2 >= 0 && sb.charAt(offset - 1) == '+' && sb.charAt(offset - 2) == ' ') {
                     /* Space followed by + is AsciiDoc hard break that we consider whitespace */
                     offset -= 3;
                     continue;

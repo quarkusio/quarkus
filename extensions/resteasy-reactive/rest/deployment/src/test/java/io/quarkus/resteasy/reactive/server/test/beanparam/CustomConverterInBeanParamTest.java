@@ -29,9 +29,8 @@ public class CustomConverterInBeanParamTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(SearchResource.class, FilterData.class,
-                            JavaTimeParamConverterProvider.class, LocalDateTimeParamConverter.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(SearchResource.class,
+                    FilterData.class, JavaTimeParamConverterProvider.class, LocalDateTimeParamConverter.class));
 
     @Test
     void shouldCustomConvertBeUsedForLocalDateTimeInFilterData() {
@@ -39,10 +38,7 @@ public class CustomConverterInBeanParamTest {
         String request = since.format(DateTimeFormatter.ISO_DATE_TIME);
         String expected = since.plusYears(1).format(DateTimeFormatter.ISO_DATE_TIME);
 
-        RestAssured.get("/search?since=" + request)
-                .then()
-                .statusCode(200)
-                .body(equalTo("Got: " + expected));
+        RestAssured.get("/search?since=" + request).then().statusCode(200).body(equalTo("Got: " + expected));
     }
 
     @Path("/search")

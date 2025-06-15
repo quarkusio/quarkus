@@ -15,10 +15,11 @@ import jakarta.ws.rs.core.MediaType;
 public class AcceptHeaders {
 
     /**
-     * Gets the strings from a comma-separated list.
-     * All "*" entries are replaced with {@code null} keys.
+     * Gets the strings from a comma-separated list. All "*" entries are replaced with {@code null} keys.
      *
-     * @param header the header value.
+     * @param header
+     *        the header value.
+     *
      * @return the listed items in order of appearance or {@code null} if the header didn't contain any entries.
      */
     public static Map<String, QualityValue> getStringQualityValues(String header) {
@@ -79,10 +80,11 @@ public class AcceptHeaders {
     }
 
     /**
-     * Gets the locales from a comma-separated list.
-     * Any "*" entries are replaced with {@code null} keys.
+     * Gets the locales from a comma-separated list. Any "*" entries are replaced with {@code null} keys.
      *
-     * @param header the header value.
+     * @param header
+     *        the header value.
+     *
      * @return the listed items in order of appearance or {@code null} if the header didn't contain any entries.
      */
     public static Map<Locale, QualityValue> getLocaleQualityValues(String header) {
@@ -104,21 +106,23 @@ public class AcceptHeaders {
                     String country = value.substring(3, 5);
                     locale = new Locale(language, country);
                 } else {
-                    //LogMessages.LOGGER.ignoringUnsupportedLocale(value);
+                    // LogMessages.LOGGER.ignoringUnsupportedLocale(value);
                     continue;
                 }
             }
             result.put(locale, quality);
         }
 
-        //LogMessages.LOGGER.debug(result.toString());
+        // LogMessages.LOGGER.debug(result.toString());
         return result;
     }
 
     /**
      * Gets the media types from a comma-separated list.
      *
-     * @param header the header value.
+     * @param header
+     *        the header value.
+     *
      * @return the listed items in order of appearance or {@code null} if the header didn't contain any entries.
      */
     public static Map<MediaType, QualityValue> getMediaTypeQualityValues(String header) {
@@ -159,7 +163,7 @@ public class AcceptHeaders {
             result.put(new MediaType(type.trim(), subtype.trim(), parameters), qualityValue);
         }
 
-        //LogMessages.LOGGER.debug(result.toString());
+        // LogMessages.LOGGER.debug(result.toString());
         return result;
     }
 
@@ -227,8 +231,11 @@ public class AcceptHeaders {
      * accept-extension = ";" token [ "=" ( token | quoted-string ) ]
      * </pre>
      *
-     * @param parameters all parameters in order of appearance.
+     * @param parameters
+     *        all parameters in order of appearance.
+     *
      * @return the qvalue.
+     *
      * @see "accept-params
      */
     private static QualityValue evaluateAcceptParameters(Map<String, String> parameters) {
@@ -237,7 +244,7 @@ public class AcceptHeaders {
             String name = i.next();
             if ("q".equals(name)) {
                 if (i.hasNext()) {
-                    //LogMessages.LOGGER.acceptExtensionsNotSupported();
+                    // LogMessages.LOGGER.acceptExtensionsNotSupported();
                     i.remove();
                     do {
                         i.next();

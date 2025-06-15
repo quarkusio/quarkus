@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Assertions;
 
 public class SimpleBeanParamPermission extends Permission {
 
-    static final SimpleBeanParamPermission EMPTY = new SimpleBeanParamPermission(null, null, null, null, null, null, null,
-            null);
+    static final SimpleBeanParamPermission EMPTY = new SimpleBeanParamPermission(null, null, null, null, null, null,
+            null, null);
 
     private final String publicQuery;
     private final String header;

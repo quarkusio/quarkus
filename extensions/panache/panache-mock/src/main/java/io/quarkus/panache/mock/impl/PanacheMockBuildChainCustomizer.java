@@ -28,9 +28,7 @@ public final class PanacheMockBuildChainCustomizer implements TestBuildChainCust
                             context.produce(new PanacheMethodCustomizerBuildItem(new PanacheMockMethodCustomizer()));
                         }
                     }
-                }).produces(PanacheMethodCustomizerBuildItem.class)
-                        .consumes(LaunchModeBuildItem.class)
-                        .build();
+                }).produces(PanacheMethodCustomizerBuildItem.class).consumes(LaunchModeBuildItem.class).build();
             }
         };
     }

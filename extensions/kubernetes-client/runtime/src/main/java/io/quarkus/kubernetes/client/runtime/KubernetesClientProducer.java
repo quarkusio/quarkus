@@ -19,8 +19,8 @@ public class KubernetesClientProducer {
     @Singleton
     @Produces
     public KubernetesClient kubernetesClient(KubernetesSerialization kubernetesSerialization, Config config) {
-        client = new KubernetesClientBuilder()
-                .withKubernetesSerialization(kubernetesSerialization).withConfig(config).build();
+        client = new KubernetesClientBuilder().withKubernetesSerialization(kubernetesSerialization).withConfig(config)
+                .build();
         return client;
     }
 

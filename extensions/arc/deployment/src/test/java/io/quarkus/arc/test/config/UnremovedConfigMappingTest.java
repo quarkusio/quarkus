@@ -19,8 +19,7 @@ import io.smallrye.config.WithDefault;
 public class UnremovedConfigMappingTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(UnremovedConfigMapping.class));
+            .withApplicationRoot((jar) -> jar.addClass(UnremovedConfigMapping.class));
 
     @Inject
     SmallRyeConfig config;

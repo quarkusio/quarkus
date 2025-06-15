@@ -31,11 +31,10 @@ public class ChangingCredentialsTestResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public Uni<Response> connect() {
-        return client.query("SELECT USER FROM DUAL").execute()
-                .map(rowSet -> {
-                    assertEquals(1, rowSet.size());
-                    return Response.ok(rowSet.iterator().next().getString(0)).build();
-                }).eventually(credentialsProvider::changeProperties);
+        return client.query("SELECT USER FROM DUAL").execute().map(rowSet -> {
+            assertEquals(1, rowSet.size());
+            return Response.ok(rowSet.iterator().next().getString(0)).build();
+        }).eventually(credentialsProvider::changeProperties);
     }
 
 }

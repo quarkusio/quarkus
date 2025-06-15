@@ -5,8 +5,8 @@ import java.util.Map;
 import io.quarkus.security.identity.SecurityIdentity;
 
 /**
- * Security event that should be fired when the {@link SecurityIdentity} passed security constrain,
- * such as {@link SecurityCheck} or HTTP Security policy.
+ * Security event that should be fired when the {@link SecurityIdentity} passed security constrain, such as
+ * {@link SecurityCheck} or HTTP Security policy.
  */
 public final class AuthorizationSuccessEvent extends AbstractSecurityEvent {
     public static final String AUTHORIZATION_CONTEXT = AuthorizationSuccessEvent.class.getName() + ".CONTEXT";
@@ -23,7 +23,7 @@ public final class AuthorizationSuccessEvent extends AbstractSecurityEvent {
 
     public AuthorizationSuccessEvent(SecurityIdentity securityIdentity, String authorizationContext,
             Map<String, Object> eventProperties, MethodDescription securedMethod) {
-        this(securityIdentity, authorizationContext, withProperties(SECURED_METHOD_KEY, toString(securedMethod),
-                eventProperties));
+        this(securityIdentity, authorizationContext,
+                withProperties(SECURED_METHOD_KEY, toString(securedMethod), eventProperties));
     }
 }

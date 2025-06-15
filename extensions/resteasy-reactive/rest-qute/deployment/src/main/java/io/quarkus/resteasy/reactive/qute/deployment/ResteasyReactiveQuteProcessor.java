@@ -50,7 +50,8 @@ public class ResteasyReactiveQuteProcessor {
     }
 
     @BuildStep
-    void nonBlockingTemplateInstance(RestQuteConfig config, BuildProducer<NonBlockingReturnTypeBuildItem> nonBlockingType) {
+    void nonBlockingTemplateInstance(RestQuteConfig config,
+            BuildProducer<NonBlockingReturnTypeBuildItem> nonBlockingType) {
         if (config.templateInstanceNonBlockingType()) {
             nonBlockingType.produce(new NonBlockingReturnTypeBuildItem(TEMPLATE_INSTANCE));
         }
@@ -62,14 +63,15 @@ public class ResteasyReactiveQuteProcessor {
             @Override
             public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                     Map<String, Object> methodContext) {
-                if (method.returnType().name().equals(TEMPLATE_INSTANCE) || isAsyncTemplateInstance(method.returnType())) {
+                if (method.returnType().name().equals(TEMPLATE_INSTANCE)
+                        || isAsyncTemplateInstance(method.returnType())) {
                     // TemplateResponseUniHandler creates a Uni, so we also need to introduce another Uni handler
                     // so RR actually gets the result
-                    // the reason why we use AFTER_METHOD_INVOKE_SECOND_ROUND is to be able to properly support Uni<TemplateInstance>
-                    return Collections.singletonList(
-                            new FixedHandlersChainCustomizer(
-                                    List.of(new TemplateResponseUniHandler(), new UniResponseHandler()),
-                                    HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE_SECOND_ROUND));
+                    // the reason why we use AFTER_METHOD_INVOKE_SECOND_ROUND is to be able to properly support
+                    // Uni<TemplateInstance>
+                    return Collections.singletonList(new FixedHandlersChainCustomizer(
+                            List.of(new TemplateResponseUniHandler(), new UniResponseHandler()),
+                            HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE_SECOND_ROUND));
                 }
                 return Collections.emptyList();
             }

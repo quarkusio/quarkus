@@ -15,12 +15,9 @@ import io.restassured.response.Response;
 public class ConfigurationLiveReloadTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyProcessor.class, HttpFrontend.class, DumbConnector.class)
-                    .addAsResource(
-                            new File("src/test/resources/config/dummy-connector-conf.properties"),
-                            "application.properties"));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClasses(MyProcessor.class, HttpFrontend.class, DumbConnector.class).addAsResource(
+                    new File("src/test/resources/config/dummy-connector-conf.properties"), "application.properties"));
 
     @Test
     public void testConfigurationUpdate() {
@@ -38,12 +35,14 @@ public class ConfigurationLiveReloadTest {
         String s = get("http://localhost:8080").asString();
         assertThat(s).isEqualTo("HALLOHALLO");
 
-        test.modifyResourceFile("application.properties", v -> v.replace("mp.messaging.incoming.input.values=hallo", "#$$"));
+        test.modifyResourceFile("application.properties",
+                v -> v.replace("mp.messaging.incoming.input.values=hallo", "#$$"));
 
         Response response = get("http://localhost:8080").andReturn();
         assertThat(response.getStatusCode()).isEqualTo(500);
 
-        test.modifyResourceFile("application.properties", v -> v.replace("#$$", "mp.messaging.incoming.input.values=foo"));
+        test.modifyResourceFile("application.properties",
+                v -> v.replace("#$$", "mp.messaging.incoming.input.values=foo"));
         s = get("http://localhost:8080").asString();
         assertThat(s).isEqualTo("FOOFOO");
     }
@@ -64,7 +63,8 @@ public class ConfigurationLiveReloadTest {
         String s = get("http://localhost:8080").asString();
         assertThat(s).isEqualTo("HALLOHALLO");
 
-        test.modifySourceFile("HttpFrontend.java", d -> d.replace("response.end();", "response.write(\"!\"); response.end();"));
+        test.modifySourceFile("HttpFrontend.java",
+                d -> d.replace("response.end();", "response.write(\"!\"); response.end();"));
 
         s = get("http://localhost:8080").asString();
         assertThat(s).isEqualTo("HALLOHALLO!");

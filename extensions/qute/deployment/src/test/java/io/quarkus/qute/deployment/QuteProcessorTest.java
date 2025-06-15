@@ -48,8 +48,8 @@ public class QuteProcessorTest {
         Set<Expression> foo = QuteProcessor.collectNamespaceExpressions(analysis, "foo");
         assertEquals(2, foo.size());
         for (Expression fooExpr : foo) {
-            assertTrue(
-                    fooExpr.toOriginalString().equals("foo:bar") || fooExpr.toOriginalString().equals("foo:baz.get(foo:bar)"));
+            assertTrue(fooExpr.toOriginalString().equals("foo:bar")
+                    || fooExpr.toOriginalString().equals("foo:baz.get(foo:bar)"));
         }
     }
 

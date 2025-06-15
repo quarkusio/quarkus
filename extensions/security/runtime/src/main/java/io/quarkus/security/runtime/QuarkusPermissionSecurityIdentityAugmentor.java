@@ -18,14 +18,15 @@ import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Adds a permission checker that grants access to the {@link QuarkusPermission}
- * when {@link QuarkusPermission#isGranted(SecurityIdentity)} is true.
+ * Adds a permission checker that grants access to the {@link QuarkusPermission} when
+ * {@link QuarkusPermission#isGranted(SecurityIdentity)} is true.
  */
 public final class QuarkusPermissionSecurityIdentityAugmentor implements SecurityIdentityAugmentor {
 
     /**
      * Permission checker only authorizes authenticated users and checkers shouldn't throw a security exception.
-     * However, it can happen than runtime exception occur, and we shouldn't leak that something wrong with response status.
+     * However, it can happen than runtime exception occur, and we shouldn't leak that something wrong with response
+     * status.
      */
     private static final Predicate<Throwable> NOT_A_FORBIDDEN_EXCEPTION = new Predicate<>() {
         @Override
@@ -49,8 +50,7 @@ public final class QuarkusPermissionSecurityIdentityAugmentor implements Securit
             @Override
             public Uni<Boolean> apply(SecurityIdentity finalIdentity, Permission requiredpermission) {
                 if (requiredpermission instanceof QuarkusPermission<?> quarkusPermission) {
-                    return quarkusPermission
-                            .isGranted(finalIdentity, blockingExecutor)
+                    return quarkusPermission.isGranted(finalIdentity, blockingExecutor)
                             .onFailure(NOT_A_FORBIDDEN_EXCEPTION).transform(WRAP_WITH_FORBIDDEN_EXCEPTION);
                 }
                 return Uni.createFrom().item(false);
@@ -65,8 +65,8 @@ public final class QuarkusPermissionSecurityIdentityAugmentor implements Securit
             return Uni.createFrom().item(identity);
         }
 
-        return Uni.createFrom().item(
-                new PermissionCheckerIdentityDecorator(identity, attributes.get(ROUTING_CONTEXT_ATTRIBUTE), permissionChecker));
+        return Uni.createFrom().item(new PermissionCheckerIdentityDecorator(identity,
+                attributes.get(ROUTING_CONTEXT_ATTRIBUTE), permissionChecker));
     }
 
     @Override
@@ -149,16 +149,15 @@ public final class QuarkusPermissionSecurityIdentityAugmentor implements Securit
 
         @Override
         public Uni<Boolean> checkPermission(Permission permission) {
-            return permissionChecker.apply(this, permission)
-                    .flatMap(new Function<Boolean, Uni<? extends Boolean>>() {
-                        @Override
-                        public Uni<? extends Boolean> apply(Boolean accessGranted) {
-                            if (Boolean.TRUE.equals(accessGranted)) {
-                                return Uni.createFrom().item(true);
-                            }
-                            return delegate.checkPermission(permission);
-                        }
-                    });
+            return permissionChecker.apply(this, permission).flatMap(new Function<Boolean, Uni<? extends Boolean>>() {
+                @Override
+                public Uni<? extends Boolean> apply(Boolean accessGranted) {
+                    if (Boolean.TRUE.equals(accessGranted)) {
+                        return Uni.createFrom().item(true);
+                    }
+                    return delegate.checkPermission(permission);
+                }
+            });
         }
 
         @Override

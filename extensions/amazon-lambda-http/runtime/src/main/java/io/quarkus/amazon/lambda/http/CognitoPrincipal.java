@@ -11,10 +11,8 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 
 /**
- * Represents a Cognito JWT used to authenticate request
- *
- * Will only be allocated if requestContext.authorizer.jwt.claims.cognito:username is set
- * in the http event sent by API Gateway
+ * Represents a Cognito JWT used to authenticate request Will only be allocated if
+ * requestContext.authorizer.jwt.claims.cognito:username is set in the http event sent by API Gateway
  */
 public class CognitoPrincipal implements JsonWebToken {
     private APIGatewayV2HTTPEvent.RequestContext.Authorizer.JWT jwt;

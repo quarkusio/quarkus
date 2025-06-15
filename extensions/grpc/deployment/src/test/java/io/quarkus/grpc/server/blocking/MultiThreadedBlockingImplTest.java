@@ -30,13 +30,9 @@ public class MultiThreadedBlockingImplTest {
     private static final Logger logger = Logger.getLogger(GrpcServices.class);
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addPackage(StandardBlocking.class.getPackage())
-                            .addPackage(
-                                    StandardBlockingGrpcServiceGrpc.StandardBlockingGrpcServiceImplBase.class.getPackage()));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true).setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addPackage(StandardBlocking.class.getPackage()).addPackage(
+                    StandardBlockingGrpcServiceGrpc.StandardBlockingGrpcServiceImplBase.class.getPackage()));
 
     @GrpcClient
     StandardBlockingGrpcServiceGrpc.StandardBlockingGrpcServiceBlockingStub client;
@@ -80,8 +76,8 @@ public class MultiThreadedBlockingImplTest {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             }
-            responseObserver.onNext(Response.newBuilder()
-                    .setId(request.getId()).setThread(Thread.currentThread().getName()).build());
+            responseObserver.onNext(
+                    Response.newBuilder().setId(request.getId()).setThread(Thread.currentThread().getName()).build());
             responseObserver.onCompleted();
         }
     }

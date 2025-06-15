@@ -24,13 +24,14 @@ public final class QuarkusJtaPlatform implements JtaPlatform, TransactionManager
     private volatile UserTransaction userTransaction;
 
     private QuarkusJtaPlatform() {
-        //nothing
+        // nothing
     }
 
     public TransactionSynchronizationRegistry retrieveTransactionSynchronizationRegistry() {
         TransactionSynchronizationRegistry transactionSynchronizationRegistry = this.transactionSynchronizationRegistry;
         if (transactionSynchronizationRegistry == null) {
-            transactionSynchronizationRegistry = Arc.container().instance(TransactionSynchronizationRegistry.class).get();
+            transactionSynchronizationRegistry = Arc.container().instance(TransactionSynchronizationRegistry.class)
+                    .get();
 
             this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         }

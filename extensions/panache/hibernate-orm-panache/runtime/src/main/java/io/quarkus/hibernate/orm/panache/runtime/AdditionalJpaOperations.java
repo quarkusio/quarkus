@@ -33,7 +33,8 @@ public class AdditionalJpaOperations {
             String countQuery, Sort sort, Map<String, Object> params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
         Session session = jpaOperations.getSession(entityClass);
-        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        SelectionQuery hibernateQuery = session
+                .createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         JpaOperations.bindParameters(hibernateQuery, params);
         return new CustomCountPanacheQuery(session, hibernateQuery, countQuery, params);
     }
@@ -48,14 +49,15 @@ public class AdditionalJpaOperations {
             String countQuery, Sort sort, Object... params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
         Session session = jpaOperations.getSession(entityClass);
-        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        SelectionQuery hibernateQuery = session
+                .createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
         JpaOperations.bindParameters(hibernateQuery, params);
         return new CustomCountPanacheQuery(session, hibernateQuery, countQuery, params);
     }
 
     public static long deleteAllWithCascade(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass) {
         Session session = jpaOperations.getSession(entityClass);
-        //detecting the case where there are cascade-delete associations, and do the bulk delete query otherwise.
+        // detecting the case where there are cascade-delete associations, and do the bulk delete query otherwise.
         if (deleteOnCascadeDetected(jpaOperations, entityClass)) {
             int count = 0;
             List<?> objects = jpaOperations.listAll(entityClass);
@@ -69,11 +71,12 @@ public class AdditionalJpaOperations {
     }
 
     /**
-     * Detects if cascading delete is needed. The delete-cascading is needed when associations with cascade delete enabled
-     * {@link jakarta.persistence.OneToMany#cascade()} and also on entities containing a collection of elements
+     * Detects if cascading delete is needed. The delete-cascading is needed when associations with cascade delete
+     * enabled {@link jakarta.persistence.OneToMany#cascade()} and also on entities containing a collection of elements
      * {@link jakarta.persistence.ElementCollection}
      *
      * @param entityClass
+     *
      * @return true if cascading delete is needed. False otherwise
      */
     private static boolean deleteOnCascadeDetected(AbstractJpaOperations<?> jpaOperations, Class<?> entityClass) {
@@ -83,13 +86,11 @@ public class AdditionalJpaOperations {
         Set<Attribute<?, ?>> declaredAttributes = ((EntityTypeImpl) entity1).getDeclaredAttributes();
 
         CascadeStyle[] propertyCascadeStyles = session.unwrap(SessionImplementor.class)
-                .getEntityPersister(entityClass.getName(), null)
-                .getPropertyCascadeStyles();
+                .getEntityPersister(entityClass.getName(), null).getPropertyCascadeStyles();
         boolean doCascade = Arrays.stream(propertyCascadeStyles)
                 .anyMatch(cascadeStyle -> cascadeStyle.doCascade(CascadingActions.DELETE));
-        boolean hasElementCollection = declaredAttributes.stream()
-                .anyMatch(attribute -> attribute.getPersistentAttributeType()
-                        .equals(Attribute.PersistentAttributeType.ELEMENT_COLLECTION));
+        boolean hasElementCollection = declaredAttributes.stream().anyMatch(attribute -> attribute
+                .getPersistentAttributeType().equals(Attribute.PersistentAttributeType.ELEMENT_COLLECTION));
         return doCascade || hasElementCollection;
 
     }
@@ -110,8 +111,7 @@ public class AdditionalJpaOperations {
     }
 
     public static <PanacheQueryType> long deleteWithCascade(AbstractJpaOperations<PanacheQueryType> jpaOperations,
-            Class<?> entityClass, String query,
-            Map<String, Object> params) {
+            Class<?> entityClass, String query, Map<String, Object> params) {
         Session session = jpaOperations.getSession(entityClass);
         if (deleteOnCascadeDetected(jpaOperations, entityClass)) {
             int count = 0;

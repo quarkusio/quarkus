@@ -12,8 +12,7 @@ public class CookieTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SetCookieResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SetCookieResource.class));
 
     @Test
     public void testSetMultipleCookieAsString() {

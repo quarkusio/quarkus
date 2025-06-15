@@ -16,8 +16,7 @@ public class FailureHandlerPathTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Routes.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Routes.class));
 
     @Test
     public void test() {

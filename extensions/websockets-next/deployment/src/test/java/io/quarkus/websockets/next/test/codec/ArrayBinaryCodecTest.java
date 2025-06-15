@@ -24,10 +24,9 @@ import io.vertx.core.buffer.Buffer;
 public class ArrayBinaryCodecTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Item.class, Endpoint.class, WSClient.class, ItemArrayBinaryCodec.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Item.class, Endpoint.class, WSClient.class, ItemArrayBinaryCodec.class);
+    });
 
     @Inject
     Vertx vertx;

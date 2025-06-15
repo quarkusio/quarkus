@@ -14,8 +14,7 @@ public class InvalidExtensionMethodMatchRegexTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Extensions.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Foo.class, Extensions.class))
             .setExpectedException(TemplateException.class);
 
     @Test

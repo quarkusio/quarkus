@@ -15,9 +15,7 @@ public abstract class QuarkusTest extends QuarkusDev {
 
     @Inject
     public QuarkusTest(Configuration quarkusDevConfiguration, QuarkusPluginExtension extension) {
-        super(
-                "Continuous testing mode: enables continuous testing without starting dev mode",
-                quarkusDevConfiguration,
+        super("Continuous testing mode: enables continuous testing without starting dev mode", quarkusDevConfiguration,
                 extension);
     }
 

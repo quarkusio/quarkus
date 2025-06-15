@@ -38,9 +38,12 @@ public class CapabilityAggregationStep {
     /**
      * Provides capabilities configured in the extension descriptors.
      *
-     * @param producer capability build item producer
-     * @param curateOutcomeBuildItem application model
-     * @param supplierFactory boolean supplier factory
+     * @param producer
+     *        capability build item producer
+     * @param curateOutcomeBuildItem
+     *        application model
+     * @param supplierFactory
+     *        boolean supplier factory
      */
     @BuildStep
     void provideCapabilities(BuildProducer<CapabilityBuildItem> producer,
@@ -61,8 +64,8 @@ public class CapabilityAggregationStep {
                             && capability.charAt(conditionIndex + 1) == '!';
                     testClassStart = conditionIndex + (inv ? 2 : 1);
                     conditionIndex = capability.indexOf('?', testClassStart + 1);
-                    final String testClassName = capability
-                            .substring(testClassStart, conditionIndex > 0 ? conditionIndex : capability.length());
+                    final String testClassName = capability.substring(testClassStart,
+                            conditionIndex > 0 ? conditionIndex : capability.length());
                     Class<? extends BooleanSupplier> testClass;
                     try {
                         testClass = Thread.currentThread().getContextClassLoader().loadClass(testClassName)
@@ -87,12 +90,15 @@ public class CapabilityAggregationStep {
      * Aggregates all the capability build items. Not all the capabilities are configured in the extension descriptors.
      * Many are still produced by build steps directly.
      *
-     * @param capabilities capability build items
+     * @param capabilities
+     *        capability build items
+     *
      * @return aggregated capabilities
      */
     @BuildStep
     Capabilities aggregateCapabilities(List<CapabilityBuildItem> capabilities,
-            CapabilitiesConfiguredInDescriptorsBuildItem configuredCaps, CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CapabilitiesConfiguredInDescriptorsBuildItem configuredCaps,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         final Map<String, Object> providedCapabilities = new HashMap<>();
         CapabilityErrors capabilityErrors = null;
@@ -136,11 +142,13 @@ public class CapabilityAggregationStep {
             }
         }
 
-        // capabilities are supposed to be configured in the extension descriptors and not produced directly by build steps
+        // capabilities are supposed to be configured in the extension descriptors and not produced directly by build
+        // steps
         if (!capsProvidedByBuildSteps.isEmpty()) {
             final StringWriter buf = new StringWriter();
             try (BufferedWriter writer = new BufferedWriter(buf)) {
-                writer.append("The following capabilities were found to be missing from the processed extension descriptors:");
+                writer.append(
+                        "The following capabilities were found to be missing from the processed extension descriptors:");
                 for (Map.Entry<String, List<String>> provider : capsProvidedByBuildSteps.entrySet()) {
                     for (String capability : provider.getValue()) {
                         writer.newLine();
@@ -148,7 +156,8 @@ public class CapabilityAggregationStep {
                     }
                 }
                 writer.newLine();
-                writer.append("Please report this issue to the extension maintainers to get it fixed in the future releases.");
+                writer.append(
+                        "Please report this issue to the extension maintainers to get it fixed in the future releases.");
             } catch (IOException e) {
             }
             Logger.getLogger(CapabilityAggregationStep.class).warn(buf.toString());

@@ -16,10 +16,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SimpleBeanTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class)
-                    .addAsResource(new StringAsset("simpleBean.baz=1"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(SimpleBean.class).addAsResource(new StringAsset("simpleBean.baz=1"), "application.properties"));
 
     @Inject
     SimpleBean simpleBean;

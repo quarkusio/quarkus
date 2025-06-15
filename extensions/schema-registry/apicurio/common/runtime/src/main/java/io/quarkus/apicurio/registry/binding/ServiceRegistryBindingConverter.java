@@ -86,13 +86,13 @@ public class ServiceRegistryBindingConverter implements ServiceBindingConverter 
         for (String propertyName : configIn.getPropertyNames()) {
             if (propertyName.startsWith(INCOMING_PREFIX)) {
                 var channelAndProp = StringUtils.substringAfter(propertyName, INCOMING_PREFIX);
-                //remove property
+                // remove property
                 var channelName = StringUtils.substringBefore(channelAndProp, ".");
                 if (!StringUtils.isBlank(channelName))
                     list.add(INCOMING_PREFIX + channelName + ".");
             } else if (propertyName.startsWith(OUTGOING_PREFIX)) {
                 var channelAndProp = StringUtils.substringAfter(propertyName, OUTGOING_PREFIX);
-                //remove property
+                // remove property
                 var channelName = StringUtils.substringBefore(channelAndProp, ".");
                 if (!StringUtils.isBlank(channelName))
                     list.add(OUTGOING_PREFIX + channelName + ".");

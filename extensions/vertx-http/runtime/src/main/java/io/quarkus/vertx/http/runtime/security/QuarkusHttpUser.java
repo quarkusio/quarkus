@@ -25,9 +25,8 @@ public class QuarkusHttpUser implements User {
      */
     public static final String DEFERRED_IDENTITY_KEY = "io.quarkus.vertx.http.deferred-identity";
     /**
-     * The key that stores a BiConsumer that handles auth failures
-     *
-     * This can be overridden by downstream handlers such as Undertow to control auth failure handling.
+     * The key that stores a BiConsumer that handles auth failures This can be overridden by downstream handlers such as
+     * Undertow to control auth failure handling.
      */
     public static final String AUTH_FAILURE_HANDLER = "io.quarkus.vertx.http.auth-failure-handler";
 
@@ -79,10 +78,9 @@ public class QuarkusHttpUser implements User {
     }
 
     /**
-     * Gets the current user from the routing context. This method may block if proactive authentication is disabled,
-     * as it may need to perform a potentially blocking operation.
-     * If an IPM is provided this method will return the anonymous
-     * identity if there is no active user, otherwise it will return null if there is no user.
+     * Gets the current user from the routing context. This method may block if proactive authentication is disabled, as
+     * it may need to perform a potentially blocking operation. If an IPM is provided this method will return the
+     * anonymous identity if there is no active user, otherwise it will return null if there is no user.
      */
     public static SecurityIdentity getSecurityIdentityBlocking(RoutingContext routingContext,
             IdentityProviderManager identityProviderManager) {
@@ -97,8 +95,7 @@ public class QuarkusHttpUser implements User {
         if (identityProviderManager != null) {
             return identityProviderManager
                     .authenticate(setRoutingContextAttribute(new AnonymousAuthenticationRequest(), routingContext))
-                    .await()
-                    .indefinitely();
+                    .await().indefinitely();
         }
         return null;
     }

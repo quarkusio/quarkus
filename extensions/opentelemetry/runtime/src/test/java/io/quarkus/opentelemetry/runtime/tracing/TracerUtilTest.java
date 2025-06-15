@@ -18,11 +18,8 @@ public class TracerUtilTest {
 
     @Test
     public void testMapResourceAttributes() {
-        List<String> resourceAttributes = Arrays.asList(
-                "service.name=myservice",
-                "service.namespace=mynamespace",
-                "service.version=1.0",
-                "deployment.environment=production");
+        List<String> resourceAttributes = Arrays.asList("service.name=myservice", "service.namespace=mynamespace",
+                "service.version=1.0", "deployment.environment=production");
         Resource resource = TracerUtil.mapResourceAttributes(resourceAttributes, null, null);
         Attributes attributes = resource.getAttributes();
         Assertions.assertThat(attributes.size()).isEqualTo(4);

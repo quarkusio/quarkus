@@ -49,7 +49,8 @@ import io.undertow.websockets.WebSocketDeploymentInfo;
 public class WebsocketClientProcessor {
 
     private static final DotName CLIENT_ENDPOINT = DotName.createSimple(ClientEndpoint.class.getName());
-    private static final DotName SERVER_APPLICATION_CONFIG = DotName.createSimple(ServerApplicationConfig.class.getName());
+    private static final DotName SERVER_APPLICATION_CONFIG = DotName
+            .createSimple(ServerApplicationConfig.class.getName());
     private static final DotName ENDPOINT = DotName.createSimple(Endpoint.class.getName());
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -82,14 +83,12 @@ public class WebsocketClientProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public ServerWebSocketContainerBuildItem deploy(final CombinedIndexBuildItem indexBuildItem,
-            WebsocketCoreRecorder recorder,
-            BuildProducer<ReflectiveClassBuildItem> reflection,
-            List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints,
-            BeanContainerBuildItem beanContainerBuildItem,
-            WebsocketConfig websocketConfig,
-            BuildProducer<WebSocketDeploymentInfoBuildItem> infoBuildItemBuildProducer,
+            WebsocketCoreRecorder recorder, BuildProducer<ReflectiveClassBuildItem> reflection,
+            List<AnnotatedWebsocketEndpointBuildItem> annotatedEndpoints, BeanContainerBuildItem beanContainerBuildItem,
+            WebsocketConfig websocketConfig, BuildProducer<WebSocketDeploymentInfoBuildItem> infoBuildItemBuildProducer,
             Optional<ServerWebSocketContainerFactoryBuildItem> factoryBuildItem,
-            BuildProducer<ServletContextAttributeBuildItem> servletContextAttributeBuildItemBuildProducer) throws Exception {
+            BuildProducer<ServletContextAttributeBuildItem> servletContextAttributeBuildItemBuildProducer)
+            throws Exception {
 
         final Set<String> endpoints = new HashSet<>();
         final Set<String> config = new HashSet<>();
@@ -110,38 +109,30 @@ public class WebsocketClientProcessor {
                 endpoints.add(clazz.name().toString());
             }
         }
-        if (annotatedEndpoints.isEmpty() &&
-                endpoints.isEmpty() &&
-                config.isEmpty()) {
+        if (annotatedEndpoints.isEmpty() && endpoints.isEmpty() && config.isEmpty()) {
             return null;
         }
         Set<String> annotated = new HashSet<>();
         for (AnnotatedWebsocketEndpointBuildItem i : annotatedEndpoints) {
             annotated.add(i.className);
         }
-        reflection.produce(
-                ReflectiveClassBuildItem.builder(annotated.toArray(new String[annotated.size()]))
-                        .reason(getClass().getName())
-                        .methods().build());
+        reflection.produce(ReflectiveClassBuildItem.builder(annotated.toArray(new String[annotated.size()]))
+                .reason(getClass().getName()).methods().build());
 
         registerCodersForReflection(reflection, index.getAnnotations(CLIENT_ENDPOINT));
 
-        reflection.produce(
-                ReflectiveClassBuildItem.builder(ClientEndpointConfig.Configurator.class.getName()).methods().fields()
-                        .build());
+        reflection.produce(ReflectiveClassBuildItem.builder(ClientEndpointConfig.Configurator.class.getName()).methods()
+                .fields().build());
 
-        RuntimeValue<WebSocketDeploymentInfo> deploymentInfo = recorder.createDeploymentInfo(annotated, endpoints, config,
-                websocketConfig.maxFrameSize(),
-                websocketConfig.dispatchToWorker());
+        RuntimeValue<WebSocketDeploymentInfo> deploymentInfo = recorder.createDeploymentInfo(annotated, endpoints,
+                config, websocketConfig.maxFrameSize(), websocketConfig.dispatchToWorker());
         infoBuildItemBuildProducer.produce(new WebSocketDeploymentInfoBuildItem(deploymentInfo));
         RuntimeValue<ServerWebSocketContainer> serverContainer = recorder.createServerContainer(
-                beanContainerBuildItem.getValue(),
-                deploymentInfo,
+                beanContainerBuildItem.getValue(), deploymentInfo,
                 factoryBuildItem.map(ServerWebSocketContainerFactoryBuildItem::getFactory).orElse(null));
         servletContextAttributeBuildItemBuildProducer
                 .produce(new ServletContextAttributeBuildItem(ServerContainer.class.getName(), serverContainer));
-        return new ServerWebSocketContainerBuildItem(
-                serverContainer);
+        return new ServerWebSocketContainerBuildItem(serverContainer);
     }
 
     public static void registerCodersForReflection(BuildProducer<ReflectiveClassBuildItem> reflection,
@@ -160,8 +151,7 @@ public class WebsocketClientProcessor {
     static void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection, AnnotationValue types) {
         if (types != null && types.asClassArray() != null) {
             for (Type type : types.asClassArray()) {
-                reflection
-                        .produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
+                reflection.produce(ReflectiveClassBuildItem.builder(type.name().toString()).methods().build());
             }
         }
     }

@@ -93,12 +93,8 @@ public abstract class QuarkusListExtensions extends QuarkusPlatformTask {
     public void listExtensions() {
         try {
             final QuarkusProject quarkusProject = getQuarkusProject(installed);
-            ListExtensions listExtensions = new ListExtensions(quarkusProject)
-                    .all(isFromCli() ? false : isAll())
-                    .fromCli(isFromCli())
-                    .format(getFormat())
-                    .installed(isInstalled())
-                    .search(getSearchPattern())
+            ListExtensions listExtensions = new ListExtensions(quarkusProject).all(isFromCli() ? false : isAll())
+                    .fromCli(isFromCli()).format(getFormat()).installed(isInstalled()).search(getSearchPattern())
                     .category(getCategory());
             listExtensions.execute();
 
@@ -115,8 +111,8 @@ public abstract class QuarkusListExtensions extends QuarkusPlatformTask {
                 }
 
                 log.info("");
-                log.info(ListExtensions.ADD_EXTENSION_HINT,
-                        "build.gradle", "./gradlew addExtension --extensions=\"artifactId\"");
+                log.info(ListExtensions.ADD_EXTENSION_HINT, "build.gradle",
+                        "./gradlew addExtension --extensions=\"artifactId\"");
             }
         } catch (Exception e) {
             throw new GradleException("Unable to list extensions", e);

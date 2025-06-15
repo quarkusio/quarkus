@@ -7,15 +7,10 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 public class SmallRyeJwtDisabledTest {
-    private static Class<?>[] testClasses = {
-            DefaultGroupsEndpoint.class
-    };
+    private static Class<?>[] testClasses = { DefaultGroupsEndpoint.class };
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("publicKey.pem")
-                    .addAsResource("smallryeJwtDisabled.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("publicKey.pem").addAsResource("smallryeJwtDisabled.properties", "application.properties"));
 
     @Test
     public void serviceIsNotSecured() throws Exception {

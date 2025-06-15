@@ -39,8 +39,8 @@ public class MongoTracingCommandListener implements CommandListener {
     public MongoTracingCommandListener(OpenTelemetry openTelemetry) {
         requestMap = new ConcurrentHashMap<>();
         SpanNameExtractor<MongoCommand> spanNameExtractor = MongoCommand::name;
-        instrumenter = Instrumenter.<MongoCommand, Void> builder(
-                openTelemetry, "quarkus-mongodb-client", spanNameExtractor)
+        instrumenter = Instrumenter
+                .<MongoCommand, Void> builder(openTelemetry, "quarkus-mongodb-client", spanNameExtractor)
                 .addAttributesExtractor(new CommandEventAttrExtractor())
                 .buildInstrumenter(SpanKindExtractor.alwaysClient());
         LOGGER.debugf("MongoTracingCommandListener created");
@@ -50,13 +50,11 @@ public class MongoTracingCommandListener implements CommandListener {
     public void commandStarted(CommandStartedEvent event) {
         LOGGER.tracef("commandStarted event %s", event.getCommandName());
 
-        Context parentContext = Optional.ofNullable(event.getRequestContext())
-                .map(rc -> {
-                    Context ctx = rc.get(MongoRequestContext.OTEL_CONTEXT_KEY);
-                    rc.delete(MongoRequestContext.OTEL_CONTEXT_KEY);
-                    return ctx;
-                })
-                .orElseGet(Context::current);
+        Context parentContext = Optional.ofNullable(event.getRequestContext()).map(rc -> {
+            Context ctx = rc.get(MongoRequestContext.OTEL_CONTEXT_KEY);
+            rc.delete(MongoRequestContext.OTEL_CONTEXT_KEY);
+            return ctx;
+        }).orElseGet(Context::current);
         var mongoCommand = new MongoCommand(event.getCommandName(), event.getCommand());
         if (instrumenter.shouldStart(parentContext, mongoCommand)) {
             Context context = instrumenter.start(parentContext, mongoCommand);
@@ -78,11 +76,7 @@ public class MongoTracingCommandListener implements CommandListener {
         LOGGER.tracef("commandFailed event %s", event.getCommandName());
         ContextEvent contextEvent = requestMap.remove(event.getRequestId());
         if (contextEvent != null) {
-            instrumenter.end(
-                    contextEvent.context(),
-                    contextEvent.command(),
-                    null,
-                    event.getThrowable());
+            instrumenter.end(contextEvent.context(), contextEvent.command(), null, event.getThrowable());
         }
     }
 
@@ -94,11 +88,7 @@ public class MongoTracingCommandListener implements CommandListener {
         }
 
         @Override
-        public void onEnd(
-                AttributesBuilder attributesBuilder,
-                Context context,
-                MongoCommand command,
-                Void unused,
+        public void onEnd(AttributesBuilder attributesBuilder, Context context, MongoCommand command, Void unused,
                 Throwable throwable) {
         }
     }

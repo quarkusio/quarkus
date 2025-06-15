@@ -77,8 +77,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     }
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
-            Metadata headers,
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
 
         // We need to check if the method is annotated with @Blocking.
@@ -127,8 +126,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
                     requestContext.deactivate();
                 }
                 return listener;
-            }, false)
-                    .onComplete(event -> replay.setDelegate(event.result()));
+            }, false).onComplete(event -> replay.setDelegate(event.result()));
 
             return replay;
         } else {
@@ -142,11 +140,9 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     }
 
     /**
-     * Stores the incoming events until the listener is injected.
-     * When injected, replay the events.
+     * Stores the incoming events until the listener is injected. When injected, replay the events.
      * <p>
-     * Note that event must be executed in order, explaining why incomingEvents
-     * are executed sequentially
+     * Note that event must be executed in order, explaining why incomingEvents are executed sequentially
      */
     private class ReplayListener<ReqT> extends ServerCall.Listener<ReqT> {
         private final InjectableContext.ContextState requestContextState;
@@ -163,10 +159,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         }
 
         /**
-         * Must be called from within the event loop context
-         * If there are deferred events will start executing them in the shared worker context
+         * Must be called from within the event loop context If there are deferred events will start executing them in
+         * the shared worker context
          *
-         * @param delegate the original
+         * @param delegate
+         *        the original
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {
             this.delegate = delegate;
@@ -187,11 +184,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         }
 
         /**
-         * Will execute the consumer in a worker context
-         * Once complete will enqueue the next consumer for execution.
+         * Will execute the consumer in a worker context Once complete will enqueue the next consumer for execution.
          * This method guarantees ordered execution per request.
          *
-         * @param consumer the original
+         * @param consumer
+         *        the original
          */
         private void executeBlockingWithRequestContext(Consumer<ServerCall.Listener<ReqT>> consumer) {
             final Context grpcContext = Context.current();
@@ -245,11 +242,9 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     }
 
     /**
-     * Stores the incoming events until the listener is injected.
-     * When injected, replay the events.
+     * Stores the incoming events until the listener is injected. When injected, replay the events.
      * <p>
-     * Note that event must be executed in order, explaining why incomingEvents
-     * are executed sequentially
+     * Note that event must be executed in order, explaining why incomingEvents are executed sequentially
      * <p>
      * This replay listener is only used for virtual threads.
      */
@@ -266,10 +261,11 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
         }
 
         /**
-         * Must be called from within the event loop context
-         * If there are deferred events will start executing them in the shared worker context
+         * Must be called from within the event loop context If there are deferred events will start executing them in
+         * the shared worker context
          *
-         * @param delegate the original
+         * @param delegate
+         *        the original
          */
         void setDelegate(ServerCall.Listener<ReqT> delegate) {
             this.delegate = delegate;

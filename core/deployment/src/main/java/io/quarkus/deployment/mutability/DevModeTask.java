@@ -39,8 +39,8 @@ public class DevModeTask {
 
     public static Closeable main(Path appRoot) throws Exception {
 
-        try (ObjectInputStream in = new ObjectInputStream(
-                Files.newInputStream(appRoot.resolve(LIB).resolve(DEPLOYMENT_LIB).resolve(JarResultBuildStep.APPMODEL_DAT)))) {
+        try (ObjectInputStream in = new ObjectInputStream(Files.newInputStream(
+                appRoot.resolve(LIB).resolve(DEPLOYMENT_LIB).resolve(JarResultBuildStep.APPMODEL_DAT)))) {
             Properties buildSystemProperties = new Properties();
             try (InputStream buildIn = Files
                     .newInputStream(appRoot.resolve(QUARKUS).resolve(BUILD_SYSTEM_PROPERTIES))) {
@@ -52,23 +52,18 @@ public class DevModeTask {
             ApplicationModel existingModel = appModel.getAppModel(appRoot);
             DevModeContext context = createDevModeContext(appRoot, existingModel);
 
-            CuratedApplication bootstrap = QuarkusBootstrap.builder()
-                    .setAppArtifact(existingModel.getAppArtifact())
-                    .setExistingModel(existingModel)
-                    .setIsolateDeployment(true)
-                    .setMode(QuarkusBootstrap.Mode.REMOTE_DEV_SERVER)
-                    .setBuildSystemProperties(buildSystemProperties)
+            CuratedApplication bootstrap = QuarkusBootstrap.builder().setAppArtifact(existingModel.getAppArtifact())
+                    .setExistingModel(existingModel).setIsolateDeployment(true)
+                    .setMode(QuarkusBootstrap.Mode.REMOTE_DEV_SERVER).setBuildSystemProperties(buildSystemProperties)
                     .setBaseName(appModel.getBaseName())
                     .setApplicationRoot(existingModel.getAppArtifact().getResolvedPaths().getSinglePath())
-                    .setTargetDirectory(appRoot.getParent())
-                    .setBaseClassLoader(DevModeTask.class.getClassLoader())
+                    .setTargetDirectory(appRoot.getParent()).setBaseClassLoader(DevModeTask.class.getClassLoader())
                     .build().bootstrap();
             Map<String, Object> map = new HashMap<>();
             map.put(DevModeContext.class.getName(), context);
             map.put(IsolatedDevModeMain.APP_ROOT, appRoot);
             map.put(DevModeType.class.getName(), DevModeType.REMOTE_SERVER_SIDE);
-            return (Closeable) bootstrap.runInAugmentClassLoader(IsolatedDevModeMain.class.getName(),
-                    map);
+            return (Closeable) bootstrap.runInAugmentClassLoader(IsolatedDevModeMain.class.getName(), map);
 
         }
     }
@@ -80,11 +75,9 @@ public class DevModeTask {
             public void run(ResolvedDependency dep, Path moduleClasses, boolean appArtifact) {
 
                 ((ResolvedArtifactDependency) dep).setResolvedPaths(PathList.of(moduleClasses));
-                DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo.Builder()
-                        .setArtifactKey(dep.getKey())
+                DevModeContext.ModuleInfo module = new DevModeContext.ModuleInfo.Builder().setArtifactKey(dep.getKey())
                         .setClassesPath(moduleClasses.toAbsolutePath().toString())
-                        .setResourcesOutputPath(moduleClasses.toAbsolutePath().toString())
-                        .build();
+                        .setResourcesOutputPath(moduleClasses.toAbsolutePath().toString()).build();
 
                 if (appArtifact) {
                     context.setApplicationRoot(module);
@@ -98,8 +91,8 @@ public class DevModeTask {
         return context;
     }
 
-    public static void extractDevModeClasses(Path appRoot, ApplicationModel appModel, PostExtractAction postExtractAction)
-            throws IOException {
+    public static void extractDevModeClasses(Path appRoot, ApplicationModel appModel,
+            PostExtractAction postExtractAction) throws IOException {
         Path extracted = appRoot.resolve("dev");
         Files.createDirectories(extracted);
         final Map<ArtifactKey, ResolvedDependency> rtDependencies = new HashMap<>();
@@ -107,16 +100,16 @@ public class DevModeTask {
             rtDependencies.put(i.getKey(), i);
         }
 
-        //setup the classes that can be hot reloaded
-        //this code needs to be kept in sync with the code in IsolatedRemoteDevModeMain
-        //todo: look at a better way of doing this
+        // setup the classes that can be hot reloaded
+        // this code needs to be kept in sync with the code in IsolatedRemoteDevModeMain
+        // todo: look at a better way of doing this
         for (ArtifactKey i : appModel.getReloadableWorkspaceDependencies()) {
             boolean appArtifact = false;
             ResolvedDependency dep = rtDependencies.get(i);
             Path moduleClasses = null;
             if (dep == null) {
                 appArtifact = appModel.getAppArtifact().getKey().equals(i);
-                //check if this is the application itself
+                // check if this is the application itself
                 if (appArtifact) {
                     dep = appModel.getAppArtifact();
                     moduleClasses = extracted.resolve("app");
@@ -125,7 +118,7 @@ public class DevModeTask {
                 moduleClasses = extracted.resolve(i.getGroupId()).resolve(i.getArtifactId());
             }
             if (dep == null) {
-                //not all local projects are dependencies
+                // not all local projects are dependencies
                 continue;
             }
             IoUtils.createOrEmptyDir(moduleClasses);
@@ -134,7 +127,8 @@ public class DevModeTask {
                     Path moduleTarget = moduleClasses;
                     Files.walkFileTree(p, new FileVisitor<Path>() {
                         @Override
-                        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                                throws IOException {
                             Files.createDirectories(moduleTarget.resolve(p.relativize(dir)));
                             return FileVisitResult.CONTINUE;
                         }

@@ -8,8 +8,8 @@ import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.binder.cache.CaffeineCacheMetrics;
 
 /**
- * An instance of this class is created during the instantiation of the Caffeine caches when the application depends on a
- * quarkus-micrometer-registry-* extension.
+ * An instance of this class is created during the instantiation of the Caffeine caches when the application depends on
+ * a quarkus-micrometer-registry-* extension.
  */
 public class MicrometerMetricsInitializer implements MetricsInitializer {
 

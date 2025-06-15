@@ -18,11 +18,8 @@ public class ShardFailureIgnoreDefaultTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionUtils.class)
-                    .addClass(MyEntity1.class)
-                    .addClass(MyEntity2.class)
-                    .addAsResource("hsearch-4915/index2.json"))
+            .withApplicationRoot((jar) -> jar.addClass(TransactionUtils.class).addClass(MyEntity1.class)
+                    .addClass(MyEntity2.class).addAsResource("hsearch-4915/index2.json"))
             .withConfigurationResource("application.properties")
             // Override the type of the keyword field to integer, to create an error in one shard only.
             .overrideConfigKey(
@@ -40,8 +37,7 @@ public class ShardFailureIgnoreDefaultTest {
         });
         QuarkusTransaction.joiningExisting().run(() -> {
             assertThatThrownBy(() -> session.search(List.of(MyEntity1.class, MyEntity2.class))
-                    .where(f -> f.wildcard().field("text").matching("4*"))
-                    .fetchHits(20))
+                    .where(f -> f.wildcard().field("text").matching("4*")).fetchHits(20))
                     // MyEntity2 fails because "text" is an integer field there
                     // We expect an exception
                     .hasMessageContaining("Elasticsearch request failed",

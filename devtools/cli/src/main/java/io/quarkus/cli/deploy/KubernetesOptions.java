@@ -12,16 +12,13 @@ public class KubernetesOptions {
     @CommandLine.Option(order = 4, names = { "--username" }, description = "Kubernetes username")
     public Optional<String> username = Optional.empty();
 
-    @CommandLine.Option(order = 5, names = {
-            "--password" }, description = "Kubernetes password")
+    @CommandLine.Option(order = 5, names = { "--password" }, description = "Kubernetes password")
     public Optional<String> password = Optional.empty();
 
-    @CommandLine.Option(order = 6, names = {
-            "--token" }, description = "Kubernetes oAuth token")
+    @CommandLine.Option(order = 6, names = { "--token" }, description = "Kubernetes oAuth token")
     public Optional<String> token = Optional.empty();
 
-    @CommandLine.Option(order = 7, names = {
-            "--trust-certs" }, description = "Flag to trust self-signed certificates")
+    @CommandLine.Option(order = 7, names = { "--trust-certs" }, description = "Flag to trust self-signed certificates")
     public Optional<Boolean> trustCerts = Optional.empty();
 
     @CommandLine.Option(order = 8, names = { "--namespace" }, description = "The Kubernetes namespace")

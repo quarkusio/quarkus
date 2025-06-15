@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MissingConfigIdentityExpressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(NoSuchElementException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MissingConfigIdentityExpressionTest.InvalidBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(NoSuchElementException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MissingConfigIdentityExpressionTest.InvalidBean.class));
 
     @Test
     public void test() {

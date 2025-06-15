@@ -53,8 +53,7 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         HttpServerRequest request = context.request();
 
         if (!request.isSSL()) {
@@ -73,14 +72,12 @@ public class MtlsAuthenticationMechanism implements HttpAuthenticationMechanism 
         AuthenticationRequest authRequest = new CertificateAuthenticationRequest(
                 new CertificateCredential((X509Certificate) certificate));
         authRequest.setAttribute(ROLES_MAPPER_ATTRIBUTE, certificateToRoles);
-        return identityProviderManager
-                .authenticate(HttpSecurityUtils.setRoutingContextAttribute(authRequest, context));
+        return identityProviderManager.authenticate(HttpSecurityUtils.setRoutingContextAttribute(authRequest, context));
     }
 
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
-        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
-                null, null));
+        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(), null, null));
     }
 
     @Override

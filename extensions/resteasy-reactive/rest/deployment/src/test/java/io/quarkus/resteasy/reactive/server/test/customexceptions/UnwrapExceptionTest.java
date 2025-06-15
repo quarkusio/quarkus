@@ -21,45 +21,36 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnwrapExceptionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FirstException.class, SecondException.class, ThirdException.class,
-                                    FourthException.class, FifthException.class, SixthException.class,
-                                    Mappers.class, Resource.class, ExceptionUtil.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(FirstException.class, SecondException.class,
+                    ThirdException.class, FourthException.class, FifthException.class, SixthException.class,
+                    Mappers.class, Resource.class, ExceptionUtil.class);
+        }
+    });
 
     @Test
     public void testWrapperWithUnmappedException() {
-        when().get("/hello/iaeInSecond")
-                .then().statusCode(500);
+        when().get("/hello/iaeInSecond").then().statusCode(500);
     }
 
     @Test
     public void testMappedExceptionWithoutUnwrappedWrapper() {
-        when().get("/hello/iseInFirst")
-                .then().statusCode(500);
+        when().get("/hello/iseInFirst").then().statusCode(500);
 
-        when().get("/hello/iseInThird")
-                .then().statusCode(500);
+        when().get("/hello/iseInThird").then().statusCode(500);
 
-        when().get("/hello/iseInSixth")
-                .then().statusCode(500);
+        when().get("/hello/iseInSixth").then().statusCode(500);
     }
 
     @Test
     public void testWrapperWithMappedException() {
-        when().get("/hello/iseInSecond")
-                .then().statusCode(900);
+        when().get("/hello/iseInSecond").then().statusCode(900);
 
-        when().get("/hello/iseInFourth")
-                .then().statusCode(900);
+        when().get("/hello/iseInFourth").then().statusCode(900);
 
-        when().get("/hello/iseInFifth")
-                .then().statusCode(900);
+        when().get("/hello/iseInFifth").then().statusCode(900);
     }
 
     @Path("hello")

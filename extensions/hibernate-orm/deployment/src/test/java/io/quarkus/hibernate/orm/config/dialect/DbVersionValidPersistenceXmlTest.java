@@ -34,13 +34,10 @@ public class DbVersionValidPersistenceXmlTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(MyEntity.class)
+            .withApplicationRoot((jar) -> jar.addClass(SmokeTestUtils.class).addClass(MyEntity.class)
                     .addAsManifestResource(new StringAsset(loadResourceAndReplacePlaceholders(
                             "META-INF/some-persistence-with-h2-version-placeholder.xml",
-                            Map.of("H2_VERSION", CONFIGURED_DB_VERSION))),
-                            "persistence.xml"))
+                            Map.of("H2_VERSION", CONFIGURED_DB_VERSION))), "persistence.xml"))
             .withConfigurationResource("application-datasource-only.properties");
 
     @Inject
@@ -51,16 +48,15 @@ public class DbVersionValidPersistenceXmlTest {
 
     @Test
     public void dialectVersion() {
-        var dialectVersion = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
+        var dialectVersion = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect()
+                .getVersion();
         assertThat(DialectVersions.toString(dialectVersion)).isEqualTo(CONFIGURED_DB_VERSION);
     }
 
     @Test
     @Transactional
     public void smokeTest() {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(session,
-                MyEntity.class, MyEntity::new,
-                MyEntity::getId,
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(session, MyEntity.class, MyEntity::new, MyEntity::getId,
                 MyEntity::setName, MyEntity::getName);
     }
 }

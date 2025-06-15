@@ -32,8 +32,8 @@ public class LoggingApiCompletenessTest {
             }
 
             if (!match) {
-                mismatches.add("JBoss Logging method [" + jbossLoggingMethod
-                        + "] doesn't have an equivalent in " + Log.class.getName());
+                mismatches.add("JBoss Logging method [" + jbossLoggingMethod + "] doesn't have an equivalent in "
+                        + Log.class.getName());
             }
         }
 
@@ -60,8 +60,7 @@ public class LoggingApiCompletenessTest {
     }
 
     private static boolean isPrivateStaticAdditionalMethod(Method method) {
-        return Modifier.isPrivate(method.getModifiers())
-                && Modifier.isStatic(method.getModifiers())
+        return Modifier.isPrivate(method.getModifiers()) && Modifier.isStatic(method.getModifiers())
                 && ("fail".equals(method.getName()) || "shouldFail".equals(method.getName()));
     }
 

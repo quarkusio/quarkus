@@ -47,25 +47,23 @@ public interface EnvVarHolder {
         // first process old-style configuration, this relies on each configuration having a name
         String target = targetPlatformName();
         envVars().forEach((key, envConfig) -> {
-            validator.process(key, envConfig.value(), envConfig.secret(), envConfig.configmap(), envConfig.field(), target,
-                    Optional.empty(), true);
+            validator.process(key, envConfig.value(), envConfig.secret(), envConfig.configmap(), envConfig.field(),
+                    target, Optional.empty(), true);
         });
 
         // override old-style with newer versions if present
         final EnvVarsConfig c = env();
         Map<String, EnvVarPrefixConfig> prefixMap = collectPrefixes(c);
 
-        c.vars().forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createSimpleVar(k, v.value().orElse(""), target)));
+        c.vars().forEach(
+                (k, v) -> validator.process(KubernetesEnvBuildItem.createSimpleVar(k, v.value().orElse(""), target)));
         c.fields().forEach((k, v) -> validator.process(KubernetesEnvBuildItem.createFromField(k, v, target)));
-        c.configmaps()
-                .ifPresent(
-                        cl -> cl.forEach(cm -> validator.process(KubernetesEnvBuildItem.createFromConfigMap(cm,
-                                target, extractConfigmapPrefix(cm, prefixMap).orElse(null)))));
-        c.secrets().ifPresent(sl -> sl.forEach(s -> validator.process(KubernetesEnvBuildItem.createFromSecret(s,
-                target, extractSecretPrefix(s, prefixMap).orElse(null)))));
-        c.mapping().forEach(
-                (varName, config) -> validator.process(KubernetesEnvBuildItem.createFromResourceKey(varName, config.withKey(),
-                        config.fromSecret().orElse(null), config.fromConfigmap().orElse(null), target)));
+        c.configmaps().ifPresent(cl -> cl.forEach(cm -> validator.process(KubernetesEnvBuildItem.createFromConfigMap(cm,
+                target, extractConfigmapPrefix(cm, prefixMap).orElse(null)))));
+        c.secrets().ifPresent(sl -> sl.forEach(s -> validator.process(
+                KubernetesEnvBuildItem.createFromSecret(s, target, extractSecretPrefix(s, prefixMap).orElse(null)))));
+        c.mapping().forEach((varName, config) -> validator.process(KubernetesEnvBuildItem.createFromResourceKey(varName,
+                config.withKey(), config.fromSecret().orElse(null), config.fromConfigmap().orElse(null), target)));
 
         return validator.getBuildItems();
     }

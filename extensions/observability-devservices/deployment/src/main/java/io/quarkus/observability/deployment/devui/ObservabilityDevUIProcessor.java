@@ -38,17 +38,12 @@ public class ObservabilityDevUIProcessor {
 
                 // Grafana
                 grafanaUrl = StringUtils.prependIfMissing(grafanaUrl, "http://");
-                card.addPage(Page.externalPageBuilder("Grafana UI")
-                        .url(grafanaUrl, grafanaUrl)
-                        .doNotEmbed()
-                        .isHtmlContent()
-                        .icon("font-awesome-solid:chart-line"));
+                card.addPage(Page.externalPageBuilder("Grafana UI").url(grafanaUrl, grafanaUrl).doNotEmbed()
+                        .isHtmlContent().icon("font-awesome-solid:chart-line"));
 
                 // Open Telemetry
                 final ExternalPageBuilder otelPage = Page.externalPageBuilder("OpenTelemetry Port")
-                        .icon("font-awesome-solid:binoculars")
-                        .doNotEmbed()
-                        .url("https://opentelemetry.io/")
+                        .icon("font-awesome-solid:binoculars").doNotEmbed().url("https://opentelemetry.io/")
                         .staticLabel(StringUtils
                                 .substringAfterLast(runtimeConfig.getOrDefault("otel-collector.url", "0"), ":"));
                 card.addPage(otelPage);
@@ -58,9 +53,7 @@ public class ObservabilityDevUIProcessor {
 
                 // LGTM Container Log Console
                 WebComponentPageBuilder mailLogPageBuilder = Page.webComponentPageBuilder()
-                        .icon("font-awesome-solid:chart-line")
-                        .title("LGTM")
-                        .componentLink("qwc-lgtm-log.js");
+                        .icon("font-awesome-solid:chart-line").title("LGTM").componentLink("qwc-lgtm-log.js");
 
                 footerProducer.produce(new FooterPageBuildItem(mailLogPageBuilder));
             }

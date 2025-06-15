@@ -37,57 +37,29 @@ public class CustomObjectMapperTest {
      */
     @Test
     void test() {
-        given().body("{\"Request\":{\"value\":\"FIRST\"}}")
-                .contentType(ContentType.JSON)
-                .post("/server/dummy")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(equalTo("0"));
+        given().body("{\"Request\":{\"value\":\"FIRST\"}}").contentType(ContentType.JSON).post("/server/dummy").then()
+                .statusCode(HttpStatus.SC_OK).body(equalTo("0"));
 
         // ContextResolver was invoked for both reader and writer
-        when().get("/server/count")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(equalTo("2"));
+        when().get("/server/count").then().statusCode(HttpStatus.SC_OK).body(equalTo("2"));
 
-        given().body("{\"Request2\":{\"value\":\"FIRST\"}}")
-                .contentType(ContentType.JSON)
-                .post("/server/dummy2")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(equalTo("0"));
+        given().body("{\"Request2\":{\"value\":\"FIRST\"}}").contentType(ContentType.JSON).post("/server/dummy2").then()
+                .statusCode(HttpStatus.SC_OK).body(equalTo("0"));
 
         // ContextResolver was invoked for both reader and writer because different types where used
-        when().get("/server/count")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(equalTo("4"));
+        when().get("/server/count").then().statusCode(HttpStatus.SC_OK).body(equalTo("4"));
 
-        given().body("{\"Request\":{\"value\":\"FIRST\"}}")
-                .contentType(ContentType.JSON)
-                .post("/server/dummy")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(equalTo("0"));
+        given().body("{\"Request\":{\"value\":\"FIRST\"}}").contentType(ContentType.JSON).post("/server/dummy").then()
+                .statusCode(HttpStatus.SC_OK).body(equalTo("0"));
 
         // ContextResolver was not invoked because the types have already been cached
-        when().get("/server/count")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(equalTo("4"));
+        when().get("/server/count").then().statusCode(HttpStatus.SC_OK).body(equalTo("4"));
 
-        given().body("{\"Request2\":{\"value\":\"FIRST\"}}")
-                .contentType(ContentType.JSON)
-                .post("/server/dummy2")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(equalTo("0"));
+        given().body("{\"Request2\":{\"value\":\"FIRST\"}}").contentType(ContentType.JSON).post("/server/dummy2").then()
+                .statusCode(HttpStatus.SC_OK).body(equalTo("0"));
 
         // ContextResolver was not invoked because the types have already been cached
-        when().get("/server/count")
-                .then()
-                .statusCode(HttpStatus.SC_OK)
-                .body(equalTo("4"));
+        when().get("/server/count").then().statusCode(HttpStatus.SC_OK).body(equalTo("4"));
     }
 
     private static void doTest() {

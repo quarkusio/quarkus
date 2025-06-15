@@ -7,7 +7,6 @@ import io.quarkus.scheduler.spi.JobInstrumenter;
 import io.quarkus.scheduler.spi.JobInstrumenter.JobInstrumentationContext;
 
 /**
- *
  * @see JobInstrumenter
  */
 public class InstrumentedInvoker extends DelegateInvoker {

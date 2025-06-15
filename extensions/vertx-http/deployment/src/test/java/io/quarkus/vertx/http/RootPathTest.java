@@ -13,13 +13,11 @@ import io.restassured.RestAssured;
 import io.vertx.ext.web.Router;
 
 public class RootPathTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.http.root-path=/api\n";
+    private static final String APP_PROPS = "" + "quarkus.http.root-path=/api\n";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(BeanRegisteringRouteUsingObserves.class));
 
     @Test

@@ -69,7 +69,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 if (requestContext.restartWithNextInitialMatch()) {
                     return;
                 }
-                // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
+                // The idea here is to check if any of the mappers of the class could map the request - if the HTTP
+                // Method were correct
                 String remaining = getRemaining(requestContext);
                 for (RequestMapper<RuntimeResource> existingMapper : mappers.values()) {
                     if (existingMapper.map(remaining) != null) {
@@ -95,7 +96,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 if (requestContext.restartWithNextInitialMatch()) {
                     return;
                 }
-                // The idea here is to check if any of the mappers of the class could map the request - if the HTTP Method were correct
+                // The idea here is to check if any of the mappers of the class could map the request - if the HTTP
+                // Method were correct
                 for (Map.Entry<String, RequestMapper<RuntimeResource>> entry : mappers.entrySet()) {
                     if (entry.getKey() == null) {
                         continue;
@@ -113,24 +115,29 @@ public class ClassRoutingHandler implements ServerRestHandler {
             }
         }
 
-        // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
-        // HttpMethod being null means this is a sub resource locator method. The handler chain of the sub resource has to match the content-type header
+        // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in
+        // @Consumes
+        // HttpMethod being null means this is a sub resource locator method. The handler chain of the sub resource has
+        // to match the content-type header
         if (target.value.getHttpMethod() != null && !target.value.getConsumes().isEmpty()) {
             String contentType = (String) requestContext.getHeader(HttpHeaders.CONTENT_TYPE, true);
             if (contentType != null) {
                 try {
-                    if (MediaTypeHelper.getFirstMatch(
-                            target.value.getConsumes(),
+                    if (MediaTypeHelper.getFirstMatch(target.value.getConsumes(),
                             Collections.singletonList(MediaTypeHelper.valueOf(contentType))) == null) {
-                        throw new NotSupportedException("The content-type header value did not match the value in @Consumes");
+                        throw new NotSupportedException(
+                                "The content-type header value did not match the value in @Consumes");
                     }
                 } catch (IllegalArgumentException e) {
-                    throw new NotSupportedException("The content-type header value did not correspond to a valid media type");
+                    throw new NotSupportedException(
+                            "The content-type header value did not correspond to a valid media type");
                 }
             }
         }
-        // according to the spec we need to return HTTP 406 when Accept header doesn't match what is specified in @Produces
-        // HttpMethod being null means this is a sub resource locator method. The handler chain of the sub resource has to match the accept header
+        // according to the spec we need to return HTTP 406 when Accept header doesn't match what is specified in
+        // @Produces
+        // HttpMethod being null means this is a sub resource locator method. The handler chain of the sub resource has
+        // to match the accept header
         if (target.value.getHttpMethod() != null && target.value.getProduces() != null) {
             // there could potentially be multiple Accept headers and we need to response with 406
             // if none match the method's @Produces
@@ -169,7 +176,9 @@ public class ClassRoutingHandler implements ServerRestHandler {
 
     /**
      * @return {@code true} if the provided string matches one of the {@code @Produces} values of the resource method
-     * @throws IllegalArgumentException if the provided string cannot be parsed into a {@link MediaType}
+     *
+     * @throws IllegalArgumentException
+     *         if the provided string cannot be parsed into a {@link MediaType}
      */
     private boolean acceptHeaderMatches(RequestMapper.RequestMatch<RuntimeResource> target, String accepts) {
         if ((accepts != null) && !accepts.equals(MediaType.WILDCARD)) {
@@ -201,7 +210,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
                         break;
                     }
                     begin = commaIndex + 1; // the next part will start at the character after the comma
-                    if (begin >= (accepts.length() - 1)) { // if we have reached this point, then are no compatible media types
+                    if (begin >= (accepts.length() - 1)) { // if we have reached this point, then are no compatible
+                                                           // media types
                         break;
                     }
                     commaIndex = accepts.indexOf(',', begin);
@@ -209,7 +219,8 @@ public class ClassRoutingHandler implements ServerRestHandler {
 
                 return compatible;
             } else {
-                // don't use any of the JAX-RS stuff from the various MediaType helper as we want to be as performant as possible
+                // don't use any of the JAX-RS stuff from the various MediaType helper as we want to be as performant as
+                // possible
                 List<MediaType> acceptsMediaTypes;
                 if (accepts.contains(",")) {
                     String[] parts = accepts.split(",");
@@ -221,8 +232,7 @@ public class ClassRoutingHandler implements ServerRestHandler {
                 } else {
                     acceptsMediaTypes = Collections.singletonList(toMediaType(accepts));
                 }
-                return MediaTypeHelper.getFirstMatch(Arrays.asList(producesMediaTypes),
-                        acceptsMediaTypes) != null;
+                return MediaTypeHelper.getFirstMatch(Arrays.asList(producesMediaTypes), acceptsMediaTypes) != null;
             }
         }
 

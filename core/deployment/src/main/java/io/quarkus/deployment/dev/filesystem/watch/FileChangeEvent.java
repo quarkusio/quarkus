@@ -6,7 +6,6 @@ import java.nio.file.Path;
  * The event object that is fired when a file system change is detected.
  *
  * @see WatchServiceFileSystemWatcher
- *
  */
 public class FileChangeEvent {
 
@@ -16,8 +15,10 @@ public class FileChangeEvent {
     /**
      * Construct a new instance.
      *
-     * @param file the file which is being watched
-     * @param type the type of event that was encountered
+     * @param file
+     *        the file which is being watched
+     * @param type
+     *        the type of event that was encountered
      */
     public FileChangeEvent(Path file, Type type) {
         this.file = file;

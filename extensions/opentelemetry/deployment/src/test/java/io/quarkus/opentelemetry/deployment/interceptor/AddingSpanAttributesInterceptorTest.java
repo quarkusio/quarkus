@@ -32,15 +32,13 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class AddingSpanAttributesInterceptorTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClass(HelloRouter.class)
-                            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
-                            .addAsManifestResource(
-                                    "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
-                                    "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                            .addAsResource("resource-config/application-no-metrics.properties", "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClass(HelloRouter.class)
+            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsManifestResource(
+                    "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
+                    "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsResource("resource-config/application-no-metrics.properties", "application.properties"));
 
     @Inject
     HelloRouter helloRouter;
@@ -59,8 +57,7 @@ public class AddingSpanAttributesInterceptorTest {
         Span span = tracer.spanBuilder("withSpanAttributesTest").startSpan();
         String result;
         try (Scope scope = span.makeCurrent()) {
-            result = helloRouter.withSpanAttributes(
-                    "implicit", "explicit", null, "ignore");
+            result = helloRouter.withSpanAttributes("implicit", "explicit", null, "ignore");
         } finally {
             span.end();
         }
@@ -76,15 +73,13 @@ public class AddingSpanAttributesInterceptorTest {
 
     @Test
     void withSpanAttributesTest_noActiveSpan() {
-        String resultWithoutSpan = helloRouter.withSpanAttributes(
-                "implicit", "explicit", null, "ignore");
+        String resultWithoutSpan = helloRouter.withSpanAttributes("implicit", "explicit", null, "ignore");
         assertEquals("hello!", resultWithoutSpan);
 
         spanExporter.getFinishedSpanItems(0);
         // No span created
 
-        String resultWithSpan = helloRouter.withSpanTakesPrecedence(
-                "implicit", "explicit", null, "ignore");
+        String resultWithSpan = helloRouter.withSpanTakesPrecedence("implicit", "explicit", null, "ignore");
         assertEquals("hello!", resultWithSpan);
 
         // we need 1 span to make sure we don't get a false positive.
@@ -98,8 +93,7 @@ public class AddingSpanAttributesInterceptorTest {
 
     @Test
     void withSpanAttributesTest_newSpan() {
-        String result = helloRouter.withSpanTakesPrecedence(
-                "implicit", "explicit", null, "ignore");
+        String result = helloRouter.withSpanTakesPrecedence("implicit", "explicit", null, "ignore");
 
         assertEquals("hello!", result);
         List<SpanData> spanItems = spanExporter.getFinishedSpanItems(1);
@@ -118,8 +112,7 @@ public class AddingSpanAttributesInterceptorTest {
         Span span = tracer.spanBuilder("noAttributesAdded").startSpan();
         String result;
         try (Scope scope = span.makeCurrent()) {
-            result = helloRouter.noAttributesAdded(
-                    "implicit", "explicit", null, "ignore");
+            result = helloRouter.noAttributesAdded("implicit", "explicit", null, "ignore");
         } finally {
             span.end();
         }
@@ -139,10 +132,8 @@ public class AddingSpanAttributesInterceptorTest {
     public static class HelloRouter {
         // mast have already an active span
         @AddingSpanAttributes
-        public String withSpanAttributes(
-                @SpanAttribute String implicitName,
-                @SpanAttribute("explicitName") String parameter,
-                @SpanAttribute("nullAttribute") String nullAttribute,
+        public String withSpanAttributes(@SpanAttribute String implicitName,
+                @SpanAttribute("explicitName") String parameter, @SpanAttribute("nullAttribute") String nullAttribute,
                 String notTraced) {
 
             return "hello!";
@@ -150,19 +141,15 @@ public class AddingSpanAttributesInterceptorTest {
 
         @WithSpan
         @AddingSpanAttributes
-        public String withSpanTakesPrecedence(
-                @SpanAttribute String implicitName,
-                @SpanAttribute("explicitName") String parameter,
-                @SpanAttribute("nullAttribute") String nullAttribute,
+        public String withSpanTakesPrecedence(@SpanAttribute String implicitName,
+                @SpanAttribute("explicitName") String parameter, @SpanAttribute("nullAttribute") String nullAttribute,
                 String notTraced) {
 
             return "hello!";
         }
 
-        public String noAttributesAdded(
-                @SpanAttribute String implicitName,
-                @SpanAttribute("explicitName") String parameter,
-                @SpanAttribute("nullAttribute") String nullAttribute,
+        public String noAttributesAdded(@SpanAttribute String implicitName,
+                @SpanAttribute("explicitName") String parameter, @SpanAttribute("nullAttribute") String nullAttribute,
                 String notTraced) {
 
             return "hello!";

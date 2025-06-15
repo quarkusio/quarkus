@@ -26,13 +26,12 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 
 /**
- * Tests that a 400 response from jackson on the client is not propagated to the server as a 400,
- * but is instead reported as an internal server error
+ * Tests that a 400 response from jackson on the client is not propagated to the server as a 400, but is instead
+ * reported as an internal server error
  */
 public class BadRequestNotPropagatedTestCase {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withEmptyApplication();
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
 
     @TestHTTPResource
     URL url;
@@ -113,10 +112,10 @@ public class BadRequestNotPropagatedTestCase {
                 return badClient.get("{name:foo}");
             } catch (WebApplicationException e) {
                 if (e.getResponse().getStatus() != 400) {
-                    //this is a bit odd, but we are trying to test that a 400 from jackson won't cause a 400
-                    //response from the server part
-                    //returning this will cause a 204 response and fail the test, as if the original exception is
-                    //not 400 then something has gone wrong
+                    // this is a bit odd, but we are trying to test that a 400 from jackson won't cause a 400
+                    // response from the server part
+                    // returning this will cause a 204 response and fail the test, as if the original exception is
+                    // not 400 then something has gone wrong
                     return null;
                 }
                 throw e;

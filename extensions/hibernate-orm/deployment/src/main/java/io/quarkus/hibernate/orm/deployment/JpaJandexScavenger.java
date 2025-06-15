@@ -44,10 +44,9 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 /**
  * Scan the Jandex index to find JPA entities (and embeddables supporting entity models).
  * <p>
- * The output is then both consumed as plain list to use as a filter for which classes
- * need to be enhanced, collect them for storage in the JPADeploymentTemplate and registered
- * for reflective access.
- * TODO some of these are going to be redundant?
+ * The output is then both consumed as plain list to use as a filter for which classes need to be enhanced, collect them
+ * for storage in the JPADeploymentTemplate and registered for reflective access. TODO some of these are going to be
+ * redundant?
  *
  * @author Emmanuel Bernard emmanuel@hibernate.org
  * @author Sanne Grinovero <sanne@hibernate.org>
@@ -67,8 +66,7 @@ public final class JpaJandexScavenger {
 
     JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
-            List<JpaModelPersistenceUnitContributionBuildItem> persistenceUnitContributions,
-            IndexView index,
+            List<JpaModelPersistenceUnitContributionBuildItem> persistenceUnitContributions, IndexView index,
             Set<String> ignorableNonIndexedClasses) {
         this.reflectiveClass = reflectiveClass;
         this.hotDeploymentWatchedFiles = hotDeploymentWatchedFiles;
@@ -105,7 +103,7 @@ public final class JpaJandexScavenger {
             // Register static metamodel classes as well, so that their `class_` attribute can be populated.
             // See org.hibernate.metamodel.internal.MetadataContext.populateStaticMetamodel
             // Note: registering classes that do not exist is not a problem -- and is necessary if the application
-            //       tries to access these classes via reflection anyway (which it will, through Hibernate ORM).
+            // tries to access these classes via reflection anyway (which it will, through Hibernate ORM).
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(className + "_").fields().build());
         }
 
@@ -128,13 +126,13 @@ public final class JpaJandexScavenger {
             unIgnorableIndexedClasses.removeAll(ignorableNonIndexedClasses);
 
             if (!unIgnorableIndexedClasses.isEmpty()) {
-                final String unindexedClassesErrorMessage = unIgnorableIndexedClasses.stream().map(d -> "\t- " + d + "\n")
-                        .collect(Collectors.joining());
+                final String unindexedClassesErrorMessage = unIgnorableIndexedClasses.stream()
+                        .map(d -> "\t- " + d + "\n").collect(Collectors.joining());
                 throw new ConfigurationException(
                         "Unable to properly register the hierarchy of the following JPA classes as they are not in the Jandex index:\n"
                                 + unindexedClassesErrorMessage
-                                + "Consider adding them to the index either by creating a Jandex index " +
-                                "for your dependency via the Maven plugin, an empty META-INF/beans.xml or quarkus.index-dependency properties.");
+                                + "Consider adding them to the index either by creating a Jandex index "
+                                + "for your dependency via the Maven plugin, an empty META-INF/beans.xml or quarkus.index-dependency properties.");
             }
         }
 
@@ -158,15 +156,16 @@ public final class JpaJandexScavenger {
             for (String mappingFileName : mappingFileNames) {
                 hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(mappingFileName));
 
-                Optional<RecordableXmlMapping> mappingOptional = parser.parse(persistenceUnitContribution.persistenceUnitName,
+                Optional<RecordableXmlMapping> mappingOptional = parser.parse(
+                        persistenceUnitContribution.persistenceUnitName,
                         persistenceUnitContribution.persistenceUnitRootURL, mappingFileName);
                 if (!mappingOptional.isPresent()) {
                     if (persistenceUnitContribution.explicitlyListedMappingFiles.contains(mappingFileName)) {
                         // Trigger an exception for files that are explicitly mentioned and could not be found
                         // DEFAULT_ORM_XML in particular may be mentioned only implicitly,
                         // in which case it's fine if we cannot find it.
-                        throw new IllegalStateException("Cannot find ORM mapping file '" + mappingFileName
-                                + "' in the classpath");
+                        throw new IllegalStateException(
+                                "Cannot find ORM mapping file '" + mappingFileName + "' in the classpath");
                     }
                     continue;
                 }
@@ -205,13 +204,13 @@ public final class JpaJandexScavenger {
             enlistExplicitClass(collector, name);
         }
         for (var converter : mapping.getConverters()) {
-            collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, converter.getClazz())));
+            collector.potentialCdiBeanTypes
+                    .add(DotName.createSimple(qualifyIfNecessary(packagePrefix, converter.getClazz())));
         }
     }
 
     private void enlistOrmXmlMappingManagedClass(Collector collector, String packagePrefix,
-            JaxbEntityOrMappedSuperclass managed,
-            String nodeName) {
+            JaxbEntityOrMappedSuperclass managed, String nodeName) {
         String name = safeGetClassName(packagePrefix, managed, nodeName);
         enlistExplicitClass(collector, name);
         if (managed instanceof JaxbEntity) {
@@ -229,7 +228,8 @@ public final class JpaJandexScavenger {
             return;
         }
         for (var listener : entityListeners.getEntityListeners()) {
-            collector.potentialCdiBeanTypes.add(DotName.createSimple(qualifyIfNecessary(packagePrefix, listener.getClazz())));
+            collector.potentialCdiBeanTypes
+                    .add(DotName.createSimple(qualifyIfNecessary(packagePrefix, listener.getClazz())));
         }
     }
 
@@ -241,7 +241,8 @@ public final class JpaJandexScavenger {
         return qualifyIfNecessary(packagePrefix, name);
     }
 
-    // See org.hibernate.cfg.annotations.reflection.internal.XMLContext.buildSafeClassName(java.lang.String, java.lang.String)
+    // See org.hibernate.cfg.annotations.reflection.internal.XMLContext.buildSafeClassName(java.lang.String,
+    // java.lang.String)
     private static String qualifyIfNecessary(String packagePrefix, String name) {
         if (name.indexOf('.') < 0) {
             return packagePrefix + name;
@@ -357,8 +358,8 @@ public final class JpaJandexScavenger {
                     collectElementCollectionTypes(embeddedTypes, method.declaringClass(), method, method.returnType());
                     break;
                 default:
-                    throw new IllegalStateException(
-                            "[internal error] " + ClassNames.ELEMENT_COLLECTION + " placed on a unknown element: " + target);
+                    throw new IllegalStateException("[internal error] " + ClassNames.ELEMENT_COLLECTION
+                            + " placed on a unknown element: " + target);
             }
 
         }
@@ -438,9 +439,9 @@ public final class JpaJandexScavenger {
     }
 
     /**
-     * Add the class to the reflective list with full method and field access.
-     * Add the superclasses recursively as well as the interfaces.
-     * Un-indexed classes/interfaces are accumulated to be thrown as a configuration error in the top level caller method
+     * Add the class to the reflective list with full method and field access. Add the superclasses recursively as well
+     * as the interfaces. Un-indexed classes/interfaces are accumulated to be thrown as a configuration error in the top
+     * level caller method
      * <p>
      * TODO should we also return the return types of all methods and fields? It could contain Enums for example.
      */
@@ -475,7 +476,7 @@ public final class JpaJandexScavenger {
             }
         }
 
-        //Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
+        // Capture this one (for various needs: Reflective access enablement, Hibernate enhancement, JPA Template)
         collectModelType(collector, classInfo);
 
         // add superclass recursively
@@ -500,9 +501,8 @@ public final class JpaJandexScavenger {
         }
     }
 
-    private void collectEmbeddedType(Set<DotName> embeddedTypes, ClassInfo declaringClass,
-            Declaration attribute, Type attributeType, boolean validate)
-            throws BuildException {
+    private void collectEmbeddedType(Set<DotName> embeddedTypes, ClassInfo declaringClass, Declaration attribute,
+            Type attributeType, boolean validate) throws BuildException {
         DotName className;
         switch (attributeType.kind()) {
             case CLASS:
@@ -518,15 +518,13 @@ public final class JpaJandexScavenger {
         if (validate && !index.getClassByName(className).hasAnnotation(ClassNames.EMBEDDABLE)) {
             throw new BuildException(
                     "Type " + className + " must be annotated with @Embeddable, because it is used as an embeddable."
-                            + " This type is used in class " + declaringClass
-                            + " for attribute " + attribute + ".");
+                            + " This type is used in class " + declaringClass + " for attribute " + attribute + ".");
         }
         embeddedTypes.add(attributeType.name());
     }
 
     private void collectElementCollectionTypes(Set<DotName> embeddedTypes, ClassInfo declaringClass,
-            Declaration attribute, Type attributeType)
-            throws BuildException {
+            Declaration attribute, Type attributeType) throws BuildException {
         switch (attributeType.kind()) {
             case CLASS:
                 // Raw collection type, nothing we can do
@@ -541,7 +539,8 @@ public final class JpaJandexScavenger {
                 }
                 break;
             case ARRAY:
-                collectEmbeddedType(embeddedTypes, declaringClass, attribute, attributeType.asArrayType().constituent(), true);
+                collectEmbeddedType(embeddedTypes, declaringClass, attribute, attributeType.asArrayType().constituent(),
+                        true);
                 break;
             default:
                 // do nothing
@@ -552,8 +551,7 @@ public final class JpaJandexScavenger {
     private static boolean isIgnored(DotName classDotName) {
         String className = classDotName.toString();
         if (className.startsWith("java.util.") || className.startsWith("java.lang.")
-                || className.startsWith("org.hibernate.engine.spi.")
-                || className.startsWith("jakarta.persistence.")
+                || className.startsWith("org.hibernate.engine.spi.") || className.startsWith("jakarta.persistence.")
                 || className.startsWith("jakarta.persistence.")) {
             return true;
         }

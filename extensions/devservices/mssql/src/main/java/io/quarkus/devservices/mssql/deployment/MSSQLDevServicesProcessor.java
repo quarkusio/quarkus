@@ -43,21 +43,20 @@ public class MSSQLDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevServicesConfig devServicesConfig) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, DevServicesConfig devServicesConfig) {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
             @SuppressWarnings("unchecked")
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
+                    Optional<Duration> startupTimeout) {
 
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
 
                 Supplier<RunningDevServicesDatasource> startService = () -> {
-                    QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(containerConfig.getImageName(),
-                            containerConfig.getFixedExposedPort(),
+                    QuarkusMSSQLServerContainer container = new QuarkusMSSQLServerContainer(
+                            containerConfig.getImageName(), containerConfig.getFixedExposedPort(),
                             composeProjectBuildItem.getDefaultNetworkId(),
                             !devServicesSharedNetworkBuildItem.isEmpty());
                     startupTimeout.ifPresent(container::withStartupTimeout);
@@ -66,8 +65,7 @@ public class MSSQLDevServicesProcessor {
                             .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
 
                     // Defining the database name and the username is not supported by this container yet
-                    container.withPassword(effectivePassword)
-                            .withReuse(containerConfig.isReuse());
+                    container.withPassword(effectivePassword).withReuse(containerConfig.isReuse());
                     Labels.addDataSourceLabel(container, datasourceName);
                     Volumes.addVolumes(container, containerConfig.getVolumes());
 
@@ -84,18 +82,16 @@ public class MSSQLDevServicesProcessor {
 
                     LOG.info("Dev Services for Microsoft SQL Server started.");
 
-                    return new RunningDevServicesDatasource(container.getContainerId(),
-                            container.getEffectiveJdbcUrl(),
-                            container.getReactiveUrl(),
-                            DEFAULT_USERNAME,
-                            container.getPassword(),
+                    return new RunningDevServicesDatasource(container.getContainerId(), container.getEffectiveJdbcUrl(),
+                            container.getReactiveUrl(), DEFAULT_USERNAME, container.getPassword(),
                             new ContainerShutdownCloseable(container, "Microsoft SQL Server"));
                 };
                 List<String> images = List.of(
                         containerConfig.getImageName().orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")),
                         "mssql");
                 return ComposeLocator
-                        .locateContainer(composeProjectBuildItem, images, MS_SQL_SERVER_PORT, launchMode, useSharedNetwork)
+                        .locateContainer(composeProjectBuildItem, images, MS_SQL_SERVER_PORT, launchMode,
+                                useSharedNetwork)
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig))
                         .orElseGet(startService);
             }
@@ -110,8 +106,7 @@ public class MSSQLDevServicesProcessor {
 
         public QuarkusMSSQLServerContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork) {
-            super(DockerImageName
-                    .parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")))
+            super(DockerImageName.parse(imageName.orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql")))
                     .asCompatibleSubstituteFor(MSSQLServerContainer.IMAGE));
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;

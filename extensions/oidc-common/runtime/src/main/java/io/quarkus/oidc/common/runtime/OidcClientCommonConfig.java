@@ -22,9 +22,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
     }
 
     /**
-     * The OIDC token endpoint that issues access and refresh tokens;
-     * specified as a relative path or absolute URL.
-     * Set if {@link #discoveryEnabled} is `false` or a discovered token endpoint path must be customized.
+     * The OIDC token endpoint that issues access and refresh tokens; specified as a relative path or absolute URL. Set
+     * if {@link #discoveryEnabled} is `false` or a discovered token endpoint path must be customized.
      *
      * @deprecated use the {@link #tokenPath()} method instead
      */
@@ -41,7 +40,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
 
     /**
      * The client id of the application. Each application has a client id that is used to identify the application.
-     * Setting the client id is not required if {@link #applicationType} is `service` and no token introspection is required.
+     * Setting the client id is not required if {@link #applicationType} is `service` and no token introspection is
+     * required.
      *
      * @deprecated use the {@link #clientId()} method instead
      */
@@ -49,9 +49,9 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
     public Optional<String> clientId = Optional.empty();
 
     /**
-     * The client name of the application. It is meant to represent a human readable description of the application which you
-     * may provide when an application (client) is registered in an OpenId Connect provider's dashboard.
-     * For example, you can set this property to have more informative log messages which record an activity of the given
+     * The client name of the application. It is meant to represent a human readable description of the application
+     * which you may provide when an application (client) is registered in an OpenId Connect provider's dashboard. For
+     * example, you can set this property to have more informative log messages which record an activity of the given
      * client.
      *
      * @deprecated use the {@link #clientName()} method instead
@@ -96,20 +96,20 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
      * @deprecated use {@link io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder.CredentialsBuilder}
      */
     @Deprecated(since = "3.18", forRemoval = true)
-    public static class Credentials implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials {
+    public static class Credentials
+            implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials {
 
         /**
-         * The client secret used by the `client_secret_basic` authentication method.
-         * Must be set unless a secret is set in {@link #clientSecret} or {@link #jwt} client authentication is required.
-         * You can use `client-secret.value` instead, but both properties are mutually exclusive.
+         * The client secret used by the `client_secret_basic` authentication method. Must be set unless a secret is set
+         * in {@link #clientSecret} or {@link #jwt} client authentication is required. You can use `client-secret.value`
+         * instead, but both properties are mutually exclusive.
          */
         public Optional<String> secret = Optional.empty();
 
         /**
          * The client secret used by the `client_secret_basic` (default), `client_secret_post`, or `client_secret_jwt`
-         * authentication methods.
-         * Note that a `secret.value` property can be used instead to support the `client_secret_basic` method
-         * but both properties are mutually exclusive.
+         * authentication methods. Note that a `secret.value` property can be used instead to support the
+         * `client_secret_basic` method but both properties are mutually exclusive.
          */
         public Secret clientSecret = new Secret();
 
@@ -142,7 +142,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             this.jwt = jwt;
         }
 
-        private void addConfigMappingValues(io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials mapping) {
+        private void addConfigMappingValues(
+                io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials mapping) {
             secret = mapping.secret();
             clientSecret.addConfigMappingValues(mapping.clientSecret());
             jwt.addConfigMappingValues(mapping.jwt());
@@ -169,7 +170,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
          * @see <a href=
          *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
          */
-        public static class Secret implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret {
+        public static class Secret
+                implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret {
 
             @Override
             public Optional<String> value() {
@@ -183,14 +185,14 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
 
             @Override
             public Optional<io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method> method() {
-                return method.map(Enum::toString)
-                        .map(io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method::valueOf);
+                return method.map(Enum::toString).map(
+                        io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method::valueOf);
             }
 
             public static enum Method {
                 /**
-                 * `client_secret_basic` (default): The client id and secret are submitted with the HTTP Authorization Basic
-                 * scheme.
+                 * `client_secret_basic` (default): The client id and secret are submitted with the HTTP Authorization
+                 * Basic scheme.
                  */
                 BASIC,
 
@@ -202,21 +204,20 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
 
                 /**
                  * `client_secret_jwt`: The client id and generated JWT secret are submitted as the `client_id` and
-                 * `client_secret`
-                 * form parameters.
+                 * `client_secret` form parameters.
                  */
                 POST_JWT,
 
                 /**
-                 * client id and secret are submitted as HTTP query parameters. This option is only supported by the OIDC
-                 * extension.
+                 * client id and secret are submitted as HTTP query parameters. This option is only supported by the
+                 * OIDC extension.
                  */
                 QUERY
             }
 
             /**
-             * The client secret value. This value is ignored if `credentials.secret` is set.
-             * Must be set unless a secret is set in {@link #clientSecret} or {@link #jwt} client authentication is required.
+             * The client secret value. This value is ignored if `credentials.secret` is set. Must be set unless a
+             * secret is set in {@link #clientSecret} or {@link #jwt} client authentication is required.
              */
             public Optional<String> value = Optional.empty();
 
@@ -226,8 +227,7 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             public Provider provider = new Provider();
 
             /**
-             * The authentication method.
-             * If the `clientSecret.value` secret is set, this method is `basic` by default.
+             * The authentication method. If the `clientSecret.value` secret is set, this method is `basic` by default.
              */
             public Optional<Method> method = Optional.empty();
 
@@ -264,14 +264,15 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
         }
 
         /**
-         * Supports the client authentication `client_secret_jwt` and `private_key_jwt` methods, which involves sending a JWT
-         * token assertion signed with a client secret or private key.
-         * JWT Bearer client authentication is also supported.
+         * Supports the client authentication `client_secret_jwt` and `private_key_jwt` methods, which involves sending
+         * a JWT token assertion signed with a client secret or private key. JWT Bearer client authentication is also
+         * supported.
          *
          * @see <a href=
          *      "https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication</a>
          */
-        public static class Jwt implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt {
+        public static class Jwt
+                implements io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt {
 
             @Override
             public io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source source() {
@@ -382,8 +383,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             public Source source = Source.CLIENT;
 
             /**
-             * If provided, indicates that JWT is signed using a secret key.
-             * It is mutually exclusive with {@link #key}, {@link #keyFile} and {@link #keyStore} properties.
+             * If provided, indicates that JWT is signed using a secret key. It is mutually exclusive with {@link #key},
+             * {@link #keyFile} and {@link #keyStore} properties.
              */
             public Optional<String> secret = Optional.empty();
 
@@ -393,23 +394,23 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             public Provider secretProvider = new Provider();
 
             /**
-             * String representation of a private key. If provided, indicates that JWT is signed using a private key in PEM or
-             * JWK format.
-             * It is mutually exclusive with {@link #secret}, {@link #keyFile} and {@link #keyStore} properties.
-             * You can use the {@link #signatureAlgorithm} property to override the default key algorithm, `RS256`.
+             * String representation of a private key. If provided, indicates that JWT is signed using a private key in
+             * PEM or JWK format. It is mutually exclusive with {@link #secret}, {@link #keyFile} and {@link #keyStore}
+             * properties. You can use the {@link #signatureAlgorithm} property to override the default key algorithm,
+             * `RS256`.
              */
             public Optional<String> key = Optional.empty();
 
             /**
-             * If provided, indicates that JWT is signed using a private key in PEM or JWK format.
-             * It is mutually exclusive with {@link #secret}, {@link #key} and {@link #keyStore} properties.
-             * You can use the {@link #signatureAlgorithm} property to override the default key algorithm, `RS256`.
+             * If provided, indicates that JWT is signed using a private key in PEM or JWK format. It is mutually
+             * exclusive with {@link #secret}, {@link #key} and {@link #keyStore} properties. You can use the
+             * {@link #signatureAlgorithm} property to override the default key algorithm, `RS256`.
              */
             public Optional<String> keyFile = Optional.empty();
 
             /**
-             * If provided, indicates that JWT is signed using a private key from a keystore.
-             * It is mutually exclusive with {@link #secret}, {@link #key} and {@link #keyFile} properties.
+             * If provided, indicates that JWT is signed using a private key from a keystore. It is mutually exclusive
+             * with {@link #secret}, {@link #key} and {@link #keyFile} properties.
              */
             public Optional<String> keyStoreFile = Optional.empty();
 
@@ -429,8 +430,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             public Optional<String> keyPassword;
 
             /**
-             * The JWT audience (`aud`) claim value.
-             * By default, the audience is set to the address of the OpenId Connect Provider's token endpoint.
+             * The JWT audience (`aud`) claim value. By default, the audience is set to the address of the OpenId
+             * Connect Provider's token endpoint.
              */
             public Optional<String> audience = Optional.empty();
 
@@ -455,9 +456,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             public Map<String, String> claims = new HashMap<>();
 
             /**
-             * The signature algorithm used for the {@link #keyFile} property.
-             * Supported values: `RS256` (default), `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`,
-             * `HS256`, `HS384`, `HS512`.
+             * The signature algorithm used for the {@link #keyFile} property. Supported values: `RS256` (default),
+             * `RS384`, `RS512`, `PS256`, `PS384`, `PS512`, `ES256`, `ES384`, `ES512`, `HS256`, `HS384`, `HS512`.
              */
             public Optional<String> signatureAlgorithm = Optional.empty();
 
@@ -469,9 +469,8 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
 
             /**
              * If true then the client authentication token is a JWT bearer grant assertion. Instead of producing
-             * 'client_assertion'
-             * and 'client_assertion_type' form properties, only 'assertion' is produced.
-             * This option is only supported by the OIDC client extension.
+             * 'client_assertion' and 'client_assertion_type' form properties, only 'assertion' is produced. This option
+             * is only supported by the OIDC client extension.
              */
             public boolean assertion = false;
 
@@ -599,11 +598,10 @@ public abstract class OidcClientCommonConfig extends OidcCommonConfig
             public Optional<String> name = Optional.empty();
 
             /**
-             * The CredentialsProvider keyring name.
-             * The keyring name is only required when the CredentialsProvider being
-             * used requires the keyring name to look up the secret, which is often the case when a CredentialsProvider is
-             * shared by multiple extensions to retrieve credentials from a more dynamic source like a vault instance or secret
-             * manager
+             * The CredentialsProvider keyring name. The keyring name is only required when the CredentialsProvider
+             * being used requires the keyring name to look up the secret, which is often the case when a
+             * CredentialsProvider is shared by multiple extensions to retrieve credentials from a more dynamic source
+             * like a vault instance or secret manager
              */
             public Optional<String> keyringName = Optional.empty();
 

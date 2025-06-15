@@ -15,10 +15,8 @@ public class OraclePoolProducerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-default-datasource.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingBareOracleClient.class)
-                    .addClasses(BeanUsingMutinyOracleClient.class));
+            .withConfigurationResource("application-default-datasource.properties").withApplicationRoot((jar) -> jar
+                    .addClasses(BeanUsingBareOracleClient.class).addClasses(BeanUsingMutinyOracleClient.class));
 
     @Inject
     BeanUsingBareOracleClient beanUsingBare;
@@ -28,10 +26,7 @@ public class OraclePoolProducerTest {
 
     @Test
     public void testVertxInjection() {
-        beanUsingBare.verify()
-                .thenCompose(v -> beanUsingMutiny.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingBare.verify().thenCompose(v -> beanUsingMutiny.verify()).toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -52,8 +47,7 @@ public class OraclePoolProducerTest {
         io.vertx.mutiny.sqlclient.Pool oracleClient;
 
         public CompletionStage<Void> verify() {
-            return oracleClient.query("SELECT 1 FROM DUAL").execute()
-                    .onItem().ignore().andContinueWithNull()
+            return oracleClient.query("SELECT 1 FROM DUAL").execute().onItem().ignore().andContinueWithNull()
                     .subscribeAsCompletionStage();
         }
     }

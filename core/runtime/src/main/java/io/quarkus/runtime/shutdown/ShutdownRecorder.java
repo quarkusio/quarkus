@@ -28,7 +28,8 @@ public class ShutdownRecorder {
     }
 
     public static void runShutdown() {
-        if (shutdownListeners == null) { // when QUARKUS_INIT_AND_EXIT is used, ShutdownRecorder#setListeners has not been called
+        if (shutdownListeners == null) { // when QUARKUS_INIT_AND_EXIT is used, ShutdownRecorder#setListeners has not
+                                         // been called
             return;
         }
         log.debug("Attempting to gracefully shutdown.");

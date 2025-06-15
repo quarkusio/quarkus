@@ -6,8 +6,8 @@ import jakarta.ws.rs.FormParam;
 import io.vertx.core.json.JsonObject;
 
 /**
- * JAX-RS structure suitable for use as a {@link BeanParam} for a POST response
- * containing all the required fields for a form-based registration.
+ * JAX-RS structure suitable for use as a {@link BeanParam} for a POST response containing all the required fields for a
+ * form-based registration.
  *
  * @see WebAuthnController#callback(io.vertx.ext.web.RoutingContext) for a JSON-based registration
  */

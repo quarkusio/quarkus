@@ -10,8 +10,8 @@ import io.quarkus.scheduler.runtime.SchedulerConfig;
 import io.smallrye.common.annotation.Identifier;
 
 /**
- * This build item holds all discovered {@link io.quarkus.scheduler.Scheduler} implementations sorted by priority. Higher
- * priority goes first.
+ * This build item holds all discovered {@link io.quarkus.scheduler.Scheduler} implementations sorted by priority.
+ * Higher priority goes first.
  */
 public final class DiscoveredImplementationsBuildItem extends SimpleBuildItem {
 
@@ -21,14 +21,14 @@ public final class DiscoveredImplementationsBuildItem extends SimpleBuildItem {
 
     private final boolean useCompositeScheduler;
 
-    DiscoveredImplementationsBuildItem(String autoImplementation, Set<String> implementations, boolean useCompositeScheduler) {
+    DiscoveredImplementationsBuildItem(String autoImplementation, Set<String> implementations,
+            boolean useCompositeScheduler) {
         this.autoImplementation = Objects.requireNonNull(autoImplementation);
         this.implementations = Objects.requireNonNull(implementations);
         this.useCompositeScheduler = useCompositeScheduler;
     }
 
     /**
-     *
      * @return the implementation with highest priority
      */
     public String getAutoImplementation() {
@@ -50,6 +50,7 @@ public final class DiscoveredImplementationsBuildItem extends SimpleBuildItem {
      * </ul>
      *
      * @return {@code true} if a composite scheduler is used
+     *
      * @see CompositeScheduler
      */
     public boolean isCompositeSchedulerUsed() {

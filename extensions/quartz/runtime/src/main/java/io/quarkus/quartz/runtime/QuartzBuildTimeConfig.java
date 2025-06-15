@@ -33,12 +33,12 @@ public interface QuartzBuildTimeConfig {
     /**
      * The type of store to use.
      * <p>
-     * When using {@link StoreType#JDBC_CMT} or {@link StoreType#JDBC_TX} configuration values make sure that you have the
-     * datasource configured. See <a href="https://quarkus.io/guides/datasource"> Configuring your datasource</a> for more
-     * information.
+     * When using {@link StoreType#JDBC_CMT} or {@link StoreType#JDBC_TX} configuration values make sure that you have
+     * the datasource configured. See <a href="https://quarkus.io/guides/datasource"> Configuring your datasource</a>
+     * for more information.
      * <p>
-     * To create Quartz tables, you can perform a schema migration via the <a href="https://quarkus.io/guides/flyway"> Flyway
-     * extension</a> using a SQL script matching your database picked from <a href=
+     * To create Quartz tables, you can perform a schema migration via the <a href="https://quarkus.io/guides/flyway">
+     * Flyway extension</a> using a SQL script matching your database picked from <a href=
      * "https://github.com/quartz-scheduler/quartz/blob/master/quartz-core/src/main/resources/org/quartz/impl/jdbcjobstore">Quartz
      * repository</a>.
      */
@@ -48,8 +48,9 @@ public interface QuartzBuildTimeConfig {
     /**
      * The class name of the thread pool implementation to use.
      * <p>
-     * It's important to bear in mind that Quartz threads are not used to execute scheduled methods, instead the regular Quarkus
-     * thread pool is used by default. See also {@code quarkus.quartz.run-blocking-scheduled-method-on-quartz-thread}.
+     * It's important to bear in mind that Quartz threads are not used to execute scheduled methods, instead the regular
+     * Quarkus thread pool is used by default. See also
+     * {@code quarkus.quartz.run-blocking-scheduled-method-on-quartz-thread}.
      */
     @WithDefault("org.quartz.simpl.SimpleThreadPool")
     String threadPoolClass();
@@ -59,8 +60,8 @@ public interface QuartzBuildTimeConfig {
      * <p>
      * Ignored if using a `ram` store i.e {@link StoreType#RAM}.
      * <p>
-     * Optionally needed when using the `jdbc-tx` or `jdbc-cmt` store types.
-     * If not specified, defaults to using the default datasource.
+     * Optionally needed when using the `jdbc-tx` or `jdbc-cmt` store types. If not specified, defaults to using the
+     * default datasource.
      */
     @WithName("datasource")
     Optional<String> dataSourceName();
@@ -103,16 +104,14 @@ public interface QuartzBuildTimeConfig {
      * Ignored if using a `ram` store i.e {@link StoreType#RAM}.
      * <p>
      * If this is set to `true`, the JDBCJobStore will store the JobDataMaps in their serialize form in the BLOB Column.
-     * This is useful when you want to store complex JobData objects other than String.
-     * This is equivalent of setting `org.quartz.jobStore.useProperties` to `false`.
-     * <b>NOTE: When this option is set to `true`, all the non-String classes used in JobDataMaps have to be registered
-     * for serialization when building a native image</b>
+     * This is useful when you want to store complex JobData objects other than String. This is equivalent of setting
+     * `org.quartz.jobStore.useProperties` to `false`. <b>NOTE: When this option is set to `true`, all the non-String
+     * classes used in JobDataMaps have to be registered for serialization when building a native image</b>
      * <p>
-     * If this is set to `false` (the default), the values can be stored as name-value pairs rather than storing more complex
-     * objects in their serialized form in the BLOB column.
-     * This can be handy, as you avoid the class versioning issues that can arise from serializing your non-String classes into
-     * a BLOB.
-     * This is equivalent of setting `org.quartz.jobStore.useProperties` to `true`.
+     * If this is set to `false` (the default), the values can be stored as name-value pairs rather than storing more
+     * complex objects in their serialized form in the BLOB column. This can be handy, as you avoid the class versioning
+     * issues that can arise from serializing your non-String classes into a BLOB. This is equivalent of setting
+     * `org.quartz.jobStore.useProperties` to `true`.
      */
     @WithDefault("false")
     boolean serializeJobData();

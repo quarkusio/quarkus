@@ -60,8 +60,7 @@ public class ClientResponseContextImpl implements ClientResponseContext {
 
     @Override
     public void setStatusInfo(StatusType statusInfo) {
-        state.setResponseStatus(statusInfo.getStatusCode())
-                .setResponseReasonPhrase(statusInfo.getReasonPhrase());
+        state.setResponseStatus(statusInfo.getStatusCode()).setResponseReasonPhrase(statusInfo.getReasonPhrase());
     }
 
     @Override

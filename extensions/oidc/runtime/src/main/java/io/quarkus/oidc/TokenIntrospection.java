@@ -10,7 +10,6 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 
 /**
  * Represents a token introspection result
- *
  */
 public class TokenIntrospection extends AbstractJsonObject {
 

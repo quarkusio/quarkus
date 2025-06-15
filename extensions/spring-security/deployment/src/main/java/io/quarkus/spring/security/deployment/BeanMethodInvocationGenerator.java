@@ -62,9 +62,9 @@ class BeanMethodInvocationGenerator {
     }
 
     /**
-     * Returns the name of the generated class that implements the security check
-     * The generated class is an implementation of {@link AbstractBeanMethodSecurityCheck}
-     * that simply calls the proper bean method with the correct arguments
+     * Returns the name of the generated class that implements the security check The generated class is an
+     * implementation of {@link AbstractBeanMethodSecurityCheck} that simply calls the proper bean method with the
+     * correct arguments
      */
     final String generateSecurityCheck(String expression, MethodInfo securedMethodInfo) {
         String paramTypesDescriptor = getParamTypesDescriptor(securedMethodInfo);
@@ -77,14 +77,13 @@ class BeanMethodInvocationGenerator {
             ;
         }
         /*
-         * We need to make sure the cache key contains the both the expression and the parameter types of the method
-         * on which the SecurityCheck will apply
-         * This is because the generated security check takes into account the parameter types in order to create the
-         * proper calls to the bean method.
-         * If however the expressions indicated that no parameters are passed to the bean method, we can just use the
-         * expression as the cache key
+         * We need to make sure the cache key contains the both the expression and the parameter types of the method on
+         * which the SecurityCheck will apply This is because the generated security check takes into account the
+         * parameter types in order to create the proper calls to the bean method. If however the expressions indicated
+         * that no parameters are passed to the bean method, we can just use the expression as the cache key
          */
-        String cacheKey = beanMethodArgumentExpressions.length > 0 ? expression + "-" + paramTypesDescriptor : expression;
+        String cacheKey = beanMethodArgumentExpressions.length > 0 ? expression + "-" + paramTypesDescriptor
+                : expression;
 
         String cachedGeneratedClassName = alreadyGeneratedClasses.get(cacheKey);
         if (cachedGeneratedClassName != null) {
@@ -97,23 +96,21 @@ class BeanMethodInvocationGenerator {
         }
 
         String beanName = matcher.group(1);
-        ClassInfo beanClassInfo = getClassInfoFromBeanName(beanName, index,
-                springBeansNameToDotName, springBeansNameToClassInfo, expression, securedMethodInfo);
+        ClassInfo beanClassInfo = getClassInfoFromBeanName(beanName, index, springBeansNameToDotName,
+                springBeansNameToClassInfo, expression, securedMethodInfo);
 
         String beanMethodName = matcher.group(2);
-        MethodInfo matchingBeanMethod = determineMatchingBeanMethod(beanMethodName, beanMethodArgumentExpressions.length,
-                beanClassInfo, securedMethodInfo, expression, beanName);
+        MethodInfo matchingBeanMethod = determineMatchingBeanMethod(beanMethodName,
+                beanMethodArgumentExpressions.length, beanClassInfo, securedMethodInfo, expression, beanName);
 
-        String generatedClassName = "io.quarkus.spring.security.check." + beanClassInfo.name().withoutPackagePrefix() + "_"
-                + HashUtil.sha1(cacheKey) + "_CheckFor_" + beanMethodName;
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedClassName)
-                .superClass(AbstractBeanMethodSecurityCheck.class)
-                .build()) {
+        String generatedClassName = "io.quarkus.spring.security.check." + beanClassInfo.name().withoutPackagePrefix()
+                + "_" + HashUtil.sha1(cacheKey) + "_CheckFor_" + beanMethodName;
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
+                .superClass(AbstractBeanMethodSecurityCheck.class).build()) {
 
             /*
-             * The generated classes will have a static getInstance method that will allow the creation of a single instance
-             * This is done to avoid creating multiple objects for the same expression
+             * The generated classes will have a static getInstance method that will allow the creation of a single
+             * instance This is done to avoid creating multiple objects for the same expression
              */
 
             FieldDescriptor instanceField = of(generatedClassName, "INSTANCE", generatedClassName);
@@ -131,31 +128,34 @@ class BeanMethodInvocationGenerator {
             }
 
             boolean checkRequiresMethodArguments = false;
-            try (MethodCreator check = cc.getMethodCreator("check", boolean.class, SecurityIdentity.class, Object[].class)
+            try (MethodCreator check = cc
+                    .getMethodCreator("check", boolean.class, SecurityIdentity.class, Object[].class)
                     .setModifiers(Modifier.PROTECTED)) {
                 ResultHandle arcContainer = check
                         .invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
                 ResultHandle instanceHandle = check.invokeInterfaceMethod(
-                        ofMethod(ArcContainer.class, "instance", InstanceHandle.class, String.class),
-                        arcContainer, check.load(beanName));
-                ResultHandle bean = check
-                        .invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+                        ofMethod(ArcContainer.class, "instance", InstanceHandle.class, String.class), arcContainer,
+                        check.load(beanName));
+                ResultHandle bean = check.invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class),
+                        instanceHandle);
                 ResultHandle castedBean = check.checkCast(bean, beanClassInfo.name().toString());
                 ResultHandle[] argHandles = new ResultHandle[beanMethodArgumentExpressions.length];
 
                 for (int i = 0; i < beanMethodArgumentExpressions.length; i++) {
                     String argumentExpression = beanMethodArgumentExpressions[i];
                     String trimmedArgumentExpression = argumentExpression.trim();
-                    if (argumentExpression.startsWith("'") && argumentExpression.endsWith("'")) { // hard coded string case
+                    if (argumentExpression.startsWith("'") && argumentExpression.endsWith("'")) { // hard coded string
+                                                                                                  // case
                         if (!DotNames.STRING.equals(matchingBeanMethod.parameterType(i).name())) {
-                            throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
-                                    + "' found in expression '" + trimmedArgumentExpression
-                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
-                                    + securedMethodInfo.declaringClass() + " is not of type String");
+                            throw new IllegalArgumentException("Parameter with index " + i + " of method '"
+                                    + beanMethodName + "' found in expression '" + trimmedArgumentExpression
+                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name()
+                                    + " of class " + securedMethodInfo.declaringClass() + " is not of type String");
                         }
 
                         argHandles[i] = check.load(argumentExpression.replace("'", ""));
-                    } else if (trimmedArgumentExpression.matches(METHOD_PARAMETER_REGEX)) { // secured method's parameter case
+                    } else if (trimmedArgumentExpression.matches(METHOD_PARAMETER_REGEX)) { // secured method's
+                                                                                            // parameter case
                         checkRequiresMethodArguments = true;
                         Matcher parameterMatcher = METHOD_PARAMETER_PATTERN.matcher(trimmedArgumentExpression);
                         if (!parameterMatcher.find()) { // should never happen
@@ -163,32 +163,35 @@ class BeanMethodInvocationGenerator {
                         }
 
                         // this is the index of the parameter we care about
-                        int parameterIndex = getParameterIndex(securedMethodInfo, parameterMatcher.group(1), expression);
+                        int parameterIndex = getParameterIndex(securedMethodInfo, parameterMatcher.group(1),
+                                expression);
 
                         DotName expectedType = securedMethodInfo.parameterType(parameterIndex).name();
                         if (!matchingBeanMethod.parameterType(i).name().equals(expectedType)) {
-                            throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
-                                    + "' found in expression '" + trimmedArgumentExpression
-                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
-                                    + securedMethodInfo.declaringClass() + " is not of type " + expectedType);
+                            throw new IllegalArgumentException("Parameter with index " + i + " of method '"
+                                    + beanMethodName + "' found in expression '" + trimmedArgumentExpression
+                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name()
+                                    + " of class " + securedMethodInfo.declaringClass() + " is not of type "
+                                    + expectedType);
                         }
 
                         /*
-                         * the check method from AbstractBeanMethodSecurityCheck contains all parameters in an object array
-                         * so we need to use that to read the value at runtime
+                         * the check method from AbstractBeanMethodSecurityCheck contains all parameters in an object
+                         * array so we need to use that to read the value at runtime
                          */
                         ResultHandle methodArgsArrays = check.getMethodParam(1);
                         argHandles[i] = check.readArrayValue(methodArgsArrays, parameterIndex);
-                    } else if (trimmedArgumentExpression.matches("(authentication.)?principal.username")) { // username use case
+                    } else if (trimmedArgumentExpression.matches("(authentication.)?principal.username")) { // username
+                                                                                                            // use case
                         ResultHandle securityIdentity = check.getMethodParam(0);
                         ResultHandle principal = check.invokeInterfaceMethod(
                                 ofMethod(SecurityIdentity.class, "getPrincipal", Principal.class), securityIdentity);
 
                         if (!DotNames.STRING.equals(matchingBeanMethod.parameterType(i).name())) {
-                            throw new IllegalArgumentException("Parameter with index " + i + " of method '" + beanMethodName
-                                    + "' found in expression '" + trimmedArgumentExpression
-                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name() + " of class "
-                                    + securedMethodInfo.declaringClass() + " is not of type String");
+                            throw new IllegalArgumentException("Parameter with index " + i + " of method '"
+                                    + beanMethodName + "' found in expression '" + trimmedArgumentExpression
+                                    + "' in the @PreAuthorize annotation on method " + securedMethodInfo.name()
+                                    + " of class " + securedMethodInfo.declaringClass() + " is not of type String");
                         }
 
                         ResultHandle username = check
@@ -201,7 +204,8 @@ class BeanMethodInvocationGenerator {
 
                 ResultHandle result;
                 if (Modifier.isInterface(matchingBeanMethod.declaringClass().flags())) {
-                    result = check.invokeInterfaceMethod(MethodDescriptor.of(matchingBeanMethod), castedBean, argHandles);
+                    result = check.invokeInterfaceMethod(MethodDescriptor.of(matchingBeanMethod), castedBean,
+                            argHandles);
                 } else {
                     result = check.invokeVirtualMethod(MethodDescriptor.of(matchingBeanMethod), castedBean, argHandles);
                 }
@@ -235,27 +239,24 @@ class BeanMethodInvocationGenerator {
             MethodInfo securedMethodInfo, String expression, String beanName) {
         MethodInfo matchingBeanClassMethod = null;
         for (MethodInfo candidateMethod : beanClassInfo.methods()) {
-            if (candidateMethod.name().equals(methodName) &&
-                    Modifier.isPublic(candidateMethod.flags()) &&
-                    DotNames.PRIMITIVE_BOOLEAN.equals(candidateMethod.returnType().name()) &&
-                    candidateMethod.parametersCount() == methodParametersSize) {
+            if (candidateMethod.name().equals(methodName) && Modifier.isPublic(candidateMethod.flags())
+                    && DotNames.PRIMITIVE_BOOLEAN.equals(candidateMethod.returnType().name())
+                    && candidateMethod.parametersCount() == methodParametersSize) {
                 if (matchingBeanClassMethod == null) {
                     matchingBeanClassMethod = candidateMethod;
                 } else {
-                    throw new IllegalArgumentException(
-                            "Could not match a unique method name '" + methodName + "' for bean named " + beanName
-                                    + " with class " + beanClassInfo.name() + " Offending expression is " +
-                                    expression + " of @PreAuthorize on method '" + methodName + "' of class "
-                                    + securedMethodInfo.declaringClass());
+                    throw new IllegalArgumentException("Could not match a unique method name '" + methodName
+                            + "' for bean named " + beanName + " with class " + beanClassInfo.name()
+                            + " Offending expression is " + expression + " of @PreAuthorize on method '" + methodName
+                            + "' of class " + securedMethodInfo.declaringClass());
                 }
             }
         }
         if (matchingBeanClassMethod == null) {
-            throw new IllegalArgumentException(
-                    "Could not find a public, boolean returning method named '" + methodName + "' for bean named " + beanName
-                            + " with class " + beanClassInfo.name() + " Offending expression is " +
-                            expression + " of @PreAuthorize on method '" + methodName + "' of class "
-                            + securedMethodInfo.declaringClass());
+            throw new IllegalArgumentException("Could not find a public, boolean returning method named '" + methodName
+                    + "' for bean named " + beanName + " with class " + beanClassInfo.name()
+                    + " Offending expression is " + expression + " of @PreAuthorize on method '" + methodName
+                    + "' of class " + securedMethodInfo.declaringClass());
         }
         return matchingBeanClassMethod;
     }

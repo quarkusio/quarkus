@@ -16,13 +16,13 @@ final class ConfigUtilJandex {
     }
 
     static String oldKey(Class<? extends Annotation> annotation, String member, MethodInfo declaringMethod) {
-        return declaringMethod.declaringClass().name() + "/" + declaringMethod.name()
-                + "/" + annotation.getSimpleName() + "/" + member;
+        return declaringMethod.declaringClass().name() + "/" + declaringMethod.name() + "/" + annotation.getSimpleName()
+                + "/" + member;
     }
 
     static String newKey(Class<? extends Annotation> annotation, String member, ClassInfo declaringClass) {
-        return ConfigConstants.PREFIX + "\"" + declaringClass.name() + "\"."
-                + newAnnotationName(annotation) + "." + newMemberName(member);
+        return ConfigConstants.PREFIX + "\"" + declaringClass.name() + "\"." + newAnnotationName(annotation) + "."
+                + newMemberName(member);
     }
 
     static String oldKey(Class<? extends Annotation> annotation, String member, ClassInfo declaringClass) {
@@ -30,8 +30,8 @@ final class ConfigUtilJandex {
     }
 
     static String newKey(Class<? extends Annotation> annotation, String member) {
-        return ConfigConstants.PREFIX + ConfigConstants.GLOBAL + "."
-                + newAnnotationName(annotation) + "." + newMemberName(member);
+        return ConfigConstants.PREFIX + ConfigConstants.GLOBAL + "." + newAnnotationName(annotation) + "."
+                + newMemberName(member);
     }
 
     static String oldKey(Class<? extends Annotation> annotation, String member) {

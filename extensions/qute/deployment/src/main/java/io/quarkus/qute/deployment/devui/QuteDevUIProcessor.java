@@ -33,15 +33,11 @@ import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 public class QuteDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public void pages(
-            EffectiveTemplatePathsBuildItem effectiveTemplatePaths,
-            List<CheckedTemplateBuildItem> checkedTemplates,
-            TemplateVariantsBuildItem variants,
+    public void pages(EffectiveTemplatePathsBuildItem effectiveTemplatePaths,
+            List<CheckedTemplateBuildItem> checkedTemplates, TemplateVariantsBuildItem variants,
             TemplatesAnalysisBuildItem templatesAnalysis,
-            List<TemplateExtensionMethodBuildItem> templateExtensionMethods,
-            List<TemplateDataBuildItem> templateDatas,
-            List<ImplicitValueResolverBuildItem> implicitTemplateDatas,
-            List<TemplateGlobalBuildItem> templateGlobals,
+            List<TemplateExtensionMethodBuildItem> templateExtensionMethods, List<TemplateDataBuildItem> templateDatas,
+            List<ImplicitValueResolverBuildItem> implicitTemplateDatas, List<TemplateGlobalBuildItem> templateGlobals,
             BuildProducer<CardPageBuildItem> cardPages) {
 
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
@@ -74,8 +70,8 @@ public class QuteDevUIProcessor {
                 sortedTemplateData.add(new TemplateDataBuildItem(itd.getTemplateData(), itd.getClazz()));
             }
         }
-        sortedTemplateData = sortedTemplateData.stream()
-                .sorted(Comparator.comparing(td -> td.getTargetClass().name())).collect(Collectors.toList());
+        sortedTemplateData = sortedTemplateData.stream().sorted(Comparator.comparing(td -> td.getTargetClass().name()))
+                .collect(Collectors.toList());
         if (!sortedTemplateData.isEmpty()) {
             pageBuildItem.addBuildTimeData("templateData", createTemplateDataJson(sortedTemplateData));
         }
@@ -86,31 +82,22 @@ public class QuteDevUIProcessor {
             pageBuildItem.addBuildTimeData("templateGlobals", createTemplateGlobalsJson(sortedTemplateGlobals));
         }
 
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("Templates")
-                .icon("font-awesome-solid:file-code")
-                .componentLink("qwc-qute-templates.js")
-                .staticLabel(String.valueOf(sortedTemplatePaths.size())));
+        pageBuildItem.addPage(Page.webComponentPageBuilder().title("Templates").icon("font-awesome-solid:file-code")
+                .componentLink("qwc-qute-templates.js").staticLabel(String.valueOf(sortedTemplatePaths.size())));
 
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("Extension Methods")
-                .icon("font-awesome-solid:puzzle-piece")
-                .componentLink("qwc-qute-extension-methods.js")
+        pageBuildItem.addPage(Page.webComponentPageBuilder().title("Extension Methods")
+                .icon("font-awesome-solid:puzzle-piece").componentLink("qwc-qute-extension-methods.js")
                 .staticLabel(String.valueOf(sortedExtensionMethods.size())));
 
         if (!sortedTemplateData.isEmpty()) {
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .title("Template Data")
-                    .icon("font-awesome-solid:database")
-                    .componentLink("qwc-qute-template-data.js")
+            pageBuildItem.addPage(Page.webComponentPageBuilder().title("Template Data")
+                    .icon("font-awesome-solid:database").componentLink("qwc-qute-template-data.js")
                     .staticLabel(String.valueOf(sortedTemplateData.size())));
         }
 
         if (!sortedTemplateGlobals.isEmpty()) {
-            pageBuildItem.addPage(Page.webComponentPageBuilder()
-                    .title("Global Variables")
-                    .icon("font-awesome-solid:globe")
-                    .componentLink("qwc-qute-template-globals.js")
+            pageBuildItem.addPage(Page.webComponentPageBuilder().title("Global Variables")
+                    .icon("font-awesome-solid:globe").componentLink("qwc-qute-template-globals.js")
                     .staticLabel(String.valueOf(sortedTemplateGlobals.size())));
         }
 
@@ -122,8 +109,8 @@ public class QuteDevUIProcessor {
         for (TemplateGlobalBuildItem global : sortedTemplateGlobals) {
             Map<String, String> map = new HashMap<>();
             map.put("name", global.getName());
-            map.put("target", global.getDeclaringClass() + "#"
-                    + (global.isField() ? global.getTarget().asField().name() : global.getTarget().asMethod().name() + "()"));
+            map.put("target", global.getDeclaringClass() + "#" + (global.isField() ? global.getTarget().asField().name()
+                    : global.getTarget().asMethod().name() + "()"));
             globals.add(map);
         }
         return globals;
@@ -180,11 +167,10 @@ public class QuteDevUIProcessor {
             Map<String, Object> template = new HashMap<>();
             template.put("path", templatePath.getPath());
 
-            CheckedTemplateBuildItem checkedTemplate = findCheckedTemplate(getBasePath(templatePath.getPath(), variants),
-                    checkedTemplates);
+            CheckedTemplateBuildItem checkedTemplate = findCheckedTemplate(
+                    getBasePath(templatePath.getPath(), variants), checkedTemplates);
             if (checkedTemplate != null) {
-                template.put("checkedTemplate",
-                        checkedTemplate.getDescription());
+                template.put("checkedTemplate", checkedTemplate.getDescription());
             }
 
             TemplateAnalysis analysis = templatesAnalysis.getAnalysis().stream()
@@ -219,7 +205,8 @@ public class QuteDevUIProcessor {
         return null;
     }
 
-    private CheckedTemplateBuildItem findCheckedTemplate(String basePath, List<CheckedTemplateBuildItem> checkedTemplates) {
+    private CheckedTemplateBuildItem findCheckedTemplate(String basePath,
+            List<CheckedTemplateBuildItem> checkedTemplates) {
         if (basePath != null) {
             for (CheckedTemplateBuildItem checkedTemplate : checkedTemplates) {
                 if (checkedTemplate.isFragment()) {

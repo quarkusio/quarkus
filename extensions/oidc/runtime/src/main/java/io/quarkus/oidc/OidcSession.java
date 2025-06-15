@@ -24,8 +24,8 @@ public interface OidcSession {
     Instant expiresAt();
 
     /**
-     * Return a {@linkplain Duration} indicating how long the current session will remain valid for
-     * starting from this method's invocation time.
+     * Return a {@linkplain Duration} indicating how long the current session will remain valid for starting from this
+     * method's invocation time.
      *
      * @return Duration
      */

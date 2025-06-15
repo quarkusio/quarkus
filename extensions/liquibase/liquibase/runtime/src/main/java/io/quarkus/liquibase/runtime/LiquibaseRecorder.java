@@ -35,32 +35,32 @@ public class LiquibaseRecorder {
                 var dataSourceBean = AgroalDataSourceUtil.dataSourceInstance(dataSourceName).getHandle().getBean();
                 var dataSourceActive = dataSourceBean.checkActive();
                 if (!dataSourceActive.value()) {
-                    return ActiveResult.inactive(
-                            String.format(Locale.ROOT,
-                                    "Liquibase for datasource '%s' was deactivated automatically because this datasource was deactivated.",
-                                    dataSourceName),
-                            dataSourceActive);
+                    return ActiveResult.inactive(String.format(Locale.ROOT,
+                            "Liquibase for datasource '%s' was deactivated automatically because this datasource was deactivated.",
+                            dataSourceName), dataSourceActive);
                 }
 
                 // Note: When quarkus.liquibase.enabled is set to false, Liquibase beans are still available.
-                //       The property only controls automatic execution on startup.
+                // The property only controls automatic execution on startup.
                 // TODO should we change quarkus.liquibase.enabled (see ^) to align on other extensions?
-                //   See https://github.com/quarkusio/quarkus/issues/42244.
-                //   We'd have something like quarkus.liquibase.startup.enabled controlling startup behavior,
-                //   and *if necessary* quarkus.liquibase.active controlling bean availability
-                //   (though IMO controlling that at the datasource level would be enough).
+                // See https://github.com/quarkusio/quarkus/issues/42244.
+                // We'd have something like quarkus.liquibase.startup.enabled controlling startup behavior,
+                // and *if necessary* quarkus.liquibase.active controlling bean availability
+                // (though IMO controlling that at the datasource level would be enough).
                 return ActiveResult.active();
             }
         };
     }
 
-    public Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory> liquibaseFunction(String dataSourceName) {
+    public Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory> liquibaseFunction(
+            String dataSourceName) {
         return new Function<SyntheticCreationalContext<LiquibaseFactory>, LiquibaseFactory>() {
             @Override
             public LiquibaseFactory apply(SyntheticCreationalContext<LiquibaseFactory> context) {
                 DataSource dataSource = context.getInjectedReference(DataSource.class,
                         AgroalDataSourceUtil.qualifier(dataSourceName));
-                LiquibaseFactoryProducer liquibaseProducer = context.getInjectedReference(LiquibaseFactoryProducer.class);
+                LiquibaseFactoryProducer liquibaseProducer = context
+                        .getInjectedReference(LiquibaseFactoryProducer.class);
                 return liquibaseProducer.createLiquibaseFactory(dataSource, dataSourceName);
             }
         };
@@ -78,8 +78,7 @@ public class LiquibaseRecorder {
 
         InjectableInstance<LiquibaseFactory> liquibaseFactoryInstance = Arc.container().select(LiquibaseFactory.class,
                 LiquibaseFactoryUtil.getLiquibaseFactoryQualifier(dataSourceName));
-        if (!liquibaseFactoryInstance.isResolvable()
-                || !liquibaseFactoryInstance.getHandle().getBean().isActive()) {
+        if (!liquibaseFactoryInstance.isResolvable() || !liquibaseFactoryInstance.getHandle().getBean().isActive()) {
             return;
         }
 
@@ -89,8 +88,7 @@ public class LiquibaseRecorder {
                 liquibase.dropAll();
             }
             if (dataSourceConfig.migrateAtStart()) {
-                var lockService = LockServiceFactory.getInstance()
-                        .getLockService(liquibase.getDatabase());
+                var lockService = LockServiceFactory.getInstance().getLockService(liquibase.getDatabase());
                 lockService.waitForLock();
                 try {
                     if (dataSourceConfig.validateOnMigrate()) {

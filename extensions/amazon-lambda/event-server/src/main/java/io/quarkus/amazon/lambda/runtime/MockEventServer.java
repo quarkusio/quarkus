@@ -71,7 +71,8 @@ public class MockEventServer implements Closeable {
     }
 
     public void start(int port) {
-        vertx = Vertx.vertx(new VertxOptions().setMaxWorkerExecuteTime(60).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES));
+        vertx = Vertx
+                .vertx(new VertxOptions().setMaxWorkerExecuteTime(60).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES));
         HttpServerOptions options = new HttpServerOptions();
         options.setPort(port == 0 ? -1 : port);
         Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
@@ -239,13 +240,9 @@ public class MockEventServer implements Closeable {
             if (ctx.request().getHeader("Content-Type") != null) {
                 pending.response().putHeader("Content-Type", ctx.request().getHeader("Content-Type"));
             }
-            pending.response()
-                    .setStatusCode(200)
-                    .end(buffer);
+            pending.response().setStatusCode(200).end(buffer);
         } else {
-            pending.response()
-                    .setStatusCode(204)
-                    .end();
+            pending.response().setStatusCode(204).end();
         }
     }
 
@@ -269,13 +266,9 @@ public class MockEventServer implements Closeable {
             if (ctx.request().getHeader("Content-Type") != null) {
                 pending.response().putHeader("Content-Type", ctx.request().getHeader("Content-Type"));
             }
-            pending.response()
-                    .setStatusCode(500)
-                    .end(buffer);
+            pending.response().setStatusCode(500).end(buffer);
         } else {
-            pending.response()
-                    .setStatusCode(500)
-                    .end();
+            pending.response().setStatusCode(500).end();
         }
     }
 

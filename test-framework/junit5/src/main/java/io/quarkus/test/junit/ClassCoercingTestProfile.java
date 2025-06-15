@@ -60,7 +60,8 @@ public class ClassCoercingTestProfile implements QuarkusTestProfile {
 
     @Override
     public List<TestResourceEntry> testResources() {
-        // TODO this is not safe, because testResources will be in the wrong class, so we would need to wrap them as well
+        // TODO this is not safe, because testResources will be in the wrong class, so we would need to wrap them as
+        // well
         if (profile != null) {
             return profile.testResources();
         } else {

@@ -17,20 +17,12 @@ import io.restassured.http.ContentType;
 public class ConsumesXMLTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Bar.class, FooResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Bar.class, FooResource.class));
 
     @Test
     public void testConsumesXML() {
-        RestAssured.given()
-                .contentType(ContentType.XML)
-                .body(new Bar("open", "bar"))
-                .when().post("/foo")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(200)
-                .contentType(MediaType.TEXT_PLAIN)
-                .body(Matchers.is("open bar"));
+        RestAssured.given().contentType(ContentType.XML).body(new Bar("open", "bar")).when().post("/foo").then().log()
+                .ifValidationFails().statusCode(200).contentType(MediaType.TEXT_PLAIN).body(Matchers.is("open bar"));
     }
 
     @Path("/foo")

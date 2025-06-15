@@ -12,37 +12,25 @@ public class WithDuplicateAttributeFilter {
     @Funq
     @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "test") })
     public String toCommaSeparated(List<Identity> identityList) {
-        return identityList
-                .stream()
-                .map(Identity::getName)
-                .collect(Collectors.joining(","));
+        return identityList.stream().map(Identity::getName).collect(Collectors.joining(","));
     }
 
     @Funq
     @CloudEventMapping(trigger = "listOfStrings", attributes = { @EventAttribute(name = "source", value = "test") })
     public String toSemicolonSeparated(List<Identity> identityList) {
-        return identityList
-                .stream()
-                .map(Identity::getName)
-                .collect(Collectors.joining(";"));
+        return identityList.stream().map(Identity::getName).collect(Collectors.joining(";"));
     }
 
     @Funq
     @CloudEventMapping(trigger = "toDashSeparated", attributes = { @EventAttribute(name = "source", value = "test") })
     public String toDashSeparated(List<Identity> identityList) {
-        return identityList
-                .stream()
-                .map(Identity::getName)
-                .collect(Collectors.joining("-"));
+        return identityList.stream().map(Identity::getName).collect(Collectors.joining("-"));
     }
 
     @Funq
     @CloudEventMapping(trigger = "toDashSeparated", attributes = { @EventAttribute(name = "source", value = "test") })
     public String toColonSeparated(List<Identity> identityList) {
-        return identityList
-                .stream()
-                .map(Identity::getName)
-                .collect(Collectors.joining(":"));
+        return identityList.stream().map(Identity::getName).collect(Collectors.joining(":"));
     }
 
 }

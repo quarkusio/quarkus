@@ -22,14 +22,16 @@ public class AlterArgs implements RedisCommandExtraArguments {
     private final Map<String, Object> labels = new HashMap<>();
 
     /**
-     * Set the maximum age for samples compared to the highest reported timestamp, in milliseconds.
-     * Samples are expired based solely on the difference between their timestamp and the timestamps passed to
-     * subsequent TS.ADD, TS.MADD, TS.INCRBY, and TS.DECRBY calls.
+     * Set the maximum age for samples compared to the highest reported timestamp, in milliseconds. Samples are expired
+     * based solely on the difference between their timestamp and the timestamps passed to subsequent TS.ADD, TS.MADD,
+     * TS.INCRBY, and TS.DECRBY calls.
      * <p>
      * When set to 0, samples never expire. When not specified, the option is set to the global RETENTION_POLICY
      * configuration of the database, which by default is 0.
      *
-     * @param retention the retention, must not be {@code null}
+     * @param retention
+     *        the retention, must not be {@code null}
+     *
      * @return the current {@code AlterArgs}
      */
     public AlterArgs setRetention(Duration retention) {
@@ -41,6 +43,7 @@ public class AlterArgs implements RedisCommandExtraArguments {
      * Set the retention duration so the samples never expire.
      *
      * @return the current {@code AlterArgs}
+     *
      * @see #setRetention(Duration)
      */
     public AlterArgs forever() {
@@ -49,13 +52,15 @@ public class AlterArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Sets the initial allocation size, in bytes, for the data part of each new chunk.
-     * Actual chunks may consume more memory. Changing chunkSize (using TS.ALTER) does not affect existing chunks.
+     * Sets the initial allocation size, in bytes, for the data part of each new chunk. Actual chunks may consume more
+     * memory. Changing chunkSize (using TS.ALTER) does not affect existing chunks.
      * <p>
-     * Must be a multiple of 8 in the range [48 .. 1048576].
-     * When not specified, it is set to 4096 bytes (a single memory page).
+     * Must be a multiple of 8 in the range [48 .. 1048576]. When not specified, it is set to 4096 bytes (a single
+     * memory page).
      *
-     * @param size the chunk size, between 48 and 1048576
+     * @param size
+     *        the chunk size, between 48 and 1048576
+     *
      * @return the current {@code AlterArgs}
      */
     public AlterArgs chunkSize(int size) {
@@ -66,9 +71,12 @@ public class AlterArgs implements RedisCommandExtraArguments {
     /**
      * Set the policy for handling insertion (TS.ADD and TS.MADD) of multiple samples with identical timestamps.
      * <p>
-     * When not specified: set to the global DUPLICATE_POLICY configuration of the database (which, by default, is BLOCK).
+     * When not specified: set to the global DUPLICATE_POLICY configuration of the database (which, by default, is
+     * BLOCK).
      *
-     * @param policy the policy, must not be {@code null}
+     * @param policy
+     *        the policy, must not be {@code null}
+     *
      * @return the current {@code AlterArgs}
      */
     public AlterArgs duplicatePolicy(DuplicatePolicy policy) {
@@ -79,11 +87,14 @@ public class AlterArgs implements RedisCommandExtraArguments {
     /**
      * Set a label-value pairs that represent metadata labels of the key and serve as a secondary index.
      * <p>
-     * The TS.MGET, TS.MRANGE, and TS.MREVRANGE commands operate on multiple time series based on their labels.
-     * The TS.QUERYINDEX command returns all time series keys matching a given filter based on their labels.
+     * The TS.MGET, TS.MRANGE, and TS.MREVRANGE commands operate on multiple time series based on their labels. The
+     * TS.QUERYINDEX command returns all time series keys matching a given filter based on their labels.
      *
-     * @param label the label, must not be {@code null}
-     * @param value the value, must not be {@code  null}
+     * @param label
+     *        the label, must not be {@code null}
+     * @param value
+     *        the value, must not be {@code  null}
+     *
      * @return the current {@code AlterArgs}
      */
     public AlterArgs label(String label, Object value) {

@@ -62,7 +62,9 @@ public final class Json {
 
     /**
      * @param ignoreEmptyBuilders
+     *
      * @return the new JSON array builder
+     *
      * @see JsonBuilder#ignoreEmptyBuilders
      */
     public static JsonArrayBuilder array(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
@@ -78,7 +80,9 @@ public final class Json {
 
     /**
      * @param ignoreEmptyBuilders
+     *
      * @return the new JSON object builder
+     *
      * @see JsonBuilder#ignoreEmptyBuilders
      */
     public static JsonObjectBuilder object(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
@@ -89,18 +93,16 @@ public final class Json {
 
         protected final boolean ignoreEmptyBuilders;
         /**
-         * Skips escaping characters in string values.
-         * This option should be enabled when transforming JSON input,
-         * whose string values are already escaped.
-         * In situations like this, the option avoids escaping characters
-         * that are already escaped.
+         * Skips escaping characters in string values. This option should be enabled when transforming JSON input, whose
+         * string values are already escaped. In situations like this, the option avoids escaping characters that are
+         * already escaped.
          */
         protected final boolean skipEscapeCharacters;
         protected JsonTransform transform;
 
         /**
-         * @param ignoreEmptyBuilders If set to true all empty builders added to this builder will be ignored during
-         *        {@link #build()}
+         * @param ignoreEmptyBuilders
+         *        If set to true all empty builders added to this builder will be ignored during {@link #build()}
          */
         JsonBuilder(boolean ignoreEmptyBuilders, boolean skipEscapeCharacters) {
             this.ignoreEmptyBuilders = ignoreEmptyBuilders;
@@ -114,6 +116,7 @@ public final class Json {
 
         /**
          * @return a string representation
+         *
          * @throws IOException
          */
         abstract String build() throws IOException;
@@ -122,12 +125,13 @@ public final class Json {
 
         /**
          * @param value
+         *
          * @return <code>true</code> if the value is null or an empty builder and {@link #ignoreEmptyBuilders} is set to
-         *         <code>true</code>, <code>false</code>
-         *         otherwise
+         *         <code>true</code>, <code>false</code> otherwise
          */
         protected boolean isIgnored(Object value) {
-            return value == null || (ignoreEmptyBuilders && value instanceof JsonBuilder && ((JsonBuilder<?>) value).isEmpty());
+            return value == null
+                    || (ignoreEmptyBuilders && value instanceof JsonBuilder && ((JsonBuilder<?>) value).isEmpty());
         }
 
         protected boolean isValuesEmpty(Collection<Object> values) {
@@ -414,7 +418,8 @@ public final class Json {
         }
     }
 
-    static void appendStringValue(Appendable appendable, String value, boolean skipEscapeCharacters) throws IOException {
+    static void appendStringValue(Appendable appendable, String value, boolean skipEscapeCharacters)
+            throws IOException {
         appendable.append(CHAR_QUOTATION_MARK);
         if (skipEscapeCharacters) {
             appendable.append(value);
@@ -428,7 +433,9 @@ public final class Json {
      * Escape quotation mark, reverse solidus and control characters (U+0000 through U+001F).
      *
      * @param value
+     *
      * @return escaped value
+     *
      * @see <a href="https://www.ietf.org/rfc/rfc4627.txt">https://www.ietf.org/rfc/rfc4627.txt</a>
      */
     static String escape(String value) {

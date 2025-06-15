@@ -20,8 +20,7 @@ public class ContextTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyResource.class));
 
     @Test
     public void testContextInjection() {

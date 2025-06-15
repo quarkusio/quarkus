@@ -75,8 +75,7 @@ public class VanillaKubernetesProcessor {
 
     @BuildStep
     public void checkVanillaKubernetes(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities,
-            KubernetesConfig config,
-            BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
+            KubernetesConfig config, BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
         DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
 
@@ -84,24 +83,24 @@ public class VanillaKubernetesProcessor {
         if (userSpecifiedDeploymentTargets.isEmpty() || userSpecifiedDeploymentTargets.contains(KUBERNETES)) {
             // when nothing was selected by the user, we enable vanilla Kubernetes by default
             deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES,
-                    deploymentResourceKind.getKind(), deploymentResourceKind.getGroup(), deploymentResourceKind.getVersion(),
-                    VANILLA_KUBERNETES_PRIORITY, true, config.deployStrategy()));
+                    deploymentResourceKind.getKind(), deploymentResourceKind.getGroup(),
+                    deploymentResourceKind.getVersion(), VANILLA_KUBERNETES_PRIORITY, true, config.deployStrategy()));
 
             String name = ResourceNameUtil.getResourceName(config, applicationInfo);
             resourceMeta.produce(new KubernetesResourceMetadataBuildItem(KUBERNETES, deploymentResourceKind.getGroup(),
                     deploymentResourceKind.getVersion(), deploymentResourceKind.getKind(), name));
 
         } else {
-            deploymentTargets
-                    .produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES, deploymentResourceKind.getKind(),
-                            deploymentResourceKind.getGroup(),
-                            deploymentResourceKind.getVersion(), VANILLA_KUBERNETES_PRIORITY, false, config.deployStrategy()));
+            deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(KUBERNETES,
+                    deploymentResourceKind.getKind(), deploymentResourceKind.getGroup(),
+                    deploymentResourceKind.getVersion(), VANILLA_KUBERNETES_PRIORITY, false, config.deployStrategy()));
         }
     }
 
     @BuildStep
     public void createAnnotations(KubernetesConfig config, BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config.annotations().forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KUBERNETES)));
+        config.annotations()
+                .forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, KUBERNETES)));
     }
 
     @BuildStep
@@ -111,7 +110,8 @@ public class VanillaKubernetesProcessor {
             labels.produce(new KubernetesLabelBuildItem(k, v, KUBERNETES));
             imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
         });
-        labels.produce(new KubernetesLabelBuildItem(KubernetesLabelBuildItem.CommonLabels.MANAGED_BY, "quarkus", KUBERNETES));
+        labels.produce(
+                new KubernetesLabelBuildItem(KubernetesLabelBuildItem.CommonLabels.MANAGED_BY, "quarkus", KUBERNETES));
     }
 
     @BuildStep
@@ -120,7 +120,8 @@ public class VanillaKubernetesProcessor {
     }
 
     @BuildStep
-    public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config, List<KubernetesPortBuildItem> ports) {
+    public List<ConfiguratorBuildItem> createConfigurators(KubernetesConfig config,
+            List<KubernetesPortBuildItem> ports) {
         List<ConfiguratorBuildItem> result = new ArrayList<>();
         KubernetesCommonHelper.combinePorts(ports, config).values()
                 .forEach(value -> result.add(new ConfiguratorBuildItem(new AddPortToKubernetesConfig(value))));
@@ -137,38 +138,33 @@ public class VanillaKubernetesProcessor {
     }
 
     @BuildStep
-    public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config, List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
+    public KubernetesEffectiveServiceAccountBuildItem computeEffectiveServiceAccounts(
+            ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+            List<KubernetesServiceAccountBuildItem> serviceAccountsFromExtensions,
             BuildProducer<DecoratorBuildItem> decorators) {
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, KUBERNETES,
-                config, serviceAccountsFromExtensions,
-                decorators);
+        return KubernetesCommonHelper.computeEffectiveServiceAccount(name, KUBERNETES, config,
+                serviceAccountsFromExtensions, decorators);
     }
 
     @BuildStep
     public List<DecoratorBuildItem> createDecorators(ApplicationInfoBuildItem applicationInfo,
             OutputTargetBuildItem outputTarget, Capabilities capabilities, KubernetesConfig config,
-            PackageConfig packageConfig,
-            Optional<MetricsCapabilityBuildItem> metricsConfiguration,
+            PackageConfig packageConfig, Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             Optional<KubernetesClientCapabilityBuildItem> kubernetesClientConfiguration,
-            List<KubernetesNamespaceBuildItem> namespaces,
-            List<KubernetesJobBuildItem> jobs,
-            List<KubernetesInitContainerBuildItem> initContainers,
-            List<KubernetesAnnotationBuildItem> annotations,
+            List<KubernetesNamespaceBuildItem> namespaces, List<KubernetesJobBuildItem> jobs,
+            List<KubernetesInitContainerBuildItem> initContainers, List<KubernetesAnnotationBuildItem> annotations,
             List<KubernetesLabelBuildItem> labels, List<KubernetesEnvBuildItem> envs,
             Optional<ContainerImageInfoBuildItem> image, Optional<KubernetesCommandBuildItem> command,
-            Optional<KubernetesProbePortNameBuildItem> portName,
-            List<KubernetesPortBuildItem> ports, Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
+            Optional<KubernetesProbePortNameBuildItem> portName, List<KubernetesPortBuildItem> ports,
+            Optional<KubernetesHealthLivenessPathBuildItem> livenessPath,
             Optional<KubernetesHealthReadinessPathBuildItem> readinessPath,
-            Optional<KubernetesHealthStartupPathBuildItem> startupPath,
-            List<KubernetesRoleBuildItem> roles,
+            Optional<KubernetesHealthStartupPathBuildItem> startupPath, List<KubernetesRoleBuildItem> roles,
             List<KubernetesClusterRoleBuildItem> clusterRoles,
             List<KubernetesEffectiveServiceAccountBuildItem> serviceAccounts,
             List<KubernetesRoleBindingBuildItem> roleBindings,
             List<KubernetesClusterRoleBindingBuildItem> clusterRoleBindings,
-            Optional<CustomProjectRootBuildItem> customProjectRoot,
-            List<KubernetesDeploymentTargetBuildItem> targets) {
+            Optional<CustomProjectRootBuildItem> customProjectRoot, List<KubernetesDeploymentTargetBuildItem> targets) {
 
         final List<DecoratorBuildItem> result = new ArrayList<>();
         if (targets.stream().filter(KubernetesDeploymentTargetBuildItem::isEnabled)
@@ -176,16 +172,15 @@ public class VanillaKubernetesProcessor {
             return result;
         }
         final String name = ResourceNameUtil.getResourceName(config, applicationInfo);
-        final var namespace = Targetable.filteredByTarget(namespaces, KUBERNETES, true)
-                .findFirst();
+        final var namespace = Targetable.filteredByTarget(namespaces, KUBERNETES, true).findFirst();
 
-        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot, outputTarget,
-                packageConfig);
+        Optional<Project> project = KubernetesCommonHelper.createProject(applicationInfo, customProjectRoot,
+                outputTarget, packageConfig);
         Optional<Port> port = KubernetesCommonHelper.getPort(ports, config);
         result.addAll(KubernetesCommonHelper.createDecorators(project, KUBERNETES, name, namespace, config,
                 metricsConfiguration, kubernetesClientConfiguration, annotations, labels, image, command, port,
-                livenessPath, readinessPath, startupPath,
-                roles, clusterRoles, serviceAccounts, roleBindings, clusterRoleBindings));
+                livenessPath, readinessPath, startupPath, roles, clusterRoles, serviceAccounts, roleBindings,
+                clusterRoleBindings));
 
         DeploymentResourceKind deploymentKind = config.getDeploymentResourceKind(capabilities);
         if (deploymentKind != DeploymentResourceKind.Deployment) {
@@ -201,16 +196,14 @@ public class VanillaKubernetesProcessor {
 
         if (config.ingress() != null) {
             if (config.ingress().tls() != null) {
-                for (Map.Entry<String, IngressConfig.IngressTlsConfig> tlsConfigEntry : config.ingress().tls().entrySet()) {
+                for (Map.Entry<String, IngressConfig.IngressTlsConfig> tlsConfigEntry : config.ingress().tls()
+                        .entrySet()) {
                     if (tlsConfigEntry.getValue().enabled()) {
-                        String[] tlsHosts = tlsConfigEntry.getValue().hosts()
-                                .map(l -> l.toArray(new String[0]))
+                        String[] tlsHosts = tlsConfigEntry.getValue().hosts().map(l -> l.toArray(new String[0]))
                                 .orElse(null);
-                        result.add(new DecoratorBuildItem(KUBERNETES,
-                                new AddIngressTlsDecorator(name, new IngressBuilder()
-                                        .withTlsSecretName(tlsConfigEntry.getKey())
-                                        .withTlsHosts(tlsHosts)
-                                        .build())));
+                        result.add(
+                                new DecoratorBuildItem(KUBERNETES, new AddIngressTlsDecorator(name, new IngressBuilder()
+                                        .withTlsSecretName(tlsConfigEntry.getKey()).withTlsHosts(tlsHosts).build())));
                     }
                 }
 
@@ -221,48 +214,47 @@ public class VanillaKubernetesProcessor {
             }
 
             for (IngressConfig.IngressRuleConfig rule : config.ingress().rules().values()) {
-                result.add(new DecoratorBuildItem(KUBERNETES, new AddIngressRuleDecorator(name, port,
-                        new IngressRuleBuilder()
-                                .withHost(rule.host())
-                                .withPath(rule.path())
-                                .withPathType(rule.pathType())
-                                .withServiceName(rule.serviceName().orElse(null))
-                                .withServicePortName(rule.servicePortName().orElse(null))
-                                .withServicePortNumber(rule.servicePortNumber().orElse(-1))
-                                .build())));
+                result.add(new DecoratorBuildItem(KUBERNETES,
+                        new AddIngressRuleDecorator(name, port,
+                                new IngressRuleBuilder().withHost(rule.host()).withPath(rule.path())
+                                        .withPathType(rule.pathType()).withServiceName(rule.serviceName().orElse(null))
+                                        .withServicePortName(rule.servicePortName().orElse(null))
+                                        .withServicePortNumber(rule.servicePortNumber().orElse(-1)).build())));
             }
         }
 
         if (config.replicas() != 1) {
             // This only affects Deployment
-            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToDeploymentDecorator(name, config.replicas())));
+            result.add(new DecoratorBuildItem(KUBERNETES,
+                    new ApplyReplicasToDeploymentDecorator(name, config.replicas())));
             // This only affects StatefulSet
-            result.add(new DecoratorBuildItem(KUBERNETES, new ApplyReplicasToStatefulSetDecorator(name, config.replicas())));
+            result.add(new DecoratorBuildItem(KUBERNETES,
+                    new ApplyReplicasToStatefulSetDecorator(name, config.replicas())));
         }
 
-        image.ifPresent(
-                i -> result.add(new DecoratorBuildItem(KUBERNETES, new ApplyContainerImageDecorator(name, i.getImage()))));
+        image.ifPresent(i -> result
+                .add(new DecoratorBuildItem(KUBERNETES, new ApplyContainerImageDecorator(name, i.getImage()))));
 
-        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
+        result.add(
+                new DecoratorBuildItem(KUBERNETES, new ApplyImagePullPolicyDecorator(name, config.imagePullPolicy())));
         result.add(new DecoratorBuildItem(KUBERNETES, new AddSelectorToDeploymentDecorator(name)));
 
         Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES))
                 .forEach(e -> result.add(new DecoratorBuildItem(KUBERNETES,
                         new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
                                 new EnvBuilder().withName(EnvConverter.convertName(e.getName())).withValue(e.getValue())
-                                        .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
-                                        .withPrefix(e.getPrefix())
-                                        .build()))));
+                                        .withSecret(e.getSecret()).withConfigmap(e.getConfigMap())
+                                        .withField(e.getField()).withPrefix(e.getPrefix()).build()))));
 
         config.containerName().ifPresent(containerName -> result
                 .add(new DecoratorBuildItem(KUBERNETES, new ChangeContainerNameDecorator(containerName))));
 
         // Service handling
-        result.add(new DecoratorBuildItem(KUBERNETES, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
+        result.add(
+                new DecoratorBuildItem(KUBERNETES, new ApplyServiceTypeDecorator(name, config.serviceType().name())));
         if ((config.serviceType() == ServiceType.NodePort)) {
             List<Map.Entry<String, PortConfig>> nodeConfigPorts = config.ports().entrySet().stream()
-                    .filter(e -> e.getValue().nodePort().isPresent())
-                    .toList();
+                    .filter(e -> e.getValue().nodePort().isPresent()).toList();
             if (!nodeConfigPorts.isEmpty()) {
                 for (Map.Entry<String, PortConfig> entry : nodeConfigPorts) {
                     result.add(new DecoratorBuildItem(KUBERNETES,
@@ -275,26 +267,17 @@ public class VanillaKubernetesProcessor {
         }
 
         // Probe port handling
-        result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, LIVENESS_PROBE, config.livenessProbe(),
-                        portName,
-                        ports,
-                        config.ports()));
-        result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, READINESS_PROBE, config.readinessProbe(),
-                        portName,
-                        ports,
-                        config.ports()));
-        result.add(
-                KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, STARTUP_PROBE, config.startupProbe(),
-                        portName,
-                        ports,
-                        config.ports()));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, LIVENESS_PROBE,
+                config.livenessProbe(), portName, ports, config.ports()));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, READINESS_PROBE,
+                config.readinessProbe(), portName, ports, config.ports()));
+        result.add(KubernetesCommonHelper.createProbeHttpPortDecorator(name, KUBERNETES, STARTUP_PROBE,
+                config.startupProbe(), portName, ports, config.ports()));
 
         // Handle remote debug configuration
         if (config.remoteDebug().enabled()) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
-                    config.remoteDebug().buildJavaToolOptionsEnv())));
+            result.add(new DecoratorBuildItem(KUBERNETES, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY,
+                    name, config.remoteDebug().buildJavaToolOptionsEnv())));
         }
 
         // Handle init Containers and Jobs
@@ -302,35 +285,28 @@ public class VanillaKubernetesProcessor {
         result.addAll(KubernetesCommonHelper.createInitJobDecorators(KUBERNETES, name, jobs, result));
 
         // Do not bind the Management port to the Service resource unless it's explicitly used by the user.
-        if (managementPortIsEnabled()
-                && (config.ingress() == null
-                        || !config.ingress().expose()
-                        || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
-            result.add(new DecoratorBuildItem(KUBERNETES, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
+        if (managementPortIsEnabled() && (config.ingress() == null || !config.ingress().expose()
+                || !config.ingress().targetPort().equals(MANAGEMENT_PORT_NAME))) {
+            result.add(
+                    new DecoratorBuildItem(KUBERNETES, new RemovePortFromServiceDecorator(name, MANAGEMENT_PORT_NAME)));
         }
 
         // Handle deployment strategy
         if (config.strategy() != DeploymentStrategy.None) {
             result.add(new DecoratorBuildItem(KUBERNETES,
-                    new ApplyDeploymentStrategyDecorator(name, config.strategy(), new RollingUpdateBuilder()
-                            .withMaxSurge(config.rollingUpdate().maxSurge())
-                            .withMaxUnavailable(config.rollingUpdate().maxUnavailable())
-                            .build())));
+                    new ApplyDeploymentStrategyDecorator(name, config.strategy(),
+                            new RollingUpdateBuilder().withMaxSurge(config.rollingUpdate().maxSurge())
+                                    .withMaxUnavailable(config.rollingUpdate().maxUnavailable()).build())));
         }
         printMessageAboutPortsThatCantChange(KUBERNETES, ports, config);
         return result;
     }
 
     @BuildStep
-    void externalizeInitTasks(
-            ApplicationInfoBuildItem applicationInfo,
-            KubernetesConfig config,
-            ContainerImageInfoBuildItem image,
-            List<InitTaskBuildItem> initTasks,
-            BuildProducer<KubernetesJobBuildItem> jobs,
-            BuildProducer<KubernetesInitContainerBuildItem> initContainers,
-            BuildProducer<KubernetesEnvBuildItem> env,
-            BuildProducer<KubernetesRoleBuildItem> roles,
+    void externalizeInitTasks(ApplicationInfoBuildItem applicationInfo, KubernetesConfig config,
+            ContainerImageInfoBuildItem image, List<InitTaskBuildItem> initTasks,
+            BuildProducer<KubernetesJobBuildItem> jobs, BuildProducer<KubernetesInitContainerBuildItem> initContainers,
+            BuildProducer<KubernetesEnvBuildItem> env, BuildProducer<KubernetesRoleBuildItem> roles,
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
 

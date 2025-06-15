@@ -24,8 +24,7 @@ class ContentTypeHeaderTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SomeClient.class, Endpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SomeClient.class, Endpoint.class));
 
     @TestHTTPResource("/foo")
     URI uri;
@@ -35,8 +34,7 @@ class ContentTypeHeaderTest {
         ClientImpl client = (ClientImpl) ClientBuilder.newClient();
         WebTargetImpl target = (WebTargetImpl) client.target(uri);
         SomeClient someClient = target.proxy(SomeClient.class);
-        assertThat(someClient.postDefaultType("some-text"))
-                .isEqualToIgnoringCase("application/octet-stream");
+        assertThat(someClient.postDefaultType("some-text")).isEqualToIgnoringCase("application/octet-stream");
     }
 
     @Test
@@ -44,8 +42,7 @@ class ContentTypeHeaderTest {
         ClientImpl client = (ClientImpl) ClientBuilder.newClient();
         WebTargetImpl target = (WebTargetImpl) client.target(uri);
         SomeClient someClient = target.proxy(SomeClient.class);
-        assertThat(someClient.postHtml("some-text"))
-                .isEqualToIgnoringCase("text/html");
+        assertThat(someClient.postHtml("some-text")).isEqualToIgnoringCase("text/html");
     }
 
     @Test
@@ -53,8 +50,7 @@ class ContentTypeHeaderTest {
         ClientImpl client = (ClientImpl) ClientBuilder.newClient();
         WebTargetImpl target = (WebTargetImpl) client.target(uri);
         SomeClient someClient = target.proxy(SomeClient.class);
-        assertThat(someClient.echoText("some-other-text"))
-                .isEqualToIgnoringCase("some-other-text");
+        assertThat(someClient.echoText("some-other-text")).isEqualToIgnoringCase("some-other-text");
     }
 
     @Path("/")

@@ -27,8 +27,7 @@ public interface ClassRolesAllowedInterfaceWithPath_SecurityOnInterface {
     @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE + CLASS_ROLES_ALLOWED_PATH)
     default ClassRolesAllowedSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnInterface_ClassRolesAllowed() {
         return new ClassRolesAllowedSubResourceWithoutPath(
-                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                        + SUB_IMPL_ON_INTERFACE + CLASS_ROLES_ALLOWED_PATH);
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE + CLASS_ROLES_ALLOWED_PATH);
     }
 
     @POST

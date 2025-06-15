@@ -49,9 +49,12 @@ public abstract class ClassPermitAllParentResourceWithPath_SecurityOnParent
 
     @PermitAll
     @POST
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
-    public String classPathOnParentResource_ImplOnParent_ImplMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH
+            + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
+    public String classPathOnParentResource_ImplOnParent_ImplMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @Override

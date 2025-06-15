@@ -29,15 +29,15 @@ public class FlywayExtensionCleanAndMigrateAtStartTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1.0.0__Quarkus.sql")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("clean-and-migrate-at-start-config.properties", "application.properties"));
 
     @Test
     @DisplayName("Clean and migrate at start correctly")
     public void testFlywayConfigInjection() throws SQLException {
 
-        try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
+        try (Connection connection = defaultDataSource.getConnection();
+                Statement stat = connection.createStatement()) {
             try (ResultSet executeQuery = stat.executeQuery("select * from fake_existing_tbl")) {
                 fail("fake_existing_tbl should not exist");
             } catch (JdbcSQLSyntaxErrorException e) {

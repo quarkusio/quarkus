@@ -57,15 +57,14 @@ public class ConfigurationPropertiesProcessor {
             }
             switch (annotation.target().kind()) {
                 case CLASS:
-                    metadata.add(
-                            new ConfigurationPropertiesMetadataBuildItem(annotation.target().asClass(), getPrefix(annotation),
-                                    namingStrategy, !ignoreMismatching));
+                    metadata.add(new ConfigurationPropertiesMetadataBuildItem(annotation.target().asClass(),
+                            getPrefix(annotation), namingStrategy, !ignoreMismatching));
                     break;
                 case METHOD:
                     onMethodInstances.add(annotation.target().asMethod());
                     metadata.add(new ConfigurationPropertiesMetadataBuildItem(
-                            index.getClassByName(annotation.target().asMethod().returnType().name()), getPrefix(annotation),
-                            namingStrategy, !ignoreMismatching, ArcInstanceFactory.INSTANCE));
+                            index.getClassByName(annotation.target().asMethod().returnType().name()),
+                            getPrefix(annotation), namingStrategy, !ignoreMismatching, ArcInstanceFactory.INSTANCE));
                     break;
                 default:
                     throw new IllegalArgumentException(
@@ -132,17 +131,15 @@ public class ConfigurationPropertiesProcessor {
             ResultHandle containerHandle = methodCreator
                     .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
             ResultHandle qualifiersHandle = methodCreator.newArray(Annotation.class, 1);
-            ResultHandle qualifierInstanceHandle = methodCreator.readStaticField(FieldDescriptor
-                    .of(SpringBootConfigProperties.Literal.class, "INSTANCE", SpringBootConfigProperties.Literal.class));
+            ResultHandle qualifierInstanceHandle = methodCreator.readStaticField(FieldDescriptor.of(
+                    SpringBootConfigProperties.Literal.class, "INSTANCE", SpringBootConfigProperties.Literal.class));
             methodCreator.writeArrayValue(qualifiersHandle, 0, qualifierInstanceHandle);
             ResultHandle instanceHandle = methodCreator.invokeInterfaceMethod(
                     MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                             Annotation[].class),
-                    containerHandle, methodCreator.loadClassFromTCCL(configObjectClassName),
-                    qualifiersHandle);
-            return methodCreator
-                    .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
-                            instanceHandle);
+                    containerHandle, methodCreator.loadClassFromTCCL(configObjectClassName), qualifiersHandle);
+            return methodCreator.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
         }
     }
 }

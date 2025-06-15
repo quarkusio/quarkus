@@ -14,10 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidConditionalExecutionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class, Some.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Jobs.class, Some.class));
 
     @Test
     public void testExecution() {

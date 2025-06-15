@@ -27,8 +27,7 @@ class ErrorCallbackArgument implements CallbackArgument {
         if (clazz == null) {
             throw new IllegalArgumentException("The class " + clazzName + " not found in the index");
         }
-        if (clazz.superName().equals(DotName.OBJECT_NAME)
-                || clazz.superName().equals(DotName.RECORD_NAME)
+        if (clazz.superName().equals(DotName.OBJECT_NAME) || clazz.superName().equals(DotName.RECORD_NAME)
                 || clazz.superName().equals(DotName.ENUM_NAME)) {
             return false;
         }

@@ -11,7 +11,9 @@ public final class InjectedChannelBuildItem extends MultiBuildItem {
     /**
      * Creates a new instance of {@link InjectedChannelBuildItem}.
      *
-     * @param name the name of the injected channel
+     * @param name
+     *        the name of the injected channel
+     *
      * @return the new {@link InjectedChannelBuildItem}
      */
     public static InjectedChannelBuildItem of(String name) {

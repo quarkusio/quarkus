@@ -5,8 +5,8 @@ import java.util.concurrent.CompletionStage;
 /**
  * Instruments a scheduled job.
  * <p>
- * Telemetry extensions can provide exactly one CDI bean of this type. The scope must be either {@link jakarta.inject.Singleton}
- * or {@link jakarta.enterprise.context.ApplicationScoped}.
+ * Telemetry extensions can provide exactly one CDI bean of this type. The scope must be either
+ * {@link jakarta.inject.Singleton} or {@link jakarta.enterprise.context.ApplicationScoped}.
  */
 public interface JobInstrumenter {
 

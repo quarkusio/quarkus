@@ -13,12 +13,11 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import io.vertx.sqlclient.Pool;
 
 /**
- * An alternative implementation of {@link org.hibernate.reactive.pool.impl.ExternalSqlClientPool}
- * which retrieves SQL loggers / exception handlers lazily,
- * to avoid a circular dependency JdbcEnvironment => pool => JdbcServices => JdbcEnvironment.
+ * An alternative implementation of {@link org.hibernate.reactive.pool.impl.ExternalSqlClientPool} which retrieves SQL
+ * loggers / exception handlers lazily, to avoid a circular dependency JdbcEnvironment => pool => JdbcServices =>
+ * JdbcEnvironment.
  */
-public class QuarkusSqlClientPool extends SqlClientPool
-        implements ServiceRegistryAwareService {
+public class QuarkusSqlClientPool extends SqlClientPool implements ServiceRegistryAwareService {
 
     private final Pool pool;
     private SqlStatementLogger sqlStatementLogger;
@@ -48,8 +47,7 @@ public class QuarkusSqlClientPool extends SqlClientPool
     @Override
     public SqlExceptionHelper getSqlExceptionHelper() {
         if (sqlExceptionHelper == null) {
-            sqlExceptionHelper = serviceRegistry
-                    .getService(JdbcServices.class).getSqlExceptionHelper();
+            sqlExceptionHelper = serviceRegistry.getService(JdbcServices.class).getSqlExceptionHelper();
         }
         return sqlExceptionHelper;
     }

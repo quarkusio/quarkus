@@ -6,10 +6,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.reactive.messaging.annotations.ConnectorAttribute;
 
 /**
- * Represents a reactive messaging connector.
- *
- * It contains the name (like {@code smallrye-kafka}), the direction (incoming or outgoing), and the list of connector
- * attributes (mainly for documentation and tooling purpose).
+ * Represents a reactive messaging connector. It contains the name (like {@code smallrye-kafka}), the direction
+ * (incoming or outgoing), and the list of connector attributes (mainly for documentation and tooling purpose).
  */
 public final class ConnectorBuildItem extends MultiBuildItem {
 

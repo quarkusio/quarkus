@@ -53,14 +53,14 @@ public final class HibernateSearchOrmElasticsearchMapperContext implements Mappe
     @Override
     public <T> Optional<BeanReference<T>> singleExtensionBeanReferenceFor(Optional<String> override, Class<T> beanType,
             String backendName, String indexName) {
-        return HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(override, beanType, persistenceUnitName, backendName,
-                indexName);
+        return HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(override, beanType, persistenceUnitName,
+                backendName, indexName);
     }
 
     @Override
     public <T> Optional<List<BeanReference<T>>> multiExtensionBeanReferencesFor(Optional<List<String>> override,
             Class<T> beanType, String backendName, String indexName) {
-        return HibernateSearchBeanUtil.multiExtensionBeanReferencesFor(override, beanType, persistenceUnitName, backendName,
-                indexName);
+        return HibernateSearchBeanUtil.multiExtensionBeanReferencesFor(override, beanType, persistenceUnitName,
+                backendName, indexName);
     }
 }

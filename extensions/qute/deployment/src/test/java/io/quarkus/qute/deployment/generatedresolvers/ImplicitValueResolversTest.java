@@ -21,9 +21,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ImplicitValueResolversTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("{name.toUpperCase}"), "templates/hello.html")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("{name.toUpperCase}"), "templates/hello.html")
                     .addAsResource(new StringAsset("{name}"), "templates/bye.html")
                     .addAsResource(new StringAsset("{name}"), "templates/zero.html"));
 

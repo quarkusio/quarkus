@@ -22,10 +22,9 @@ public class AmqpDevModeNoHttpTest {
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Producer.class, Consumer.class,
-                            AnonymousAmqpBroker.class, ProtonProtocolManagerFactory.class)
-                    .addAsResource("broker.xml")
-                    .addAsResource("application.properties"))
+                    .addClasses(Producer.class, Consumer.class, AnonymousAmqpBroker.class,
+                            ProtonProtocolManagerFactory.class)
+                    .addAsResource("broker.xml").addAsResource("application.properties"))
             .setLogRecordPredicate(r -> r.getLoggerName().equals(Consumer.class.getName()));
 
     @BeforeAll
@@ -49,9 +48,7 @@ public class AmqpDevModeNoHttpTest {
             List<LogRecord> log = TEST.getLogRecords();
             assertThat(log).hasSizeGreaterThanOrEqualTo(5);
 
-            List<Long> nums = log.stream()
-                    .map(it -> Long.parseLong(it.getMessage()))
-                    .collect(Collectors.toList());
+            List<Long> nums = log.stream().map(it -> Long.parseLong(it.getMessage())).collect(Collectors.toList());
 
             long last = nums.get(nums.size() - 1);
             assertThat(nums).containsSequence(last - 4, last - 3, last - 2, last - 1, last);
@@ -63,9 +60,7 @@ public class AmqpDevModeNoHttpTest {
             List<LogRecord> log = TEST.getLogRecords();
             assertThat(log).hasSizeGreaterThanOrEqualTo(5);
 
-            List<Long> nums = log.stream()
-                    .map(it -> Long.parseLong(it.getMessage()))
-                    .collect(Collectors.toList());
+            List<Long> nums = log.stream().map(it -> Long.parseLong(it.getMessage())).collect(Collectors.toList());
 
             long last = nums.get(nums.size() - 1);
             assertThat(nums).containsSequence(last - 8, last - 6, last - 4, last - 2, last);
@@ -78,9 +73,7 @@ public class AmqpDevModeNoHttpTest {
             List<LogRecord> log = new CopyOnWriteArrayList<>(TEST.getLogRecords());
             assertThat(log).hasSizeGreaterThanOrEqualTo(5);
 
-            List<Long> nums = log.stream()
-                    .map(it -> Long.parseLong(it.getMessage()))
-                    .collect(Collectors.toList());
+            List<Long> nums = log.stream().map(it -> Long.parseLong(it.getMessage())).collect(Collectors.toList());
 
             long last = nums.get(nums.size() - 1);
             assertThat(nums).containsSequence(last - 4, last - 3, last - 2, last - 1, last);
@@ -92,9 +85,7 @@ public class AmqpDevModeNoHttpTest {
             List<LogRecord> log = TEST.getLogRecords();
             assertThat(log).hasSizeGreaterThanOrEqualTo(5);
 
-            List<Long> nums = log.stream()
-                    .map(it -> Long.parseLong(it.getMessage()))
-                    .collect(Collectors.toList());
+            List<Long> nums = log.stream().map(it -> Long.parseLong(it.getMessage())).collect(Collectors.toList());
 
             long last = nums.get(nums.size() - 1);
             assertThat(nums).containsSequence(last - 12, last - 9, last - 6, last - 3, last);

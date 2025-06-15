@@ -27,8 +27,7 @@ public final class HibernateEnversProcessor {
 
     @BuildStep
     List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
-        return Arrays.asList(
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity"),
+        return Arrays.asList(new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity"),
                 new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"),
                 new AdditionalJpaModelBuildItem("org.hibernate.envers.RevisionMapping"),
                 new AdditionalJpaModelBuildItem("org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping"));
@@ -39,13 +38,10 @@ public final class HibernateEnversProcessor {
             HibernateEnversBuildTimeConfig buildTimeConfig) {
         // This is necessary because these classes are added to the model conditionally at static init,
         // so they don't get processed by HibernateOrmProcessor and in particular don't get reflection enabled.
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                "org.hibernate.envers.DefaultRevisionEntity",
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.hibernate.envers.DefaultRevisionEntity",
                 "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
-                "org.hibernate.envers.RevisionMapping",
-                "org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping")
-                .reason(getClass().getName())
-                .methods().build());
+                "org.hibernate.envers.RevisionMapping", "org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping")
+                .reason(getClass().getName()).methods().build());
 
         List<String> classes = new ArrayList<>(buildTimeConfig.persistenceUnits().size() * 2);
         for (HibernateEnversBuildTimeConfigPersistenceUnit pu : buildTimeConfig.persistenceUnits().values()) {
@@ -53,8 +49,7 @@ public final class HibernateEnversProcessor {
             pu.auditStrategy().ifPresent(classes::add);
         }
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0]))
-                .reason("Configured Envers listeners and audit strategies")
-                .methods().fields().build());
+                .reason("Configured Envers listeners and audit strategies").methods().fields().build());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -69,10 +64,9 @@ public final class HibernateEnversProcessor {
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationProducer) {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             String puName = puDescriptor.getPersistenceUnitName();
-            integrationProducer.produce(
-                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_ENVERS, puName)
-                            .setInitListener(recorder.createStaticInitListener(buildTimeConfig, puName))
-                            .setXmlMappingRequired(true));
+            integrationProducer.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_ENVERS, puName)
+                    .setInitListener(recorder.createStaticInitListener(buildTimeConfig, puName))
+                    .setXmlMappingRequired(true));
         }
     }
 }

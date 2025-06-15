@@ -23,8 +23,7 @@ public class RestClientFallbackTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RestClientFallbackTest.class, Client.class, MyFallback.class));
+            .withApplicationRoot((jar) -> jar.addClasses(RestClientFallbackTest.class, Client.class, MyFallback.class));
 
     @TestHTTPResource
     URL url;

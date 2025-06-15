@@ -18,7 +18,8 @@ public class PanacheUpdateImpl implements PanacheUpdate {
     private MongoCollection collection;
     private ClientSession session;
 
-    public PanacheUpdateImpl(MongoOperations operations, Class<?> entityClass, Bson update, MongoCollection collection) {
+    public PanacheUpdateImpl(MongoOperations operations, Class<?> entityClass, Bson update,
+            MongoCollection collection) {
         this.operations = operations;
         this.entityClass = entityClass;
         this.update = update;

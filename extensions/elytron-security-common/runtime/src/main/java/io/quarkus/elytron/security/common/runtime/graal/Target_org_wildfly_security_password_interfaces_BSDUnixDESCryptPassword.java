@@ -12,8 +12,8 @@ import io.smallrye.common.constraint.Assert;
 public final class Target_org_wildfly_security_password_interfaces_BSDUnixDESCryptPassword {
 
     @Substitute
-    static Target_org_wildfly_security_password_interfaces_BSDUnixDESCryptPassword createRaw(String algorithm, byte[] hash,
-            int salt, int iterationCount) {
+    static Target_org_wildfly_security_password_interfaces_BSDUnixDESCryptPassword createRaw(String algorithm,
+            byte[] hash, int salt, int iterationCount) {
         Assert.checkNotNullParam("hash", hash);
         Assert.checkNotNullParam("algorithm", algorithm);
         return (Target_org_wildfly_security_password_interfaces_BSDUnixDESCryptPassword) (Object) new RawBSDUnixDESCryptPassword(
@@ -24,7 +24,8 @@ public final class Target_org_wildfly_security_password_interfaces_BSDUnixDESCry
     private static final class RawBSDUnixDESCryptPassword {
 
         @Alias
-        RawBSDUnixDESCryptPassword(final String algorithm, final int iterationCount, final int salt, final byte[] hash) {
+        RawBSDUnixDESCryptPassword(final String algorithm, final int iterationCount, final int salt,
+                final byte[] hash) {
         }
     }
 }

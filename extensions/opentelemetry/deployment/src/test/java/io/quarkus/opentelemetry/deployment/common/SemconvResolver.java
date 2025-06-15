@@ -32,9 +32,8 @@ public class SemconvResolver {
         } else if (attributeKey.getType().equals(STRING)) {
             return (T) data.getAttributes().get(attributeKey);
         } else {
-            throw new IllegalArgumentException(
-                    "Unsupported attribute: " + attributeKey.getKey() +
-                            " with type: " + attributeKey.getKey().getClass());
+            throw new IllegalArgumentException("Unsupported attribute: " + attributeKey.getKey() + " with type: "
+                    + attributeKey.getKey().getClass());
         }
     }
 }

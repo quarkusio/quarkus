@@ -23,18 +23,13 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class OtelLogsHandlerDisabledTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(JBossLoggingBean.class)
-                            .addClasses(InMemoryLogRecordExporter.class, InMemoryLogRecordExporterProvider.class)
-                            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
-                            .add(new StringAsset(
-                                    "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.otel.logs.handler.enabled=false\n" +
-                                            "quarkus.otel.traces.enabled=false\n"),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(JBossLoggingBean.class)
+            .addClasses(InMemoryLogRecordExporter.class, InMemoryLogRecordExporterProvider.class)
+            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
+            .add(new StringAsset("quarkus.otel.logs.enabled=true\n" + "quarkus.otel.logs.handler.enabled=false\n"
+                    + "quarkus.otel.traces.enabled=false\n"), "application.properties"));
 
     @Inject
     InMemoryLogRecordExporter logRecordExporter;

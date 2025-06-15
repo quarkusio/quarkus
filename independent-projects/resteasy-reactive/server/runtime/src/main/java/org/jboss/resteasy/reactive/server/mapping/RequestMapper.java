@@ -44,7 +44,9 @@ public class RequestMapper<T> {
     /**
      * Match the path to the UriTemplates. Returns the best match, meaning the least remaining path after match.
      *
-     * @param path path to search UriTemplate for
+     * @param path
+     *        path to search UriTemplate for
+     *
      * @return best RequestMatch, or null if the path has no match
      */
     public RequestMatch<T> map(String path) {
@@ -58,9 +60,12 @@ public class RequestMapper<T> {
     }
 
     /**
-     * Continue matching for the next best path starting from the last match, meaning the least remaining path after match.
+     * Continue matching for the next best path starting from the last match, meaning the least remaining path after
+     * match.
      *
-     * @param path path to search UriTemplate for
+     * @param path
+     *        path to search UriTemplate for
+     *
      * @return another RequestMatch. Might return null if all matches are exhausted.
      */
     public RequestMatch<T> continueMatching(String path, RequestMatch<T> lastMatch) {
@@ -105,8 +110,8 @@ public class RequestMapper<T> {
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private RequestMatch<T> mapFromPathMatcher(String path, PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatches,
-            int startIdx) {
+    private RequestMatch<T> mapFromPathMatcher(String path,
+            PathMatcher.PathMatch<ArrayList<RequestPath<T>>> initialMatches, int startIdx) {
         var value = initialMatches.getValue();
         if (value == null || startIdx < 0) {
             return null;
@@ -124,8 +129,7 @@ public class RequestMapper<T> {
                 if (segment.type == URITemplate.Type.CUSTOM_REGEX) {
                     // exclude any path end slash when matching a subdir, but include it in the matched length
                     boolean endSlash = matchPos < path.length() && path.charAt(path.length() - 1) == '/';
-                    Matcher matcher = segment.pattern.matcher(
-                            endSlash ? path.substring(0, path.length() - 1) : path);
+                    Matcher matcher = segment.pattern.matcher(endSlash ? path.substring(0, path.length() - 1) : path);
                     matched = matcher.find(matchPos);
                     if (!matched || matcher.start() != matchPos) {
                         break;
@@ -138,10 +142,10 @@ public class RequestMapper<T> {
                         params[paramCount++] = matcher.group(group);
                     }
                 } else if (segment.type == URITemplate.Type.LITERAL) {
-                    //make sure the literal text is the same
+                    // make sure the literal text is the same
                     if (matchPos + segment.literalText.length() > pathLength) {
                         matched = false;
-                        break; //too long
+                        break; // too long
                     }
                     for (int pos = 0; pos < segment.literalText.length(); ++pos) {
                         if (path.charAt(matchPos++) != segment.literalText.charAt(pos)) {
@@ -173,11 +177,13 @@ public class RequestMapper<T> {
             boolean fullMatch = matchPos == pathLength;
             boolean doPrefixMatch = false;
             if (!fullMatch) {
-                //according to the spec every template ends with (/.*)?
-                if (matchPos == 1) { //matchPos == 1 corresponds to '/' as a root level match
-                    doPrefixMatch = prefixAllowed || pathLength == 1; //if prefix is allowed, or we've matched the whole thing
+                // according to the spec every template ends with (/.*)?
+                if (matchPos == 1) { // matchPos == 1 corresponds to '/' as a root level match
+                    doPrefixMatch = prefixAllowed || pathLength == 1; // if prefix is allowed, or we've matched the
+                                                                      // whole thing
                 } else if (path.charAt(matchPos) == '/') {
-                    doPrefixMatch = prefixAllowed || matchPos == pathLength - 1; //if prefix is allowed, or the remainder is only a trailing /
+                    doPrefixMatch = prefixAllowed || matchPos == pathLength - 1; // if prefix is allowed, or the
+                                                                                 // remainder is only a trailing /
                 }
             }
             if (fullMatch || doPrefixMatch) {

@@ -18,7 +18,7 @@ public class PanacheJpaRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheRepositoryClassOperationGenerationVisitor(className, outputClassVisitor,
-                this.indexView, typeBundle);
+        return new PanacheRepositoryClassOperationGenerationVisitor(className, outputClassVisitor, this.indexView,
+                typeBundle);
     }
 }

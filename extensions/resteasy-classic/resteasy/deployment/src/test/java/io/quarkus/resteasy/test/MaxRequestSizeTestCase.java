@@ -17,8 +17,7 @@ public class MaxRequestSizeTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MaxBodySizeResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MaxBodySizeResource.class)
                     .addAsResource(new StringAsset("quarkus.http.limits.max-body-size=10"), "application.properties"));
 
     @Test
@@ -28,10 +27,8 @@ public class MaxRequestSizeTestCase {
             sb.append("q");
         }
         // while sending a payload within the limit should return 200
-        RestAssured.given()
-                .body(sb.toString())
-                .post("/max-body-size")
-                .then().statusCode(200).body(Matchers.equalTo("cl" + sb.toString()));
+        RestAssured.given().body(sb.toString()).post("/max-body-size").then().statusCode(200)
+                .body(Matchers.equalTo("cl" + sb.toString()));
     }
 
     @Test
@@ -41,10 +38,7 @@ public class MaxRequestSizeTestCase {
             sb.append("q");
         }
 
-        RestAssured.given()
-                .body(sb.toString())
-                .post("/max-body-size")
-                .then().statusCode(413);
+        RestAssured.given().body(sb.toString()).post("/max-body-size").then().statusCode(413);
 
     }
 
@@ -55,16 +49,13 @@ public class MaxRequestSizeTestCase {
             sb.append("q");
         }
         // while sending a payload within the limit should return 200
-        RestAssured.given()
-                .contentType("application/octet-stream")
+        RestAssured.given().contentType("application/octet-stream")
                 .body(new FilterInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8))) {
                     @Override
                     public int available() throws IOException {
                         return -1;
                     }
-                })
-                .post("/max-body-size")
-                .then().statusCode(200).body(Matchers.equalTo("chunked" + sb.toString()));
+                }).post("/max-body-size").then().statusCode(200).body(Matchers.equalTo("chunked" + sb.toString()));
     }
 
     @Test
@@ -74,16 +65,13 @@ public class MaxRequestSizeTestCase {
             sb.append("q");
         }
 
-        RestAssured.given()
-                .contentType("application/octet-stream")
+        RestAssured.given().contentType("application/octet-stream")
                 .body(new FilterInputStream(new ByteArrayInputStream(sb.toString().getBytes(StandardCharsets.UTF_8))) {
                     @Override
                     public int available() throws IOException {
                         return -1;
                     }
-                })
-                .post("/max-body-size")
-                .then().statusCode(413);
+                }).post("/max-body-size").then().statusCode(413);
 
     }
 }

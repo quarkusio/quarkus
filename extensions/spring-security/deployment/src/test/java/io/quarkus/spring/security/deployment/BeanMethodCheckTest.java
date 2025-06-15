@@ -29,20 +29,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BeanMethodCheckTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            Person.class,
-                            PersonChecker.class,
-                            PersonCheckerImpl.class,
-                            PrincipalChecker.class,
-                            BeanWithBeanMethodChecks.class,
-                            SomeInterface.class,
-                            SomeInterfaceImpl.class,
-                            SpringConfiguration.class,
-                            IdentityMock.class,
-                            AuthData.class,
-                            SecurityTestUtils.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Person.class, PersonChecker.class, PersonCheckerImpl.class, PrincipalChecker.class,
+                    BeanWithBeanMethodChecks.class, SomeInterface.class, SomeInterfaceImpl.class,
+                    SpringConfiguration.class, IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     BeanWithBeanMethodChecks beanWithBeanMethodChecks;
@@ -66,20 +56,22 @@ public class BeanMethodCheckTest {
 
     @Test
     public void testWithParams() {
-        assertFailureFor(() -> beanWithBeanMethodChecks.withParams("other", new Person("geo")), UnauthorizedException.class,
-                ANONYMOUS);
+        assertFailureFor(() -> beanWithBeanMethodChecks.withParams("other", new Person("geo")),
+                UnauthorizedException.class, ANONYMOUS);
         assertSuccess(() -> beanWithBeanMethodChecks.withParams("geo", new Person("geo")), "withParams", ANONYMOUS);
-        assertFailureFor(() -> beanWithBeanMethodChecks.withParams("other", new Person("geo")), ForbiddenException.class, USER);
+        assertFailureFor(() -> beanWithBeanMethodChecks.withParams("other", new Person("geo")),
+                ForbiddenException.class, USER);
         assertSuccess(() -> beanWithBeanMethodChecks.withParams("geo", new Person("geo")), "withParams", USER);
     }
 
     // the reason for having this test is to ensure that caching of the generated classes doesn't mess up anything
     @Test
     public void testAnotherWithParams() {
-        assertFailureFor(() -> beanWithBeanMethodChecks.withParams("other", new Person("geo")), UnauthorizedException.class,
-                ANONYMOUS);
+        assertFailureFor(() -> beanWithBeanMethodChecks.withParams("other", new Person("geo")),
+                UnauthorizedException.class, ANONYMOUS);
         assertSuccess(() -> beanWithBeanMethodChecks.withParams("geo", new Person("geo")), "withParams", ANONYMOUS);
-        assertFailureFor(() -> beanWithBeanMethodChecks.withParams("other", new Person("geo")), ForbiddenException.class, USER);
+        assertFailureFor(() -> beanWithBeanMethodChecks.withParams("other", new Person("geo")),
+                ForbiddenException.class, USER);
         assertSuccess(() -> beanWithBeanMethodChecks.withParams("geo", new Person("geo")), "withParams", USER);
     }
 
@@ -87,9 +79,10 @@ public class BeanMethodCheckTest {
     public void testWithParamsAndConstant() {
         assertSuccess(() -> beanWithBeanMethodChecks.withParamAndConstant(new Person("geo")), "withParamAndConstant",
                 ANONYMOUS);
-        assertFailureFor(() -> beanWithBeanMethodChecks.withParamAndConstant(new Person("other")), ForbiddenException.class,
+        assertFailureFor(() -> beanWithBeanMethodChecks.withParamAndConstant(new Person("other")),
+                ForbiddenException.class, USER);
+        assertSuccess(() -> beanWithBeanMethodChecks.withParamAndConstant(new Person("geo")), "withParamAndConstant",
                 USER);
-        assertSuccess(() -> beanWithBeanMethodChecks.withParamAndConstant(new Person("geo")), "withParamAndConstant", USER);
     }
 
     @Test
@@ -97,7 +90,8 @@ public class BeanMethodCheckTest {
         assertFailureFor(() -> someInterface.doSomething("other", 1, new Person("geo")), UnauthorizedException.class,
                 ANONYMOUS);
         assertSuccess(() -> someInterface.doSomething("geo", 1, new Person("geo")), "doSomething", ANONYMOUS);
-        assertFailureFor(() -> someInterface.doSomething("other", -1, new Person("geo")), ForbiddenException.class, USER);
+        assertFailureFor(() -> someInterface.doSomething("other", -1, new Person("geo")), ForbiddenException.class,
+                USER);
         assertSuccess(() -> someInterface.doSomething("geo", -1, new Person("geo")), "doSomething", USER);
     }
 

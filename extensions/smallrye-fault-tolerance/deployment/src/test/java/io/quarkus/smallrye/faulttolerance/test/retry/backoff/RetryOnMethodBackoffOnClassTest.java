@@ -14,8 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RetryOnMethodBackoffOnClassTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RetryOnMethodBackoffOnClassService.class))
+            .withApplicationRoot((jar) -> jar.addClasses(RetryOnMethodBackoffOnClassService.class))
             .assertException(e -> {
                 assertEquals(DefinitionException.class, e.getClass());
                 assertTrue(e.getMessage().contains("Backoff annotation"));

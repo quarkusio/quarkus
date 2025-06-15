@@ -23,31 +23,18 @@ public class TypeSafeLoopTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, MyFooList.class, Item.class, Extensions.class)
-                    .addAsResource(new StringAsset("{@java.util.List<io.quarkus.qute.deployment.Foo> list}"
-                            + "{@io.quarkus.qute.deployment.MyFooList fooList}"
-                            + "{#for foo in list}"
-                            + "{foo.name}={foo.age}={foo.charlie.name}"
-                            + "{/}"
-                            + "::"
-                            + "{#for foo in fooList}"
-                            + "{foo.name}={foo.age}={foo.charlie.name}"
-                            + "{/}"
-                            + "::"
-                            + "{fooList.get(0).name}"
-                            + "::"
-                            + "{#for item in items}{#each item.tags('foo')}{it}{/each}{/for}"
-                            + "::"
-                            + "{fooList.get(0).tags.size}={#each fooList.get(0).tags}{it}{/each}"), "templates/foo.html")
-                    .addAsResource(new StringAsset("{@java.util.List<io.quarkus.qute.deployment.Foo> list}"
-                            + "{#for foo in list}"
-                            + "{#let name=foo.name}"
-                            + "{#for char in name.toCharArray}"
-                            + "{char}:"
-                            + "{/for}"
-                            + "{/let}"
-                            + "{/for}"), "templates/nested.html"));
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Foo.class, MyFooList.class, Item.class, Extensions.class)
+                            .addAsResource(new StringAsset("{@java.util.List<io.quarkus.qute.deployment.Foo> list}"
+                                    + "{@io.quarkus.qute.deployment.MyFooList fooList}" + "{#for foo in list}"
+                                    + "{foo.name}={foo.age}={foo.charlie.name}" + "{/}" + "::" + "{#for foo in fooList}"
+                                    + "{foo.name}={foo.age}={foo.charlie.name}" + "{/}" + "::" + "{fooList.get(0).name}"
+                                    + "::" + "{#for item in items}{#each item.tags('foo')}{it}{/each}{/for}" + "::"
+                                    + "{fooList.get(0).tags.size}={#each fooList.get(0).tags}{it}{/each}"),
+                                    "templates/foo.html")
+                            .addAsResource(new StringAsset("{@java.util.List<io.quarkus.qute.deployment.Foo> list}"
+                                    + "{#for foo in list}" + "{#let name=foo.name}" + "{#for char in name.toCharArray}"
+                                    + "{char}:" + "{/for}" + "{/let}" + "{/for}"), "templates/nested.html"));
 
     @Inject
     Template foo;
@@ -67,8 +54,7 @@ public class TypeSafeLoopTest {
     @Test
     public void testNestedHintsValidation() {
         List<Foo> foos = Collections.singletonList(new Foo("boom", 10l));
-        assertEquals("b:o:o:m:",
-                nested.data("list", foos).render());
+        assertEquals("b:o:o:m:", nested.data("list", foos).render());
     }
 
     static class Item {

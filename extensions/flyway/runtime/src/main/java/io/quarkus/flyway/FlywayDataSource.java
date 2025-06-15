@@ -17,8 +17,8 @@ import jakarta.inject.Qualifier;
 /**
  * Qualifier used to specify which datasource will be used and therefore which Flyway instance will be injected.
  * <p>
- * Flyway instances can also be qualified by name using @{@link Named}.
- * The name is the datasource name prefixed by "flyway_".
+ * Flyway instances can also be qualified by name using @{@link Named}. The name is the datasource name prefixed by
+ * "flyway_".
  */
 @Target({ METHOD, FIELD, PARAMETER, TYPE })
 @Retention(RUNTIME)
@@ -31,7 +31,8 @@ public @interface FlywayDataSource {
     /**
      * Supports inline instantiation of the {@link FlywayDataSource} qualifier.
      */
-    public static final class FlywayDataSourceLiteral extends AnnotationLiteral<FlywayDataSource> implements FlywayDataSource {
+    public static final class FlywayDataSourceLiteral extends AnnotationLiteral<FlywayDataSource>
+            implements FlywayDataSource {
 
         public static final FlywayDataSourceLiteral INSTANCE = of("");
 

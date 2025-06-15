@@ -6,8 +6,8 @@ import java.util.Optional;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Build item that defines dependencies that should not be indexed. This can be used when a dependency contains
- * a marker file (e.g. META-INF/beans.xml).
+ * Build item that defines dependencies that should not be indexed. This can be used when a dependency contains a marker
+ * file (e.g. META-INF/beans.xml).
  */
 public final class ExcludeDependencyBuildItem extends MultiBuildItem {
     private final String groupId;

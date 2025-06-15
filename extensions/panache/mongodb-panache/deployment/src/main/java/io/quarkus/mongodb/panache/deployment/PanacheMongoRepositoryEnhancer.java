@@ -17,7 +17,8 @@ public class PanacheMongoRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
-        return new PanacheRepositoryClassOperationGenerationVisitor(className, outputClassVisitor, indexView, typeBundle);
+        return new PanacheRepositoryClassOperationGenerationVisitor(className, outputClassVisitor, indexView,
+                typeBundle);
     }
 
 }

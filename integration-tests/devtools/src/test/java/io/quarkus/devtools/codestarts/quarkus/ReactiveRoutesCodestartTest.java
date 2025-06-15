@@ -13,9 +13,7 @@ public class ReactiveRoutesCodestartTest {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("reactive-routes-codestart")
-            .languages(JAVA, KOTLIN)
-            .build();
+            .codestarts("reactive-routes-codestart").languages(JAVA, KOTLIN).build();
 
     @Test
     void testContent() throws Throwable {

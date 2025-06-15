@@ -17,28 +17,22 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CollectionTemplateExtensionsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset(
-                            "{@java.util.List<Boolean> list}{list.0.booleanValue}={list[0]}"),
-                            "templates/getByIndex.html")
-                    .addAsResource(new StringAsset(
-                            "{@java.util.List<String> list}{#each list.reversed}{it.toUpperCase}::{/each}"),
-                            "templates/reversed.html")
-                    .addAsResource(new StringAsset(
-                            "{@java.util.List<String> list}{#each list.take(2)}{it}::{/each}"),
-                            "templates/take.html")
-                    .addAsResource(new StringAsset(
-                            "{@java.util.List<String> list}{#each list.takeLast(2)}{it}::{/each}"),
-                            "templates/takeLast.html")
-                    .addAsResource(new StringAsset(
-                            "{@java.util.List<String> list}{list.first.toUpperCase}"),
-                            "templates/first.html")
-                    .addAsResource(new StringAsset(
-                            "{@java.util.List<String> list}{list.last.toUpperCase}"),
-                            "templates/last.html")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addAsResource(new StringAsset("{@java.util.List<Boolean> list}{list.0.booleanValue}={list[0]}"),
+                    "templates/getByIndex.html")
+            .addAsResource(
+                    new StringAsset("{@java.util.List<String> list}{#each list.reversed}{it.toUpperCase}::{/each}"),
+                    "templates/reversed.html")
+            .addAsResource(new StringAsset("{@java.util.List<String> list}{#each list.take(2)}{it}::{/each}"),
+                    "templates/take.html")
+            .addAsResource(new StringAsset("{@java.util.List<String> list}{#each list.takeLast(2)}{it}::{/each}"),
+                    "templates/takeLast.html")
+            .addAsResource(new StringAsset("{@java.util.List<String> list}{list.first.toUpperCase}"),
+                    "templates/first.html")
+            .addAsResource(new StringAsset("{@java.util.List<String> list}{list.last.toUpperCase}"),
+                    "templates/last.html")
 
-            );
+    );
 
     @Inject
     Engine engine;

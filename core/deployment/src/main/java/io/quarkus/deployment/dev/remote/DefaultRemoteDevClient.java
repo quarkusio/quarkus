@@ -12,9 +12,8 @@ import java.util.function.Supplier;
 import io.quarkus.dev.spi.RemoteDevState;
 
 /**
- * A noop remote dev client, that just polls every second to update the app
- *
- * This is useful if you are using an external tool such as odo to update your remote pod.
+ * A noop remote dev client, that just polls every second to update the app This is useful if you are using an external
+ * tool such as odo to update your remote pod.
  */
 public class DefaultRemoteDevClient implements RemoteDevClient {
 
@@ -40,7 +39,7 @@ public class DefaultRemoteDevClient implements RemoteDevClient {
 
         @Override
         public void run() {
-            //we don't care about the result, we just want to force regeneration
+            // we don't care about the result, we just want to force regeneration
             changeRequestFunction.get();
 
         }

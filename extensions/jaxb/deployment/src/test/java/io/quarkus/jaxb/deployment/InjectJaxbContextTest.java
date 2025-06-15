@@ -26,11 +26,8 @@ public class InjectJaxbContextTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            io.quarkus.jaxb.deployment.one.Model.class,
-                            io.quarkus.jaxb.deployment.two.Model.class,
-                            Person.class,
-                            CustomJaxbContextCustomizer.class)
+                    .addClasses(io.quarkus.jaxb.deployment.one.Model.class, io.quarkus.jaxb.deployment.two.Model.class,
+                            Person.class, CustomJaxbContextCustomizer.class)
                     .addPackage("io.quarkus.jaxb.deployment.info"))
             .overrideConfigKey("quarkus.jaxb.exclude-classes", "io.quarkus.jaxb.deployment.two.Model");
 
@@ -70,10 +67,7 @@ public class InjectJaxbContextTest {
         marshaller.marshal(person, sw);
 
         assertThat(sw.toString()).isEqualTo("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-                + "<person>\n"
-                + "    <first>first</first>\n"
-                + "    <last>last</last>\n"
-                + "</person>\n");
+                + "<person>\n" + "    <first>first</first>\n" + "    <last>last</last>\n" + "</person>\n");
     }
 
 }

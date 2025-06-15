@@ -30,13 +30,13 @@ public final class KeycloakPolicyEnforcerUtil {
     }
 
     static PolicyEnforcer createPolicyEnforcer(OidcTenantConfig oidcConfig,
-            KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig,
-            TlsConfigSupport tlsConfigSupport) {
+            KeycloakPolicyEnforcerTenantConfig keycloakPolicyEnforcerConfig, TlsConfigSupport tlsConfigSupport) {
 
         if (oidcConfig.applicationType()
                 .orElse(OidcTenantConfig.ApplicationType.SERVICE) == OidcTenantConfig.ApplicationType.WEB_APP
                 && oidcConfig.roles().source().orElse(null) != OidcTenantConfig.Roles.Source.accesstoken) {
-            throw new OIDCException("Application 'web-app' type is only supported if access token is the source of roles");
+            throw new OIDCException(
+                    "Application 'web-app' type is only supported if access token is the source of roles");
         }
 
         AdapterConfig adapterConfig = new AdapterConfig();
@@ -82,13 +82,9 @@ public final class KeycloakPolicyEnforcerUtil {
 
         adapterConfig.setPolicyEnforcerConfig(enforcerConfig);
 
-        return PolicyEnforcer.builder()
-                .authServerUrl(adapterConfig.getAuthServerUrl())
-                .realm(adapterConfig.getRealm())
-                .clientId(adapterConfig.getResource())
-                .credentials(adapterConfig.getCredentials())
-                .bearerOnly(adapterConfig.isBearerOnly())
-                .enforcerConfig(enforcerConfig)
+        return PolicyEnforcer.builder().authServerUrl(adapterConfig.getAuthServerUrl()).realm(adapterConfig.getRealm())
+                .clientId(adapterConfig.getResource()).credentials(adapterConfig.getCredentials())
+                .bearerOnly(adapterConfig.isBearerOnly()).enforcerConfig(enforcerConfig)
                 .httpClient(new HttpClientBuilder().sslContext(tlsConfigSupport.getSslContext()).build(adapterConfig))
                 .build();
     }
@@ -148,8 +144,8 @@ public final class KeycloakPolicyEnforcerUtil {
         enforcerConfig.setEnforcementMode(config.policyEnforcer().enforcementMode());
         enforcerConfig.setHttpMethodAsScope(config.policyEnforcer().httpMethodAsScope());
 
-        KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig pathCache = config.policyEnforcer()
-                .pathCache();
+        KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathCacheConfig pathCache = config
+                .policyEnforcer().pathCache();
 
         PolicyEnforcerConfig.PathCacheConfig pathCacheConfig = new PolicyEnforcerConfig.PathCacheConfig();
         pathCacheConfig.setLifespan(pathCache.lifespan());
@@ -213,8 +209,7 @@ public final class KeycloakPolicyEnforcerUtil {
                         return mConfig;
                     }
                 }).collect(Collectors.toList()));
-        config1.setClaimInformationPointConfig(
-                getClaimInformationPointConfig(pathConfig.claimInformationPoint()));
+        config1.setClaimInformationPointConfig(getClaimInformationPointConfig(pathConfig.claimInformationPoint()));
         return config1;
     }
 

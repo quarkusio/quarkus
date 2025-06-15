@@ -43,17 +43,14 @@ public class MediatorConfigurationSupportTest {
         indexer.index(MediatorConfigurationSupportTest.class.getClassLoader().getResourceAsStream(
                 "io/quarkus/smallrye/reactivemessaging/MediatorConfigurationSupportTest$ClassContainingAllSortsOfMethods.class"));
         Index index = indexer.complete();
-        classInfo = index
-                .getClassByName(DotName.createSimple(ClassContainingAllSortsOfMethods.class.getName()));
+        classInfo = index.getClassByName(DotName.createSimple(ClassContainingAllSortsOfMethods.class.getName()));
         classLoader = ClassContainingAllSortsOfMethods.class.getClassLoader();
     }
 
     private MediatorConfigurationSupport create(String method) {
         for (MethodInfo m : classInfo.methods()) {
             if (m.name().equalsIgnoreCase(method)) {
-                return new MediatorConfigurationSupport(
-                        method,
-                        load(m.returnType().name().toString()),
+                return new MediatorConfigurationSupport(method, load(m.returnType().name().toString()),
                         m.parameterTypes().stream().map(t -> load(t.name().toString())).toArray(Class[]::new),
                         new QuarkusMediatorConfigurationUtil.ReturnTypeGenericTypeAssignable(m, classLoader),
                         m.parametersCount() == 0

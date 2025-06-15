@@ -81,7 +81,8 @@ public class DefaultTokenStateManager implements TokenStateManager {
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
                         .append(tokens.getAccessTokenExpiresIn() != null ? tokens.getAccessTokenExpiresIn() : "")
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append(tokens.getAccessTokenScope() != null ? tokens.getAccessTokenScope() : "");
+                        .append(tokens.getAccessTokenScope() != null ? encodeScopes(oidcConfig, tokens.getAccessTokenScope())
+                                : "");
 
                 // Encrypt access token and create a `q_session_at` cookie.
                 CodeAuthenticationMechanism.createCookie(routingContext,

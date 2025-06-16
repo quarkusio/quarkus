@@ -20,7 +20,7 @@ Each organization creating their Quarkus platform may establish their own criter
 
 == How does the Quarkus Platform help?
 When you're using multiple extensions or libraries (like in Quarkus), a BOM ensures:
-* Version compatibility between dependencies
+* version compatibility between the dependencies;
 * Simplified dependency management
 * easier upgrades.
 

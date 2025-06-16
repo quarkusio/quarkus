@@ -89,8 +89,14 @@ quarkus.kafka.devservices.image-name=quay.io/strimzi-test-container/test-contain
 
 You can configure the Dev Services for Kafka to create topics once the broker is started.
 Topics are created with given number of partitions and 1 replica.
+The syntax is the following:
 
-The following example creates a topic named `test` with 3 partitions, and a second topic named `messages` with 2 partitions.
+[source, properties]
+----
+quarkus.kafka.devservices.topic-partitions.<topic-name>=<number-of-partitions>
+----
+
+The following example creates a topic named `test` with three partitions, and a second topic named `messages` with two partitions.
 
 [source, properties]
 ----

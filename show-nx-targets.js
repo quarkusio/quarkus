@@ -1,164 +1,113 @@
 // Show how Maven targets appear in Nx format
 const fs = require('fs');
 
-// Mock the target generation process that the TypeScript plugin uses
-function createPhaseTarget(phase, phaseDependencies, relevantPhases) {
-  const config = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `mvn ${phase}`,
-      cwd: '{projectRoot}',
-    },
-    metadata: {
-      type: 'phase',
-      phase: phase,
-      technologies: ['maven'],
-      description: `Maven lifecycle phase: ${phase}`,
-    },
-    inputs: ['{projectRoot}/pom.xml'],
-    outputs: [],
-  };
-
-  // Add phase-specific configurations
-  if (phase === 'compile') {
-    config.inputs.push('{projectRoot}/src/main/**/*');
-    config.outputs = ['{projectRoot}/target/classes/**/*'];
-  } else if (phase === 'test') {
-    config.inputs.push('{projectRoot}/src/test/**/*', '{projectRoot}/src/main/**/*');
-    config.outputs = ['{projectRoot}/target/surefire-reports/**/*'];
-  } else if (phase === 'package') {
-    config.inputs.push('{projectRoot}/src/**/*');
-    config.outputs = ['{projectRoot}/target/*.jar', '{projectRoot}/target/*.war'];
-  }
-
-  // Add dependencies
-  const phaseDeps = phaseDependencies[phase] || [];
-  const filteredDeps = phaseDeps.filter(dep => relevantPhases.includes(dep));
-  if (filteredDeps.length > 0) {
-    config.dependsOn = filteredDeps;
-  }
-
-  return config;
-}
-
-function createPluginGoalTarget(goalInfo) {
-  const { pluginKey, goal, targetType, suggestedDependencies } = goalInfo;
-  const command = `mvn ${pluginKey}:${goal}`;
-
-  const config = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command,
-      cwd: '{projectRoot}',
-    },
-    metadata: {
-      type: 'goal',
-      plugin: pluginKey,
-      goal: goal,
-      targetType: targetType,
-      technologies: ['maven'],
-      description: `${pluginKey.split(':')[1]}:${goal}`,
-    },
-    inputs: ['{projectRoot}/pom.xml'],
-    outputs: [],
-  };
-
-  // Customize based on target type
-  if (targetType === 'serve') {
-    config.inputs.push('{projectRoot}/src/**/*');
-  } else if (targetType === 'build') {
-    config.inputs.push('{projectRoot}/src/**/*');
-    config.outputs = ['{projectRoot}/target/**/*'];
-  } else if (targetType === 'test') {
-    config.inputs.push('{projectRoot}/src/test/**/*', '{projectRoot}/src/main/**/*');
-    config.outputs = ['{projectRoot}/target/surefire-reports/**/*'];
-  }
-
-  if (suggestedDependencies && suggestedDependencies.length > 0) {
-    config.dependsOn = suggestedDependencies;
-  }
-
-  return config;
-}
-
-// Get example project data
+// Get actual project data from the Maven plugin output
 const data = JSON.parse(fs.readFileSync('./maven-results.json', 'utf8'));
-const projectPath = 'independent-projects/arc/processor';
-const project = data[projectPath];
+
+// Extract the first project from the createNodesResults
+let project = null;
+let projectName = null;
+let projectRoot = null;
+
+if (data.createNodesResults && data.createNodesResults.length > 0) {
+  const [pomPath, createResult] = data.createNodesResults[0];
+  const projects = createResult.projects || {};
+  const projectKey = Object.keys(projects)[0];
+  
+  if (projectKey) {
+    project = projects[projectKey];
+    projectName = project.name;
+    projectRoot = project.root || '.';
+  }
+}
+
+if (!project) {
+  console.log('No projects found in maven-results.json');
+  process.exit(1);
+}
 
 console.log('='.repeat(70));
-console.log(`NX TARGET CONFIGURATION FOR: ${project.name}`);
+console.log(`NX TARGET CONFIGURATION FOR: ${projectName}`);
 console.log('='.repeat(70));
 
-// Generate example targets
-const targets = {};
+const targets = project.targets || {};
+const targetNames = Object.keys(targets);
 
-// Add phase targets
+// Categorize targets by type
+const phaseTargets = [];
+const goalTargets = [];
+
+targetNames.forEach(name => {
+  const target = targets[name];
+  const metadata = target.metadata || {};
+  
+  if (metadata.type === 'phase') {
+    phaseTargets.push({ name, target });
+  } else if (metadata.type === 'goal') {
+    goalTargets.push({ name, target });
+  }
+});
+
+// Display phase targets
 console.log('\n📋 PHASE TARGETS (Maven Lifecycle):');
-['compile', 'test', 'package'].forEach(phase => {
-  if (project.relevantPhases.includes(phase)) {
-    const target = createPhaseTarget(phase, project.phaseDependencies, project.relevantPhases);
-    targets[phase] = target;
-    
-    console.log(`\n  ${phase}:`);
+if (phaseTargets.length > 0) {
+  phaseTargets.forEach(({ name, target }) => {
+    console.log(`\n  ${name}:`);
     console.log(`    executor: ${target.executor}`);
     console.log(`    command: ${target.options.command}`);
-    console.log(`    inputs: [${target.inputs.join(', ')}]`);
-    if (target.outputs.length > 0) {
+    if (target.inputs && target.inputs.length > 0) {
+      console.log(`    inputs: [${target.inputs.join(', ')}]`);
+    }
+    if (target.outputs && target.outputs.length > 0) {
       console.log(`    outputs: [${target.outputs.join(', ')}]`);
     }
-    if (target.dependsOn) {
+    if (target.dependsOn && target.dependsOn.length > 0) {
       console.log(`    dependsOn: [${target.dependsOn.join(', ')}]`);
     }
-  }
-});
-
-// Add plugin goal targets
-console.log('\n🔧 PLUGIN GOAL TARGETS (Framework-specific):');
-project.pluginGoals.forEach(goalInfo => {
-  const target = createPluginGoalTarget(goalInfo);
-  targets[goalInfo.targetName] = target;
-  
-  console.log(`\n  ${goalInfo.targetName}:`);
-  console.log(`    executor: ${target.executor}`);
-  console.log(`    command: ${target.options.command}`);
-  console.log(`    type: ${goalInfo.targetType}`);
-  if (target.dependsOn) {
-    console.log(`    dependsOn: [${target.dependsOn.join(', ')}]`);
-  }
-});
-
-console.log('\n🔗 DEPENDENCY VISUALIZATION:');
-console.log('When you run "nx serve", the dependency chain looks like:');
-
-// Find serve target dependencies
-const serveTarget = project.pluginGoals.find(g => g.targetType === 'serve');
-if (serveTarget && serveTarget.suggestedDependencies) {
-  let chain = [];
-  let current = serveTarget.suggestedDependencies[0]; // 'compile'
-  
-  while (current && project.phaseDependencies[current]) {
-    const deps = project.phaseDependencies[current];
-    if (deps.length > 0) {
-      const relevantDep = deps.find(dep => project.relevantPhases.includes(dep));
-      if (relevantDep) {
-        chain.unshift(relevantDep);
-        current = relevantDep;
-      } else {
-        break;
-      }
-    } else {
-      break;
+    if (target.metadata.description) {
+      console.log(`    description: ${target.metadata.description}`);
     }
-  }
-  
-  chain.push('compile');
-  chain.push('serve');
-  
-  console.log(`  ${chain.join(' → ')}`);
-  console.log(`  ${'↑'.padStart(chain[0].length + 1)} ${'↑'.padStart(chain[1] ? chain[1].length + 2 : 0)} ${'↑'.padStart('serve'.length + 2)}`);
-  console.log(`  First    Compile   Start dev`);
-  console.log(`  step     sources   server`);
+  });
+} else {
+  console.log('  No phase targets found');
+}
+
+// Display plugin goal targets
+console.log('\n🔧 PLUGIN GOAL TARGETS (Framework-specific):');
+if (goalTargets.length > 0) {
+  goalTargets.forEach(({ name, target }) => {
+    console.log(`\n  ${name}:`);
+    console.log(`    executor: ${target.executor}`);
+    console.log(`    command: ${target.options.command}`);
+    if (target.metadata.plugin) {
+      console.log(`    plugin: ${target.metadata.plugin}`);
+    }
+    if (target.metadata.goal) {
+      console.log(`    goal: ${target.metadata.goal}`);
+    }
+    if (target.dependsOn && target.dependsOn.length > 0) {
+      console.log(`    dependsOn: [${target.dependsOn.join(', ')}]`);
+    }
+    if (target.metadata.description) {
+      console.log(`    description: ${target.metadata.description}`);
+    }
+  });
+} else {
+  console.log('  No plugin goal targets found');
+}
+
+// Show dependency visualization
+console.log('\n🔗 DEPENDENCY VISUALIZATION:');
+if (targetNames.length > 0) {
+  console.log('Target dependency chains:');
+  targetNames.forEach(name => {
+    const target = targets[name];
+    if (target.dependsOn && target.dependsOn.length > 0) {
+      console.log(`  ${name} → depends on: [${target.dependsOn.join(', ')}]`);
+    }
+  });
+} else {
+  console.log('  No target dependencies found');
 }
 
 console.log('\n💡 BENEFITS:');

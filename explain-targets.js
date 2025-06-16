@@ -3,66 +3,107 @@ const fs = require('fs');
 
 const data = JSON.parse(fs.readFileSync('./maven-results.json', 'utf8'));
 
-// Find a good example project with multiple types of targets
-let exampleProject = null;
-for (const [path, project] of Object.entries(data)) {
-  if (project.pluginGoals?.length > 2 && project.relevantPhases?.length > 8) {
-    exampleProject = { path, project };
-    break;
+// Extract the first project from the createNodesResults
+let project = null;
+let projectName = null;
+let projectRoot = null;
+let path = null;
+
+if (data.createNodesResults && data.createNodesResults.length > 0) {
+  const [pomPath, createResult] = data.createNodesResults[0];
+  const projects = createResult.projects || {};
+  const projectKey = Object.keys(projects)[0];
+  
+  if (projectKey) {
+    project = projects[projectKey];
+    projectName = project.name;
+    projectRoot = project.root || '.';
+    path = pomPath;
   }
 }
 
-if (!exampleProject) {
-  console.log('No suitable example project found');
+if (!project) {
+  console.log('No projects found in maven-results.json');
   process.exit(1);
 }
-
-const { path, project } = exampleProject;
 console.log('='.repeat(60));
 console.log(`EXAMPLE PROJECT: ${path}`);
-console.log(`Project: ${project.name}`);
+console.log(`Project: ${projectName}`);
 console.log('='.repeat(60));
 
-console.log('\n1. MAVEN LIFECYCLE PHASES:');
-console.log('These are the standard Maven build phases that run in order:');
-project.relevantPhases.forEach((phase, i) => {
-  console.log(`   ${i + 1}. ${phase}`);
+const targets = project.targets || {};
+const targetNames = Object.keys(targets);
+
+// Categorize targets
+const phaseTargets = [];
+const goalTargets = [];
+const allPhases = new Set();
+const allPlugins = new Set();
+
+targetNames.forEach(name => {
+  const target = targets[name];
+  const metadata = target.metadata || {};
+  
+  if (metadata.type === 'phase') {
+    phaseTargets.push({ name, target });
+    if (metadata.phase) allPhases.add(metadata.phase);
+  } else if (metadata.type === 'goal') {
+    goalTargets.push({ name, target });
+    if (metadata.plugin) allPlugins.add(metadata.plugin);
+  }
 });
 
-console.log('\n2. PHASE DEPENDENCIES:');
-console.log('Each phase depends on previous phases completing first:');
-for (const [phase, deps] of Object.entries(project.phaseDependencies || {})) {
-  if (deps.length > 0) {
-    console.log(`   ${phase} → depends on: [${deps.join(', ')}]`);
-  } else {
-    console.log(`   ${phase} → no dependencies (runs first)`);
-  }
+console.log('\n1. MAVEN LIFECYCLE PHASES:');
+console.log('These are the Maven build phases discovered in this project:');
+if (allPhases.size > 0) {
+  Array.from(allPhases).forEach((phase, i) => {
+    console.log(`   ${i + 1}. ${phase}`);
+  });
+} else {
+  console.log('   No phase targets found');
 }
+
+console.log('\n2. PHASE DEPENDENCIES:');
+console.log('Each phase target depends on other targets completing first:');
+phaseTargets.forEach(({ name, target }) => {
+  if (target.dependsOn && target.dependsOn.length > 0) {
+    console.log(`   ${name} → depends on: [${target.dependsOn.join(', ')}]`);
+  } else {
+    console.log(`   ${name} → no dependencies (runs independently)`);
+  }
+});
 
 console.log('\n3. PLUGIN GOALS:');
 console.log('These are specific tasks that plugins can execute:');
-project.pluginGoals.forEach((goal, i) => {
-  console.log(`   ${i + 1}. Target: "${goal.targetName}"`);
-  console.log(`      Plugin: ${goal.pluginKey}`);
-  console.log(`      Goal: ${goal.goal}`);
-  console.log(`      Type: ${goal.targetType}`);
-  console.log(`      Dependencies: [${goal.suggestedDependencies?.join(', ') || 'none'}]`);
+goalTargets.forEach((goalInfo, i) => {
+  const { name, target } = goalInfo;
+  const metadata = target.metadata || {};
+  console.log(`   ${i + 1}. Target: "${name}"`);
+  console.log(`      Plugin: ${metadata.plugin || 'unknown'}`);
+  console.log(`      Goal: ${metadata.goal || 'unknown'}`);
+  console.log(`      Phase: ${metadata.phase || 'none'}`);
+  console.log(`      Dependencies: [${target.dependsOn?.join(', ') || 'none'}]`);
+  if (metadata.description) {
+    console.log(`      Description: ${metadata.description}`);
+  }
   console.log('');
 });
 
 console.log('\n4. TARGET TYPES EXPLAINED:');
-console.log('   • build    - Compiles/packages the code (mvn compile, mvn package)');
-console.log('   • test     - Runs tests (mvn test, mvn integration-test)');
-console.log('   • serve    - Starts development server (quarkus:dev, spring-boot:run)');
-console.log('   • deploy   - Deploys artifacts (mvn deploy)');
+console.log('   • goal     - Specific plugin execution (maven-compiler:compile)');
+console.log('   • phase    - Maven lifecycle phase (compile, test, package)');
+console.log('   • build    - Compiles/packages the code');
+console.log('   • test     - Runs tests');
 console.log('   • utility  - Helper tasks (clean, validate)');
 
-if (Object.keys(project.crossProjectDependencies || {}).length > 0) {
-  console.log('\n5. CROSS-PROJECT DEPENDENCIES:');
-  console.log('Some targets depend on targets in other projects:');
-  for (const [target, deps] of Object.entries(project.crossProjectDependencies)) {
-    console.log(`   ${target} → depends on: [${deps.join(', ')}]`);
-  }
+console.log('\n5. DISCOVERED PLUGINS:');
+console.log('Maven plugins found in this project:');
+if (allPlugins.size > 0) {
+  Array.from(allPlugins).forEach((plugin, i) => {
+    console.log(`   ${i + 1}. ${plugin}`);
+  });
+} else {
+  console.log('   No plugin goals found');
 }
 
 console.log('\n6. HOW NX USES THESE:');

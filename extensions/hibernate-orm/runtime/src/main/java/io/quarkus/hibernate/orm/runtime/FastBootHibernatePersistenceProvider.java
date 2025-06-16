@@ -191,6 +191,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate ORM persistence unit");
             }
+
             RuntimeSettings runtimeSettings = buildRuntimeSettings(persistenceUnitName, recordedState, puConfig);
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(persistenceUnitName,
@@ -205,7 +206,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
-                    true);
+                    true,
+                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour());
         }
 
         log.debug("Found no matching persistence units");

@@ -183,8 +183,8 @@ public final class HibernateReactiveProcessor {
                 launchMode.getLaunchMode(),
                 systemProperties, nativeImageResources, hotDeploymentWatchedFiles, dbKindDialectBuildItems);
 
-        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
-        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
+        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
         jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
         xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
@@ -202,6 +202,7 @@ public final class HibernateReactiveProcessor {
                         persistenceUnitConfig.dialect().dialect(),
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                         hibernateOrmConfig.database().ormCompatibilityVersion(),
+                        hibernateOrmConfig.mapping().format().global(),
                         persistenceUnitConfig.unsupportedProperties()),
                 null,
                 jpaModel.getXmlMappings(reactivePU.getName()),

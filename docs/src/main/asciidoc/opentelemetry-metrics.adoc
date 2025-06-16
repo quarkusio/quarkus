@@ -536,6 +536,8 @@ See the main xref:opentelemetry.adoc#resource[OpenTelemetry Guide resources] sec
 
 == Automatic instrumentation
 
+=== Microprofile 2.0
+
 We provide automatic instrumentation for JVM metrics and HTTP server requests metrics according to the https://github.com/eclipse/microprofile-telemetry/blob/2.0/spec/src/main/asciidoc/metrics.adoc[Microprofile Metrics 2.0 specification].
 
 These metrics can be disabled by setting the following properties to `false`:
@@ -546,12 +548,159 @@ quarkus.otel.instrument.jvm-metrics=false
 quarkus.otel.instrument.http-server-metrics=false
 ----
 
+These are the metrics produced by the OpenTelemetry extension when metrics are enabled, as of June 12, 2025:
+
+|===
+|Metric Name |Description |Type |Available on JVM? |Available on Native?|MP 2.0?
+
+|http.server.request.duration
+|Duration of HTTP server requests
+|HISTOGRAM
+|Y
+|Y
+|Y
+
+|jvm.memory.committed
+|Measure of memory committed
+|LONG_SUM
+|Y
+|No data produced
+|Y
+
+|jvm.memory.used
+|Measure of memory used
+|LONG_SUM
+|Y
+|No data produced
+|Y
+
+|jvm.memory.limit
+|Measure of max obtainable memory
+|LONG_SUM
+|Y
+|Not present
+|Y
+
+|jvm.memory.used_after_last_gc
+|Measure of memory used, as measured after the most recent garbage collection event on this pool.
+|LONG_SUM
+|Y
+|No data produced
+|Y
+
+|jvm.gc.duration
+|Duration of JVM garbage collection actions
+|HISTOGRAM
+|Y
+|Not present
+|Y
+
+|jvm.class.count
+|Number of classes currently loaded.
+|LONG_SUM
+|Y
+|No data produced
+|Y
+
+|jvm.class.loaded
+|Number of classes loaded since JVM start.
+|LONG_SUM
+|Y
+|No data produced
+|Y
+
+|jvm.class.unloaded
+|Number of classes unloaded since JVM start.
+|LONG_SUM
+|Y
+|No data produced
+|Y
+
+|jvm.cpu.count
+|Number of processors available to the Java virtual machine.
+|LONG_SUM
+|Y
+|Y
+|N
+
+|jvm.cpu.limit
+|
+|LONG_SUM
+|Y
+|No data produced
+|N
+
+|jvm.cpu.time
+|CPU time used by the process as reported by the JVM.
+|DOUBLE_SUM
+|Y
+|Not present
+|N
+
+|jvm.system.cpu.utilization
+|CPU time used by the process as reported by the JVM.
+|DOUBLE_SUM
+|Not present
+|No data produced
+|N
+
+|jvm.cpu.recent_utilization
+|Recent CPU utilization for the process as reported by the JVM.
+|DOUBLE_GAUGE
+|Y
+|No data produced
+|N
+
+|jvm.cpu.longlock
+|Long lock times
+|HISTOGRAM
+|Y
+|Y
+|N
+
+|jvm.cpu.context_switch
+|
+|DOUBLE_SUM
+|Y
+|No data produced
+|N
+
+// not on native
+|jvm.network.io
+|Network read/write bytes.
+|HISTOGRAM
+|Y
+|Not present
+|N
+
+|jvm.network.time
+|Network read/write duration.
+|HISTOGRAM
+|Y
+|Not present
+|N
+
+|jvm.thread.count
+|Number of executing platform threads.
+|LONG_SUM
+|Y
+|Y
+|Y
+
+|===
+
+
+The native image assessment above was performed using GraalVM 23.0.2. Work will be done in the future to improve the metrics support on the native image builds.
+
 [NOTE]
 ====
-- It is recommended to disable these instrumentations if you are using the Micrometer extension as well.
+- It is recommended to disable these instrumentations if you are using the `quarkus-micrometer` or the `quarkus-micrometer-opentelemetry` extensions as well.
 ====
 
-We plan to bridge the existing Quarkus Micrometer extension metrics to OpenTelemetry in the future.
+=== Micrometer to OpenTelemetry bridge
+
+The Micrometer to OpenTelemetry bridge unifies all telemetry in Quarkus. It generates Micrometer's metrics but sends
+them along the OpenTelemetry telemetry output. For more details please visit the xref:telemetry-micrometer-to-opentelemetry.adoc[Micrometer and OpenTelemetry extension].
 
 == Exporters
 See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] section.

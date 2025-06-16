@@ -122,8 +122,8 @@ public class TargetDependencyServiceTest {
         
         TargetDependencyService service = new TargetDependencyService(mojo.getLog(), false, session);
         
-        // Test various common Maven goals
-        String[] testGoals = {"clean", "compile", "test", "package", "install"};
+        // Test actual Maven goals from the POM configuration
+        String[] testGoals = {"compiler:compile", "compiler:testCompile", "surefire:test", "jar:jar", "install:install"};
         
         for (String goal : testGoals) {
             List<String> dependencies = service.calculateGoalDependencies(

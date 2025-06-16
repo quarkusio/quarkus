@@ -38,11 +38,6 @@ public class TargetDependencyService {
             effectivePhase = inferPhaseFromGoal(MavenUtils.extractGoalFromTargetName(targetName), project);
         }
 
-        // Fallback: map common goals to known phases if inference fails
-        if (effectivePhase == null || effectivePhase.isEmpty()) {
-            String goal = MavenUtils.extractGoalFromTargetName(targetName);
-            effectivePhase = mapGoalToPhase(goal);
-        }
 
         if (effectivePhase != null && !effectivePhase.isEmpty()) {
             // Add dependency on preceding phase (but don't fail if this doesn't work)
@@ -192,26 +187,6 @@ public class TargetDependencyService {
     }
 
 
-    /**
-     * Simple mapping of common goals to their typical phases
-     */
-    private String mapGoalToPhase(String goal) {
-        if (goal == null) return null;
-
-        switch (goal) {
-            case "clean": return "clean";
-            case "compile": return "compile";
-            case "testCompile": return "test-compile";
-            case "test": return "test";
-            case "package": return "package";
-            case "jar": return "package";
-            case "war": return "package";
-            case "install": return "install";
-            case "deploy": return "deploy";
-            case "site": return "site";
-            default: return null;
-        }
-    }
 
     /**
      * Infer the Maven phase from a goal name using project build configuration
@@ -235,8 +210,8 @@ public class TargetDependencyService {
             }
         }
 
-        // Fallback to mapGoalToPhase
-        return mapGoalToPhase(goal);
+        // No fallback - rely only on project plugin configuration
+        return null;
     }
 
 

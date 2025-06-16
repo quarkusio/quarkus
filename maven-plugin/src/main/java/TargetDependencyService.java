@@ -1,25 +1,20 @@
 import model.TargetConfiguration;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.LifecycleExecutor;
-import org.apache.maven.lifecycle.MavenExecutionPlan;
-import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Service responsible for calculating target dependencies in Maven projects.
  * Handles phase dependencies, cross-module dependencies, and goal dependencies.
  */
 public class TargetDependencyService {
-    
+
     private final Log log;
     private final boolean verbose;
     private final MavenSession session;
@@ -33,69 +28,69 @@ public class TargetDependencyService {
     /**
      * Calculate dependencies for a goal target
      */
-    public List<String> calculateGoalDependencies(MavenProject project, String executionPhase, 
+    public List<String> calculateGoalDependencies(MavenProject project, String executionPhase,
                                                   String targetName, List<MavenProject> reactorProjects) {
         List<String> dependsOn = new ArrayList<>();
-        
-        
+
+
         String effectivePhase = executionPhase;
         if (effectivePhase == null || effectivePhase.isEmpty() || effectivePhase.startsWith("${")) {
-            effectivePhase = inferPhaseFromGoal(MavenUtils.extractGoalFromTargetName(targetName));
+            effectivePhase = inferPhaseFromGoal(MavenUtils.extractGoalFromTargetName(targetName), project);
         }
-        
+
         // Fallback: map common goals to known phases if inference fails
         if (effectivePhase == null || effectivePhase.isEmpty()) {
             String goal = MavenUtils.extractGoalFromTargetName(targetName);
             effectivePhase = mapGoalToPhase(goal);
         }
-        
+
         if (effectivePhase != null && !effectivePhase.isEmpty()) {
             // Add dependency on preceding phase (but don't fail if this doesn't work)
             try {
-                String precedingPhase = getPrecedingPhase(effectivePhase);
+                String precedingPhase = getPrecedingPhase(effectivePhase, project);
                 if (precedingPhase != null && !precedingPhase.isEmpty()) {
                     dependsOn.add(precedingPhase);
                 }
             } catch (Exception e) {
                 // Continue even if preceding phase detection fails
             }
-            
+
             // ALWAYS add cross-module dependencies using Nx ^ syntax
             // Goals depend on their phase across all dependent projects
             dependsOn.add("^" + effectivePhase);
         }
-        
-        
+
+
         return dependsOn;
     }
 
     /**
      * Calculate dependencies for a phase target
      */
-    public List<String> calculatePhaseDependencies(String phase, Map<String, TargetConfiguration> allTargets, 
+    public List<String> calculatePhaseDependencies(String phase, Map<String, TargetConfiguration> allTargets,
                                                    MavenProject project, List<MavenProject> reactorProjects) {
         List<String> dependsOn = new ArrayList<>();
-        
+
         // Add dependency on preceding phase
-        List<String> phaseDependencies = getPhaseDependencies(phase);
+        List<String> phaseDependencies = getPhaseDependencies(phase, project);
         dependsOn.addAll(phaseDependencies);
-        
+
         // Add dependencies on all goals that belong to this phase
         List<String> goalsForPhase = getGoalsForPhase(phase, allTargets);
         dependsOn.addAll(goalsForPhase);
-        
+
         // Add cross-module dependencies using Nx ^ syntax
         dependsOn.add("^" + phase);
-        
+
         return dependsOn;
     }
 
     /**
      * Get phase dependencies (preceding phases)
      */
-    public List<String> getPhaseDependencies(String phase) {
+    public List<String> getPhaseDependencies(String phase, MavenProject project) {
         List<String> deps = new ArrayList<>();
-        String precedingPhase = getPrecedingPhase(phase);
+        String precedingPhase = getPrecedingPhase(phase, project);
         if (precedingPhase != null) {
             deps.add(precedingPhase);
         }
@@ -107,77 +102,102 @@ public class TargetDependencyService {
      */
     public List<String> getGoalsForPhase(String phase, Map<String, TargetConfiguration> allTargets) {
         List<String> goalsForPhase = new ArrayList<>();
-        
+
         for (Map.Entry<String, TargetConfiguration> entry : allTargets.entrySet()) {
             String targetName = entry.getKey();
             TargetConfiguration target = entry.getValue();
-            
-            if (target.getMetadata() != null && 
+
+            if (target.getMetadata() != null &&
                 "goal".equals(target.getMetadata().getType()) &&
                 phase.equals(target.getMetadata().getPhase())) {
                 goalsForPhase.add(targetName);
             }
         }
-        
+
         return goalsForPhase;
     }
 
 
 
     /**
-     * Get Maven execution plan using the lifecycle executor
+     * Get lifecycle phases using Maven Session API - cleanest approach
      */
-    private MavenExecutionPlan getExecutionPlan() {
+    private List<String> getLifecyclePhases(String upToPhase, MavenProject project) {
+        if (session == null) {
+            return new ArrayList<>();
+        }
+
         try {
-            LifecycleExecutor lifecycleExecutor = session.getContainer().lookup(LifecycleExecutor.class);
-            List<String> goals = session.getGoals();
-            return lifecycleExecutor.calculateExecutionPlan(session, goals.toArray(new String[0]));
+            // Best approach: Use DefaultLifecycles from the container
+            // This is the most reliable and direct way to get Maven's lifecycle phases
+            org.apache.maven.lifecycle.DefaultLifecycles defaultLifecycles =
+                session.getContainer().lookup(org.apache.maven.lifecycle.DefaultLifecycles.class);
+
+            // Get the default lifecycle
+            org.apache.maven.lifecycle.Lifecycle defaultLifecycle =
+                defaultLifecycles.getLifeCycles().stream()
+                    .filter(lc -> "default".equals(lc.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (defaultLifecycle != null) {
+                List<String> phases = new ArrayList<>(defaultLifecycle.getPhases());
+
+                // Return phases up to the target phase
+                int targetIndex = phases.indexOf(upToPhase);
+                if (targetIndex >= 0) {
+                    return phases.subList(0, targetIndex + 1);
+                }
+            }
+
+            return new ArrayList<>();
+
         } catch (Exception e) {
             if (verbose) {
-                log.warn("Could not access Maven execution plan: " + e.getMessage(), e);
+                log.warn("Could not access Maven lifecycle definitions: " + e.getMessage());
             }
-            return null;
+            return new ArrayList<>();
         }
     }
 
     /**
      * Get the preceding phase in the Maven lifecycle
      */
-    public String getPrecedingPhase(String phase) {
+    public String getPrecedingPhase(String phase, MavenProject project) {
         if (phase == null || phase.isEmpty()) {
             return null;
         }
-        
-        MavenExecutionPlan executionPlan = getExecutionPlan();
-        if (executionPlan == null) {
-            return null;
+
+        // Get lifecycle phases using Maven's lifecycle definitions
+        List<String> lifecyclePhases = getLifecyclePhases(phase, project);
+
+        if (verbose) {
+            log.info("Found lifecycle phases up to " + phase + ": " + lifecyclePhases);
         }
-        
-        List<String> allPhases = new ArrayList<>();
-        Set<String> seenPhases = new LinkedHashSet<>();
-        
-        for (MojoExecution mojoExecution : executionPlan.getMojoExecutions()) {
-            String executionPhase = mojoExecution.getLifecyclePhase();
-            if (executionPhase != null && !executionPhase.isEmpty()) {
-                seenPhases.add(executionPhase);
-            }
-        }
-        allPhases.addAll(seenPhases);
-        
-        int currentPhaseIndex = allPhases.indexOf(phase);
+
+        // Find the preceding phase
+        int currentPhaseIndex = lifecyclePhases.indexOf(phase);
         if (currentPhaseIndex > 0) {
-            return allPhases.get(currentPhaseIndex - 1);
+            String precedingPhase = lifecyclePhases.get(currentPhaseIndex - 1);
+            if (verbose) {
+                log.info("Found preceding phase: " + precedingPhase);
+            }
+            return precedingPhase;
         }
-        
+
+        if (verbose) {
+            log.info("No preceding phase found for: " + phase + " (index: " + currentPhaseIndex + ")");
+        }
         return null;
     }
+
 
     /**
      * Simple mapping of common goals to their typical phases
      */
     private String mapGoalToPhase(String goal) {
         if (goal == null) return null;
-        
+
         switch (goal) {
             case "clean": return "clean";
             case "compile": return "compile";
@@ -194,29 +214,32 @@ public class TargetDependencyService {
     }
 
     /**
-     * Infer the Maven phase from a goal name by examining plugin configurations
+     * Infer the Maven phase from a goal name using project build configuration
      */
-    public String inferPhaseFromGoal(String goal) {
+    public String inferPhaseFromGoal(String goal, MavenProject project) {
         if (goal == null || goal.isEmpty()) {
             return null;
         }
-        
-        MavenExecutionPlan executionPlan = getExecutionPlan();
-        if (executionPlan == null) {
-            return null;
-        }
-        
-        for (MojoExecution mojoExecution : executionPlan.getMojoExecutions()) {
-            String executionGoal = mojoExecution.getGoal();
-            if (goal.equals(executionGoal) || goal.endsWith(":" + executionGoal)) {
-                return mojoExecution.getLifecyclePhase();
+
+        // Try to infer from project build plugins first
+        if (project != null && project.getBuild() != null) {
+            for (org.apache.maven.model.Plugin plugin : project.getBuild().getPlugins()) {
+                for (org.apache.maven.model.PluginExecution execution : plugin.getExecutions()) {
+                    if (execution.getGoals().contains(goal) ||
+                        execution.getGoals().stream().anyMatch(g -> goal.endsWith(":" + g))) {
+                        if (execution.getPhase() != null) {
+                            return execution.getPhase();
+                        }
+                    }
+                }
             }
         }
-        
-        return null;
+
+        // Fallback to mapGoalToPhase
+        return mapGoalToPhase(goal);
     }
 
-    
+
     /**
      * Get Nx project path from Maven project (relative path from workspace root)
      */

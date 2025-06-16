@@ -176,14 +176,16 @@ public class TargetDependencyServiceTest {
 
         NxAnalyzerMojo mojo = (NxAnalyzerMojo) rule.lookupConfiguredMojo(pom, "analyze");
         MavenSession session = (MavenSession) rule.getVariableValueFromObject(mojo, "session");
+        List<MavenProject> reactorProjects = (List<MavenProject>) rule.getVariableValueFromObject(mojo, "reactorProjects");
+        MavenProject project = reactorProjects.get(0);
         
         TargetDependencyService service = new TargetDependencyService(mojo.getLog(), false, session);
         
         // Test with various phases
-        List<String> testDeps = service.getPhaseDependencies("test");
+        List<String> testDeps = service.getPhaseDependencies("test", project);
         assertNotNull("Test phase dependencies should not be null", testDeps);
         
-        List<String> compileDeps = service.getPhaseDependencies("compile");
+        List<String> compileDeps = service.getPhaseDependencies("compile", project);
         assertNotNull("Compile phase dependencies should not be null", compileDeps);
     }
 
@@ -197,10 +199,12 @@ public class TargetDependencyServiceTest {
 
         NxAnalyzerMojo mojo = (NxAnalyzerMojo) rule.lookupConfiguredMojo(pom, "analyze");
         MavenSession session = (MavenSession) rule.getVariableValueFromObject(mojo, "session");
+        List<MavenProject> reactorProjects = (List<MavenProject>) rule.getVariableValueFromObject(mojo, "reactorProjects");
+        MavenProject project = reactorProjects.get(0);
         
         TargetDependencyService service = new TargetDependencyService(mojo.getLog(), false, session);
         
-        List<String> dependencies = service.getPhaseDependencies(null);
+        List<String> dependencies = service.getPhaseDependencies(null, project);
         assertNotNull("Dependencies should not be null", dependencies);
         assertTrue("Dependencies should be empty for null phase", dependencies.isEmpty());
     }
@@ -257,17 +261,19 @@ public class TargetDependencyServiceTest {
 
         NxAnalyzerMojo mojo = (NxAnalyzerMojo) rule.lookupConfiguredMojo(pom, "analyze");
         MavenSession session = (MavenSession) rule.getVariableValueFromObject(mojo, "session");
+        List<MavenProject> reactorProjects = (List<MavenProject>) rule.getVariableValueFromObject(mojo, "reactorProjects");
+        MavenProject project = reactorProjects.get(0);
         
         TargetDependencyService service = new TargetDependencyService(mojo.getLog(), false, session);
         
         // Test some common Maven lifecycle phases
-        String precedingPhase = service.getPrecedingPhase("test");
+        String precedingPhase = service.getPrecedingPhase("test", project);
         // The result depends on the actual Maven lifecycle execution plan
         // but should be consistent with Maven's behavior
         
         // Test null handling
-        assertNull("Null phase should return null", service.getPrecedingPhase(null));
-        assertNull("Empty phase should return null", service.getPrecedingPhase(""));
+        assertNull("Null phase should return null", service.getPrecedingPhase(null, project));
+        assertNull("Empty phase should return null", service.getPrecedingPhase("", project));
     }
 
     /**
@@ -280,16 +286,18 @@ public class TargetDependencyServiceTest {
 
         NxAnalyzerMojo mojo = (NxAnalyzerMojo) rule.lookupConfiguredMojo(pom, "analyze");
         MavenSession session = (MavenSession) rule.getVariableValueFromObject(mojo, "session");
+        List<MavenProject> reactorProjects = (List<MavenProject>) rule.getVariableValueFromObject(mojo, "reactorProjects");
+        MavenProject project = reactorProjects.get(0);
         
         TargetDependencyService service = new TargetDependencyService(mojo.getLog(), false, session);
         
         // Test phase inference for common goals
-        String phase = service.inferPhaseFromGoal("compile");
+        String phase = service.inferPhaseFromGoal("compile", project);
         // Result depends on actual Maven execution plan but should be consistent
         
         // Test null handling
-        assertNull("Null goal should return null", service.inferPhaseFromGoal(null));
-        assertNull("Empty goal should return null", service.inferPhaseFromGoal(""));
+        assertNull("Null goal should return null", service.inferPhaseFromGoal(null, project));
+        assertNull("Empty goal should return null", service.inferPhaseFromGoal("", project));
     }
 
     /**
@@ -302,15 +310,93 @@ public class TargetDependencyServiceTest {
 
         NxAnalyzerMojo mojo = (NxAnalyzerMojo) rule.lookupConfiguredMojo(pom, "analyze");
         MavenSession session = (MavenSession) rule.getVariableValueFromObject(mojo, "session");
+        List<MavenProject> reactorProjects = (List<MavenProject>) rule.getVariableValueFromObject(mojo, "reactorProjects");
+        MavenProject project = reactorProjects.get(0);
         
         // Create verbose service
         TargetDependencyService verboseService = new TargetDependencyService(mojo.getLog(), true, session);
         
         // Test that verbose service works
-        List<String> dependencies = verboseService.getPhaseDependencies("test");
+        List<String> dependencies = verboseService.getPhaseDependencies("test", project);
         assertNotNull("Verbose service should work", dependencies);
     }
 
+
+    /**
+     * Test that goals should depend on the preceding phase
+     */
+    @Test
+    public void testGoalsShouldDependOnPrecedingPhase() throws Exception {
+        File pom = new File("target/test-classes/unit/basic-test");
+        assertTrue("Test POM should exist", pom.exists());
+
+        NxAnalyzerMojo mojo = (NxAnalyzerMojo) rule.lookupConfiguredMojo(pom, "analyze");
+        MavenSession session = (MavenSession) rule.getVariableValueFromObject(mojo, "session");
+        List<MavenProject> reactorProjects = (List<MavenProject>) rule.getVariableValueFromObject(mojo, "reactorProjects");
+        MavenProject project = reactorProjects.get(0);
+        
+        // Enhance the session to be more like a real Maven environment
+        enhanceSessionForTesting(session, project);
+        
+        TargetDependencyService service = new TargetDependencyService(mojo.getLog(), true, session);
+        
+        // Test that install goal depends on package phase
+        // Pass null for executionPhase to force goal-to-phase mapping
+        List<String> installDependencies = service.calculateGoalDependencies(
+            project, null, "install:install", reactorProjects);
+        
+        assertNotNull("Install dependencies should not be null", installDependencies);
+        
+        // Debug: Print actual dependencies
+        System.out.println("Install dependencies: " + installDependencies);
+        
+        // Should contain verify dependency since install's preceding phase is verify in Maven lifecycle
+        boolean hasVerifyDependency = installDependencies.stream()
+            .anyMatch(dep -> dep.contains("verify"));
+        assertTrue("Install goal should depend on verify phase", hasVerifyDependency);
+    }
+    
+    /**
+     * Enhance the Maven session to be more like a real Maven environment
+     */
+    private void enhanceSessionForTesting(MavenSession session, MavenProject project) {
+        try {
+            // Set up local repository
+            if (session.getLocalRepository() == null) {
+                File tempRepo = new File(System.getProperty("java.io.tmpdir"), "maven-test-repo");
+                if (!tempRepo.exists()) {
+                    tempRepo.mkdirs();
+                }
+                org.apache.maven.artifact.repository.ArtifactRepository localRepo = 
+                    new org.apache.maven.artifact.repository.MavenArtifactRepository(
+                        "local", 
+                        tempRepo.toURI().toString(), 
+                        new org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout(),
+                        null, null);
+                session.getRequest().setLocalRepository(localRepo);
+            }
+            
+            // Ensure project is set properly in session
+            session.setCurrentProject(project);
+            if (session.getProjects() == null || session.getProjects().isEmpty()) {
+                session.setProjects(java.util.Arrays.asList(project));
+            }
+            
+            // Set goals if not present
+            if (session.getGoals() == null || session.getGoals().isEmpty()) {
+                session.getRequest().setGoals(java.util.Arrays.asList("install"));
+            }
+            
+            // Add execution root directory
+            if (session.getExecutionRootDirectory() == null) {
+                session.getRequest().setBaseDirectory(project.getBasedir());
+            }
+            
+        } catch (Exception e) {
+            // Continue if session enhancement fails
+            System.out.println("Warning: Could not fully enhance session: " + e.getMessage());
+        }
+    }
 
     /**
      * Test service behavior without Maven session
@@ -322,10 +408,10 @@ public class TargetDependencyServiceTest {
         TargetDependencyService service = new TargetDependencyService(null, false, null);
         
         // Test methods that should handle null session gracefully
-        List<String> phaseDeps = service.getPhaseDependencies("test");
+        List<String> phaseDeps = service.getPhaseDependencies("test", null);
         assertNotNull("Phase dependencies should not be null", phaseDeps);
         
-        String phase = service.inferPhaseFromGoal("compile");
+        String phase = service.inferPhaseFromGoal("compile", null);
         // Should handle null session gracefully (may return null)
     }
 

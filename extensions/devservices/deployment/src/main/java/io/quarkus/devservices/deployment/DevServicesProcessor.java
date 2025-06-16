@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -62,7 +61,7 @@ public class DevServicesProcessor {
 
     static volatile ConsoleStateManager.ConsoleContext context;
     static volatile boolean logForwardEnabled = false;
-    static Map<String, ContainerLogForwarder> containerLogForwarders = new HashMap<>();
+    static Set<ContainerLogForwarder> containerLogForwarders = new HashSet<>();
 
     @BuildStep
     public DevServicesNetworkIdBuildItem networkId(
@@ -110,15 +109,14 @@ public class DevServicesProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             List<DevServicesResultBuildItem> devServicesResults) {
+        containerLogForwarders.clear();
         List<DevServiceDescriptionBuildItem> serviceDescriptions = buildServiceDescriptions(
                 dockerStatusBuildItem, devServicesResults, devServicesLauncherConfig);
 
         for (DevServiceDescriptionBuildItem devService : serviceDescriptions) {
-            if (devService.hasContainerInfo()) {
-                containerLogForwarders.compute(devService.getContainerInfo().id(),
-                        (id, forwarder) -> Objects.requireNonNullElseGet(forwarder,
-                                () -> new ContainerLogForwarder(devService)));
-            }
+
+            containerLogForwarders.add(new ContainerLogForwarder(devService));
+
         }
 
         // Build commands if we are in local dev mode
@@ -131,11 +129,11 @@ public class DevServicesProcessor {
 
         // Dev UI Log stream
         for (DevServiceDescriptionBuildItem service : serviceDescriptions) {
-            if (service.getContainerInfo() != null) {
-                footerLogProducer.produce(new FooterLogBuildItem(service.getName(), () -> {
-                    return createLogPublisher(service.getContainerInfo().id());
-                }));
-            }
+
+            footerLogProducer.produce(new FooterLogBuildItem(service.getName(), () -> {
+                ContainerInfo containerInfo = service.getContainerInfo();
+                return createLogPublisher(containerInfo);
+            }));
         }
 
         if (context == null) {
@@ -162,22 +160,28 @@ public class DevServicesProcessor {
         return serviceDescriptions;
     }
 
-    private Flow.Publisher<String> createLogPublisher(String containerId) {
+    private Flow.Publisher<String> createLogPublisher(ContainerInfo containerInfo) {
+
         try (FrameConsumerResultCallback resultCallback = new FrameConsumerResultCallback()) {
             SubmissionPublisher<String> publisher = new SubmissionPublisher<>();
             resultCallback.addConsumer(OutputFrame.OutputType.STDERR,
                     frame -> publisher.submit(frame.getUtf8String()));
             resultCallback.addConsumer(OutputFrame.OutputType.STDOUT,
                     frame -> publisher.submit(frame.getUtf8String()));
-            LogContainerCmd logCmd = DockerClientFactory.lazyClient()
-                    .logContainerCmd(containerId)
-                    .withFollowStream(true)
-                    .withTailAll()
-                    .withStdErr(true)
-                    .withStdOut(true);
-            logCmd.exec(resultCallback);
+            if (containerInfo != null) {
+                String containerId = containerInfo.id();
+                LogContainerCmd logCmd = DockerClientFactory.lazyClient()
+                        .logContainerCmd(containerId)
+                        .withFollowStream(true)
+                        .withTailAll()
+                        .withStdErr(true)
+                        .withStdOut(true);
+                logCmd.exec(resultCallback);
+            }
 
             return publisher;
+        } catch (RuntimeException re) {
+            throw re;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -259,14 +263,14 @@ public class DevServicesProcessor {
 
     private synchronized void toggleLogForwarders() {
         if (logForwardEnabled) {
-            for (ContainerLogForwarder logForwarder : containerLogForwarders.values()) {
+            for (ContainerLogForwarder logForwarder : containerLogForwarders) {
                 if (logForwarder.isRunning()) {
                     logForwarder.close();
                 }
             }
             logForwardEnabled = false;
         } else {
-            for (ContainerLogForwarder logForwarder : containerLogForwarders.values()) {
+            for (ContainerLogForwarder logForwarder : containerLogForwarders) {
                 logForwarder.start();
             }
             logForwardEnabled = true;

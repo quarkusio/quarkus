@@ -14,21 +14,10 @@ describe('Maven Plugin', () => {
   let cachedDepsResults: any[] = [];
   let analysisCompleted = false;
   
-  const samplePomFiles = [
-    'core/launcher/pom.xml',
-    'core/class-change-agent/pom.xml', 
-    'core/processor/pom.xml',
-    'core/runtime/pom.xml',
-    'core/pom.xml',
-    'core/deployment/pom.xml',
-    'core/builder/pom.xml',
-    'pom.xml', // Root pom
-    'bom/application/pom.xml',
-    'extensions/arc/pom.xml'
-  ];
+  // Dynamically discover pom files instead of hardcoding them
+  const samplePomFiles = ['pom.xml']; // Start with root pom for basic testing
 
   beforeAll(async () => {
-    console.log('Running Maven analysis once for all tests...');
     
     // Set up workspace root mocking
     Object.defineProperty(require('@nx/devkit'), 'workspaceRoot', {
@@ -65,21 +54,16 @@ describe('Maven Plugin', () => {
       };
 
       const options: MavenPluginOptions = {
-        mavenExecutable: 'mvn'
+        mavenExecutable: 'mvn',
+        verbose: true
       };
 
-      console.log('Analyzing nodes...');
       cachedNodesResults = await createNodesV2[1](samplePomFiles, options, nodesContext);
-      
-      console.log('Analyzing dependencies...');  
       cachedDepsResults = await createDependencies(options, depsContext);
-      
       analysisCompleted = true;
-      console.log(`Maven analysis complete: ${cachedNodesResults.length} node results, ${cachedDepsResults.length} dependencies`);
-      
     } catch (error) {
-      console.warn('Maven analysis failed during setup:', error.message);
       analysisCompleted = false;
+      throw new Error(`Maven analysis failed during test setup: ${error}`);
     }
   }, 120000); // 2 minute timeout for Maven analysis
   
@@ -95,44 +79,30 @@ describe('Maven Plugin', () => {
   });
 
   describe('createNodesV2 - Full Workspace Analysis', () => {
-    it('should process all core Maven projects', async () => {
+    it('should process Maven projects from workspace', async () => {
       // Use cached results from beforeAll
       const result = cachedNodesResults;
       
       expect(Array.isArray(result)).toBe(true);
-      console.log(`Analysis returned ${result.length} results`);
+      expect(analysisCompleted).toBe(true);
+      expect(result.length).toBeGreaterThan(0);
       
-      if (analysisCompleted && result.length > 0) {
-        // If analysis succeeded, verify we have nodes for our core projects
-        const resultMap = new Map();
-        result.forEach(item => {
-          if (item.nodes) {
-            Object.keys(item.nodes).forEach(nodeKey => {
-              resultMap.set(nodeKey, item.nodes[nodeKey]);
-            });
-          }
-        });
-        
-        const projectNames = Array.from(resultMap.keys());
-        console.log('Found projects:', projectNames);
-        
-        // Verify we have projects
-        expect(projectNames.length).toBeGreaterThan(0);
-        
-        // Log project targets for debugging
-        projectNames.forEach(name => {
-          const node = resultMap.get(name);
-          if (node?.targets) {
-            console.log(`${name} targets:`, Object.keys(node.targets));
-          }
-        });
-      } else {
-        console.log('Maven analysis did not complete successfully or returned no results');
-        // Test still passes - we demonstrated real Maven analysis was attempted
-      }
+      const resultMap = new Map();
+      result.forEach(item => {
+        if (item.nodes) {
+          Object.keys(item.nodes).forEach(nodeKey => {
+            resultMap.set(nodeKey, item.nodes[nodeKey]);
+          });
+        }
+      });
+      
+      const projectNames = Array.from(resultMap.keys());
+      
+      // Verify we discovered the expected number of Maven projects (1781 pom.xml files)
+      expect(projectNames.length).toBe(1781);
     });
 
-    it('should generate proper target dependencies for core projects', async () => {
+    it('should generate proper target dependencies for projects', async () => {
       // Use cached results from beforeAll
       const result = cachedNodesResults;
       
@@ -146,42 +116,26 @@ describe('Maven Plugin', () => {
         }
       });
 
-      console.log(`Found ${resultMap.size} projects with targets`);
+      expect(analysisCompleted).toBe(true);
+      expect(resultMap.size).toBeGreaterThan(0);
 
-      if (analysisCompleted && resultMap.size > 0) {
-        // Log the actual target dependencies found
-        resultMap.forEach((node, projectName) => {
-          if (node?.targets) {
-            console.log(`\n=== ${projectName} targets ===`);
-            Object.entries(node.targets).forEach(([targetName, target]) => {
-              const dependsOn = target.dependsOn || [];
-              console.log(`  ${targetName}: dependsOn=[${dependsOn.join(', ')}]`);
-            });
-          }
-        });
-
-        // Verify that at least some projects have proper Maven lifecycle dependencies
-        const projectsWithDependencies = Array.from(resultMap.entries()).filter(([_, node]) => {
-          if (!node?.targets) return false;
-          return Object.values(node.targets).some(target => 
-            target.dependsOn && target.dependsOn.length > 0
-          );
-        });
-
-        console.log(`Projects with dependencies: ${projectsWithDependencies.length}`);
-        
-        // Check for cross-module dependencies (^ syntax)
-        const hasCrossModuleDeps = Array.from(resultMap.values()).some(node => {
-          if (!node?.targets) return false;
-          return Object.values(node.targets).some(target => 
-            target.dependsOn?.some(dep => dep.startsWith('^'))
-          );
-        });
-        
-        console.log('Has cross-module dependencies (^ syntax):', hasCrossModuleDeps);
-      } else {
-        console.log('No projects with targets found - analysis may have failed');
-      }
+      // Verify that at least some projects have proper Maven lifecycle dependencies
+      const projectsWithDependencies = Array.from(resultMap.entries()).filter(([_, node]) => {
+        if (!node?.targets) return false;
+        return Object.values(node.targets).some(target => 
+          target.dependsOn && target.dependsOn.length > 0
+        );
+      });
+      
+      // Check for cross-module dependencies (^ syntax)
+      const hasCrossModuleDeps = Array.from(resultMap.values()).some(node => {
+        if (!node?.targets) return false;
+        return Object.values(node.targets).some(target => 
+          target.dependsOn?.some(dep => dep.startsWith('^'))
+        );
+      });
+      
+      expect(hasCrossModuleDeps).toBe(true);
     });
 
     it('should handle empty results gracefully', async () => {
@@ -202,123 +156,61 @@ describe('Maven Plugin', () => {
       const result = cachedDepsResults;
       
       expect(Array.isArray(result)).toBe(true);
-
-      // Log actual dependencies found
-      console.log('\n=== Actual Maven Dependencies Found ===');
-      result.forEach((dep, index) => {
-        console.log(`${index + 1}. ${dep.source} -> ${dep.target} (${dep.type})`);
+      expect(analysisCompleted).toBe(true);
+      
+      // Check that dependencies have required properties
+      result.forEach(dep => {
+        expect(dep.source).toBeDefined();
+        expect(dep.target).toBeDefined();
+        expect(dep.type).toBeDefined();
       });
 
-      if (analysisCompleted && result.length > 0) {
-        // Verify that we have some actual dependencies
-        console.log(`Found ${result.length} dependencies`);
-        
-        // Check that dependencies have required properties
-        result.forEach(dep => {
-          expect(dep.source).toBeDefined();
-          expect(dep.target).toBeDefined();
-          expect(dep.type).toBeDefined();
-        });
-
-        // Look for specific expected dependencies based on actual core structure
-        const sources = result.map(dep => dep.source);
-        const targets = result.map(dep => dep.target);
-        
-        console.log('Sources found:', [...new Set(sources)]);
-        console.log('Targets found:', [...new Set(targets)]);
-        
-        // Verify we have some realistic Maven module dependencies
-        expect(sources.length).toBeGreaterThan(0);
-        expect(targets.length).toBeGreaterThan(0);
-      } else {
-        console.log('No dependencies found - analysis may have failed or returned empty results');
-      }
+      // Look for specific expected dependencies based on actual core structure
+      const sources = result.map(dep => dep.source);
+      const targets = result.map(dep => dep.target);
+      
+      // Verify we have some realistic Maven module dependencies
+      expect(sources.length).toBeGreaterThan(0);
+      expect(targets.length).toBeGreaterThan(0);
     });
 
     it('should verify target dependency graph structure', async () => {
       // Use cached results from beforeAll
       const result = cachedDepsResults;
       
+      expect(analysisCompleted).toBe(true);
+      
       // Focus on target-level dependencies (project:target format)
       const targetDependencies = result.filter(dep => 
         dep.source.includes(':') && dep.target.includes(':')
       );
       
-      console.log('\n=== Target-Level Dependencies Found ===');
-      targetDependencies.forEach((dep, index) => {
-        console.log(`${index + 1}. ${dep.source} -> ${dep.target}`);
+      // Check structure of target dependencies if they exist
+      targetDependencies.forEach(dep => {
+        expect(dep.source).toMatch(/^[^:]+:[^:]+$/); // format: project:target
+        expect(dep.target).toMatch(/^[^:]+:[^:]+$/); // format: project:target
       });
-
-      if (analysisCompleted && targetDependencies.length > 0) {
-        // Verify target-level dependencies exist
-        console.log(`Found ${targetDependencies.length} target-level dependencies`);
-        
-        // Check structure of target dependencies
-        targetDependencies.forEach(dep => {
-          expect(dep.source).toMatch(/^[^:]+:[^:]+$/); // format: project:target
-          expect(dep.target).toMatch(/^[^:]+:[^:]+$/); // format: project:target
-        });
-      } else {
-        console.log('No target-level dependencies found - this may be expected');
-      }
 
       // Also check for project-level dependencies
       const projectDependencies = result.filter(dep => 
         !dep.source.includes(':') && !dep.target.includes(':')
       );
-      
-      console.log('\n=== Project-Level Dependencies Found ===');
-      projectDependencies.forEach((dep, index) => {
-        console.log(`${index + 1}. ${dep.source} -> ${dep.target}`);
-      });
-      
-      console.log(`Total: ${targetDependencies.length} target deps + ${projectDependencies.length} project deps`);
     });
 
     it('should handle complex multi-level dependency chains', async () => {
       // Use cached results from beforeAll
       const result = cachedDepsResults;
       
-      console.log('\n=== Complex Dependency Chain Analysis ===');
-      console.log(`Total dependencies found: ${result.length}`);
+      expect(analysisCompleted).toBe(true);
       
-      if (analysisCompleted && result.length > 0) {
-        // Build dependency graph
-        const dependencyGraph = new Map();
-        result.forEach(dep => {
-          if (!dependencyGraph.has(dep.source)) {
-            dependencyGraph.set(dep.source, []);
-          }
-          dependencyGraph.get(dep.source).push(dep.target);
-        });
-        
-        console.log('\n=== Dependency Graph ===');
-        dependencyGraph.forEach((targets, source) => {
-          console.log(`${source} -> [${targets.join(', ')}]`);
-        });
-        
-        // Look for common patterns in Maven multi-module projects
-        const coreProjects = ['deployment', 'runtime', 'builder', 'processor', 'launcher', 'class-change-agent'];
-        
-        // Check for dependencies involving core projects
-        const coreRelatedDeps = result.filter(dep => 
-          coreProjects.includes(dep.source) || coreProjects.includes(dep.target) ||
-          coreProjects.some(project => dep.source.startsWith(project + ':')) ||
-          coreProjects.some(project => dep.target.startsWith(project + ':'))
-        );
-        
-        console.log(`\nCore-related dependencies: ${coreRelatedDeps.length}`);
-        coreRelatedDeps.forEach(dep => {
-          console.log(`  ${dep.source} -> ${dep.target}`);
-        });
-        
-        // Check for transitive dependency chains
-        const hasTransitiveDeps = dependencyGraph.size > 1;
-        console.log(`Has transitive dependencies: ${hasTransitiveDeps}`);
-        
-      } else {
-        console.log('No dependencies found - analysis may have failed');
-      }
+      // Build dependency graph
+      const dependencyGraph = new Map();
+      result.forEach(dep => {
+        if (!dependencyGraph.has(dep.source)) {
+          dependencyGraph.set(dep.source, []);
+        }
+        dependencyGraph.get(dep.source).push(dep.target);
+      });
     });
 
     it('should handle graceful failure', async () => {
@@ -333,7 +225,8 @@ describe('Maven Plugin', () => {
       };
 
       const options: MavenPluginOptions = {
-        mavenExecutable: 'non-existent-command'
+        mavenExecutable: 'non-existent-command',
+        verbose: true
       };
 
       const result = await createDependencies(options, context);
@@ -341,26 +234,455 @@ describe('Maven Plugin', () => {
     });
   });
 
-  describe('Integration Tests - Real Workspace Workflow', () => {
-    const samplePomFiles = [
-      'core/launcher/pom.xml',
-      'core/class-change-agent/pom.xml', 
-      'core/processor/pom.xml',
-      'core/runtime/pom.xml',
-      'core/pom.xml',
-      'core/deployment/pom.xml',
-      'core/builder/pom.xml',
-      'pom.xml', // Root pom
-      'bom/application/pom.xml',
-      'extensions/arc/pom.xml'
-    ];
+  describe('Maven Lifecycle Phases Analysis', () => {
+    it('should identify lifecycle phases correctly', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
 
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const phaseTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => target?.metadata?.type === 'phase');
+
+      expect(phaseTargets.length).toBeGreaterThan(0);
+    });
+
+    it('should have nx:noop executor for all lifecycle phases', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const phaseTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => target?.metadata?.type === 'phase');
+
+      phaseTargets.forEach(([name, target]) => {
+        expect(target?.executor).toBe('nx:noop');
+      });
+    });
+
+    it('should have proper phase dependencies using ^ syntax', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const phaseTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => target?.metadata?.type === 'phase');
+
+      phaseTargets.forEach(([name, target]) => {
+        const dependsOn = target?.dependsOn || [];
+        const crossModuleDeps = dependsOn.filter((dep: string) => dep.startsWith('^'));
+        
+        // All phases should have at least one cross-module dependency
+        if (dependsOn.length > 0) {
+          expect(crossModuleDeps.length).toBeGreaterThan(0);
+        }
+      });
+    });
+
+    it('should have correct metadata structure for phases', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const phaseTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => target?.metadata?.type === 'phase');
+
+      phaseTargets.forEach(([name, target]) => {
+        expect(target?.metadata?.type).toBe('phase');
+        expect(target?.metadata?.phase).toBe(name);
+        expect(target?.metadata?.technologies).toContain('maven');
+      });
+    });
+
+    it('should have empty inputs and outputs for phases', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const phaseTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => target?.metadata?.type === 'phase');
+
+      phaseTargets.forEach(([name, target]) => {
+        // Phases are orchestrators, they don't have direct inputs/outputs
+        expect(target?.inputs).toEqual([]);
+        expect(target?.outputs).toEqual([]);
+      });
+    });
+  });
+
+  describe('Maven Plugin Goals Analysis', () => {
+    it('should identify maven-compiler plugin goals', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const compilerGoals = Object.entries(quarkusCoreProject.targets)
+        .filter(([name, target]: [string, any]) => 
+          name.startsWith('maven-compiler:') && target?.metadata?.type === 'goal'
+        );
+
+      expect(compilerGoals.length).toBeGreaterThan(0);
+      
+      // Should have at least compile goal
+      const compileGoal = compilerGoals.find(([name]) => name === 'maven-compiler:compile');
+      expect(compileGoal).toBeDefined();
+    });
+
+    it('should have nx:run-commands executor for all goals', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const goalTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => target?.metadata?.type === 'goal');
+
+      goalTargets.forEach(([name, target]) => {
+        expect(target?.executor).toBe('nx:run-commands');
+        expect(target?.options?.command).toContain('mvn');
+        expect(target?.options?.cwd).toBe('core/runtime');
+      });
+    });
+
+    it('should have correct metadata structure for goals', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const goalTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => target?.metadata?.type === 'goal');
+
+      goalTargets.forEach(([name, target]) => {
+        expect(target?.metadata?.type).toBe('goal');
+        expect(target?.metadata?.plugin).toBeDefined();
+        expect(target?.metadata?.goal).toBeDefined();
+        expect(target?.metadata?.technologies).toContain('maven');
+      });
+    });
+
+    it('should have proper cross-module dependencies for bound goals', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const boundGoals = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => 
+          target?.metadata?.type === 'goal' && target?.metadata?.phase
+        );
+
+      boundGoals.forEach(([name, target]) => {
+        const dependsOn = target?.dependsOn || [];
+        const phase = target?.metadata?.phase;
+        const expectedCrossModuleDep = `^${phase}`;
+        
+        // Bound goals should depend on their phase in other modules
+        expect(dependsOn).toContain(expectedCrossModuleDep);
+      });
+    });
+
+    it('should have appropriate inputs for compilation goals', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const compilationGoals = Object.entries(quarkusCoreProject.targets)
+        .filter(([name, target]: [string, any]) => 
+          target?.metadata?.type === 'goal' && 
+          (name.includes('compile') || name.includes('resources'))
+        );
+
+      compilationGoals.forEach(([name, target]) => {
+        const inputs = target?.inputs || [];
+        
+        // Should include pom.xml and source files
+        expect(inputs).toContain('{projectRoot}/pom.xml');
+        
+        if (name.includes('compile') || name.includes('resources')) {
+          const hasSourceInputs = inputs.some((input: string) => 
+            input.includes('src/**/*')
+          );
+          expect(hasSourceInputs).toBe(true);
+        }
+      });
+    });
+  });
+
+  describe('Cross-Module Dependencies Analysis', () => {
+    it('should identify targets using ^ syntax for cross-module dependencies', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const targetsWithCrossModuleDeps = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => {
+          const dependsOn = target?.dependsOn || [];
+          return dependsOn.some((dep: string) => dep.startsWith('^'));
+        });
+
+      expect(targetsWithCrossModuleDeps.length).toBeGreaterThan(0);
+    });
+
+    it('should validate ^ syntax patterns for lifecycle phases', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const lifecyclePhases = ['validate', 'compile', 'test', 'package', 'verify', 'install', 'deploy'];
+      
+      lifecyclePhases.forEach(phase => {
+        const target = quarkusCoreProject.targets[phase];
+        if (target) {
+          const dependsOn = target?.dependsOn || [];
+          const expectedCrossModuleDep = `^${phase}`;
+          
+          // Each lifecycle phase should depend on the same phase in other modules
+          expect(dependsOn).toContain(expectedCrossModuleDep);
+        }
+      });
+    });
+
+    it('should identify project-to-project dependencies', () => {
+      expect(analysisCompleted).toBe(true);
+      
+      const projectLevelDeps = cachedDepsResults.filter(dep => 
+        !dep.source.includes(':') && !dep.target.includes(':')
+      );
+
+      // Look for dependencies involving quarkus-core
+      const coreDeps = projectLevelDeps.filter(dep => 
+        dep.source === 'io.quarkus:quarkus-core' || dep.target === 'io.quarkus:quarkus-core'
+      );
+    });
+  });
+
+  describe('Target Input/Output Configuration Analysis', () => {
+    it('should have pom.xml as input for all Maven targets', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const mavenTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([_, target]: [string, any]) => 
+          target?.metadata?.technologies?.includes('maven')
+        );
+
+      mavenTargets.forEach(([name, target]) => {
+        const inputs = target?.inputs || [];
+        const hasPomInput = inputs.includes('{projectRoot}/pom.xml');
+        
+        expect(hasPomInput).toBe(true);
+      });
+    });
+
+    it('should have target directory outputs for build targets', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      const buildTargets = Object.entries(quarkusCoreProject.targets)
+        .filter(([name, _]: [string, any]) => 
+          name.includes('compile') || name.includes('jar') || name.includes('build')
+        );
+
+      buildTargets.forEach(([name, target]) => {
+        const outputs = target?.outputs || [];
+        const hasTargetOutput = outputs.some((output: string) => 
+          output.includes('{projectRoot}/target')
+        );
+        
+        if (outputs.length > 0) {
+          expect(hasTargetOutput).toBe(true);
+        }
+      });
+    });
+
+    it('should use projectRoot placeholders correctly', () => {
+      expect(analysisCompleted).toBe(true);
+      expect(cachedNodesResults.length).toBeGreaterThan(0);
+
+      const allNodes = new Map();
+      cachedNodesResults.forEach(result => {
+        if (result.nodes) {
+          Object.keys(result.nodes).forEach(nodeKey => {
+            allNodes.set(nodeKey, result.nodes[nodeKey]);
+          });
+        }
+      });
+
+      const quarkusCoreProject = allNodes.get('io.quarkus:quarkus-core');
+      expect(quarkusCoreProject?.targets).toBeDefined();
+
+      Object.entries(quarkusCoreProject.targets).forEach(([name, target]) => {
+        const inputs = target?.inputs || [];
+        const outputs = target?.outputs || [];
+        
+        [...inputs, ...outputs].forEach((path: string) => {
+          if (path.includes('projectRoot')) {
+            // Should use proper placeholder syntax
+            expect(path).toMatch(/\{projectRoot\}/);
+          }
+        });
+      });
+    });
+  });
+
+  describe('Integration Tests - Real Workspace Workflow', () => {
     it('should handle complete workflow with all core projects', async () => {
-      // Use cached results from beforeAll for integration test
-      console.log('\n=== Integration Test: Complete Workflow ===');
+      expect(analysisCompleted).toBe(true);
       
       // Use cached nodes results
-      console.log('Testing createNodesV2 with cached results...');
       const nodesResult = cachedNodesResults;
       expect(Array.isArray(nodesResult)).toBe(true);
       
@@ -374,66 +696,21 @@ describe('Maven Plugin', () => {
         }
       });
       
-      console.log(`Found ${allNodes.size} projects with targets`);
-      
-      if (analysisCompleted && allNodes.size > 0) {
-        // Log projects and their targets
-        allNodes.forEach((node, projectName) => {
-          if (node?.targets) {
-            const targetNames = Object.keys(node.targets);
-            console.log(`  ${projectName}: ${targetNames.length} targets [${targetNames.join(', ')}]`);
-            
-            // Log dependencies for interesting targets
-            if (node.targets.compile?.dependsOn?.length > 0) {
-              console.log(`    compile dependsOn: [${node.targets.compile.dependsOn.join(', ')}]`);
-            }
-          }
-        });
-      }
+      expect(allNodes.size).toBeGreaterThan(0);
 
       // Use cached dependencies results  
-      console.log('\nTesting createDependencies with cached results...');
       const depsResult = cachedDepsResults;
       expect(Array.isArray(depsResult)).toBe(true);
       
-      console.log(`Found ${depsResult.length} dependencies`);
-      
-      if (analysisCompleted && depsResult.length > 0) {
-        // Categorize dependencies
-        const projectDeps = depsResult.filter(dep => !dep.source.includes(':') && !dep.target.includes(':'));
-        const targetDeps = depsResult.filter(dep => dep.source.includes(':') && dep.target.includes(':'));
-        
-        console.log(`  Project-level dependencies: ${projectDeps.length}`);
-        console.log(`  Target-level dependencies: ${targetDeps.length}`);
-        
-        // Show some examples
-        if (projectDeps.length > 0) {
-          console.log('  Project dependency examples:');
-          projectDeps.slice(0, 5).forEach(dep => {
-            console.log(`    ${dep.source} -> ${dep.target}`);
-          });
-        }
-        
-        if (targetDeps.length > 0) {
-          console.log('  Target dependency examples:');
-          targetDeps.slice(0, 5).forEach(dep => {
-            console.log(`    ${dep.source} -> ${dep.target}`);
-          });
-        }
-      }
+      // Categorize dependencies
+      const projectDeps = depsResult.filter(dep => !dep.source.includes(':') && !dep.target.includes(':'));
+      const targetDeps = depsResult.filter(dep => dep.source.includes(':') && dep.target.includes(':'));
 
       // Verify we got some meaningful results
       const hasProjects = allNodes.size > 0;
       const hasTargets = Array.from(allNodes.values()).some(node => node?.targets);
       
-      console.log(`\nIntegration test results:`);
-      console.log(`  Analysis completed: ${analysisCompleted}`);
-      console.log(`  Projects found: ${hasProjects}`);
-      console.log(`  Targets found: ${hasTargets}`);
-      console.log(`  Dependencies found: ${depsResult.length > 0}`);
-      
-      // Basic validation - tests demonstrate real Maven analysis was attempted
-      expect(hasProjects || !hasProjects).toBe(true); // Always pass - we've shown real analysis
+      expect(hasProjects).toBe(true);
       if (hasTargets) {
         expect(hasTargets).toBe(true);
       }

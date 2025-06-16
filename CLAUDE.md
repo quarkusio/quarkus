@@ -17,7 +17,7 @@ This guide provides comprehensive testing instructions for the Nx Maven plugin i
 nx show projects
 
 # Generate project graph JSON
-nx graph --graph.json
+nx graph --file graph.json
 
 # View project details
 nx show projects --verbose

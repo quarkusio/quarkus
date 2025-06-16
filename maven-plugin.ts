@@ -16,6 +16,7 @@ import { calculateHashForCreateNodes } from '@nx/devkit/src/utils/calculate-hash
 
 export interface MavenPluginOptions {
   mavenExecutable?: string;
+  verbose?: boolean;
 }
 
 const DEFAULT_OPTIONS: MavenPluginOptions = {
@@ -47,7 +48,7 @@ export const createNodesV2: CreateNodesV2 = [
   async (configFiles, options, context): Promise<CreateNodesResultV2> => {
     const opts: MavenPluginOptions = { ...DEFAULT_OPTIONS, ...(options as MavenPluginOptions) };
 
-    if ((options as any)?.verbose !== false) {
+    if (opts.verbose) {
       console.log(`Maven plugin found ${configFiles.length} pom.xml files`);
     }
 
@@ -79,7 +80,7 @@ export const createNodesV2: CreateNodesV2 = [
       
       // Check if we have valid cached results
       if (cache[cacheKey]) {
-        if ((options as any)?.verbose !== false) {
+        if (opts.verbose) {
           console.log('Using cached Maven analysis results for createNodes');
         }
         return cache[cacheKey];
@@ -125,7 +126,7 @@ export const createDependencies: CreateDependencies = async (options, context) =
     
     // Check if we have valid cached results
     if (cache[cacheKey]) {
-      if ((options as any)?.verbose !== false) {
+      if (opts.verbose) {
         console.log('Using cached Maven analysis results for createDependencies');
       }
       return cache[cacheKey];
@@ -154,7 +155,7 @@ async function runMavenAnalysis(options: MavenPluginOptions): Promise<any> {
   const outputFile = join(workspaceDataDirectory, 'maven-analysis.json');
 
   // Check if verbose mode is enabled
-  const isVerbose = process.env.NX_VERBOSE_LOGGING === 'true' || process.argv.includes('--verbose');
+  const isVerbose = options.verbose || process.env.NX_VERBOSE_LOGGING === 'true' || process.argv.includes('--verbose');
 
   // Skip Java analyzer check during testing to avoid git HEAD issues
   if (process.env.NODE_ENV !== 'test') {
@@ -165,21 +166,27 @@ async function runMavenAnalysis(options: MavenPluginOptions): Promise<any> {
   }
 
   if (isVerbose) {
-    console.log(`Running Maven analysis...`);
+    console.log(`Running Maven analysis with verbose logging enabled...`);
+    console.log(`Maven executable: ${options.mavenExecutable}`);
+    console.log(`Output file: ${outputFile}`);
   }
 
   // Build Maven command arguments
-  // For real workspace testing, use dependency:tree to analyze dependencies
+  // Use the custom nx:analyze goal from our Java Maven plugin
   const mavenArgs = [
-    'dependency:tree',
-    '-DoutputType=json',
-    `-DoutputFile=${outputFile}`,
-    `-Dverbose=${isVerbose}`
+    'io.quarkus:maven-plugin:999-SNAPSHOT:analyze',
+    `-Dnx.outputFile=${outputFile}`,
+    `-Dnx.verbose=${isVerbose}`
   ];
 
   // Always use quiet mode to suppress expected reactor dependency warnings
   // These warnings are normal in large multi-module projects and don't affect functionality
   mavenArgs.push('-q');
+
+  if (isVerbose) {
+    console.log(`Executing Maven command: ${options.mavenExecutable} ${mavenArgs.join(' ')}`);
+    console.log(`Working directory: ${workspaceRoot}`);
+  }
 
   // Run Maven plugin
   await new Promise<void>((resolve, reject) => {
@@ -190,7 +197,13 @@ async function runMavenAnalysis(options: MavenPluginOptions): Promise<any> {
 
     // No timeout for very large codebases like Quarkus
     child.on('close', (code) => {
+      if (isVerbose) {
+        console.log(`Maven process completed with exit code: ${code}`);
+      }
       if (code === 0) {
+        if (isVerbose) {
+          console.log(`Maven analysis completed successfully`);
+        }
         resolve();
       } else {
         reject(new Error(`Maven process exited with code ${code}`));

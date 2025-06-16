@@ -6,13 +6,13 @@
     "compile-java": "cd maven-plugin-v2 && mvn clean compile"
   },
   "devDependencies": {
-    "@nx/devkit": "latest",
+    "@nx/devkit": "0.0.0-pr-31581-fa41031",
     "@swc-node/register": "^1.10.9",
     "@swc/cli": "^0.7.7",
     "@swc/core": "^1.12.0",
     "@types/node": "^24.0.0",
     "@types/xml2js": "^0.4.14",
-    "nx": "latest",
+    "nx": "0.0.0-pr-31581-fa41031",
     "nx-mcp": "^0.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",

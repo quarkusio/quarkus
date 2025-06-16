@@ -537,6 +537,7 @@ requires a spy:
 [source,java]
 ----
 @ConfigMapping(prefix = "app")
+@Unremovable
 public interface AppConfig {
     @WithDefault("app")
     String name();

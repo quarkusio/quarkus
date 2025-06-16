@@ -46,7 +46,7 @@ public class JPAConfig {
 
     void startAll() {
         List<CompletableFuture<?>> start = new ArrayList<>();
-        //by using a dedicated thread for starting up the PR,
+        //by using a dedicated thread for starting up the PU,
         //we work around https://github.com/quarkusio/quarkus/issues/17304 to some extent
         //as the main thread is now no longer polluted with ThreadLocals by default
         //this is not a complete fix, but will help as long as the test methods

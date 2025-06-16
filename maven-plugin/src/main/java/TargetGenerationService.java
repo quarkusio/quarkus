@@ -1,7 +1,11 @@
 import model.TargetConfiguration;
 import model.TargetMetadata;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.lifecycle.LifecycleExecutor;
+import org.apache.maven.lifecycle.MavenExecutionPlan;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
@@ -21,10 +25,12 @@ public class TargetGenerationService {
     
     private final Log log;
     private final boolean verbose;
+    private final MavenSession session;
 
-    public TargetGenerationService(Log log, boolean verbose) {
+    public TargetGenerationService(Log log, boolean verbose, MavenSession session) {
         this.log = log;
         this.verbose = verbose;
+        this.session = session;
     }
 
     /**
@@ -70,12 +76,10 @@ public class TargetGenerationService {
                                                                  Map<String, List<String>> phaseDependencies) {
         Map<String, TargetConfiguration> phaseTargets = new LinkedHashMap<>();
         
-        String[] phases = {
-            "clean", "validate", "compile", "test", "package", 
-            "verify", "install", "deploy", "site"
-        };
+        // Dynamically discover applicable phases for this project
+        Set<String> applicablePhases = getApplicablePhases(project);
         
-        for (String phase : phases) {
+        for (String phase : applicablePhases) {
             TargetConfiguration target = new TargetConfiguration("nx:noop");
             
             // Configure as no-op
@@ -314,6 +318,69 @@ public class TargetGenerationService {
             return "site";
         } else {
             return "compile";
+        }
+    }
+
+    /**
+     * Dynamically discover all lifecycle phases that have bound goals for this project
+     */
+    private Set<String> getApplicablePhases(MavenProject project) {
+        Set<String> applicablePhases = new LinkedHashSet<>();
+        
+        try {
+            LifecycleExecutor lifecycleExecutor = session.getContainer().lookup(LifecycleExecutor.class);
+            
+            // Calculate execution plan for "deploy" phase (includes all phases up to deploy)
+            MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(
+                session, project, Arrays.asList("deploy")
+            );
+            
+            // Extract unique phases from all mojo executions
+            for (MojoExecution mojoExecution : executionPlan.getMojoExecutions()) {
+                String phase = mojoExecution.getLifecyclePhase();
+                if (phase != null && !phase.isEmpty()) {
+                    applicablePhases.add(phase);
+                }
+            }
+            
+            if (verbose) {
+                log.debug("Discovered phases for " + project.getArtifactId() + ": " + applicablePhases);
+            }
+            
+        } catch (Exception e) {
+            if (log != null) {
+                log.warn("Could not determine applicable phases for " + project.getArtifactId() + ": " + e.getMessage());
+            }
+            // Fallback to minimal phases for safety
+            applicablePhases.add("validate");
+            applicablePhases.add("install");
+        }
+        
+        return applicablePhases;
+    }
+
+    /**
+     * Check if a specific phase has any goals bound to it for this project
+     */
+    private boolean hasGoalsBoundToPhase(String phase, MavenProject project) {
+        try {
+            LifecycleExecutor lifecycleExecutor = session.getContainer().lookup(LifecycleExecutor.class);
+            
+            // Calculate execution plan for just this phase
+            MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(
+                session, project, Arrays.asList(phase)
+            );
+            
+            // Check if any mojo executions are bound to this phase
+            return executionPlan.getMojoExecutions()
+                .stream()
+                .anyMatch(mojoExecution -> phase.equals(mojoExecution.getLifecyclePhase()));
+                
+        } catch (Exception e) {
+            if (verbose && log != null) {
+                log.warn("Could not check phase bindings for " + phase + ": " + e.getMessage());
+            }
+            return true; // Assume it has goals if we can't determine
         }
     }
 }

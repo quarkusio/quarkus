@@ -74,7 +74,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
     }
     
     private void initializeServices() {
-        this.targetGenerationService = new TargetGenerationService(getLog(), isVerbose());
+        this.targetGenerationService = new TargetGenerationService(getLog(), isVerbose(), session);
         this.targetGroupService = new TargetGroupService();
         this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose(), session);
     }

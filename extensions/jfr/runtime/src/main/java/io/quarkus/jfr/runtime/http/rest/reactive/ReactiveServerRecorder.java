@@ -76,8 +76,6 @@ class ReactiveServerRecorder {
                 setHttpInfo(durationEvent);
                 durationEvent.commit();
             }
-        } else {
-            // this shouldn't happen, but if it does due to an error on our side, the request processing shouldn't be botched because of it
         }
 
         return this;

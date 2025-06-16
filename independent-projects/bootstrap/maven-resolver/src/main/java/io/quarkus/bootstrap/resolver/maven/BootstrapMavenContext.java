@@ -671,9 +671,7 @@ public class BootstrapMavenContext {
         session.setAuthenticationSelector(authSelector);
 
         Object transport = configProps.getOrDefault(MAVEN_RESOLVER_TRANSPORT_KEY, MAVEN_RESOLVER_TRANSPORT_DEFAULT);
-        if (MAVEN_RESOLVER_TRANSPORT_DEFAULT.equals(transport)) {
-            // The "default" mode (user did not set anything) from now on defaults to AUTO
-        } else if (MAVEN_RESOLVER_TRANSPORT_NATIVE.equals(transport)) {
+        if (MAVEN_RESOLVER_TRANSPORT_NATIVE.equals(transport)) {
             // Make sure (whatever extra priority is set) that resolver native is selected
             configProps.put(NATIVE_FILE_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);
             configProps.put(NATIVE_HTTP_TRANSPORTER_PRIORITY_KEY, RESOLVER_MAX_PRIORITY);

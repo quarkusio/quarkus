@@ -170,8 +170,6 @@ public final class NameIterator {
                     return cookieOf(state, pos);
                 } else if (ch == '"') {
                     state = FS_QUOTE;
-                } else if (ch == '\\') {
-                    // skip
                 } else {
                     // regular char
                     return cookieOf(state, pos);
@@ -182,8 +180,6 @@ public final class NameIterator {
                     return cookieOf(state, pos);
                 } else if (ch == '"') {
                     state = FS_INITIAL;
-                } else if (ch == '\\') {
-                    // skip
                 } else {
                     return cookieOf(state, pos);
                 }

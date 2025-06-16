@@ -134,13 +134,8 @@ public class InputStreamReadStream implements ReadStream<Buffer> {
             public void handle(AsyncResult<Buffer> ar) {
                 if (ar.succeeded()) {
                     Buffer chunk = ar.result();
-                    if (chunk != null) {
-                        boolean writable = inboundBuffer.write(chunk);
-                        if (writable) {
-                            readChunk();
-                        } else {
-                            // Full
-                        }
+                    if (chunk != null && inboundBuffer.write(chunk)) {
+                        readChunk();
                     } else {
                         inboundBuffer.write(endSentinel);
                     }

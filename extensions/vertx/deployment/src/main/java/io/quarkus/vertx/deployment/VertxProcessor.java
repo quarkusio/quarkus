@@ -192,16 +192,13 @@ class VertxProcessor {
                     InvokerBuilder builder = invokerFactory.createInvoker(bean, method)
                             .withInstanceLookup();
 
-                    if (parametersCount == 1 && method.parameterType(0).name().equals(MESSAGE)) {
-                        // io.vertx.core.eventbus.Message
-                        // no transformation required
-                    } else if (parametersCount == 1 && method.parameterType(0).name().equals(MUTINY_MESSAGE)) {
+                   if (parametersCount == 1 && method.parameterType(0).name().equals(MUTINY_MESSAGE)) {
                         // io.vertx.mutiny.core.eventbus.Message
                         builder.withArgumentTransformer(0, io.vertx.mutiny.core.eventbus.Message.class, "newInstance");
                     } else if (parametersCount == 1) {
                         // parameter is payload
                         builder.withArgumentTransformer(0, io.vertx.core.eventbus.Message.class, "body");
-                    } else if (parametersCount == 2 && method.parameterType(0).name().equals(MUTINY_MESSAGE_HEADERS)) {
+                    } else if (method.parameterType(0).name().equals(MUTINY_MESSAGE_HEADERS)) {
                         // if the method expects Mutiny MultiMap, wrap the Vert.x MultiMap
                         builder.withArgumentTransformer(0, io.vertx.mutiny.core.MultiMap.class, "newInstance");
                     }

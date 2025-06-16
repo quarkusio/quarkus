@@ -105,9 +105,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
             });
         });
 
-        if (!jbang.isAvailable()) {
-            //If jbang is not available, ignore aliases
-        } else if (remoteCatalogs.length == 0) { //If not catalog have been specified use all available.
+        if (remoteCatalogs.length == 0) { //If not catalog have been specified use all available.
             aliases.putAll(listAliasesOrFallback(jbang, fallbackCatalog).entrySet()
                     .stream()
                     .filter(e -> !aliases.containsKey(e.getKey()))

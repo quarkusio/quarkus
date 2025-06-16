@@ -415,8 +415,7 @@ class VertxCoreProcessor {
                 filter = new Filter() {
                     @Override
                     public boolean isLoggable(LogRecord record) {
-                        try (ServerSocket s = new ServerSocket(port, 1, bind)) {
-
+                        try (ServerSocket ignored = new ServerSocket(port, 1, bind)) {
                         } catch (IOException e) {
                             //if we fail to bind the JVM is still waiting for a debugger to attach
                             //no debugger means log the warning

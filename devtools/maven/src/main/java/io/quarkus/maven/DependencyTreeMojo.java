@@ -146,8 +146,6 @@ public class DependencyTreeMojo extends AbstractMojo {
                     modelResolver.setTest(true);
                 } else if (mode.equalsIgnoreCase("dev") || mode.equalsIgnoreCase("development")) {
                     modelResolver.setDevMode(true);
-                } else if (mode.equalsIgnoreCase("prod") || mode.isEmpty()) {
-                    // ignore, that's the default
                 } else {
                     throw new MojoExecutionException(
                             "Parameter 'mode' was set to '" + mode + "' while expected one of 'dev', 'test' or 'prod'");

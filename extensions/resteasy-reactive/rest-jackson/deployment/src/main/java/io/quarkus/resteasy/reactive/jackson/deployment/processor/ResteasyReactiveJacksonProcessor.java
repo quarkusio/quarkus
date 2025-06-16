@@ -290,13 +290,9 @@ public class ResteasyReactiveJacksonProcessor {
                         continue;
                     }
                     ClassInfo biFunctionClassInfo = index.getIndex().getClassByName(biFunctionType.name());
-                    if (biFunctionClassInfo == null) {
-                        // be lenient
-                    } else {
-                        if (!biFunctionClassInfo.hasNoArgsConstructor()) {
-                            throw new IllegalArgumentException(
-                                    "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
-                        }
+                    if (biFunctionClassInfo != null && !biFunctionClassInfo.hasNoArgsConstructor()) {
+                        throw new IllegalArgumentException(
+                                "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
                     }
                     reflectiveClassProducer.produce(
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())
@@ -317,13 +313,9 @@ public class ResteasyReactiveJacksonProcessor {
                         continue;
                     }
                     ClassInfo biFunctionClassInfo = index.getIndex().getClassByName(biFunctionType.name());
-                    if (biFunctionClassInfo == null) {
-                        // be lenient
-                    } else {
-                        if (!biFunctionClassInfo.hasNoArgsConstructor()) {
-                            throw new IllegalArgumentException(
-                                    "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
-                        }
+                    if (biFunctionClassInfo != null && !biFunctionClassInfo.hasNoArgsConstructor()) {
+                        throw new IllegalArgumentException(
+                                "Class '" + biFunctionClassInfo.name() + "' must contain a no-args constructor");
                     }
                     reflectiveClassProducer.produce(
                             ReflectiveClassBuildItem.builder(biFunctionType.name().toString())

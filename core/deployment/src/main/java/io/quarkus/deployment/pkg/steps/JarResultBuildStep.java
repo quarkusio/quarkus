@@ -858,8 +858,6 @@ public class JarResultBuildStep {
                 lines.sort(Comparator.naturalOrder());
                 Files.write(deplist, lines);
             }
-        } else {
-            //if it is a rebuild we might have classes
         }
         try (Stream<Path> files = Files.walk(buildDir)) {
             files.forEach(new Consumer<Path>() {

@@ -335,17 +335,6 @@ public class CommonPanacheQueryImpl<Entity> {
         } else if (page != null) {
             jpaQuery.setFirstResult(page.index * page.size);
             jpaQuery.setMaxResults(page.size);
-        } else {
-            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
-            // FIXME: requires Hibernate support
-            //            @SuppressWarnings("deprecation")
-            //            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
-            //            options.setFirstRow(null);
-            //            options.setMaxRows(null);
-            // FIXME: why would we even do that? those are the defaults, let's leave them blank
-            // if we don't, we get a LIMIT
-            //            jpaQuery.setFirstResult(0);
-            //            jpaQuery.setMaxResults(Integer.MAX_VALUE);
         }
 
         return jpaQuery;
@@ -396,12 +385,6 @@ public class CommonPanacheQueryImpl<Entity> {
             hibernateQuery.setLockMode(lockModeType);
         }
 
-        if (hints != null) {
-            // FIXME: requires Hibernate support
-            //            for (Map.Entry<String, Object> hint : hints.entrySet()) {
-            //                jpaQuery.setHint(hint.getKey(), hint.getValue());
-            //            }
-        }
         return hibernateQuery;
     }
 

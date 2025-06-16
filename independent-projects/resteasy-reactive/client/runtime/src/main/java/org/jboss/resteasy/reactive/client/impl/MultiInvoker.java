@@ -23,7 +23,6 @@ import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.core.parsetools.RecordParser;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
@@ -101,9 +100,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         }
 
         public void onCancel(Runnable onCancel) {
-            if (this.onCancel.compareAndSet(null, onCancel)) {
-                // this was a first set
-            } else if (this.onCancel.get() == CLEARED) {
+            if (this.onCancel.get() == CLEARED) {
                 // already cleared
                 if (onCancel != null)
                     onCancel.run();
@@ -276,9 +273,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         // make sure we get exceptions on the response, like close events, otherwise they
         // will be logged as errors by vertx
         vertxClientResponse.exceptionHandler(t -> {
-            if (t == ConnectionBase.CLOSED_EXCEPTION) {
-                // we can ignore this one since we registered a closeHandler
-            } else {
+            {
                 multiRequest.emitter.fail(t);
             }
         });
@@ -342,9 +337,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             }
         });
         vertxClientResponse.exceptionHandler(t -> {
-            if (t == ConnectionBase.CLOSED_EXCEPTION) {
-                // we can ignore this one since we registered a closeHandler
-            } else {
+            {
                 multiRequest.fail(t);
             }
         });

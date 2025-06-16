@@ -337,10 +337,7 @@ public class SerializedApplication {
                 result.put(dir, new JarResource[] { resource });
             } else {
                 ClassLoadingResource existingResource = existing[0];
-                if (existingResource.equals(resource)) {
-                    // we don't need to do anything as the resource has already been tracked and an attempt
-                    // to add it again was made
-                } else {
+                if (!existingResource.equals(resource)) {
                     Set<ClassLoadingResource> dirOverrides = overrides.get(dir);
                     if (dirOverrides == null) {
                         // we need to create the override set as this is the first time we find a resource for the dir

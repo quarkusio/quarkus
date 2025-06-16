@@ -57,9 +57,7 @@ public class HttpBinderConfiguration {
             Pattern defaultIgnore = null;
             String defaultMatch = null;
 
-            if (MicrometerRecorder.httpRootUri.equals(MicrometerRecorder.nonApplicationUri)) {
-                // we can't set the default ignore in this case, as the paths overlap
-            } else if (serverConfig.suppressNonApplicationUris()) {
+            if (serverConfig.suppressNonApplicationUris()) {
                 defaultIgnore = Pattern.compile(MicrometerRecorder.nonApplicationUri + ".*");
             }
 

@@ -130,8 +130,6 @@ public class WhenSectionHelper implements SectionHelper {
                     // If type info is available we do add the expression id
                     previousScope.putAttribute(VALUE_EXPR_ID, valueExpr.getGeneratedId());
                 }
-            } else if (ELSE.equals(block.getLabel())) {
-                // No special handling required for "else"
             } else if (IS.equals(block.getLabel()) || CASE.equals(block.getLabel())) {
                 Object valueExprId = previousScope.getAttribute(VALUE_EXPR_ID);
                 int added = 0;

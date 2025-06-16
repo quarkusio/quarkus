@@ -35,9 +35,7 @@ public class ContextStorageOverride extends Context.Storage {
                 fallback.set(toRestore);
             }
         } else {
-            if (dc != null && VertxContext.isDuplicatedContext(dc)) {
-                // Do nothing - duplicated context are not shared.
-            } else {
+            if (dc == null || !VertxContext.isDuplicatedContext(dc)) {
                 fallback.set(null);
             }
         }

@@ -71,8 +71,6 @@ public abstract class BaseObjectReader implements QueryReader<Object>, QueryProp
                     paramEntries = (Map<String, List<Object>>) propEntry.get(1);
                 }
                 setter.getSetter().setValue(obj, suffix, value, paramEntries);
-            } else {
-                // throw Exception?
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

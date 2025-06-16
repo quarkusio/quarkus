@@ -128,9 +128,6 @@ public abstract class AbstractLambdaPollLoop {
                                     if (running.get()) {
                                         processRequest(requestConnection.getInputStream(), responseConnection.getOutputStream(),
                                                 createContext(requestConnection));
-                                        while (responseConnection.getInputStream().read() != -1) {
-                                            // Read data
-                                        }
                                     }
                                 } else {
                                     Object input = null;
@@ -254,9 +251,6 @@ public abstract class AbstractLambdaPollLoop {
         if (response != null) {
             getOutputWriter().writeValue(responseConnection.getOutputStream(), response);
         }
-        while (responseConnection.getInputStream().read() != -1) {
-            // Read data
-        }
     }
 
     protected void requeue(String baseUrl, String requestId) throws IOException {
@@ -265,9 +259,6 @@ public abstract class AbstractLambdaPollLoop {
         responseConnection.setRequestProperty(USER_AGENT, USER_AGENT_VALUE);
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
-        while (responseConnection.getInputStream().read() != -1) {
-            // Read data
-        }
     }
 
     protected void postError(URL url, Object response) throws IOException {
@@ -277,9 +268,6 @@ public abstract class AbstractLambdaPollLoop {
         responseConnection.setDoOutput(true);
         responseConnection.setRequestMethod("POST");
         objectMapper.writeValue(responseConnection.getOutputStream(), response);
-        while (responseConnection.getInputStream().read() != -1) {
-            // Read data
-        }
     }
 
     protected HttpURLConnection responseStream(URL url) throws IOException {

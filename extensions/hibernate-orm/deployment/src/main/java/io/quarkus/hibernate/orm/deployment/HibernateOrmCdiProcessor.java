@@ -341,8 +341,6 @@ public class HibernateOrmCdiProcessor {
                         }
                     }
                 }
-            } else {
-                // we don't really know what to do here, just bail and CDI will figure it out
             }
         }
     }

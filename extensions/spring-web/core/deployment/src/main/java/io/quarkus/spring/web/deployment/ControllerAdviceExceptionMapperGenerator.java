@@ -85,9 +85,7 @@ class ControllerAdviceExceptionMapperGenerator extends AbstractExceptionMapperGe
         for (int i = 0; i < parameterTypes.size(); i++) {
             Type parameterType = parameterTypes.get(i);
             DotName parameterTypeDotName = parameterType.name();
-            if (typesUtil.isAssignable(Exception.class, parameterTypeDotName)) {
-                // do nothing since this will be handled during in generateMethodBody
-            } else if (typesUtil.isAssignable(HttpServletRequest.class, parameterTypeDotName)) {
+            if (typesUtil.isAssignable(HttpServletRequest.class, parameterTypeDotName)) {
                 if (parameterTypeToField.containsKey(parameterType)) {
                     throw new IllegalArgumentException("Parameter type " + parameterTypes.get(notAllowedParameterIndex).name()
                             + " is being used multiple times in method" + controllerAdviceMethod.name() + " of class"

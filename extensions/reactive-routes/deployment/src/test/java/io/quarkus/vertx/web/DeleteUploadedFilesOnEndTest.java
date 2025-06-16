@@ -48,7 +48,7 @@ public class DeleteUploadedFilesOnEndTest {
                     + "quarkus.http.body.uploads-directory = " + UPLOADS_DIR + "\n"), "application.properties"));
 
     @Test
-    public void upload() throws IOException {
+    public void upload() throws IOException, InterruptedException {
 
         final String cafeBabe = "cafe babe";
         final String uploadedPath = RestAssured.given().contentType("multipart/form-data")
@@ -56,10 +56,7 @@ public class DeleteUploadedFilesOnEndTest {
                 .formParam("echoAttachment", "bytes.bin").post("/vertx-web/upload") //
                 .then().statusCode(200).extract().body().asString();
         Assertions.assertFalse(uploadedPath.trim().isEmpty());
-        /* Wait up to 5 seconds for the file to disappear */
-        final long deadline = System.currentTimeMillis() + 5000;
-        while (Files.exists(Paths.get(uploadedPath)) && System.currentTimeMillis() < deadline) {
-        }
+        Thread.sleep(1_000);
         Assertions.assertFalse(Files.exists(Paths.get(uploadedPath)));
     }
 

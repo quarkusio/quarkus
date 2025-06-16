@@ -294,8 +294,6 @@ public class AsmUtil {
                 String mappedSignature2 = typeArgMapper.apply(unresolvedTypeVariable.identifier());
                 if (mappedSignature2 != null) {
                     sb.append(mappedSignature2);
-                } else if (erased) {
-                    // TODO ???
                 } else {
                     sb.append("T").append(unresolvedTypeVariable.identifier()).append(";");
                 }
@@ -305,8 +303,6 @@ public class AsmUtil {
                 String mappedSignature3 = typeArgMapper.apply(typeVariableReference.identifier());
                 if (mappedSignature3 != null) {
                     sb.append(mappedSignature3);
-                } else if (erased) {
-                    // TODO ???
                 } else {
                     sb.append("T").append(typeVariableReference.identifier()).append(";");
                 }

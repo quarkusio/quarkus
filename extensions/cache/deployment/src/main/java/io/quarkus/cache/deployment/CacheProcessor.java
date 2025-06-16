@@ -159,13 +159,7 @@ class CacheProcessor {
         // Let's also collect the cache names from the @CacheName annotations.
         for (AnnotationInstance qualifier : combinedIndex.getIndex().getAnnotations(CACHE_NAME)) {
             // The @CacheName annotation from CacheProducer must be ignored.
-            if (qualifier.target().kind() == METHOD) {
-                /*
-                 * This should only happen in CacheProducer. It'd be nice if we could forbid using @CacheName on a method in
-                 * any other class, but Arc throws an AmbiguousResolutionException before we get a chance to validate things
-                 * here.
-                 */
-            } else {
+            if (!(qualifier.target().kind() == METHOD)) {
                 names.add(qualifier.value().asString());
             }
         }

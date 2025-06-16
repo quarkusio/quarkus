@@ -75,17 +75,7 @@ public final class JsonUtil {
 
     @SuppressWarnings("unchecked")
     public static Object checkAndCopy(Object val) {
-        if (val == null) {
-            // OK
-        } else if (val instanceof Number) {
-            // OK
-        } else if (val instanceof Boolean) {
-            // OK
-        } else if (val instanceof String) {
-            // OK
-        } else if (val instanceof Character) {
-            // OK
-        } else if (val instanceof CharSequence) {
+        if (val instanceof CharSequence) {
             // CharSequences are not immutable, so we force toString() to become immutable
             val = val.toString();
         } else if (val instanceof Shareable) {
@@ -96,14 +86,6 @@ public final class JsonUtil {
             val = (new JsonObject((Map) val)).copy();
         } else if (val instanceof List) {
             val = (new JsonArray((List) val)).copy();
-        } else if (val instanceof Buffer) {
-            val = ((Buffer) val).copy();
-        } else if (val instanceof byte[]) {
-            // OK
-        } else if (val instanceof Instant) {
-            // OK
-        } else if (val instanceof Enum) {
-            // OK
         } else {
             throw new IllegalStateException("Illegal type in Json: " + val.getClass());
         }

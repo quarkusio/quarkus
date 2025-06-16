@@ -352,8 +352,6 @@ public class CommonPanacheQueryImpl<Entity> {
         } else if (page != null) {
             hibernateQuery.setFirstResult(page.index * page.size);
             hibernateQuery.setMaxResults(page.size);
-        } else {
-            //no-op
         }
 
         return hibernateQuery;
@@ -366,8 +364,6 @@ public class CommonPanacheQueryImpl<Entity> {
             hibernateQuery.setFirstResult(range.getStartIndex());
         } else if (page != null) {
             hibernateQuery.setFirstResult(page.index * page.size);
-        } else {
-            //no-op
         }
         hibernateQuery.setMaxResults(maxResults);
 

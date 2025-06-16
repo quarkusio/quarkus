@@ -130,9 +130,7 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
         // make sure we get exceptions on the response, like close events, otherwise they
         // will be logged as errors by vertx
         vertxClientResponse.exceptionHandler(t -> {
-            if (t == ConnectionBase.CLOSED_EXCEPTION) {
-                // we can ignore this one since we registered a closeHandler
-            } else {
+            if (t != ConnectionBase.CLOSED_EXCEPTION) {
                 receiveThrowable(t);
             }
         });

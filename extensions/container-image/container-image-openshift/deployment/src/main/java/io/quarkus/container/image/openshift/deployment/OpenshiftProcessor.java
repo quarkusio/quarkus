@@ -220,8 +220,6 @@ public class OpenshiftProcessor {
                 String imagePushSecret = openshiftConfig.imagePushSecret().get();
                 decorator.produce(new DecoratorBuildItem(OPENSHIFT, new ApplyDockerImageOutputToBuildConfigDecorator(
                         applicationInfo.getName(), containerImageInfo.getImage(), imagePushSecret)));
-            } else if (registry.contains(OPENSHIFT_INTERNAL_REGISTRY)) {
-                //no special handling of secrets is really needed.
             } else if (containerImageInfo.username.isPresent() && containerImageInfo.password.isPresent()) {
                 String imagePushSecret = applicationInfo.getName() + "-push-secret";
                 decorator.produce(new DecoratorBuildItem(OPENSHIFT,

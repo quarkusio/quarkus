@@ -55,8 +55,6 @@ final class ConnectionStringSubstitution {
                 MongoCompressor zlibCompressor = MongoCompressor.createZlibCompressor();
                 zlibCompressor = zlibCompressor.withProperty(MongoCompressor.LEVEL, zlibCompressionLevel);
                 compressorsList.add(zlibCompressor);
-            } else if (cur.equals("snappy")) {
-                // DO NOTHING
             } else if (!cur.isEmpty()) {
                 throw new IllegalArgumentException("Unsupported compressor '" + cur + "'");
             }

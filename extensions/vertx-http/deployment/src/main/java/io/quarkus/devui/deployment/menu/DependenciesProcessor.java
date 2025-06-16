@@ -414,9 +414,7 @@ public class DependenciesProcessor {
         void initDependents(Map<ArtifactKey, DepNode> allDeps) {
             for (var depCoords : resolvedDep.getDependencies()) {
                 var dep = allDeps.get(depCoords.getKey());
-                if (dep == null) {
-                    // TODO error/warning
-                } else {
+                if (dep != null) {
                     dep.addDependent(this);
                 }
             }

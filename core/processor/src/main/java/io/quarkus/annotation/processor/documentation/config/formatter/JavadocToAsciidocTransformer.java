@@ -474,9 +474,7 @@ public final class JavadocToAsciidocTransformer {
                     }
                     break;
                 case '\r':
-                    if (i + 1 < text.length() && text.charAt(i + 1) == '\n') {
-                        /* Ignore \r followed by \n */
-                    } else {
+                    if (i + 1 >= text.length() || text.charAt(i + 1) != '\n') {
                         /* A Mac single \r: replace by \n */
                         sb.append('\n');
                     }

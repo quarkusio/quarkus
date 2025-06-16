@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
 
+import com.mysql.cj.jdbc.MysqlXADataSource;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -27,7 +28,7 @@ public class XaConnectionsEndpoint {
 
         // Test 1#
         // Verify that the connection can be obtained
-        try (Connection connection = xaDatasource.getConnection()) {
+        try (var ignored = xaDatasource.getConnection()) {
             //The main goal is to check that the connection could be opened
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -35,14 +36,11 @@ public class XaConnectionsEndpoint {
 
         // Test 2#
         // Check it's of the expected configuration
-        AgroalConnectionFactoryConfiguration cfg = xaDatasource.getConfiguration().connectionPoolConfiguration()
-                .connectionFactoryConfiguration();
-        Class<?> connectionProviderClass = cfg.connectionProviderClass();
-        if (connectionProviderClass.equals(com.mysql.cj.jdbc.MysqlXADataSource.class)) {
-            return "OK";
-        } else {
-            return "Unexpected Driver class: " + connectionProviderClass.getName();
-        }
+        var connectionProviderClass = xaDatasource.getConfiguration().connectionPoolConfiguration()
+                .connectionFactoryConfiguration().connectionProviderClass();
+        return connectionProviderClass.equals(MysqlXADataSource.class)
+                ? "OK"
+                : "Unexpected Driver class: " + connectionProviderClass.getName();
 
     }
 

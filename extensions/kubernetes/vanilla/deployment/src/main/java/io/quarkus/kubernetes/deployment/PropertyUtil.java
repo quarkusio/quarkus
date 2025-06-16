@@ -44,8 +44,6 @@ public class PropertyUtil {
                     "%s property '%s' has been set with value '%s' while %s property '%s' is set with '%s'. %s will be set using the former.",
                     platformCapitalized, kubernetesProperty.getName(), kubernetesProperty.getValue().get(), runtimeOrBuildTime,
                     extensionProperty.getName(), extensionProperty.getValue().get(), usage);
-        } else {
-            // Both proeprties are present and aligned.
         }
     }
 }

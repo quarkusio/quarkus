@@ -29,8 +29,6 @@ abstract class AdditionalReaderWriterCommon implements AdditionalReaderWriter {
                 // we remove the existing entity and replace it with one that has no constraint
                 entries.remove(matchingEntryIgnoringConstraint);
                 entries.add(new Entry(handlerClass, mediaType, entityClass, null));
-            } else {
-                // nothing to do since the entries match completely
             }
         } else {
             entries.add(newEntry);

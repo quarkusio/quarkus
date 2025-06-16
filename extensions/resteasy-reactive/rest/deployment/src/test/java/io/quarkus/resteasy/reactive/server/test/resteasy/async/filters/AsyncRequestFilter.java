@@ -30,9 +30,7 @@ public abstract class AsyncRequestFilter implements ResteasyReactiveContainerReq
 
         String action = ctx.getHeaderString(name);
         LOG.debug("Filter request for " + name + " with action: " + action);
-        if ("sync-pass".equals(action)) {
-            // do nothing
-        } else if ("sync-fail".equals(action)) {
+        if ("sync-fail".equals(action)) {
             ctx.abortWith(Response.ok(name).build());
         } else if ("async-pass".equals(action)) {
             ctx.suspend();

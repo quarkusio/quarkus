@@ -71,9 +71,7 @@ public class JarResourceTest {
     }
 
     private static void drainFully(final InputStream inputStream) throws IOException {
-        int read = -1;
-        final byte[] data = new byte[1024];
-        while ((read = inputStream.read(data)) != -1) {
-        }
+        while (inputStream.read(new byte[1024]) != -1)
+            ;
     }
 }

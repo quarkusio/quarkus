@@ -95,10 +95,7 @@ public class VertxCurrentContextFactory implements CurrentContextFactory {
         @Override
         public void remove() {
             Context context = Vertx.currentContext();
-            if (context != null && VertxContext.isDuplicatedContext(context)) {
-                // NOOP - the DC should not be shared.
-                // context.removeLocal(key);
-            } else {
+            if (context == null || !VertxContext.isDuplicatedContext(context)) {
                 fallback.get().remove();
             }
         }

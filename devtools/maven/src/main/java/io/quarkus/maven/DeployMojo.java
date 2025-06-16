@@ -31,21 +31,19 @@ public class DeployMojo extends AbstractDeploymentMojo {
         try (CuratedApplication curatedApplication = bootstrapApplication()) {
             // get list of extensions that support quarkus:deploy
             AtomicReference<List<String>> tooMany = new AtomicReference<>();
-            AugmentAction action = curatedApplication.createAugmentor();
-            action.performCustomBuild(DeployCommandDeclarationHandler.class.getName(), new Consumer<List<String>>() {
+            curatedApplication.createAugmentor().performCustomBuild(DeployCommandDeclarationHandler.class.getName(), new Consumer<List<String>>() {
                 @Override
                 public void accept(List<String> strings) {
                     tooMany.set(strings);
                 }
             }, DeployCommandDeclarationResultBuildItem.class.getName());
-            String target = System.getProperty("quarkus.deploy.target");
-            List<String> targets = tooMany.get();
+            var target = System.getProperty("quarkus.deploy.target");
+            var targets = tooMany.get();
             if (targets.isEmpty() && target == null) {
                 // weave in kubernetes as we have no deploy support from others
                 systemProperties = new HashMap<>(systemProperties);
-                boolean shouldBuildImage = imageBuild || imageBuilder != null && !imageBuilder.isEmpty();
                 systemProperties.put("quarkus." + getDeployer().name() + ".deploy", "true");
-                systemProperties.put("quarkus.container-image.build", String.valueOf(shouldBuildImage));
+                systemProperties.put("quarkus.container-image.build", String.valueOf(imageBuild || imageBuilder != null && !imageBuilder.isEmpty()));
                 super.doExecute();
             } else if (targets.size() > 1 && target == null) {
                 getLog().error(
@@ -60,18 +58,14 @@ public class DeployMojo extends AbstractDeploymentMojo {
                 if (target == null) {
                     target = targets.get(0);
                 }
-                AugmentAction deployAction = curatedApplication.createAugmentor();
                 getLog().info("Deploy target: " + target);
                 System.setProperty("quarkus.deploy.target", target);
-
-                deployAction.performCustomBuild(DeployCommandHandler.class.getName(), new Consumer<Boolean>() {
+                curatedApplication.createAugmentor().performCustomBuild(DeployCommandHandler.class.getName(), new Consumer<Boolean>() {
                     @Override
                     public void accept(Boolean success) {
                     }
                 }, DeployCommandActionResultBuildItem.class.getName());
             }
-        } finally {
-
         }
     }
 }

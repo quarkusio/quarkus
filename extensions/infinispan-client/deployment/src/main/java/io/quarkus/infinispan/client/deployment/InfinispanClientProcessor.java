@@ -232,10 +232,6 @@ class InfinispanClientProcessor {
                                     .filter(p -> p.toString().endsWith(PROTO_EXTENSION))
                                     .iterator();
                             // We monitor the entire meta inf directory if properties are available
-                            if (protoFiles.hasNext()) {
-                                // Quarkus doesn't currently support hot deployment watching directories
-                                //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
-                            }
                             while (protoFiles.hasNext()) {
                                 Path path = protoFiles.next();
                                 if (log.isDebugEnabled()) {

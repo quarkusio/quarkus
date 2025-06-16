@@ -105,14 +105,10 @@ public class ResteasyReactiveCDIProcessor {
                                     ClassInfo clazz = context.declaration().asClass();
                                     if (requestScopedResources.contains(clazz.name())) {
                                         BuiltinScope builtinScope = BuiltinScope.from(clazz);
-                                        if (builtinScope != null) {
-                                            if (builtinScope.getName() != BuiltinScope.REQUEST.getName()) {
+                                        if (builtinScope != null && builtinScope.getName() != BuiltinScope.REQUEST.getName()) {
                                                 throw new DeploymentException(
                                                         "Resource classes that use field injection for REST parameters can only be @RequestScoped. Offending class is "
                                                                 + clazz.name());
-                                            } else {
-                                                // nothing to do as @RequestScoped was already present
-                                            }
                                         } else if (!resourceScanningResultBuildItem.get().getResult().getPossibleSubResources()
                                                 .containsKey(clazz.name())) {
                                             // no @RequestScoped for Sub Resources, since they might have a constructor

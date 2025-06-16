@@ -159,11 +159,8 @@ public class HttpServerCommonHandlers {
             } else {
                 // we need to make sure the new value is not duplicated
                 var newValues = new LinkedHashSet<String>(oldValues);
-                boolean added = newValues.add(value);
-                if (added) {
+                if (newValues.add(value)) {
                     responseHeaders.set(key, newValues);
-                } else {
-                    // we don't need to do anything here as the value was already in the set
                 }
             }
         }

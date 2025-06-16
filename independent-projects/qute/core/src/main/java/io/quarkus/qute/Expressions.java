@@ -111,16 +111,14 @@ public final class Expressions {
                     // Not inside a string/type literal
                     if (brackets == 0 && c == ' ' && splitConfig.isInfixNotationSupported()) {
                         // Infix supported, blank space and not inside a virtual method
-                        if (separator == 0
-                                && (buffer.length() == 0 || buffer.charAt(buffer.length() - 1) == '(')) {
-                            // Skip redundant blank space:
-                            // 1. before the infix method
-                            // foo  or bar
-                            // ----^
-                            // 2. before an infix method parameter
-                            // foo or  bar
-                            // -------^
-                        } else if (infix == 1) {
+                        // Skip redundant blank space:
+                        // 1. before the infix method
+                        // foo  or bar
+                        // ----^
+                        // 2. before an infix method parameter
+                        // foo or  bar
+                        // -------^
+                        if (infix == 1) {
                             // The space after the infix method
                             // foo or bar
                             // ------^
@@ -154,11 +152,10 @@ public final class Expressions {
                         }
                         buffer.append(c);
                     }
-                    separator = 0;
                 } else {
                     buffer.append(c);
-                    separator = 0;
                 }
+                separator = 0;
             }
         }
         if (infix > 0) {

@@ -195,20 +195,6 @@ public class TargetDependencyServiceTest {
         assertNull("Empty phase should return null", ctx.service.getPrecedingPhase("", ctx.project));
     }
 
-    /**
-     * Test phase inference from goal
-     */
-    @Test
-    public void testInferPhaseFromGoal() throws Exception {
-        TestContext ctx = setupBasicTest();
-        
-        String phase = ctx.service.inferPhaseFromGoal("compile", ctx.project);
-        // Result depends on actual Maven execution plan
-        
-        // Test null handling
-        assertNull("Null goal should return null", ctx.service.inferPhaseFromGoal(null, ctx.project));
-        assertNull("Empty goal should return null", ctx.service.inferPhaseFromGoal("", ctx.project));
-    }
 
     /**
      * Test that install:install depends on verify phase (key dependency test)
@@ -257,7 +243,6 @@ public class TargetDependencyServiceTest {
         List<String> phaseDeps = service.getPhaseDependencies("test", null);
         assertNotNull("Phase dependencies should not be null", phaseDeps);
         
-        String phase = service.inferPhaseFromGoal("compile", null);
         // Should handle null session gracefully
     }
 

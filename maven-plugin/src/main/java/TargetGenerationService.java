@@ -28,11 +28,13 @@ public class TargetGenerationService {
     private final Log log;
     private final boolean verbose;
     private final MavenSession session;
+    private final LifecycleExecutor lifecycleExecutor;
 
-    public TargetGenerationService(Log log, boolean verbose, MavenSession session) {
+    public TargetGenerationService(Log log, boolean verbose, MavenSession session, LifecycleExecutor lifecycleExecutor) {
         this.log = log;
         this.verbose = verbose;
         this.session = session;
+        this.lifecycleExecutor = lifecycleExecutor;
     }
 
     /**
@@ -138,7 +140,7 @@ public class TargetGenerationService {
                                 String targetName = MavenUtils.getTargetName(plugin.getArtifactId(), goal);
                                 
                                 if (!goalTargets.containsKey(targetName)) {
-                                    TargetConfiguration target = createGoalTarget(plugin, goal, execution, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()));
+                                    TargetConfiguration target = createGoalTarget(plugin, goal, execution, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()), project);
                                     goalTargets.put(targetName, target);
                                 }
                             });
@@ -147,7 +149,7 @@ public class TargetGenerationService {
                 }
                 
                 // Add common goals for well-known plugins
-                addCommonGoalsForPlugin(plugin, goalTargets, projectRootToken, actualProjectPath, goalDependencies);
+                addCommonGoalsForPlugin(plugin, goalTargets, projectRootToken, actualProjectPath, goalDependencies, project);
             });
         }
         
@@ -159,7 +161,7 @@ public class TargetGenerationService {
      */
     public TargetConfiguration createGoalTarget(Plugin plugin, String goal, PluginExecution execution, 
                                                String projectRootToken, String actualProjectPath, 
-                                               List<String> dependencies) {
+                                               List<String> dependencies, MavenProject project) {
         String pluginKey = plugin.getGroupId() + ":" + plugin.getArtifactId();
         
         TargetConfiguration target = new TargetConfiguration("nx:run-commands");
@@ -192,7 +194,7 @@ public class TargetGenerationService {
         if (executionPhase != null && !executionPhase.isEmpty() && !executionPhase.startsWith("${")) {
             metadata.setPhase(executionPhase);
         } else {
-            metadata.setPhase(inferPhaseFromGoal(goal));
+            metadata.setPhase(MavenUtils.inferPhaseFromGoal(goal, project));
         }
         metadata.setTechnologies(Arrays.asList("maven"));
         target.setMetadata(metadata);
@@ -202,7 +204,7 @@ public class TargetGenerationService {
 
     private void addCommonGoalsForPlugin(Plugin plugin, Map<String, TargetConfiguration> goalTargets, 
                                         String projectRootToken, String actualProjectPath, 
-                                        Map<String, List<String>> goalDependencies) {
+                                        Map<String, List<String>> goalDependencies, MavenProject project) {
         String artifactId = plugin.getArtifactId();
         List<String> commonGoals = new ArrayList<>();
         
@@ -219,7 +221,7 @@ public class TargetGenerationService {
         for (String goal : commonGoals) {
             String targetName = MavenUtils.getTargetName(artifactId, goal);
             if (!goalTargets.containsKey(targetName)) {
-                TargetConfiguration target = createSimpleGoalTarget(plugin, goal, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()));
+                TargetConfiguration target = createSimpleGoalTarget(plugin, goal, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()), project);
                 goalTargets.put(targetName, target);
             }
         }
@@ -227,7 +229,7 @@ public class TargetGenerationService {
 
     private TargetConfiguration createSimpleGoalTarget(Plugin plugin, String goal, 
                                                       String projectRootToken, String actualProjectPath,
-                                                      List<String> dependencies) {
+                                                      List<String> dependencies, MavenProject project) {
         String pluginKey = plugin.getGroupId() + ":" + plugin.getArtifactId();
         
         TargetConfiguration target = new TargetConfiguration("nx:run-commands");
@@ -253,7 +255,7 @@ public class TargetGenerationService {
         TargetMetadata metadata = new TargetMetadata("goal", generateGoalDescription(plugin.getArtifactId(), goal));
         metadata.setPlugin(pluginKey);
         metadata.setGoal(goal);
-        metadata.setPhase(inferPhaseFromGoal(goal));
+        metadata.setPhase(MavenUtils.inferPhaseFromGoal(goal, project));
         metadata.setTechnologies(Arrays.asList("maven"));
         target.setMetadata(metadata);
         
@@ -303,25 +305,6 @@ public class TargetGenerationService {
     }
 
 
-    private String inferPhaseFromGoal(String goal) {
-        if (goal == null || goal.isEmpty()) {
-            return null;
-        }
-        
-        if (goal.equals("compile") || goal.equals("testCompile")) {
-            return "compile";
-        } else if (goal.equals("test") || goal.contains("test")) {
-            return "test";
-        } else if (goal.equals("jar") || goal.equals("war") || goal.equals("build") || goal.equals("repackage")) {
-            return "package";
-        } else if (goal.equals("dev") || goal.equals("run")) {
-            return "compile";
-        } else if (goal.contains("site") || goal.contains("javadoc")) {
-            return "site";
-        } else {
-            return "compile";
-        }
-    }
 
     /**
      * Dynamically discover all lifecycle phases that have bound goals for this project
@@ -330,8 +313,6 @@ public class TargetGenerationService {
         Set<String> applicablePhases = new LinkedHashSet<>();
         
         try {
-            LifecycleExecutor lifecycleExecutor = session.getContainer().lookup(LifecycleExecutor.class);
-            
             // Calculate execution plan for "deploy" phase (includes all phases up to deploy)
             MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(
                 session, "deploy"
@@ -366,8 +347,6 @@ public class TargetGenerationService {
      */
     private boolean hasGoalsBoundToPhase(String phase, MavenProject project) {
         try {
-            LifecycleExecutor lifecycleExecutor = session.getContainer().lookup(LifecycleExecutor.class);
-            
             // Calculate execution plan for just this phase
             MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(
                 session, phase

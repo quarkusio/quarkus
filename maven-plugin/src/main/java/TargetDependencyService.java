@@ -33,7 +33,7 @@ public class TargetDependencyService {
 
         String effectivePhase = executionPhase;
         if (effectivePhase == null || effectivePhase.isEmpty() || effectivePhase.startsWith("${")) {
-            effectivePhase = inferPhaseFromGoal(MavenUtils.extractGoalFromTargetName(targetName), project);
+            effectivePhase = MavenUtils.inferPhaseFromGoal(MavenUtils.extractGoalFromTargetName(targetName), project);
         }
 
 
@@ -186,31 +186,6 @@ public class TargetDependencyService {
 
 
 
-    /**
-     * Infer the Maven phase from a goal name using project build configuration
-     */
-    public String inferPhaseFromGoal(String goal, MavenProject project) {
-        if (goal == null || goal.isEmpty()) {
-            return null;
-        }
-
-        // Try to infer from project build plugins first
-        if (project != null && project.getBuild() != null) {
-            for (org.apache.maven.model.Plugin plugin : project.getBuild().getPlugins()) {
-                for (org.apache.maven.model.PluginExecution execution : plugin.getExecutions()) {
-                    if (execution.getGoals().contains(goal) ||
-                        execution.getGoals().stream().anyMatch(g -> goal.endsWith(":" + g))) {
-                        if (execution.getPhase() != null) {
-                            return execution.getPhase();
-                        }
-                    }
-                }
-            }
-        }
-
-        // No fallback - rely only on project plugin configuration
-        return null;
-    }
 
 
 

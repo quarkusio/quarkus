@@ -9,6 +9,8 @@ import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
+import java.util.LinkedHashSet;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -332,7 +334,7 @@ public class TargetGenerationService {
             
             // Calculate execution plan for "deploy" phase (includes all phases up to deploy)
             MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(
-                session, project, Arrays.asList("deploy")
+                session, "deploy"
             );
             
             // Extract unique phases from all mojo executions
@@ -368,7 +370,7 @@ public class TargetGenerationService {
             
             // Calculate execution plan for just this phase
             MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(
-                session, project, Arrays.asList(phase)
+                session, phase
             );
             
             // Check if any mojo executions are bound to this phase

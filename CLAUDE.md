@@ -25,7 +25,7 @@ nx show projects --verbose
 
 ### 2. Cache Busting Commands
 
-**IMPORTANT**: Always bust caches when testing changes to ensure fresh results.
+**IMPORTANT**: Always bust caches when testing Java changes to ensure fresh results.
 
 ```bash
 # Clear all Nx caches
@@ -36,7 +36,7 @@ rm -rf .nx/cache
 rm -rf node_modules/.cache/nx
 
 # Force fresh plugin execution
-NX_CACHE_DIRECTORY="/tmp/nx-test-cache" nx graph --graph.json
+NX_CACHE_DIRECTORY="/tmp/nx-test-cache" nx graph --file graph.json
 
 # Complete clean slate (nuclear option)
 nx reset && rm -rf .nx && rm -rf node_modules/.cache
@@ -44,7 +44,7 @@ nx reset && rm -rf .nx && rm -rf node_modules/.cache
 
 ## Detailed Testing Procedures
 
-### Testing `nx graph --graph.json`
+### Testing `nx graph --file graph.json`
 
 This command generates a complete project graph with all discovered projects and their dependencies.
 

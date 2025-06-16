@@ -149,7 +149,7 @@ public class TestRegistryClientBuilder {
                     e.getArtifact().getArtifactId() + "-deployment", e.getArtifact().getClassifier(),
                     e.getArtifact().getType(), e.getArtifact().getVersion());
             jarPath = getTmpPath(deploymentJarCoords);
-            try (FileSystem zip = ZipUtils.newZip(jarPath)) {
+            try (FileSystem ignored = ZipUtils.newZip(jarPath)) {
             } catch (IOException e1) {
                 throw new UncheckedIOException(e1);
             }

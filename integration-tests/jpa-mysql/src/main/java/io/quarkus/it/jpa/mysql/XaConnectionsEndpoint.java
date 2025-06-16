@@ -27,7 +27,7 @@ public class XaConnectionsEndpoint {
 
         // Test 1#
         // Verify that the connection can be obtained
-        try (Connection connection = xaDatasource.getConnection()) {
+        try (Connection ignored = xaDatasource.getConnection()) {
             //The main goal is to check that the connection could be opened
         } catch (SQLException e) {
             throw new RuntimeException(e);

@@ -41,7 +41,7 @@ public class UpxCompressionBuildStep {
             BuildProducer<UpxCompressedBuildItem> upxCompressedProducer,
             BuildProducer<ArtifactResultBuildItem> artifactResultProducer) {
 
-        if (nativeConfig.compression().level().isEmpty()) {
+        if (nativeConfig.compression().level().isEmpty() || !nativeConfig.compression().enabled()) {
             log.debug("UPX compression disabled");
             return;
         }
@@ -52,7 +52,8 @@ public class UpxCompressionBuildStep {
 
         String effectiveBuilderImage = nativeConfig.builderImage().getEffectiveImage();
         Optional<File> upxPathFromSystem = getUpxFromSystem();
-        if (upxPathFromSystem.isPresent()) {
+        if (upxPathFromSystem.isPresent() && !nativeConfig.compression().containerBuild().orElse(false)
+                && nativeConfig.compression().containerImage().isEmpty()) {
             log.debug("Running UPX from system path");
             if (!runUpxFromHost(upxPathFromSystem.get(), image.getPath().toFile(), nativeConfig)) {
                 throw new IllegalStateException("Unable to compress the native executable");
@@ -61,9 +62,12 @@ public class UpxCompressionBuildStep {
             log.error("Compression of native executables is not yet implemented for remote container builds.");
             throw new IllegalStateException(
                     "Unable to compress the native executable: Compression of native executables is not yet supported for remote container builds");
-        } else if (nativeImageRunner.isContainerBuild()) {
-            log.info("Running UPX from a container using the builder image: " + effectiveBuilderImage);
-            if (!runUpxInContainer(image, nativeConfig, effectiveBuilderImage)) {
+        } else if (nativeConfig.compression().containerBuild().orElse(true) &&
+                (nativeImageRunner.isContainerBuild() ||
+                        nativeConfig.compression().containerImage().isPresent())) {
+            String compressorImage = nativeConfig.compression().containerImage().orElse(effectiveBuilderImage);
+            log.info("Running UPX from a container using the compressor image: " + compressorImage);
+            if (!runUpxInContainer(image, nativeConfig, compressorImage)) {
                 throw new IllegalStateException("Unable to compress the native executable");
             }
         } else {

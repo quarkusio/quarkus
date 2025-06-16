@@ -539,6 +539,25 @@ public interface NativeConfig {
     @ConfigGroup
     interface Compression {
         /**
+         * Whether compression should be enabled.
+         */
+        @WithDefault("true")
+        boolean enabled();
+
+        /**
+         * Whether the compression should be executed within a container.
+         */
+        Optional<Boolean> containerBuild();
+
+        /**
+         * The image used for compression. Defaults to {@code quarkus.native.builder-image} if not
+         * set.
+         * <p>
+         * Setting this variable will automatically activate
+         */
+        Optional<String> containerImage();
+
+        /**
          * The compression level in [1, 10].
          * 10 means <em>best</em>.
          * <p>

@@ -1,10 +1,8 @@
 import model.TargetConfiguration;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.lifecycle.LifecycleExecutor;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -215,18 +213,5 @@ public class TargetDependencyService {
     }
 
 
-    /**
-     * Get Nx project path from Maven project (relative path from workspace root)
-     */
-    private String getProjectPath(MavenProject project) {
-        if (session != null) {
-            File workspaceRoot = new File(session.getExecutionRootDirectory());
-            String relativePath = NxPathUtils.getRelativePath(workspaceRoot, project.getBasedir());
-            return relativePath.isEmpty() ? "." : relativePath;
-        } else {
-            // Fallback to project base directory name
-            return project.getBasedir().getName();
-        }
-    }
 
 }

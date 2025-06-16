@@ -834,6 +834,23 @@ public class SmallRyeGraphQLProcessor {
     }
 
     @BuildStep
+    void detectVirtualThreadsAndMarkExecutor(
+            CombinedIndexBuildItem combinedIndexBuildItem,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
+
+        IndexView index = combinedIndexBuildItem.getIndex();
+        DotName virtualThreadAnnotation = DotName.createSimple("io.smallrye.common.annotation.RunOnVirtualThread");
+        // Check if the annotation is used anywhere in the codebase
+        if (!index.getAnnotations(virtualThreadAnnotation).isEmpty()) {
+            // Mark the virtual threads executor as unremovable
+            unremovableBeans.produce(UnremovableBeanBuildItem
+                    .beanTypes(DotName.createSimple("java.util.concurrent.ExecutorService"),
+                            DotName.createSimple("java.util.concurrent.Executor"),
+                            DotName.createSimple("io.quarkus.virtual.threads.VirtualThreads")));
+        }
+    }
+
+    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerGraphQLUiHandler(
             BuildProducer<RouteBuildItem> routeProducer,

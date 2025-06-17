@@ -25,6 +25,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClosedException;
 import io.vertx.core.http.WebSocketBase;
 import io.vertx.core.http.WebSocketFrame;
 import io.vertx.core.http.WebSocketFrameType;
@@ -342,6 +343,9 @@ class Endpoints {
     }
 
     static boolean isWebSocketIsClosedFailure(Throwable throwable, WebSocketConnectionBase connection) {
+        if (throwable instanceof HttpClosedException) {
+            return true;
+        }
         if (!connection.isClosed()) {
             return false;
         }

@@ -347,4 +347,27 @@ public class IncludeTest {
                                     """).render().replaceAll("\\s+", ""));
     }
 
+    @Test
+    public void testDynamicTemplate() {
+        Engine engine = Engine.builder().addDefaults().build();
+        engine.putTemplate("root", engine.parse("<html><body>{#insert foo /}</body></html>"));
+        assertEquals("<html><body>Something</body></html>",
+                engine.parse("{#include _id=foo}{#foo}Something{/include}").data("foo", "root").render());
+        assertEquals("<html><body>1</body></html>",
+                engine.parse("{#include bar=1 _id=foo}{#foo}{bar}{/include}").data("foo", "root").render());
+    }
+
+    @Test
+    public void testDynamicTemplateNotFound() {
+        Engine engine = Engine.builder().addDefaults().build();
+        assertThatExceptionOfType(TemplateException.class)
+                .isThrownBy(() -> engine.parse("{#include _id=foo /}", null, "foo.html")
+                        .data("foo", "nonexistent")
+                        .render())
+                .withMessage(
+                        "Rendering error in template [foo.html] line 1: included template [nonexistent] not found")
+                .hasFieldOrProperty("origin")
+                .hasFieldOrProperty("code");
+    }
+
 }

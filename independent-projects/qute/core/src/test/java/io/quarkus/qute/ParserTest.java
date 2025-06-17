@@ -449,9 +449,9 @@ public class ParserTest {
     }
 
     @Test
-    public void testMandatorySectionParas() {
-        assertParserError("{#include /}", ParserError.MANDATORY_SECTION_PARAMS_MISSING,
-                "Parser error: mandatory section parameters not declared for {#include /}: [template]", 1);
+    public void testMandatorySectionParams() {
+        assertParserError("{#eval /}", ParserError.MANDATORY_SECTION_PARAMS_MISSING,
+                "Parser error: mandatory section parameters not declared for {#eval /}: [template]", 1);
     }
 
     @Test

@@ -1127,6 +1127,15 @@ This section can be used to include another template and possibly override some 
 <1> Include a template with id `foo`. The included template can reference data from the current context.
 <2> It's also possible to define optional parameters that can be used in the included template.
 
+By default, the first unnamed parameter represents the id of a template that should be included.
+And it is taken as is.
+For example, `{#include bar/foo /}` includes a template with id `bar/foo`; i.e. `src/main/resources/templates/bar/foo.html` could be matched.
+However, it is also possible to supply the template id dynamically.
+Just add the `_id` parameter to the tag.
+In this case, the argument value of the `_id` parameter represents an expression that is resolved and the result represents the template id.
+For example, `{#include _id=bar.foo /}` means that `bar.foo` is first resolved and then the resulting template id is used.
+
+
 _Template inheritance_ makes it possible to reuse template layouts.
 
 .Template "base"

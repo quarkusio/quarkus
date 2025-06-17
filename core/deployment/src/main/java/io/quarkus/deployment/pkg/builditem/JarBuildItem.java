@@ -11,6 +11,9 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.sbom.ApplicationManifestConfig;
 
+/**
+ * Provides information about the primary JAR artifact generated
+ */
 public final class JarBuildItem extends SimpleBuildItem {
 
     private final Path path;

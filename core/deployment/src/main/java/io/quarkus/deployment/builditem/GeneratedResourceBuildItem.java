@@ -2,6 +2,9 @@ package io.quarkus.deployment.builditem;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Representing a resource file generated during the build
+ */
 public final class GeneratedResourceBuildItem extends MultiBuildItem {
     final String name;
     final byte[] data;

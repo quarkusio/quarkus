@@ -73,11 +73,7 @@ public class TargetGroupService {
      * @return List of all lifecycle phase names
      */
     private List<String> getAllLifecyclePhases() {
-        List<String> allPhases = new ArrayList<>();
-        allPhases.addAll(executionPlanAnalysisService.getDefaultLifecyclePhases());
-        allPhases.addAll(executionPlanAnalysisService.getCleanLifecyclePhases());
-        allPhases.addAll(executionPlanAnalysisService.getSiteLifecyclePhases());
-        return allPhases;
+        return new ArrayList<>(executionPlanAnalysisService.getAllLifecyclePhases());
     }
 
     private Map<String, String> getPhaseDescriptions() {

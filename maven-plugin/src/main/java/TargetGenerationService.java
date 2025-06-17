@@ -78,10 +78,7 @@ public class TargetGenerationService {
         Map<String, TargetConfiguration> phaseTargets = new LinkedHashMap<>();
 
         // Get all phases from all 3 Maven lifecycles (default, clean, site)
-        Set<String> applicablePhases = new LinkedHashSet<>();
-        applicablePhases.addAll(executionPlanAnalysisService.getDefaultLifecyclePhases());
-        applicablePhases.addAll(executionPlanAnalysisService.getCleanLifecyclePhases());
-        applicablePhases.addAll(executionPlanAnalysisService.getSiteLifecyclePhases());
+        Set<String> applicablePhases = executionPlanAnalysisService.getAllLifecyclePhases();
 
         for (String phase : applicablePhases) {
             TargetConfiguration target = new TargetConfiguration("nx:noop");

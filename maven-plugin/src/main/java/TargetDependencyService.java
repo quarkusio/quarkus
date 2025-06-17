@@ -120,18 +120,12 @@ public class TargetDependencyService {
             return null;
         }
 
-        // Check each lifecycle to find which one contains this phase
-        List<String> defaultPhases = executionPlanAnalysisService.getDefaultLifecyclePhases();
-        List<String> cleanPhases = executionPlanAnalysisService.getCleanLifecyclePhases();
-        List<String> sitePhases = executionPlanAnalysisService.getSiteLifecyclePhases();
+        // Find which lifecycle contains this phase and get its phases
+        org.apache.maven.lifecycle.Lifecycle lifecycle = executionPlanAnalysisService.getLifecycleForPhase(phase);
+        String precedingPhase = null;
         
-        // Find which lifecycle contains the phase and get preceding phase
-        String precedingPhase = findPrecedingPhaseInLifecycle(phase, defaultPhases);
-        if (precedingPhase == null) {
-            precedingPhase = findPrecedingPhaseInLifecycle(phase, cleanPhases);
-        }
-        if (precedingPhase == null) {
-            precedingPhase = findPrecedingPhaseInLifecycle(phase, sitePhases);
+        if (lifecycle != null && lifecycle.getPhases() != null) {
+            precedingPhase = findPrecedingPhaseInLifecycle(phase, lifecycle.getPhases());
         }
         
         if (precedingPhase != null && verbose) {

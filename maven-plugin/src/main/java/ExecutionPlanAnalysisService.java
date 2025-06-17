@@ -65,6 +65,17 @@ public class ExecutionPlanAnalysisService {
     }
     
     /**
+     * Get all lifecycle phases from all lifecycles (default, clean, site)
+     */
+    public Set<String> getAllLifecyclePhases() {
+        Set<String> allPhases = new LinkedHashSet<>();
+        allPhases.addAll(getLifecyclePhases("default"));
+        allPhases.addAll(getLifecyclePhases("clean"));
+        allPhases.addAll(getLifecyclePhases("site"));
+        return allPhases;
+    }
+    
+    /**
      * Get default lifecycle phases (validate, compile, test, package, verify, install, deploy)
      */
     public List<String> getDefaultLifecyclePhases() {
@@ -85,6 +96,24 @@ public class ExecutionPlanAnalysisService {
         return getLifecyclePhases("site");
     }
     
+    /**
+     * Get the lifecycle that contains the specified phase
+     */
+    public org.apache.maven.lifecycle.Lifecycle getLifecycleForPhase(String phase) {
+        if (defaultLifecycles == null || phase == null) {
+            return null;
+        }
+        
+        try {
+            return defaultLifecycles.getPhaseToLifecycleMap().get(phase);
+        } catch (Exception e) {
+            if (verbose) {
+                log.warn("Could not get lifecycle for phase '" + phase + "': " + e.getMessage());
+            }
+            return null;
+        }
+    }
+    
     
     /**
      * Get lifecycle phases for a specific lifecycle ID
@@ -95,16 +124,11 @@ public class ExecutionPlanAnalysisService {
         }
 
         try {
-            org.apache.maven.lifecycle.Lifecycle lifecycle =
-                defaultLifecycles.getLifeCycles().stream()
-                    .filter(lc -> lifecycleId.equals(lc.getId()))
-                    .findFirst()
-                    .orElse(null);
-
-            if (lifecycle != null && lifecycle.getPhases() != null) {
-                return new ArrayList<>(lifecycle.getPhases());
+            for (org.apache.maven.lifecycle.Lifecycle lifecycle : defaultLifecycles.getLifeCycles()) {
+                if (lifecycleId.equals(lifecycle.getId()) && lifecycle.getPhases() != null) {
+                    return new ArrayList<>(lifecycle.getPhases());
+                }
             }
-
             return new ArrayList<>();
 
         } catch (Exception e) {
@@ -126,7 +150,7 @@ public class ExecutionPlanAnalysisService {
         ProjectExecutionAnalysis analysis = new ProjectExecutionAnalysis();
         
         // Use actual lifecycle phases from Maven's lifecycle definitions
-        List<String> lifecyclePhases = getDefaultLifecyclePhases();
+        Set<String> lifecyclePhases = getAllLifecyclePhases();
         
         for (String phase : lifecyclePhases) {
             try {

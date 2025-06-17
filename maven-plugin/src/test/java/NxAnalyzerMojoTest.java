@@ -67,6 +67,7 @@ public class NxAnalyzerMojoTest {
         assertNotNull("Verbose mojo should have a logger", mojo.getLog());
     }
     
+
     /**
      * Test without Maven project (testing harness validation)
      */

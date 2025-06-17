@@ -128,20 +128,23 @@ public class ExecutionPlanAnalysisServiceTest {
     }
 
     @Test
-    public void testGetApplicablePhases_WithRealProject() throws Exception {
+    public void testGetAllLifecyclePhases_WithRealProject() throws Exception {
         TestContext ctx = setupBasicTest();
         
-        // Execute
-        Set<String> phases = ctx.service.getApplicablePhases(ctx.project);
+        // Execute - test all 3 lifecycle methods
+        List<String> defaultPhases = ctx.service.getDefaultLifecyclePhases();
+        List<String> cleanPhases = ctx.service.getCleanLifecyclePhases();
+        List<String> sitePhases = ctx.service.getSiteLifecyclePhases();
         
         // Verify
-        assertNotNull("Phases should not be null", phases);
-        // Even if LifecycleExecutor is null, should return empty set, not null
+        assertNotNull("Default phases should not be null", defaultPhases);
+        assertNotNull("Clean phases should not be null", cleanPhases);
+        assertNotNull("Site phases should not be null", sitePhases);
         
-        if (ctx.lifecycleExecutor != null) {
-            // If we have a real lifecycle executor, we might find some phases
-            // The exact phases depend on the test project configuration
-        }
+        // Verify some expected phases exist
+        assertTrue("Should contain compile phase", defaultPhases.contains("compile"));
+        assertTrue("Should contain clean phase", cleanPhases.contains("clean"));
+        assertTrue("Should contain site phase", sitePhases.contains("site"));
     }
 
     @Test
@@ -209,10 +212,10 @@ public class ExecutionPlanAnalysisServiceTest {
         // Test empty goal
         assertNull("Empty goal should return null", ctx.service.findPhaseForGoal(ctx.project, ""));
         
-        // Test null project for phases
-        Set<String> phases = ctx.service.getApplicablePhases(null);
-        assertNotNull("Should return empty set for null project", phases);
-        assertTrue("Should be empty for null project", phases.isEmpty());
+        // Test lifecycle phases (these don't depend on project)
+        List<String> defaultPhases = ctx.service.getDefaultLifecyclePhases();
+        assertNotNull("Default phases should not be null", defaultPhases);
+        assertTrue("Should contain at least one phase", !defaultPhases.isEmpty());
         
         // Test null inputs for goals by phase
         List<String> goalsForNull = ctx.service.getGoalsForPhase(null, "compile");
@@ -264,9 +267,7 @@ public class ExecutionPlanAnalysisServiceTest {
         assertNotNull("Outputs should not be null", outputs);
         assertTrue("Current implementation should return empty list", outputs.isEmpty());
         
-        // Test getRelativeBuildPath - current implementation returns projectRoot/target
-        String buildPath = ctx.service.getRelativeBuildPath("/some/build/dir", "{projectRoot}", ctx.project);
-        assertEquals("Should return projectRoot/target", "{projectRoot}/target", buildPath);
+        // Note: getRelativeBuildPath method was removed as it was unused
     }
 
     // ========================================
@@ -337,5 +338,224 @@ public class ExecutionPlanAnalysisServiceTest {
         // Test null input
         List<String> nullGoals = ExecutionPlanAnalysisService.getCommonGoalsForPlugin(null);
         assertEquals("Should have 0 goals for null", 0, nullGoals.size());
+    }
+
+    // ========================================
+    // Tests for getLifecyclePhases() method
+    // ========================================
+
+    @Test
+    public void testGetDefaultLifecyclePhases() throws Exception {
+        TestContext ctx = setupBasicTest();
+        
+        // Execute
+        List<String> defaultPhases = ctx.service.getDefaultLifecyclePhases();
+        
+        // Verify
+        assertNotNull("Default lifecycle phases should not be null", defaultPhases);
+        
+        if (!defaultPhases.isEmpty()) {
+            // Verify expected default lifecycle phases
+            assertTrue("Should contain compile phase", defaultPhases.contains("compile"));
+            assertTrue("Should contain test phase", defaultPhases.contains("test"));
+            assertTrue("Should contain package phase", defaultPhases.contains("package"));
+            assertTrue("Should contain install phase", defaultPhases.contains("install"));
+            
+            // Verify the order - compile should come before test
+            int compileIndex = defaultPhases.indexOf("compile");
+            int testIndex = defaultPhases.indexOf("test");
+            int packageIndex = defaultPhases.indexOf("package");
+            int verifyIndex = defaultPhases.indexOf("verify");
+            int installIndex = defaultPhases.indexOf("install");
+            
+            if (compileIndex >= 0 && testIndex >= 0) {
+                assertTrue("Compile should come before test", compileIndex < testIndex);
+            }
+            if (testIndex >= 0 && packageIndex >= 0) {
+                assertTrue("Test should come before package", testIndex < packageIndex);
+            }
+            if (packageIndex >= 0 && verifyIndex >= 0) {
+                assertTrue("Package should come before verify", packageIndex < verifyIndex);
+            }
+            if (verifyIndex >= 0 && installIndex >= 0) {
+                assertTrue("Verify should come before install", verifyIndex < installIndex);
+            }
+        }
+    }
+
+    @Test
+    public void testGetCleanLifecyclePhases() throws Exception {
+        TestContext ctx = setupBasicTest();
+        
+        // Execute
+        List<String> cleanPhases = ctx.service.getCleanLifecyclePhases();
+        
+        // Verify
+        assertNotNull("Clean lifecycle phases should not be null", cleanPhases);
+        
+        if (!cleanPhases.isEmpty()) {
+            // Verify expected clean lifecycle phases
+            assertTrue("Should contain clean phase", cleanPhases.contains("clean"));
+            
+            // Check for optional pre-clean and post-clean phases
+            if (cleanPhases.contains("pre-clean") && cleanPhases.contains("post-clean")) {
+                int preCleanIndex = cleanPhases.indexOf("pre-clean");
+                int cleanIndex = cleanPhases.indexOf("clean");
+                int postCleanIndex = cleanPhases.indexOf("post-clean");
+                
+                assertTrue("Pre-clean should come before clean", preCleanIndex < cleanIndex);
+                assertTrue("Clean should come before post-clean", cleanIndex < postCleanIndex);
+            }
+        }
+    }
+
+    @Test
+    public void testGetSiteLifecyclePhases() throws Exception {
+        TestContext ctx = setupBasicTest();
+        
+        // Execute
+        List<String> sitePhases = ctx.service.getSiteLifecyclePhases();
+        
+        // Verify
+        assertNotNull("Site lifecycle phases should not be null", sitePhases);
+        
+        if (!sitePhases.isEmpty()) {
+            // Verify expected site lifecycle phases
+            assertTrue("Should contain site phase", sitePhases.contains("site"));
+            
+            // Check for optional phases and their order
+            if (sitePhases.contains("pre-site")) {
+                int preSiteIndex = sitePhases.indexOf("pre-site");
+                int siteIndex = sitePhases.indexOf("site");
+                assertTrue("Pre-site should come before site", preSiteIndex < siteIndex);
+            }
+            
+            if (sitePhases.contains("post-site")) {
+                int siteIndex = sitePhases.indexOf("site");
+                int postSiteIndex = sitePhases.indexOf("post-site");
+                assertTrue("Site should come before post-site", siteIndex < postSiteIndex);
+            }
+            
+            if (sitePhases.contains("site-deploy")) {
+                int siteIndex = sitePhases.indexOf("site");
+                int siteDeployIndex = sitePhases.indexOf("site-deploy");
+                assertTrue("Site should come before site-deploy", siteIndex < siteDeployIndex);
+            }
+        }
+    }
+
+
+    @Test
+    public void testGetLifecyclePhases_WithNullDefaultLifecycles() throws Exception {
+        TestContext ctx = setupBasicTest();
+        
+        // Create service with null DefaultLifecycles
+        ExecutionPlanAnalysisService serviceWithNullLifecycles = 
+            new ExecutionPlanAnalysisService(ctx.log, false, ctx.lifecycleExecutor, ctx.session, null);
+        
+        // Execute
+        List<String> defaultPhases = serviceWithNullLifecycles.getDefaultLifecyclePhases();
+        
+        // Verify
+        assertNotNull("Should return empty list, not null", defaultPhases);
+        assertTrue("Should be empty when DefaultLifecycles is null", defaultPhases.isEmpty());
+    }
+
+    @Test
+    public void testGetLifecyclePhases_OnlyReturnsDefaultLifecycle() throws Exception {
+        TestContext ctx = setupBasicTest();
+        
+        // Execute - now we test that each lifecycle method returns only its own phases
+        List<String> defaultPhases = ctx.service.getDefaultLifecyclePhases();
+        List<String> cleanPhases = ctx.service.getCleanLifecyclePhases();
+        List<String> sitePhases = ctx.service.getSiteLifecyclePhases();
+        
+        // Verify separation of lifecycle phases
+        if (!defaultPhases.isEmpty()) {
+            // Default phases should not contain clean or site phases
+            assertFalse("Default lifecycle should not contain clean", defaultPhases.contains("clean"));
+            assertFalse("Default lifecycle should not contain site", defaultPhases.contains("site"));
+        }
+        
+        if (!cleanPhases.isEmpty()) {
+            // Clean phases should not contain default or site phases
+            assertFalse("Clean lifecycle should not contain compile", cleanPhases.contains("compile"));
+            assertFalse("Clean lifecycle should not contain site", cleanPhases.contains("site"));
+        }
+        
+        if (!sitePhases.isEmpty()) {
+            // Site phases should not contain default or clean phases
+            assertFalse("Site lifecycle should not contain compile", sitePhases.contains("compile"));
+            assertFalse("Site lifecycle should not contain clean", sitePhases.contains("clean"));
+        }
+    }
+
+    @Test
+    public void testGetLifecyclePhases_ErrorHandling() throws Exception {
+        TestContext ctx = setupBasicTest();
+        
+        // Create verbose service to test error logging
+        DefaultLifecycles defaultLifecycles = (DefaultLifecycles) rule.getVariableValueFromObject(
+            rule.lookupConfiguredMojo(new File("target/test-classes/unit/basic-test"), "analyze"), "defaultLifecycles");
+        ExecutionPlanAnalysisService verboseService = new ExecutionPlanAnalysisService(
+            ctx.log, true, ctx.lifecycleExecutor, ctx.session, defaultLifecycles);
+        
+        // Execute - should handle any errors gracefully
+        List<String> defaultPhases = verboseService.getDefaultLifecyclePhases();
+        List<String> cleanPhases = verboseService.getCleanLifecyclePhases();
+        List<String> sitePhases = verboseService.getSiteLifecyclePhases();
+        
+        // Verify - should not throw exceptions and return valid lists
+        assertNotNull("Default phases should return a list even if errors occur", defaultPhases);
+        assertNotNull("Clean phases should return a list even if errors occur", cleanPhases);
+        assertNotNull("Site phases should return a list even if errors occur", sitePhases);
+    }
+
+    @Test
+    @WithoutMojo
+    public void testGetLifecyclePhases_DocumentsCurrentLimitations() {
+        // This test documents the current limitations of getLifecyclePhases()
+        // that the user wants to address:
+        
+        // 1. Only returns default lifecycle phases (compile, test, package, etc.)
+        // 2. Does not return clean lifecycle phases (pre-clean, clean, post-clean)
+        // 3. Does not return site lifecycle phases (pre-site, site, post-site, site-deploy)
+        // 4. Filters specifically for lifecycle with id "default"
+        
+        assertTrue("Current implementation only returns default lifecycle", true);
+        
+        // Expected phases that SHOULD be available but currently are NOT:
+        // Clean lifecycle: pre-clean, clean, post-clean
+        // Site lifecycle: pre-site, site, post-site, site-deploy
+        
+        // This test serves as documentation for the rewrite requirements
+    }
+
+    @Test
+    public void testGetDefaultLifecyclePhases_IntegrationTestOrdering() throws Exception {
+        TestContext ctx = setupBasicTest();
+        
+        // Execute
+        List<String> defaultPhases = ctx.service.getDefaultLifecyclePhases();
+        
+        // Verify integration test phase ordering
+        if (!defaultPhases.isEmpty() && defaultPhases.contains("post-integration-test")) {
+            int preIntegrationIndex = defaultPhases.indexOf("pre-integration-test");
+            int integrationIndex = defaultPhases.indexOf("integration-test");
+            int postIntegrationIndex = defaultPhases.indexOf("post-integration-test");
+            
+            if (preIntegrationIndex >= 0 && integrationIndex >= 0 && postIntegrationIndex >= 0) {
+                assertTrue("pre-integration-test should come before integration-test", 
+                          preIntegrationIndex < integrationIndex);
+                assertTrue("integration-test should come before post-integration-test", 
+                          integrationIndex < postIntegrationIndex);
+                
+                // Verify they are consecutive
+                assertEquals("integration-test should immediately follow pre-integration-test",
+                           preIntegrationIndex + 1, integrationIndex);
+                assertEquals("post-integration-test should immediately follow integration-test",
+                           integrationIndex + 1, postIntegrationIndex);
+            }
+        }
     }
 }

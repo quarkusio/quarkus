@@ -202,12 +202,17 @@ public class NxAnalyzerMojo extends AbstractMojo {
     private Map<String, List<String>> calculatePhaseDependencies(MavenProject project, Map<String, TargetConfiguration> allTargets) {
         Map<String, List<String>> phaseDependencies = new LinkedHashMap<>();
         
-        String[] phases = {
-            "clean", "validate", "compile", "test", "package", 
-            "verify", "install", "deploy", "site"
-        };
+        // Get all lifecycle phases from all Maven lifecycles (default, clean, site)
+        Set<String> allPhases = new LinkedHashSet<>();
+        allPhases.addAll(executionPlanAnalysisService.getDefaultLifecyclePhases());
+        allPhases.addAll(executionPlanAnalysisService.getCleanLifecyclePhases());
+        allPhases.addAll(executionPlanAnalysisService.getSiteLifecyclePhases());
         
-        for (String phase : phases) {
+        if (isVerbose()) {
+            getLog().debug("Calculating dependencies for " + allPhases.size() + " lifecycle phases: " + allPhases);
+        }
+        
+        for (String phase : allPhases) {
             List<String> dependencies = targetDependencyService.calculatePhaseDependencies(
                 phase, allTargets, project, reactorProjects);
             phaseDependencies.put(phase, dependencies);

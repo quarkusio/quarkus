@@ -111,49 +111,43 @@ public class TargetDependencyService {
 
 
 
-    /**
-     * Get lifecycle phases using ExecutionPlanAnalysisService
-     */
-    private List<String> getLifecyclePhases(String upToPhase, MavenProject project) {
-        List<String> allPhases = executionPlanAnalysisService.getLifecyclePhases();
-        
-        // Return phases up to the target phase
-        int targetIndex = allPhases.indexOf(upToPhase);
-        if (targetIndex >= 0) {
-            return allPhases.subList(0, targetIndex + 1);
-        }
-        
-        // If upToPhase is not found, return all phases
-        return allPhases;
-    }
 
     /**
-     * Get the preceding phase in the Maven lifecycle
+     * Get the preceding phase in the Maven lifecycle (supports all lifecycles: default, clean, site)
      */
     public String getPrecedingPhase(String phase, MavenProject project) {
         if (phase == null || phase.isEmpty()) {
             return null;
         }
 
-        // Get lifecycle phases using Maven's lifecycle definitions
-        List<String> lifecyclePhases = getLifecyclePhases(phase, project);
-
-        if (verbose) {
-            log.info("Found lifecycle phases up to " + phase + ": " + lifecyclePhases);
+        // Check each lifecycle to find which one contains this phase
+        List<String> defaultPhases = executionPlanAnalysisService.getDefaultLifecyclePhases();
+        List<String> cleanPhases = executionPlanAnalysisService.getCleanLifecyclePhases();
+        List<String> sitePhases = executionPlanAnalysisService.getSiteLifecyclePhases();
+        
+        // Find which lifecycle contains the phase and get preceding phase
+        String precedingPhase = findPrecedingPhaseInLifecycle(phase, defaultPhases);
+        if (precedingPhase == null) {
+            precedingPhase = findPrecedingPhaseInLifecycle(phase, cleanPhases);
         }
-
-        // Find the preceding phase
+        if (precedingPhase == null) {
+            precedingPhase = findPrecedingPhaseInLifecycle(phase, sitePhases);
+        }
+        
+        if (precedingPhase != null && verbose) {
+            log.info("Found preceding phase: " + precedingPhase);
+        }
+        
+        return precedingPhase;
+    }
+    
+    /**
+     * Helper method to find preceding phase within a specific lifecycle
+     */
+    private String findPrecedingPhaseInLifecycle(String phase, List<String> lifecyclePhases) {
         int currentPhaseIndex = lifecyclePhases.indexOf(phase);
         if (currentPhaseIndex > 0) {
-            String precedingPhase = lifecyclePhases.get(currentPhaseIndex - 1);
-            if (verbose) {
-                log.info("Found preceding phase: " + precedingPhase);
-            }
-            return precedingPhase;
-        }
-
-        if (verbose) {
-            log.info("No preceding phase found for: " + phase + " (index: " + currentPhaseIndex + ")");
+            return lifecyclePhases.get(currentPhaseIndex - 1);
         }
         return null;
     }

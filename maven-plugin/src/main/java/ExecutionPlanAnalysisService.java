@@ -52,16 +52,6 @@ public class ExecutionPlanAnalysisService {
         return analysis.getPhaseForGoal(goal);
     }
     
-    /**
-     * Get all applicable phases for a project
-     */
-    public Set<String> getApplicablePhases(MavenProject project) {
-        if (project == null) {
-            return new LinkedHashSet<>();
-        }
-        ProjectExecutionAnalysis analysis = getAnalysis(project);
-        return analysis.getAllPhases();
-    }
     
     /**
      * Get all goals for a specific phase
@@ -75,30 +65,51 @@ public class ExecutionPlanAnalysisService {
     }
     
     /**
-     * Get all lifecycle phases using dependency injected DefaultLifecycles
+     * Get default lifecycle phases (validate, compile, test, package, verify, install, deploy)
      */
-    public List<String> getLifecyclePhases() {
-        if (defaultLifecycles == null) {
+    public List<String> getDefaultLifecyclePhases() {
+        return getLifecyclePhases("default");
+    }
+    
+    /**
+     * Get clean lifecycle phases (pre-clean, clean, post-clean)
+     */
+    public List<String> getCleanLifecyclePhases() {
+        return getLifecyclePhases("clean");
+    }
+    
+    /**
+     * Get site lifecycle phases (pre-site, site, post-site, site-deploy)
+     */
+    public List<String> getSiteLifecyclePhases() {
+        return getLifecyclePhases("site");
+    }
+    
+    
+    /**
+     * Get lifecycle phases for a specific lifecycle ID
+     */
+    private List<String> getLifecyclePhases(String lifecycleId) {
+        if (defaultLifecycles == null || lifecycleId == null) {
             return new ArrayList<>();
         }
 
         try {
-            // Get the default lifecycle
-            org.apache.maven.lifecycle.Lifecycle defaultLifecycle =
+            org.apache.maven.lifecycle.Lifecycle lifecycle =
                 defaultLifecycles.getLifeCycles().stream()
-                    .filter(lc -> "default".equals(lc.getId()))
+                    .filter(lc -> lifecycleId.equals(lc.getId()))
                     .findFirst()
                     .orElse(null);
 
-            if (defaultLifecycle != null) {
-                return new ArrayList<>(defaultLifecycle.getPhases());
+            if (lifecycle != null && lifecycle.getPhases() != null) {
+                return new ArrayList<>(lifecycle.getPhases());
             }
 
             return new ArrayList<>();
 
         } catch (Exception e) {
             if (verbose) {
-                log.warn("Could not access Maven lifecycle definitions: " + e.getMessage());
+                log.warn("Could not access Maven lifecycle '" + lifecycleId + "': " + e.getMessage());
             }
             return new ArrayList<>();
         }
@@ -115,7 +126,7 @@ public class ExecutionPlanAnalysisService {
         ProjectExecutionAnalysis analysis = new ProjectExecutionAnalysis();
         
         // Use actual lifecycle phases from Maven's lifecycle definitions
-        List<String> lifecyclePhases = getLifecyclePhases();
+        List<String> lifecyclePhases = getDefaultLifecyclePhases();
         
         for (String phase : lifecyclePhases) {
             try {
@@ -321,10 +332,5 @@ public class ExecutionPlanAnalysisService {
     public List<String> getGoalOutputs(String goal, String projectRootToken, MavenProject project) {
         // Simplified implementation without hardcoded patterns
         return new ArrayList<>();
-    }
-    
-    public String getRelativeBuildPath(String buildDirectory, String projectRootToken, MavenProject project) {
-        // Simplified implementation
-        return projectRootToken + "/target";
     }
 }

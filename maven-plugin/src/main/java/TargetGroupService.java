@@ -4,12 +4,9 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.project.MavenProject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Service responsible for organizing targets into logical groups based on Maven phases.
@@ -42,8 +39,8 @@ public class TargetGroupService {
         }
         Map<String, TargetGroup> targetGroups = new LinkedHashMap<>();
 
-        // Extract phases from Maven execution plan
-        List<String> phases = extractPhasesFromExecutionPlan(project, session);
+        // Get all phases from all 3 Maven lifecycles (default, clean, site)
+        List<String> phases = getAllLifecyclePhases();
 
         Map<String, String> phaseDescriptions = getPhaseDescriptions();
 
@@ -57,11 +54,14 @@ public class TargetGroupService {
         // Assign targets to groups
         for (String targetName : projectTargets.keySet()) {
             TargetConfiguration target = projectTargets.get(targetName);
-            String assignedPhase = assignTargetToPhase(targetName, target, phases);
+            String assignedPhase = assignTargetToPhase(targetName, target, phases, project);
 
-            TargetGroup group = targetGroups.get(assignedPhase);
-            if (group != null) {
-                group.addTarget(targetName);
+            // Skip targets that don't have phase metadata (noop)
+            if (assignedPhase != null) {
+                TargetGroup group = targetGroups.get(assignedPhase);
+                if (group != null) {
+                    group.addTarget(targetName);
+                }
             }
         }
 
@@ -69,26 +69,15 @@ public class TargetGroupService {
     }
 
     /**
-     * Extract phases from the Maven execution plan for the given project
-     * @param project The Maven project
-     * @param session The Maven session (used for fallback if needed)
-     * @return List of phase names in execution order
+     * Get all phases from all 3 Maven lifecycles (default, clean, site)
+     * @return List of all lifecycle phase names
      */
-    private List<String> extractPhasesFromExecutionPlan(MavenProject project, MavenSession session) {
-        List<String> phases = new ArrayList<>();
-
-        try {
-            // Use the ExecutionPlanAnalysisService to get applicable phases
-            Set<String> applicablePhases = executionPlanAnalysisService.getApplicablePhases(project);
-
-            phases.addAll(applicablePhases);
-
-        } catch (Exception e) {
-            // If we can't access the execution plan analysis, fall back to minimal essential phases
-            phases.addAll(Arrays.asList("clean", "validate", "compile", "test", "package", "install", "deploy"));
-        }
-
-        return phases;
+    private List<String> getAllLifecyclePhases() {
+        List<String> allPhases = new ArrayList<>();
+        allPhases.addAll(executionPlanAnalysisService.getDefaultLifecyclePhases());
+        allPhases.addAll(executionPlanAnalysisService.getCleanLifecyclePhases());
+        allPhases.addAll(executionPlanAnalysisService.getSiteLifecyclePhases());
+        return allPhases;
     }
 
     private Map<String, String> getPhaseDescriptions() {
@@ -105,14 +94,33 @@ public class TargetGroupService {
         return descriptions;
     }
 
-    private String assignTargetToPhase(String targetName, TargetConfiguration target, List<String> phases) {
+    private String assignTargetToPhase(String targetName, TargetConfiguration target, List<String> phases, MavenProject project) {
         // All targets should have metadata.phase set by TargetGenerationService
         if (target.getMetadata() != null && target.getMetadata().getPhase() != null) {
             return target.getMetadata().getPhase();
         }
 
-        // This should not happen with properly created targets
-        throw new IllegalStateException("Target " + targetName + " has no phase metadata set");
+        // Use ExecutionPlanAnalysisService to determine the phase for this target
+        try {
+            // If target name is a phase name, assign it to that phase
+            if (phases.contains(targetName)) {
+                return targetName;
+            }
+            
+            // For goal targets, extract the goal and find its phase
+            String goal = ExecutionPlanAnalysisService.extractGoalFromTargetName(targetName);
+            if (goal != null) {
+                String foundPhase = executionPlanAnalysisService.findPhaseForGoal(project, goal);
+                if (foundPhase != null && phases.contains(foundPhase)) {
+                    return foundPhase;
+                }
+            }
+        } catch (Exception e) {
+            // Log but don't fail
+        }
+
+        // Return null if no phase can be determined - caller should handle this gracefully (noop)
+        return null;
     }
 
 }

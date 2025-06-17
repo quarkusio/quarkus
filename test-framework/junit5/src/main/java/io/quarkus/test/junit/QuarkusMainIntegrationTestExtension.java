@@ -38,7 +38,6 @@ import io.quarkus.test.junit.launcher.ArtifactLauncherProvider;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
 import io.quarkus.test.junit.main.QuarkusMainLauncher;
-import io.quarkus.test.junit.util.CloseAdaptor;
 import io.smallrye.config.SmallRyeConfig;
 
 public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
@@ -115,7 +114,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         devServicesProps = devServicesLaunchResult.properties();
 
         ExtensionContext root = extensionContext.getRoot();
-        root.getStore(NAMESPACE).put("devServicesLaunchResult", new CloseAdaptor(devServicesLaunchResult));
+        root.getStore(NAMESPACE).put("devServicesLaunchResult", devServicesLaunchResult);
     }
 
     private ArtifactLauncher.LaunchResult doProcessStart(ExtensionContext context, String[] args) {

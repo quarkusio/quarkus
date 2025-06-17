@@ -1190,7 +1190,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
     }
 
-    class FailedCleanup implements ExtensionContext.Store.CloseableResource {
+    class FailedCleanup implements AutoCloseable {
         @Override
         public void close() {
             shutdownHangDetection();

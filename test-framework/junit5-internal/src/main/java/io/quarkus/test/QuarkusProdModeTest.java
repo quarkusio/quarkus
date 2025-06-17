@@ -369,10 +369,10 @@ public class QuarkusProdModeTest
             manager.init(null);
             testResourceProperties = manager.start();
             store.put(TestResourceManager.class.getName(), manager);
-            store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {
+            store.put(TestResourceManager.CLOSEABLE_NAME, new AutoCloseable() {
 
                 @Override
-                public void close() throws Throwable {
+                public void close() throws Exception {
                     manager.close();
                 }
             });

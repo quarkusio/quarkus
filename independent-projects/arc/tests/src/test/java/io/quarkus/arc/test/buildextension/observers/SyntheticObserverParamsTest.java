@@ -19,9 +19,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 public class SyntheticObserverParamsTest {
     public enum SimpleEnum {
@@ -87,14 +86,12 @@ public class SyntheticObserverParamsTest {
                                     simpleAnnotation("three") })
                             .param("annMixedArray", new AnnotationInstance[] { simpleAnnotation("four"),
                                     anotherAnnotation(42) })
-                            .notify(mc -> {
-                                ResultHandle params = mc.readInstanceField(
-                                        FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
-                                        mc.getThis());
-                                mc.invokeStaticMethod(
-                                        MethodDescriptor.ofMethod(Verification.class, "invoke", void.class, Map.class),
-                                        params);
-                                mc.returnValue(null);
+                            .notify(og -> {
+                                BlockCreator bc = og.notifyMethod();
+
+                                bc.invokeStatic(MethodDesc.of(Verification.class, "invoke", void.class, Map.class),
+                                        og.paramsMap());
+                                bc.return_();
                             })
                             .done();
                 }

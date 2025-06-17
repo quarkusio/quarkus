@@ -63,7 +63,10 @@ import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  * Entrypoint for the Build Compatible Extensions implementation. Used by the rest of ArC.
@@ -493,27 +496,20 @@ public class ExtensionsEntryPoint {
                     .async(syntheticObserver.isAsync)
                     .transactionPhase(syntheticObserver.transactionPhase);
             configureParams(observer, syntheticObserver.params);
-            observer.notify(mc -> { // generated method signature: void(EventContext)
-                // | SyntheticObserver instance = new ConfiguredEventConsumer();
-                ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(syntheticObserver.implementationClass));
+            observer.notify(ng -> {
+                BlockCreator bc = ng.notifyMethod();
 
-                // | Map<String, Object> paramsMap = this.params;
-                // the generated observer class has a "params" field filled with all the data
-                ResultHandle paramsMap = mc.readInstanceField(
-                        FieldDescriptor.of(mc.getMethodDescriptor().getDeclaringClass(), "params", Map.class),
-                        mc.getThis());
+                // | SyntheticObserver instance = new ConfiguredEventConsumer();
+                Expr instance = bc.new_(syntheticObserver.implementationClass);
 
                 // | Parameters params = new ParametersImpl(paramsMap);
-                ResultHandle params = mc.newInstance(MethodDescriptor.ofConstructor(ParametersImpl.class, Map.class),
-                        paramsMap);
+                Expr params = bc.new_(ConstructorDesc.of(ParametersImpl.class, Map.class), ng.paramsMap());
 
                 // | instance.observe(eventContext, params);
-                ResultHandle[] args = { mc.getMethodParam(0), params };
-                mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(SyntheticObserver.class, "observe",
-                        void.class, EventContext.class, Parameters.class), instance, args);
+                bc.invokeInterface(MethodDesc.of(SyntheticObserver.class, "observe",
+                        void.class, EventContext.class, Parameters.class), instance, ng.eventContext(), params);
 
-                // return type is void
-                mc.returnValue(null);
+                bc.return_();
             });
             // the generated classes need to see the `implementationClass`, so if it is
             // an application class, the generated classes are forced to also be application

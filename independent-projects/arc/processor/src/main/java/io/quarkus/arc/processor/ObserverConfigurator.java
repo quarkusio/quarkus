@@ -3,6 +3,7 @@ package io.quarkus.arc.processor;
 import java.lang.annotation.Annotation;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -15,7 +16,10 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
-import io.quarkus.gizmo.MethodCreator;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
 
 /**
  * Configures a synthetic observer.
@@ -34,7 +38,7 @@ public final class ObserverConfigurator extends ConfiguratorBase<ObserverConfigu
     int priority;
     boolean isAsync;
     TransactionPhase transactionPhase;
-    Consumer<MethodCreator> notifyConsumer;
+    Consumer<NotifyGeneration> notifyConsumer;
     boolean forceApplicationClass;
 
     public ObserverConfigurator(Consumer<ObserverConfigurator> consumer) {
@@ -114,7 +118,7 @@ public final class ObserverConfigurator extends ConfiguratorBase<ObserverConfigu
         return this;
     }
 
-    public ObserverConfigurator notify(Consumer<MethodCreator> notifyConsumer) {
+    public ObserverConfigurator notify(Consumer<NotifyGeneration> notifyConsumer) {
         this.notifyConsumer = notifyConsumer;
         return this;
     }
@@ -146,4 +150,35 @@ public final class ObserverConfigurator extends ConfiguratorBase<ObserverConfigu
         addQualifier(qualifier);
     }
 
+    public interface NotifyGeneration {
+        /**
+         * {@return the generated class of the observer}
+         * This class contains the generated {@code notify} method.
+         *
+         * @see #notifyMethod()
+         */
+        ClassCreator observerClass();
+
+        /**
+         * {@return the {@link BlockCreator} for the generated {@code notify} method}
+         * This method is supposed to contain the logic of the observer.
+         */
+        BlockCreator notifyMethod();
+
+        /**
+         * {@return the field on the {@link #observerClass()} that contains the parameter map}
+         */
+        default Var paramsMap() {
+            ClassCreator cc = observerClass();
+            return cc.this_().field(FieldDesc.of(cc.type(), "params", Map.class));
+        }
+
+        /**
+         * {@return the parameter of the generated notification method that contains
+         * the {@link jakarta.enterprise.inject.spi.EventContext}}
+         *
+         * @see #notifyMethod()
+         */
+        Var eventContext();
+    }
 }

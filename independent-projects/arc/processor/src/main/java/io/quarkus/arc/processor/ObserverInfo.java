@@ -30,7 +30,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.processor.BuildExtension.BuildContext;
 import io.quarkus.arc.processor.ObserverTransformer.ObserverTransformation;
 import io.quarkus.arc.processor.ObserverTransformer.TransformationContext;
-import io.quarkus.gizmo.MethodCreator;
 import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
@@ -96,7 +95,8 @@ public class ObserverInfo implements InjectionTargetInfo {
             MethodParameterInfo eventParameter, Type observedType, Set<AnnotationInstance> qualifiers, Reception reception,
             TransactionPhase transactionPhase, boolean isAsync, int priority,
             List<ObserverTransformer> transformers, BuildContext buildContext, boolean jtaCapabilities,
-            Consumer<MethodCreator> notify, Map<String, Object> params, boolean forceApplicationClass) {
+            Consumer<ObserverConfigurator.NotifyGeneration> notify, Map<String, Object> params,
+            boolean forceApplicationClass) {
 
         if (!transformers.isEmpty()) {
             // Transform attributes if needed
@@ -178,7 +178,7 @@ public class ObserverInfo implements InjectionTargetInfo {
 
     // Following fields are only used by synthetic observers
 
-    private final Consumer<MethodCreator> notify;
+    private final Consumer<ObserverConfigurator.NotifyGeneration> notify;
 
     private final Map<String, Object> params;
 
@@ -189,7 +189,7 @@ public class ObserverInfo implements InjectionTargetInfo {
             Injection injection,
             MethodParameterInfo eventParameter,
             boolean isAsync, int priority, Reception reception, TransactionPhase transactionPhase,
-            Type observedType, Set<AnnotationInstance> qualifiers, Consumer<MethodCreator> notify,
+            Type observedType, Set<AnnotationInstance> qualifiers, Consumer<ObserverConfigurator.NotifyGeneration> notify,
             Map<String, Object> params, boolean forceApplicationClass) {
         this.identifier = generateIdentifier(userId, declaringBean, observerMethod, isAsync, priority, transactionPhase,
                 observedType, qualifiers);
@@ -321,7 +321,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         return qualifiers;
     }
 
-    Consumer<MethodCreator> getNotify() {
+    Consumer<ObserverConfigurator.NotifyGeneration> getNotify() {
         return notify;
     }
 
@@ -413,7 +413,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         return builder.toString();
     }
 
-    @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
+    @SuppressForbidden(reason = "Using Type.toString() as part of the observer hash")
     private static String generateIdentifier(String userId, BeanInfo declaringBean, MethodInfo observerMethod,
             boolean isAsync, int priority, TransactionPhase transactionPhase, Type observedType,
             Set<AnnotationInstance> qualifiers) {

@@ -230,8 +230,6 @@ function findJavaAnalyzer(): string | null {
     join(__dirname, 'maven-plugin/target/maven-plugin-999-SNAPSHOT.jar'),
   ];
 
-  console.log(possiblePaths);
-
   for (const path of possiblePaths) {
     if (existsSync(path)) {
       return path;

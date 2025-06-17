@@ -1,0 +1,48 @@
+= When to initialize classes in native mode
+
+* Status: _proposed_
+* Date: 2025-06-17
+* Authors: @zakkak, @gsmet, @cescoffier
+
+== Context and Problem Statement
+
+Build time initialization of classes in native mode aligns with Quarkus' philosophy of doing as much as possible at build time to optimize runtime performance and reduce startup time.
+However, build time initialization often leads to issues that require additional configuration or even code substitutions to be worked around.
+This complicates the development process and discourages developers from using Quarkus' native mode due to increased complexity if they rely on libraries not handled by Quarkus or some of its extensions.
+
+== Decision Drivers
+
+* Reduce entry barrier for developers that want to use Quarkus native mode
+* Benefit from build time initialization when possible
+
+== Considered options
+
+=== Initialize all classes at build time
+
+This option has been the default behavior in Quarkus for a long time.
+It allows Quarkus to take advantage of build time initialization as much as possible, but requires developers to deal with issues that arise from it.
+
+=== Initialize all classes at runtime
+
+This option has been the default behavior in GraalVM for a long time.
+It makes running code in native mode easier and more predictable as it behaves closer to how it would behave in the JVM.
+However, it does not allow Quarkus to take advantage of build time initialization, which can lead to slower startup times and higher memory usage.
+
+=== Initialize specific classes at build time and the rest at runtime
+
+Since Quarkus already defaults to initializing classes at build time, it is possible to configure it to keep initializing these classes at build time while initializing the rest at runtime.
+
+== Decision
+
+The "Initialize specific classes at build time and the rest at runtime" option seems to be the best compromise between the two extremes.
+
+* Quarkus core, the core extensions, as well as Quarkiverse extensions will continue to initialize their classes at build time by default.
+* Application code and third-party libraries not handled by Quarkus will initialize their classes at runtime by default.
+
+== Consequences
+
+The consequences of this decision are:
+
+* Classes or packages that are handled by Quarkus will need to be explicitly configured to be initialized at build time.
+  This requires the implementation of a mechanism that will detect which packages are handled by Quarkus.
+* Users may get reduced performance if they don't opt in to initialize their classes at build time.

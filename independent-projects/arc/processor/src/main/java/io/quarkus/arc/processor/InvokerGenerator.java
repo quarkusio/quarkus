@@ -609,9 +609,9 @@ public class InvokerGenerator extends AbstractGenerator {
             } else {
                 BuiltinBean builtinBean = resolved.getBuiltinBean();
                 InjectionPointInfo injectionPoint = invoker.getInjectionPointForArgument(position);
-                builtinBean.getGenerator().generate(new GeneratorContext(classOutput, beanDeployment, injectionPoint,
-                        invokerClass, invokerConstructor, name, annotationLiterals, invoker, reflectionRegistration,
-                        injectionPointAnnotationsPredicate));
+                builtinBean.getGenerator().generate(new GeneratorContext(beanDeployment, injectionPoint,
+                        name, annotationLiterals, invoker, reflectionRegistration, injectionPointAnnotationsPredicate,
+                        invokerClass, invokerConstructor));
             }
 
             // in `invoke()`

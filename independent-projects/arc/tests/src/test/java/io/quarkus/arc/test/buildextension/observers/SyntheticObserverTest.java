@@ -18,9 +18,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.processor.ObserverRegistrar;
 import io.quarkus.arc.test.ArcTestContainer;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 public class SyntheticObserverTest {
 
@@ -29,25 +31,23 @@ public class SyntheticObserverTest {
             .observerRegistrars(new ObserverRegistrar() {
                 @Override
                 public void register(RegistrationContext context) {
-                    context.configure().observedType(String.class).notify(mc -> {
-                        ResultHandle eventContext = mc.getMethodParam(0);
-                        ResultHandle event = mc.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(EventContext.class, "getEvent", Object.class), eventContext);
-                        ResultHandle events = mc.readStaticField(FieldDescriptor.of(MyObserver.class, "EVENTS", List.class));
-                        mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
-                                events, event);
-                        mc.returnValue(null);
+                    context.configure().observedType(String.class).notify(og -> {
+                        BlockCreator bc = og.notifyMethod();
+
+                        Expr event = bc.invokeInterface(MethodDesc.of(EventContext.class, "getEvent", Object.class),
+                                og.eventContext());
+                        bc.withList(Expr.staticField(FieldDesc.of(MyObserver.class, "EVENTS"))).add(event);
+                        bc.return_();
                     }).done();
 
-                    context.configure().observedType(String.class).addQualifier().annotation(Named.class)
-                            .addValue("value", "bla").done()
-                            .notify(mc -> {
-                                ResultHandle events = mc
-                                        .readStaticField(FieldDescriptor.of(MyObserver.class, "EVENTS", List.class));
-                                mc.invokeInterfaceMethod(
-                                        MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
-                                        events, mc.load("synthetic2"));
-                                mc.returnValue(null);
+                    context.configure().observedType(String.class)
+                            .addQualifier().annotation(Named.class).addValue("value", "bla").done()
+                            .notify(og -> {
+                                BlockCreator bc = og.notifyMethod();
+
+                                bc.withList(Expr.staticField(FieldDesc.of(MyObserver.class, "EVENTS")))
+                                        .add(Const.of("synthetic2"));
+                                bc.return_();
                             }).done();
                 }
             }).build();

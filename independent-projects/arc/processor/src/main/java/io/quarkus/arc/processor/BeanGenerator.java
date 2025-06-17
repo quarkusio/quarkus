@@ -1,6 +1,7 @@
 package io.quarkus.arc.processor;
 
 import static io.quarkus.arc.processor.IndexClassLookupUtils.getClassByName;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.objectweb.asm.Opcodes.ACC_BRIDGE;
 import static org.objectweb.asm.Opcodes.ACC_FINAL;
 import static org.objectweb.asm.Opcodes.ACC_PRIVATE;
@@ -43,6 +44,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
@@ -81,6 +83,13 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.Var;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
 
 /**
  *
@@ -728,10 +737,9 @@ public class BeanGenerator extends AbstractGenerator {
             } else {
                 if (injectionPoint.getResolvedBean() == null) {
                     BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
-                    builtinBean.getGenerator()
-                            .generate(new GeneratorContext(classOutput, bean.getDeployment(), injectionPoint, beanCreator,
-                                    constructor, injectionPointToProviderField.get(injectionPoint), annotationLiterals, bean,
-                                    reflectionRegistration, injectionPointAnnotationsPredicate));
+                    builtinBean.getGenerator().generate(new GeneratorContext(bean.getDeployment(), injectionPoint,
+                            injectionPointToProviderField.get(injectionPoint), annotationLiterals, bean,
+                            reflectionRegistration, injectionPointAnnotationsPredicate, beanCreator, constructor));
                 } else {
                     // Not a built-in bean
                     if (injectionPoint.isCurrentInjectionPointWrapperNeeded()) {
@@ -1314,6 +1322,23 @@ public class BeanGenerator extends AbstractGenerator {
                 BytecodeCreator isNull = bytecode.ifNull(referenceHandle).trueBranch();
                 isNull.assign(referenceHandle,
                         Types.loadPrimitiveDefault(injectionPoint.getType().asPrimitiveType().primitive(), isNull));
+            }
+        }
+    }
+
+    static void checkPrimitiveInjection_2(BlockCreator b0, InjectionPointInfo injectionPoint, LocalVar localVar) {
+        if (injectionPoint.getType().kind() == Type.Kind.PRIMITIVE) {
+            Type producerType = null;
+            if (injectionPoint.getResolvedBean().isProducerField()) {
+                producerType = injectionPoint.getResolvedBean().getTarget().get().asField().type();
+            } else if (injectionPoint.getResolvedBean().isProducerMethod()) {
+                producerType = injectionPoint.getResolvedBean().getTarget().get().asMethod().returnType();
+            }
+
+            if (PrimitiveType.isBox(producerType)) {
+                b0.ifNull(localVar, b1 -> {
+                    b1.set(localVar, Const.ofDefault(classDescOf(injectionPoint.getType())));
+                });
             }
         }
     }
@@ -2314,6 +2339,29 @@ public class BeanGenerator extends AbstractGenerator {
                 constructor.load(injectionPoint.isTransient()));
     }
 
+    static Expr wrapCurrentInjectionPoint_2(BeanInfo bean, BlockCreator constructor, InjectionPointInfo injectionPoint,
+            Expr beanExpr, Expr delegateSupplier, LocalVar tccl, AnnotationLiteralProcessor annotationLiterals,
+            ReflectionRegistration reflectionRegistration, Predicate<DotName> injectionPointAnnotationsPredicate) {
+        Var requiredQualifiers = collectInjectionPointQualifiers_2(bean.getDeployment(),
+                constructor, injectionPoint, annotationLiterals);
+        Var annotations = collectInjectionPointAnnotations_2(bean.getDeployment(),
+                constructor, injectionPoint, annotationLiterals, injectionPointAnnotationsPredicate);
+        Var javaMember = getJavaMemberHandle_2(constructor, injectionPoint, reflectionRegistration);
+
+        // TODO empty IP for synthetic injections
+
+        RuntimeTypeCreator rttc = RuntimeTypeCreator.of(constructor);
+        if (tccl != null) {
+            rttc = rttc.withTCCL(tccl);
+        }
+
+        return constructor.new_(ConstructorDesc.of(CurrentInjectionPointProvider.class, InjectableBean.class,
+                Supplier.class, java.lang.reflect.Type.class, Set.class, Set.class, Member.class, int.class, boolean.class),
+                beanExpr, delegateSupplier, rttc.create(injectionPoint.getType()),
+                requiredQualifiers, annotations, javaMember, Const.of(injectionPoint.getPosition()),
+                Const.of(injectionPoint.isTransient()));
+    }
+
     private void initializeProxy(BeanInfo bean, String baseName, ClassCreator beanCreator) {
         if (bean.getDeployment().hasRuntimeDeferredUnproxyableError(bean)) {
             return;
@@ -2451,6 +2499,106 @@ public class BeanGenerator extends AbstractGenerator {
             }
         }
         return qualifiersHandle;
+    }
+
+    public static Var getJavaMemberHandle_2(BlockCreator bc, InjectionPointInfo injectionPoint,
+            ReflectionRegistration reflectionRegistration) {
+        Expr javaMember;
+        if (injectionPoint.isSynthetic()) {
+            javaMember = Const.ofNull(Member.class);
+        } else if (injectionPoint.isField()) {
+            FieldInfo field = injectionPoint.getAnnotationTarget().asField();
+            reflectionRegistration.registerField(field);
+            javaMember = bc.invokeStatic(MethodDescs.REFLECTIONS_FIND_FIELD,
+                    Const.of(classDescOf(field.declaringClass())), Const.of(field.name()));
+        } else {
+            MethodInfo method = injectionPoint.getAnnotationTarget().asMethodParameter().method();
+            reflectionRegistration.registerMethod(method);
+            if (method.name().equals(Methods.INIT)) {
+                // Reflections.findConstructor(org.foo.SimpleBean.class,java.lang.String.class)
+                Expr clazz = Const.of(classDescOf(method.declaringClass()));
+                Expr paramsArray = bc.newArray(Class.class, method.parameterTypes()
+                        .stream()
+                        .map(paramType -> Const.of(classDescOf(paramType)))
+                        .toList());
+                javaMember = bc.invokeStatic(MethodDescs.REFLECTIONS_FIND_CONSTRUCTOR, clazz, paramsArray);
+            } else {
+                // Reflections.findMethod(org.foo.SimpleBean.class,"foo",java.lang.String.class)
+                Expr clazz = Const.of(classDescOf(method.declaringClass()));
+                Expr name = Const.of(method.name());
+                Expr paramsArray = bc.newArray(Class.class, method.parameterTypes()
+                        .stream()
+                        .map(paramType -> Const.of(classDescOf(paramType)))
+                        .toList());
+                javaMember = bc.invokeStatic(MethodDescs.REFLECTIONS_FIND_METHOD, clazz, name, paramsArray);
+            }
+        }
+        return bc.localVar("member", javaMember);
+    }
+
+    public static Var collectInjectionPointAnnotations_2(BeanDeployment beanDeployment, BlockCreator bc,
+            InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals,
+            Predicate<DotName> injectionPointAnnotationsPredicate) {
+        if (injectionPoint.isSynthetic()) {
+            return bc.localVar("annotations", bc.setOf());
+        }
+        Collection<AnnotationInstance> annotations;
+        if (Kind.FIELD.equals(injectionPoint.getAnnotationTarget().kind())) {
+            FieldInfo field = injectionPoint.getAnnotationTarget().asField();
+            annotations = beanDeployment.getAnnotations(field);
+        } else {
+            MethodInfo method = injectionPoint.getAnnotationTarget().asMethodParameter().method();
+            annotations = Annotations.getParameterAnnotations(beanDeployment, method, injectionPoint.getPosition());
+        }
+        if (annotations.isEmpty()) {
+            return bc.localVar("annotations", bc.setOf());
+        }
+
+        LocalVar annotationsVar = bc.localVar("annotations", bc.new_(HashSet.class));
+        for (AnnotationInstance annotation : annotations) {
+            if (!injectionPointAnnotationsPredicate.test(annotation.name())) {
+                continue;
+            }
+            Expr annotationExpr;
+            if (DotNames.INJECT.equals(annotation.name())) {
+                annotationExpr = Expr.staticField(FieldDesc.of(InjectLiteral.class, "INSTANCE"));
+            } else {
+                ClassInfo annotationClass = getClassByName(beanDeployment.getBeanArchiveIndex(), annotation.name());
+                if (annotationClass == null) {
+                    continue;
+                }
+                annotationExpr = annotationLiterals.create(bc, annotationClass, annotation);
+            }
+            bc.withSet(annotationsVar).add(annotationExpr);
+        }
+        return annotationsVar;
+    }
+
+    public static Var collectInjectionPointQualifiers_2(BeanDeployment beanDeployment, BlockCreator bc,
+            InjectionPointInfo injectionPoint, AnnotationLiteralProcessor annotationLiterals) {
+        return collectQualifiers_2(beanDeployment, bc, annotationLiterals,
+                injectionPoint.hasDefaultedQualifier() ? Collections.emptySet() : injectionPoint.getRequiredQualifiers());
+    }
+
+    public static Var collectQualifiers_2(BeanDeployment beanDeployment, BlockCreator bc,
+            AnnotationLiteralProcessor annotationLiterals, Set<AnnotationInstance> qualifiers) {
+        if (qualifiers.isEmpty()) {
+            return Expr.staticField(FieldDescs.QUALIFIERS_IP_QUALIFIERS);
+        } else {
+            LocalVar qualifiersVar = bc.localVar("qualifiers", bc.new_(HashSet.class));
+            for (AnnotationInstance qualifier : qualifiers) {
+                BuiltinQualifier builtinQualifier = BuiltinQualifier.of(qualifier);
+                Expr qualifierExpr;
+                if (builtinQualifier != null) {
+                    qualifierExpr = builtinQualifier.getLiteralInstance_2();
+                } else {
+                    // Create annotation literal if needed
+                    qualifierExpr = annotationLiterals.create(bc, beanDeployment.getQualifier(qualifier.name()), qualifier);
+                }
+                bc.withSet(qualifiersVar).add(qualifierExpr);
+            }
+            return qualifiersVar;
+        }
     }
 
     static void destroyTransientReferences(BytecodeCreator bytecode, Iterable<TransientReference> transientReferences) {

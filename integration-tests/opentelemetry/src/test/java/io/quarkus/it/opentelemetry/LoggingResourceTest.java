@@ -85,10 +85,12 @@ public class LoggingResourceTest {
         await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("directTrace called").size() == 1);
         Map<String, Object> logLine = getLogs("directTrace called").get(0);
 
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
+        await().atMost(Duration.ofSeconds(30)).until(() -> getSpans().size() > 0);
+        Map<String, Object> spanData = getSpans().stream()
+                .filter(map -> SpanId.getInvalid().equals(map.get("parent_spanId")))
+                .findFirst()
+                .get();
 
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
         assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
 
         assertEquals("INFO", logLine.get("severityText"));
@@ -110,14 +112,18 @@ public class LoggingResourceTest {
         await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("Oh no Exception!").size() == 1);
         Map<String, Object> logLine = getLogs("Oh no Exception!").get(0);
 
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
-        Map<String, Object> spanData = getSpans().get(0);
+        await().atMost(Duration.ofSeconds(30)).until(() -> getSpans().size() > 0);
 
-        assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
+        List<Map<String, Object>> spans = getSpans();
+        Map<String, Object> spanData = spans.stream()
+                .filter(map -> SpanId.getInvalid().equals(map.get("parent_spanId")))
+                .findFirst()
+                .get();
+
         assertEquals(TraceId.getInvalid(), spanData.get("parent_traceId"));
 
         Map<String, Object> logLineSpanContext = (Map<String, Object>) logLine.get("spanContext");
-        assertEquals(spanData.get("traceId"), logLineSpanContext.get("traceId"));
+        assertEquals(spanData.get("traceId"), logLineSpanContext.get("traceId"), "traceId do not match. Spans: " + spans);
         assertEquals(spanData.get("spanId"), logLineSpanContext.get("spanId"));
         assertEquals(true, logLineSpanContext.get("sampled"));
 

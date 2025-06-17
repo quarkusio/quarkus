@@ -49,6 +49,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
     private LifecycleExecutor lifecycleExecutor;
     
     // Services for delegating complex operations
+    private ExecutionPlanAnalysisService executionPlanAnalysisService;
     private TargetGenerationService targetGenerationService;
     private TargetGroupService targetGroupService;
     private TargetDependencyService targetDependencyService;
@@ -79,9 +80,10 @@ public class NxAnalyzerMojo extends AbstractMojo {
     }
     
     private void initializeServices() {
-        this.targetGenerationService = new TargetGenerationService(getLog(), isVerbose(), session, lifecycleExecutor);
+        this.executionPlanAnalysisService = new ExecutionPlanAnalysisService(getLog(), isVerbose(), lifecycleExecutor, session);
+        this.targetGenerationService = new TargetGenerationService(getLog(), isVerbose(), session, executionPlanAnalysisService);
         this.targetGroupService = new TargetGroupService();
-        this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose(), session);
+        this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose(), session, executionPlanAnalysisService);
     }
     
     private void logBasicInfo() {
@@ -177,7 +179,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
         
         // Calculate dependencies for each goal target
         for (String targetName : goalTargets) {
-            String goal = MavenUtils.extractGoalFromTargetName(targetName);
+            String goal = ExecutionPlanAnalysisService.extractGoalFromTargetName(targetName);
             
             // Try to find execution phase from plugin configuration
             String executionPhase = findExecutionPhase(project, targetName);
@@ -246,7 +248,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
                     plugin.getExecutions().forEach(execution -> {
                         if (execution.getGoals() != null) {
                             execution.getGoals().forEach(goal -> {
-                                String targetName = MavenUtils.getTargetName(artifactId, goal);
+                                String targetName = ExecutionPlanAnalysisService.getTargetName(artifactId, goal);
                                 goalTargets.add(targetName);
                             });
                         }
@@ -268,7 +270,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
      * Find execution phase for a goal target
      */
     private String findExecutionPhase(MavenProject project, String targetName) {
-        String goal = MavenUtils.extractGoalFromTargetName(targetName);
+        String goal = ExecutionPlanAnalysisService.extractGoalFromTargetName(targetName);
         
         if (project.getBuildPlugins() != null) {
             for (org.apache.maven.model.Plugin plugin : project.getBuildPlugins()) {
@@ -289,17 +291,9 @@ public class NxAnalyzerMojo extends AbstractMojo {
      * Add common goals for well-known plugins
      */
     private void addCommonGoals(String artifactId, Set<String> goalTargets) {
-        if (artifactId.contains("compiler")) {
-            goalTargets.add(MavenUtils.getTargetName(artifactId, "compile"));
-            goalTargets.add(MavenUtils.getTargetName(artifactId, "testCompile"));
-        } else if (artifactId.contains("surefire")) {
-            goalTargets.add(MavenUtils.getTargetName(artifactId, "test"));
-        } else if (artifactId.contains("quarkus")) {
-            goalTargets.add(MavenUtils.getTargetName(artifactId, "dev"));
-            goalTargets.add(MavenUtils.getTargetName(artifactId, "build"));
-        } else if (artifactId.contains("spring-boot")) {
-            goalTargets.add(MavenUtils.getTargetName(artifactId, "run"));
-            goalTargets.add(MavenUtils.getTargetName(artifactId, "repackage"));
+        List<String> commonGoals = ExecutionPlanAnalysisService.getCommonGoalsForPlugin(artifactId);
+        for (String goal : commonGoals) {
+            goalTargets.add(ExecutionPlanAnalysisService.getTargetName(artifactId, goal));
         }
     }
     

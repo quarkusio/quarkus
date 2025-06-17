@@ -28,13 +28,13 @@ public class TargetGenerationService {
     private final Log log;
     private final boolean verbose;
     private final MavenSession session;
-    private final LifecycleExecutor lifecycleExecutor;
+    private final ExecutionPlanAnalysisService executionPlanAnalysisService;
 
-    public TargetGenerationService(Log log, boolean verbose, MavenSession session, LifecycleExecutor lifecycleExecutor) {
+    public TargetGenerationService(Log log, boolean verbose, MavenSession session, ExecutionPlanAnalysisService executionPlanAnalysisService) {
         this.log = log;
         this.verbose = verbose;
         this.session = session;
-        this.lifecycleExecutor = lifecycleExecutor;
+        this.executionPlanAnalysisService = executionPlanAnalysisService;
     }
 
     /**
@@ -137,7 +137,7 @@ public class TargetGenerationService {
                     plugin.getExecutions().forEach(execution -> {
                         if (execution.getGoals() != null) {
                             execution.getGoals().forEach(goal -> {
-                                String targetName = MavenUtils.getTargetName(plugin.getArtifactId(), goal);
+                                String targetName = ExecutionPlanAnalysisService.getTargetName(plugin.getArtifactId(), goal);
                                 
                                 if (!goalTargets.containsKey(targetName)) {
                                     TargetConfiguration target = createGoalTarget(plugin, goal, execution, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()), project);
@@ -194,7 +194,7 @@ public class TargetGenerationService {
         if (executionPhase != null && !executionPhase.isEmpty() && !executionPhase.startsWith("${")) {
             metadata.setPhase(executionPhase);
         } else {
-            metadata.setPhase(MavenUtils.inferPhaseFromGoal(goal, project));
+            metadata.setPhase(executionPlanAnalysisService.findPhaseForGoal(project, goal));
         }
         metadata.setTechnologies(Arrays.asList("maven"));
         target.setMetadata(metadata);
@@ -206,20 +206,10 @@ public class TargetGenerationService {
                                         String projectRootToken, String actualProjectPath, 
                                         Map<String, List<String>> goalDependencies, MavenProject project) {
         String artifactId = plugin.getArtifactId();
-        List<String> commonGoals = new ArrayList<>();
-        
-        if (artifactId.contains("compiler")) {
-            commonGoals.addAll(Arrays.asList("compile", "testCompile"));
-        } else if (artifactId.contains("surefire")) {
-            commonGoals.add("test");
-        } else if (artifactId.contains("quarkus")) {
-            commonGoals.addAll(Arrays.asList("dev", "build"));
-        } else if (artifactId.contains("spring-boot")) {
-            commonGoals.addAll(Arrays.asList("run", "repackage"));
-        }
+        List<String> commonGoals = ExecutionPlanAnalysisService.getCommonGoalsForPlugin(artifactId);
         
         for (String goal : commonGoals) {
-            String targetName = MavenUtils.getTargetName(artifactId, goal);
+            String targetName = ExecutionPlanAnalysisService.getTargetName(artifactId, goal);
             if (!goalTargets.containsKey(targetName)) {
                 TargetConfiguration target = createSimpleGoalTarget(plugin, goal, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()), project);
                 goalTargets.put(targetName, target);
@@ -255,7 +245,7 @@ public class TargetGenerationService {
         TargetMetadata metadata = new TargetMetadata("goal", generateGoalDescription(plugin.getArtifactId(), goal));
         metadata.setPlugin(pluginKey);
         metadata.setGoal(goal);
-        metadata.setPhase(MavenUtils.inferPhaseFromGoal(goal, project));
+        metadata.setPhase(executionPlanAnalysisService.findPhaseForGoal(project, goal));
         metadata.setTechnologies(Arrays.asList("maven"));
         target.setMetadata(metadata);
         
@@ -284,7 +274,7 @@ public class TargetGenerationService {
 
 
     private String generateGoalDescription(String artifactId, String goal) {
-        String pluginName = artifactId.replace("-maven-plugin", "").replace("-plugin", "");
+        String pluginName = ExecutionPlanAnalysisService.normalizePluginName(artifactId);
         
         switch (goal) {
             case "compile": return "Compile main sources";
@@ -310,31 +300,18 @@ public class TargetGenerationService {
      * Dynamically discover all lifecycle phases that have bound goals for this project
      */
     private Set<String> getApplicablePhases(MavenProject project) {
-        Set<String> applicablePhases = new LinkedHashSet<>();
+        Set<String> applicablePhases = executionPlanAnalysisService.getApplicablePhases(project);
         
-        try {
-            // Calculate execution plan for "deploy" phase (includes all phases up to deploy)
-            MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(
-                session, "deploy"
-            );
-            
-            // Extract unique phases from all mojo executions
-            for (MojoExecution mojoExecution : executionPlan.getMojoExecutions()) {
-                String phase = mojoExecution.getLifecyclePhase();
-                if (phase != null && !phase.isEmpty()) {
-                    applicablePhases.add(phase);
-                }
-            }
-            
-            if (verbose) {
-                log.debug("Discovered phases for " + project.getArtifactId() + ": " + applicablePhases);
-            }
-            
-        } catch (Exception e) {
+        if (verbose) {
+            log.debug("Discovered phases for " + project.getArtifactId() + ": " + applicablePhases);
+        }
+        
+        // Fallback to minimal phases if analysis returns empty
+        if (applicablePhases.isEmpty()) {
             if (log != null) {
-                log.warn("Could not determine applicable phases for " + project.getArtifactId() + ": " + e.getMessage());
+                log.warn("No phases discovered for " + project.getArtifactId() + ", using fallback phases");
             }
-            // Fallback to minimal phases for safety
+            applicablePhases = new LinkedHashSet<>();
             applicablePhases.add("validate");
             applicablePhases.add("install");
         }
@@ -347,15 +324,9 @@ public class TargetGenerationService {
      */
     private boolean hasGoalsBoundToPhase(String phase, MavenProject project) {
         try {
-            // Calculate execution plan for just this phase
-            MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(
-                session, phase
-            );
-            
-            // Check if any mojo executions are bound to this phase
-            return executionPlan.getMojoExecutions()
-                .stream()
-                .anyMatch(mojoExecution -> phase.equals(mojoExecution.getLifecyclePhase()));
+            // Use the analysis service to check if this phase has any goals
+            List<String> goalsForPhase = executionPlanAnalysisService.getGoalsForPhase(project, phase);
+            return !goalsForPhase.isEmpty();
                 
         } catch (Exception e) {
             if (verbose && log != null) {

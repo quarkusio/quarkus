@@ -1,5 +1,6 @@
 import model.TargetConfiguration;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.lifecycle.LifecycleExecutor;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
@@ -16,11 +17,13 @@ public class TargetDependencyService {
     private final Log log;
     private final boolean verbose;
     private final MavenSession session;
+    private final ExecutionPlanAnalysisService executionPlanAnalysisService;
 
-    public TargetDependencyService(Log log, boolean verbose, MavenSession session) {
+    public TargetDependencyService(Log log, boolean verbose, MavenSession session, ExecutionPlanAnalysisService executionPlanAnalysisService) {
         this.log = log;
         this.verbose = verbose;
         this.session = session;
+        this.executionPlanAnalysisService = executionPlanAnalysisService;
     }
 
     /**
@@ -33,7 +36,7 @@ public class TargetDependencyService {
 
         String effectivePhase = executionPhase;
         if (effectivePhase == null || effectivePhase.isEmpty() || effectivePhase.startsWith("${")) {
-            effectivePhase = MavenUtils.inferPhaseFromGoal(MavenUtils.extractGoalFromTargetName(targetName), project);
+            effectivePhase = executionPlanAnalysisService.findPhaseForGoal(project, ExecutionPlanAnalysisService.extractGoalFromTargetName(targetName));
         }
 
 

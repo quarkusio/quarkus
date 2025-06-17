@@ -41,7 +41,7 @@ public class CreateDependenciesGenerator {
 
         for (int i = 0; i < projects.size(); i++) {
             MavenProject project = projects.get(i);
-            String source = project.getGroupId() + ":" + project.getArtifactId();
+            String source = MavenUtils.formatProjectKey(project);
             String sourceFile = NxPathUtils.getRelativePomPath(project, workspaceRoot);
 
             // Show progress every 100 projects to reduce log spam
@@ -98,7 +98,7 @@ public class CreateDependenciesGenerator {
                                               MavenProject project,
                                               Map<String, String> artifactToProject,
                                               String sourceFile) {
-        String source = project.getGroupId() + ":" + project.getArtifactId();
+        String source = MavenUtils.formatProjectKey(project);
         int count = 0;
 
         // Check both declared dependencies and resolved artifacts

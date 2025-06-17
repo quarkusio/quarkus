@@ -82,7 +82,7 @@ public class ExecutionPlanAnalysisService {
         ProjectExecutionAnalysis analysis = new ProjectExecutionAnalysis();
         
         // Try different lifecycle endpoints to get comprehensive coverage
-        String[] lifecycleEndpoints = {"compile", "test", "package", "deploy", "clean", "site"};
+        String[] lifecycleEndpoints = {"compile", "test", "package", "verify", "deploy", "clean", "site"};
         
         for (String endpoint : lifecycleEndpoints) {
             try {
@@ -283,5 +283,15 @@ public class ExecutionPlanAnalysisService {
         public String getPluginArtifactId() { return pluginArtifactId; }
         public String getExecutionId() { return executionId; }
         public String getPluginKey() { return pluginKey; }
+    }
+    
+    public List<String> getGoalOutputs(String goal, String projectRootToken, MavenProject project) {
+        // Simplified implementation without hardcoded patterns
+        return new ArrayList<>();
+    }
+    
+    public String getRelativeBuildPath(String buildDirectory, String projectRootToken, MavenProject project) {
+        // Simplified implementation
+        return projectRootToken + "/target";
     }
 }

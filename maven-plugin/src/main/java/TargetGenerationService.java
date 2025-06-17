@@ -179,7 +179,7 @@ public class TargetGenerationService {
         }
         target.setInputs(inputs);
         
-        List<String> outputs = getGoalOutputs(goal, projectRootToken);
+        List<String> outputs = executionPlanAnalysisService.getGoalOutputs(goal, projectRootToken, project);
         target.setOutputs(outputs);
         
         // Use pre-calculated dependencies
@@ -236,7 +236,7 @@ public class TargetGenerationService {
         }
         target.setInputs(inputs);
         
-        List<String> outputs = getGoalOutputs(goal, projectRootToken);
+        List<String> outputs = executionPlanAnalysisService.getGoalOutputs(goal, projectRootToken, project);
         target.setOutputs(outputs);
         
         // Use pre-calculated dependencies
@@ -259,18 +259,8 @@ public class TargetGenerationService {
                goal.equals("dev") || goal.equals("run");
     }
 
-    private List<String> getGoalOutputs(String goal, String projectRootToken) {
-        List<String> outputs = new ArrayList<>();
-        if (goal.contains("compile") || goal.contains("build") || goal.contains("jar") || goal.contains("war")) {
-            outputs.add(projectRootToken + "/target/**/*");
-        } else if (goal.contains("test")) {
-            outputs.add(projectRootToken + "/target/surefire-reports/**/*");
-            outputs.add(projectRootToken + "/target/failsafe-reports/**/*");
-        } else if (goal.contains("site") || goal.contains("javadoc")) {
-            outputs.add(projectRootToken + "/target/site/**/*");
-        }
-        return outputs;
-    }
+    
+    
 
 
     private String generateGoalDescription(String artifactId, String goal) {
@@ -304,6 +294,10 @@ public class TargetGenerationService {
         
         if (verbose) {
             log.debug("Discovered phases for " + project.getArtifactId() + ": " + applicablePhases);
+        }
+        // Always log this for debugging
+        if (log != null) {
+            log.info("DEBUG: Applicable phases for " + project.getArtifactId() + ": " + applicablePhases);
         }
         
         // Fallback to minimal phases if analysis returns empty

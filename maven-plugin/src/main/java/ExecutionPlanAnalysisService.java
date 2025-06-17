@@ -34,6 +34,20 @@ public class ExecutionPlanAnalysisService {
     }
     
     /**
+     * Get the LifecycleExecutor for use by other services
+     */
+    public LifecycleExecutor getLifecycleExecutor() {
+        return lifecycleExecutor;
+    }
+    
+    /**
+     * Get the DefaultLifecycles for use by other services
+     */
+    public DefaultLifecycles getDefaultLifecycles() {
+        return defaultLifecycles;
+    }
+    
+    /**
      * Get or compute execution analysis for a project
      */
     public ProjectExecutionAnalysis getAnalysis(MavenProject project) {

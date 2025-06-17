@@ -3,12 +3,15 @@ import model.TargetMetadata;
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
+import org.apache.maven.model.Resource;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
 import java.util.LinkedHashSet;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -26,12 +29,16 @@ public class TargetGenerationService {
     private final boolean verbose;
     private final MavenSession session;
     private final ExecutionPlanAnalysisService executionPlanAnalysisService;
+    private final DynamicGoalAnalysisService dynamicGoalAnalysis;
 
     public TargetGenerationService(Log log, boolean verbose, MavenSession session, ExecutionPlanAnalysisService executionPlanAnalysisService) {
         this.log = log;
         this.verbose = verbose;
         this.session = session;
         this.executionPlanAnalysisService = executionPlanAnalysisService;
+        this.dynamicGoalAnalysis = new DynamicGoalAnalysisService(session, executionPlanAnalysisService, 
+                                                                 executionPlanAnalysisService.getLifecycleExecutor(), 
+                                                                 executionPlanAnalysisService.getDefaultLifecycles(), log, verbose);
     }
 
     /**
@@ -221,12 +228,8 @@ public class TargetGenerationService {
         options.put("failOnError", true);
         target.setOptions(options);
 
-        // Smart inputs/outputs based on goal
-        List<String> inputs = new ArrayList<>();
-        inputs.add(projectRootToken + "/pom.xml");
-        if (isSourceProcessingGoal(goal)) {
-            inputs.add(projectRootToken + "/src/**/*");
-        }
+        // Smart inputs/outputs based on goal using Maven APIs
+        List<String> inputs = getSmartInputsForGoal(goal, project, projectRootToken);
         target.setInputs(inputs);
 
         List<String> outputs = executionPlanAnalysisService.getGoalOutputs(goal, projectRootToken, project);
@@ -289,11 +292,7 @@ public class TargetGenerationService {
         options.put("failOnError", true);
         target.setOptions(options);
 
-        List<String> inputs = new ArrayList<>();
-        inputs.add(projectRootToken + "/pom.xml");
-        if (isSourceProcessingGoal(goal)) {
-            inputs.add(projectRootToken + "/src/**/*");
-        }
+        List<String> inputs = getSmartInputsForGoal(goal, project, projectRootToken);
         target.setInputs(inputs);
 
         List<String> outputs = executionPlanAnalysisService.getGoalOutputs(goal, projectRootToken, project);
@@ -314,9 +313,128 @@ public class TargetGenerationService {
 
     // Helper methods
 
-    private boolean isSourceProcessingGoal(String goal) {
-        return goal.contains("compile") || goal.contains("test") || goal.contains("build") ||
-               goal.equals("dev") || goal.equals("run");
+    /**
+     * Get smart inputs for a Maven goal using dynamic Maven API analysis
+     * instead of hardcoded patterns. This uses actual Maven project configuration,
+     * plugin analysis, and lifecycle phase information.
+     */
+    private List<String> getSmartInputsForGoal(String goal, MavenProject project, String projectRootToken) {
+        List<String> inputs = new ArrayList<>();
+        
+        // Always include POM
+        inputs.add(projectRootToken + "/pom.xml");
+        
+        // Get dynamic analysis of goal behavior
+        GoalBehavior behavior = dynamicGoalAnalysis.analyzeGoal(goal, project);
+        
+        if (behavior.processesSources()) {
+            // Use actual source directories from Maven configuration
+            List<String> sourcePaths = behavior.getSourcePaths();
+            if (sourcePaths.isEmpty()) {
+                // Fallback to project defaults
+                sourcePaths = project.getCompileSourceRoots();
+            }
+            
+            for (String sourcePath : sourcePaths) {
+                String relativePath = getRelativePathFromProject(sourcePath, project);
+                if (relativePath != null && !relativePath.isEmpty()) {
+                    inputs.add(projectRootToken + "/" + relativePath + "/**/*");
+                }
+            }
+            
+            // Add test sources for test-related goals
+            if (behavior.isTestRelated()) {
+                for (String testSourceRoot : project.getTestCompileSourceRoots()) {
+                    String relativePath = getRelativePathFromProject(testSourceRoot, project);
+                    if (relativePath != null && !relativePath.isEmpty()) {
+                        inputs.add(projectRootToken + "/" + relativePath + "/**/*");
+                    }
+                }
+            }
+        }
+        
+        if (behavior.needsResources()) {
+            // Use actual resource directories from Maven configuration
+            List<String> resourcePaths = behavior.getResourcePaths();
+            if (resourcePaths.isEmpty()) {
+                // Fallback to project defaults
+                if (project.getBuild() != null && project.getBuild().getResources() != null) {
+                    for (Resource resource : project.getBuild().getResources()) {
+                        if (resource.getDirectory() != null) {
+                            resourcePaths.add(resource.getDirectory());
+                        }
+                    }
+                }
+            }
+            
+            for (String resourcePath : resourcePaths) {
+                String relativePath = getRelativePathFromProject(resourcePath, project);
+                if (relativePath != null && !relativePath.isEmpty()) {
+                    inputs.add(projectRootToken + "/" + relativePath + "/**/*");
+                }
+            }
+            
+            // Test resources for test-related goals
+            if (behavior.isTestRelated()) {
+                if (project.getBuild() != null && project.getBuild().getTestResources() != null) {
+                    for (Resource resource : project.getBuild().getTestResources()) {
+                        if (resource.getDirectory() != null) {
+                            String relativePath = getRelativePathFromProject(resource.getDirectory(), project);
+                            if (relativePath != null && !relativePath.isEmpty()) {
+                                inputs.add(projectRootToken + "/" + relativePath + "/**/*");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return inputs;
+    }
+
+    // Removed hardcoded goal classification methods:
+    // - isSourceProcessingGoal() - replaced by dynamicGoalAnalysis.analyzeGoal()
+    // - isTestGoal() - replaced by GoalBehavior.isTestRelated() 
+    // - needsResources() - replaced by GoalBehavior.needsResources()
+    // 
+    // These methods used hardcoded string patterns and have been replaced with
+    // dynamic Maven API-based analysis that uses actual plugin configuration,
+    // lifecycle phases, and MojoExecution information.
+    
+    /**
+     * Convert an absolute or relative path from Maven configuration to a relative path
+     * from the project base directory.
+     */
+    private String getRelativePathFromProject(String pathString, MavenProject project) {
+        if (pathString == null || pathString.trim().isEmpty()) {
+            return null;
+        }
+        
+        try {
+            Path projectBase = project.getBasedir().toPath().toAbsolutePath();
+            Path targetPath = Paths.get(pathString);
+            
+            if (targetPath.isAbsolute()) {
+                // Convert absolute path to relative
+                if (targetPath.startsWith(projectBase)) {
+                    return projectBase.relativize(targetPath).toString().replace('\\', '/');
+                } else {
+                    // Path is outside project - skip it
+                    if (verbose && log != null) {
+                        log.debug("Skipping path outside project: " + pathString);
+                    }
+                    return null;
+                }
+            } else {
+                // Already relative - normalize separators
+                return targetPath.toString().replace('\\', '/');
+            }
+        } catch (Exception e) {
+            if (log != null) {
+                log.warn("Error processing path: " + pathString + ", error: " + e.getMessage());
+            }
+            return null;
+        }
     }
 
 

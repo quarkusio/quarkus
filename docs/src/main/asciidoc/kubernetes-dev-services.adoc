@@ -55,6 +55,15 @@ quarkus.kubernetes-client.devservices.flavor=api-only # k3s or kind
 quarkus.kubernetes-client.devservices.api-version=1.22
 ----
 
+You can also configure a custom image compatible with standard images (kind, k3s & api-server) using the `quarkus.kubernetes-client.devservices.image-name` property. However, it must be consistent with the flavor and api-version properties:
+
+[source, properties]
+----
+quarkus.kubernetes-client.devservices.flavor=api-only # k3s or kind
+quarkus.kubernetes-client.devservices.api-version=1.24.1
+quarkus.kubernetes-client.devservices.image-name=quay.io/giantswarm/kube-apiserver:v1.24.1
+----
+
 `api-only` only starts a Kubernetes API Server (plus the required etcd). If you need a fully-featured Kubernetes cluster that can spin up Pods, you can use `k3s` or `kind`. `k3s` requires to start the container with `privileged mode`. The `kind` test container now also supports using podman's rootless mode.
 
 If `api-version` is not set, the latest version for the given flavor will be used. Otherwise, the version must match a https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json[version supported by the given flavor].

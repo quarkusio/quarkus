@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,8 @@ import com.dajudge.kindcontainer.K3sContainer;
 import com.dajudge.kindcontainer.K3sContainerVersion;
 import com.dajudge.kindcontainer.KindContainer;
 import com.dajudge.kindcontainer.KindContainerVersion;
+import com.dajudge.kindcontainer.KubernetesContainer;
+import com.dajudge.kindcontainer.KubernetesImageSpec;
 import com.dajudge.kindcontainer.KubernetesVersionEnum;
 import com.dajudge.kindcontainer.client.KubeConfigUtils;
 import com.dajudge.kindcontainer.client.config.Cluster;
@@ -225,18 +228,12 @@ public class DevServicesKubernetesProcessor {
                     .orElse(api_only);
 
             @SuppressWarnings("rawtypes")
-            final var container = switch (clusterType) {
-                case api_only -> new ApiServerContainer(
-                        config.apiVersion
-                                .map(version -> findOrElseThrow(clusterType, version, ApiServerContainerVersion.class))
-                                .orElseGet(() -> latest(ApiServerContainerVersion.class)));
-                case k3s -> new K3sContainer(
-                        config.apiVersion.map(version -> findOrElseThrow(clusterType, version, K3sContainerVersion.class))
-                                .orElseGet(() -> latest(K3sContainerVersion.class)));
-                case kind -> new KindContainer(
-                        config.apiVersion
-                                .map(version -> findOrElseThrow(clusterType, version, KindContainerVersion.class))
-                                .orElseGet(() -> latest(KindContainerVersion.class)));
+            KubernetesContainer container = switch (clusterType) {
+                case api_only -> createContainer(ApiServerContainer::new, ApiServerContainerVersion.class, config, clusterType);
+
+                case k3s -> createContainer(K3sContainer::new, K3sContainerVersion.class, config, clusterType);
+
+                case kind -> createContainer(KindContainer::new, KindContainerVersion.class, config, clusterType);
             };
 
             if (useSharedNetwork) {
@@ -270,7 +267,21 @@ public class DevServicesKubernetesProcessor {
                 .orElseGet(defaultKubernetesClusterSupplier);
     }
 
-    <T extends KubernetesVersionEnum<T>> T findOrElseThrow(final Flavor flavor, final String version,
+    @SuppressWarnings("rawtypes")
+    private <T extends KubernetesVersionEnum<T>, C extends KubernetesContainer> C createContainer(
+            Function<KubernetesImageSpec<T>, C> constructor,
+            Class<T> versionClass,
+            KubernetesDevServiceCfg config,
+            Flavor flavor) {
+        T version = config.apiVersion
+                .map(v -> findOrElseThrow(flavor, v, versionClass))
+                .orElseGet(() -> latest(versionClass));
+
+        KubernetesImageSpec<T> imageSpec = version.withImage(config.imageName);
+        return constructor.apply(imageSpec);
+    }
+
+    private <T extends KubernetesVersionEnum<T>> T findOrElseThrow(final Flavor flavor, final String version,
             final Class<T> versions) {
         final String versionWithPrefix = !version.startsWith("v") ? "v" + version : version;
         return KubernetesVersionEnum.ascending(versions)
@@ -315,6 +326,7 @@ public class DevServicesKubernetesProcessor {
     private static final class KubernetesDevServiceCfg {
 
         public boolean devServicesEnabled;
+        public String imageName;
         public Optional<Flavor> flavor;
         public Optional<String> apiVersion;
         public boolean overrideKubeconfig;
@@ -324,6 +336,8 @@ public class DevServicesKubernetesProcessor {
 
         public KubernetesDevServiceCfg(KubernetesDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled();
+            this.imageName = config.imageName()
+                    .orElse(null);
             this.serviceName = config.serviceName();
             this.apiVersion = config.apiVersion();
             this.overrideKubeconfig = config.overrideKubeconfig();
@@ -334,7 +348,8 @@ public class DevServicesKubernetesProcessor {
 
         @Override
         public int hashCode() {
-            return Objects.hash(devServicesEnabled, flavor, apiVersion, overrideKubeconfig, shared, serviceName, containerEnv);
+            return Objects.hash(devServicesEnabled, imageName, flavor, apiVersion, overrideKubeconfig, shared, serviceName,
+                    containerEnv);
         }
 
         @Override

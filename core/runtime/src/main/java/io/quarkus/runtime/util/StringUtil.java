@@ -1,5 +1,7 @@
 package io.quarkus.runtime.util;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -26,7 +28,7 @@ public final class StringUtil {
     }
 
     public static Iterator<String> camelHumpsIterator(String str) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             int idx;
 
             public boolean hasNext() {
@@ -100,7 +102,7 @@ public final class StringUtil {
     }
 
     public static Iterator<String> lowerCase(Iterator<String> orig) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             public boolean hasNext() {
                 return orig.hasNext();
             }
@@ -142,7 +144,7 @@ public final class StringUtil {
     }
 
     public static Iterator<String> lowerCaseFirst(Iterator<String> orig) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             boolean first = true;
 
             public boolean hasNext() {
@@ -162,7 +164,7 @@ public final class StringUtil {
     }
 
     public static Iterator<String> withoutSuffix(Iterator<String> orig, String... suffixes) {
-        return new Iterator<String>() {
+        return new Iterator<>() {
             String next = null;
 
             public boolean hasNext() {
@@ -229,7 +231,7 @@ public final class StringUtil {
         return join("-", lowerCase(camelHumpsIterator(orig)));
     }
 
-    public static boolean isNullOrEmpty(String s) {
+    public static boolean isNullOrEmpty(@Nullable String s) {
         return s == null || s.isEmpty();
     }
 }

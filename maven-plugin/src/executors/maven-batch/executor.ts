@@ -79,7 +79,7 @@ export default async function runExecutor(
   // Check for batch executor
   const batchExecutorClasspath = join(pluginDir, 'target/classes');
   const dependencyPath = join(pluginDir, 'target/dependency');
-
+  
   if (!existsSync(batchExecutorClasspath)) {
     const error = `Maven plugin not compiled. Run 'mvn compile' in ${pluginDir}`;
     logger.error(error);
@@ -95,7 +95,7 @@ export default async function runExecutor(
   try {
     const goalsString = goals.join(',');
     const verboseFlag = verbose ? 'true' : 'false';
-
+    
     // Build command with new signature: goals, workspaceRoot, projects, verbose
     const classpath = `${batchExecutorClasspath}:${dependencyPath}/*`;
     const command = `java -Dmaven.multiModuleProjectDirectory="${workspaceRoot}" -cp "${classpath}" NxMavenBatchExecutor "${goalsString}" "${workspaceRoot}" "${projectRoot}" ${verboseFlag}`;
@@ -118,7 +118,7 @@ export default async function runExecutor(
     });
 
     const duration = Date.now() - startTime;
-
+    
     // Parse JSON output from batch executor
     // The output may contain Maven warnings before the JSON, so find the JSON part
     let result: MavenBatchResult;
@@ -127,7 +127,7 @@ export default async function runExecutor(
       const lines = output.trim().split('\n');
       let jsonStart = -1;
       let jsonEnd = -1;
-
+      
       // Find the start of JSON
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].trim().startsWith('{')) {
@@ -135,7 +135,7 @@ export default async function runExecutor(
           break;
         }
       }
-
+      
       // Find the end of JSON (last '}')
       for (let i = lines.length - 1; i >= 0; i--) {
         if (lines[i].trim().endsWith('}')) {
@@ -143,11 +143,11 @@ export default async function runExecutor(
           break;
         }
       }
-
+      
       if (jsonStart === -1 || jsonEnd === -1) {
         throw new Error('No JSON output found');
       }
-
+      
       const jsonOutput = lines.slice(jsonStart, jsonEnd + 1).join('\n');
       result = JSON.parse(jsonOutput);
     } catch (parseError: any) {
@@ -161,7 +161,7 @@ export default async function runExecutor(
     if (verbose || !result.overallSuccess) {
       logger.info(`Maven batch execution completed in ${duration}ms`);
       logger.info(`Overall success: ${result.overallSuccess}`);
-
+      
       if (result.errorMessage) {
         logger.error(`Error: ${result.errorMessage}`);
       }
@@ -169,11 +169,11 @@ export default async function runExecutor(
       result.goalResults.forEach((goalResult, index) => {
         const status = goalResult.success ? '✅' : '❌';
         logger.info(`${status} Goal ${index + 1}: ${goalResult.goal} (${goalResult.durationMs}ms)`);
-
+        
         if (!goalResult.success && goalResult.errors.length > 0) {
           goalResult.errors.forEach(error => logger.error(`  Error: ${error}`));
         }
-
+        
         if (verbose && goalResult.output.length > 0) {
           logger.debug(`  Output: ${goalResult.output.slice(-5).join('\n  ')}`); // Last 5 lines
         }
@@ -191,7 +191,7 @@ export default async function runExecutor(
 
     // Determine success
     const success = result.overallSuccess || !failOnError;
-
+    
     if (!success && failOnError) {
       logger.error(`Maven batch execution failed`);
       if (result.errorMessage) {
@@ -209,7 +209,7 @@ export default async function runExecutor(
   } catch (error: any) {
     const errorMessage = error?.message || String(error);
     logger.error(`Maven batch executor failed: ${errorMessage}`);
-
+    
     if (verbose) {
       logger.debug(`Error details:`, error);
     }
@@ -227,11 +227,8 @@ export async function batchMavenExecutor(
   taskGraph: TaskGraph,
   inputs: Record<string, MavenBatchExecutorOptions>
 ): Promise<Record<string, { success: boolean; terminalOutput: string }>> {
-  logger.info(`[BATCH DEBUG] batchMavenExecutor called with ${Object.keys(inputs).length} tasks`);
-  logger.info(`[BATCH DEBUG] Task IDs: ${Object.keys(inputs).join(', ')}`);
-
   const results: Record<string, { success: boolean; terminalOutput: string }> = {};
-
+  
   try {
     // Collect ALL goals and projects from ALL tasks in the task graph
     const allGoals: string[] = [];
@@ -239,77 +236,61 @@ export async function batchMavenExecutor(
     const taskIds: string[] = [];
     let verbose = false;
     let commonOptions: MavenBatchExecutorOptions | undefined;
-
+    
     // Extract goals and project roots from each task in the task graph
     for (const [taskId, options] of Object.entries(inputs)) {
       const task = taskGraph.tasks[taskId];
-      logger.info(`[BATCH DEBUG] Processing task ${taskId}: executor=${task?.target?.executor}, goals=${options.goals?.join(',')}`);
-
-      // Get goals from the task's configuration options
-      const taskGoals = options.goals || [];
-      allGoals.push(...taskGoals);
-
-      // Get project root (use from options or task target project)
-      const projectRoot = options.projectRoot || task.target.project || '.';
-      allProjects.push(projectRoot);
-
-      taskIds.push(taskId);
-
-      logger.info(`[BATCH DEBUG] Added task ${taskId}: goals=${taskGoals.join(',')}, projectRoot=${projectRoot}`);
-
-      // Use first task's options as base, enable verbose if any task requests it
-      if (!commonOptions) commonOptions = options;
-      if (options.verbose) verbose = true;
+      
+      if (task) {
+        // Get goals from the task's configuration options
+        const taskGoals = options.goals || [];
+        allGoals.push(...taskGoals);
+        
+        // Get project root (use from options or task target project)
+        const projectRoot = options.projectRoot || task.target.project || '.';
+        allProjects.push(projectRoot);
+        
+        taskIds.push(taskId);
+        
+        // Use first task's options as base, enable verbose if any task requests it
+        if (!commonOptions) commonOptions = options;
+        if (options.verbose) verbose = true;
+      }
     }
-
+    
     // Remove duplicate goals and projects
     const uniqueGoals = Array.from(new Set(allGoals));
     const uniqueProjects = Array.from(new Set(allProjects));
-
-    logger.info(`[BATCH DEBUG] Collected: ${taskIds.length} tasks, ${uniqueGoals.length} unique goals, ${uniqueProjects.length} unique projects`);
-    logger.info(`[BATCH DEBUG] Unique goals: ${uniqueGoals.join(', ')}`);
-    logger.info(`[BATCH DEBUG] Unique projects: ${uniqueProjects.join(', ')}`);
-
+    
     // If no tasks or goals, return empty results
     if (taskIds.length === 0 || uniqueGoals.length === 0) {
-      logger.info(`[BATCH DEBUG] No tasks or goals found, returning empty results`);
       return results;
     }
-
-    logger.info(`[BATCH DEBUG] Starting batch execution of ${uniqueGoals.length} goals across ${uniqueProjects.length} projects`);
-
+    
     // Execute ALL unique goals across ALL unique projects in a single batch
-    const batchOptions = { ...commonOptions!, verbose: true }; // Force verbose for debugging
+    const batchOptions = { ...commonOptions!, verbose };
     const batchResult = await executeMultiProjectMavenBatch(uniqueGoals, uniqueProjects, batchOptions, process.cwd());
-
-    logger.info(`[BATCH DEBUG] Batch execution completed: success=${batchResult.overallSuccess}, ${batchResult.goalResults.length} goal results`);
-
+    
     // All tasks get the same result (success/failure of the entire batch)
     for (const taskId of taskIds) {
       results[taskId] = {
         success: batchResult.overallSuccess,
         terminalOutput: batchResult.goalResults.map(r => r.output.join('\n')).join('\n')
       };
-      logger.info(`[BATCH DEBUG] Set result for task ${taskId}: success=${batchResult.overallSuccess}`);
     }
-
-    logger.info(`[BATCH DEBUG] Returning results for ${Object.keys(results).length} tasks`);
+    
     return results;
-
+    
   } catch (error: any) {
-    logger.error(`[BATCH DEBUG] Batch execution failed: ${error?.message || String(error)}`);
-
     // If batch fails, mark ALL tasks as failed
     for (const taskId of Object.keys(inputs)) {
       results[taskId] = {
         success: false,
         terminalOutput: error?.message || String(error)
       };
-      logger.info(`[BATCH DEBUG] Set failed result for task ${taskId}`);
     }
   }
-
-  logger.info(`[BATCH DEBUG] Final: returning results for ${Object.keys(results).length} tasks`);
+  
   return results;
 }
 
@@ -320,11 +301,6 @@ async function executeMultiProjectMavenBatch(
   options: MavenBatchExecutorOptions,
   workspaceRoot: string
 ): Promise<MavenBatchResult> {
-  logger.info(`[MULTI-PROJECT DEBUG] executeMultiProjectMavenBatch called`);
-  logger.info(`[MULTI-PROJECT DEBUG] Goals: ${goals.join(', ')}`);
-  logger.info(`[MULTI-PROJECT DEBUG] Projects: ${projects.join(', ')}`);
-  logger.info(`[MULTI-PROJECT DEBUG] Workspace root: ${workspaceRoot}`);
-
   const {
     verbose = false,
     mavenPluginPath = 'maven-plugin',
@@ -342,7 +318,7 @@ async function executeMultiProjectMavenBatch(
   // Check for batch executor
   const batchExecutorClasspath = join(pluginDir, 'target/classes');
   const dependencyPath = join(pluginDir, 'target/dependency');
-
+  
   if (!existsSync(batchExecutorClasspath)) {
     throw new Error(`Maven plugin not compiled. Run 'mvn compile' in ${pluginDir}`);
   }
@@ -354,16 +330,10 @@ async function executeMultiProjectMavenBatch(
   const goalsString = goals.join(',');
   const projectsString = projects.join(',');
   const verboseFlag = verbose ? 'true' : 'false';
-
+  
   // Build command with new signature: goals, workspaceRoot, projects, verbose
   const classpath = `${batchExecutorClasspath}:${dependencyPath}/*`;
   const command = `java -Dmaven.multiModuleProjectDirectory="${workspaceRoot}" -cp "${classpath}" NxMavenBatchExecutor "${goalsString}" "${workspaceRoot}" "${projectsString}" ${verboseFlag}`;
-
-  logger.info(`[MULTI-PROJECT DEBUG] Java command: ${command}`);
-  logger.info(`[MULTI-PROJECT DEBUG] Working directory: ${pluginDir}`);
-  logger.info(`[MULTI-PROJECT DEBUG] Goals string: ${goalsString}`);
-  logger.info(`[MULTI-PROJECT DEBUG] Projects string: ${projectsString}`);
-  logger.info(`[MULTI-PROJECT DEBUG] Verbose flag: ${verboseFlag}`);
 
   // Execute the batch command
   const startTime = Date.now();
@@ -379,7 +349,7 @@ async function executeMultiProjectMavenBatch(
   const lines = output.trim().split('\n');
   let jsonStart = -1;
   let jsonEnd = -1;
-
+  
   // Find the start of JSON
   for (let i = 0; i < lines.length; i++) {
     if (lines[i].trim().startsWith('{')) {
@@ -387,7 +357,7 @@ async function executeMultiProjectMavenBatch(
       break;
     }
   }
-
+  
   // Find the end of JSON (last '}')
   for (let i = lines.length - 1; i >= 0; i--) {
     if (lines[i].trim().endsWith('}')) {
@@ -395,18 +365,18 @@ async function executeMultiProjectMavenBatch(
       break;
     }
   }
-
+  
   if (jsonStart === -1 || jsonEnd === -1) {
     throw new Error('No JSON output found');
   }
-
+  
   const jsonOutput = lines.slice(jsonStart, jsonEnd + 1).join('\n');
   const result: MavenBatchResult = JSON.parse(jsonOutput);
-
+  
   if (verbose) {
     logger.info(`Multi-project Maven batch execution completed`);
     logger.info(`Overall success: ${result.overallSuccess}`);
-
+    
     if (result.errorMessage) {
       logger.error(`Error: ${result.errorMessage}`);
     }
@@ -416,6 +386,6 @@ async function executeMultiProjectMavenBatch(
       logger.info(`${status} Goal ${index + 1}: ${goalResult.goal} (${goalResult.durationMs}ms)`);
     });
   }
-
+  
   return result;
 }

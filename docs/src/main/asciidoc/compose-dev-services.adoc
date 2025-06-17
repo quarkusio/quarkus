@@ -558,6 +558,7 @@ In the example above:
 The mapped properties will contain the host port that is mapped to the container port,
 which may be different from the container port if you're using dynamic port mapping (e.g., `- '5432'` instead of `- '7432:5432'`).
 
+[[exposing-port-mappings-to-running-containers]]
 ==== Exposing port mappings to running containers
 
 In some cases, containers need to know the host ports they're mapped to at runtime.

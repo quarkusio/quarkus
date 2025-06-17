@@ -11,7 +11,6 @@ import { dirname, join } from 'path';
 import { existsSync, readFileSync } from 'fs';
 import { spawn } from 'child_process';
 import { workspaceDataDirectory } from 'nx/src/utils/cache-directory';
-import { hashObject } from 'nx/src/devkit-internals';
 import { calculateHashForCreateNodes } from '@nx/devkit/src/utils/calculate-hash-for-create-nodes';
 
 export interface MavenPluginOptions {
@@ -71,8 +70,7 @@ export const createNodesV2: CreateNodesV2 = [
         context,
         ['{projectRoot}/pom.xml', '{workspaceRoot}/**/pom.xml']
       );
-      const optionsHash = hashObject(opts);
-      const cacheKey = `nodes-${projectHash}-${optionsHash}`;
+      const cacheKey = projectHash;
       
       // Set up cache path
       const cachePath = join(workspaceDataDirectory, 'maven-analysis-cache.json');
@@ -117,8 +115,7 @@ export const createDependencies: CreateDependencies = async (options, context) =
       context,
       ['{projectRoot}/pom.xml', '{workspaceRoot}/**/pom.xml']
     );
-    const optionsHash = hashObject(opts);
-    const cacheKey = `deps-${projectHash}-${optionsHash}`;
+    const cacheKey = projectHash;
     
     // Set up cache path
     const cachePath = join(workspaceDataDirectory, 'maven-analysis-cache.json');

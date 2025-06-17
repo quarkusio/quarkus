@@ -1,6 +1,7 @@
 import model.TargetConfiguration;
 import model.TargetMetadata;
 import org.apache.maven.execution.MavenSession;
+import org.apache.maven.lifecycle.DefaultLifecycles;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.plugin.testing.WithoutMojo;
@@ -64,8 +65,9 @@ public class TargetDependencyServiceTest {
         MavenProject project = reactorProjects.get(0);
         Log log = mojo.getLog();
         
-        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(log, false, null, session);
-        TargetDependencyService service = new TargetDependencyService(log, false, session, analysisService);
+        DefaultLifecycles defaultLifecycles = (DefaultLifecycles) rule.getVariableValueFromObject(mojo, "defaultLifecycles");
+        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(log, false, null, session, defaultLifecycles);
+        TargetDependencyService service = new TargetDependencyService(log, false, analysisService);
         return new TestContext(service, project, reactorProjects, session, log);
     }
 
@@ -204,22 +206,40 @@ public class TargetDependencyServiceTest {
     public void testInstallGoalDependencies() throws Exception {
         TestContext ctx = setupBasicTest();
         
-        // Enhance session for better Maven environment simulation
-        enhanceSessionForTesting(ctx.session, ctx.project);
-        
         // Create service with verbose mode for better debugging
-        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(ctx.log, true, null, ctx.session);
-        TargetDependencyService service = new TargetDependencyService(ctx.log, true, ctx.session, analysisService);
+        DefaultLifecycles defaultLifecycles = (DefaultLifecycles) rule.getVariableValueFromObject(
+            rule.lookupConfiguredMojo(new File("target/test-classes/unit/basic-test"), "analyze"), "defaultLifecycles");
+        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(ctx.log, true, null, ctx.session, defaultLifecycles);
+        TargetDependencyService service = new TargetDependencyService(ctx.log, true, analysisService);
         
+        // Test with explicitly provided phase (simulating when phase inference works)
         List<String> installDependencies = service.calculateGoalDependencies(
-            ctx.project, null, "install:install", ctx.reactorProjects);
+            ctx.project, "install", "install:install", ctx.reactorProjects);
         
         assertNotNull("Install dependencies should not be null", installDependencies);
         
-        // Without LifecycleExecutor, phase inference returns null, so we expect basic dependencies
-        // The service should still return dependencies gracefully
-        assertTrue("Should have some dependencies even without LifecycleExecutor", 
-            installDependencies.size() >= 0);
+        // Log dependencies for debugging
+        ctx.log.info("Install goal dependencies: " + installDependencies);
+        
+        // Install goal should have specific expected dependencies when phase is known
+        assertEquals("Install goal should have exactly 2 dependencies", 2, installDependencies.size());
+        assertTrue("Install goal should depend on verify phase (preceding phase)", installDependencies.contains("verify"));
+        assertTrue("Install goal should have cross-module dependency on install", installDependencies.contains("^install"));
+    }
+    
+    /**
+     * Helper method to validate if a string is a valid Maven phase
+     */
+    private boolean isValidMavenPhase(String phase) {
+        Set<String> validPhases = Set.of(
+            "validate", "initialize", "generate-sources", "process-sources", 
+            "generate-resources", "process-resources", "compile", "process-classes",
+            "generate-test-sources", "process-test-sources", "generate-test-resources", 
+            "process-test-resources", "test-compile", "process-test-classes", "test",
+            "prepare-package", "package", "pre-integration-test", "integration-test",
+            "post-integration-test", "verify", "install", "deploy", "clean", "site"
+        );
+        return validPhases.contains(phase);
     }
 
     /**
@@ -229,8 +249,10 @@ public class TargetDependencyServiceTest {
     public void testVerboseService() throws Exception {
         TestContext ctx = setupBasicTest();
         
-        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(ctx.log, true, null, ctx.session);
-        TargetDependencyService verboseService = new TargetDependencyService(ctx.log, true, ctx.session, analysisService);
+        DefaultLifecycles defaultLifecycles = (DefaultLifecycles) rule.getVariableValueFromObject(
+            rule.lookupConfiguredMojo(new File("target/test-classes/unit/basic-test"), "analyze"), "defaultLifecycles");
+        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(ctx.log, true, null, ctx.session, defaultLifecycles);
+        TargetDependencyService verboseService = new TargetDependencyService(ctx.log, true, analysisService);
         
         List<String> dependencies = verboseService.getPhaseDependencies("test", ctx.project);
         assertNotNull("Verbose service should work", dependencies);
@@ -242,8 +264,8 @@ public class TargetDependencyServiceTest {
     @Test
     @WithoutMojo
     public void testServiceWithoutSession() {
-        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(null, false, null, null);
-        TargetDependencyService service = new TargetDependencyService(null, false, null, analysisService);
+        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(null, false, null, null, null);
+        TargetDependencyService service = new TargetDependencyService(null, false, analysisService);
         
         List<String> phaseDeps = service.getPhaseDependencies("test", null);
         assertNotNull("Phase dependencies should not be null", phaseDeps);
@@ -251,42 +273,6 @@ public class TargetDependencyServiceTest {
         // Should handle null session gracefully
     }
 
-    /**
-     * Enhance Maven session for better testing environment
-     */
-    private void enhanceSessionForTesting(MavenSession session, MavenProject project) {
-        try {
-            if (session.getLocalRepository() == null) {
-                File tempRepo = new File(System.getProperty("java.io.tmpdir"), "maven-test-repo");
-                if (!tempRepo.exists()) {
-                    tempRepo.mkdirs();
-                }
-                org.apache.maven.artifact.repository.ArtifactRepository localRepo = 
-                    new org.apache.maven.artifact.repository.MavenArtifactRepository(
-                        "local", 
-                        tempRepo.toURI().toString(), 
-                        new org.apache.maven.artifact.repository.layout.DefaultRepositoryLayout(),
-                        null, null);
-                session.getRequest().setLocalRepository(localRepo);
-            }
-            
-            session.setCurrentProject(project);
-            if (session.getProjects() == null || session.getProjects().isEmpty()) {
-                session.setProjects(Arrays.asList(project));
-            }
-            
-            if (session.getGoals() == null || session.getGoals().isEmpty()) {
-                session.getRequest().setGoals(Arrays.asList("install"));
-            }
-            
-            if (session.getExecutionRootDirectory() == null) {
-                session.getRequest().setBaseDirectory(project.getBasedir());
-            }
-            
-        } catch (Exception e) {
-            System.out.println("Warning: Could not fully enhance session: " + e.getMessage());
-        }
-    }
 
     /**
      * Create test targets map for testing

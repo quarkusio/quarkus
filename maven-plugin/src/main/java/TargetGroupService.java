@@ -1,9 +1,6 @@
 import model.TargetConfiguration;
 import model.TargetGroup;
 import org.apache.maven.execution.MavenSession;
-import org.apache.maven.lifecycle.LifecycleExecutor;
-import org.apache.maven.lifecycle.MavenExecutionPlan;
-import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.project.MavenProject;
 
 import java.util.ArrayList;
@@ -18,6 +15,12 @@ import java.util.Set;
  * Service responsible for organizing targets into logical groups based on Maven phases.
  */
 public class TargetGroupService {
+
+    private final ExecutionPlanAnalysisService executionPlanAnalysisService;
+
+    public TargetGroupService(ExecutionPlanAnalysisService executionPlanAnalysisService) {
+        this.executionPlanAnalysisService = executionPlanAnalysisService;
+    }
 
     /**
      * Generate target groups for a project based on its targets
@@ -38,78 +41,53 @@ public class TargetGroupService {
             throw new IllegalArgumentException("Maven session cannot be null");
         }
         Map<String, TargetGroup> targetGroups = new LinkedHashMap<>();
-        
+
         // Extract phases from Maven execution plan
         List<String> phases = extractPhasesFromExecutionPlan(project, session);
-        
+
         Map<String, String> phaseDescriptions = getPhaseDescriptions();
-        
+
         // Create target groups for each phase
         for (int i = 0; i < phases.size(); i++) {
             String phase = phases.get(i);
             TargetGroup group = new TargetGroup(phase, phaseDescriptions.get(phase), i);
             targetGroups.put(phase, group);
         }
-        
+
         // Assign targets to groups
         for (String targetName : projectTargets.keySet()) {
             TargetConfiguration target = projectTargets.get(targetName);
             String assignedPhase = assignTargetToPhase(targetName, target, phases);
-            
+
             TargetGroup group = targetGroups.get(assignedPhase);
             if (group != null) {
                 group.addTarget(targetName);
             }
         }
-        
+
         return targetGroups;
     }
 
     /**
      * Extract phases from the Maven execution plan for the given project
      * @param project The Maven project
-     * @param session The Maven session containing execution plan
+     * @param session The Maven session (used for fallback if needed)
      * @return List of phase names in execution order
      */
     private List<String> extractPhasesFromExecutionPlan(MavenProject project, MavenSession session) {
         List<String> phases = new ArrayList<>();
-        Set<String> seenPhases = new LinkedHashSet<>();
-        
+
         try {
-            // Get the LifecycleExecutor from the session container
-            LifecycleExecutor lifecycleExecutor = session.getContainer().lookup(LifecycleExecutor.class);
-            
-            // Calculate execution plan for the default lifecycle up to deploy phase
-            MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(session, "deploy");
-            
-            // Extract phases from the execution plan
-            for (MojoExecution mojoExecution : executionPlan.getMojoExecutions()) {
-                String phase = mojoExecution.getLifecyclePhase();
-                if (phase != null && !phase.isEmpty()) {
-                    seenPhases.add(phase);
-                }
-            }
-            
-            // Also try to get clean lifecycle phases
-            try {
-                MavenExecutionPlan cleanPlan = lifecycleExecutor.calculateExecutionPlan(session, "clean");
-                for (MojoExecution mojoExecution : cleanPlan.getMojoExecutions()) {
-                    String phase = mojoExecution.getLifecyclePhase();
-                    if (phase != null && !phase.isEmpty()) {
-                        seenPhases.add(phase);
-                    }
-                }
-            } catch (Exception cleanEx) {
-                // Clean lifecycle might not be available, continue without it
-            }
-            
-            phases.addAll(seenPhases);
-            
+            // Use the ExecutionPlanAnalysisService to get applicable phases
+            Set<String> applicablePhases = executionPlanAnalysisService.getApplicablePhases(project);
+
+            phases.addAll(applicablePhases);
+
         } catch (Exception e) {
-            // If we can't access the execution plan, fall back to minimal essential phases
+            // If we can't access the execution plan analysis, fall back to minimal essential phases
             phases.addAll(Arrays.asList("clean", "validate", "compile", "test", "package", "install", "deploy"));
         }
-        
+
         return phases;
     }
 
@@ -132,7 +110,7 @@ public class TargetGroupService {
         if (target.getMetadata() != null && target.getMetadata().getPhase() != null) {
             return target.getMetadata().getPhase();
         }
-        
+
         // This should not happen with properly created targets
         throw new IllegalStateException("Target " + targetName + " has no phase metadata set");
     }

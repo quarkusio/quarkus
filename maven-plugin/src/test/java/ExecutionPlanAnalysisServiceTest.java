@@ -1,5 +1,6 @@
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.LifecycleExecutor;
+import org.apache.maven.lifecycle.DefaultLifecycles;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.plugin.testing.WithoutMojo;
@@ -75,7 +76,8 @@ public class ExecutionPlanAnalysisServiceTest {
             // LifecycleExecutor might not be available in test environment
         }
         
-        ExecutionPlanAnalysisService service = new ExecutionPlanAnalysisService(log, false, lifecycleExecutor, session);
+        DefaultLifecycles defaultLifecycles = (DefaultLifecycles) rule.getVariableValueFromObject(mojo, "defaultLifecycles");
+        ExecutionPlanAnalysisService service = new ExecutionPlanAnalysisService(log, false, lifecycleExecutor, session, defaultLifecycles);
         return new TestContext(service, project, reactorProjects, session, log, lifecycleExecutor);
     }
 
@@ -165,8 +167,10 @@ public class ExecutionPlanAnalysisServiceTest {
         TestContext ctx = setupBasicTest();
         
         // Create verbose service
+        DefaultLifecycles defaultLifecycles = (DefaultLifecycles) rule.getVariableValueFromObject(
+            rule.lookupConfiguredMojo(new File("target/test-classes/unit/basic-test"), "analyze"), "defaultLifecycles");
         ExecutionPlanAnalysisService verboseService = new ExecutionPlanAnalysisService(
-            ctx.log, true, ctx.lifecycleExecutor, ctx.session);
+            ctx.log, true, ctx.lifecycleExecutor, ctx.session, defaultLifecycles);
         
         // Execute - should not throw exceptions even with verbose logging
         ExecutionPlanAnalysisService.ProjectExecutionAnalysis analysis = verboseService.getAnalysis(ctx.project);

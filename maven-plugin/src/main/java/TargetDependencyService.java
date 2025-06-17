@@ -1,6 +1,4 @@
 import model.TargetConfiguration;
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.lifecycle.LifecycleExecutor;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
@@ -16,13 +14,11 @@ public class TargetDependencyService {
 
     private final Log log;
     private final boolean verbose;
-    private final MavenSession session;
     private final ExecutionPlanAnalysisService executionPlanAnalysisService;
 
-    public TargetDependencyService(Log log, boolean verbose, MavenSession session, ExecutionPlanAnalysisService executionPlanAnalysisService) {
+    public TargetDependencyService(Log log, boolean verbose, ExecutionPlanAnalysisService executionPlanAnalysisService) {
         this.log = log;
         this.verbose = verbose;
-        this.session = session;
         this.executionPlanAnalysisService = executionPlanAnalysisService;
     }
 
@@ -116,44 +112,19 @@ public class TargetDependencyService {
 
 
     /**
-     * Get lifecycle phases using Maven Session API - cleanest approach
+     * Get lifecycle phases using ExecutionPlanAnalysisService
      */
     private List<String> getLifecyclePhases(String upToPhase, MavenProject project) {
-        if (session == null) {
-            return new ArrayList<>();
+        List<String> allPhases = executionPlanAnalysisService.getLifecyclePhases();
+        
+        // Return phases up to the target phase
+        int targetIndex = allPhases.indexOf(upToPhase);
+        if (targetIndex >= 0) {
+            return allPhases.subList(0, targetIndex + 1);
         }
-
-        try {
-            // Best approach: Use DefaultLifecycles from the container
-            // This is the most reliable and direct way to get Maven's lifecycle phases
-            org.apache.maven.lifecycle.DefaultLifecycles defaultLifecycles =
-                session.getContainer().lookup(org.apache.maven.lifecycle.DefaultLifecycles.class);
-
-            // Get the default lifecycle
-            org.apache.maven.lifecycle.Lifecycle defaultLifecycle =
-                defaultLifecycles.getLifeCycles().stream()
-                    .filter(lc -> "default".equals(lc.getId()))
-                    .findFirst()
-                    .orElse(null);
-
-            if (defaultLifecycle != null) {
-                List<String> phases = new ArrayList<>(defaultLifecycle.getPhases());
-
-                // Return phases up to the target phase
-                int targetIndex = phases.indexOf(upToPhase);
-                if (targetIndex >= 0) {
-                    return phases.subList(0, targetIndex + 1);
-                }
-            }
-
-            return new ArrayList<>();
-
-        } catch (Exception e) {
-            if (verbose) {
-                log.warn("Could not access Maven lifecycle definitions: " + e.getMessage());
-            }
-            return new ArrayList<>();
-        }
+        
+        // If upToPhase is not found, return all phases
+        return allPhases;
     }
 
     /**

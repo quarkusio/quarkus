@@ -1,3 +1,4 @@
+import org.apache.maven.lifecycle.DefaultLifecycles;
 import org.apache.maven.plugin.testing.MojoRule;
 import org.apache.maven.plugin.testing.WithoutMojo;
 import org.apache.maven.project.MavenProject;
@@ -42,7 +43,8 @@ public class MavenUtilsTest {
         
         // Note: MavenUtils.inferPhaseFromGoal has been removed in favor of ExecutionPlanAnalysisService
         // This test now demonstrates the new approach
-        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(mojo.getLog(), false, null, session);
+        DefaultLifecycles defaultLifecycles = (DefaultLifecycles) rule.getVariableValueFromObject(mojo, "defaultLifecycles");
+        ExecutionPlanAnalysisService analysisService = new ExecutionPlanAnalysisService(mojo.getLog(), false, null, session, defaultLifecycles);
         
         // Test null handling
         assertNull("Null goal should return null", analysisService.findPhaseForGoal(project, null));

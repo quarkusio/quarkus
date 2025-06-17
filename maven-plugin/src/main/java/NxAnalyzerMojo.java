@@ -1,5 +1,6 @@
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.LifecycleExecutor;
+import org.apache.maven.lifecycle.DefaultLifecycles;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
@@ -48,6 +49,9 @@ public class NxAnalyzerMojo extends AbstractMojo {
     @Component
     private LifecycleExecutor lifecycleExecutor;
     
+    @Component
+    private DefaultLifecycles defaultLifecycles;
+    
     // Services for delegating complex operations
     private ExecutionPlanAnalysisService executionPlanAnalysisService;
     private TargetGenerationService targetGenerationService;
@@ -80,10 +84,10 @@ public class NxAnalyzerMojo extends AbstractMojo {
     }
     
     private void initializeServices() {
-        this.executionPlanAnalysisService = new ExecutionPlanAnalysisService(getLog(), isVerbose(), lifecycleExecutor, session);
+        this.executionPlanAnalysisService = new ExecutionPlanAnalysisService(getLog(), isVerbose(), lifecycleExecutor, session, defaultLifecycles);
         this.targetGenerationService = new TargetGenerationService(getLog(), isVerbose(), session, executionPlanAnalysisService);
-        this.targetGroupService = new TargetGroupService();
-        this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose(), session, executionPlanAnalysisService);
+        this.targetGroupService = new TargetGroupService(executionPlanAnalysisService);
+        this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose(), executionPlanAnalysisService);
     }
     
     private void logBasicInfo() {

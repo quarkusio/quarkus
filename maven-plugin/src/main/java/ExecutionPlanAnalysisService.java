@@ -1,6 +1,7 @@
 import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.LifecycleExecutor;
 import org.apache.maven.lifecycle.MavenExecutionPlan;
+import org.apache.maven.lifecycle.DefaultLifecycles;
 import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
@@ -19,15 +20,17 @@ public class ExecutionPlanAnalysisService {
     private final boolean verbose;
     private final LifecycleExecutor lifecycleExecutor;
     private final MavenSession session;
+    private final DefaultLifecycles defaultLifecycles;
     
     // Cache to store analysis results per project
     private final Map<String, ProjectExecutionAnalysis> analysisCache = new ConcurrentHashMap<>();
     
-    public ExecutionPlanAnalysisService(Log log, boolean verbose, LifecycleExecutor lifecycleExecutor, MavenSession session) {
+    public ExecutionPlanAnalysisService(Log log, boolean verbose, LifecycleExecutor lifecycleExecutor, MavenSession session, DefaultLifecycles defaultLifecycles) {
         this.log = log;
         this.verbose = verbose;
         this.lifecycleExecutor = lifecycleExecutor;
         this.session = session;
+        this.defaultLifecycles = defaultLifecycles;
     }
     
     /**
@@ -72,6 +75,36 @@ public class ExecutionPlanAnalysisService {
     }
     
     /**
+     * Get all lifecycle phases using dependency injected DefaultLifecycles
+     */
+    public List<String> getLifecyclePhases() {
+        if (defaultLifecycles == null) {
+            return new ArrayList<>();
+        }
+
+        try {
+            // Get the default lifecycle
+            org.apache.maven.lifecycle.Lifecycle defaultLifecycle =
+                defaultLifecycles.getLifeCycles().stream()
+                    .filter(lc -> "default".equals(lc.getId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (defaultLifecycle != null) {
+                return new ArrayList<>(defaultLifecycle.getPhases());
+            }
+
+            return new ArrayList<>();
+
+        } catch (Exception e) {
+            if (verbose) {
+                log.warn("Could not access Maven lifecycle definitions: " + e.getMessage());
+            }
+            return new ArrayList<>();
+        }
+    }
+    
+    /**
      * Analyze a project's execution plans and cache the results
      */
     private ProjectExecutionAnalysis analyzeProject(MavenProject project) {
@@ -81,28 +114,28 @@ public class ExecutionPlanAnalysisService {
         
         ProjectExecutionAnalysis analysis = new ProjectExecutionAnalysis();
         
-        // Try different lifecycle endpoints to get comprehensive coverage
-        String[] lifecycleEndpoints = {"compile", "test", "package", "verify", "deploy", "clean", "site"};
+        // Use actual lifecycle phases from Maven's lifecycle definitions
+        List<String> lifecyclePhases = getLifecyclePhases();
         
-        for (String endpoint : lifecycleEndpoints) {
+        for (String phase : lifecyclePhases) {
             try {
                 if (lifecycleExecutor != null && session != null) {
-                    MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(session, endpoint);
-                    analysis.addExecutionPlan(endpoint, executionPlan);
+                    MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(session, phase);
+                    analysis.addExecutionPlan(phase, executionPlan);
                     
                     if (verbose) {
                         log.debug("Analyzed " + executionPlan.getMojoExecutions().size() + 
-                                 " executions for endpoint: " + endpoint);
+                                 " executions for phase: " + phase);
                     }
                 } else {
-                    if (verbose && log != null) {
-                        log.warn("LifecycleExecutor or session is null, skipping endpoint: " + endpoint);
+                    if (verbose) {
+                        log.warn("LifecycleExecutor or session is null, skipping phase: " + phase);
                     }
                 }
                 
             } catch (Exception e) {
-                if (verbose && log != null) {
-                    log.warn("Could not calculate execution plan for " + endpoint + ": " + e.getMessage());
+                if (verbose) {
+                    log.warn("Could not calculate execution plan for " + phase + ": " + e.getMessage());
                 }
             }
         }

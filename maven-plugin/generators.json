@@ -1,0 +1,4 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nrwl/nx/master/packages/nx/schemas/generators.json",
+  "generators": {}
+}

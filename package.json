@@ -3,7 +3,7 @@
   "scripts": {
     "test": "vitest",
     "test:watch": "vitest --watch",
-    "compile-java": "cd maven-plugin-v2 && mvn clean compile"
+    "compile-java": "cd maven-plugin && mvn install"
   },
   "devDependencies": {
     "@nx/devkit": "0.0.0-pr-31581-fa41031",

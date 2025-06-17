@@ -1,0 +1,1086 @@
+{
+  "createNodesResults": [
+    [
+      "pom.xml",
+      {
+        "projects": {
+          ".": {
+            "name": "io.quarkus:maven-plugin",
+            "root": ".",
+            "sourceRoot": null,
+            "projectType": "library",
+            "targets": {
+              "maven-compiler:compile": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-compiler-plugin:compile",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml",
+                  "{projectRoot}/src/**/*"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "process-resources",
+                  "^compile"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "compile",
+                  "plugin": "org.apache.maven.plugins:maven-compiler-plugin",
+                  "goal": "compile",
+                  "executionId": "default-compile",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Compile main sources"
+                }
+              },
+              "maven-compiler:testCompile": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-compiler-plugin:testCompile",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml",
+                  "{projectRoot}/src/**/*"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "process-test-resources",
+                  "^test-compile"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "test-compile",
+                  "plugin": "org.apache.maven.plugins:maven-compiler-plugin",
+                  "goal": "testCompile",
+                  "executionId": "default-testCompile",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Compile test sources"
+                }
+              },
+              "maven:descriptor": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-plugin-plugin:descriptor",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "compile",
+                  "^process-classes"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "process-classes",
+                  "plugin": "org.apache.maven.plugins:maven-plugin-plugin",
+                  "goal": "descriptor",
+                  "executionId": "default-descriptor",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven descriptor"
+                }
+              },
+              "maven-clean:clean": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-clean-plugin:clean",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "pre-clean",
+                  "^clean"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "clean",
+                  "plugin": "org.apache.maven.plugins:maven-clean-plugin",
+                  "goal": "clean",
+                  "executionId": "default-clean",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-clean clean"
+                }
+              },
+              "maven-resources:testResources": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-resources-plugin:testResources",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml",
+                  "{projectRoot}/src/**/*"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "generate-test-resources",
+                  "^process-test-resources"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "process-test-resources",
+                  "plugin": "org.apache.maven.plugins:maven-resources-plugin",
+                  "goal": "testResources",
+                  "executionId": "default-testResources",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-resources testResources"
+                }
+              },
+              "maven-resources:resources": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-resources-plugin:resources",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "generate-resources",
+                  "^process-resources"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "process-resources",
+                  "plugin": "org.apache.maven.plugins:maven-resources-plugin",
+                  "goal": "resources",
+                  "executionId": "default-resources",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-resources resources"
+                }
+              },
+              "maven-jar:jar": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-jar-plugin:jar",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "prepare-package",
+                  "^package"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "package",
+                  "plugin": "org.apache.maven.plugins:maven-jar-plugin",
+                  "goal": "jar",
+                  "executionId": "default-jar",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Create JAR"
+                }
+              },
+              "maven-surefire:test": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-surefire-plugin:test",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml",
+                  "{projectRoot}/src/**/*"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "process-test-classes",
+                  "^test"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "test",
+                  "plugin": "org.apache.maven.plugins:maven-surefire-plugin",
+                  "goal": "test",
+                  "executionId": "default-test",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Run tests"
+                }
+              },
+              "maven-install:install": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-install-plugin:install",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "verify",
+                  "^install"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "install",
+                  "plugin": "org.apache.maven.plugins:maven-install-plugin",
+                  "goal": "install",
+                  "executionId": "default-install",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-install install"
+                }
+              },
+              "maven-deploy:deploy": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-deploy-plugin:deploy",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "install",
+                  "^deploy"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "deploy",
+                  "plugin": "org.apache.maven.plugins:maven-deploy-plugin",
+                  "goal": "deploy",
+                  "executionId": "default-deploy",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-deploy deploy"
+                }
+              },
+              "maven-site:site": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-site-plugin:site",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "pre-site",
+                  "^site"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "site",
+                  "plugin": "org.apache.maven.plugins:maven-site-plugin",
+                  "goal": "site",
+                  "executionId": "default-site",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Generate site documentation"
+                }
+              },
+              "maven-site:deploy": {
+                "executor": "nx:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-site-plugin:deploy",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "{projectRoot}/pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [
+                  "install",
+                  "^deploy"
+                ],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "site-deploy",
+                  "plugin": "org.apache.maven.plugins:maven-site-plugin",
+                  "goal": "deploy",
+                  "executionId": "default-deploy",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-site deploy"
+                }
+              },
+              "validate": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "^validate"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "validate",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: validate"
+                }
+              },
+              "initialize": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "validate",
+                  "^initialize"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "initialize",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: initialize"
+                }
+              },
+              "generate-sources": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "initialize",
+                  "^generate-sources"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "generate-sources",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: generate-sources"
+                }
+              },
+              "process-sources": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "generate-sources",
+                  "^process-sources"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "process-sources",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: process-sources"
+                }
+              },
+              "generate-resources": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "process-sources",
+                  "^generate-resources"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "generate-resources",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: generate-resources"
+                }
+              },
+              "process-resources": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "generate-resources",
+                  "maven-resources:resources",
+                  "^process-resources"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "process-resources",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: process-resources"
+                }
+              },
+              "compile": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "process-resources",
+                  "maven-compiler:compile",
+                  "^compile"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "compile",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: compile"
+                }
+              },
+              "process-classes": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "compile",
+                  "maven:descriptor",
+                  "^process-classes"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "process-classes",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: process-classes"
+                }
+              },
+              "generate-test-sources": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "process-classes",
+                  "^generate-test-sources"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "generate-test-sources",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: generate-test-sources"
+                }
+              },
+              "process-test-sources": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "generate-test-sources",
+                  "^process-test-sources"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "process-test-sources",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: process-test-sources"
+                }
+              },
+              "generate-test-resources": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "process-test-sources",
+                  "^generate-test-resources"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "generate-test-resources",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: generate-test-resources"
+                }
+              },
+              "process-test-resources": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "generate-test-resources",
+                  "maven-resources:testResources",
+                  "^process-test-resources"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "process-test-resources",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: process-test-resources"
+                }
+              },
+              "test-compile": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "process-test-resources",
+                  "maven-compiler:testCompile",
+                  "^test-compile"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "test-compile",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: test-compile"
+                }
+              },
+              "process-test-classes": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "test-compile",
+                  "^process-test-classes"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "process-test-classes",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: process-test-classes"
+                }
+              },
+              "test": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "process-test-classes",
+                  "maven-surefire:test",
+                  "^test"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "test",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: test"
+                }
+              },
+              "prepare-package": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "test",
+                  "^prepare-package"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "prepare-package",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: prepare-package"
+                }
+              },
+              "package": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "prepare-package",
+                  "maven-jar:jar",
+                  "^package"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "package",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: package"
+                }
+              },
+              "pre-integration-test": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "package",
+                  "^pre-integration-test"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "pre-integration-test",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: pre-integration-test"
+                }
+              },
+              "integration-test": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "pre-integration-test",
+                  "^integration-test"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "integration-test",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: integration-test"
+                }
+              },
+              "post-integration-test": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "integration-test",
+                  "^post-integration-test"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "post-integration-test",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: post-integration-test"
+                }
+              },
+              "verify": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "post-integration-test",
+                  "^verify"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "verify",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: verify"
+                }
+              },
+              "install": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "verify",
+                  "maven-install:install",
+                  "^install"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "install",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: install"
+                }
+              },
+              "deploy": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "install",
+                  "maven-deploy:deploy",
+                  "^deploy"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "deploy",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: deploy"
+                }
+              },
+              "pre-clean": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "^pre-clean"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "pre-clean",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: pre-clean"
+                }
+              },
+              "clean": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "pre-clean",
+                  "maven-clean:clean",
+                  "^clean"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "clean",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: clean"
+                }
+              },
+              "post-clean": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "clean",
+                  "^post-clean"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "post-clean",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: post-clean"
+                }
+              },
+              "pre-site": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "^pre-site"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "pre-site",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: pre-site"
+                }
+              },
+              "site": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "pre-site",
+                  "maven-site:site",
+                  "^site"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "site",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: site"
+                }
+              },
+              "post-site": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "site",
+                  "^post-site"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "post-site",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: post-site"
+                }
+              },
+              "site-deploy": {
+                "executor": "nx:noop",
+                "options": {},
+                "inputs": [],
+                "outputs": [],
+                "dependsOn": [
+                  "post-site",
+                  "maven-site:deploy",
+                  "^site-deploy"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "site-deploy",
+                  "plugin": "org.apache.maven:maven-core",
+                  "goal": null,
+                  "executionId": null,
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: site-deploy"
+                }
+              }
+            },
+            "metadata": {
+              "groupId": "io.quarkus",
+              "artifactId": "maven-plugin",
+              "version": "999-SNAPSHOT",
+              "packaging": "maven-plugin",
+              "targetGroups": {
+                "validate": [
+                  "validate"
+                ],
+                "initialize": [
+                  "initialize"
+                ],
+                "generate-sources": [
+                  "generate-sources"
+                ],
+                "process-sources": [
+                  "process-sources"
+                ],
+                "generate-resources": [
+                  "generate-resources"
+                ],
+                "process-resources": [
+                  "maven-resources:resources",
+                  "process-resources"
+                ],
+                "compile": [
+                  "maven-compiler:compile",
+                  "compile"
+                ],
+                "process-classes": [
+                  "maven:descriptor",
+                  "process-classes"
+                ],
+                "generate-test-sources": [
+                  "generate-test-sources"
+                ],
+                "process-test-sources": [
+                  "process-test-sources"
+                ],
+                "generate-test-resources": [
+                  "generate-test-resources"
+                ],
+                "process-test-resources": [
+                  "maven-resources:testResources",
+                  "process-test-resources"
+                ],
+                "test-compile": [
+                  "maven-compiler:testCompile",
+                  "test-compile"
+                ],
+                "process-test-classes": [
+                  "process-test-classes"
+                ],
+                "test": [
+                  "maven-surefire:test",
+                  "test"
+                ],
+                "prepare-package": [
+                  "prepare-package"
+                ],
+                "package": [
+                  "maven-jar:jar",
+                  "package"
+                ],
+                "pre-integration-test": [
+                  "pre-integration-test"
+                ],
+                "integration-test": [
+                  "integration-test"
+                ],
+                "post-integration-test": [
+                  "post-integration-test"
+                ],
+                "verify": [
+                  "verify"
+                ],
+                "install": [
+                  "maven-install:install",
+                  "install"
+                ],
+                "deploy": [
+                  "maven-deploy:deploy",
+                  "deploy"
+                ],
+                "pre-clean": [
+                  "pre-clean"
+                ],
+                "clean": [
+                  "maven-clean:clean",
+                  "clean"
+                ],
+                "post-clean": [
+                  "post-clean"
+                ],
+                "pre-site": [
+                  "pre-site"
+                ],
+                "site": [
+                  "maven-site:site",
+                  "site"
+                ],
+                "post-site": [
+                  "post-site"
+                ],
+                "site-deploy": [
+                  "maven-site:deploy",
+                  "site-deploy"
+                ]
+              }
+            }
+          }
+        },
+        "externalNodes": {}
+      }
+    ]
+  ],
+  "createDependencies": []
+}

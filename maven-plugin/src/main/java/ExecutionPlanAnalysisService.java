@@ -114,6 +114,63 @@ public class ExecutionPlanAnalysisService {
         }
     }
     
+    /**
+     * Get all goals that should be completed by the time the specified phase finishes.
+     * This includes goals from all phases up to and including the target phase.
+     */
+    public List<String> getGoalsCompletedByPhase(MavenProject project, String targetPhase) {
+        if (project == null || targetPhase == null) {
+            return new ArrayList<>();
+        }
+        
+        List<String> completedGoals = new ArrayList<>();
+        org.apache.maven.lifecycle.Lifecycle lifecycle = getLifecycleForPhase(targetPhase);
+        
+        if (lifecycle == null) {
+            return completedGoals;
+        }
+        
+        List<String> lifecyclePhases = lifecycle.getPhases();
+        int targetPhaseIndex = lifecyclePhases.indexOf(targetPhase);
+        
+        if (targetPhaseIndex == -1) {
+            return completedGoals;
+        }
+        
+        // Use Set to avoid duplicates
+        Set<String> uniqueGoals = new LinkedHashSet<>();
+        
+        // Get goals from all phases up to and including the target phase
+        for (int i = 0; i <= targetPhaseIndex; i++) {
+            String phase = lifecyclePhases.get(i);
+            List<String> phaseGoals = getGoalsForPhase(project, phase);
+            
+            // Convert to proper plugin:goal format
+            for (String goal : phaseGoals) {
+                if (goal.contains(":")) {
+                    // Goal is already in plugin:goal format
+                    String[] parts = goal.split(":");
+                    if (parts.length >= 3) {
+                        // Format: groupId:artifactId:goal
+                        String groupId = parts[0];
+                        String artifactId = parts[1];
+                        String goalName = parts[2];
+                        uniqueGoals.add(groupId + ":" + artifactId + ":" + goalName);
+                    } else if (parts.length == 2) {
+                        // Format: plugin:goal - convert to full format
+                        String plugin = parts[0];
+                        String goalName = parts[1];
+                        uniqueGoals.add("org.apache.maven.plugins:maven-" + plugin + "-plugin:" + goalName);
+                    }
+                }
+            }
+        }
+        
+        completedGoals.addAll(uniqueGoals);
+        
+        return completedGoals;
+    }
+    
     
     /**
      * Get lifecycle phases for a specific lifecycle ID

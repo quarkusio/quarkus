@@ -17,5 +17,7 @@
   "workspaceLayout": {
     "projectNameAndRootFormat": "as-provided"
   },
-  "$schema": "./node_modules/nx/schemas/nx-schema.json"
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "nxCloudUrl": "https://staging.nx.app",
+  "nxCloudId": "6851e8640ed81802ffc6674f"
 }

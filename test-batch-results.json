@@ -1,0 +1,35 @@
+{
+  "overallSuccess": true,
+  "totalDurationMs": 3188,
+  "goalResults": [
+    {
+      "goal": "org.apache.maven.plugins:maven-jar-plugin:jar,org.apache.maven.plugins:maven-install-plugin:install",
+      "success": true,
+      "durationMs": 3188,
+      "exitCode": 0,
+      "output": [
+        "[INFO] Scanning for projects...",
+        "[WARNING] This build will only read from the build cache, since the clean lifecycle is not part of the build invocation.",
+        "[INFO] ",
+        "[INFO] ----------------------< io.quarkus:maven-plugin >-----------------------",
+        "[INFO] Building maven-plugin 999-SNAPSHOT",
+        "[INFO]   from pom.xml",
+        "[INFO] ----------------------------[ maven-plugin ]----------------------------",
+        "[INFO] ",
+        "[INFO] --- jar:3.4.1:jar (default-cli) @ maven-plugin ---",
+        "[INFO] ",
+        "[INFO] --- install:3.1.2:install (default-cli) @ maven-plugin ---",
+        "[INFO] Installing /home/jason/projects/triage/java/quarkus/maven-plugin/pom.xml to /home/jason/.m2/repository/io/quarkus/maven-plugin/999-SNAPSHOT/maven-plugin-999-SNAPSHOT.pom",
+        "[INFO] Installing /home/jason/projects/triage/java/quarkus/maven-plugin/target/maven-plugin-999-SNAPSHOT.jar to /home/jason/.m2/repository/io/quarkus/maven-plugin/999-SNAPSHOT/maven-plugin-999-SNAPSHOT.jar",
+        "[INFO] ------------------------------------------------------------------------",
+        "[INFO] BUILD SUCCESS",
+        "[INFO] ------------------------------------------------------------------------",
+        "[INFO] Total time:  1.165 s",
+        "[INFO] Finished at: 2025-06-17T14:09:58-04:00",
+        "[INFO] ------------------------------------------------------------------------",
+        "[INFO] 2 goals, 2 executed"
+      ],
+      "errors": []
+    }
+  ]
+}

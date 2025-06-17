@@ -1,0 +1,48 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "version": 2,
+  "title": "Maven Batch Executor",
+  "description": "Execute Maven goals using the batch invoker with session context preservation",
+  "type": "object",
+  "properties": {
+    "goals": {
+      "type": "array",
+      "description": "Maven goals to execute in batch (e.g., ['compile', 'org.apache.maven.plugins:maven-surefire-plugin:test'])",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1
+    },
+    "projectRoot": {
+      "type": "string",
+      "description": "Project root directory relative to workspace root",
+      "default": "."
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Enable verbose output",
+      "default": false
+    },
+    "mavenPluginPath": {
+      "type": "string",
+      "description": "Path to the Maven plugin directory containing the batch executor",
+      "default": "maven-plugin"
+    },
+    "timeout": {
+      "type": "number",
+      "description": "Timeout in milliseconds for Maven execution",
+      "default": 300000
+    },
+    "outputFile": {
+      "type": "string",
+      "description": "Optional file to write execution results"
+    },
+    "failOnError": {
+      "type": "boolean",
+      "description": "Fail the executor if any Maven goal fails",
+      "default": true
+    }
+  },
+  "required": ["goals"],
+  "additionalProperties": false
+}

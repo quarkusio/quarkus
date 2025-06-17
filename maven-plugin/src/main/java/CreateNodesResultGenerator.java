@@ -117,6 +117,7 @@ public class CreateNodesResultGenerator {
             updatedTarget.setMetadata(target.getMetadata());
             updatedTarget.setDependsOn(new ArrayList<>(target.getDependsOn()));
             
+            
             // Update cwd in options
             Map<String, Object> options = new LinkedHashMap<>(target.getOptions());
             if (options.containsKey("cwd") && "{projectRoot}".equals(options.get("cwd"))) {

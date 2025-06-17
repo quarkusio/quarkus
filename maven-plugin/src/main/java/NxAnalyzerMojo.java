@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -108,14 +109,20 @@ public class NxAnalyzerMojo extends AbstractMojo {
         File workspaceRoot = new File(session.getExecutionRootDirectory());
         
         
+        // First, calculate actual project dependencies for all projects
+        Map<MavenProject, List<MavenProject>> projectDependencies = calculateProjectDependencies();
+        
         // Generate targets and groups for each project
         Map<MavenProject, Map<String, TargetConfiguration>> projectTargets = new LinkedHashMap<>();
         Map<MavenProject, Map<String, TargetGroup>> projectTargetGroups = new LinkedHashMap<>();
         
         for (MavenProject project : reactorProjects) {
             try {
-                // Calculate goal dependencies first
-                Map<String, List<String>> goalDependencies = calculateGoalDependencies(project, workspaceRoot);
+                // Get actual project dependencies for this project (not all reactor projects)
+                List<MavenProject> actualDependencies = projectDependencies.getOrDefault(project, new ArrayList<>());
+                
+                // Calculate goal dependencies using only actual dependencies
+                Map<String, List<String>> goalDependencies = calculateGoalDependencies(project, actualDependencies);
                 
                 // Generate targets using pre-calculated goal dependencies (phase dependencies calculated later)
                 Map<String, TargetConfiguration> targets = targetGenerationService.generateTargets(
@@ -134,7 +141,8 @@ public class NxAnalyzerMojo extends AbstractMojo {
                 
                 if (isVerbose()) {
                     getLog().info("Processed " + project.getArtifactId() + 
-                                 ": " + targets.size() + " targets, " + targetGroups.size() + " groups");
+                                 ": " + targets.size() + " targets, " + targetGroups.size() + " groups, " +
+                                 actualDependencies.size() + " project dependencies");
                 }
                 
             } catch (Exception e) {
@@ -169,9 +177,54 @@ public class NxAnalyzerMojo extends AbstractMojo {
     }
     
     /**
-     * Calculate goal dependencies for a project
+     * Calculate actual project dependencies for all projects in the reactor.
+     * Returns a map from each project to its list of actual Maven dependency projects.
      */
-    private Map<String, List<String>> calculateGoalDependencies(MavenProject project, File workspaceRoot) {
+    private Map<MavenProject, List<MavenProject>> calculateProjectDependencies() {
+        Map<MavenProject, List<MavenProject>> projectDependencies = new LinkedHashMap<>();
+        
+        // Build artifact mapping for workspace projects
+        Map<String, MavenProject> artifactToProject = new HashMap<>();
+        for (MavenProject project : reactorProjects) {
+            if (project.getGroupId() != null && project.getArtifactId() != null) {
+                String key = MavenUtils.formatProjectKey(project);
+                artifactToProject.put(key, project);
+            }
+        }
+        
+        // Calculate dependencies for each project
+        for (MavenProject project : reactorProjects) {
+            List<MavenProject> dependencies = new ArrayList<>();
+            
+            if (project.getDependencies() != null) {
+                for (org.apache.maven.model.Dependency dep : project.getDependencies()) {
+                    if (dep.getGroupId() != null && dep.getArtifactId() != null) {
+                        String depKey = dep.getGroupId() + ":" + dep.getArtifactId();
+                        
+                        // Check if this dependency refers to another project in workspace
+                        MavenProject targetProject = artifactToProject.get(depKey);
+                        if (targetProject != null && !targetProject.equals(project)) {
+                            dependencies.add(targetProject);
+                        }
+                    }
+                }
+            }
+            
+            projectDependencies.put(project, dependencies);
+            
+            if (isVerbose() && !dependencies.isEmpty()) {
+                getLog().debug("Project " + project.getArtifactId() + " depends on " + 
+                             dependencies.size() + " workspace projects");
+            }
+        }
+        
+        return projectDependencies;
+    }
+
+    /**
+     * Calculate goal dependencies for a project using only actual project dependencies
+     */
+    private Map<String, List<String>> calculateGoalDependencies(MavenProject project, List<MavenProject> actualDependencies) {
         Map<String, List<String>> goalDependencies = new LinkedHashMap<>();
         
         if (isVerbose()) {
@@ -189,7 +242,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
             String executionPhase = findExecutionPhase(project, targetName);
             
             List<String> dependencies = targetDependencyService.calculateGoalDependencies(
-                project, executionPhase, targetName, reactorProjects);
+                project, executionPhase, targetName, actualDependencies);
             goalDependencies.put(targetName, dependencies);
         }
         
@@ -337,12 +390,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
     private void logCompletion(long startTime, String outputPath) {
         long totalTime = System.currentTimeMillis() - startTime;
         
-        getLog().info("Analysis complete. Results written to: " + outputPath);
-        if (isVerbose()) {
-            double projectsPerSecond = reactorProjects.size() / (totalTime / 1000.0);
-            getLog().info("Performance: Processed " + reactorProjects.size() + " projects in " + 
-                         (totalTime / 1000.0) + "s (" + String.format("%.1f", projectsPerSecond) + " projects/sec)");
-        }
-        getLog().info("SUCCESS: Maven analysis completed successfully");
+        // Always show timing information
+        getLog().info("Analysis completed in " + (totalTime / 1000.0) + "s for " + reactorProjects.size() + " projects");
     }
 }

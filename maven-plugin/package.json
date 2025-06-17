@@ -1,0 +1,21 @@
+{
+  "name": "@nx-quarkus/maven-plugin",
+  "version": "1.0.0",
+  "description": "Nx Maven plugin with batch executor for Quarkus projects",
+  "main": "src/index.js",
+  "keywords": ["nx", "maven", "quarkus", "java"],
+  "author": "Nx Quarkus Team",
+  "license": "MIT",
+  "dependencies": {
+    "@nx/devkit": "^21.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "nx": {
+    "name": "@nx-quarkus/maven-plugin"
+  },
+  "executors": "./executors.json",
+  "generators": "./generators.json"
+}

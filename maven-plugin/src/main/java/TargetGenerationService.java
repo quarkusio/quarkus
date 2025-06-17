@@ -71,6 +71,7 @@ public class TargetGenerationService {
 
     /**
      * Generate targets for Maven lifecycle phases
+     * Phases are entry points that depend on individual goal targets
      */
     public Map<String, TargetConfiguration> generatePhaseTargets(MavenProject project, File workspaceRoot,
                                                                  Map<String, TargetConfiguration> allTargets,
@@ -81,29 +82,70 @@ public class TargetGenerationService {
         Set<String> applicablePhases = executionPlanAnalysisService.getAllLifecyclePhases();
 
         for (String phase : applicablePhases) {
-            TargetConfiguration target = new TargetConfiguration("nx:noop");
+            // Phase targets depend on individual goal targets (not batch execution)
+            List<String> goalsToComplete = executionPlanAnalysisService.getGoalsCompletedByPhase(project, phase);
+            
+            TargetConfiguration target;
+            if (!goalsToComplete.isEmpty()) {
+                // Phase targets are just entry points - they depend on individual goal targets
+                target = new TargetConfiguration("nx:noop");
+                target.setOptions(new LinkedHashMap<>());
+                
+                // Convert goal names to target names and set as dependencies
+                List<String> goalTargetDependencies = new ArrayList<>();
+                for (String goalName : goalsToComplete) {
+                    // goalName is in format "pluginArtifactId:goalName" 
+                    String targetName = getTargetNameFromGoal(goalName);
+                    if (allTargets.containsKey(targetName)) {
+                        goalTargetDependencies.add(targetName);
+                    } else if (verbose) {
+                        log.debug("Warning: Goal target '" + targetName + "' not found for phase '" + phase + "'");
+                    }
+                }
+                target.setDependsOn(goalTargetDependencies);
+                
+            } else {
+                // No goals for this phase - make it a no-op
+                target = new TargetConfiguration("nx:noop");
+                target.setOptions(new LinkedHashMap<>());
+                target.setDependsOn(new ArrayList<>());
+            }
 
-            // Configure as no-op
-            target.setOptions(new LinkedHashMap<>());
+            // Configure inputs/outputs (minimal since phase is just orchestration)
             target.setInputs(new ArrayList<>());
             target.setOutputs(new ArrayList<>());
 
-            // Phase dependencies - use pre-calculated dependencies
-            List<String> dependsOn = phaseDependencies.getOrDefault(phase, new ArrayList<>());
-
-            target.setDependsOn(dependsOn);
-
             // Add metadata
-            TargetMetadata metadata = new TargetMetadata("phase", "Maven lifecycle phase: " + phase);
+            String description = "Maven lifecycle phase: " + phase + " (depends on " + target.getDependsOn().size() + " goals)";
+            TargetMetadata metadata = new TargetMetadata("phase", description);
             metadata.setPhase(phase);
             metadata.setPlugin("org.apache.maven:maven-core");
             metadata.setTechnologies(Arrays.asList("maven"));
             target.setMetadata(metadata);
 
             phaseTargets.put(phase, target);
+            
+            if (verbose) {
+                log.debug("Generated phase target '" + phase + "' depending on goals: " + target.getDependsOn());
+            }
         }
 
         return phaseTargets;
+    }
+    
+    /**
+     * Convert a full goal name (plugin:goal) to target name (plugin:goal format)
+     */
+    private String getTargetNameFromGoal(String goalName) {
+        // goalName is already in format "artifactId:goal" or "groupId:artifactId:goal"
+        // Extract just the artifactId:goal part for target name
+        String[] parts = goalName.split(":");
+        if (parts.length >= 2) {
+            String artifactId = parts[parts.length - 2]; // Second to last part is artifactId
+            String goal = parts[parts.length - 1];       // Last part is goal
+            return ExecutionPlanAnalysisService.getTargetName(artifactId, goal);
+        }
+        return goalName; // Fallback to original name
     }
 
     /**
@@ -161,11 +203,22 @@ public class TargetGenerationService {
                                                List<String> dependencies, MavenProject project) {
         String pluginKey = plugin.getGroupId() + ":" + plugin.getArtifactId();
 
-        TargetConfiguration target = new TargetConfiguration("nx:run-commands");
+
+        TargetConfiguration target = new TargetConfiguration("@nx-quarkus/maven-plugin:maven-batch");
+        
+        if (verbose) {
+            log.info("DEBUG: Creating goal target with TypeScript executor: " + pluginKey + ":" + goal);
+        }
 
         Map<String, Object> options = new LinkedHashMap<>();
-        options.put("command", "mvn " + pluginKey + ":" + goal);
-        options.put("cwd", actualProjectPath);
+        // Use TypeScript batch executor for single goal execution with session context
+        List<String> goals = new ArrayList<>();
+        goals.add(pluginKey + ":" + goal);
+        options.put("goals", goals);
+        options.put("projectRoot", actualProjectPath);
+        options.put("verbose", verbose);
+        options.put("mavenPluginPath", "maven-plugin");
+        options.put("failOnError", true);
         target.setOptions(options);
 
         // Smart inputs/outputs based on goal
@@ -219,11 +272,21 @@ public class TargetGenerationService {
                                                       List<String> dependencies, MavenProject project) {
         String pluginKey = plugin.getGroupId() + ":" + plugin.getArtifactId();
 
-        TargetConfiguration target = new TargetConfiguration("nx:run-commands");
+        TargetConfiguration target = new TargetConfiguration("@nx-quarkus/maven-plugin:maven-batch");
+        
+        if (verbose) {
+            log.info("DEBUG: Creating simple goal target with TypeScript executor: " + pluginKey + ":" + goal);
+        }
 
         Map<String, Object> options = new LinkedHashMap<>();
-        options.put("command", "mvn " + pluginKey + ":" + goal);
-        options.put("cwd", actualProjectPath);
+        // Use TypeScript batch executor for single goal execution with session context
+        List<String> goals = new ArrayList<>();
+        goals.add(pluginKey + ":" + goal);
+        options.put("goals", goals);
+        options.put("projectRoot", actualProjectPath);
+        options.put("verbose", verbose);
+        options.put("mavenPluginPath", "maven-plugin");
+        options.put("failOnError", true);
         target.setOptions(options);
 
         List<String> inputs = new ArrayList<>();

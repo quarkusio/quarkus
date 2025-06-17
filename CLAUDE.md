@@ -29,4 +29,4 @@ nx graph --file graph.json
 nx show projects --verbose
 ```
 
-[... rest of the existing content remains unchanged ...]
+Never hardcode stuff. Use the Maven APIs to get the information

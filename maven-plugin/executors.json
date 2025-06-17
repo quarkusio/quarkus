@@ -1,0 +1,11 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nrwl/nx/master/packages/nx/schemas/executors.json",
+  "executors": {
+    "maven-batch": {
+      "implementation": "./src/executors/maven-batch/impl.ts",
+      "batchImplementation": "./src/executors/maven-batch/impl.ts#batchMavenExecutor",
+      "schema": "./src/executors/maven-batch/schema.json",
+      "description": "Batch executor for Maven goals with session context preservation - executes multiple goals in a single Maven session to maintain artifact context between goals"
+    }
+  }
+}

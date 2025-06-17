@@ -114,8 +114,6 @@ public final class AmazonLambdaProcessor {
             final DotName name = info.name();
             final String lambda = name.toString();
             builder.addBeanClass(lambda);
-            reflectiveClassBuildItemBuildProducer
-                    .produce(ReflectiveClassBuildItem.builder(lambda).methods().build());
 
             String cdiName = null;
             AnnotationInstance named = info.declaredAnnotation(NAMED);
@@ -150,9 +148,18 @@ public final class AmazonLambdaProcessor {
                         }
                     }
                 }
-                current = combinedIndexBuildItem.getIndex().getClassByName(current.superName());
+                if (!done) {
+                    current = combinedIndexBuildItem.getIndex().getClassByName(current.superName());
+                }
             }
-            ret.add(new AmazonLambdaBuildItem(lambda, cdiName, streamHandler));
+            if (done) {
+                String handlerClass = current.name().toString();
+                ret.add(new AmazonLambdaBuildItem(handlerClass, cdiName, streamHandler));
+                reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(handlerClass).methods()
+                        .reason(getClass().getName()
+                                + ": reflectively accessed in io.quarkus.amazon.lambda.runtime.AmazonLambdaRecorder.discoverHandlerMethod")
+                        .build());
+            }
         }
         additionalBeanBuildItemBuildProducer.produce(builder.build());
         reflectiveClassBuildItemBuildProducer

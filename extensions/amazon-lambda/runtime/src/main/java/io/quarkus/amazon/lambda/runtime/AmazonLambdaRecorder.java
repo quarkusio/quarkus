@@ -92,7 +92,7 @@ public class AmazonLambdaRecorder {
     }
 
     private static Method discoverHandlerMethod(Class<? extends RequestHandler<?, ?>> handlerClass) {
-        final Method[] methods = handlerClass.getMethods();
+        final Method[] methods = handlerClass.getDeclaredMethods();
         Method method = null;
         for (int i = 0; i < methods.length && method == null; i++) {
             if (methods[i].getName().equals("handleRequest")) {

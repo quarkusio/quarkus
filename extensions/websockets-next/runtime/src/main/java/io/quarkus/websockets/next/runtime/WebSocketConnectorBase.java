@@ -193,6 +193,10 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
                 clientOptions.setIdleTimeout((int) timeout.toMillis());
             }
         }
+        if (config.connectionClosingTimeout().isPresent()) {
+            long timeoutSeconds = config.connectionClosingTimeout().get().toSeconds();
+            clientOptions.setClosingTimeout(timeoutSeconds > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) timeoutSeconds);
+        }
         Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
                 Optional.ofNullable(tlsConfigurationName));
         if (maybeTlsConfiguration.isEmpty()) {

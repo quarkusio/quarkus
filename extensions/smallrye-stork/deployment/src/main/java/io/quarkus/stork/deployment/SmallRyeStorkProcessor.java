@@ -2,6 +2,8 @@ package io.quarkus.stork.deployment;
 
 import static java.util.Arrays.asList;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
@@ -17,12 +19,16 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.stork.SmallRyeStorkRecorder;
+import io.quarkus.stork.SmallRyeStorkRegistrationRecorder;
 import io.quarkus.stork.StorkConfigProvider;
 import io.quarkus.stork.StorkConfiguration;
+import io.quarkus.stork.StorkRegistrarConfigRecorder;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.smallrye.stork.spi.LoadBalancerProvider;
 import io.smallrye.stork.spi.ServiceDiscoveryProvider;
@@ -34,6 +40,11 @@ import io.smallrye.stork.spi.internal.ServiceRegistrarLoader;
 public class SmallRyeStorkProcessor {
 
     private static final String KUBERNETES_SERVICE_DISCOVERY_PROVIDER = "io.smallrye.stork.servicediscovery.kubernetes.KubernetesServiceDiscoveryProvider";
+    private static final String CONSUL_SERVICE_REGISTRAR_PROVIDER = "io.smallrye.stork.serviceregistration.consul.ConsulServiceRegistrarProvider";
+    private static final String EUREKA_SERVICE_REGISTRAR_PROVIDER = "io.smallrye.stork.serviceregistration.eureka.EurekaServiceRegistrarProvider";
+    private static final String SERVICE_REGISTRAR_PROVIDER = "io.smallrye.stork.spi.ServiceRegistrarProvider";
+    private static final String CONSUL_SERVICE_REGISTRAR_TYPE = "consul";
+    private static final String EUREKA_SERVICE_REGISTRAR_TYPE = "eureka";
     private static final Logger LOGGER = Logger.getLogger(SmallRyeStorkProcessor.class.getName());
 
     @BuildStep
@@ -87,9 +98,45 @@ public class SmallRyeStorkProcessor {
     @Consume(AlwaysBuildItem.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Consume(StorkRegistrationBuildItem.class)
+    @Produce(StorkInitializedBuildItem.class)
     void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown, VertxBuildItem vertx,
             StorkConfiguration configuration) {
         storkRecorder.initialize(shutdown, vertx.getVertx(), configuration);
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void checkStorkConsulRegistrar(BuildProducer<StorkRegistrationBuildItem> registration,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
+            StorkRegistrarConfigRecorder registrarConfigRecorder, StorkConfiguration configuration, Capabilities capabilities,
+            CombinedIndexBuildItem index) {
+        String smallryeHealthCheckDefaultUrl = "";
+        if (QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)) {
+            if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+                Config quarkusConfig = ConfigProvider.getConfig();
+                smallryeHealthCheckDefaultUrl = quarkusConfig.getConfigValue("quarkus.management.root-path").getValue() + "/"
+                        + quarkusConfig.getConfigValue("quarkus.smallrye-health.root-path").getValue() + "/"
+                        + quarkusConfig.getConfigValue("quarkus.smallrye-health.liveness-path").getValue();
+            }
+            registrarConfigRecorder.setupServiceRegistrarConfig(configuration, CONSUL_SERVICE_REGISTRAR_TYPE,
+                    smallryeHealthCheckDefaultUrl);
+        } else if (QuarkusClassLoader.isClassPresentAtRuntime(EUREKA_SERVICE_REGISTRAR_PROVIDER)) {
+            registrarConfigRecorder.setupServiceRegistrarConfig(configuration, EUREKA_SERVICE_REGISTRAR_TYPE,
+                    smallryeHealthCheckDefaultUrl);
+        }
+        registration.produce(new StorkRegistrationBuildItem());
+
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void registerServiceInstance(StorkInitializedBuildItem storkInitializedBuildItem, ShutdownContextBuildItem shutdown,
+            SmallRyeStorkRegistrationRecorder registrationRecorder, StorkConfiguration configuration) {
+        if (QuarkusClassLoader.isClassPresentAtRuntime(SERVICE_REGISTRAR_PROVIDER)) {
+            registrationRecorder.registerServiceInstance(configuration);
+            registrationRecorder.deregisterServiceInstance(shutdown, configuration);
+        }
     }
 
     private static final class AlwaysBuildItem extends EmptyBuildItem {

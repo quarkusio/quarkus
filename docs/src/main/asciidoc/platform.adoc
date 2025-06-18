@@ -11,10 +11,18 @@ include::_attributes.adoc[]
 
 The Quarkus extension ecosystem consists of the Quarkus extensions developed and maintained by the community, including the Quarkus core development team. While the Quarkus ecosystem (sometimes also referred to as the "Quarkus universe") includes all the Quarkus extensions ever developed, there is also a concept of a Quarkus platform.
 
-== Quarkus Platform
+== What is the Quarkus Platform?
+
+The Quarkus Platform is a curated set of extensions, tools, and configurations that make it easier to build, test, and deploy Java applications with Quarkus.
 
 The fundamental promise of a Quarkus platform is any combination of the Quarkus extensions the platform consists of can be used in the same application without causing any conflict for each other.
 Each organization creating their Quarkus platform may establish their own criteria for the extensions to be accepted into the platform and the means to guarantee the compatibility between the accepted extensions.
+
+== How does the Quarkus Platform help?
+When multiple extensions are used in the same project, a Quarkus platform BOM ensures:
+* version compatibility between the dependencies;
+* simplified dependency management;
+* easier upgrades.
 
 === Quarkus Platform Artifacts
 

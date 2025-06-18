@@ -1,10 +1,12 @@
 package org.jboss.resteasy.reactive.client.processor.beanparam;
 
+import org.jboss.jandex.Type;
+
 public class HeaderParamItem extends Item {
     private final String headerName;
-    private final String paramType;
+    private final Type paramType;
 
-    public HeaderParamItem(String fieldName, String headerName, ValueExtractor extractor, String paramType) {
+    public HeaderParamItem(String fieldName, String headerName, ValueExtractor extractor, Type paramType) {
         super(fieldName, ItemType.HEADER_PARAM, false, extractor);
         this.headerName = headerName;
         this.paramType = paramType;
@@ -14,7 +16,7 @@ public class HeaderParamItem extends Item {
         return headerName;
     }
 
-    public String getParamType() {
+    public Type getParamType() {
         return paramType;
     }
 }

@@ -1,11 +1,12 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
 import org.apache.commons.lang3.SystemUtils;
+
+import io.smallrye.common.process.ProcessUtil;
 
 public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
 
@@ -43,23 +44,7 @@ public class NativeImageBuildLocalRunner extends NativeImageBuildRunner {
         if (!SystemUtils.IS_OS_LINUX) {
             return false;
         }
-
-        // System path
-        String systemPath = System.getenv("PATH");
-        if (systemPath != null) {
-            String[] pathDirs = systemPath.split(File.pathSeparator);
-            for (String pathDir : pathDirs) {
-                File dir = new File(pathDir);
-                if (dir.isDirectory()) {
-                    File file = new File(dir, "objcopy");
-                    if (file.exists()) {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
+        return ProcessUtil.pathOfCommand(Path.of("objcopy")).isPresent();
     }
 
     private String[] buildCommand(List<String> args) {

@@ -8,6 +8,7 @@ import java.util.ServiceConfigurationError;
 import java.util.Set;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.extension.ConditionEvaluationResult;
 import org.junit.jupiter.api.extension.ExecutionCondition;
@@ -15,7 +16,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.deployment.dev.testing.TestConfig;
-import io.quarkus.logging.Log;
+import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.test.junit.classloading.FacadeClassLoader;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -34,6 +35,8 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     //needed for @Nested
     protected static final Deque<Class<?>> currentTestClassStack = new ArrayDeque<>();
     protected static Class<?> currentJUnitTestClass;
+
+    private static final Logger log = Logger.getLogger(StartupActionImpl.class);
 
     // TODO is it nicer to pass in the test class, or invoke the getter twice?
     public static Class<? extends QuarkusTestProfile> getQuarkusTestProfile(Class testClass,
@@ -170,27 +173,27 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
 
             if (isVSCode) {
                 // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
-                Log.error(
+                log.error(
                         "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
             } else if (isMaybeVSCode) {
                 // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
-                Log.error(
+                log.error(
                         "Could not read configuration while evaluating whether to run a test. It looks like you're probably running tests with VS Code. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
             } else if (isEclipse) {
                 // Tracked by https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257; fixed in Eclipse 4.37
-                Log.error(
+                log.error(
                         "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the Eclipse IDE. To work around the problem, edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
                                 + context.getRequiredTestClass().getName()
                                 + "]` in the program arguments. Running the whole package, or running individual test methods, will also work without any extra configuration.");
             } else {
-                Log.error("Internal error: Could not read configuration while evaluating whether to run "
+                log.error("Internal error: Could not read configuration while evaluating whether to run "
                         + context.getRequiredTestClass()
                         + ". Please let the Quarkus team know what you were doing when this error happened.");
 
             }
-            Log.debug("Underlying exception: " + e);
-            Log.debug("Thread Context Classloader: " + Thread.currentThread().getContextClassLoader());
-            Log.debug("The class of the class we use for mapping is " + TestConfig.class.getClassLoader());
+            log.debug("Underlying exception: " + e);
+            log.debug("Thread Context Classloader: " + Thread.currentThread().getContextClassLoader());
+            log.debug("The class of the class we use for mapping is " + TestConfig.class.getClassLoader());
             String message = isVSCode || isMaybeVSCode
                     ? "Could not execute test class because it was loaded with the wrong classloader by the VS Code test runner. Try running test methods individually instead."
                     : isEclipse

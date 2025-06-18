@@ -58,6 +58,8 @@ import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
 import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class NativeImageBuildStep {
 
@@ -73,11 +75,6 @@ public class NativeImageBuildStep {
      * Name of the <em>environment</em> variable to retrieve JAVA_HOME
      */
     private static final String JAVA_HOME_ENV = "JAVA_HOME";
-
-    /**
-     * The name of the environment variable containing the system path.
-     */
-    private static final String PATH = "PATH";
 
     private static final int OOM_ERROR_VALUE = 137;
     private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
@@ -546,22 +543,9 @@ public class NativeImageBuildStep {
             }
         }
 
-        // System path
-        String systemPath = System.getenv(PATH);
-        if (systemPath != null) {
-            String[] pathDirs = systemPath.split(File.pathSeparator);
-            for (String pathDir : pathDirs) {
-                File dir = new File(pathDir);
-                if (dir.isDirectory()) {
-                    File file = new File(dir, executableName);
-                    if (file.exists()) {
-                        return new NativeImageBuildLocalRunner(file.getAbsolutePath());
-                    }
-                }
-            }
-        }
-
-        return null;
+        return ProcessUtil.pathOfCommand(Path.of(executableName))
+                .map(value -> new NativeImageBuildLocalRunner(value.toString()))
+                .orElse(null);
     }
 
     private static String getNativeImageExecutableName() {
@@ -571,7 +555,7 @@ public class NativeImageBuildStep {
     private static String detectNoPIE() {
         String argument = testGCCArgument("-no-pie");
 
-        return argument.length() == 0 ? testGCCArgument("-nopie") : argument;
+        return argument.isEmpty() ? testGCCArgument("-nopie") : argument;
     }
 
     private static String detectPIE() {
@@ -580,17 +564,13 @@ public class NativeImageBuildStep {
 
     private static String testGCCArgument(String argument) {
         try {
-            Process gcc = new ProcessBuilder("cc", "-v", "-E", argument, "-").start();
-            gcc.getOutputStream().close();
-            if (gcc.waitFor() == 0) {
-                return argument;
-            }
-
-        } catch (IOException | InterruptedException e) {
-            // eat
+            ProcessBuilder.newBuilder("cc")
+                    .arguments("-v", "-E", argument, "-")
+                    .run();
+            return argument;
+        } catch (Exception ignored) {
+            return "";
         }
-
-        return "";
     }
 
     private static class NativeImageInvokerInfo {

@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Assertions;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
 
@@ -91,7 +91,7 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
 
     private Process doLaunch(Path jar, File output) throws IOException {
         List<String> commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
+        commands.add(ProcessUtil.pathOfJava().toString());
         commands.add("-jar");
         commands.add(jar.toString());
         ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));

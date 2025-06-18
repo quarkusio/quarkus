@@ -17,7 +17,7 @@ import io.quarkus.observability.common.config.AbstractGrafanaConfig;
 import io.quarkus.observability.common.config.LgtmComponent;
 import io.quarkus.observability.common.config.LgtmConfig;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.utilities.OS;
+import io.smallrye.common.os.OS;
 
 @SuppressWarnings("resource")
 public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
@@ -181,7 +181,7 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
             // On Linux, you can’t automatically resolve host.docker.internal,
             // you need to provide the following run flag when you start the container:
             //--add-host=host.docker.internal:host-gateway
-            if (OS.determineOS() == OS.LINUX) {
+            if (OS.current() == OS.LINUX) {
                 withCreateContainerCmdModifier(cmd -> cmd
                         .getHostConfig()
                         .withExtraHosts("host.docker.internal:host-gateway"));

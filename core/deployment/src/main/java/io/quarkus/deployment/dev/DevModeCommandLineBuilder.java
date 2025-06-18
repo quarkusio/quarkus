@@ -38,7 +38,7 @@ import io.quarkus.bootstrap.model.JvmOptionsBuilder;
 import io.quarkus.deployment.util.CommandLineUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.runtime.logging.JBossVersion;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class DevModeCommandLineBuilder {
 
@@ -131,7 +131,7 @@ public class DevModeCommandLineBuilder {
     private ExtensionDevModeJvmOptionFilter extDevModeJvmOptionFilter;
 
     protected DevModeCommandLineBuilder(String java) {
-        final String javaTool = java == null ? JavaBinFinder.findBin() : java;
+        final String javaTool = java == null ? ProcessUtil.pathOfJava().toString() : java;
         log.debugf("Using javaTool: %s", javaTool);
         args.add(javaTool);
     }

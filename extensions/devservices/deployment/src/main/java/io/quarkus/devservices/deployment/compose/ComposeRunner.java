@@ -13,7 +13,7 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.dockerclient.TransportConfig;
 import org.testcontainers.utility.CommandLine;
 
-import io.quarkus.deployment.util.ExecUtil;
+import io.smallrye.common.process.ProcessBuilder;
 
 /**
  * A class that runs compose commands.
@@ -113,23 +113,17 @@ public class ComposeRunner {
         LOG.debugv("Compose is running with env {0}", environment);
         LOG.infov("Compose is running command: {0} {1}", composeExecutable, cmd);
 
-        try {
-            final File pwd = composeFiles.get(0).getAbsoluteFile().getParentFile().getAbsoluteFile();
-            int exitCode = ExecUtil.execProcess(
-                    ExecUtil.startProcess(pwd, environment, composeExecutable, cmd.split("\\s+")),
-                    is -> new ExecUtil.HandleOutput(is, Logger.Level.INFO, LOG));
-            if (exitCode == 0) {
-                LOG.info("Compose has finished running");
-            } else {
-                throw new RuntimeException("Compose exited abnormally with code " + exitCode +
-                        " whilst running command: " +
-                        composeExecutable + " " + cmd + ", with env vars: " + environment);
-            }
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Error running Compose command: " + cmd, e);
-        }
+        final File pwd = composeFiles.get(0).getAbsoluteFile().getParentFile().getAbsoluteFile();
+
+        ProcessBuilder.newBuilder(composeExecutable)
+                .directory(pwd.toPath())
+                .arguments(cmd.split("\\s+"))
+                .environment(environment)
+                .output()
+                .consumeWith(br -> br.lines().forEach(LOG::info))
+                .run();
+
+        LOG.info("Compose has finished running");
     }
 
 }

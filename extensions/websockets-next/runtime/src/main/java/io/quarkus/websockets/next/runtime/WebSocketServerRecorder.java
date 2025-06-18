@@ -34,6 +34,7 @@ import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.HttpUpgradeCheck.CheckResult;
 import io.quarkus.websockets.next.HttpUpgradeCheck.HttpUpgradeContext;
+import io.quarkus.websockets.next.UserData;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
@@ -83,20 +84,21 @@ public class WebSocketServerRecorder {
             @Override
             public void handle(RoutingContext ctx) {
                 if (ctx.request().headers().contains(HandshakeRequest.SEC_WEBSOCKET_KEY)) {
+                    UserData userData = new UserDataImpl();
                     if (httpUpgradeChecks != null) {
-                        checkHttpUpgrade(ctx, endpointId).subscribe().with(result -> {
+                        checkHttpUpgrade(ctx, endpointId, userData).subscribe().with(result -> {
                             if (!result.getResponseHeaders().isEmpty()) {
                                 result.getResponseHeaders().forEach((k, v) -> ctx.response().putHeader(k, v));
                             }
 
                             if (result.isUpgradePermitted()) {
-                                httpUpgrade(ctx);
+                                httpUpgrade(ctx, userData);
                             } else {
                                 ctx.response().setStatusCode(result.getHttpResponseCode()).end();
                             }
                         }, ctx::fail);
                     } else {
-                        httpUpgrade(ctx);
+                        httpUpgrade(ctx, userData);
                     }
                 } else {
                     LOG.debugf("Non-websocket client request ignored:\n%s", ctx.request().headers());
@@ -104,7 +106,7 @@ public class WebSocketServerRecorder {
                 }
             }
 
-            private void httpUpgrade(RoutingContext ctx) {
+            private void httpUpgrade(RoutingContext ctx, UserData userData) {
                 var telemetrySupport = telemetryProvider == null ? null
                         : telemetryProvider.createServerTelemetrySupport(endpointPath);
                 final Future<ServerWebSocket> future;
@@ -126,7 +128,7 @@ public class WebSocketServerRecorder {
                     SendingInterceptor sendingInterceptor = telemetrySupport == null ? null
                             : telemetrySupport.getSendingInterceptor();
                     WebSocketConnectionImpl connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId, ws,
-                            connectionManager, codecs, ctx, trafficLogger, sendingInterceptor);
+                            connectionManager, codecs, ctx, trafficLogger, userData, sendingInterceptor);
                     connectionManager.add(generatedEndpointClass, connection);
                     if (trafficLogger != null) {
                         trafficLogger.connectionOpened(connection);
@@ -141,7 +143,7 @@ public class WebSocketServerRecorder {
                 });
             }
 
-            private Uni<CheckResult> checkHttpUpgrade(RoutingContext ctx, String endpointId) {
+            private Uni<CheckResult> checkHttpUpgrade(RoutingContext ctx, String endpointId, UserData userData) {
                 QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
                 Uni<SecurityIdentity> identity;
                 if (user == null) {
@@ -149,7 +151,7 @@ public class WebSocketServerRecorder {
                 } else {
                     identity = Uni.createFrom().item(user.getSecurityIdentity());
                 }
-                return checkHttpUpgrade(new HttpUpgradeContextImpl(ctx, identity, endpointId), httpUpgradeChecks, 0);
+                return checkHttpUpgrade(new HttpUpgradeContextImpl(ctx, userData, identity, endpointId), httpUpgradeChecks, 0);
             }
 
             private static Uni<CheckResult> checkHttpUpgrade(HttpUpgradeContext ctx,

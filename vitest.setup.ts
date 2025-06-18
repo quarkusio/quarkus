@@ -7,7 +7,7 @@ export async function setup() {
   // Step 1: Recompile Java components
   console.log('📦 Recompiling Java components...');
   const javaCompileStart = Date.now();
-  execSync('cd maven-plugin && mvn install -DskipTests', { stdio: 'inherit' });
+  execSync('cd maven-plugin && mvn clean compile kotlin:compile org.apache.maven.plugins:maven-plugin-plugin:descriptor install -Dmaven.test.skip=true', { stdio: 'inherit' });
   const javaCompileDuration = Date.now() - javaCompileStart;
   console.log(`⏱️  Java compilation completed in ${javaCompileDuration}ms`);
 

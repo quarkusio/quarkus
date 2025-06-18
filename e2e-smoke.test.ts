@@ -4,23 +4,47 @@ import { readFileSync, existsSync, rmSync } from 'fs';
 
 const TIMEOUT = 120000; // 2 minutes
 
-describe('Maven Plugin E2E Smoke Tests', () => {
-  beforeAll(async () => {
-    console.log('🔥 Starting Maven Plugin E2E Smoke Tests...');
-
+// Global setup to ensure Maven is compiled once
+let isSetupComplete = false;
+const setupPromise = (async () => {
+  if (!isSetupComplete) {
+    console.log('🔥 Setting up Maven Plugin E2E Tests (one-time setup)...');
+    
     // Step 1: Recompile Java components
     console.log('📦 Recompiling Java components...');
     execSync('cd maven-plugin && mvn install -DskipTests -q', { stdio: 'inherit' });
-
+    
     // Step 2: Reset Nx state
     console.log('🔄 Resetting Nx state...');
     execSync('npx nx reset', { stdio: 'inherit' });
+    
+    isSetupComplete = true;
+    console.log('✅ Maven plugin setup complete');
+  }
+})();
+
+describe('Maven Plugin E2E Smoke Tests', () => {
+  // Generate unique test ID for this test run
+  const testId = Math.random().toString(36).substring(7);
+  const sharedGraphFile = `/tmp/nx-e2e-${testId}-shared-graph.json`;
+  let projectGraph: any;
+  
+  beforeAll(async () => {
+    await setupPromise;
+    
+    // Prime the shared graph file once for all tests
+    console.log('📊 Generating shared project graph...');
+    execSync(`npx nx graph --file ${sharedGraphFile}`, { stdio: 'pipe' });
+    
+    const graphContent = readFileSync(sharedGraphFile, 'utf8');
+    projectGraph = JSON.parse(graphContent);
+    console.log(`✅ Shared graph generated with ${Object.keys(projectGraph.graph.nodes).length} nodes`);
   }, TIMEOUT);
 
   afterAll(() => {
-    // Cleanup temporary files
+    // Cleanup this test run's temporary files
     try {
-      rmSync('/tmp/nx-e2e-*', { recursive: true, force: true });
+      rmSync(`/tmp/nx-e2e-${testId}-*`, { recursive: true, force: true });
     } catch (error) {
       // Ignore cleanup errors
     }
@@ -47,50 +71,36 @@ describe('Maven Plugin E2E Smoke Tests', () => {
   });
 
   describe('Project Graph Generation', () => {
-    it('should generate project graph without errors', () => {
-      const graphFile = '/tmp/nx-e2e-graph.json';
-      execSync(`npx nx graph --file ${graphFile}`, { stdio: 'inherit' });
+    it('should have valid project graph structure', () => {
+      expect(projectGraph).toHaveProperty('graph');
+      expect(projectGraph.graph).toHaveProperty('nodes');
+      expect(projectGraph.graph).toHaveProperty('dependencies');
+      expect(Object.keys(projectGraph.graph.nodes).length).toBeGreaterThan(0);
+    });
 
-      expect(existsSync(graphFile)).toBe(true);
-
-      const graphContent = readFileSync(graphFile, 'utf8');
-      const graph = JSON.parse(graphContent);
-
-      expect(graph).toHaveProperty('graph');
-      expect(graph.graph).toHaveProperty('nodes');
-      expect(Object.keys(graph.graph.nodes).length).toBeGreaterThan(0);
-    }, TIMEOUT);
-
-    it('should have stable project graph generation', () => {
-      const graphs = [];
-
-      // Generate graph 3 times
-      for (let i = 0; i < 3; i++) {
-        const graphFile = `/tmp/nx-e2e-graph-${i}.json`;
+    it('should have consistent graph structure across multiple generations', () => {
+      // Generate graph 2 more times to verify consistency
+      const additionalGraphs = [];
+      
+      for (let i = 0; i < 2; i++) {
+        const graphFile = `/tmp/nx-e2e-${testId}-consistency-${i}.json`;
         execSync(`npx nx graph --file ${graphFile}`, { stdio: 'pipe' });
-
+        
         const graphContent = readFileSync(graphFile, 'utf8');
-        graphs.push(JSON.parse(graphContent));
+        additionalGraphs.push(JSON.parse(graphContent));
       }
-
-      // All graphs should have the same number of nodes
-      const nodeCount = Object.keys(graphs[0].graph.nodes).length;
-      expect(nodeCount).toBeGreaterThan(0);
-
-      graphs.forEach((graph, index) => {
-        expect(Object.keys(graph.graph.nodes).length).toBe(nodeCount);
+      
+      // All graphs should have the same number of nodes as the shared graph
+      const expectedNodeCount = Object.keys(projectGraph.graph.nodes).length;
+      expect(expectedNodeCount).toBeGreaterThan(0);
+      
+      additionalGraphs.forEach((graph, index) => {
+        expect(Object.keys(graph.graph.nodes).length).toBe(expectedNodeCount);
       });
     }, TIMEOUT);
   });
 
   describe('Snapshot Testing', () => {
-    let projectGraph: any;
-
-    beforeAll(() => {
-      const graphFile = '/tmp/nx-e2e-snapshot-graph.json';
-      execSync(`npx nx graph --file ${graphFile}`, { stdio: 'pipe' });
-      projectGraph = JSON.parse(readFileSync(graphFile, 'utf8'));
-    });
 
     it('should snapshot quarkus-core project configuration', () => {
       // Find quarkus-core project

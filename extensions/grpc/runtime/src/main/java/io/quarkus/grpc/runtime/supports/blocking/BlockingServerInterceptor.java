@@ -37,6 +37,62 @@ import io.vertx.core.Vertx;
 public class BlockingServerInterceptor implements ServerInterceptor, Function<String, Boolean>, Prioritized {
     private static final Logger log = Logger.getLogger(BlockingServerInterceptor.class);
 
+    // Reserved keywords, based on the jls, see:
+    // https://github.com/grpc/grpc-java/blob/master/compiler/src/java_plugin/cpp/java_generator.cpp#L90
+    private static final Set<String> GRPC_JAVA_RESERVED_KEYWORDS = Set.of(
+            "abstract",
+            "assert",
+            "boolean",
+            "break",
+            "byte",
+            "case",
+            "catch",
+            "char",
+            "class",
+            "const",
+            "continue",
+            "default",
+            "do",
+            "double",
+            "else",
+            "enum",
+            "extends",
+            "final",
+            "finally",
+            "float",
+            "for",
+            "goto",
+            "if",
+            "implements",
+            "import",
+            "instanceof",
+            "int",
+            "interface",
+            "long",
+            "native",
+            "new",
+            "package",
+            "private",
+            "protected",
+            "public",
+            "return",
+            "short",
+            "static",
+            "strictfp",
+            "super",
+            "switch",
+            "synchronized",
+            "this",
+            "throw",
+            "throws",
+            "transient",
+            "try",
+            "void",
+            "volatile",
+            "while",
+            "true",
+            "false");
+
     private final Vertx vertx;
     private final Set<String> blockingMethods;
     private final Set<String> virtualMethods;
@@ -68,12 +124,22 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     @Override
     public Boolean apply(String name) {
         String methodName = name.substring(name.lastIndexOf("/") + 1);
-        return blockingMethods.contains(methodName.toLowerCase());
+        return blockingMethods.contains(toLowerCaseBeanSpec(methodName));
     }
 
     public Boolean applyVirtual(String name) {
         String methodName = name.substring(name.lastIndexOf("/") + 1);
-        return virtualMethods.contains(methodName.toLowerCase());
+        return virtualMethods.contains(toLowerCaseBeanSpec(methodName));
+    }
+
+    private String toLowerCaseBeanSpec(String name) {
+
+        // Methods cannot always be lowercased for comparison.
+        // - gRPC allows using method names which normally would not work in java because of reserved keywords.
+        // - Underscores are removed.
+
+        String lowerBeanSpec = name.toLowerCase().replace("_", "");
+        return GRPC_JAVA_RESERVED_KEYWORDS.contains(lowerBeanSpec) ? lowerBeanSpec + "_" : lowerBeanSpec;
     }
 
     @Override

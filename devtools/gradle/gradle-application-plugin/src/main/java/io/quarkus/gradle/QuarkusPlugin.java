@@ -249,9 +249,9 @@ public class QuarkusPlugin implements Plugin<Project> {
                 QuarkusBuildDependencies.class,
                 task -> {
                     configureQuarkusBuildTask(project, task, quarkusBuildAppModelTask, serviceProvider);
-
                     task.getOutputs().doNotCacheIf("Dependencies are never cached", t -> true);
                 });
+        project.afterEvaluate(evaluated -> addDependencyOnJandexIfConfigured(evaluated, quarkusBuildDependencies));
 
         Property<Boolean> cacheLargeArtifacts = quarkusExt.getCacheLargeArtifacts();
 
@@ -646,7 +646,7 @@ public class QuarkusPlugin implements Plugin<Project> {
     }
 
     private void setupQuarkusBuildTaskDeps(Project project, Project dep, Set<String> visited) {
-        if (!visited.add(dep.getGroup() + ":" + dep.getName())) {
+        if (!visited.add(dep.getPath())) {
             return;
         }
 
@@ -663,16 +663,22 @@ public class QuarkusPlugin implements Plugin<Project> {
                 });
 
         getLazyTask(project, QUARKUS_DEV_TASK_NAME).ifPresent(quarkusDev -> {
-            for (String taskName : new String[] { JavaPlugin.PROCESS_RESOURCES_TASK_NAME,
-                    // This is the task of the 'org.kordamp.gradle.jandex' Gradle plugin
-                    "jandex",
-                    // This is the task of the 'com.github.vlsi.jandex' Gradle plugin
-                    "processJandexIndex" }) {
-                getLazyTask(dep, taskName).ifPresent(t -> quarkusDev.configure(qd -> qd.dependsOn(t)));
-            }
+            getLazyTask(project, JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
+                    .ifPresent(t -> quarkusDev.configure(qd -> qd.dependsOn(t)));
+            addDependencyOnJandexIfConfigured(dep, quarkusDev);
         });
 
         visitProjectDependencies(project, dep, visited);
+    }
+
+    private void addDependencyOnJandexIfConfigured(Project project, TaskProvider<? extends Task> quarkusTask) {
+        for (String taskName : new String[] {
+                // This is the task of the 'org.kordamp.gradle.jandex' Gradle plugin
+                "jandex",
+                // This is the task of the 'com.github.vlsi.jandex' Gradle plugin
+                "processJandexIndex" }) {
+            getLazyTask(project, taskName).ifPresent(t -> quarkusTask.configure(qd -> qd.mustRunAfter(t)));
+        }
     }
 
     protected void visitProjectDependencies(Project project, Project dep, Set<String> visited) {
@@ -689,10 +695,10 @@ public class QuarkusPlugin implements Plugin<Project> {
                     .forEach(d -> {
                         Project depProject = null;
 
-                        if (d instanceof ProjectDependency) {
-                            depProject = dep.project(((ProjectDependency) d).getPath());
-                        } else if (d instanceof ExternalModuleDependency) {
-                            depProject = ToolingUtils.findIncludedProject(project, (ExternalModuleDependency) d);
+                        if (d instanceof ProjectDependency projectDep) {
+                            depProject = dep.project(projectDep.getPath());
+                        } else if (d instanceof ExternalModuleDependency externalModuleDep) {
+                            depProject = ToolingUtils.findIncludedProject(project, externalModuleDep);
                         }
 
                         if (depProject == null) {
@@ -711,13 +717,9 @@ public class QuarkusPlugin implements Plugin<Project> {
     private void visitLocalProject(Project project, Project localProject, Set<String> visited) {
         // local dependency, so we collect also its dependencies
         visitProjectDep(project, localProject, visited);
-
-        ExtensionDependency<?> extensionDependency = DependencyUtils
-                .getExtensionInfoOrNull(project, localProject);
-
-        if (extensionDependency instanceof ProjectExtensionDependency) {
-            visitProjectDep(project,
-                    ((ProjectExtensionDependency) extensionDependency).getDeploymentModule(), visited);
+        ExtensionDependency<?> extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, localProject);
+        if (extensionDependency instanceof ProjectExtensionDependency projectExtDep) {
+            visitProjectDep(project, projectExtDep.getDeploymentModule(), visited);
         }
     }
 

@@ -47,7 +47,7 @@ public class LambdaUtil {
         output = output.replace("${artifactId}", target.getBaseName())
                 .replace("${buildDir}", target.getOutputDirectory().toString())
                 .replace("${targetUri}", targetUri);
-        Files.write(artifact, output.getBytes(StandardCharsets.UTF_8));
+        Files.writeString(artifact, output);
     }
 
     public static void writeExecutableFile(OutputTargetBuildItem target, String name, String output) throws IOException {

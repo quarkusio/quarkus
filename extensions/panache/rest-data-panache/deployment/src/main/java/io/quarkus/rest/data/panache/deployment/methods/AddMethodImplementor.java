@@ -6,7 +6,6 @@ import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreat
 import static io.quarkus.rest.data.panache.deployment.utils.SignatureMethodCreator.uniType;
 
 import jakarta.validation.Valid;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.resteasy.reactive.RestResponse;

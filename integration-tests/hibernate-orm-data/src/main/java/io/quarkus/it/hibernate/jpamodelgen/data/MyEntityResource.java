@@ -2,6 +2,8 @@ package io.quarkus.it.hibernate.jpamodelgen.data;
 
 import java.util.List;
 
+import jakarta.data.Order;
+import jakarta.data.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -28,6 +30,11 @@ public class MyEntityResource {
     @Transactional
     public void create(MyEntity entity) {
         repository.insert(entity);
+    }
+
+    @GET
+    public List<MyEntity> get() {
+        return repository.findAll(Order.by(Sort.asc(MyEntity_.NAME))).toList();
     }
 
     @GET

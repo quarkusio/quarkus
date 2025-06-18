@@ -61,25 +61,39 @@ public class NxAnalyzerMojo extends AbstractMojo {
     
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        long startTime = System.currentTimeMillis();
+        long overallStartTime = System.currentTimeMillis();
         
+        getLog().info("🔥 Starting Maven analysis for " + reactorProjects.size() + " projects...");
         
         try {
+            // Phase 1: Initialize services
+            long initStart = System.currentTimeMillis();
             initializeServices();
+            long initDuration = System.currentTimeMillis() - initStart;
+            getLog().info("⏱️  Service initialization completed in " + initDuration + "ms");
             
-            getLog().info("Starting Nx analysis for " + reactorProjects.size() + " projects");
             logBasicInfo();
             
-            // Generate analysis results
+            // Phase 2: Perform Maven analysis
+            long analysisStart = System.currentTimeMillis();
+            getLog().info("📊 Starting Maven workspace analysis...");
             Map<String, Object> result = performAnalysis();
+            long analysisDuration = System.currentTimeMillis() - analysisStart;
+            getLog().info("⏱️  Maven workspace analysis completed in " + analysisDuration + "ms (" + 
+                         String.format("%.2f", analysisDuration / 1000.0) + "s)");
             
-            // Write output
+            // Phase 3: Write output
+            long writeStart = System.currentTimeMillis();
             String outputPath = determineOutputPath();
             writeResult(result, outputPath);
+            long writeDuration = System.currentTimeMillis() - writeStart;
+            getLog().info("⏱️  Output file writing completed in " + writeDuration + "ms");
             
-            logCompletion(startTime, outputPath);
+            logCompletion(overallStartTime, outputPath, analysisDuration);
             
         } catch (Exception e) {
+            long failureDuration = System.currentTimeMillis() - overallStartTime;
+            getLog().error("❌ Analysis failed after " + failureDuration + "ms: " + e.getMessage());
             throw new MojoExecutionException("Analysis failed: " + e.getMessage(), e);
         }
     }
@@ -108,15 +122,20 @@ public class NxAnalyzerMojo extends AbstractMojo {
     private Map<String, Object> performAnalysis() {
         File workspaceRoot = new File(session.getExecutionRootDirectory());
         
-        
-        // First, calculate actual project dependencies for all projects
+        // Phase 1: Calculate project dependencies
+        long depCalcStart = System.currentTimeMillis();
         Map<MavenProject, List<MavenProject>> projectDependencies = calculateProjectDependencies();
+        long depCalcDuration = System.currentTimeMillis() - depCalcStart;
+        getLog().info("⏱️  Project dependency calculation completed in " + depCalcDuration + "ms");
         
-        // Generate targets and groups for each project
+        // Phase 2: Generate targets and groups for each project
+        long targetGenStart = System.currentTimeMillis();
         Map<MavenProject, Map<String, TargetConfiguration>> projectTargets = new LinkedHashMap<>();
         Map<MavenProject, Map<String, TargetGroup>> projectTargetGroups = new LinkedHashMap<>();
         
+        int processedProjects = 0;
         for (MavenProject project : reactorProjects) {
+            long projectStart = System.currentTimeMillis();
             try {
                 // Get actual project dependencies for this project (not all reactor projects)
                 List<MavenProject> actualDependencies = projectDependencies.getOrDefault(project, new ArrayList<>());
@@ -139,10 +158,18 @@ public class NxAnalyzerMojo extends AbstractMojo {
                 Map<String, TargetGroup> targetGroups = targetGroupService.generateTargetGroups(project, targets, session);
                 projectTargetGroups.put(project, targetGroups);
                 
+                processedProjects++;
+                long projectDuration = System.currentTimeMillis() - projectStart;
+                
                 if (isVerbose()) {
-                    getLog().info("Processed " + project.getArtifactId() + 
+                    getLog().info("✅ Processed " + project.getArtifactId() + " in " + projectDuration + "ms" +
                                  ": " + targets.size() + " targets, " + targetGroups.size() + " groups, " +
                                  actualDependencies.size() + " project dependencies");
+                } else if (processedProjects % 100 == 0) {
+                    // Log progress every 100 projects for large workspaces
+                    long avgTimePerProject = (System.currentTimeMillis() - targetGenStart) / processedProjects;
+                    getLog().info("📊 Processed " + processedProjects + "/" + reactorProjects.size() + 
+                                 " projects (avg " + avgTimePerProject + "ms per project)");
                 }
                 
             } catch (Exception e) {
@@ -153,7 +180,12 @@ public class NxAnalyzerMojo extends AbstractMojo {
             }
         }
         
-        // Generate Nx-compatible outputs
+        long targetGenDuration = System.currentTimeMillis() - targetGenStart;
+        getLog().info("⏱️  Target generation completed in " + targetGenDuration + "ms for " + 
+                     processedProjects + " projects (avg " + (targetGenDuration / processedProjects) + "ms per project)");
+        
+        // Phase 3: Generate Nx-compatible outputs
+        long outputGenStart = System.currentTimeMillis();
         List<CreateNodesV2Entry> createNodesEntries = CreateNodesResultGenerator.generateCreateNodesV2Results(
             reactorProjects, workspaceRoot, projectTargets, projectTargetGroups);
         
@@ -164,6 +196,9 @@ public class NxAnalyzerMojo extends AbstractMojo {
         
         List<RawProjectGraphDependency> createDependencies = CreateDependenciesGenerator.generateCreateDependencies(
             reactorProjects, workspaceRoot, getLog(), isVerbose());
+        
+        long outputGenDuration = System.currentTimeMillis() - outputGenStart;
+        getLog().info("⏱️  Nx output generation completed in " + outputGenDuration + "ms");
         
         if (isVerbose()) {
             getLog().info("Generated " + createDependencies.size() + " workspace dependencies");
@@ -387,10 +422,30 @@ public class NxAnalyzerMojo extends AbstractMojo {
         }
     }
     
-    private void logCompletion(long startTime, String outputPath) {
+    private void logCompletion(long startTime, String outputPath, long analysisDuration) {
         long totalTime = System.currentTimeMillis() - startTime;
         
-        // Always show timing information
-        getLog().info("Analysis completed in " + (totalTime / 1000.0) + "s for " + reactorProjects.size() + " projects");
+        // Calculate analysis percentage of total time
+        double analysisPercentage = (analysisDuration * 100.0) / totalTime;
+        
+        // Always show comprehensive timing information
+        getLog().info("✅ Maven analysis completed successfully!");
+        getLog().info("📊 Total execution time: " + String.format("%.2f", totalTime / 1000.0) + "s");
+        getLog().info("⚡ Core analysis time: " + String.format("%.2f", analysisDuration / 1000.0) + "s (" + 
+                     String.format("%.1f", analysisPercentage) + "% of total)");
+        getLog().info("📁 Output written to: " + outputPath);
+        getLog().info("🏗️  Projects analyzed: " + reactorProjects.size());
+        
+        // Performance insights
+        if (reactorProjects.size() > 0) {
+            double avgTimePerProject = analysisDuration / (double) reactorProjects.size();
+            getLog().info("⏱️  Average time per project: " + String.format("%.1f", avgTimePerProject) + "ms");
+            
+            if (avgTimePerProject > 1000) {
+                getLog().warn("⚠️  High average time per project detected - consider optimizing large projects");
+            } else if (avgTimePerProject < 10) {
+                getLog().info("🚀 Excellent performance - very fast analysis per project");
+            }
+        }
     }
 }

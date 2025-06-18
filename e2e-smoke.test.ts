@@ -9,16 +9,21 @@ describe('Maven Plugin E2E Smoke Tests', () => {
   const testId = Math.random().toString(36).substring(7);
   const sharedGraphFile = `/tmp/nx-e2e-${testId}-shared-graph.json`;
   let projectGraph: any;
-  
+
   beforeAll(async () => {
     // Maven compilation and Nx reset are handled by global setup
     // Just generate the shared graph file once for all tests
     console.log('📊 Generating shared project graph...');
-    execSync(`npx nx graph --file ${sharedGraphFile}`, { stdio: 'pipe' });
+    const graphGenStart = Date.now();
     
+    execSync(`npx nx graph --file ${sharedGraphFile} --verbose`, { stdio: 'inherit' });
+    
+    const graphGenDuration = Date.now() - graphGenStart;
     const graphContent = readFileSync(sharedGraphFile, 'utf8');
     projectGraph = JSON.parse(graphContent);
+    
     console.log(`✅ Shared graph generated with ${Object.keys(projectGraph.graph.nodes).length} nodes`);
+    console.log(`⏱️  Maven analysis completed in ${graphGenDuration}ms (${(graphGenDuration / 1000).toFixed(2)}s)`);
   }, TIMEOUT);
 
   afterAll(() => {
@@ -61,19 +66,19 @@ describe('Maven Plugin E2E Smoke Tests', () => {
     it('should have consistent graph structure across multiple generations', () => {
       // Generate graph 2 more times to verify consistency
       const additionalGraphs = [];
-      
+
       for (let i = 0; i < 2; i++) {
         const graphFile = `/tmp/nx-e2e-${testId}-consistency-${i}.json`;
         execSync(`npx nx graph --file ${graphFile}`, { stdio: 'pipe' });
-        
+
         const graphContent = readFileSync(graphFile, 'utf8');
         additionalGraphs.push(JSON.parse(graphContent));
       }
-      
+
       // All graphs should have the same number of nodes as the shared graph
       const expectedNodeCount = Object.keys(projectGraph.graph.nodes).length;
       expect(expectedNodeCount).toBeGreaterThan(0);
-      
+
       additionalGraphs.forEach((graph, index) => {
         expect(Object.keys(graph.graph.nodes).length).toBe(expectedNodeCount);
       });
@@ -84,67 +89,32 @@ describe('Maven Plugin E2E Smoke Tests', () => {
 
     it('should snapshot quarkus-core project configuration', () => {
       // Find quarkus-core project
-      const coreProject = Object.entries(projectGraph.graph.nodes).find(([name, node]: [string, any]) => 
-        name.includes('quarkus-core') || node.data?.name?.includes('quarkus-core')
-      );
+      const coreProject = projectGraph.graph.nodes['io.quarkus:quarkus-core'];
 
-      expect(coreProject).toBeDefined();
-      
-      const [projectName, projectData] = coreProject!;
-      
-      const snapshot = {
-        name: projectData.data?.name || projectName,
-        type: projectData.type,
-        targets: projectData.data?.targets ? Object.keys(projectData.data.targets).sort() : [],
-        targetCount: projectData.data?.targets ? Object.keys(projectData.data.targets).length : 0,
-        root: projectData.data?.root,
-        hasSourceRoot: !!projectData.data?.sourceRoot
-      };
-
-      expect(snapshot).toMatchSnapshot();
+      expect(coreProject).toMatchSnapshot();
     }, TIMEOUT);
 
     it('should snapshot quarkus-core project dependencies', () => {
       // Find quarkus-core project
-      const coreProjectEntry = Object.entries(projectGraph.graph.nodes).find(([name, node]: [string, any]) => 
-        name.includes('quarkus-core') || node.data?.name?.includes('quarkus-core')
-      );
+      const coreDependencies = projectGraph.graph.dependencies['io.quarkus:quarkus-core'];
 
-      expect(coreProjectEntry).toBeDefined();
-      
-      const [coreProjectName] = coreProjectEntry!;
-      
-      // Get dependencies for the core project
-      const dependencies = projectGraph.graph.dependencies[coreProjectName] || [];
-      
-      const dependencySnapshot = {
-        projectName: coreProjectName,
-        dependencyCount: dependencies.length,
-        dependencies: dependencies
-          .map((dep: any) => ({
-            target: dep.target,
-            type: dep.type || 'implicit'
-          }))
-          .sort((a: any, b: any) => a.target.localeCompare(b.target))
-      };
-
-      expect(dependencySnapshot).toMatchSnapshot();
+      expect(coreDependencies).toMatchSnapshot();
     }, TIMEOUT);
 
     it('should snapshot key Maven projects structure', () => {
       // Find a few key Maven projects to snapshot
       const keyProjects = [
         'quarkus-parent',
-        'quarkus-core', 
+        'quarkus-core',
         'arc-parent',
         'arc'
       ];
 
       const foundProjects = keyProjects.map(projectKey => {
-        const projectEntry = Object.entries(projectGraph.graph.nodes).find(([name, node]: [string, any]) => 
+        const projectEntry = Object.entries(projectGraph.graph.nodes).find(([name, node]: [string, any]) =>
           name.includes(projectKey) || node.data?.name?.includes(projectKey)
         );
-        
+
         if (projectEntry) {
           const [projectName, projectData] = projectEntry;
           return {
@@ -166,10 +136,10 @@ describe('Maven Plugin E2E Smoke Tests', () => {
     it('should snapshot overall project statistics', () => {
       const stats = {
         totalProjects: Object.keys(projectGraph.graph.nodes).length,
-        projectsWithTargets: Object.values(projectGraph.graph.nodes).filter((node: any) => 
+        projectsWithTargets: Object.values(projectGraph.graph.nodes).filter((node: any) =>
           node.data?.targets && Object.keys(node.data.targets).length > 0
         ).length,
-        projectsWithDependencies: Object.keys(projectGraph.graph.dependencies).filter(key => 
+        projectsWithDependencies: Object.keys(projectGraph.graph.dependencies).filter(key =>
           projectGraph.graph.dependencies[key]?.length > 0
         ).length,
         hasValidGraph: !!projectGraph.graph,

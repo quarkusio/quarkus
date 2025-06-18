@@ -3,7 +3,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-project</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.24.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
     <artifactId>quarkus-bom-dev-ui</artifactId>

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>quarkus-rest-csrf-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>3.24.0</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>

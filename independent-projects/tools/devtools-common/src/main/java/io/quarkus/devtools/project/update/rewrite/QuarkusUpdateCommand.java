@@ -30,6 +30,7 @@ import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.qute.Qute;
 import io.smallrye.common.os.OS;
 import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class QuarkusUpdateCommand {
 
@@ -308,9 +309,7 @@ public class QuarkusUpdateCommand {
      * @return A Path to the executable, if found, null otherwise
      */
     public static Path searchPath(String cmd) {
-        String envPath = System.getenv("PATH");
-        envPath = envPath != null ? envPath : "";
-        return searchPath(cmd, envPath);
+        return ProcessUtil.pathOfCommand(Path.of(cmd)).orElse(null);
     }
 
     /**

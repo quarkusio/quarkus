@@ -120,6 +120,7 @@ import io.quarkus.hibernate.validator.runtime.jaxrs.ViolationReport;
 import io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
+import io.quarkus.hibernate.validator.spi.BeanValidationTraversableResolverBuildItem;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyConfigBuildItem;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
@@ -475,7 +476,7 @@ class HibernateValidatorProcessor {
             ShutdownContextBuildItem shutdownContext,
             List<ConfigClassBuildItem> configClasses,
             List<AdditionalJaxRsResourceMethodAnnotationsBuildItem> additionalJaxRsResourceMethodAnnotations,
-            Capabilities capabilities,
+            Optional<BeanValidationTraversableResolverBuildItem> beanValidationTraversableResolver,
             LocalesBuildTimeConfig localesBuildTimeConfig,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) throws Exception {
 
@@ -607,7 +608,8 @@ class HibernateValidatorProcessor {
                 .createWith(recorder.hibernateValidatorFactory(classesToBeValidated, detectedBuiltinConstraints,
                         valueExtractorClassProxies,
                         hasXmlConfiguration(),
-                        capabilities.isPresent(Capability.HIBERNATE_ORM),
+                        beanValidationTraversableResolver
+                                .map(BeanValidationTraversableResolverBuildItem::getAttributeLoadedPredicate),
                         localesBuildTimeConfig,
                         hibernateValidatorBuildTimeConfig))
                 .addQualifier().annotation(DotNames.NAMED).addValue("value", VALIDATOR_FACTORY_NAME).done()

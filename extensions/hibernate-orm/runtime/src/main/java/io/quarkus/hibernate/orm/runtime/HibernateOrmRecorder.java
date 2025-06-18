@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -13,6 +14,7 @@ import jakarta.inject.Inject;
 import jakarta.persistence.Cache;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
+import jakarta.persistence.spi.LoadState;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -249,5 +251,30 @@ public class HibernateOrmRecorder {
                 SchemaManagementIntegrator.runPostBootValidation(puName);
             }
         }, "Hibernate post-boot validation thread for " + puName).start();
+    }
+
+    public BiPredicate<Object, String> attributeLoadedPredicate() {
+        return new IsAttributeLoadedPredicate();
+    }
+
+    private static class IsAttributeLoadedPredicate implements BiPredicate<Object, String> {
+        private final ProviderUtil providerUtil = new ProviderUtil();
+
+        @Override
+        public boolean test(Object entity, String attributeName) {
+            LoadState loadstate = providerUtil.isLoadedWithoutReference(entity, attributeName);
+            if (loadstate == LoadState.LOADED) {
+                return true;
+            } else if (loadstate == LoadState.NOT_LOADED) {
+                return false;
+            }
+            loadstate = providerUtil.isLoadedWithReference(entity, attributeName);
+            if (loadstate == LoadState.LOADED) {
+                return true;
+            } else if (loadstate == LoadState.NOT_LOADED) {
+                return false;
+            }
+            return true;
+        }
     }
 }

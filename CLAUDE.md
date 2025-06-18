@@ -58,6 +58,9 @@ nx reset
 
 # 3. Test your changes
 nx show projects
+
+# 4. Run smoke tests after major changes
+npm run test:e2e
 ```
 
 ## Prerequisites

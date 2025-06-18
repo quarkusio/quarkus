@@ -37,7 +37,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <maven-core.version>3.9.9</maven-core.version>
-        <jackson-bom.version>2.19.0</jackson-bom.version>
+        <jackson-bom.version>2.19.1</jackson-bom.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
         <junit5.version>5.13.1</junit5.version>
         <mockito.version>5.18.0</mockito.version>

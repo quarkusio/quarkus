@@ -30,6 +30,7 @@ import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
@@ -295,6 +296,9 @@ public class StartupActionImpl implements StartupAction {
             CompletableFuture.allOf(devServicesRequests.stream()
                     .map(serv -> CompletableFuture.runAsync(() -> devServicesRegistry.start(serv)))
                     .toArray(CompletableFuture[]::new)).join();
+        }
+        if (InitialConfigurator.DELAYED_HANDLER.isActivated()) {
+            InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
         }
     }
 

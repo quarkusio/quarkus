@@ -571,7 +571,7 @@ public final class OidcUtils {
     static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {
         if (oidcTenantConfig != null && oidcTenantConfig.provider().isPresent()) {
             return OidcUtils.mergeTenantConfig(oidcTenantConfig,
-                    KnownOidcProviders.provider(oidcTenantConfig.provider.get()));
+                    KnownOidcProviders.provider(oidcTenantConfig.provider().get()));
         } else {
             return oidcTenantConfig;
         }

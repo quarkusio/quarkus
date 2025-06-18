@@ -541,7 +541,7 @@ public class QuteProcessor {
         } else {
             defaultName = nameValue.asString();
         }
-        String name = target.kind() == Kind.METHOD ? target.asMethod().name() : target.asClass().simpleName();
+        String name = getTargetName(target);
         if (checkedFragment) {
             // the name is the part before the last occurence of a dollar sign
             name = name.substring(0, name.lastIndexOf('$'));
@@ -556,7 +556,7 @@ public class QuteProcessor {
         if (ignoreFragmentsValue != null && ignoreFragmentsValue.asBoolean()) {
             return null;
         }
-        String name = target.kind() == Kind.METHOD ? target.asMethod().name() : target.asClass().simpleName();
+        String name = getTargetName(target);
         // the id is the part after the last occurence of a dollar sign
         int idx = name.lastIndexOf('$');
         if (idx == -1 || idx == name.length()) {
@@ -572,6 +572,15 @@ public class QuteProcessor {
             defaultName = nameValue.asString();
         }
         return defaultedName(defaultName, name.substring(idx + 1, name.length()));
+    }
+
+    private String getTargetName(AnnotationTarget target) {
+        if (target.kind() == Kind.METHOD) {
+            return target.asMethod().name();
+        }
+        ClassInfo targetClass = target.asClass();
+        return targetClass.nestingType() == NestingType.TOP_LEVEL ? targetClass.name().withoutPackagePrefix()
+                : targetClass.simpleName();
     }
 
     private String defaultedName(String defaultNameStrategy, String value) {
@@ -3123,9 +3132,9 @@ public class QuteProcessor {
                 if (method.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
                         && config.filter().test(method)
                         && (method.name().equals(name)
-                                || ValueResolverGenerator.getPropertyName(method.name()).equals(name))) {
+                                || isMatchingGetter(method, name, clazz, config))) {
                     // Skip void, non-public, static and synthetic methods
-                    // Method name must match (exact or getter)
+                    // Method name must match (exact or getter if no exact match exists)
                     return method;
                 }
             }
@@ -3154,7 +3163,7 @@ public class QuteProcessor {
                     for (MethodInfo method : interfaceClassInfo.methods()) {
                         if (config.filter().test(method)
                                 && (method.name().equals(name)
-                                        || ValueResolverGenerator.getPropertyName(method.name()).equals(name))) {
+                                        || isMatchingGetter(method, name, clazz, config))) {
                             return method;
                         }
                     }
@@ -3163,6 +3172,55 @@ public class QuteProcessor {
         }
         // No matching method found
         return null;
+    }
+
+    private static boolean isMatchingGetter(MethodInfo method, String name, ClassInfo clazz, JavaMemberLookupConfig config) {
+        if (ValueResolverGenerator.isGetterName(method.name(), method.returnType())) {
+            // isActive -> active, hasImage -> image
+            String propertyName = ValueResolverGenerator.getPropertyName(method.name());
+            if (propertyName.equals(name)) {
+                if (config.declaredMembersOnly()) {
+                    return clazz.methods().stream().noneMatch(m -> m.name().equals(name));
+                } else {
+                    Set<DotName> interfaceNames = new HashSet<>();
+                    while (clazz != null) {
+                        if (interfaceNames != null) {
+                            addInterfaces(clazz, config.index(), interfaceNames);
+                        }
+                        for (MethodInfo m : clazz.methods()) {
+                            if (m.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
+                                    && config.filter().test(m)
+                                    && m.name().equals(name)) {
+                                // Exact match exists
+                                return false;
+                            }
+                        }
+                        DotName superName = clazz.superName();
+                        if (superName == null) {
+                            clazz = null;
+                        } else {
+                            clazz = config.index().getClassByName(clazz.superName());
+                        }
+                    }
+                    for (DotName interfaceName : interfaceNames) {
+                        ClassInfo interfaceClassInfo = config.index().getClassByName(interfaceName);
+                        if (interfaceClassInfo != null) {
+                            for (MethodInfo m : interfaceClassInfo.methods()) {
+                                if (m.isDefault()
+                                        && m.returnType().kind() != org.jboss.jandex.Type.Kind.VOID
+                                        && config.filter().test(m)
+                                        && (m.name().equals(name))) {
+                                    // Exact default method match exists
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static void addInterfaces(ClassInfo clazz, IndexView index, Set<DotName> interfaceNames) {

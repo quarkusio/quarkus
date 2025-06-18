@@ -906,7 +906,10 @@ public class SmallRyeOpenApiProcessor {
                 .withOperationHandler(this::handleOperation)
                 .enableUnannotatedPathParameters(capabilities.isPresent(Capability.RESTEASY_REACTIVE))
                 .enableStandardFilter(false)
-                .withFilters(openAPIBuildItems.stream().map(AddToOpenAPIDefinitionBuildItem::getOASFilter).toList());
+                .withFilters(openAPIBuildItems.stream()
+                        .map(AddToOpenAPIDefinitionBuildItem::getOASFilter)
+                        .sorted(Comparator.comparing(filter -> filter.getClass().getName()))
+                        .toList());
 
         getUserDefinedBuildtimeFilters(index).forEach(builder::addFilterName);
 

@@ -863,10 +863,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             if (isIdTokenRequired(configContext)) {
                                 LOG.errorf("ID token is not available in the authorization code grant response");
                                 return Uni.createFrom().failure(new AuthenticationCompletionException());
-                            } else {
+                            } else if (tokens.getAccessToken() != null) {
                                 tokens.setIdToken(generateInternalIdToken(configContext, null, null,
                                         tokens.getAccessTokenExpiresIn()));
                                 internalIdToken = true;
+                            } else {
+                                LOG.errorf(
+                                        "Neither ID token nor access tokens are available in the authorization code grant response."
+                                                + " Please check logs for more details, enable debug log level if no details are visible.");
+                                return Uni.createFrom().failure(new AuthenticationCompletionException());
                             }
                         } else {
                             if (!prepareNonceForVerification(context, configContext.oidcConfig(), stateBean)) {
@@ -1039,10 +1044,10 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         } else if (accessTokenExpiresInSecs != null) {
             builder.expiresIn(accessTokenExpiresInSecs);
         }
-        builder.audience(context.oidcConfig().getClientId().get());
+        builder.audience(context.oidcConfig().clientId().get());
 
         JwtSignatureBuilder sigBuilder = builder.jws().header(INTERNAL_IDTOKEN_HEADER, true);
-        String clientOrJwtSecret = OidcCommonUtils.getClientOrJwtSecret(context.oidcConfig().credentials);
+        String clientOrJwtSecret = OidcCommonUtils.getClientOrJwtSecret(context.oidcConfig().credentials());
         if (clientOrJwtSecret != null) {
             LOG.debug("Signing internal ID token with a configured client secret");
             return sigBuilder.sign(KeyUtils.createSecretKeyFromSecret(clientOrJwtSecret));

@@ -2041,9 +2041,13 @@ public class ItemResource {
 [[type_safe_fragments]]
 ==== Type-safe Fragments
 
-You can also define a type-safe <<fragments,fragment>> in your Java code.
-A _native static_ method with the name that contains a dollar sign `$` denotes a method that represents a fragment of a type-safe template.
-The name of the fragment is derived from the annotated method name.
+You can also define a type-safe <<fragments,fragment>> of a type-safe template in your Java code.
+There are two ways to define a type-safe fragment:
+
+1. A _native static_ method annotated with `@CheckedTemplate`, with a name that contains a dollar sign `$`.
+2. A Java record that implements `io.quarkus.qute.TemplateInstance` and its name contains a dollar sign `$`.
+
+The name of the fragment is derived from the annotated member name.
 The part before the last occurrence of a dollar sign `$` is the method name of the related type-safe template.
 The part after the last occurrence of a dollar sign is the fragment identifier.
 The strategy defined by the relevant `CheckedTemplate#defaultName()` is honored when constructing the defaulted names.
@@ -2062,6 +2066,9 @@ class Templates {
 
   // defines a fragment of Templates#items() with identifier "item"
   static native TemplateInstance items$item(Item item); <1>
+  
+  // type-safe fragment as a Java record - functionally equivalent to the items$item() method above
+  record items$item(Item item) implements TemplateInstance {}
 }
 ----
 <1> Quarkus validates at build time that each template that corresponds to the `Templates#items()` contains a fragment with identifier `item`. Moreover, the parameters of the fragment method are validated too. In general, all type-safe expressions that are found in the fragment and that reference some data from the original/outer template require a specific parameter to be present.

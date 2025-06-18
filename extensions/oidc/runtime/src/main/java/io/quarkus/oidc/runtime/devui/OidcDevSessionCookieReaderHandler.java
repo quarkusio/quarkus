@@ -4,8 +4,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
-import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.http.Cookie;
@@ -13,10 +13,8 @@ import io.vertx.ext.web.RoutingContext;
 
 final class OidcDevSessionCookieReaderHandler implements Handler<RoutingContext> {
 
-    private final OidcTenantConfig defaultTenantConfig;
+    OidcDevSessionCookieReaderHandler() {
 
-    OidcDevSessionCookieReaderHandler(OidcConfig oidcConfig) {
-        this.defaultTenantConfig = OidcTenantConfig.of(OidcConfig.getDefaultTenant(oidcConfig));
     }
 
     @Override
@@ -24,6 +22,7 @@ final class OidcDevSessionCookieReaderHandler implements Handler<RoutingContext>
         Cookie cookie = rc.request().getCookie(OidcUtils.SESSION_COOKIE_NAME);
         if (cookie != null) {
             DefaultTokenStateManager tokenStateManager = Arc.container().instance(DefaultTokenStateManager.class).get();
+            OidcTenantConfig defaultTenantConfig = getDefaultTenantConfig();
             Uni<AuthorizationCodeTokens> tokensUni = tokenStateManager.getTokens(rc, defaultTenantConfig, cookie.getValue(),
                     null);
             tokensUni.subscribe().with(tokens -> {
@@ -40,5 +39,13 @@ final class OidcDevSessionCookieReaderHandler implements Handler<RoutingContext>
             // empty: not logged in
             rc.end("{}");
         }
+    }
+
+    private static OidcTenantConfig getDefaultTenantConfig() {
+        TenantConfigBean tenantConfigBean = Arc.container().instance(TenantConfigBean.class).get();
+        if (tenantConfigBean.getDefaultTenant() != null && tenantConfigBean.getDefaultTenant().oidcConfig() != null) {
+            return tenantConfigBean.getDefaultTenant().oidcConfig();
+        }
+        return OidcTenantConfig.builder().build();
     }
 }

@@ -1,11 +1,14 @@
 package io.quarkus.hibernate.validator.runtime;
 
+import java.lang.annotation.ElementType;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -16,6 +19,7 @@ import jakarta.validation.ClockProvider;
 import jakarta.validation.ConstraintValidatorFactory;
 import jakarta.validation.MessageInterpolator;
 import jakarta.validation.ParameterNameProvider;
+import jakarta.validation.Path;
 import jakarta.validation.TraversableResolver;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
@@ -25,7 +29,6 @@ import jakarta.validation.valueextraction.ValueExtractor;
 import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
-import org.hibernate.validator.internal.engine.resolver.JPATraversableResolver;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
@@ -83,7 +86,8 @@ public class HibernateValidatorRecorder {
     public Function<SyntheticCreationalContext<HibernateValidatorFactory>, HibernateValidatorFactory> hibernateValidatorFactory(
             Set<Class<?>> classesToBeValidated,
             Set<String> detectedBuiltinConstraints, Set<Class<?>> valueExtractorClasses,
-            boolean hasXmlConfiguration, boolean jpaInClasspath,
+            boolean hasXmlConfiguration,
+            Optional<BiPredicate<Object, String>> attributeLoadedPredicate,
             LocalesBuildTimeConfig localesBuildTimeConfig,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) {
         return new Function<>() {
@@ -141,8 +145,8 @@ public class HibernateValidatorRecorder {
                     configuration.traversableResolver(configuredTraversableResolver.get());
                 } else {
                     // we still define the one we want to use so that we do not rely on runtime automatic detection
-                    if (jpaInClasspath) {
-                        configuration.traversableResolver(new JPATraversableResolver());
+                    if (attributeLoadedPredicate.isPresent()) {
+                        configuration.traversableResolver(new DelegatingTraversableResolver(attributeLoadedPredicate.get()));
                     } else {
                         configuration.traversableResolver(new TraverseAllTraversableResolver());
                     }
@@ -290,5 +294,25 @@ public class HibernateValidatorRecorder {
     // so completely in heap and ready to go when a native image is built
     public void hibernateValidatorFactoryInit(BeanContainer beanContainer) {
         HibernateValidatorFactory hibernateValidatorFactory = beanContainer.beanInstance(HibernateValidatorFactory.class);
+    }
+
+    static final class DelegatingTraversableResolver implements TraversableResolver {
+        private final BiPredicate<Object, String> attributeLoadedPredicate;
+
+        DelegatingTraversableResolver(BiPredicate<Object, String> attributeLoadedPredicate) {
+            this.attributeLoadedPredicate = attributeLoadedPredicate;
+        }
+
+        @Override
+        public boolean isReachable(Object entity, Path.Node traversableProperty, Class<?> rootBeanType,
+                Path pathToTraversableObject, ElementType elementType) {
+            return attributeLoadedPredicate.test(entity, traversableProperty.getName());
+        }
+
+        @Override
+        public boolean isCascadable(Object traversableObject, Path.Node traversableProperty, Class<?> rootBeanType,
+                Path pathToTraversableObject, ElementType elementType) {
+            return true;
+        }
     }
 }

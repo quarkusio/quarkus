@@ -131,6 +131,7 @@ import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
+import io.quarkus.hibernate.validator.spi.BeanValidationTraversableResolverBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
 import io.quarkus.runtime.LaunchMode;
@@ -518,9 +519,11 @@ public final class HibernateOrmProcessor {
     public void build(RecorderContext recorderContext, HibernateOrmRecorder recorder,
             Capabilities capabilities,
             JpaModelBuildItem jpaModel,
+            HibernateOrmConfig hibernateOrmConfig,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> integrationBuildItems,
             BuildProducer<BeanContainerListenerBuildItem> beanContainerListener,
+            BuildProducer<BeanValidationTraversableResolverBuildItem> beanValidationTraversableResolver,
             LaunchModeBuildItem launchMode) throws Exception {
         validateHibernatePropertiesNotUsed();
 
@@ -578,6 +581,10 @@ public final class HibernateOrmProcessor {
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
                         recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses)));
+        if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR) && hibernateOrmConfig.enabled()) {
+            beanValidationTraversableResolver
+                    .produce(new BeanValidationTraversableResolverBuildItem(recorder.attributeLoadedPredicate()));
+        }
     }
 
     private void validateHibernatePropertiesNotUsed() {

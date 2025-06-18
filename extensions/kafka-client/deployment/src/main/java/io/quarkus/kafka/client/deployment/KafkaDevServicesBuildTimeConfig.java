@@ -96,7 +96,7 @@ public interface KafkaDevServicesBuildTimeConfig {
     /**
      * The topic-partition pairs to create in the Dev Services Kafka broker.
      * After the broker is started, given topics with partitions are created, skipping already existing topics.
-     * For example, <code>quarkus.kafka.devservices.topic-partitions.test=2</code> will create a topic named
+     * For example, <code>quarkus.kafka.devservices.topic-partitions.my-topic=2</code> will create a topic named
      * {@code test} with 2 partitions.
      * <p>
      * The topic creation will not try to re-partition existing topics with different number of partitions.

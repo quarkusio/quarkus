@@ -2,7 +2,6 @@ import org.apache.maven.execution.MavenSession;
 import org.apache.maven.lifecycle.LifecycleExecutor;
 import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 import org.apache.maven.project.MavenProject;
-import org.junit.Test;
 
 import java.io.File;
 
@@ -11,23 +10,28 @@ import java.io.File;
  */
 public class MavenPluginIntrospectionServiceTest extends AbstractMojoTestCase {
     
-    @Test
     public void testIntrospectCompilerPlugin() throws Exception {
         // Setup test project with compiler plugin
         File pom = getTestFile("src/test/resources/unit/basic-test/pom.xml");
         assertNotNull(pom);
         assertTrue(pom.exists());
         
-        MavenProject project = readMavenProject(pom);
+        // Read the actual POM file
+        // Create project and set the POM file for Maven context
+        MavenProject project = new MavenProject();
+        project.setFile(pom);
+        project.setGroupId("test");
+        project.setArtifactId("basic-test-project");
+        project.setVersion("1.0-SNAPSHOT");
         assertNotNull(project);
         
-        // Mock session and lifecycle executor (in real usage these would be injected)
+        // Create basic session
         MavenSession session = newMavenSession(project);
         LifecycleExecutor lifecycleExecutor = lookup(LifecycleExecutor.class);
         
-        // Create introspection service
+        // Create introspection service with system logger
         MavenPluginIntrospectionService service = new MavenPluginIntrospectionService(
-            session, lifecycleExecutor, getContainer().getLogger(), true);
+            session, lifecycleExecutor, new org.apache.maven.plugin.logging.SystemStreamLog(), true);
         
         // Test introspection of compile goal
         MavenPluginIntrospectionService.GoalIntrospectionResult result = 
@@ -50,15 +54,19 @@ public class MavenPluginIntrospectionServiceTest extends AbstractMojoTestCase {
         }
     }
     
-    @Test
     public void testIntrospectTestGoal() throws Exception {
         File pom = getTestFile("src/test/resources/unit/basic-test/pom.xml");
-        MavenProject project = readMavenProject(pom);
+        // Create project and set the POM file for Maven context
+        MavenProject project = new MavenProject();
+        project.setFile(pom);
+        project.setGroupId("test");
+        project.setArtifactId("basic-test-project");
+        project.setVersion("1.0-SNAPSHOT");
         MavenSession session = newMavenSession(project);
         LifecycleExecutor lifecycleExecutor = lookup(LifecycleExecutor.class);
         
         MavenPluginIntrospectionService service = new MavenPluginIntrospectionService(
-            session, lifecycleExecutor, getContainer().getLogger(), true);
+            session, lifecycleExecutor, new org.apache.maven.plugin.logging.SystemStreamLog(), true);
         
         // Test introspection of test goal
         MavenPluginIntrospectionService.GoalIntrospectionResult result = 
@@ -77,19 +85,23 @@ public class MavenPluginIntrospectionServiceTest extends AbstractMojoTestCase {
         System.out.println("Dependency resolution: " + result.getRequiresDependencyResolution());
     }
     
-    @Test
     public void testEnhancedDynamicAnalysis() throws Exception {
         File pom = getTestFile("src/test/resources/unit/basic-test/pom.xml");
-        MavenProject project = readMavenProject(pom);
+        // Create project and set the POM file for Maven context
+        MavenProject project = new MavenProject();
+        project.setFile(pom);
+        project.setGroupId("test");
+        project.setArtifactId("basic-test-project");
+        project.setVersion("1.0-SNAPSHOT");
         MavenSession session = newMavenSession(project);
         LifecycleExecutor lifecycleExecutor = lookup(LifecycleExecutor.class);
         
         // Create enhanced analysis service
         ExecutionPlanAnalysisService executionPlanService = new ExecutionPlanAnalysisService(
-            getContainer().getLogger(), true, lifecycleExecutor, session, null);
+            new org.apache.maven.plugin.logging.SystemStreamLog(), true, lifecycleExecutor, session, null);
         
         EnhancedDynamicGoalAnalysisService enhancedService = new EnhancedDynamicGoalAnalysisService(
-            session, executionPlanService, lifecycleExecutor, getContainer().getLogger(), true);
+            session, executionPlanService, lifecycleExecutor, new org.apache.maven.lifecycle.DefaultLifecycles(), new org.apache.maven.plugin.logging.SystemStreamLog(), true);
         
         // Test enhanced analysis
         GoalBehavior compileResult = enhancedService.analyzeGoal("compile", project);
@@ -101,9 +113,11 @@ public class MavenPluginIntrospectionServiceTest extends AbstractMojoTestCase {
         assertTrue("Enhanced analysis should detect test nature", testResult.isTestRelated());
         assertTrue("Enhanced analysis should detect source processing for tests", testResult.processesSources());
         
-        // Get detailed introspection result
+        // Get detailed introspection result by creating a new service instance
+        MavenPluginIntrospectionService introspectionService = new MavenPluginIntrospectionService(
+            session, lifecycleExecutor, new org.apache.maven.plugin.logging.SystemStreamLog(), true);
         MavenPluginIntrospectionService.GoalIntrospectionResult detailedResult = 
-            enhancedService.getIntrospectionResult("compile", project);
+            introspectionService.analyzeGoal("compile", project);
         
         System.out.println("Enhanced analysis - Compile goal:");
         System.out.println("  Processes sources: " + compileResult.processesSources());
@@ -119,15 +133,19 @@ public class MavenPluginIntrospectionServiceTest extends AbstractMojoTestCase {
         System.out.println("  Test related: " + testResult.isTestRelated());
     }
     
-    @Test
     public void testParameterAnalysis() throws Exception {
         File pom = getTestFile("src/test/resources/unit/basic-test/pom.xml");
-        MavenProject project = readMavenProject(pom);
+        // Create project and set the POM file for Maven context
+        MavenProject project = new MavenProject();
+        project.setFile(pom);
+        project.setGroupId("test");
+        project.setArtifactId("basic-test-project");
+        project.setVersion("1.0-SNAPSHOT");
         MavenSession session = newMavenSession(project);
         LifecycleExecutor lifecycleExecutor = lookup(LifecycleExecutor.class);
         
         MavenPluginIntrospectionService service = new MavenPluginIntrospectionService(
-            session, lifecycleExecutor, getContainer().getLogger(), true);
+            session, lifecycleExecutor, new org.apache.maven.plugin.logging.SystemStreamLog(), true);
         
         // Test parameter analysis for different goals
         String[] goalNames = {"compile", "test", "package"};
@@ -158,10 +176,14 @@ public class MavenPluginIntrospectionServiceTest extends AbstractMojoTestCase {
      * This test demonstrates how the introspection service provides much more
      * information than the old hardcoded approach
      */
-    @Test
     public void testComparisonWithHardcodedApproach() throws Exception {
         File pom = getTestFile("src/test/resources/unit/basic-test/pom.xml");
-        MavenProject project = readMavenProject(pom);
+        // Create project and set the POM file for Maven context
+        MavenProject project = new MavenProject();
+        project.setFile(pom);
+        project.setGroupId("test");
+        project.setArtifactId("basic-test-project");
+        project.setVersion("1.0-SNAPSHOT");
         MavenSession session = newMavenSession(project);
         LifecycleExecutor lifecycleExecutor = lookup(LifecycleExecutor.class);
         
@@ -170,7 +192,7 @@ public class MavenPluginIntrospectionServiceTest extends AbstractMojoTestCase {
         
         // New introspection approach
         MavenPluginIntrospectionService service = new MavenPluginIntrospectionService(
-            session, lifecycleExecutor, getContainer().getLogger(), true);
+            session, lifecycleExecutor, new org.apache.maven.plugin.logging.SystemStreamLog(), true);
         MavenPluginIntrospectionService.GoalIntrospectionResult introspectionResult = 
             service.analyzeGoal("compile", project);
         GoalBehavior introspectionBehavior = introspectionResult.toGoalBehavior();

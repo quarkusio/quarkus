@@ -31,9 +31,9 @@ function readMavenCache(cachePath: string): Record<string, any> {
   }
 }
 
-function writeMavenCache(cachePath: string, results: any) {
+function writeMavenCache(cachePath: string, cache: Record<string, any>) {
   try {
-    writeJsonFile(cachePath, results);
+    writeJsonFile(cachePath, cache);
   } catch (error) {
     console.warn('Failed to write Maven cache:', error.message);
   }
@@ -81,18 +81,17 @@ export const createNodesV2: CreateNodesV2 = [
         if (opts.verbose) {
           console.log('Using cached Maven analysis results for createNodes');
         }
-        return cache[cacheKey];
+        return cache[cacheKey].createNodesResults || [];
       }
 
       // Run analysis if not cached
       const result = await runMavenAnalysis(opts);
-      const createNodesResults = result.createNodesResults || [];
 
-      // Cache the results
-      cache[cacheKey] = createNodesResults;
+      // Cache the complete result
+      cache[cacheKey] = result;
       writeMavenCache(cachePath, cache);
 
-      return createNodesResults;
+      return result.createNodesResults || [];
 
     } catch (error) {
       console.error(`Maven analysis failed:`, error.message);
@@ -126,18 +125,17 @@ export const createDependencies: CreateDependencies = async (options, context) =
       if (opts.verbose) {
         console.log('Using cached Maven analysis results for createDependencies');
       }
-      return cache[cacheKey];
+      return cache[cacheKey].createDependencies || [];
     }
 
     // Run analysis if not cached
     const result = await runMavenAnalysis(opts);
-    const createDependencies = result.createDependencies || [];
 
-    // Cache the results
-    cache[cacheKey] = createDependencies;
+    // Cache the complete result
+    cache[cacheKey] = result;
     writeMavenCache(cachePath, cache);
 
-    return createDependencies;
+    return result.createDependencies || [];
 
   } catch (error) {
     console.error(`Maven dependency analysis failed:`, error.message);

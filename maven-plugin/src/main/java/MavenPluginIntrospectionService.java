@@ -54,16 +54,20 @@ public class MavenPluginIntrospectionService {
                 MojoExecution mojoExecution = findMojoExecution(goal, project);
                 if (mojoExecution != null) {
                     analyzeMojoExecution(mojoExecution, result);
-                }
-                
-                // 2. Analyze using MojoDescriptor if available
-                if (mojoExecution != null && mojoExecution.getMojoDescriptor() != null) {
-                    analyzeMojoDescriptor(mojoExecution.getMojoDescriptor(), result);
-                }
-                
-                // 3. Analyze plugin configuration
-                if (mojoExecution != null) {
+                    
+                    // 2. Analyze using MojoDescriptor if available
+                    if (mojoExecution.getMojoDescriptor() != null) {
+                        analyzeMojoDescriptor(mojoExecution.getMojoDescriptor(), result);
+                    }
+                    
+                    // 3. Analyze plugin configuration
                     analyzePluginConfiguration(mojoExecution, result);
+                } else {
+                    // No MojoExecution found - use fallback
+                    if (verbose) {
+                        log.debug("No MojoExecution found for goal " + goal + ", using fallback analysis");
+                    }
+                    result = createFallbackResult(goal);
                 }
                 
             } catch (Exception e) {

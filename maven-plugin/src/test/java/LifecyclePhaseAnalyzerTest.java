@@ -1,93 +1,37 @@
 import org.apache.maven.lifecycle.DefaultLifecycles;
 import org.apache.maven.lifecycle.Lifecycle;
 import org.apache.maven.plugin.logging.Log;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.apache.maven.plugin.testing.AbstractMojoTestCase;
 
 import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 /**
  * Test class demonstrating the LifecyclePhaseAnalyzer functionality and showing
  * how it replaces hardcoded phase behavior with dynamic Maven API analysis.
  */
-public class LifecyclePhaseAnalyzerTest {
+public class LifecyclePhaseAnalyzerTest extends AbstractMojoTestCase {
     
-    @Mock
     private DefaultLifecycles defaultLifecycles;
-    
-    @Mock
     private Log log;
-    
-    @Mock
-    private Lifecycle defaultLifecycle;
-    
-    @Mock 
-    private Lifecycle cleanLifecycle;
-    
-    @Mock
-    private Lifecycle siteLifecycle;
-    
     private LifecyclePhaseAnalyzer analyzer;
     
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
+    @Override
+    protected void setUp() throws Exception {
+        super.setUp();
         
-        // Setup mock lifecycles
-        setupMockLifecycles();
+        // Get DefaultLifecycles from the Maven container
+        defaultLifecycles = lookup(DefaultLifecycles.class);
+        log = new org.apache.maven.plugin.logging.SystemStreamLog();
         
         analyzer = new LifecyclePhaseAnalyzer(defaultLifecycles, log, true);
     }
     
-    private void setupMockLifecycles() {
-        // Default lifecycle phases (subset for testing)
-        List<String> defaultPhases = Arrays.asList(
-            "validate", "initialize", "generate-sources", "process-sources", 
-            "generate-resources", "process-resources", "compile", "process-classes",
-            "generate-test-sources", "process-test-sources", "generate-test-resources",
-            "process-test-resources", "test-compile", "process-test-classes", "test",
-            "prepare-package", "package", "pre-integration-test", "integration-test",
-            "post-integration-test", "verify", "install", "deploy"
-        );
-        
-        // Clean lifecycle phases
-        List<String> cleanPhases = Arrays.asList("pre-clean", "clean", "post-clean");
-        
-        // Site lifecycle phases
-        List<String> sitePhases = Arrays.asList("pre-site", "site", "post-site", "site-deploy");
-        
-        // Setup mock lifecycle objects
-        when(defaultLifecycle.getId()).thenReturn("default");
-        when(defaultLifecycle.getPhases()).thenReturn(defaultPhases);
-        
-        when(cleanLifecycle.getId()).thenReturn("clean");
-        when(cleanLifecycle.getPhases()).thenReturn(cleanPhases);
-        
-        when(siteLifecycle.getId()).thenReturn("site");
-        when(siteLifecycle.getPhases()).thenReturn(sitePhases);
-        
-        // Setup phase-to-lifecycle mapping
-        Map<String, Lifecycle> phaseToLifecycleMap = new HashMap<>();
-        for (String phase : defaultPhases) {
-            phaseToLifecycleMap.put(phase, defaultLifecycle);
-        }
-        for (String phase : cleanPhases) {
-            phaseToLifecycleMap.put(phase, cleanLifecycle);
-        }
-        for (String phase : sitePhases) {
-            phaseToLifecycleMap.put(phase, siteLifecycle);
-        }
-        
-        when(defaultLifecycles.getPhaseToLifecycleMap()).thenReturn(phaseToLifecycleMap);
-        when(defaultLifecycles.getLifeCycles()).thenReturn(Arrays.asList(defaultLifecycle, cleanLifecycle, siteLifecycle));
+    @Override
+    protected void tearDown() throws Exception {
+        super.tearDown();
     }
     
-    @Test
+    
     public void testBasicPhaseAnalysis() {
         // Test source processing phase
         LifecyclePhaseAnalyzer.PhaseAnalysis compileAnalysis = analyzer.analyzePhase("compile");
@@ -100,7 +44,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(compileAnalysis.getPhasePosition() >= 0);
     }
     
-    @Test
     public void testTestPhaseAnalysis() {
         // Test test-related phase
         LifecyclePhaseAnalyzer.PhaseAnalysis testAnalysis = analyzer.analyzePhase("test");
@@ -111,7 +54,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(testAnalysis.hasCategory(LifecyclePhaseAnalyzer.PhaseCategory.TEST_RELATED));
     }
     
-    @Test
     public void testResourcePhaseAnalysis() {
         // Test resource processing phase
         LifecyclePhaseAnalyzer.PhaseAnalysis resourceAnalysis = analyzer.analyzePhase("process-resources");
@@ -123,7 +65,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(resourceAnalysis.hasCategory(LifecyclePhaseAnalyzer.PhaseCategory.PROCESSING));
     }
     
-    @Test
     public void testCleanLifecyclePhase() {
         // Test clean lifecycle phase
         LifecyclePhaseAnalyzer.PhaseAnalysis cleanAnalysis = analyzer.analyzePhase("clean");
@@ -134,7 +75,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(cleanAnalysis.hasCategory(LifecyclePhaseAnalyzer.PhaseCategory.CLEANUP));
     }
     
-    @Test
     public void testSiteLifecyclePhase() {
         // Test site lifecycle phase
         LifecyclePhaseAnalyzer.PhaseAnalysis siteAnalysis = analyzer.analyzePhase("site");
@@ -145,7 +85,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(siteAnalysis.hasCategory(LifecyclePhaseAnalyzer.PhaseCategory.DOCUMENTATION));
     }
     
-    @Test
     public void testPhasePositionAnalysis() {
         // Test early phase
         LifecyclePhaseAnalyzer.PhaseAnalysis validateAnalysis = analyzer.analyzePhase("validate");
@@ -160,7 +99,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(deployAnalysis.hasCategory(LifecyclePhaseAnalyzer.PhaseCategory.LATE_PHASE));
     }
     
-    @Test
     public void testGoalBehaviorConversion() {
         // Test source processing conversion
         GoalBehavior compileGate = analyzer.toGoalBehavior("compile");
@@ -182,7 +120,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(testResourceGate.isTestRelated());
     }
     
-    @Test
     public void testComplexPhaseNames() {
         // Test phase with multiple semantic indicators
         LifecyclePhaseAnalyzer.PhaseAnalysis testCompileAnalysis = analyzer.analyzePhase("test-compile");
@@ -197,7 +134,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(generateSourcesAnalysis.hasCategory(LifecyclePhaseAnalyzer.PhaseCategory.SOURCE_PROCESSING));
     }
     
-    @Test
     public void testCaching() {
         // Analyze same phase twice
         LifecyclePhaseAnalyzer.PhaseAnalysis first = analyzer.analyzePhase("compile");
@@ -212,7 +148,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue((Integer) stats.get("cachedAnalyses") > 0);
     }
     
-    @Test
     public void testGetAllLifecyclePhases() {
         Set<String> allPhases = analyzer.getAllLifecyclePhases();
         
@@ -224,7 +159,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertTrue(allPhases.contains("site"));
     }
     
-    @Test
     public void testGetPhasesForLifecycle() {
         List<String> defaultPhases = analyzer.getPhasesForLifecycle("default");
         assertNotNull(defaultPhases);
@@ -237,7 +171,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertEquals(3, cleanPhases.size());
     }
     
-    @Test
     public void testNullAndEmptyPhases() {
         // Test null phase
         LifecyclePhaseAnalyzer.PhaseAnalysis nullAnalysis = analyzer.analyzePhase(null);
@@ -250,7 +183,6 @@ public class LifecyclePhaseAnalyzerTest {
         assertEquals("", emptyAnalysis.getPhase());
     }
     
-    @Test
     public void testUnknownPhase() {
         // Test phase not in any lifecycle
         LifecyclePhaseAnalyzer.PhaseAnalysis unknownAnalysis = analyzer.analyzePhase("unknown-phase");
@@ -264,7 +196,6 @@ public class LifecyclePhaseAnalyzerTest {
     /**
      * This test demonstrates the key difference between hardcoded and dynamic approaches
      */
-    @Test
     public void testDynamicVsHardcodedComparison() {
         // Test phases that would be handled by hardcoded switch
         String[] testPhases = {
@@ -285,7 +216,6 @@ public class LifecyclePhaseAnalyzerTest {
         }
     }
     
-    @Test
     public void testCacheClear() {
         // Analyze some phases
         analyzer.analyzePhase("compile");
@@ -298,6 +228,6 @@ public class LifecyclePhaseAnalyzerTest {
         analyzer.clearCache();
         
         Map<String, Object> statsAfter = analyzer.getCacheStats();
-        assertEquals(0, (Integer) statsAfter.get("cachedAnalyses"));
+        assertEquals((Integer) 0, (Integer) statsAfter.get("cachedAnalyses"));
     }
 }

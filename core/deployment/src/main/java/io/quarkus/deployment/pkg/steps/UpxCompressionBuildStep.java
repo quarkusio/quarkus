@@ -3,6 +3,7 @@ package io.quarkus.deployment.pkg.steps;
 import static io.quarkus.deployment.pkg.steps.LinuxIDUtil.getLinuxID;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,15 +25,11 @@ import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.FileUtil;
 import io.smallrye.common.process.AbnormalExitException;
 import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class UpxCompressionBuildStep {
 
     private static final Logger log = Logger.getLogger(UpxCompressionBuildStep.class);
-
-    /**
-     * The name of the environment variable containing the system path.
-     */
-    private static final String PATH = "PATH";
 
     @BuildStep(onlyIf = NativeBuild.class)
     public void compress(NativeConfig nativeConfig, NativeImageRunnerBuildItem nativeImageRunner,
@@ -174,21 +171,8 @@ public class UpxCompressionBuildStep {
     }
 
     private Optional<File> getUpxFromSystem() {
-        String exec = getUpxExecutableName();
-        String systemPath = System.getenv(PATH);
-        if (systemPath != null) {
-            String[] pathDirs = systemPath.split(File.pathSeparator);
-            for (String pathDir : pathDirs) {
-                File dir = new File(pathDir);
-                if (dir.isDirectory()) {
-                    File file = new File(dir, exec);
-                    if (file.exists()) {
-                        return Optional.of(file);
-                    }
-                }
-            }
-        }
-        return Optional.empty();
+        return ProcessUtil.pathOfCommand(Path.of(getUpxExecutableName()))
+                .map(Path::toFile);
     }
 
     private static String getUpxExecutableName() {

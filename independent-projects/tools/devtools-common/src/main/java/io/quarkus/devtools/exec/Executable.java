@@ -2,12 +2,10 @@ package io.quarkus.devtools.exec;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessUtil;
 
 public class Executable {
 
@@ -32,9 +30,7 @@ public class Executable {
     }
 
     public static String findExecutable(String exec) {
-        return Stream.of(System.getenv("PATH").split(Pattern.quote(File.pathSeparator))).map(Paths::get)
-                .map(path -> path.resolve(exec).toFile()).filter(File::exists).findFirst().map(File::getParent)
-                .orElse(null);
+        return ProcessUtil.pathOfCommand(Path.of(exec)).map(Object::toString).orElse(null);
     }
 
     public static File findExecutable(String name, String errorMessage, MessageWriter output) {

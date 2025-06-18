@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.get;
 import static org.hamcrest.CoreMatchers.equalTo;
 
 import jakarta.ws.rs.GET;

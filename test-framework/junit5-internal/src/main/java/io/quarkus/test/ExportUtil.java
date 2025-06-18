@@ -1,7 +1,5 @@
 package io.quarkus.test;
 
-import static io.quarkus.test.ExportUtil.APPLICATION_PROPERTIES;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;

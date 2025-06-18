@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.deployment.metrics;
 
-import static io.opentelemetry.sdk.metrics.data.MetricDataType.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.util.List;

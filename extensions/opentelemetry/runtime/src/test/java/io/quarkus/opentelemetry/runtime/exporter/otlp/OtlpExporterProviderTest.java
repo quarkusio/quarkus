@@ -10,7 +10,11 @@ import java.util.OptionalInt;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.*;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.CompressionType;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterLogsConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterMetricsConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTracesConfig;
 
 class OtlpExporterProviderTest {
 

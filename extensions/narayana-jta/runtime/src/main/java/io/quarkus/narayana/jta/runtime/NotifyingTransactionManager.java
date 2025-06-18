@@ -18,8 +18,6 @@ import jakarta.transaction.TransactionScoped;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.narayana.jta.runtime.TransactionScopedNotifier.TransactionId;
-
 /**
  * A delegating transaction manager which receives an instance of Narayana transaction manager
  * and delegates all calls to it.

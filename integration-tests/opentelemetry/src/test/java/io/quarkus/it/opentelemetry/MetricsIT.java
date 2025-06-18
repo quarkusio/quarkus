@@ -1,7 +1,6 @@
 package io.quarkus.it.opentelemetry;
 
 import static io.opentelemetry.sdk.metrics.data.MetricDataType.*;
-import static io.opentelemetry.sdk.metrics.data.MetricDataType.LONG_SUM;
 
 import java.util.Set;
 

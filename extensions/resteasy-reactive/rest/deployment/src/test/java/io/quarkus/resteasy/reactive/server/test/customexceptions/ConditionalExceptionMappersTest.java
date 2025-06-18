@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.customexceptions;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.get;
 
 import java.util.function.Supplier;
 

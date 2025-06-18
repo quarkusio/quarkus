@@ -1,6 +1,7 @@
 package io.quarkus.resteasy.reactive.qute.runtime;
 
-import static io.quarkus.resteasy.reactive.qute.runtime.Util.*;
+import static io.quarkus.resteasy.reactive.qute.runtime.Util.setSelectedVariant;
+import static io.quarkus.resteasy.reactive.qute.runtime.Util.toUni;
 
 import jakarta.ws.rs.core.MediaType;
 

@@ -10,13 +10,15 @@ import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseBroadcaster;
 import jakarta.ws.rs.sse.SseEventSink;
 
-// Using `@RestStreamElementType` on purpose to ensure the backward compatibility.
 import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 
+/**
+ * @implNote Use {@link org.jboss.resteasy.reactive.RestStreamElementType} on purpose to ensure the backward compatibility.
+ */
 @Path("sse")
 public class SseResource {
 

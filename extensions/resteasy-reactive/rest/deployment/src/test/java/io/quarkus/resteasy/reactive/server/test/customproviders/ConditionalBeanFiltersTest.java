@@ -1,7 +1,7 @@
 package io.quarkus.resteasy.reactive.server.test.customproviders;
 
-import static io.restassured.RestAssured.*;
-import static org.assertj.core.api.Assertions.*;
+import static io.restassured.RestAssured.get;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.util.List;

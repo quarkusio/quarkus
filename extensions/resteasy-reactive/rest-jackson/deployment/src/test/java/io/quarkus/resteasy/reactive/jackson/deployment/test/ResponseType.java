@@ -5,7 +5,6 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.resteasy.reactive.jackson.SecureField;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public enum ResponseType {

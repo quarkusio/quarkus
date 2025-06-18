@@ -87,7 +87,7 @@ updates:
       - dependency-name: org.codehaus.mojo:*
       - dependency-name: io.fabric8:docker-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
-      - dependency-name: net.revelc.code:impsort-maven-plugin
+      - dependency-name: com.diffplug.spotless:spotless-maven-plugin
       - dependency-name: eu.maveniverse.maven.njord:*
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*

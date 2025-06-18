@@ -7,8 +7,6 @@ import java.util.Set;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientInfo;
-import io.quarkus.grpc.deployment.GrpcClientBuildItem.ClientType;
 
 public final class GrpcClientBuildItem extends MultiBuildItem {
 

@@ -1,6 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.headers;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 

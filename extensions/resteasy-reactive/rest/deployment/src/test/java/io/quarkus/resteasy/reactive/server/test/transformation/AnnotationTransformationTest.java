@@ -1,8 +1,9 @@
 package io.quarkus.resteasy.reactive.server.test.transformation;
 
-import static io.restassured.RestAssured.*;
+import static io.restassured.RestAssured.get;
 import static org.jboss.jandex.AnnotationInstance.create;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.*;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

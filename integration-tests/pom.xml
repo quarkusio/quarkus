@@ -360,6 +360,7 @@
                 <module>elasticsearch-java-client</module>
                 <module>micrometer-mp-metrics</module>
                 <module>micrometer-prometheus</module>
+                <module>micrometer-prometheus-opentelemetry</module>
                 <module>micrometer-security</module>
                 <module>micrometer-opentelemetry</module>
                 <module>opentelemetry</module>

@@ -34,7 +34,7 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
 public class PrometheusRegistryProcessor {
     private static final Logger log = Logger.getLogger(PrometheusRegistryProcessor.class);
 
-    static final String REGISTRY_CLASS_NAME = "io.micrometer.prometheus.PrometheusMeterRegistry";
+    static final String REGISTRY_CLASS_NAME = "io.micrometer.prometheusmetrics.PrometheusMeterRegistry";
     static final Class<?> REGISTRY_CLASS = MicrometerRecorder.getClassForName(REGISTRY_CLASS_NAME);
 
     public static class PrometheusEnabled implements BooleanSupplier {

@@ -137,7 +137,7 @@ The JVM and HTTP server metrics are collected by Micrometer.
 Next, are examples of the metrics collected by Micrometer and a comparison of what would be the `quarkus-micrometer-registry-prometheus` output vs the one on this bridge. A link to the equivalent OpenTelemetry Semantic Convention is also provided for reference and is not currently used in the bridge.
 
 |===
-|Micrometer Meter |Quarkus Micrometer Prometheus output | This bridge OpenTelemetry output name | Related OpenTelemetry Semantic Convention (not applied)
+|Micrometer Meter |Quarkus Micrometer Prometheus client v0.x output | This bridge OpenTelemetry output name | Related OpenTelemetry Semantic Convention (not applied)
 
 |Using the @Timed interceptor.
 |

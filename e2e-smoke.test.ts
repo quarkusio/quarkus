@@ -4,25 +4,6 @@ import { readFileSync, existsSync, rmSync } from 'fs';
 
 const TIMEOUT = 120000; // 2 minutes
 
-// Global setup to ensure Maven is compiled once
-let isSetupComplete = false;
-const setupPromise = (async () => {
-  if (!isSetupComplete) {
-    console.log('🔥 Setting up Maven Plugin E2E Tests (one-time setup)...');
-    
-    // Step 1: Recompile Java components
-    console.log('📦 Recompiling Java components...');
-    execSync('cd maven-plugin && mvn install -DskipTests -q', { stdio: 'inherit' });
-    
-    // Step 2: Reset Nx state
-    console.log('🔄 Resetting Nx state...');
-    execSync('npx nx reset', { stdio: 'inherit' });
-    
-    isSetupComplete = true;
-    console.log('✅ Maven plugin setup complete');
-  }
-})();
-
 describe('Maven Plugin E2E Smoke Tests', () => {
   // Generate unique test ID for this test run
   const testId = Math.random().toString(36).substring(7);
@@ -30,9 +11,8 @@ describe('Maven Plugin E2E Smoke Tests', () => {
   let projectGraph: any;
   
   beforeAll(async () => {
-    await setupPromise;
-    
-    // Prime the shared graph file once for all tests
+    // Maven compilation and Nx reset are handled by global setup
+    // Just generate the shared graph file once for all tests
     console.log('📊 Generating shared project graph...');
     execSync(`npx nx graph --file ${sharedGraphFile}`, { stdio: 'pipe' });
     

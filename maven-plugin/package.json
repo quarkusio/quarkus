@@ -2,7 +2,7 @@
   "name": "@nx-quarkus/maven-plugin",
   "version": "1.0.0",
   "description": "Nx Maven plugin with batch executor for Quarkus projects",
-  "main": "src/index.js",
+  "main": "src/index.ts",
   "keywords": ["nx", "maven", "quarkus", "java"],
   "author": "Nx Quarkus Team",
   "license": "MIT",

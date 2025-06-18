@@ -3,6 +3,8 @@
   "scripts": {
     "test": "vitest",
     "test:watch": "vitest --watch",
+    "test:e2e": "vitest run e2e-smoke.test.ts",
+    "test:e2e:watch": "vitest watch e2e-smoke.test.ts",
     "compile-java": "cd maven-plugin && mvn install -DskipTests"
   },
   "devDependencies": {

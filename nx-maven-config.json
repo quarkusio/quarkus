@@ -1,7 +1,7 @@
 {
   "plugins": [
     {
-      "plugin": "./maven-plugin.ts",
+      "plugin": "./maven-plugin",
       "options": {
         "buildTargetName": "build",
         "testTargetName": "test",

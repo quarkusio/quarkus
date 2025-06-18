@@ -1,0 +1,165 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot key Maven projects structure 1`] = `
+[
+  {
+    "hasDependencies": false,
+    "hasTargets": true,
+    "key": "quarkus-parent",
+    "name": "io.quarkus:quarkus-parent",
+    "targetCount": 40,
+    "type": "lib",
+  },
+  {
+    "hasDependencies": true,
+    "hasTargets": true,
+    "key": "quarkus-core",
+    "name": "io.quarkus:quarkus-core-deployment",
+    "targetCount": 47,
+    "type": "lib",
+  },
+  {
+    "hasDependencies": false,
+    "hasTargets": true,
+    "key": "arc-parent",
+    "name": "io.quarkus.arc:arc-parent",
+    "targetCount": 42,
+    "type": "lib",
+  },
+  {
+    "hasDependencies": true,
+    "hasTargets": true,
+    "key": "arc",
+    "name": "io.quarkus:quarkus-hibernate-search-backend-elasticsearch-common-deployment",
+    "targetCount": 46,
+    "type": "lib",
+  },
+]
+`;
+
+exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot overall project statistics 1`] = `
+{
+  "hasDependencies": true,
+  "hasNodes": true,
+  "hasValidGraph": true,
+  "projectsWithDependencies": 1241,
+  "projectsWithTargets": 1267,
+  "totalProjects": 1267,
+}
+`;
+
+exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quarkus-core project configuration 1`] = `
+{
+  "hasSourceRoot": false,
+  "name": "io.quarkus:quarkus-core-deployment",
+  "root": "core/deployment",
+  "targetCount": 47,
+  "targets": [
+    "buildnumber:create",
+    "clean",
+    "compile",
+    "deploy",
+    "forbiddenapis:check",
+    "formatter:format",
+    "generate-resources",
+    "generate-sources",
+    "generate-test-resources",
+    "generate-test-sources",
+    "impsort:sort",
+    "initialize",
+    "install",
+    "integration-test",
+    "maven-clean:clean",
+    "maven-compiler:compile",
+    "maven-compiler:testCompile",
+    "maven-deploy:deploy",
+    "maven-enforcer:enforce",
+    "maven-install:install",
+    "maven-jar:jar",
+    "maven-resources:resources",
+    "maven-resources:testResources",
+    "maven-site:deploy",
+    "maven-site:site",
+    "maven-source:jar-no-fork",
+    "maven-surefire:test",
+    "package",
+    "post-clean",
+    "post-integration-test",
+    "post-site",
+    "pre-clean",
+    "pre-integration-test",
+    "pre-site",
+    "prepare-package",
+    "process-classes",
+    "process-resources",
+    "process-sources",
+    "process-test-classes",
+    "process-test-resources",
+    "process-test-sources",
+    "site",
+    "site-deploy",
+    "test",
+    "test-compile",
+    "validate",
+    "verify",
+  ],
+  "type": "lib",
+}
+`;
+
+exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quarkus-core project dependencies 1`] = `
+{
+  "dependencies": [
+    {
+      "target": "io.quarkus:quarkus-bom",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-bom-quarkus-platform-properties",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-bootstrap-core",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-bootstrap-gradle-resolver",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-bootstrap-maven-resolver",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-builder",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-class-change-agent",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-classloader-commons",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-core",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-development-mode-spi",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-devtools-utilities",
+      "type": "STATIC",
+    },
+    {
+      "target": "io.quarkus:quarkus-hibernate-validator-spi",
+      "type": "STATIC",
+    },
+  ],
+  "dependencyCount": 12,
+  "projectName": "io.quarkus:quarkus-core-deployment",
+}
+`;

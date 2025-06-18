@@ -10,7 +10,7 @@ This repository contains an Nx plugin for Maven integration that enables Nx to w
 
 ### Core Components
 
-1. **TypeScript Graph Plugin** (`maven-plugin.ts`)
+1. **TypeScript Graph Plugin** (`maven-plugin/maven-plugin.ts`)
    - Main entry point for Nx integration
    - Generates project graph using Maven workspace analysis
    - Interfaces with Maven APIs through the mojo analyzer

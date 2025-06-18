@@ -22,6 +22,10 @@ const DEFAULT_OPTIONS: MavenPluginOptions = {
   mavenExecutable: 'mvn',
 };
 
+// Global cache to avoid running Maven analysis multiple times
+let globalAnalysisCache: any = null;
+let globalCacheKey: string | null = null;
+
 // Cache management functions
 function readMavenCache(cachePath: string): Record<string, any> {
   try {
@@ -72,6 +76,14 @@ export const createNodesV2: CreateNodesV2 = [
       );
       const cacheKey = projectHash;
       
+      // OPTIMIZATION: Check global in-memory cache first
+      if (globalAnalysisCache && globalCacheKey === cacheKey) {
+        if (opts.verbose) {
+          console.log('Using global in-memory cache for createNodes');
+        }
+        return globalAnalysisCache.createNodesResults || [];
+      }
+      
       // Set up cache path
       const cachePath = join(workspaceDataDirectory, 'maven-analysis-cache.json');
       const cache = readMavenCache(cachePath);
@@ -81,6 +93,9 @@ export const createNodesV2: CreateNodesV2 = [
         if (opts.verbose) {
           console.log('Using cached Maven analysis results for createNodes');
         }
+        // Store in global cache for faster subsequent access
+        globalAnalysisCache = cache[cacheKey];
+        globalCacheKey = cacheKey;
         return cache[cacheKey].createNodesResults || [];
       }
 
@@ -90,6 +105,10 @@ export const createNodesV2: CreateNodesV2 = [
       // Cache the complete result
       cache[cacheKey] = result;
       writeMavenCache(cachePath, cache);
+      
+      // Store in global cache
+      globalAnalysisCache = result;
+      globalCacheKey = cacheKey;
 
       return result.createNodesResults || [];
 
@@ -116,6 +135,14 @@ export const createDependencies: CreateDependencies = async (options, context) =
     );
     const cacheKey = projectHash;
     
+    // OPTIMIZATION: Check global in-memory cache first
+    if (globalAnalysisCache && globalCacheKey === cacheKey) {
+      if (opts.verbose) {
+        console.log('Using global in-memory cache for createDependencies');
+      }
+      return globalAnalysisCache.createDependencies || [];
+    }
+    
     // Set up cache path
     const cachePath = join(workspaceDataDirectory, 'maven-analysis-cache.json');
     const cache = readMavenCache(cachePath);
@@ -125,15 +152,22 @@ export const createDependencies: CreateDependencies = async (options, context) =
       if (opts.verbose) {
         console.log('Using cached Maven analysis results for createDependencies');
       }
+      // Store in global cache for faster subsequent access
+      globalAnalysisCache = cache[cacheKey];
+      globalCacheKey = cacheKey;
       return cache[cacheKey].createDependencies || [];
     }
 
-    // Run analysis if not cached
+    // Run analysis if not cached - this should rarely happen since createNodesV2 runs first
     const result = await runMavenAnalysis(opts);
 
     // Cache the complete result
     cache[cacheKey] = result;
     writeMavenCache(cachePath, cache);
+    
+    // Store in global cache
+    globalAnalysisCache = result;
+    globalCacheKey = cacheKey;
 
     return result.createDependencies || [];
 

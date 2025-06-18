@@ -11,7 +11,7 @@ import com.oracle.svm.core.annotate.TargetClass;
 public final class DisableSSPIClient {
 
     @Substitute
-    private ISSPIClient createSSPI(PGStream pgStream,
+    private static ISSPIClient createSSPI(PGStream pgStream,
             String spnServiceClass,
             boolean enableNegotiate) {
         throw new IllegalStateException("The org.postgresql.sspi.SSPIClient is not available on GraalVM");

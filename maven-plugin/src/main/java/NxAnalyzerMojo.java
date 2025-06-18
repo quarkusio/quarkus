@@ -100,6 +100,10 @@ public class NxAnalyzerMojo extends AbstractMojo {
     
     private void initializeServices() {
         this.executionPlanAnalysisService = new ExecutionPlanAnalysisService(getLog(), isVerbose(), lifecycleExecutor, session, defaultLifecycles);
+        
+        // Pre-analyze all projects upfront to avoid performance bottlenecks during dependency analysis
+        executionPlanAnalysisService.preAnalyzeAllProjects(reactorProjects);
+        
         this.targetGenerationService = new TargetGenerationService(getLog(), isVerbose(), session, executionPlanAnalysisService);
         this.targetGroupService = new TargetGroupService(executionPlanAnalysisService);
         this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose(), executionPlanAnalysisService);

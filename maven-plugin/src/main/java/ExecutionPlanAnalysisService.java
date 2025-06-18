@@ -11,8 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Service that analyzes Maven execution plans once and caches results for efficient querying.
- * This avoids recalculating execution plans multiple times for the same project.
+ * Service that analyzes Maven execution plans upfront and stores all results for efficient querying.
+ * Pre-computes all Maven analysis to avoid performance bottlenecks during target dependency analysis.
  */
 public class ExecutionPlanAnalysisService {
     
@@ -22,8 +22,15 @@ public class ExecutionPlanAnalysisService {
     private final MavenSession session;
     private final DefaultLifecycles defaultLifecycles;
     
-    // Cache to store analysis results per project
+    // Pre-computed analysis results per project
     private final Map<String, ProjectExecutionAnalysis> analysisCache = new ConcurrentHashMap<>();
+    
+    // Pre-computed lifecycle information (shared across all projects)
+    private final Set<String> allLifecyclePhases;
+    private final List<String> defaultLifecyclePhases;
+    private final List<String> cleanLifecyclePhases;
+    private final List<String> siteLifecyclePhases;
+    private final Map<String, org.apache.maven.lifecycle.Lifecycle> phaseToLifecycleMap;
     
     public ExecutionPlanAnalysisService(Log log, boolean verbose, LifecycleExecutor lifecycleExecutor, MavenSession session, DefaultLifecycles defaultLifecycles) {
         this.log = log;
@@ -31,6 +38,43 @@ public class ExecutionPlanAnalysisService {
         this.lifecycleExecutor = lifecycleExecutor;
         this.session = session;
         this.defaultLifecycles = defaultLifecycles;
+        
+        // Pre-compute all lifecycle information once
+        this.allLifecyclePhases = computeAllLifecyclePhases();
+        this.defaultLifecyclePhases = computeLifecyclePhases("default");
+        this.cleanLifecyclePhases = computeLifecyclePhases("clean");
+        this.siteLifecyclePhases = computeLifecyclePhases("site");
+        this.phaseToLifecycleMap = computePhaseToLifecycleMap();
+        
+        if (verbose) {
+            log.info("Pre-computed lifecycle information: " + allLifecyclePhases.size() + " total phases");
+        }
+    }
+    
+    /**
+     * Pre-analyze all projects in the reactor upfront to avoid performance bottlenecks
+     */
+    public void preAnalyzeAllProjects(List<MavenProject> reactorProjects) {
+        if (reactorProjects == null || reactorProjects.isEmpty()) {
+            return;
+        }
+        
+        long startTime = System.currentTimeMillis();
+        if (verbose) {
+            log.info("Pre-analyzing execution plans for " + reactorProjects.size() + " projects...");
+        }
+        
+        for (MavenProject project : reactorProjects) {
+            String projectKey = MavenUtils.formatProjectKey(project);
+            if (!analysisCache.containsKey(projectKey)) {
+                analysisCache.put(projectKey, analyzeProject(project));
+            }
+        }
+        
+        long duration = System.currentTimeMillis() - startTime;
+        if (verbose) {
+            log.info("Completed pre-analysis of " + reactorProjects.size() + " projects in " + duration + "ms");
+        }
     }
     
     /**
@@ -82,50 +126,38 @@ public class ExecutionPlanAnalysisService {
      * Get all lifecycle phases from all lifecycles (default, clean, site)
      */
     public Set<String> getAllLifecyclePhases() {
-        Set<String> allPhases = new LinkedHashSet<>();
-        allPhases.addAll(getLifecyclePhases("default"));
-        allPhases.addAll(getLifecyclePhases("clean"));
-        allPhases.addAll(getLifecyclePhases("site"));
-        return allPhases;
+        return new LinkedHashSet<>(allLifecyclePhases);
     }
     
     /**
      * Get default lifecycle phases (validate, compile, test, package, verify, install, deploy)
      */
     public List<String> getDefaultLifecyclePhases() {
-        return getLifecyclePhases("default");
+        return new ArrayList<>(defaultLifecyclePhases);
     }
     
     /**
      * Get clean lifecycle phases (pre-clean, clean, post-clean)
      */
     public List<String> getCleanLifecyclePhases() {
-        return getLifecyclePhases("clean");
+        return new ArrayList<>(cleanLifecyclePhases);
     }
     
     /**
      * Get site lifecycle phases (pre-site, site, post-site, site-deploy)
      */
     public List<String> getSiteLifecyclePhases() {
-        return getLifecyclePhases("site");
+        return new ArrayList<>(siteLifecyclePhases);
     }
     
     /**
      * Get the lifecycle that contains the specified phase
      */
     public org.apache.maven.lifecycle.Lifecycle getLifecycleForPhase(String phase) {
-        if (defaultLifecycles == null || phase == null) {
+        if (phase == null) {
             return null;
         }
-        
-        try {
-            return defaultLifecycles.getPhaseToLifecycleMap().get(phase);
-        } catch (Exception e) {
-            if (verbose) {
-                log.warn("Could not get lifecycle for phase '" + phase + "': " + e.getMessage());
-            }
-            return null;
-        }
+        return phaseToLifecycleMap.get(phase);
     }
     
     /**
@@ -187,9 +219,20 @@ public class ExecutionPlanAnalysisService {
     
     
     /**
-     * Get lifecycle phases for a specific lifecycle ID
+     * Pre-compute all lifecycle phases from all lifecycles
      */
-    private List<String> getLifecyclePhases(String lifecycleId) {
+    private Set<String> computeAllLifecyclePhases() {
+        Set<String> allPhases = new LinkedHashSet<>();
+        allPhases.addAll(computeLifecyclePhases("default"));
+        allPhases.addAll(computeLifecyclePhases("clean"));
+        allPhases.addAll(computeLifecyclePhases("site"));
+        return allPhases;
+    }
+    
+    /**
+     * Pre-compute lifecycle phases for a specific lifecycle ID
+     */
+    private List<String> computeLifecyclePhases(String lifecycleId) {
         if (defaultLifecycles == null || lifecycleId == null) {
             return new ArrayList<>();
         }
@@ -211,6 +254,26 @@ public class ExecutionPlanAnalysisService {
     }
     
     /**
+     * Pre-compute phase to lifecycle mapping for efficient lookups
+     */
+    private Map<String, org.apache.maven.lifecycle.Lifecycle> computePhaseToLifecycleMap() {
+        Map<String, org.apache.maven.lifecycle.Lifecycle> map = new HashMap<>();
+        
+        if (defaultLifecycles == null) {
+            return map;
+        }
+        
+        try {
+            return defaultLifecycles.getPhaseToLifecycleMap();
+        } catch (Exception e) {
+            if (verbose) {
+                log.warn("Could not build phase to lifecycle map: " + e.getMessage());
+            }
+            return map;
+        }
+    }
+    
+    /**
      * Analyze a project's execution plans and cache the results
      */
     private ProjectExecutionAnalysis analyzeProject(MavenProject project) {
@@ -220,10 +283,8 @@ public class ExecutionPlanAnalysisService {
         
         ProjectExecutionAnalysis analysis = new ProjectExecutionAnalysis();
         
-        // Use actual lifecycle phases from Maven's lifecycle definitions
-        Set<String> lifecyclePhases = getAllLifecyclePhases();
-        
-        for (String phase : lifecyclePhases) {
+        // Use pre-computed lifecycle phases for better performance
+        for (String phase : allLifecyclePhases) {
             try {
                 if (lifecycleExecutor != null && session != null) {
                     MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(session, phase);

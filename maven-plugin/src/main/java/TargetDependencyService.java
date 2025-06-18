@@ -115,6 +115,7 @@ public class TargetDependencyService {
     /**
      * Get all goals from preceding phases in the Maven lifecycle.
      * This ensures goals depend on other goals, not phases.
+     * Optimized to use pre-computed execution plan analysis.
      */
     public List<String> getPrecedingGoalsInLifecycle(MavenProject project, String currentPhase) {
         List<String> precedingGoals = new ArrayList<>();
@@ -123,7 +124,7 @@ public class TargetDependencyService {
             return precedingGoals;
         }
 
-        // Get the lifecycle containing this phase
+        // Use pre-computed lifecycle information for better performance
         org.apache.maven.lifecycle.Lifecycle lifecycle = executionPlanAnalysisService.getLifecycleForPhase(currentPhase);
         if (lifecycle == null || lifecycle.getPhases() == null) {
             return precedingGoals;

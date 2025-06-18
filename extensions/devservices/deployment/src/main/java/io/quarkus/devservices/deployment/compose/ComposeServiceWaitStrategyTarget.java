@@ -5,6 +5,7 @@ import static io.quarkus.devservices.common.Labels.DOCKER_COMPOSE_SERVICE;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
@@ -31,7 +32,11 @@ public class ComposeServiceWaitStrategyTarget implements WaitStrategyTarget, Sup
     public ComposeServiceWaitStrategyTarget(DockerClient dockerClient, Container container) {
         this.dockerClient = dockerClient;
         this.container = container;
-        this.exposedPorts = Arrays.stream(container.getPorts()).map(ContainerPort::getPrivatePort).toList();
+        this.exposedPorts = Arrays.stream(container.getPorts())
+                .filter(port -> port.getPublicPort() != null)
+                .map(ContainerPort::getPrivatePort)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     @Override

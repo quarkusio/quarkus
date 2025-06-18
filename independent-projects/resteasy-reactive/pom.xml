@@ -72,9 +72,6 @@
         <mockito.version>5.17.0</mockito.version>
         <wiremock.version>3.13.0</wiremock.version>
         <mutiny-zero.version>1.1.1</mutiny-zero.version>
-
-        <!-- Forbidden API checks -->
-        <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>
     </properties>
 
     <modules>
@@ -500,7 +497,6 @@
                 <plugin>
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
-                    <version>${forbiddenapis-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>verify-forbidden-apis</id>

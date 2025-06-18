@@ -136,9 +136,6 @@
         <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
         <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
 
-        <!-- Forbidden API checks -->
-        <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>
-
         <!-- platform properties - this is a floating tag -->
         <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>
 
@@ -622,7 +619,6 @@
                 <plugin>
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
-                    <version>${forbiddenapis-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>verify-forbidden-apis</id>

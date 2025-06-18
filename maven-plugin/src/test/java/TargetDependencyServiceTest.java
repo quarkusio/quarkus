@@ -78,7 +78,7 @@ public class TargetDependencyServiceTest {
     public void testCalculateGoalDependencies() throws Exception {
         TestContext ctx = setupBasicTest();
         
-        List<String> dependencies = ctx.service.calculateGoalDependencies(
+        List<Object> dependencies = ctx.service.calculateGoalDependencies(
             ctx.project, "compile", "compiler:compile", new ArrayList<>());
         
         assertNotNull("Dependencies should not be null", dependencies);
@@ -95,7 +95,7 @@ public class TargetDependencyServiceTest {
     public void testCalculateGoalDependencies_NullPhase() throws Exception {
         TestContext ctx = setupBasicTest();
         
-        List<String> dependencies = ctx.service.calculateGoalDependencies(
+        List<Object> dependencies = ctx.service.calculateGoalDependencies(
             ctx.project, null, "compiler:compile", ctx.reactorProjects);
         
         assertNotNull("Dependencies should not be null", dependencies);
@@ -108,7 +108,7 @@ public class TargetDependencyServiceTest {
     public void testCalculateGoalDependencies_EmptyPhase() throws Exception {
         TestContext ctx = setupBasicTest();
         
-        List<String> dependencies = ctx.service.calculateGoalDependencies(
+        List<Object> dependencies = ctx.service.calculateGoalDependencies(
             ctx.project, "", "compiler:compile", ctx.reactorProjects);
         
         assertNotNull("Dependencies should not be null", dependencies);
@@ -122,7 +122,7 @@ public class TargetDependencyServiceTest {
         TestContext ctx = setupBasicTest();
         Map<String, TargetConfiguration> allTargets = createTestTargetsMap();
         
-        List<String> dependencies = ctx.service.calculatePhaseDependencies(
+        List<Object> dependencies = ctx.service.calculatePhaseDependencies(
             "test", allTargets, ctx.project, ctx.reactorProjects);
         
         assertNotNull("Dependencies should not be null", dependencies);
@@ -130,7 +130,7 @@ public class TargetDependencyServiceTest {
         // Cross-module dependencies are handled at the goal level, not phase level
         // In test environment with no actual goals, this may be empty
         assertTrue("Phase dependencies should only contain goals for the phase", 
-            dependencies.isEmpty() || dependencies.stream().allMatch(dep -> !dep.startsWith("^")));
+            dependencies.isEmpty() || dependencies.stream().allMatch(dep -> dep instanceof String && !((String)dep).startsWith("^")));
     }
 
     /**
@@ -188,7 +188,7 @@ public class TargetDependencyServiceTest {
         Map<String, TargetConfiguration> allTargets = createTestTargetsMap();
         
         // Test post-integration-test phase dependencies
-        List<String> dependencies = ctx.service.calculatePhaseDependencies(
+        List<Object> dependencies = ctx.service.calculatePhaseDependencies(
             "post-integration-test", allTargets, ctx.project, ctx.reactorProjects);
         
         System.out.println("DEBUG: post-integration-test dependencies = " + dependencies);
@@ -199,7 +199,7 @@ public class TargetDependencyServiceTest {
         // No longer contain preceding phases or cross-module dependencies
         // In test environment with no actual goals, this may be empty
         assertTrue("Phase dependencies should only contain goals for the phase", 
-            dependencies.isEmpty() || dependencies.stream().allMatch(dep -> !dep.startsWith("^") && !dep.equals("integration-test")));
+            dependencies.isEmpty() || dependencies.stream().allMatch(dep -> dep instanceof String && !((String)dep).startsWith("^") && !((String)dep).equals("integration-test")));
     }
 
     /**
@@ -210,7 +210,7 @@ public class TargetDependencyServiceTest {
         TestContext ctx = setupBasicTest();
         
         // Test goal dependencies for a goal that runs in post-integration-test
-        List<String> dependencies = ctx.service.calculateGoalDependencies(
+        List<Object> dependencies = ctx.service.calculateGoalDependencies(
             ctx.project, "post-integration-test", "failsafe:integration-test", ctx.reactorProjects);
         
         System.out.println("DEBUG: failsafe:integration-test goal dependencies = " + dependencies);
@@ -218,7 +218,7 @@ public class TargetDependencyServiceTest {
         assertNotNull("Dependencies should not be null", dependencies);
         
         // Should contain the preceding phase (integration-test)
-        boolean containsIntegrationTest = dependencies.contains("integration-test");
+        boolean containsIntegrationTest = dependencies.stream().anyMatch(dep -> dep instanceof String && ((String)dep).equals("integration-test"));
         if (!containsIntegrationTest) {
             System.out.println("WARNING: goal dependencies do not contain 'integration-test'");
             System.out.println("Available dependencies: " + dependencies);
@@ -228,7 +228,7 @@ public class TargetDependencyServiceTest {
         // Cross-module dependencies now scoped to actual project dependencies
         // In test environment with no actual dependencies, this may be empty
         boolean hasValidDependencies = dependencies.isEmpty() || 
-            dependencies.stream().anyMatch(dep -> dep.contains(":") && !dep.startsWith("^"));
+            dependencies.stream().anyMatch(dep -> dep instanceof String && ((String)dep).contains(":") && !((String)dep).startsWith("^"));
         assertTrue("Should have valid goal dependencies or empty list", hasValidDependencies);
     }
 
@@ -335,7 +335,7 @@ public class TargetDependencyServiceTest {
         TargetDependencyService service = new TargetDependencyService(ctx.log, true, analysisService);
         
         // Test with explicitly provided phase (simulating when phase inference works)
-        List<String> installDependencies = service.calculateGoalDependencies(
+        List<Object> installDependencies = service.calculateGoalDependencies(
             ctx.project, "install", "install:install", ctx.reactorProjects);
         
         assertNotNull("Install dependencies should not be null", installDependencies);
@@ -347,7 +347,7 @@ public class TargetDependencyServiceTest {
         // Cross-module dependencies now scoped to actual project dependencies
         // In test environment with no actual dependencies, this may be empty
         boolean hasValidGoalDependencies = installDependencies.isEmpty() || 
-            installDependencies.stream().anyMatch(dep -> dep.contains(":") && !dep.startsWith("^"));
+            installDependencies.stream().anyMatch(dep -> dep instanceof String && ((String)dep).contains(":") && !((String)dep).startsWith("^"));
         assertTrue("Install goal should have valid goal dependencies or empty list", hasValidGoalDependencies);
     }
     

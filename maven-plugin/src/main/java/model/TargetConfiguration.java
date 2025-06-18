@@ -13,7 +13,7 @@ public class TargetConfiguration {
     private Map<String, Object> options = new LinkedHashMap<>();
     private List<String> inputs = new ArrayList<>();
     private List<String> outputs = new ArrayList<>();
-    private List<String> dependsOn = new ArrayList<>();
+    private List<Object> dependsOn = new ArrayList<>();
     private TargetMetadata metadata;
     
     public TargetConfiguration() {}
@@ -35,8 +35,8 @@ public class TargetConfiguration {
     public List<String> getOutputs() { return outputs; }
     public void setOutputs(List<String> outputs) { this.outputs = outputs; }
 
-    public List<String> getDependsOn() { return dependsOn; }
-    public void setDependsOn(List<String> dependsOn) { this.dependsOn = dependsOn; }
+    public List<Object> getDependsOn() { return dependsOn; }
+    public void setDependsOn(List<Object> dependsOn) { this.dependsOn = dependsOn; }
 
     public TargetMetadata getMetadata() { return metadata; }
     public void setMetadata(TargetMetadata metadata) { this.metadata = metadata; }

@@ -1,4 +1,5 @@
 import model.TargetConfiguration;
+import model.TargetDependency;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
@@ -28,9 +29,9 @@ public class TargetDependencyService {
      * Calculate dependencies for a goal target.
      * Goals now depend on other goals, not on phases.
      */
-    public List<String> calculateGoalDependencies(MavenProject project, String executionPhase,
+    public List<Object> calculateGoalDependencies(MavenProject project, String executionPhase,
                                                   String targetName, List<MavenProject> actualDependencies) {
-        Set<String> dependsOnSet = new LinkedHashSet<>();
+        List<Object> dependencies = new ArrayList<>();
 
         String effectivePhase = executionPhase;
         if (effectivePhase == null || effectivePhase.isEmpty() || effectivePhase.startsWith("${")) {
@@ -38,28 +39,40 @@ public class TargetDependencyService {
         }
 
         if (effectivePhase != null && !effectivePhase.isEmpty()) {
-            // Add goal-to-goal dependencies based on Maven lifecycle ordering
+            // Add goal-to-goal dependencies based on Maven lifecycle ordering (same project)
             List<String> precedingGoals = getPrecedingGoalsInLifecycle(project, effectivePhase);
-            dependsOnSet.addAll(precedingGoals);
+            for (String goal : precedingGoals) {
+                dependencies.add(goal); // Simple string dependency for same project
+            }
 
-            // Add cross-module dependencies for goals in the same phase across all dependent projects
-            List<String> crossModuleGoals = getCrossModuleGoalsForPhase(project, effectivePhase, actualDependencies);
-            dependsOnSet.addAll(crossModuleGoals);
+            // Add cross-module dependencies using object form for better precision
+            if (!actualDependencies.isEmpty()) {
+                List<String> dependentProjects = new ArrayList<>();
+                for (MavenProject depProject : actualDependencies) {
+                    dependentProjects.add(MavenUtils.formatProjectKey(depProject));
+                }
+                
+                // Create object dependency for cross-module goals in the same phase
+                TargetDependency crossModuleDep = new TargetDependency(effectivePhase, dependentProjects);
+                dependencies.add(crossModuleDep);
+            }
         }
 
-        return new ArrayList<>(dependsOnSet);
+        return dependencies;
     }
 
     /**
      * Calculate dependencies for a phase target
      */
-    public List<String> calculatePhaseDependencies(String phase, Map<String, TargetConfiguration> allTargets,
+    public List<Object> calculatePhaseDependencies(String phase, Map<String, TargetConfiguration> allTargets,
                                                    MavenProject project, List<MavenProject> reactorProjects) {
-        List<String> dependsOn = new ArrayList<>();
+        List<Object> dependsOn = new ArrayList<>();
 
         // Add dependencies on all goals that belong to this phase
         List<String> goalsForPhase = getGoalsForPhase(phase, allTargets);
-        dependsOn.addAll(goalsForPhase);
+        for (String goal : goalsForPhase) {
+            dependsOn.add(goal); // Simple string dependency for goals in same project
+        }
 
         return dependsOn;
     }

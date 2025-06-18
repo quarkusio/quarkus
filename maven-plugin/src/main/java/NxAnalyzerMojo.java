@@ -141,14 +141,14 @@ public class NxAnalyzerMojo extends AbstractMojo {
                 List<MavenProject> actualDependencies = projectDependencies.getOrDefault(project, new ArrayList<>());
                 
                 // Calculate goal dependencies using only actual dependencies
-                Map<String, List<String>> goalDependencies = calculateGoalDependencies(project, actualDependencies);
+                Map<String, List<Object>> goalDependencies = calculateGoalDependencies(project, actualDependencies);
                 
                 // Generate targets using pre-calculated goal dependencies (phase dependencies calculated later)
                 Map<String, TargetConfiguration> targets = targetGenerationService.generateTargets(
                     project, workspaceRoot, goalDependencies, new LinkedHashMap<>());
                 
                 // Now calculate phase dependencies using the generated targets
-                Map<String, List<String>> phaseDependencies = calculatePhaseDependencies(project, targets);
+                Map<String, List<Object>> phaseDependencies = calculatePhaseDependencies(project, targets);
                 
                 // Update phase targets with calculated dependencies
                 updatePhaseTargetsWithDependencies(targets, phaseDependencies);
@@ -259,8 +259,8 @@ public class NxAnalyzerMojo extends AbstractMojo {
     /**
      * Calculate goal dependencies for a project using only actual project dependencies
      */
-    private Map<String, List<String>> calculateGoalDependencies(MavenProject project, List<MavenProject> actualDependencies) {
-        Map<String, List<String>> goalDependencies = new LinkedHashMap<>();
+    private Map<String, List<Object>> calculateGoalDependencies(MavenProject project, List<MavenProject> actualDependencies) {
+        Map<String, List<Object>> goalDependencies = new LinkedHashMap<>();
         
         if (isVerbose()) {
             getLog().debug("Calculating goal dependencies for " + project.getArtifactId());
@@ -276,7 +276,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
             // Try to find execution phase from plugin configuration
             String executionPhase = findExecutionPhase(project, targetName);
             
-            List<String> dependencies = targetDependencyService.calculateGoalDependencies(
+            List<Object> dependencies = targetDependencyService.calculateGoalDependencies(
                 project, executionPhase, targetName, actualDependencies);
             goalDependencies.put(targetName, dependencies);
         }
@@ -287,8 +287,8 @@ public class NxAnalyzerMojo extends AbstractMojo {
     /**
      * Calculate phase dependencies for a project using generated targets
      */
-    private Map<String, List<String>> calculatePhaseDependencies(MavenProject project, Map<String, TargetConfiguration> allTargets) {
-        Map<String, List<String>> phaseDependencies = new LinkedHashMap<>();
+    private Map<String, List<Object>> calculatePhaseDependencies(MavenProject project, Map<String, TargetConfiguration> allTargets) {
+        Map<String, List<Object>> phaseDependencies = new LinkedHashMap<>();
         
         // Get all lifecycle phases from all Maven lifecycles (default, clean, site)
         Set<String> allPhases = executionPlanAnalysisService.getAllLifecyclePhases();
@@ -298,7 +298,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
         }
         
         for (String phase : allPhases) {
-            List<String> dependencies = targetDependencyService.calculatePhaseDependencies(
+            List<Object> dependencies = targetDependencyService.calculatePhaseDependencies(
                 phase, allTargets, project, reactorProjects);
             phaseDependencies.put(phase, dependencies);
         }
@@ -310,10 +310,10 @@ public class NxAnalyzerMojo extends AbstractMojo {
      * Update phase targets with calculated dependencies
      */
     private void updatePhaseTargetsWithDependencies(Map<String, TargetConfiguration> targets, 
-                                                   Map<String, List<String>> phaseDependencies) {
-        for (Map.Entry<String, List<String>> entry : phaseDependencies.entrySet()) {
+                                                   Map<String, List<Object>> phaseDependencies) {
+        for (Map.Entry<String, List<Object>> entry : phaseDependencies.entrySet()) {
             String phase = entry.getKey();
-            List<String> dependencies = entry.getValue();
+            List<Object> dependencies = entry.getValue();
             
             TargetConfiguration phaseTarget = targets.get(phase);
             if (phaseTarget != null) {

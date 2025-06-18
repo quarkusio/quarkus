@@ -51,8 +51,8 @@ public class TargetGenerationService {
      * @throws IllegalArgumentException if project is null
      */
     public Map<String, TargetConfiguration> generateTargets(MavenProject project, File workspaceRoot,
-                                                           Map<String, List<String>> goalDependencies,
-                                                           Map<String, List<String>> phaseDependencies) {
+                                                           Map<String, List<Object>> goalDependencies,
+                                                           Map<String, List<Object>> phaseDependencies) {
         if (project == null) {
             throw new IllegalArgumentException("Project cannot be null");
         }
@@ -82,7 +82,7 @@ public class TargetGenerationService {
      */
     public Map<String, TargetConfiguration> generatePhaseTargets(MavenProject project, File workspaceRoot,
                                                                  Map<String, TargetConfiguration> allTargets,
-                                                                 Map<String, List<String>> phaseDependencies) {
+                                                                 Map<String, List<Object>> phaseDependencies) {
         Map<String, TargetConfiguration> phaseTargets = new LinkedHashMap<>();
 
         // Get all phases from all 3 Maven lifecycles (default, clean, site)
@@ -99,7 +99,7 @@ public class TargetGenerationService {
                 target.setOptions(new LinkedHashMap<>());
                 
                 // Convert goal names to target names and set as dependencies
-                List<String> goalTargetDependencies = new ArrayList<>();
+                List<Object> goalTargetDependencies = new ArrayList<>();
                 for (String goalName : goalsToComplete) {
                     // goalName is in format "pluginArtifactId:goalName" 
                     String targetName = getTargetNameFromGoal(goalName);
@@ -159,7 +159,7 @@ public class TargetGenerationService {
      * Generate targets for plugin goals
      */
     public Map<String, TargetConfiguration> generatePluginGoalTargets(MavenProject project, File workspaceRoot,
-                                                                      Map<String, List<String>> goalDependencies) {
+                                                                      Map<String, List<Object>> goalDependencies) {
         Map<String, TargetConfiguration> goalTargets = new LinkedHashMap<>();
 
         if (verbose) {
@@ -186,7 +186,7 @@ public class TargetGenerationService {
                                 String targetName = ExecutionPlanAnalysisService.getTargetName(plugin.getArtifactId(), goal);
 
                                 if (!goalTargets.containsKey(targetName)) {
-                                    TargetConfiguration target = createGoalTarget(plugin, goal, execution, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()), project);
+                                    TargetConfiguration target = createGoalTarget(plugin, goal, execution, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<Object>()), project);
                                     goalTargets.put(targetName, target);
                                 }
                             });
@@ -207,7 +207,7 @@ public class TargetGenerationService {
      */
     public TargetConfiguration createGoalTarget(Plugin plugin, String goal, PluginExecution execution,
                                                String projectRootToken, String actualProjectPath,
-                                               List<String> dependencies, MavenProject project) {
+                                               List<Object> dependencies, MavenProject project) {
         String pluginKey = plugin.getGroupId() + ":" + plugin.getArtifactId();
 
 
@@ -257,14 +257,14 @@ public class TargetGenerationService {
 
     private void addCommonGoalsForPlugin(Plugin plugin, Map<String, TargetConfiguration> goalTargets,
                                         String projectRootToken, String actualProjectPath,
-                                        Map<String, List<String>> goalDependencies, MavenProject project) {
+                                        Map<String, List<Object>> goalDependencies, MavenProject project) {
         String artifactId = plugin.getArtifactId();
         List<String> commonGoals = ExecutionPlanAnalysisService.getCommonGoalsForPlugin(artifactId);
 
         for (String goal : commonGoals) {
             String targetName = ExecutionPlanAnalysisService.getTargetName(artifactId, goal);
             if (!goalTargets.containsKey(targetName)) {
-                TargetConfiguration target = createSimpleGoalTarget(plugin, goal, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()), project);
+                TargetConfiguration target = createSimpleGoalTarget(plugin, goal, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<Object>()), project);
                 goalTargets.put(targetName, target);
             }
         }
@@ -272,7 +272,7 @@ public class TargetGenerationService {
 
     private TargetConfiguration createSimpleGoalTarget(Plugin plugin, String goal,
                                                       String projectRootToken, String actualProjectPath,
-                                                      List<String> dependencies, MavenProject project) {
+                                                      List<Object> dependencies, MavenProject project) {
         String pluginKey = plugin.getGroupId() + ":" + plugin.getArtifactId();
 
         TargetConfiguration target = new TargetConfiguration("@nx-quarkus/maven-plugin:maven-batch");

@@ -138,8 +138,6 @@ public final class HibernateReactiveProcessor {
                         "Cannot use persistence.xml with Hibernate Reactive in Quarkus. Must use application.properties instead.");
             }
         }
-        DataSourceBuildTimeConfig defaultDataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
-                .get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
 
         for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig
                 .namedPersistenceUnits()
@@ -154,10 +152,14 @@ public final class HibernateReactiveProcessor {
                     applicationArchivesBuildItem, jpaModel, curateOutcomeBuildItem, launchMode, capabilities,
                     defaultDataSourceDbKindBuildItems, systemProperties, nativeImageResources,
                     hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                    unremovableBeans, defaultDataSourceBuildTimeConfig, dbKindDialectBuildItems);
+                    unremovableBeans, dbKindDialectBuildItems);
         }
 
-        boolean enableDefaultPersistenceUnit = hibernateOrmConfig.namedPersistenceUnits().isEmpty()
+        DataSourceBuildTimeConfig defaultDataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
+                .get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+
+        boolean enableDefaultPersistenceUnit = defaultDataSourceBuildTimeConfig != null &&
+                hibernateOrmConfig.namedPersistenceUnits().isEmpty()
                 || hibernateOrmConfig.defaultPersistenceUnit().isAnyPropertySet();
 
         if (!enableDefaultPersistenceUnit) {
@@ -170,7 +172,7 @@ public final class HibernateReactiveProcessor {
                 applicationArchivesBuildItem, jpaModel, curateOutcomeBuildItem, launchMode, capabilities,
                 defaultDataSourceDbKindBuildItems, systemProperties, nativeImageResources,
                 hotDeploymentWatchedFiles, persistenceUnitDescriptors,
-                unremovableBeans, defaultDataSourceBuildTimeConfig, dbKindDialectBuildItems);
+                unremovableBeans, dbKindDialectBuildItems);
     }
 
     private static void producePersistenceUnitFromConfig(HibernateOrmConfig hibernateOrmConfig, String persistenceUnitName,
@@ -186,7 +188,6 @@ public final class HibernateReactiveProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            DataSourceBuildTimeConfig defaultDataSourceBuildTimeConfig,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
         String datasourceNameFromConf = persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
 
@@ -195,11 +196,11 @@ public final class HibernateReactiveProcessor {
 
         Optional<String> datasourceName = Optional.of(datasourceNameFromConf);
         Optional<String> explicitDialect = persistenceUnitConfig.dialect().dialect();
-        Optional<String> explicitDbMinVersion = defaultDataSourceBuildTimeConfig.dbVersion();
+        Optional<String> explicitDbMinVersion = dataSourceBuildTimeConfig.dbVersion();
         Optional<String> dbKindOptional = DefaultDataSourceDbKindBuildItem.resolve(
                 dataSourceBuildTimeConfig.dbKind(),
                 defaultDataSourceDbKindBuildItems,
-                defaultDataSourceBuildTimeConfig.devservices().enabled()
+                dataSourceBuildTimeConfig.devservices().enabled()
                         .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
                 curateOutcomeBuildItem);
         Optional<String> dbVersion = dataSourceBuildTimeConfig.dbVersion();

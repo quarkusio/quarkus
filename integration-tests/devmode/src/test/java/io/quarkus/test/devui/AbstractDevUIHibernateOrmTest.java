@@ -21,14 +21,16 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
     private final String expectedTableName;
     private final String expectedClassName;
     private final Integer expectedResults;
+    private final boolean reactive;
 
     public AbstractDevUIHibernateOrmTest(String expectedPersistenceUnitName, String expectedTableName,
-            String expectedClassName, Integer expectedResults) {
+            String expectedClassName, Integer expectedResults, boolean reactive) {
         super("io.quarkus.quarkus-hibernate-orm");
         this.expectedPersistenceUnitName = expectedPersistenceUnitName;
         this.expectedTableName = expectedTableName;
         this.expectedClassName = expectedClassName;
         this.expectedResults = expectedResults;
+        this.reactive = reactive;
     }
 
     @Test
@@ -69,6 +71,10 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
                 JsonNode namedQueries = persistenceUnit.get("namedQueries");
                 assertNotNull(namedQueries);
                 assertTrue(namedQueries.isArray());
+
+                JsonNode reactive = persistenceUnit.get("reactive");
+                assertTrue(reactive.isBoolean());
+                assertEquals(this.reactive, reactive.asBoolean());
             }
         }
     }

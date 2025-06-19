@@ -5,8 +5,8 @@ plugins{
 
 
 
-group 'io.quarkus.test.application'
-version '1.0-SNAPSHOT'
+group = 'io.quarkus.test.application'
+version = '1.0-SNAPSHOT'
 
 
 repositories {

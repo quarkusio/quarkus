@@ -36,8 +36,8 @@ public class TestUtils {
                 "id 'java'\n" +
                 "id 'io.quarkus.extension'\n" +
                 "}\n" +
-                "group 'org.acme'\n" +
-                "version '1.0.0'\n" +
+                "group = 'org.acme'\n" +
+                "version = '1.0.0'\n" +
                 "repositories { \n" +
                 "mavenCentral()\n" +
                 "mavenLocal()\n" +
@@ -63,8 +63,8 @@ public class TestUtils {
         return "plugins {\n" +
                 "id 'java'\n" +
                 "}\n" +
-                "group 'org.acme'\n" +
-                "version '1.0.0'\n" +
+                "group = 'org.acme'\n" +
+                "version = '1.0.0'\n" +
                 "repositories { \n" +
                 "mavenCentral()\n" +
                 "mavenLocal()\n" +

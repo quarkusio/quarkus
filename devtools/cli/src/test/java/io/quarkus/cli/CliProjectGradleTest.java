@@ -444,9 +444,9 @@ public class CliProjectGradleTest {
                 "build.gradle should exist: " + buildGradle.toAbsolutePath().toString());
 
         String buildContent = CliDriver.readFileAsString(buildGradle);
-        Assertions.assertTrue(buildContent.contains("group '" + group + "'"),
+        Assertions.assertTrue(buildContent.contains("group = '" + group + "'"),
                 "build.gradle should include the group id:\n" + buildContent);
-        Assertions.assertTrue(buildContent.contains("version '" + version + "'"),
+        Assertions.assertTrue(buildContent.contains("version = '" + version + "'"),
                 "build.gradle should include the version:\n" + buildContent);
 
         Path settings = project.resolve("settings.gradle");

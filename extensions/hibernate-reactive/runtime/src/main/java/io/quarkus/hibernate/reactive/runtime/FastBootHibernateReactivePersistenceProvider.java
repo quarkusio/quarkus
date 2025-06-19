@@ -231,7 +231,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(
-                    persistenceUnitName, persistenceUnit.getConfigurationName(),
+                    persistenceUnitName, persistenceUnit.getName(),
                     recordedState, runtimeSettings, puConfig);
 
             final Object cdiBeanManager = Arc.container().beanManager();

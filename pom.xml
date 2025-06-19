@@ -77,7 +77,7 @@
         <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-models.version>1.0.0</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>3.0.0.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
-        <hibernate-validator.version>9.0.0.Final</hibernate-validator.version>
+        <hibernate-validator.version>9.0.1.Final</hibernate-validator.version>
         <hibernate-search.version>8.0.0.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->

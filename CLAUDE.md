@@ -59,9 +59,13 @@ nx reset
 # 3. Test your changes
 nx show projects
 
-# 4. Run smoke tests after major changes
+# 4. Run end-to-end tests (MANDATORY before committing)
 npm run test:e2e
 ```
+
+## Commit Guidelines
+
+**MANDATORY**: Always run `npm run test:e2e` before committing any changes. This ensures the Maven plugin works correctly with real Maven projects and prevents regressions.
 
 ## Prerequisites
 

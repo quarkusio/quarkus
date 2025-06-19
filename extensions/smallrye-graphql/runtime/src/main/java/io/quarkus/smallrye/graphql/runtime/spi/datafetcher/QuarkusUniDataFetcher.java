@@ -58,7 +58,7 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
         });
 
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(vc, contextualCallable, result, operation);
         return Uni.createFrom().completionStage(result.future().toCompletionStage());
     }
 
@@ -83,7 +83,7 @@ public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> 
         });
 
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(vc, contextualCallable, result, operation);
         return Uni.createFrom().completionStage(result.future().toCompletionStage());
     }
 

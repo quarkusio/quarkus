@@ -103,7 +103,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
             }
         });
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(vc, contextualCallable, result, operation);
 
         return (T) Uni.createFrom().completionStage(result.future().toCompletionStage()).onItemOrFailure()
                 .invoke((item, error) -> {
@@ -134,7 +134,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
         });
 
         // Here call blocking with context
-        BlockingHelper.runBlocking(vc, contextualCallable, result);
+        BlockingHelper.runBlocking(vc, contextualCallable, result, operation);
         return result.future().toCompletionStage()
                 .whenComplete((resultList, error) -> {
                     if (error != null) {

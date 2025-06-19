@@ -5,7 +5,7 @@
     "test:watch": "vitest --watch",
     "test:e2e": "vitest run e2e-smoke.test.ts",
     "test:e2e:watch": "vitest watch e2e-smoke.test.ts",
-    "compile-java": "cd maven-plugin && mvn install -DskipTests"
+    "compile-java": "cd maven-plugin && mvn clean install -DskipTests"
   },
   "devDependencies": {
     "@nx/devkit": "0.0.0-pr-31581-fa41031",

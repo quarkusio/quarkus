@@ -49,7 +49,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
@@ -391,7 +390,7 @@ public class VertxHttpRecorder {
         mainRouter.getValue().mountSubRouter(frameworkPath, frameworkRouter.getValue());
     }
 
-    public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
+    public void finalizeRouter(Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, List<Filter> managementInterfaceFilterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
             RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,

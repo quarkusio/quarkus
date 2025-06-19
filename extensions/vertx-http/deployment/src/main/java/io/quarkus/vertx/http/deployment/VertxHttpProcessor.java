@@ -20,7 +20,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -326,26 +325,26 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(Optional<LoggingDecorateBuildItem> decorateBuildItem,
-            LogBuildTimeConfig logBuildTimeConfig,
-            VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer, CoreVertxBuildItem vertx,
-            LaunchModeBuildItem launchMode,
-            List<DefaultRouteBuildItem> defaultRoutes,
-            List<FilterBuildItem> filters,
-            List<ManagementInterfaceFilterBuildItem> managementInterfacefilters,
-            VertxWebRouterBuildItem httpRouteRouter,
-            HttpRootPathBuildItem httpRootPathBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
-            BodyHandlerBuildItem bodyHandlerBuildItem,
-            List<ErrorPageActionsBuildItem> errorPageActionsBuildItems,
-            BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
-            ShutdownConfig shutdownConfig,
-            LiveReloadConfig lrc,
-            CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
-            ExecutorBuildItem executorBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem, // Injected to be sure that the TLS registry has been produced before calling this method.
-            Optional<VertxDevUILogBuildItem> vertxDevUILogBuildItem)
+                                         LogBuildTimeConfig logBuildTimeConfig,
+                                         VertxHttpRecorder recorder, CoreVertxBuildItem vertx,
+                                         LaunchModeBuildItem launchMode,
+                                         List<DefaultRouteBuildItem> defaultRoutes,
+                                         List<FilterBuildItem> filters,
+                                         List<ManagementInterfaceFilterBuildItem> managementInterfacefilters,
+                                         VertxWebRouterBuildItem httpRouteRouter,
+                                         HttpRootPathBuildItem httpRootPathBuildItem,
+                                         NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+                                         VertxHttpBuildTimeConfig httpBuildTimeConfig,
+                                         List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
+                                         BodyHandlerBuildItem bodyHandlerBuildItem,
+                                         List<ErrorPageActionsBuildItem> errorPageActionsBuildItems,
+                                         BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
+                                         ShutdownConfig shutdownConfig,
+                                         LiveReloadConfig lrc,
+                                         CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
+                                         ExecutorBuildItem executorBuildItem,
+                                         TlsRegistryBuildItem tlsRegistryBuildItem, // Injected to be sure that the TLS registry has been produced before calling this method.
+                                         Optional<VertxDevUILogBuildItem> vertxDevUILogBuildItem)
             throws BuildException {
 
         Optional<DefaultRouteBuildItem> defaultRoute;
@@ -411,7 +410,7 @@ class VertxHttpProcessor {
             publisher = Optional.of(vertxDevUILogBuildItem.get().getPublisher());
         }
 
-        recorder.finalizeRouter(beanContainer.getValue(),
+        recorder.finalizeRouter(
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, listOfManagementInterfaceFilters,
                 vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),

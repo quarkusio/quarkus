@@ -30,6 +30,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
@@ -143,14 +144,15 @@ public class WorkspaceProcessor {
                 .namespace(NAMESPACE)
                 .filter(Patterns.ANY_MD);
 
-        workspaceActionProducer.produce(new WorkspaceActionBuildItem(actionBuilder));
+        workspaceActionProducer.produce(new WorkspaceActionBuildItem(NAMESPACE, actionBuilder));
     }
 
     @BuildStep
     void createBuildTimeActions(Optional<WorkspaceBuildItem> workspaceBuildItem,
             List<WorkspaceActionBuildItem> workspaceActionBuildItems,
             BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
-            Capabilities capabilities) {
+            Capabilities capabilities,
+            CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
@@ -161,8 +163,10 @@ public class WorkspaceProcessor {
 
             // Workspace Actions
             Map<String, Action> actionMap = workspaceActionBuildItems.stream()
-                    .flatMap(item -> item.getActions().stream())
-                    .map(ActionBuilder::build)
+                    .flatMap(item -> item.getActions().stream()
+                            .map(builder -> builder
+                                    .namespace(item.getExtensionPathName(curateOutcomeBuildItem))
+                                    .build()))
                     .collect(Collectors.toMap(Action::getId, action -> action, (a, b) -> a));
 
             buildItemActions.addAction("getWorkspaceItems", (t) -> {

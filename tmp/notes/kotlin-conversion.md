@@ -1,17 +1,37 @@
-# Kotlin Model Conversion Notes
+# Kotlin Conversion Notes
 
-## What was done:
-1. Successfully converted all Java model classes to Kotlin
-2. Set up Maven compilation configuration for mixed Java/Kotlin project
-3. Kotlin models compile successfully 
-4. All constructor signatures match original Java classes
+## NxMavenBatchExecutor Java to Kotlin Conversion
 
-## Current Issue:
-- Build cache is preventing fresh Kotlin compilation
-- Java code can't find Kotlin constructors due to cached builds
-- Need to bypass build cache to complete conversion
+### What Was Done
 
-## Model Classes Converted:
+Converted `NxMavenBatchExecutor.java` to Kotlin with the following changes:
+
+#### Key Kotlin Conversions
+
+1. **Class Structure**: Changed from public class to `object` since all methods are static
+2. **Property Declarations**: Used `var` for mutable properties with backing fields
+3. **Function Syntax**: Converted Java methods to Kotlin functions with concise syntax
+4. **Null Safety**: Applied Kotlin's null safety with nullable types (`String?`)
+5. **Collections**: Used Kotlin's mutable collections (`mutableListOf`)
+6. **String Templates**: Replaced Java string concatenation with Kotlin string templates
+7. **Lambda Expressions**: Simplified lambda syntax for output handlers
+8. **Data Classes**: Converted inner classes to `data class` for automatic equals/hashCode/toString
+
+#### Specific Changes
+
+- `System.exit()` → `exitProcess()`
+- Java getters/setters → Kotlin properties
+- `Arrays.asList()` → `listOf()` or `split()`
+- Java lambdas → Kotlin lambdas with simplified syntax
+- Java constructors with builders → Kotlin `apply` blocks
+- Java ArrayList → Kotlin `mutableListOf()`
+
+#### File Locations
+
+- **Original**: `maven-plugin/src/main/java/NxMavenBatchExecutor.java` (removed)
+- **New**: `maven-plugin/src/main/kotlin/NxMavenBatchExecutor.kt`
+
+## Previous Model Classes Converted:
 - TargetConfiguration.kt ✓
 - TargetMetadata.kt ✓  
 - TargetGroup.kt ✓
@@ -23,4 +43,4 @@
 - ProjectConfiguration.kt ✓
 
 ## Status:
-Models are successfully converted to Kotlin with proper Java-compatible constructors. Main mojo analyzer remains in Java as requested.
+NxMavenBatchExecutor has been successfully converted to Kotlin while maintaining the same functionality.

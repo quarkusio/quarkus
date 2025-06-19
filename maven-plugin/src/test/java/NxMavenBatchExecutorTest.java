@@ -64,7 +64,7 @@ public class NxMavenBatchExecutorTest {
         List<String> projects = Arrays.asList(".");
         
         NxMavenBatchExecutor.BatchExecutionResult result = 
-            NxMavenBatchExecutor.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, false);
+            NxMavenBatchExecutor.INSTANCE.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, false);
         
         assertNotNull("Result should not be null", result);
         assertNotNull("Goal results should not be null", result.getGoalResults());
@@ -78,7 +78,7 @@ public class NxMavenBatchExecutorTest {
         String invalidWorkspace = "/nonexistent/workspace/path";
         
         NxMavenBatchExecutor.BatchExecutionResult result = 
-            NxMavenBatchExecutor.executeBatch(goals, invalidWorkspace, projects, false);
+            NxMavenBatchExecutor.INSTANCE.executeBatch(goals, invalidWorkspace, projects, false);
         
         assertNotNull("Result should not be null", result);
         assertFalse("Should fail with invalid workspace", result.isOverallSuccess());
@@ -91,7 +91,7 @@ public class NxMavenBatchExecutorTest {
         List<String> projects = Arrays.asList(".");
         
         NxMavenBatchExecutor.BatchExecutionResult result = 
-            NxMavenBatchExecutor.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, false);
+            NxMavenBatchExecutor.INSTANCE.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, false);
         
         assertNotNull("Result should not be null", result);
         assertNotNull("Goal results should not be null", result.getGoalResults());
@@ -112,7 +112,7 @@ public class NxMavenBatchExecutorTest {
         String invalidWorkspace = "/nonexistent/path";
         
         NxMavenBatchExecutor.BatchExecutionResult result = 
-            NxMavenBatchExecutor.executeBatch(goals, invalidWorkspace, projects, false);
+            NxMavenBatchExecutor.INSTANCE.executeBatch(goals, invalidWorkspace, projects, false);
         
         assertNotNull("Result should not be null", result);
         assertFalse("Should fail with invalid workspace", result.isOverallSuccess());
@@ -127,7 +127,7 @@ public class NxMavenBatchExecutorTest {
         List<String> projects = Arrays.asList(".");
         
         NxMavenBatchExecutor.BatchExecutionResult result = 
-            NxMavenBatchExecutor.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, false);
+            NxMavenBatchExecutor.INSTANCE.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, false);
         
         assertNotNull("Result should not be null", result);
         // Empty goals might fail because Maven needs at least one goal
@@ -145,7 +145,7 @@ public class NxMavenBatchExecutorTest {
         List<String> projects = Arrays.asList(".");
         
         NxMavenBatchExecutor.BatchExecutionResult result = 
-            NxMavenBatchExecutor.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, false);
+            NxMavenBatchExecutor.INSTANCE.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, false);
         
         assertNotNull("Result should not be null", result);
         assertNotNull("Goal results should not be null", result.getGoalResults());
@@ -171,7 +171,7 @@ public class NxMavenBatchExecutorTest {
         
         try {
             NxMavenBatchExecutor.BatchExecutionResult result = 
-                NxMavenBatchExecutor.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, true);
+                NxMavenBatchExecutor.INSTANCE.executeBatch(goals, testProjectDir.getAbsolutePath(), projects, true);
             
             assertNotNull("Result should not be null", result);
             

@@ -206,6 +206,17 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      - name: Setup Node.js for Nx
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - name: Install Nx
+        run: npm install -g nx@latest
+      - name: Nx set-shas
+        uses: nrwl/nx-set-shas@v4
+        with:
+          main-branch-name: 'main'
       - name: Restore Maven Repository
         uses: actions/cache/restore@v4
         if: github.event_name != 'push' || github.repository != 'quarkusio/quarkus' || github.actor == 'dependabot[bot]'

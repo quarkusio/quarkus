@@ -216,7 +216,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
             createNodesResults.add(entry.toArray());
         }
         
-        List<RawProjectGraphDependency> createDependencies = CreateDependenciesGenerator.generateCreateDependencies(
+        List<RawProjectGraphDependency> createDependencies = CreateDependenciesGenerator.INSTANCE.generateCreateDependencies(
             reactorProjects, workspaceRoot, getLog(), isVerbose());
         
         long outputGenDuration = System.currentTimeMillis() - outputGenStart;

@@ -50,11 +50,13 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
@@ -265,12 +267,14 @@ public class HttpSecurityProcessor {
         }
     }
 
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initializeAuthenticationHandler(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
+    void initializeHttpSecurity(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
             HttpSecurityRecorder recorder, VertxHttpConfig httpConfig, BeanContainerBuildItem beanContainerBuildItem) {
         if (authenticationHandler.isPresent()) {
+            recorder.prepareHttpSecurityConfiguration(httpConfig);
             recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, httpConfig,
                     beanContainerBuildItem.getValue());
         }

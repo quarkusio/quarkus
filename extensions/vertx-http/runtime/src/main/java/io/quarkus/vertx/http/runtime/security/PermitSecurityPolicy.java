@@ -6,6 +6,8 @@ import io.vertx.ext.web.RoutingContext;
 
 public class PermitSecurityPolicy implements HttpSecurityPolicy {
 
+    public static final String NAME = "permit";
+
     @Override
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {

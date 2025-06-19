@@ -18,7 +18,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -36,63 +35,24 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.client.WebClient;
 
-public class PathMatchingHttpSecurityPolicyTest {
+public abstract class PathMatchingHttpSecurityPolicyTest {
 
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
-    private static final String APP_PROPS = """
-            quarkus.http.auth.permission.authenticated.paths=/
-            quarkus.http.auth.permission.authenticated.policy=authenticated
-            quarkus.http.auth.permission.public.paths=/api*
-            quarkus.http.auth.permission.public.policy=permit
-            quarkus.http.auth.permission.foo.paths=/api/foo/bar
-            quarkus.http.auth.permission.foo.policy=authenticated
-            quarkus.http.auth.permission.unsecured.paths=/api/public
-            quarkus.http.auth.permission.unsecured.policy=permit
-            quarkus.http.auth.permission.inner-wildcard.paths=/api/*/bar
-            quarkus.http.auth.permission.inner-wildcard.policy=authenticated
-            quarkus.http.auth.permission.inner-wildcard2.paths=/api/next/*/prev
-            quarkus.http.auth.permission.inner-wildcard2.policy=authenticated
-            quarkus.http.auth.permission.inner-wildcard3.paths=/api/one/*/three/*
-            quarkus.http.auth.permission.inner-wildcard3.policy=authenticated
-            quarkus.http.auth.permission.inner-wildcard4.paths=/api/one/*/*/five
-            quarkus.http.auth.permission.inner-wildcard4.policy=authenticated
-            quarkus.http.auth.permission.inner-wildcard5.paths=/api/one/*/jamaica/*
-            quarkus.http.auth.permission.inner-wildcard5.policy=permit
-            quarkus.http.auth.permission.inner-wildcard6.paths=/api/*/sadly/*/dont-know
-            quarkus.http.auth.permission.inner-wildcard6.policy=deny
-            quarkus.http.auth.permission.baz.paths=/api/baz
-            quarkus.http.auth.permission.baz.policy=authenticated
-            quarkus.http.auth.permission.static-resource.paths=/static-file.html
-            quarkus.http.auth.permission.static-resource.policy=authenticated
-            quarkus.http.auth.permission.fubar.paths=/api/fubar/baz*
-            quarkus.http.auth.permission.fubar.policy=authenticated
-            quarkus.http.auth.permission.management.paths=/q/*
-            quarkus.http.auth.permission.management.policy=authenticated
-            quarkus.http.auth.policy.shared1.roles.root=admin,user
-            quarkus.http.auth.permission.shared1.paths=/secured/*
-            quarkus.http.auth.permission.shared1.policy=shared1
-            quarkus.http.auth.permission.shared1.shared=true
-            quarkus.http.auth.policy.unshared1.roles-allowed=user
-            quarkus.http.auth.permission.unshared1.paths=/secured/user/*
-            quarkus.http.auth.permission.unshared1.policy=unshared1
-            quarkus.http.auth.policy.unshared2.roles-allowed=admin
-            quarkus.http.auth.permission.unshared2.paths=/secured/admin/*
-            quarkus.http.auth.permission.unshared2.policy=unshared2
-            quarkus.http.auth.permission.shared2.paths=/*
-            quarkus.http.auth.permission.shared2.shared=true
-            quarkus.http.auth.permission.shared2.policy=custom
-            quarkus.http.auth.roles-mapping.root1=admin,user
-            quarkus.http.auth.roles-mapping.admin1=admin
-            quarkus.http.auth.roles-mapping.public1=public2
-            """;
     private static WebClient client;
 
-    @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-            .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class,
-                    RouteHandler.class, CustomNamedPolicy.class)
-            .addAsResource("static-file.html", "META-INF/resources/static-file.html")
-            .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
+    protected static QuarkusUnitTest createQuarkusUnitTest(String applicationProperties, Class<?>... additionalTestClasses) {
+        return new QuarkusUnitTest().setArchiveProducer(() -> {
+            var javaArchive = ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class,
+                            RouteHandler.class, CustomNamedPolicy.class)
+                    .addAsResource("static-file.html", "META-INF/resources/static-file.html")
+                    .addAsResource(new StringAsset(applicationProperties), "application.properties");
+            if (additionalTestClasses.length > 0) {
+                javaArchive.addClasses(additionalTestClasses);
+            }
+            return javaArchive;
+        });
+    }
 
     @BeforeAll
     public static void setup() {

@@ -65,7 +65,7 @@ class Person : PanacheEntity() {
 
         // For https://github.com/quarkusio/quarkus/issues/9635
         @Suppress("UNCHECKED_CAST")
-        override fun find(query: String, vararg params: Any): PanacheQuery<Person> {
+        override fun find(query: String, vararg params: Any?): PanacheQuery<Person> {
             return INSTANCE.find(Person::class.java, query, *params) as PanacheQuery<Person>
         }
 

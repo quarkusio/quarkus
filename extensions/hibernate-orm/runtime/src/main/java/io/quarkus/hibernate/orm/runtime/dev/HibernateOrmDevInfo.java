@@ -55,11 +55,18 @@ public class HibernateOrmDevInfo {
         private final Supplier<String> createDDLSupplier;
         private final Supplier<String> dropDDLSupplier;
         private final Supplier<String> updateDDLSupplier;
+        private final boolean reactive;
 
-        public PersistenceUnit(SessionFactoryImplementor sessionFactory, String name, List<Entity> managedEntities,
+        public PersistenceUnit(
+                SessionFactoryImplementor sessionFactory,
+                String name,
+                List<Entity> managedEntities,
                 List<Query> namedQueries,
-                List<Query> namedNativeQueries, Supplier<String> createDDL, Supplier<String> dropDDL,
-                Supplier<String> updateDDLSupplier) {
+                List<Query> namedNativeQueries,
+                Supplier<String> createDDL,
+                Supplier<String> dropDDL,
+                Supplier<String> updateDDLSupplier,
+                boolean reactive) {
             this.sessionFactory = sessionFactory;
             this.name = name;
             this.managedEntities = managedEntities;
@@ -68,6 +75,7 @@ public class HibernateOrmDevInfo {
             this.createDDLSupplier = createDDL;
             this.dropDDLSupplier = dropDDL;
             this.updateDDLSupplier = updateDDLSupplier;
+            this.reactive = reactive;
         }
 
         // Method name must not be `getSessionFactory` to exclude it from JSON serialization
@@ -119,6 +127,9 @@ public class HibernateOrmDevInfo {
             return updateDDL;
         }
 
+        public boolean isReactive() {
+            return reactive;
+        }
     }
 
     public static class Entity {

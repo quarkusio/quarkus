@@ -240,6 +240,9 @@ export class HibernateOrmHqlConsoleComponent extends QwcHotReloadElement {
 
     _renderTables() {
         if (this._selectedPersistenceUnit) {
+            if (this._selectedPersistenceUnit.reactive) {
+                return; // Reactive persistence units are not supported
+            }
             return html`
                 <qui-card class="tablesCard" header="Entities">
                     <div slot="content">
@@ -310,6 +313,10 @@ export class HibernateOrmHqlConsoleComponent extends QwcHotReloadElement {
     // *** data table and HQL input ***
 
     _renderDataAndInput() {
+        if (this._selectedPersistenceUnit.reactive) {
+            return html`
+                <span style="padding-top:20px;padding-left:20px;">Reactive persistence units are not supported in this console, please use a blocking one.</span>`;
+        }
         return html`
             ${this._renderHqlInput()}
             <div tab="data-tab" style="height:100%;">${this._renderTableData()}</div>`;

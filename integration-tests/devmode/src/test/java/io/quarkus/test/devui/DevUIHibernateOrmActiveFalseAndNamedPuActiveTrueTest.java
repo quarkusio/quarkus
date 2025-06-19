@@ -28,7 +28,7 @@ public class DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest extends Abstra
                     .addClasses(MyNamedPuEntity.class));
 
     public DevUIHibernateOrmActiveFalseAndNamedPuActiveTrueTest() {
-        super("namedpu", "MyNamedPuEntity", "io.quarkus.test.devui.namedpu.MyNamedPuEntity", null);
+        super("namedpu", "MyNamedPuEntity", "io.quarkus.test.devui.namedpu.MyNamedPuEntity", null, false);
     }
 
 }

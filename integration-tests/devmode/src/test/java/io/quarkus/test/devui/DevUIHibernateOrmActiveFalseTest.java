@@ -18,7 +18,7 @@ public class DevUIHibernateOrmActiveFalseTest extends AbstractDevUIHibernateOrmT
                     .addClasses(MyEntity.class));
 
     public DevUIHibernateOrmActiveFalseTest() {
-        super(null, null, null, null);
+        super(null, null, null, null, false);
     }
 
 }

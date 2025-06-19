@@ -84,8 +84,8 @@ Extensions also use Dev UI hooks to present extra information to users. For exam
 === Rich Dev UI
 
 Some extensions provide extremely sophisticated Dev UIs.
-For example, they might allow users to interact with the running application, xref:dev-ui.adoc#hot-reload[respond to reloads], visualise application metrics, or xref:dev-ui.adoc#add-a-log-to-the-footer[stream an application-specific log].
-The xref:dev-ui.adoc[Dev UI for extension developers] guide also explains these more advanced options.
+For example, they might allow users to interact with the running application (in dev mode), xref:dev-ui.adoc#hot-reload[respond to reloads], visualise application metrics, or xref:dev-ui.adoc#footer[stream an application-specific log].
+The xref:dev-ui.adoc[Dev UI] guide also explains these more advanced options.
 
 === Joyful programming model
 

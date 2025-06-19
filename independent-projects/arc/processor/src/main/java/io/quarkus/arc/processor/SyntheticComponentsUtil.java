@@ -352,11 +352,11 @@ final class SyntheticComponentsUtil {
                         bc.set(value.elem(i), annotationLiterals.create(bc, annotationClass, annotationInstance));
                     }
                 } else if (entry.getValue() instanceof InvokerInfo val) {
-                    value = bc.localVar("value", bc.new_(ClassDesc.of(val.getClassName())));
+                    value = bc.localVar("value", bc.new_(val.getClassDesc()));
                 } else if (entry.getValue() instanceof InvokerInfo[] array) {
                     value = bc.localVar("value", bc.newEmptyArray(Invoker.class, array.length));
                     for (int i = 0; i < array.length; i++) {
-                        bc.set(value.elem(i), bc.new_(ClassDesc.of(array[i].getClassName())));
+                        bc.set(value.elem(i), bc.new_(array[i].getClassDesc()));
                     }
                 } else {
                     throw new IllegalArgumentException("Unsupported parameter type: " + entry.getValue());

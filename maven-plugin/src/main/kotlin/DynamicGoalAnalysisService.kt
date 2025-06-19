@@ -1,77 +1,63 @@
-import org.apache.maven.execution.MavenSession;
-import org.apache.maven.lifecycle.DefaultLifecycles;
-import org.apache.maven.lifecycle.LifecycleExecutor;
-import org.apache.maven.model.Plugin;
-import org.apache.maven.plugin.MojoExecution;
-import org.apache.maven.plugin.logging.Log;
-import org.apache.maven.project.MavenProject;
-import org.codehaus.plexus.util.xml.Xpp3Dom;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import org.apache.maven.execution.MavenSession
+import org.apache.maven.lifecycle.DefaultLifecycles
+import org.apache.maven.lifecycle.LifecycleExecutor
+import org.apache.maven.plugin.logging.Log
+import org.apache.maven.project.MavenProject
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Service that dynamically analyzes Maven goals using Maven APIs instead of hardcoded patterns.
  * Uses MojoExecution, plugin configuration, and lifecycle phase information to determine 
  * goal behavior and requirements.
  */
-public class DynamicGoalAnalysisService {
+class DynamicGoalAnalysisService(
+    private val session: MavenSession,
+    private val executionPlanAnalysis: ExecutionPlanAnalysisService,
+    lifecycleExecutor: LifecycleExecutor,
+    defaultLifecycles: DefaultLifecycles,
+    private val log: Log,
+    private val verbose: Boolean
+) {
     
-    private final MavenSession session;
-    private final ExecutionPlanAnalysisService executionPlanAnalysis;
-    private final MavenPluginIntrospectionService introspectionService;
-    private final LifecyclePhaseAnalyzer phaseAnalyzer;
-    private final Log log;
-    private final boolean verbose;
-    private final Map<String, GoalBehavior> analysisCache = new ConcurrentHashMap<>();
-    
-    public DynamicGoalAnalysisService(MavenSession session, ExecutionPlanAnalysisService executionPlanAnalysis, 
-                                     LifecycleExecutor lifecycleExecutor, DefaultLifecycles defaultLifecycles, 
-                                     Log log, boolean verbose) {
-        this.session = session;
-        this.executionPlanAnalysis = executionPlanAnalysis;
-        this.introspectionService = new MavenPluginIntrospectionService(session, lifecycleExecutor, log, verbose);
-        this.phaseAnalyzer = new LifecyclePhaseAnalyzer(defaultLifecycles, log, verbose);
-        this.log = log;
-        this.verbose = verbose;
-    }
+    private val introspectionService = MavenPluginIntrospectionService(session, lifecycleExecutor, log, verbose)
+    private val phaseAnalyzer = LifecyclePhaseAnalyzer(defaultLifecycles, log, verbose)
+    private val analysisCache = ConcurrentHashMap<String, GoalBehavior>()
     
     /**
      * Analyze a goal to determine its behavior and requirements.
      */
-    public GoalBehavior analyzeGoal(String goal, MavenProject project) {
-        String cacheKey = project.getId() + ":" + goal;
+    fun analyzeGoal(goal: String, project: MavenProject): GoalBehavior {
+        val cacheKey = "${project.id}:$goal"
         
-        return analysisCache.computeIfAbsent(cacheKey, k -> {
-            if (verbose && log != null) {
-                log.debug("Analyzing goal behavior for: " + goal);
+        return analysisCache.computeIfAbsent(cacheKey) {
+            if (verbose) {
+                log.debug("Analyzing goal behavior for: $goal")
             }
             
-            GoalBehavior behavior = new GoalBehavior();
+            var behavior = GoalBehavior()
             
             // 1. Use Maven API-based introspection (primary analysis)
-            MavenPluginIntrospectionService.GoalIntrospectionResult introspectionResult = 
-                introspectionService.analyzeGoal(goal, project);
-            behavior = behavior.merge(introspectionResult.toGoalBehavior());
+            val introspectionResult = introspectionService.analyzeGoal(goal, project)
+            behavior = behavior.merge(introspectionResult.toGoalBehavior())
             
             // 2. Enhance with Maven API-based lifecycle phase analysis
-            String phase = executionPlanAnalysis.findPhaseForGoal(project, goal);
+            val phase = executionPlanAnalysis.findPhaseForGoal(project, goal)
             if (phase != null) {
-                GoalBehavior phaseBehavior = phaseAnalyzer.toGoalBehavior(phase);
-                behavior = behavior.merge(phaseBehavior);
+                val phaseBehavior = phaseAnalyzer.toGoalBehavior(phase)
+                behavior = behavior.merge(phaseBehavior)
             }
             
             // No fallback needed - Maven APIs provide complete analysis
             // If behavior is empty, it means the goal genuinely doesn't need
             // source files, test files, or resources (e.g., clean, validate, install)
             
-            if (verbose && log != null) {
-                log.debug("Goal " + goal + " analysis: sources=" + behavior.processesSources() + 
-                         ", test=" + behavior.isTestRelated() + ", resources=" + behavior.needsResources());
+            if (verbose) {
+                log.debug("Goal $goal analysis: sources=${behavior.processesSources()}, " +
+                         "test=${behavior.isTestRelated()}, resources=${behavior.needsResources()}")
             }
             
-            return behavior;
-        });
+            behavior
+        }
     }
     
     // Removed findPluginForGoal() - now handled by MavenPluginIntrospectionService

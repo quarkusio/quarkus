@@ -208,7 +208,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
         
         // Phase 3: Generate Nx-compatible outputs
         long outputGenStart = System.currentTimeMillis();
-        List<CreateNodesV2Entry> createNodesEntries = CreateNodesResultGenerator.generateCreateNodesV2Results(
+        List<CreateNodesV2Entry> createNodesEntries = CreateNodesResultGenerator.INSTANCE.generateCreateNodesV2Results(
             reactorProjects, workspaceRoot, projectTargets, projectTargetGroups);
         
         List<Object[]> createNodesResults = new ArrayList<>();

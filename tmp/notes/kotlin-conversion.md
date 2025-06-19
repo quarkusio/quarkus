@@ -24,3 +24,36 @@
 
 ## Status:
 Models are successfully converted to Kotlin with proper Java-compatible constructors. Main mojo analyzer remains in Java as requested.
+
+## MavenUtils.java → MavenUtils.kt (Latest)
+
+Successfully converted the MavenUtils utility class from Java to Kotlin.
+
+### Changes Made:
+
+1. **Class structure**: Changed from Java `public class` to Kotlin `object` for singleton utility pattern
+2. **Method syntax**: Converted Java method to Kotlin function with string interpolation
+3. **Interoperability**: Added `@JvmStatic` annotation to ensure Java code can call the method statically
+
+### Key Learning:
+
+When converting Java static utility classes to Kotlin objects, must use `@JvmStatic` annotation on methods that need to be called from existing Java code. Without this annotation, Java code cannot access the methods as static methods.
+
+### Files Updated:
+- Removed: `maven-plugin/src/main/java/MavenUtils.java`
+- Added: `maven-plugin/src/main/java/MavenUtils.kt`
+
+### Testing:
+- Compilation successful
+- Nx plugin functionality verified with `nx show projects`
+- All existing Java references to `MavenUtils.formatProjectKey()` continue to work
+
+### Method Converted:
+```kotlin
+@JvmStatic
+fun formatProjectKey(project: MavenProject): String {
+    return "${project.groupId}:${project.artifactId}"
+}
+```
+
+This maintains exact same functionality as the original Java version while taking advantage of Kotlin's string interpolation.

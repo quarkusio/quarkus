@@ -31,6 +31,8 @@ public class OpenApiDevUIProcessor {
 
         cardPageBuildItem.addLibraryVersion("io.smallrye", "smallrye-open-api-jaxrs", "SmallRye OpenAPI",
                 "https://github.com/smallrye/smallrye-open-api");
+        cardPageBuildItem.addLibraryVersion("org.eclipse.microprofile.openapi", "microprofile-openapi-api",
+                "MicroProfile OpenAPI", "https://github.com/microprofile/microprofile-open-api");
         cardPageBuildItem.setLogo("openapi_logo.png", "openapi_logo.png");
 
         cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")

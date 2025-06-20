@@ -182,6 +182,8 @@ public class GrpcDevUIProcessor {
 
         // Create the card for Dev UI
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+        cardPageBuildItem.setLogo("gRPC.png", "gRPC.png");
+        cardPageBuildItem.addLibraryVersion("io.grpc", "grpc-api", "gRPC-Java", "https://github.com/grpc/grpc-java");
 
         cardPageBuildItem.addPage(Page.webComponentPageBuilder()
                 .icon("font-awesome-solid:gears")

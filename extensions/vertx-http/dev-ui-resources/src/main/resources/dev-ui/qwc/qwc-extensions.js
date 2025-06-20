@@ -51,6 +51,7 @@ export class QwcExtensions extends observeState(LitElement) {
             display: flex;
             justify-content: center;
             gap: 5px;
+            flex-wrap: wrap;
         }
     
         .card-content {

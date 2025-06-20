@@ -53,16 +53,9 @@ class ExecutionPlanAnalysisServiceTest {
         val project = reactorProjects[0]
         val log = mojo.log
         
-        // Try to get the real LifecycleExecutor from the mojo
-        val lifecycleExecutor = try {
-            rule.getVariableValueFromObject(mojo, "lifecycleExecutor") as LifecycleExecutor?
-        } catch (e: Exception) {
-            // LifecycleExecutor might not be available in test environment
-            null
-        }
-        
-        val defaultLifecycles = rule.getVariableValueFromObject(mojo, "defaultLifecycles") as DefaultLifecycles?
-        val service = ExecutionPlanAnalysisService(log, false, lifecycleExecutor, session, defaultLifecycles)
+        val lifecycleExecutor = rule.getVariableValueFromObject(mojo, "lifecycleExecutor") as LifecycleExecutor
+        val defaultLifecycles = rule.getVariableValueFromObject(mojo, "defaultLifecycles") as DefaultLifecycles
+        val service = ExecutionPlanAnalysisService(log, false, lifecycleExecutor, session!!, defaultLifecycles)
         return TestContext(service, project, reactorProjects, session, log, lifecycleExecutor)
     }
 

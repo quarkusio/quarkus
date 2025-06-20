@@ -1,5 +1,6 @@
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.google.gson.annotations.SerializedName
 import org.apache.maven.shared.invoker.*
 import java.io.File
 import kotlin.system.exitProcess
@@ -192,9 +193,16 @@ object NxMavenBatchExecutor {
      * Result of executing a batch of Maven goals
      */
     class BatchExecutionResult {
+        @SerializedName("overallSuccess")
         private var _overallSuccess: Boolean = false
+        
+        @SerializedName("totalDurationMs")
         private var _totalDurationMs: Long = 0
+        
+        @SerializedName("errorMessage")
         private var _errorMessage: String? = null
+        
+        @SerializedName("goalResults")
         private var _goalResults: MutableList<GoalExecutionResult> = mutableListOf()
         
         fun addGoalResult(goalResult: GoalExecutionResult) {
@@ -216,12 +224,25 @@ object NxMavenBatchExecutor {
      * Result of executing a single Maven goal
      */
     class GoalExecutionResult {
+        @SerializedName("goal")
         private var _goal: String? = null
+        
+        @SerializedName("success")
         private var _success: Boolean = false
+        
+        @SerializedName("durationMs")
         private var _durationMs: Long = 0
+        
+        @SerializedName("exitCode")
         private var _exitCode: Int = 0
+        
+        @SerializedName("errorMessage")
         private var _errorMessage: String? = null
+        
+        @SerializedName("output")
         private var _output: List<String> = mutableListOf()
+        
+        @SerializedName("errors")
         private var _errors: List<String> = mutableListOf()
         
         // Java-compatible getters and setters

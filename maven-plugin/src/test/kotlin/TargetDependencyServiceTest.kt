@@ -2,6 +2,7 @@ import model.TargetConfiguration
 import model.TargetMetadata
 import org.apache.maven.execution.MavenSession
 import org.apache.maven.lifecycle.DefaultLifecycles
+import org.apache.maven.lifecycle.LifecycleExecutor
 import org.apache.maven.plugin.logging.Log
 import org.apache.maven.plugin.testing.MojoRule
 import org.apache.maven.project.MavenProject
@@ -51,8 +52,9 @@ class TargetDependencyServiceTest {
         val project = reactorProjects[0]
         val log = mojo.log
         
-        val defaultLifecycles = rule.getVariableValueFromObject(mojo, "defaultLifecycles") as DefaultLifecycles?
-        val analysisService = ExecutionPlanAnalysisService(log, false, null, session, defaultLifecycles)
+        val defaultLifecycles = rule.getVariableValueFromObject(mojo, "defaultLifecycles") as DefaultLifecycles
+        val lifecycleExecutor = rule.getVariableValueFromObject(mojo, "lifecycleExecutor") as LifecycleExecutor
+        val analysisService = ExecutionPlanAnalysisService(log, false, lifecycleExecutor, session!!, defaultLifecycles)
         val service = TargetDependencyService(log, false, analysisService)
         return TestContext(service, project, reactorProjects, session, log)
     }
@@ -250,8 +252,11 @@ class TargetDependencyServiceTest {
         val project = reactorProjects[0]
         val log = mojo.log
         
-        // Create service without session
-        val analysisService = ExecutionPlanAnalysisService(log, false, null, null, null)
+        // Create service for testing edge cases
+        val session = rule.getVariableValueFromObject(mojo, "session") as MavenSession
+        val defaultLifecycles = rule.getVariableValueFromObject(mojo, "defaultLifecycles") as DefaultLifecycles
+        val lifecycleExecutor = rule.getVariableValueFromObject(mojo, "lifecycleExecutor") as LifecycleExecutor
+        val analysisService = ExecutionPlanAnalysisService(log, false, lifecycleExecutor, session, defaultLifecycles)
         val service = TargetDependencyService(log, false, analysisService)
         
         // Should not throw exceptions
@@ -273,9 +278,13 @@ class TargetDependencyServiceTest {
         val defaultLifecycles = rule.getVariableValueFromObject(
             rule.lookupConfiguredMojo(File("target/test-classes/unit/basic-test"), "analyze"), 
             "defaultLifecycles"
-        ) as DefaultLifecycles?
+        ) as DefaultLifecycles
+        val lifecycleExecutor = rule.getVariableValueFromObject(
+            rule.lookupConfiguredMojo(File("target/test-classes/unit/basic-test"), "analyze"), 
+            "lifecycleExecutor"
+        ) as LifecycleExecutor
         
-        val verboseAnalysisService = ExecutionPlanAnalysisService(ctx.log, true, null, ctx.session, defaultLifecycles)
+        val verboseAnalysisService = ExecutionPlanAnalysisService(ctx.log, true, lifecycleExecutor, ctx.session!!, defaultLifecycles)
         val verboseService = TargetDependencyService(ctx.log, true, verboseAnalysisService)
         
         val dependencies = verboseService.calculateGoalDependencies(

@@ -1,4 +1,7 @@
+import org.apache.maven.execution.MavenSession
 import org.apache.maven.lifecycle.DefaultLifecycles
+import org.apache.maven.lifecycle.LifecycleExecutor
+import org.apache.maven.plugin.logging.Log
 import org.apache.maven.plugin.testing.MojoRule
 import org.apache.maven.project.MavenProject
 import org.junit.Rule
@@ -41,7 +44,8 @@ class MavenUtilsTest {
         // Note: MavenUtils.inferPhaseFromGoal has been removed in favor of ExecutionPlanAnalysisService
         // This test now demonstrates the new approach
         val defaultLifecycles = rule.getVariableValueFromObject(mojo, "defaultLifecycles") as DefaultLifecycles?
-        val analysisService = ExecutionPlanAnalysisService(mojo.log, false, null, session, defaultLifecycles)
+        val lifecycleExecutor = rule.getVariableValueFromObject(mojo, "lifecycleExecutor") as LifecycleExecutor
+        val analysisService = ExecutionPlanAnalysisService(mojo.log, false, lifecycleExecutor, session!!, defaultLifecycles!!)
         
         // Test null handling
         assertNull(analysisService.findPhaseForGoal(project, null), "Null goal should return null")
@@ -151,7 +155,8 @@ class MavenUtilsTest {
         val mojo = rule.lookupConfiguredMojo(pom, "analyze") as NxAnalyzerMojo
         val session = rule.getVariableValueFromObject(mojo, "session") as org.apache.maven.execution.MavenSession?
         val defaultLifecycles = rule.getVariableValueFromObject(mojo, "defaultLifecycles") as DefaultLifecycles?
-        val analysisService = ExecutionPlanAnalysisService(mojo.log, false, null, session, defaultLifecycles)
+        val lifecycleExecutor = rule.getVariableValueFromObject(mojo, "lifecycleExecutor") as LifecycleExecutor
+        val analysisService = ExecutionPlanAnalysisService(mojo.log, false, lifecycleExecutor, session!!, defaultLifecycles!!)
         
         val project = MavenProject()
         

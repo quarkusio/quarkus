@@ -745,7 +745,12 @@ public class LoggingSetupRecorder {
             handler.setProtocol(config.protocol());
             handler.setBlockOnReconnect(config.blockOnReconnect());
             handler.setTruncate(config.truncate());
-            handler.setUseCountingFraming(config.useCountingFraming());
+            handler.setUseCountingFraming(switch (config.useCountingFraming()) {
+                case PROTOCOL_DEPENDENT ->
+                    config.protocol() == SyslogHandler.Protocol.TCP || config.protocol() == SyslogHandler.Protocol.SSL_TCP;
+                case TRUE -> true;
+                case FALSE -> false;
+            });
             handler.setLevel(config.level());
             if (config.maxLength().isPresent()) {
                 BigInteger maxLen = config.maxLength().get().asBigInteger();

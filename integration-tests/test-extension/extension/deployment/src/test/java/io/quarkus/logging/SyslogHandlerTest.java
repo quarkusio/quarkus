@@ -42,7 +42,7 @@ public class SyslogHandlerTest {
         assertThat(syslogHandler.getFacility()).isEqualTo(SyslogHandler.Facility.USER_LEVEL);
         assertThat(syslogHandler.getSyslogType()).isEqualTo(SyslogHandler.SyslogType.RFC5424);
         assertThat(syslogHandler.getProtocol()).isEqualTo(SyslogHandler.Protocol.TCP);
-        assertThat(syslogHandler.isUseCountingFraming()).isEqualTo(false);
+        assertThat(syslogHandler.isUseCountingFraming()).isEqualTo(true);
         assertThat(syslogHandler.isTruncate()).isEqualTo(true);
         assertThat(syslogHandler.isBlockOnReconnect()).isEqualTo(false);
     }

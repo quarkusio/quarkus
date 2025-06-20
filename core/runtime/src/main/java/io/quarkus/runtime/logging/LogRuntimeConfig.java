@@ -372,8 +372,8 @@ public interface LogRuntimeConfig {
         /**
          * If enabled, the message being sent is prefixed with the size of the message
          */
-        @WithDefault("false")
-        boolean useCountingFraming();
+        @WithDefault("protocol-dependent")
+        CountingFraming useCountingFraming();
 
         /**
          * Set to {@code true} to truncate the message if it exceeds maximum length
@@ -420,6 +420,20 @@ public interface LogRuntimeConfig {
          * Syslog async logging config
          */
         AsyncConfig async();
+
+        /**
+         * Syslog counting framing type used for smarter handling of counting framing value.
+         * <p>
+         * If {@link CountingFraming#PROTOCOL_DEPENDENT} is used, the counting framing will be {@code true}, when the
+         * {@link Protocol#TCP} or {@link Protocol#SSL_TCP} is used. Otherwise {@code false}.
+         * <p>
+         * More information in <a href="http://tools.ietf.org/html/rfc6587#section-3.4.1">http://tools.ietf.org/html/rfc6587</a>
+         */
+        enum CountingFraming {
+            TRUE,
+            FALSE,
+            PROTOCOL_DEPENDENT
+        }
     }
 
     interface SocketConfig {

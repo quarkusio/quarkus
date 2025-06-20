@@ -1,5 +1,6 @@
 package io.quarkus.deployment;
 
+import static io.quarkus.deployment.ExtensionLoaderConfig.ReportRuntimeConfigAtDeployment.warn;
 import static io.quarkus.deployment.util.ReflectUtil.isBuildProducerOf;
 import static io.quarkus.deployment.util.ReflectUtil.isConsumerOf;
 import static io.quarkus.deployment.util.ReflectUtil.isListOf;
@@ -113,7 +114,6 @@ public final class ExtensionLoader {
     }
 
     private static final Logger loadLog = Logger.getLogger("io.quarkus.deployment");
-    private static final Logger cfgLog = Logger.getLogger("io.quarkus.configuration");
     @SuppressWarnings("unchecked")
     private static final Class<? extends BooleanSupplier>[] EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY = new Class[0];
 
@@ -207,6 +207,7 @@ public final class ExtensionLoader {
                     }
                 };
 
+                // Load @ConfigMapping in recorded deployment code from Recorder
                 ObjectLoader mappingLoader = new ObjectLoader() {
                     @Override
                     public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
@@ -268,6 +269,8 @@ public final class ExtensionLoader {
             throw reportError(clazz, "Build step classes must have exactly one constructor");
         }
 
+        ExtensionLoaderConfig extensionLoaderConfig = (ExtensionLoaderConfig) readResult.getObjectsByClass()
+                .get(ExtensionLoaderConfig.class);
         EnumSet<ConfigPhase> consumingConfigPhases = EnumSet.noneOf(ConfigPhase.class);
 
         final Constructor<?> constructor = constructors[0];
@@ -591,12 +594,24 @@ public final class ExtensionLoader {
                             }
                         } else if (phase.isReadAtMain()) {
                             if (isRecorder) {
-                                methodParamFns.add((bc, bri) -> {
-                                    final RunTimeConfigurationProxyBuildItem proxies = bc
-                                            .consume(RunTimeConfigurationProxyBuildItem.class);
-                                    return proxies.getProxyObjectFor(parameterClass);
-                                });
-                                runTimeProxies.computeIfAbsent(parameterClass, ConfigMappingUtils::newInstance);
+                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment().equals(warn)) {
+                                    methodParamFns.add((bc, bri) -> {
+                                        RunTimeConfigurationProxyBuildItem proxies = bc
+                                                .consume(RunTimeConfigurationProxyBuildItem.class);
+                                        return proxies.getProxyObjectFor(parameterClass);
+                                    });
+                                    loadLog.warn(reportError(parameter,
+                                            phase + " configuration should not be consumed in Build Steps, use RuntimeValue<"
+                                                    + parameter.getType().getTypeName()
+                                                    + "> in a @Recorder constructor instead")
+                                            .getMessage());
+                                    runTimeProxies.computeIfAbsent(parameterClass, ConfigMappingUtils::newInstance);
+                                } else {
+                                    throw reportError(parameter,
+                                            phase + " configuration cannot be consumed in Build Steps, use RuntimeValue<"
+                                                    + parameter.getType().getTypeName()
+                                                    + "> in a @Recorder constructor instead");
+                                }
                             } else {
                                 throw reportError(parameter,
                                         phase + " configuration cannot be consumed here unless the method is a @Recorder");
@@ -619,11 +634,13 @@ public final class ExtensionLoader {
                         for (var ctor : ctors) {
                             if (ctors.length == 1 || ctor.isAnnotationPresent(Inject.class)) {
                                 for (var type : ctor.getGenericParameterTypes()) {
-                                    Class<?> theType = null;
+                                    Class<?> theType;
+                                    boolean isRuntimeValue = false;
                                     if (type instanceof ParameterizedType) {
                                         ParameterizedType pt = (ParameterizedType) type;
                                         if (pt.getRawType().equals(RuntimeValue.class)) {
                                             theType = (Class<?>) pt.getActualTypeArguments()[0];
+                                            isRuntimeValue = true;
                                         } else {
                                             throw new RuntimeException("Unknown recorder constructor parameter: " + type
                                                     + " in recorder " + parameter.getType());
@@ -634,11 +651,26 @@ public final class ExtensionLoader {
                                     ConfigRoot annotation = theType.getAnnotation(ConfigRoot.class);
                                     if (annotation != null) {
                                         if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                                            // TODO - Check for runtime config is done in another place, we may want to make things more consistent. Rewrite once we disallow the injection of runtime objects in build steps
                                             methodConsumingConfigPhases.add(ConfigPhase.BUILD_AND_RUN_TIME_FIXED);
                                         } else {
                                             methodConsumingConfigPhases.add(annotation.phase());
+                                            if (annotation.phase().isReadAtMain() && !isRuntimeValue) {
+                                                if (extensionLoaderConfig.reportRuntimeConfigAtDeployment().equals(warn)) {
+                                                    loadLog.warn(reportError(parameter, annotation.phase() + " configuration "
+                                                            + type.getTypeName()
+                                                            + " should be injected in a @Recorder constructor as a RuntimeValue<"
+                                                            + type.getTypeName() + ">").getMessage());
+                                                } else {
+                                                    throw reportError(parameter, annotation.phase() + " configuration "
+                                                            + type.getTypeName()
+                                                            + " can only be injected in a @Recorder constructor as a RuntimeValue<"
+                                                            + type.getTypeName() + ">");
+                                                }
+                                            }
                                         }
                                         if (annotation.phase().isReadAtMain()) {
+                                            // TODO - Remove once we disallow the injection of runtime objects in build steps
                                             runTimeProxies.computeIfAbsent(theType, ConfigMappingUtils::newInstance);
                                         } else {
                                             runTimeProxies.computeIfAbsent(theType, readResult::requireObjectForClass);
@@ -835,6 +867,7 @@ public final class ExtensionLoader {
                                                         }
                                                         return runTimeProxies.get(s);
                                                     }
+                                                    // TODO - Remove once we disallow the injection of runtime objects in build steps
                                                     if (s instanceof ParameterizedType) {
                                                         ParameterizedType p = (ParameterizedType) s;
                                                         if (p.getRawType() == RuntimeValue.class) {

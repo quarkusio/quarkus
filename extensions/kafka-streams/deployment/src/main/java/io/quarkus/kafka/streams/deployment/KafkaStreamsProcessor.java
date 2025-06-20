@@ -35,7 +35,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuil
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsProducer;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsRecorder;
-import io.quarkus.kafka.streams.runtime.KafkaStreamsRuntimeConfig;
 import io.quarkus.kafka.streams.runtime.KafkaStreamsSupport;
 import io.quarkus.kafka.streams.runtime.graal.KafkaStreamsFeature;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -249,7 +248,7 @@ class KafkaStreamsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void loadRocksDb(KafkaStreamsRecorder recorder, KafkaStreamsRuntimeConfig runtimeConfig) {
+    void loadRocksDb(KafkaStreamsRecorder recorder) {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
         recorder.loadRocksDb();

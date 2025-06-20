@@ -38,7 +38,6 @@ import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -55,9 +54,7 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveRuntimeConfig;
 import io.quarkus.reactive.mssql.client.MSSQLPoolCreator;
-import io.quarkus.reactive.mssql.client.runtime.DataSourcesReactiveMSSQLConfig;
 import io.quarkus.reactive.mssql.client.runtime.MSSQLPoolRecorder;
 import io.quarkus.reactive.mssql.client.runtime.MSSQLPoolSupport;
 import io.quarkus.reactive.mssql.client.runtime.MsSQLServiceBindingConverter;
@@ -87,10 +84,8 @@ class ReactiveMSSQLClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveMSSQLConfig dataSourcesReactiveMSSQLConfig,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
@@ -104,8 +99,7 @@ class ReactiveMSSQLClientProcessor {
                 continue;
             }
 
-            createPool(recorder, vertx, eventLoopCount, shutdown, msSQLPool, syntheticBeans, dataSourceName,
-                    dataSourcesRuntimeConfig, dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMSSQLConfig);
+            createPool(recorder, vertx, eventLoopCount, shutdown, msSQLPool, syntheticBeans, dataSourceName);
 
             msSQLPoolNamesBuilder.add(dataSourceName);
         }
@@ -203,18 +197,10 @@ class ReactiveMSSQLClientProcessor {
             ShutdownContextBuildItem shutdown,
             BuildProducer<MSSQLPoolBuildItem> msSQLPool,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveMSSQLConfig dataSourcesReactiveMSSQLConfig) {
+            String dataSourceName) {
 
         Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> poolFunction = recorder.configureMSSQLPool(vertx.getVertx(),
-                eventLoopCount.getEventLoopCount(),
-                dataSourceName,
-                dataSourcesRuntimeConfig,
-                dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactiveMSSQLConfig,
-                shutdown);
+                eventLoopCount.getEventLoopCount(), dataSourceName, shutdown);
         msSQLPool.produce(new MSSQLPoolBuildItem(dataSourceName, poolFunction));
 
         ExtendedBeanConfigurator msSQLPoolBeanConfigurator = SyntheticBeanBuildItem.configure(MSSQLPool.class)

@@ -17,7 +17,6 @@ import io.quarkus.elytron.security.deployment.ElytronTokenMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2BuildTimeConfig;
 import io.quarkus.elytron.security.oauth2.runtime.OAuth2Recorder;
-import io.quarkus.elytron.security.oauth2.runtime.OAuth2RuntimeConfig;
 import io.quarkus.elytron.security.oauth2.runtime.auth.OAuth2AuthMechanism;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
@@ -54,13 +53,12 @@ class OAuth2DeploymentProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     AdditionalBeanBuildItem configureOauth2RealmAuthConfig(OAuth2Recorder recorder,
             OAuth2BuildTimeConfig oauth2BuildTimeConfig,
-            OAuth2RuntimeConfig oauth2RuntimeConfig,
             BuildProducer<SecurityRealmBuildItem> securityRealm) throws Exception {
         if (!oauth2BuildTimeConfig.enabled()) {
             return null;
         }
 
-        RuntimeValue<SecurityRealm> realm = recorder.createRealm(oauth2RuntimeConfig);
+        RuntimeValue<SecurityRealm> realm = recorder.createRealm();
         securityRealm.produce(new SecurityRealmBuildItem(realm, REALM_NAME, null));
         return AdditionalBeanBuildItem.unremovableOf(OAuth2AuthMechanism.class);
     }

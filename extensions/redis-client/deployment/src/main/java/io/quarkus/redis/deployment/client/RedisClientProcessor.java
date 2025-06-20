@@ -124,7 +124,6 @@ public class RedisClientProcessor {
             BeanDiscoveryFinishedBuildItem beans,
             ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            RedisConfig config,
             VertxBuildItem vertxBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchModeBuildItem launchMode,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,

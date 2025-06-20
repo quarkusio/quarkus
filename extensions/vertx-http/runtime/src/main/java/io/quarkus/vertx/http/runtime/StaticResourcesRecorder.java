@@ -25,12 +25,14 @@ public class StaticResourcesRecorder {
 
     private static volatile List<Path> hotDeploymentResourcePaths;
 
-    final RuntimeValue<VertxHttpConfig> httpConfig;
-    final VertxHttpBuildTimeConfig httpBuildTimeConfig;
+    private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
+    private final RuntimeValue<VertxHttpConfig> httpConfig;
 
-    public StaticResourcesRecorder(RuntimeValue<VertxHttpConfig> httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        this.httpConfig = httpConfig;
+    public StaticResourcesRecorder(
+            final VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            final RuntimeValue<VertxHttpConfig> httpConfig) {
         this.httpBuildTimeConfig = httpBuildTimeConfig;
+        this.httpConfig = httpConfig;
     }
 
     public static void setHotDeploymentResources(List<Path> resources) {

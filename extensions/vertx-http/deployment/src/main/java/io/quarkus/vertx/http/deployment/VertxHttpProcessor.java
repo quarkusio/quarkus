@@ -57,7 +57,6 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.LiveReloadConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
-import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
@@ -340,7 +339,6 @@ class VertxHttpProcessor {
             BodyHandlerBuildItem bodyHandlerBuildItem,
             List<ErrorPageActionsBuildItem> errorPageActionsBuildItems,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
-            ShutdownConfig shutdownConfig,
             LiveReloadConfig lrc,
             CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
             ExecutorBuildItem executorBuildItem,
@@ -411,7 +409,7 @@ class VertxHttpProcessor {
             publisher = Optional.of(vertxDevUILogBuildItem.get().getPublisher());
         }
 
-        recorder.finalizeRouter(beanContainer.getValue(),
+        recorder.finalizeRouter(
                 defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
                 listOfFilters, listOfManagementInterfaceFilters,
                 vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
@@ -420,8 +418,10 @@ class VertxHttpProcessor {
                 httpRootPathBuildItem.getRootPath(),
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
                 launchMode.getLaunchMode(),
-                getBodyHandlerRequiredConditions(requireBodyHandlerBuildItems), bodyHandlerBuildItem.getHandler(),
-                gracefulShutdownFilter, shutdownConfig, executorBuildItem.getExecutorProxy(),
+                getBodyHandlerRequiredConditions(requireBodyHandlerBuildItems),
+                bodyHandlerBuildItem.getHandler(),
+                gracefulShutdownFilter,
+                executorBuildItem.getExecutorProxy(),
                 logBuildTimeConfig,
                 srcMainJava,
                 knowClasses,

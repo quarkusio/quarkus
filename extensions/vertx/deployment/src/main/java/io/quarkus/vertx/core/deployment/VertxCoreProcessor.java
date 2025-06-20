@@ -53,12 +53,10 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
-import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLocalsHelper;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
-import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.SafeVertxContextInterceptor;
 import io.quarkus.vertx.deployment.VertxBuildConfig;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
@@ -103,8 +101,8 @@ class VertxCoreProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    EventLoopCountBuildItem eventLoopCount(VertxCoreRecorder recorder, VertxConfiguration vertxConfiguration) {
-        return new EventLoopCountBuildItem(recorder.calculateEventLoopThreads(vertxConfiguration));
+    EventLoopCountBuildItem eventLoopCount(VertxCoreRecorder recorder) {
+        return new EventLoopCountBuildItem(recorder.calculateEventLoopThreads());
     }
 
     @BuildStep
@@ -229,10 +227,11 @@ class VertxCoreProcessor {
     @BuildStep
     @Produce(ServiceStartBuildItem.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    CoreVertxBuildItem build(VertxCoreRecorder recorder,
-            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown, VertxConfiguration config,
+    CoreVertxBuildItem build(
+            VertxCoreRecorder recorder,
+            LaunchModeBuildItem launchMode,
+            ShutdownContextBuildItem shutdown,
             List<VertxOptionsConsumerBuildItem> vertxOptionsConsumers,
-            ThreadPoolConfig threadPoolConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<EventLoopSupplierBuildItem> eventLoops,
             ExecutorBuildItem executorBuildItem) {
@@ -243,8 +242,8 @@ class VertxCoreProcessor {
             consumers.add(x.getConsumer());
         }
 
-        Supplier<Vertx> vertx = recorder.configureVertx(config, threadPoolConfig,
-                launchMode.getLaunchMode(), shutdown, consumers, executorBuildItem.getExecutorProxy());
+        Supplier<Vertx> vertx = recorder.configureVertx(launchMode.getLaunchMode(), shutdown, consumers,
+                executorBuildItem.getExecutorProxy());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Vertx.class)
                 .types(Vertx.class)
                 .scope(Singleton.class)

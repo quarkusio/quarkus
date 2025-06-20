@@ -22,6 +22,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -49,8 +50,13 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class WebSocketServerRecorder {
-
     private static final Logger LOG = Logger.getLogger(WebSocketServerRecorder.class);
+
+    private final RuntimeValue<WebSocketsServerRuntimeConfig> runtimeConfig;
+
+    public WebSocketServerRecorder(final RuntimeValue<WebSocketsServerRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
 
     public Supplier<Object> connectionSupplier() {
         return new Supplier<Object>() {
@@ -70,13 +76,12 @@ public class WebSocketServerRecorder {
     }
 
     public Handler<RoutingContext> createEndpointHandler(String generatedEndpointClass, String endpointId,
-            boolean activateRequestContext, boolean activateSessionContext, String endpointPath,
-            WebSocketsServerRuntimeConfig config) {
+            boolean activateRequestContext, boolean activateSessionContext, String endpointPath) {
         ArcContainer container = Arc.container();
         ConnectionManager connectionManager = container.instance(ConnectionManager.class).get();
         Codecs codecs = container.instance(Codecs.class).get();
         HttpUpgradeCheck[] httpUpgradeChecks = getHttpUpgradeChecks(endpointId, container);
-        TrafficLogger trafficLogger = TrafficLogger.forServer(config);
+        TrafficLogger trafficLogger = TrafficLogger.forServer(runtimeConfig.getValue());
         WebSocketTelemetryProvider telemetryProvider = container.instance(WebSocketTelemetryProvider.class).orElse(null);
         return new Handler<RoutingContext>() {
 
@@ -135,7 +140,9 @@ public class WebSocketServerRecorder {
                     SecuritySupport securitySupport = initializeSecuritySupport(container, ctx, vertx, connection);
 
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
-                            config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(), trafficLogger,
+                            runtimeConfig.getValue().autoPingInterval(), securitySupport,
+                            runtimeConfig.getValue().unhandledFailureStrategy(),
+                            trafficLogger,
                             () -> connectionManager.remove(generatedEndpointClass, connection), activateRequestContext,
                             activateSessionContext, telemetrySupport);
                 });

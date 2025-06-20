@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 import io.narayana.lra.client.internal.NarayanaLRAClient;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipant;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipantRegistry;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -17,9 +18,15 @@ public class NarayanaLRARecorder {
 
     static LRAParticipantRegistry registry;
 
-    public void setConfig(final LRAConfiguration config) {
+    private final RuntimeValue<LRAConfiguration> runtimeConfig;
+
+    public NarayanaLRARecorder(final RuntimeValue<LRAConfiguration> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public void setConfig() {
         if (System.getProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY) == null) {
-            System.setProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, config.coordinatorURL());
+            System.setProperty(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, runtimeConfig.getValue().coordinatorURL());
         }
     }
 

@@ -20,8 +20,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
-import io.quarkus.funqy.runtime.FunqyConfig;
-import io.quarkus.funqy.runtime.bindings.knative.events.FunqyKnativeEventsConfig;
 import io.quarkus.funqy.runtime.bindings.knative.events.KnativeEventsBindingRecorder;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -66,8 +64,6 @@ public class FunqyKnativeEventsBuildStep {
     @BuildStep
     @Record(RUNTIME_INIT)
     public void boot(ShutdownContextBuildItem shutdown,
-            FunqyConfig funqyConfig,
-            FunqyKnativeEventsConfig eventsConfig,
             KnativeEventsBindingRecorder binding,
             Optional<FunctionInitializedBuildItem> hasFunctions,
             List<FunctionBuildItem> functions,
@@ -76,7 +72,7 @@ public class FunqyKnativeEventsBuildStep {
             CoreVertxBuildItem vertx,
             BeanContainerBuildItem beanContainer,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            ExecutorBuildItem executorBuildItem) throws Exception {
+            ExecutorBuildItem executorBuildItem) {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
 
@@ -89,7 +85,7 @@ public class FunqyKnativeEventsBuildStep {
             rootPath += "/";
         }
 
-        Handler<RoutingContext> handler = binding.start(rootPath, funqyConfig, eventsConfig, vertx.getVertx(),
+        Handler<RoutingContext> handler = binding.start(rootPath, vertx.getVertx(),
                 shutdown,
                 beanContainer.getValue(),
                 executorBuildItem.getExecutorProxy());

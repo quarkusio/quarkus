@@ -81,7 +81,6 @@ import io.quarkus.grpc.protoc.plugin.MutinyGrpcGenerator;
 import io.quarkus.grpc.runtime.GrpcContainer;
 import io.quarkus.grpc.runtime.GrpcServerRecorder;
 import io.quarkus.grpc.runtime.ServerInterceptorStorage;
-import io.quarkus.grpc.runtime.config.GrpcConfiguration;
 import io.quarkus.grpc.runtime.config.GrpcServerBuildTimeConfig;
 import io.quarkus.grpc.runtime.health.GrpcHealthEndpoint;
 import io.quarkus.grpc.runtime.health.GrpcHealthStorage;
@@ -695,7 +694,6 @@ public class GrpcServerProcessor {
     @Record(value = ExecutionTime.RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     ServiceStartBuildItem initializeServer(GrpcServerRecorder recorder,
-            GrpcConfiguration config,
             GrpcBuildTimeConfig buildTimeConfig,
             ShutdownContextBuildItem shutdown,
             List<BindableServiceBuildItem> bindables,
@@ -736,7 +734,7 @@ public class GrpcServerProcessor {
                             .collect(Collectors.toMap(f -> f.getPriority() * -1, FilterBuildItem::getHandler));
                     // for the moment being, the main router doesn't have QuarkusErrorHandler, but we need to make
                     // sure that exceptions raised during proactive authentication or HTTP authorization are handled
-                    recorder.addMainRouterErrorHandlerIfSameServer(routerRuntimeValue, config);
+                    recorder.addMainRouterErrorHandlerIfSameServer(routerRuntimeValue);
                 }
             } else {
                 routerRuntimeValue = routerBuildItem.getHttpRouter();
@@ -751,7 +749,7 @@ public class GrpcServerProcessor {
                     });
             recorder.initializeGrpcServer(bindableServiceBeanStream.isEmpty(), beanContainerBuildItem.getValue(),
                     vertx.getVertx(), routerRuntimeValue,
-                    config, shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode(),
+                    shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode(),
                     capabilities.isPresent(Capability.SECURITY), securityHandlers);
             return new ServiceStartBuildItem(GRPC_SERVER);
         }

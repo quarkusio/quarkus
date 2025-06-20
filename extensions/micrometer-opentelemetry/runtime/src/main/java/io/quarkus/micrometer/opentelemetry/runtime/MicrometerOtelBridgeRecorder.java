@@ -12,15 +12,12 @@ import io.micrometer.core.instrument.Metrics;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.micrometer.v1_5.OpenTelemetryMeterRegistry;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class MicrometerOtelBridgeRecorder {
 
-    public Function<SyntheticCreationalContext<MeterRegistry>, MeterRegistry> createBridge(
-            OTelRuntimeConfig otelRuntimeConfig) {
-
+    public Function<SyntheticCreationalContext<MeterRegistry>, MeterRegistry> createBridge() {
         return new Function<>() {
             @Override
             public MeterRegistry apply(SyntheticCreationalContext<MeterRegistry> context) {

@@ -24,6 +24,11 @@ import io.vertx.core.Vertx;
 
 @Recorder
 public class MongoClientRecorder {
+    private final RuntimeValue<MongodbConfig> runtimeConfig;
+
+    public MongoClientRecorder(final RuntimeValue<MongodbConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
 
     public Supplier<MongoClientSupport> mongoClientSupportSupplier(List<String> bsonDiscriminators,
             List<Supplier<ConnectionPoolListener>> connectionPoolListenerSuppliers, boolean disableSslSupport) {
@@ -61,13 +66,11 @@ public class MongoClientRecorder {
         }
     }
 
-    public Supplier<MongoClient> mongoClientSupplier(String clientName,
-            @SuppressWarnings("unused") MongodbConfig mongodbConfig) {
+    public Supplier<MongoClient> mongoClientSupplier(String clientName) {
         return new MongoClientSupplier<>(mongoClients -> mongoClients.createMongoClient(clientName));
     }
 
-    public Supplier<ReactiveMongoClient> reactiveMongoClientSupplier(String clientName,
-            @SuppressWarnings("unused") MongodbConfig mongodbConfig) {
+    public Supplier<ReactiveMongoClient> reactiveMongoClientSupplier(String clientName) {
         return new MongoClientSupplier<>(mongoClients -> mongoClients.createReactiveMongoClient(clientName));
     }
 
@@ -113,10 +116,10 @@ public class MongoClientRecorder {
      * resolution)
      * don't end up being performed on the event loop
      */
-    public void performInitialization(MongodbConfig config, RuntimeValue<Vertx> vertx) {
+    public void performInitialization(RuntimeValue<Vertx> vertx) {
         MongoDnsClientProvider.vertx = vertx.getValue();
-        initializeDNSLookup(config.defaultMongoClientConfig());
-        for (MongoClientConfig mongoClientConfig : config.mongoClientConfigs().values()) {
+        initializeDNSLookup(runtimeConfig.getValue().defaultMongoClientConfig());
+        for (MongoClientConfig mongoClientConfig : runtimeConfig.getValue().mongoClientConfigs().values()) {
             initializeDNSLookup(mongoClientConfig);
         }
     }

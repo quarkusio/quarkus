@@ -4,19 +4,25 @@ import java.util.Map;
 import java.util.function.BooleanSupplier;
 
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathConfig;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class KeycloakPolicyEnforcerRecorder {
+    private final RuntimeValue<KeycloakPolicyEnforcerConfig> runtimeConfig;
 
-    public BooleanSupplier createBodyHandlerRequiredEvaluator(KeycloakPolicyEnforcerConfig config) {
+    public KeycloakPolicyEnforcerRecorder(final RuntimeValue<KeycloakPolicyEnforcerConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public BooleanSupplier createBodyHandlerRequiredEvaluator() {
         return new BooleanSupplier() {
             @Override
             public boolean getAsBoolean() {
-                if (isBodyHandlerRequired(config.defaultTenant())) {
+                if (isBodyHandlerRequired(runtimeConfig.getValue().defaultTenant())) {
                     return true;
                 }
-                for (KeycloakPolicyEnforcerTenantConfig tenantConfig : config.namedTenants().values()) {
+                for (KeycloakPolicyEnforcerTenantConfig tenantConfig : runtimeConfig.getValue().namedTenants().values()) {
                     if (isBodyHandlerRequired(tenantConfig)) {
                         return true;
                     }

@@ -18,7 +18,6 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.gcp.functions.FunqyCloudFunctionsBindingRecorder;
-import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.jackson.runtime.ObjectMapperProducer;
 
 public class FunqyCloudFunctionsBuildStep {
@@ -40,7 +39,7 @@ public class FunqyCloudFunctionsBuildStep {
     public void init(List<FunctionBuildItem> functions,
             FunqyCloudFunctionsBindingRecorder recorder,
             Optional<FunctionInitializedBuildItem> hasFunctions,
-            BeanContainerBuildItem beanContainer) throws Exception {
+            BeanContainerBuildItem beanContainer) {
         if (!hasFunctions.isPresent())
             return;
 
@@ -49,8 +48,8 @@ public class FunqyCloudFunctionsBuildStep {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void choose(FunqyConfig config, FunqyCloudFunctionsBindingRecorder recorder) {
-        recorder.chooseInvoker(config);
+    public void choose(FunqyCloudFunctionsBindingRecorder recorder) {
+        recorder.chooseInvoker();
     }
 
     @BuildStep

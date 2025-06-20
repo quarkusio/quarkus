@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jboss.logging.Logger;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
@@ -21,6 +19,7 @@ import io.quarkus.amazon.lambda.runtime.handlers.CollectionInputReader;
 import io.quarkus.amazon.lambda.runtime.handlers.S3EventInputReader;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -30,9 +29,6 @@ import io.quarkus.runtime.annotations.Recorder;
  */
 @Recorder
 public class AmazonLambdaRecorder {
-
-    private static final Logger log = Logger.getLogger(AmazonLambdaRecorder.class);
-
     private static Class<? extends RequestHandler<?, ?>> handlerClass;
     static Class<? extends RequestStreamHandler> streamHandlerClass;
     private static BeanContainer beanContainer;
@@ -40,10 +36,10 @@ public class AmazonLambdaRecorder {
     private static LambdaOutputWriter objectWriter;
     protected static Set<Class<?>> expectedExceptionClasses;
 
-    private final LambdaConfig config;
+    private final RuntimeValue<LambdaConfig> runtimeConfig;
 
-    public AmazonLambdaRecorder(LambdaConfig config) {
-        this.config = config;
+    public AmazonLambdaRecorder(RuntimeValue<LambdaConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
     }
 
     public void setStreamHandlerClass(Class<? extends RequestStreamHandler> handler) {
@@ -120,12 +116,12 @@ public class AmazonLambdaRecorder {
 
         Class<? extends RequestHandler<?, ?>> handlerClass = null;
         Class<? extends RequestStreamHandler> handlerStreamClass = null;
-        if (config.handler().isPresent()) {
-            handlerClass = namedHandlerClasses.get(config.handler().get());
-            handlerStreamClass = namedStreamHandlerClasses.get(config.handler().get());
+        if (runtimeConfig.getValue().handler().isPresent()) {
+            handlerClass = namedHandlerClasses.get(runtimeConfig.getValue().handler().get());
+            handlerStreamClass = namedStreamHandlerClasses.get(runtimeConfig.getValue().handler().get());
 
             if (handlerClass == null && handlerStreamClass == null) {
-                String errorMessage = "Unable to find handler class with name " + config.handler().get()
+                String errorMessage = "Unable to find handler class with name " + runtimeConfig.getValue().handler().get()
                         + " make sure there is a handler class in the deployment with the correct @Named annotation";
                 throw new RuntimeException(errorMessage);
             }

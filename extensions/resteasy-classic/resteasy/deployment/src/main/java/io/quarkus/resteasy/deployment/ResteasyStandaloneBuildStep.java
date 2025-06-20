@@ -31,7 +31,6 @@ import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationFailedExceptionMapper;
 import io.quarkus.resteasy.runtime.AuthenticationRedirectExceptionMapper;
 import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
-import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.resteasy.runtime.standalone.ResteasyStandaloneRecorder;
 import io.quarkus.resteasy.server.common.deployment.ResteasyDeploymentBuildItem;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -96,7 +95,6 @@ public class ResteasyStandaloneBuildStep {
             Optional<RequireVirtualHttpBuildItem> requireVirtual,
             Optional<NonJaxRsClassBuildItem> nonJaxRsClassBuildItem,
             ExecutorBuildItem executorBuildItem,
-            ResteasyVertxConfig resteasyVertxConfig,
             VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
 
         if (standalone == null) {
@@ -110,8 +108,8 @@ public class ResteasyStandaloneBuildStep {
         if (nonJaxRsClassBuildItem.isPresent()) {
             nonJaxRsClassNameToMethodPaths = nonJaxRsClassBuildItem.get().nonJaxRsPaths;
         }
-        Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(),
-                executorBuildItem.getExecutorProxy(), nonJaxRsClassNameToMethodPaths, resteasyVertxConfig, httpBuildTimeConfig);
+        Handler<RoutingContext> handler = recorder.vertxRequestHandler(vertx.getVertx(), executorBuildItem.getExecutorProxy(),
+                nonJaxRsClassNameToMethodPaths);
 
         final boolean noCustomAuthCompletionExMapper;
         final boolean noCustomAuthFailureExMapper;
@@ -133,8 +131,8 @@ public class ResteasyStandaloneBuildStep {
         // we add the failure handler right before QuarkusErrorHandler
         // so that user can define failure handlers that precede exception mappers
         final Handler<RoutingContext> failureHandler = recorder.vertxFailureHandler(vertx.getVertx(),
-                executorBuildItem.getExecutorProxy(), resteasyVertxConfig, noCustomAuthCompletionExMapper,
-                noCustomAuthFailureExMapper, noCustomAuthRedirectExMapper, httpBuildTimeConfig.auth().proactive());
+                executorBuildItem.getExecutorProxy(), noCustomAuthCompletionExMapper, noCustomAuthFailureExMapper,
+                noCustomAuthRedirectExMapper);
         filterBuildItemBuildProducer.produce(FilterBuildItem.ofAuthenticationFailureHandler(failureHandler));
 
         // Exact match for resources matched to the root path

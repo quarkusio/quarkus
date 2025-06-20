@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 
 import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -13,14 +14,14 @@ import io.quarkus.runtime.annotations.Recorder;
  */
 @Recorder
 public class InitializationTaskRecorder {
-    private final InitRuntimeConfig initRuntimeConfig;
+    private final RuntimeValue<InitRuntimeConfig> initRuntimeConfig;
 
-    public InitializationTaskRecorder(InitRuntimeConfig initRuntimeConfig) {
+    public InitializationTaskRecorder(RuntimeValue<InitRuntimeConfig> initRuntimeConfig) {
         this.initRuntimeConfig = initRuntimeConfig;
     }
 
     public void exitIfNeeded() {
-        if (initRuntimeConfig.initAndExit()) {
+        if (initRuntimeConfig.getValue().initAndExit()) {
             preventFurtherRecorderSteps(5, "Error attempting to gracefully shutdown after initialization",
                     () -> new PreventFurtherStepsException("Gracefully exiting after initialization.", 0));
         }

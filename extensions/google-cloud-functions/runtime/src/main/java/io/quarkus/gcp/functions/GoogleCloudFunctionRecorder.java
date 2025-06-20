@@ -4,16 +4,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class GoogleCloudFunctionRecorder {
+    private final RuntimeValue<GoogleCloudFunctionsConfig> runtimeConfig;
 
-    public void selectDelegate(GoogleCloudFunctionsConfig config, List<GoogleCloudFunctionInfo> cloudFunctions) {
+    public GoogleCloudFunctionRecorder(final RuntimeValue<GoogleCloudFunctionsConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public void selectDelegate(List<GoogleCloudFunctionInfo> cloudFunctions) {
         Map<GoogleCloudFunctionInfo.FunctionType, String> delegates = new HashMap<>();
         // if a function name is defined, check that it exists
-        if (config.function().isPresent()) {
-            String functionName = config.function().get();
+        if (runtimeConfig.getValue().function().isPresent()) {
+            String functionName = runtimeConfig.getValue().function().get();
             boolean found = false;
             for (GoogleCloudFunctionInfo info : cloudFunctions) {
                 if (functionName.equals(info.getBeanName())) {

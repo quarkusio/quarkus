@@ -19,9 +19,7 @@ import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchE
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.deployment.HibernateSearchIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit;
-import io.quarkus.hibernate.search.orm.outboxpolling.runtime.HibernateSearchOutboxPollingBuildTimeConfig;
 import io.quarkus.hibernate.search.orm.outboxpolling.runtime.HibernateSearchOutboxPollingRecorder;
-import io.quarkus.hibernate.search.orm.outboxpolling.runtime.HibernateSearchOutboxPollingRuntimeConfig;
 
 @BuildSteps(onlyIf = HibernateSearchEnabled.class)
 class HibernateSearchOutboxPollingProcessor {
@@ -46,7 +44,6 @@ class HibernateSearchOutboxPollingProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     void setStaticConfig(HibernateSearchOutboxPollingRecorder recorder,
-            HibernateSearchOutboxPollingBuildTimeConfig buildTimeConfig,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateSearchIntegrationStaticConfiguredBuildItem> staticConfigured) {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
@@ -56,7 +53,7 @@ class HibernateSearchOutboxPollingProcessor {
             String puName = configuredPersistenceUnit.getPersistenceUnitName();
             staticConfigured.produce(new HibernateSearchIntegrationStaticConfiguredBuildItem(
                     HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING, puName,
-                    recorder.createStaticInitListener(buildTimeConfig, puName))
+                    recorder.createStaticInitListener(puName))
                     // Additional entities such as Agent and OutboxEvent are defined through XML
                     // (because there's no other way).
                     .setXmlMappingRequired(true));
@@ -66,7 +63,6 @@ class HibernateSearchOutboxPollingProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void setRuntimeConfig(HibernateSearchOutboxPollingRecorder recorder,
-            HibernateSearchOutboxPollingRuntimeConfig runtimeConfig,
             List<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateSearchIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
         for (HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem configuredPersistenceUnit : configuredPersistenceUnits) {
@@ -76,7 +72,7 @@ class HibernateSearchOutboxPollingProcessor {
             String puName = configuredPersistenceUnit.getPersistenceUnitName();
             runtimeConfigured.produce(new HibernateSearchIntegrationRuntimeConfiguredBuildItem(
                     HIBERNATE_SEARCH_ORM_COORDINATION_OUTBOX_POLLING, puName,
-                    recorder.createRuntimeInitListener(runtimeConfig, puName)));
+                    recorder.createRuntimeInitListener(puName)));
         }
     }
 

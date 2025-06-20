@@ -32,7 +32,6 @@ import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
 import io.quarkus.swaggerui.runtime.SwaggerUiRecorder;
-import io.quarkus.swaggerui.runtime.SwaggerUiRuntimeConfig;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
@@ -144,7 +143,6 @@ public class SwaggerUiProcessor {
             BuildProducer<RouteBuildItem> routes,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             WebJarResultsBuildItem webJarResultsBuildItem,
-            SwaggerUiRuntimeConfig runtimeConfig,
             LaunchModeBuildItem launchMode,
             SwaggerUiConfig swaggerUiConfig,
             BuildProducer<SwaggerUiBuildItem> swaggerUiBuildProducer,
@@ -159,9 +157,8 @@ public class SwaggerUiProcessor {
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(result.getFinalDestination(), swaggerUiPath));
 
-            Handler<RoutingContext> handler = recorder.handler(result.getFinalDestination(),
-                    swaggerUiPath, result.getWebRootConfigurations(),
-                    runtimeConfig, shutdownContext);
+            Handler<RoutingContext> handler = recorder.handler(result.getFinalDestination(), swaggerUiPath,
+                    result.getWebRootConfigurations(), shutdownContext);
 
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .management("quarkus.smallrye-openapi.management.enabled")

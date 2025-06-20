@@ -49,7 +49,6 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementContext;
@@ -218,6 +217,7 @@ public class VertxHttpRecorder {
     final ManagementInterfaceBuildTimeConfig managementBuildTimeConfig;
     final RuntimeValue<VertxHttpConfig> httpConfig;
     final RuntimeValue<ManagementConfig> managementConfig;
+    final RuntimeValue<ShutdownConfig> shutdownConfig;
 
     private static volatile Handler<HttpServerRequest> managementRouter;
     private static volatile Handler<HttpServerRequest> managementRouterDelegate;
@@ -226,11 +226,13 @@ public class VertxHttpRecorder {
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             RuntimeValue<VertxHttpConfig> httpConfig,
-            RuntimeValue<ManagementConfig> managementConfig) {
+            RuntimeValue<ManagementConfig> managementConfig,
+            RuntimeValue<ShutdownConfig> shutdownConfig) {
         this.httpBuildTimeConfig = httpBuildTimeConfig;
         this.httpConfig = httpConfig;
         this.managementBuildTimeConfig = managementBuildTimeConfig;
         this.managementConfig = managementConfig;
+        this.shutdownConfig = shutdownConfig;
     }
 
     public static void setHotReplacement(Handler<RoutingContext> handler, HotReplacementContext hrc) {
@@ -391,7 +393,8 @@ public class VertxHttpRecorder {
         mainRouter.getValue().mountSubRouter(frameworkPath, frameworkRouter.getValue());
     }
 
-    public void finalizeRouter(BeanContainer container, Consumer<Route> defaultRouteHandler,
+    public void finalizeRouter(
+            Consumer<Route> defaultRouteHandler,
             List<Filter> filterList, List<Filter> managementInterfaceFilterList, Supplier<Vertx> vertx,
             LiveReloadConfig liveReloadConfig, Optional<RuntimeValue<Router>> mainRouterRuntimeValue,
             RuntimeValue<Router> httpRouterRuntimeValue, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter,
@@ -399,7 +402,7 @@ public class VertxHttpRecorder {
             String rootPath, String nonRootPath,
             LaunchMode launchMode, BooleanSupplier[] requireBodyHandlerConditions,
             Handler<RoutingContext> bodyHandler,
-            GracefulShutdownFilter gracefulShutdownFilter, ShutdownConfig shutdownConfig,
+            GracefulShutdownFilter gracefulShutdownFilter,
             Executor executor,
             LogBuildTimeConfig logBuildTimeConfig,
             String srcMainJava,
@@ -484,7 +487,7 @@ public class VertxHttpRecorder {
 
         boolean quarkusWrapperNeeded = false;
 
-        if (shutdownConfig.isTimeoutEnabled()) {
+        if (shutdownConfig.getValue().isTimeoutEnabled()) {
             gracefulShutdownFilter.next(root);
             root = gracefulShutdownFilter;
             quarkusWrapperNeeded = true;

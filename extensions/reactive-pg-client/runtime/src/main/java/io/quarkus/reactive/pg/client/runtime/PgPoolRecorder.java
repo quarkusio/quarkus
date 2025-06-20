@@ -21,7 +21,6 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
-import jakarta.inject.Inject;
 
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.SyntheticCreationalContext;
@@ -55,12 +54,15 @@ public class PgPoolRecorder {
 
     private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
     private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
+    private final RuntimeValue<DataSourcesReactivePostgreSQLConfig> reactivePostgreRuntimeConfig;
 
-    @Inject
-    public PgPoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
-            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig) {
+    public PgPoolRecorder(
+            final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig,
+            final RuntimeValue<DataSourcesReactivePostgreSQLConfig> reactivePostgreRuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
         this.reactiveRuntimeConfig = reactiveRuntimeConfig;
+        this.reactivePostgreRuntimeConfig = reactivePostgreRuntimeConfig;
     }
 
     public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
@@ -81,21 +83,16 @@ public class PgPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<PgPool>, PgPool> configurePgPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactivePostgreSQLConfig dataSourcesReactivePostgreSQLConfig,
-            ShutdownContext shutdown) {
+            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public PgPool apply(SyntheticCreationalContext<PgPool> context) {
                 PgPool pgPool = initialize((VertxInternal) vertx.getValue(),
                         eventLoopCount.get(),
                         dataSourceName,
-                        dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                        dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactivePostgreSQLConfig.dataSources().get(dataSourceName).reactive().postgresql(),
+                        runtimeConfig.getValue().dataSources().get(dataSourceName),
+                        reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
+                        reactivePostgreRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().postgresql(),
                         context);
 
                 shutdown.addShutdownTask(pgPool::close);

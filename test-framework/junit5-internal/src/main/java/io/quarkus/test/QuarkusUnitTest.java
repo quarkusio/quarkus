@@ -591,10 +591,10 @@ public class QuarkusUnitTest
             testResourceManager.start();
             TestResourceManager tm = testResourceManager;
             store.put(TestResourceManager.class.getName(), testResourceManager);
-            store.put(TestResourceManager.CLOSEABLE_NAME, new ExtensionContext.Store.CloseableResource() {
+            store.put(TestResourceManager.CLOSEABLE_NAME, new AutoCloseable() {
 
                 @Override
-                public void close() throws Throwable {
+                public void close() throws Exception {
                     tm.close();
                 }
             });

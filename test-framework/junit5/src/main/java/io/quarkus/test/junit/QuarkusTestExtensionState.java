@@ -6,11 +6,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.junit.jupiter.api.extension.ExtensionContext;
-
 import io.quarkus.test.common.TestResourceManager;
 
-public class QuarkusTestExtensionState implements ExtensionContext.Store.CloseableResource {
+public class QuarkusTestExtensionState implements AutoCloseable {
 
     private final AtomicBoolean closed = new AtomicBoolean();
 

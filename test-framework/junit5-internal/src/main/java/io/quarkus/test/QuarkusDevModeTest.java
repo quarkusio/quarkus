@@ -264,7 +264,7 @@ public class QuarkusDevModeTest
             TestResourceManager tm = testResourceManager;
 
             store.put(TestResourceManager.class.getName(), testResourceManager);
-            store.put(TestResourceManager.CLOSEABLE_NAME, (ExtensionContext.Store.CloseableResource) tm::close);
+            store.put(TestResourceManager.CLOSEABLE_NAME, tm);
         }
         TestResourceManager tm = (TestResourceManager) store.get(TestResourceManager.class.getName());
         //dev mode tests just use system properties

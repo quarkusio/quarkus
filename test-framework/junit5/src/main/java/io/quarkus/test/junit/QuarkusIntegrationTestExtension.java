@@ -256,9 +256,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
             context.getStore(ExtensionContext.Namespace.GLOBAL).put(
                     QuarkusIntegrationTestExtension.class.getName() + ".systemProps",
-                    new ExtensionContext.Store.CloseableResource() {
+                    new AutoCloseable() {
                         @Override
-                        public void close() throws Throwable {
+                        public void close() throws Exception {
                             for (Map.Entry<String, String> i : old.entrySet()) {
                                 old.put(i.getKey(), System.getProperty(i.getKey()));
                                 if (i.getValue() == null) {

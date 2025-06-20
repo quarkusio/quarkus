@@ -18,9 +18,9 @@ import kotlin.math.max
 class ExecutionPlanAnalysisService(
     private val log: Log,
     private val verbose: Boolean,
-    private val lifecycleExecutor: LifecycleExecutor,
-    private val session: MavenSession,
-    private val defaultLifecycles: DefaultLifecycles
+    private val lifecycleExecutor: LifecycleExecutor?,
+    private val session: MavenSession?,
+    private val defaultLifecycles: DefaultLifecycles?
 ) {
     
     // Pre-computed analysis results per project
@@ -80,12 +80,12 @@ class ExecutionPlanAnalysisService(
     /**
      * Get the LifecycleExecutor for use by other services
      */
-    fun getLifecycleExecutor(): LifecycleExecutor = lifecycleExecutor
+    fun getLifecycleExecutor(): LifecycleExecutor? = lifecycleExecutor
     
     /**
      * Get the DefaultLifecycles for use by other services
      */
-    fun getDefaultLifecycles(): DefaultLifecycles = defaultLifecycles
+    fun getDefaultLifecycles(): DefaultLifecycles? = defaultLifecycles
     
     /**
      * Get or compute execution analysis for a project
@@ -214,7 +214,7 @@ class ExecutionPlanAnalysisService(
      * Pre-compute lifecycle phases for a specific lifecycle ID
      */
     private fun computeLifecyclePhases(lifecycleId: String): List<String> {
-        if (lifecycleId.isEmpty()) {
+        if (lifecycleId.isEmpty() || defaultLifecycles == null) {
             return emptyList()
         }
 
@@ -236,6 +236,9 @@ class ExecutionPlanAnalysisService(
      * Pre-compute phase to lifecycle mapping for efficient lookups
      */
     private fun computePhaseToLifecycleMap(): Map<String, org.apache.maven.lifecycle.Lifecycle> {
+        if (defaultLifecycles == null) {
+            return emptyMap()
+        }
         return try {
             defaultLifecycles.phaseToLifecycleMap
         } catch (e: Exception) {
@@ -275,15 +278,22 @@ class ExecutionPlanAnalysisService(
                     // OPTIMIZATION: Cache execution plans globally to avoid recalculation
                     val planKey = createExecutionPlanKey(project, phase)
                     val executionPlan = executionPlanCache[planKey] ?: run {
-                        try {
-                            val plan = lifecycleExecutor.calculateExecutionPlan(session, phase)
-                            if (plan != null) {
-                                executionPlanCache[planKey] = plan
+                        if (lifecycleExecutor != null && session != null) {
+                            try {
+                                val plan = lifecycleExecutor.calculateExecutionPlan(session, phase)
+                                if (plan != null) {
+                                    executionPlanCache[planKey] = plan
+                                }
+                                plan
+                            } catch (e: Exception) {
+                                if (verbose) {
+                                    log.warn("Could not calculate execution plan for $phase: ${e.message}")
+                                }
+                                null
                             }
-                            plan
-                        } catch (e: Exception) {
+                        } else {
                             if (verbose) {
-                                log.warn("Could not calculate execution plan for $phase: ${e.message}")
+                                log.warn("LifecycleExecutor or session not available - cannot calculate execution plan for $phase")
                             }
                             null
                         }

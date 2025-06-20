@@ -23,7 +23,7 @@ class LifecyclePhaseAnalyzer(
      */
     fun analyzePhase(phase: String?): PhaseAnalysis {
         if (phase.isNullOrEmpty()) {
-            return PhaseAnalysis(phase ?: "")
+            return PhaseAnalysis(phase)
         }
         
         return analysisCache.computeIfAbsent(phase) { performPhaseAnalysis(it) }
@@ -100,7 +100,7 @@ class LifecyclePhaseAnalyzer(
      * Analyze phase name using semantic patterns (replacement for hardcoded switch)
      */
     private fun analyzePhaseNameSemantics(analysis: PhaseAnalysis) {
-        val phase = analysis.phase.lowercase()
+        val phase = analysis.phase?.lowercase() ?: return
         
         // Source-related phases
         if (phase.contains("source") || phase == "compile" || phase.contains("classes")) {
@@ -256,7 +256,7 @@ class LifecyclePhaseAnalyzer(
     /**
      * Comprehensive phase analysis result
      */
-    class PhaseAnalysis(val phase: String) {
+    class PhaseAnalysis(@get:JvmName("getPhase") val phase: String?) {
         var lifecycleId: String? = null
         var phasePosition: Int = -1
         var lifecyclePhases: List<String>? = null

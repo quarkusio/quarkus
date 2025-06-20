@@ -13,14 +13,19 @@ import java.util.concurrent.ConcurrentHashMap
 class DynamicGoalAnalysisService(
     private val session: MavenSession,
     private val executionPlanAnalysis: ExecutionPlanAnalysisService,
-    lifecycleExecutor: LifecycleExecutor,
-    defaultLifecycles: DefaultLifecycles,
+    lifecycleExecutor: LifecycleExecutor?,
+    defaultLifecycles: DefaultLifecycles?,
     private val log: Log,
     private val verbose: Boolean
 ) {
     
-    private val introspectionService = MavenPluginIntrospectionService(session, lifecycleExecutor, log, verbose)
-    private val phaseAnalyzer = LifecyclePhaseAnalyzer(defaultLifecycles, log, verbose)
+    private val introspectionService = if (lifecycleExecutor != null) {
+        MavenPluginIntrospectionService(session, lifecycleExecutor, log, verbose)
+    } else null
+    
+    private val phaseAnalyzer = if (defaultLifecycles != null) {
+        LifecyclePhaseAnalyzer(defaultLifecycles, log, verbose)
+    } else null
     private val analysisCache = ConcurrentHashMap<String, GoalBehavior>()
     
     /**
@@ -37,12 +42,14 @@ class DynamicGoalAnalysisService(
             var behavior = GoalBehavior()
             
             // 1. Use Maven API-based introspection (primary analysis)
-            val introspectionResult = introspectionService.analyzeGoal(goal, project)
-            behavior = behavior.merge(introspectionResult.toGoalBehavior())
+            if (introspectionService != null) {
+                val introspectionResult = introspectionService.analyzeGoal(goal, project)
+                behavior = behavior.merge(introspectionResult.toGoalBehavior())
+            }
             
             // 2. Enhance with Maven API-based lifecycle phase analysis
             val phase = executionPlanAnalysis.findPhaseForGoal(project, goal)
-            if (phase != null) {
+            if (phase != null && phaseAnalyzer != null) {
                 val phaseBehavior = phaseAnalyzer.toGoalBehavior(phase)
                 behavior = behavior.merge(phaseBehavior)
             }

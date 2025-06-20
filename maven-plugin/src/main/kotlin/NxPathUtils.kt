@@ -10,7 +10,6 @@ object NxPathUtils {
     /**
      * Calculate relative path from workspace root to target file/directory
      */
-    @JvmStatic
     fun getRelativePath(workspaceRoot: File, target: File): String {
         return try {
             val workspacePath = workspaceRoot.canonicalPath
@@ -34,7 +33,6 @@ object NxPathUtils {
     /**
      * Get project name from Maven project (directory name)
      */
-    @JvmStatic
     fun getProjectName(project: MavenProject): String {
         return project.basedir.name
     }
@@ -42,7 +40,6 @@ object NxPathUtils {
     /**
      * Get relative path to pom.xml for a project
      */
-    @JvmStatic
     fun getRelativePomPath(project: MavenProject, workspaceRoot: File): String {
         val pomFile = File(project.basedir, "pom.xml")
         val relativePath = getRelativePath(workspaceRoot, pomFile)
@@ -52,7 +49,6 @@ object NxPathUtils {
     /**
      * Check if two directories have a parent-child relationship
      */
-    @JvmStatic
     fun isParentChildRelation(dir1: File, dir2: File): Boolean {
         return try {
             val path1 = dir1.canonicalPath

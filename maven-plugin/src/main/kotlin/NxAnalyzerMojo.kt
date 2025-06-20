@@ -378,17 +378,14 @@ class NxAnalyzerMojo : AbstractMojo() {
     
     private fun isVerbose(): Boolean {
         val systemProp = System.getProperty("nx.verbose")
-        val fromParam = "true".equals(verboseStr, ignoreCase = true)
-        val fromSystem = "true".equals(systemProp, ignoreCase = true)
+        val fromParam = verboseStr?.equals("true", ignoreCase = true) ?: false
+        val fromSystem = systemProp?.equals("true", ignoreCase = true) ?: false
         return fromParam || fromSystem
     }
     
     private fun determineOutputPath(): String {
-        return if (!outputFile.isNullOrEmpty()) {
-            outputFile!!
-        } else {
-            File(session.executionRootDirectory, "maven-analysis.json").absolutePath
-        }
+        return outputFile?.takeIf { it.isNotEmpty() }
+            ?: File(session.executionRootDirectory, "maven-analysis.json").absolutePath
     }
     
     @Throws(IOException::class)

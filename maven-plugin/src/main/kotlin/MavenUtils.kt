@@ -8,7 +8,6 @@ object MavenUtils {
     /**
      * Format Maven project as "groupId:artifactId" key
      */
-    @JvmStatic
     fun formatProjectKey(project: MavenProject): String {
         return "${project.groupId}:${project.artifactId}"
     }

@@ -37,7 +37,7 @@ class TargetDependencyService(
             else -> executionPhase
         }
 
-        if (!effectivePhase.isNullOrEmpty()) {
+        if (effectivePhase?.isNotEmpty() == true) {
             // Add goal-to-goal dependencies based on Maven lifecycle ordering (same project)
             val precedingGoals = getPrecedingGoalsInLifecycle(project, effectivePhase)
             dependencies.addAll(precedingGoals) // Simple string dependencies for same project

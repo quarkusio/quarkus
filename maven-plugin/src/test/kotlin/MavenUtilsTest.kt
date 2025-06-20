@@ -15,13 +15,7 @@ import kotlin.test.*
 class MavenUtilsTest {
 
     @get:Rule
-    val rule = object : MojoRule() {
-        override fun before() {
-        }
-
-        override fun after() {
-        }
-    }
+    val rule = MojoRule()
 
     /**
      * Test phase inference from goal names with real Maven project

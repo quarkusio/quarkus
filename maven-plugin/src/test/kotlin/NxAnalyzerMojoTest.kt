@@ -12,13 +12,7 @@ import kotlin.test.*
 class NxAnalyzerMojoTest {
     
     @get:Rule
-    val rule = object : MojoRule() {
-        override fun before() {
-        }
-
-        override fun after() {
-        }
-    }
+    val rule = MojoRule()
 
     /**
      * Test basic mojo configuration and parameter injection

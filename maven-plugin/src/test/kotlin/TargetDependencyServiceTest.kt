@@ -17,13 +17,7 @@ import kotlin.test.*
 class TargetDependencyServiceTest {
 
     @get:Rule
-    val rule = object : MojoRule() {
-        override fun before() {
-        }
-
-        override fun after() {
-        }
-    }
+    val rule = MojoRule()
 
     /**
      * Test context helper for consolidated test setup

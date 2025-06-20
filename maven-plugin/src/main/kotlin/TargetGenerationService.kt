@@ -238,7 +238,7 @@ class TargetGenerationService(
             this.goal = goal
             executionId = execution.id
             phase = when {
-                !execution.phase.isNullOrEmpty() && !execution.phase.startsWith("\${") -> execution.phase
+                execution.phase?.isNotEmpty() == true && !execution.phase.startsWith("\${") -> execution.phase
                 else -> executionPlanAnalysisService.findPhaseForGoal(project, goal)
             }
             technologies = mutableListOf("maven")
@@ -340,7 +340,7 @@ class TargetGenerationService(
             
             sourcePaths.forEach { sourcePath: String ->
                 val relativePath = getRelativePathFromProject(sourcePath, project)
-                if (!relativePath.isNullOrEmpty()) {
+                if (relativePath?.isNotEmpty() == true) {
                     inputs.add("$projectRootToken/$relativePath/**/*")
                 }
             }
@@ -349,7 +349,7 @@ class TargetGenerationService(
             if (behavior.isTestRelated()) {
                 project.testCompileSourceRoots.forEach { testSourceRoot ->
                     val relativePath = getRelativePathFromProject(testSourceRoot, project)
-                    if (!relativePath.isNullOrEmpty()) {
+                    if (relativePath?.isNotEmpty() == true) {
                         inputs.add("$projectRootToken/$relativePath/**/*")
                     }
                 }
@@ -364,7 +364,7 @@ class TargetGenerationService(
             
             resourcePaths.forEach { resourcePath: String ->
                 val relativePath = getRelativePathFromProject(resourcePath, project)
-                if (!relativePath.isNullOrEmpty()) {
+                if (relativePath?.isNotEmpty() == true) {
                     inputs.add("$projectRootToken/$relativePath/**/*")
                 }
             }
@@ -374,7 +374,7 @@ class TargetGenerationService(
                 project.build?.testResources?.forEach { resource ->
                     resource.directory?.let { directory ->
                         val relativePath = getRelativePathFromProject(directory, project)
-                        if (!relativePath.isNullOrEmpty()) {
+                        if (relativePath?.isNotEmpty() == true) {
                             inputs.add("$projectRootToken/$relativePath/**/*")
                         }
                     }

@@ -350,7 +350,6 @@ class ExecutionPlanAnalysisService(
         /**
          * Generate target name from artifact ID and goal
          */
-        @JvmStatic
         fun getTargetName(artifactId: String?, goal: String): String {
             val pluginName = normalizePluginName(artifactId)
             return "$pluginName:$goal"
@@ -359,7 +358,6 @@ class ExecutionPlanAnalysisService(
         /**
          * Extract goal name from target name (e.g., "compiler:compile" -> "compile")
          */
-        @JvmStatic
         fun extractGoalFromTargetName(targetName: String?): String? {
             if (targetName == null || !targetName.contains(":")) {
                 return targetName
@@ -370,7 +368,6 @@ class ExecutionPlanAnalysisService(
         /**
          * Normalize plugin artifact ID to plugin name by removing common suffixes
          */
-        @JvmStatic
         fun normalizePluginName(artifactId: String?): String? {
             return artifactId?.replace("-maven-plugin", "")?.replace("-plugin", "")
         }
@@ -378,7 +375,6 @@ class ExecutionPlanAnalysisService(
         /**
          * Get common goals for well-known plugins
          */
-        @JvmStatic
         fun getCommonGoalsForPlugin(artifactId: String?): List<String> {
             return when {
                 artifactId == null -> emptyList()

@@ -66,7 +66,7 @@ object CreateNodesResultGenerator {
         }
         
         // Add targets (update paths to use workspace-relative paths)
-        if (!targets.isNullOrEmpty()) {
+        if (targets?.isNotEmpty() == true) {
             val updatedTargets = updateTargetPaths(targets, workspaceRoot, project.basedir)
             projectConfig.targets = updatedTargets.toMutableMap()
         }
@@ -80,7 +80,7 @@ object CreateNodesResultGenerator {
         )
         
         // Add target groups to metadata (convert from Map<String, TargetGroup> to Map<String, List<String>>)
-        if (!targetGroups.isNullOrEmpty()) {
+        if (targetGroups?.isNotEmpty() == true) {
             val convertedTargetGroups = targetGroups.mapValues { (_, targetGroup) ->
                 ArrayList(targetGroup.targets)
             }

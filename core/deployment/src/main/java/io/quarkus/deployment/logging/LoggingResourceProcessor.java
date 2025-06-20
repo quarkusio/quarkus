@@ -50,7 +50,6 @@ import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.LogManager;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
@@ -331,13 +330,7 @@ public final class LoggingResourceProcessor {
 
             initializeBuildTimeLogging(logRuntimeConfigInBuild, logBuildTimeConfig, consoleRuntimeConfig,
                     categoryMinLevelDefaults.content, additionalLogCleanupFilters, launchModeBuildItem.getLaunchMode());
-
-            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
-                }
-            });
+            // Build time logging is terminated before the application is started.
         }
         return new LoggingSetupBuildItem();
     }

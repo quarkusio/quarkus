@@ -74,7 +74,6 @@ public class DevServicesProcessor {
             if (devServicesResultBuildItem.getContainerId() == null) {
                 devServiceDescriptions.add(new DevServiceDescriptionBuildItem(devServicesResultBuildItem.getName(),
                         devServicesResultBuildItem.getDescription(),
-                        null,
                         devServicesResultBuildItem.getConfig()));
             }
         }

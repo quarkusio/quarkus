@@ -240,19 +240,13 @@ public class DevServicesProcessor {
         for (DevServicesRequestBuildItem request : devServicesRequests) {
             descriptions.add(new DevServiceDescriptionBuildItem(request.featureName,
                     toContainerInfo(() -> {
-                        Set<RunningService> runningServices = devServicesRegistry.getRunningServices(request.featureName,
+                        RunningService runningService = devServicesRegistry.getRunningServices(request.featureName,
                                 request.serviceName, request.serviceConfig);
-                        if (runningServices == null || runningServices.isEmpty()) {
-                            return null;
-                        }
-                        return runningServices.iterator().next().containerId();
+                        return runningService == null ? null : runningService.containerId();
                     }, isContainerRuntimeAvailable), () -> {
-                        Set<RunningService> runningServices = devServicesRegistry.getRunningServices(request.featureName,
+                        RunningService runningService = devServicesRegistry.getRunningServices(request.featureName,
                                 request.serviceName, request.serviceConfig);
-                        if (runningServices == null || runningServices.isEmpty()) {
-                            return null;
-                        }
-                        return runningServices.iterator().next().configs();
+                        return runningService == null ? null : runningService.configs();
                     }));
 
         }

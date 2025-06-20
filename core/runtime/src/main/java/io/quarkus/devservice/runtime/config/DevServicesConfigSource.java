@@ -3,7 +3,6 @@ package io.quarkus.devservice.runtime.config;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -25,10 +24,10 @@ public class DevServicesConfigSource implements ConfigSource {
         // We could make this more efficient by not invoking the supplier on the other end, but it would need a more complex interface
         Set<String> names = new HashSet<>();
 
-        Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getConfigForAllRunningServices(launchMode.name());
+        Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name());
         if (allConfig != null) {
-            for (Supplier<Map<String, String>> o : allConfig) {
-                Map<String, String> config = o.get();
+            for (RunningService service : allConfig) {
+                Map<String, String> config = service.configs();
                 names.addAll(config.keySet());
             }
         }
@@ -37,10 +36,10 @@ public class DevServicesConfigSource implements ConfigSource {
 
     @Override
     public String getValue(String propertyName) {
-        Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getConfigForAllRunningServices(launchMode.name());
+        Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name());
         if (allConfig != null) {
-            for (Supplier<Map<String, String>> o : allConfig) {
-                Map<String, String> config = o.get();
+            for (RunningService service : allConfig) {
+                Map<String, String> config = service.configs();
                 String answer = config.get(propertyName);
                 if (answer != null) {
                     return answer;

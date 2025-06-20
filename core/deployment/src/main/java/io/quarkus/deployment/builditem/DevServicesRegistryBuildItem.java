@@ -1,12 +1,8 @@
 package io.quarkus.deployment.builditem;
 
-import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -37,19 +33,10 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         this.globalConfig = globalDevServicesConfig;
     }
 
-    public Set<RunningService> getRunningServices(String featureName, String configName, Object identifyingConfig) {
+    public RunningService getRunningServices(String featureName, String configName, Object identifyingConfig) {
         DevServiceOwner owner = new DevServiceOwner(featureName, launchMode.name(), configName);
         ComparableDevServicesConfig key = new ComparableDevServicesConfig(uuid, owner, globalConfig, identifyingConfig);
         return RunningDevServicesRegistry.INSTANCE.getRunningServices(key);
-    }
-
-    public Set<RunningService> getAllRunningServices(String featureName, String configName) {
-        DevServiceOwner owner = new DevServiceOwner(featureName, launchMode.name(), configName);
-        return RunningDevServicesRegistry.INSTANCE.getAllRunningServices(owner);
-    }
-
-    public Set<RunningService> getAllRunningServices(String launchMode) {
-        return RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode);
     }
 
     public void addRunningService(String featureName, String configName, Object identifyingConfig,
@@ -59,10 +46,9 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         RunningDevServicesRegistry.INSTANCE.addRunningService(key, service);
     }
 
-    public void removeRunningService(String featureName, String configName, Object identifyingConfig, RunningService service) {
+    public void closeAllRunningServices(String featureName, String configName) {
         DevServiceOwner owner = new DevServiceOwner(featureName, launchMode.name(), configName);
-        ComparableDevServicesConfig key = new ComparableDevServicesConfig(uuid, owner, globalConfig, identifyingConfig);
-        RunningDevServicesRegistry.INSTANCE.removeRunningService(key, service);
+        RunningDevServicesRegistry.INSTANCE.closeAllRunningServices(owner);
     }
 
     public void closeAllRunningServices() {
@@ -71,9 +57,8 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
     public Map<String, String> getConfigForAllRunningServices() {
         Map<String, String> config = new HashMap<>();
-        for (Supplier<Map<String, String>> configProvider : RunningDevServicesRegistry.INSTANCE
-                .getConfigForAllRunningServices(launchMode.name())) {
-            config.putAll(configProvider.get());
+        for (RunningService service : RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name())) {
+            config.putAll(service.configs());
         }
         return config;
     }
@@ -82,13 +67,13 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         StartupLogCompressor compressor = new StartupLogCompressor("Dev Services Startup", null, null);
         try {
             // These RunnableDevService classes could be from another classloader, so don't make assumptions about the class
-            Collection<RunningService> matchedDevServices = this.getRunningServices(request.featureName, request.serviceName,
+            RunningService matchedDevService = this.getRunningServices(request.featureName, request.serviceName,
                     request.serviceConfig);
             // if the redis containers have already started we just return; if we wanted to be very cautious we could check the entries for an isRunningStatus, but they might be in the wrong classloader, so that's hard work
-            if (matchedDevServices == null || matchedDevServices.isEmpty()) {
+            if (matchedDevService == null) {
                 // There isn't a running container that has the right config, we need to do work
                 // Let's get all the running dev services associated with this feature (+ launch mode plus named section), so we can close them
-                closeOwnedServices(request.featureName, request.serviceName);
+                closeAllRunningServices(request.featureName, request.serviceName);
 
                 reallyStart(request);
             }
@@ -101,33 +86,12 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
     }
 
-    private void closeOwnedServices(String featureName, String configName) {
-        Collection<RunningService> unusableDevServices = this.getAllRunningServices(featureName, configName);
-        if (unusableDevServices != null) {
-            for (RunningService service : unusableDevServices) {
-                try {
-                    service.close();
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-    }
-
     private void reallyStart(DevServicesRequestBuildItem request) {
         Startable container = request.startableSupplier.get();
         container.start();
 
         RunningService service = new RunningService(request.featureName, request.featureName + " - " + request.serviceName,
-                request.getConfig(container), container.getContainerId(), self -> {
-                    try {
-                        DevServicesRegistryBuildItem.this.removeRunningService(request.featureName, request.serviceName,
-                                request.serviceConfig, self);
-                        container.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                request.getConfig(container), container.getContainerId(), container);
         this.addRunningService(request.featureName, request.serviceName, request.serviceConfig, service);
         // Ideally we'd print out a port number here, but we can only do that if we add a dependency on GenericContainer (or update startable to add a method)
 

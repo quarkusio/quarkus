@@ -1,6 +1,5 @@
 package io.quarkus.stork;
 
-import java.net.InetAddress;
 import java.util.List;
 import java.util.Map;
 
@@ -28,14 +27,9 @@ public class SmallRyeStorkRegistrationRecorder {
                 }
             }
             Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();
-            String host = parameters.containsKey("ip-address") ? parameters.get("ip-address")
-                    : quarkusConfig.getValue("quarkus.http.host", String.class);
-            int port = parameters.containsKey("port") ? Integer.parseInt(parameters.get("port"))
-                    : Integer.parseInt(quarkusConfig.getValue("quarkus.http.port", String.class));
-            if (host == null || host.isEmpty()) {
-                InetAddress inetAddress = StorkConfigUtil.detectAddress();
-                host = inetAddress != null ? inetAddress.getHostAddress() : host;
-            }
+            String host = StorkConfigUtil.getOrDefaultHost(parameters,
+                    quarkusConfig);
+            int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
             Stork.getInstance().getService(serviceName).getServiceRegistrar().registerServiceInstance(serviceName, host,
                     port).await().indefinitely();
         }

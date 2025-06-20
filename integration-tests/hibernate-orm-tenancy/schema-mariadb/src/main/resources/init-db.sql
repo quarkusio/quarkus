@@ -1,0 +1,8 @@
+CREATE OR REPLACE SCHEMA base;
+CREATE OR REPLACE SCHEMA mycompany;
+CREATE OR REPLACE SCHEMA inventory;
+CREATE OR REPLACE SCHEMA inventorymycompany;
+
+GRANT ALL privileges ON *.* TO 'quarkus'@'%';
+
+FLUSH PRIVILEGES;

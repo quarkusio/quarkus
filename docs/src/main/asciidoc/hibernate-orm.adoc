@@ -1235,7 +1235,17 @@ The following setup will use the xref:flyway.adoc[Flyway] extension to achieve t
 
 The same data source will be used for all tenants and a schema has to be created for every tenant inside that data source.
 
-CAUTION: Some databases like MariaDB/MySQL do not support database schemas. In these cases you have to use the <<database-approach,database approach>>.
+CAUTION: Some databases like MariaDB/MySQL do not support database schemas by default. In these cases you can either:
+1. Configure the JDBC driver to support schemas.
+Use `quarkus.datasource.jdbc.additional-jdbc-properties."databaseTerm"=SCHEMA`
+or `quarkus.datasource."datasource-name".jdbc.additional-jdbc-properties."databaseTerm"=SCHEMA`
+for https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-connection.html#cj-conn-prop_databaseTerm[MySQL Connector/J].
+Use `quarkus.datasource.jdbc.additional-jdbc-properties."useCatalogTerm"=SCHEMA`
+or `quarkus.datasource."datasource-name".jdbc.additional-jdbc-properties."useCatalogTerm"=SCHEMA`
+for https://mariadb.com/docs/connectors/mariadb-connector-j/about-mariadb-connector-j[MariaDB Connector/J].
+
+and
+2. Fall back to the <<database-approach,database approach>>.
 
 [source,properties]
 ----

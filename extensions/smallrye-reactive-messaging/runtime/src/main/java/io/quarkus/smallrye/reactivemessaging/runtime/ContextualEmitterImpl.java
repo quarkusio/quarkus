@@ -18,8 +18,10 @@ import io.smallrye.reactive.messaging.EmitterConfiguration;
 import io.smallrye.reactive.messaging.providers.extension.AbstractEmitter;
 import io.smallrye.reactive.messaging.providers.i18n.ProviderLogging;
 import io.smallrye.reactive.messaging.providers.locals.ContextAwareMessage;
+import io.smallrye.reactive.messaging.providers.locals.LocalContextMetadata;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 
 public class ContextualEmitterImpl<T> extends AbstractEmitter<T> implements ContextualEmitter<T> {
 
@@ -67,7 +69,7 @@ public class ContextualEmitterImpl<T> extends AbstractEmitter<T> implements Cont
         // during the emission.
         Context context = Vertx.currentContext();
         // context propagation capture and duplicate the context
-        var msgUni = Uni.createFrom().item(() -> ContextAwareMessage.withContextMetadata((Message<? extends T>) msg));
+        var msgUni = Uni.createFrom().item(() -> createContextualMessage((Message<? extends T>) msg, context));
         if (context != null) {
             msgUni = msgUni.emitOn(r -> context.runOnContext(x -> r.run()));
         }
@@ -94,6 +96,19 @@ public class ContextualEmitterImpl<T> extends AbstractEmitter<T> implements Cont
             return uni.emitOn(r -> context.runOnContext(x -> r.run()));
         } else {
             return uni;
+        }
+    }
+
+    private static <T, M extends Message<T>> Message<T> createContextualMessage(M msg, Context context) {
+        if (context == null) {
+            // No context, return the message with a new context as is.
+            return ContextAwareMessage.withContextMetadata(msg);
+        } else {
+            // create new context and copy local data from previous context
+            ContextInternal internal = (ContextInternal) context;
+            ContextInternal newCtx = internal.duplicate();
+            newCtx.localContextData().putAll(internal.localContextData());
+            return msg.addMetadata(new LocalContextMetadata(newCtx));
         }
     }
 

@@ -22,6 +22,7 @@ import io.quarkus.test.kafka.KafkaCompanionResource;
 public class KafkaContextPropagationTest {
 
     @Nested
+    // FlowerResource
     class ContextNotPropagated {
         @Test
         void testNonBlocking() {
@@ -131,6 +132,7 @@ public class KafkaContextPropagationTest {
     }
 
     @Nested
+    // FlowerContextualResource
     class ContextPropagated {
         @Test
         void testNonBlocking() {
@@ -192,63 +194,112 @@ public class KafkaContextPropagationTest {
     }
 
     @Nested
-    class MutinyContextPropagated {
+    // FlowerMutinyResource
+    class MutinyContextNotPropagated {
         @Test
         void testNonBlocking() {
-            given().body("rose").post("/flowers/mutiny").then().statusCode(204);
-            given().body("peony").post("/flowers/mutiny").then().statusCode(204);
-            given().body("daisy").post("/flowers/mutiny").then().statusCode(204);
+            given().body("rose").post("/flowers/mutiny").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("peony").post("/flowers/mutiny").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("daisy").post("/flowers/mutiny").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
         }
 
         @Test
         void testNonBlockingUni() {
-            given().body("rose").post("/flowers/mutiny/uni").then().statusCode(204);
-            given().body("peony").post("/flowers/mutiny/uni").then().statusCode(204);
-            given().body("daisy").post("/flowers/mutiny/uni").then().statusCode(204);
+            given().body("rose").post("/flowers/mutiny/uni").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("peony").post("/flowers/mutiny/uni").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("daisy").post("/flowers/mutiny/uni").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
         }
 
         @Test
         void testBlocking() {
-            given().body("rose").post("/flowers/mutiny/blocking").then().statusCode(204);
-            given().body("peony").post("/flowers/mutiny/blocking").then().statusCode(204);
-            given().body("daisy").post("/flowers/mutiny/blocking").then().statusCode(204);
+            given().body("rose").post("/flowers/mutiny/blocking").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("peony").post("/flowers/mutiny/blocking").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("daisy").post("/flowers/mutiny/blocking").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
         }
 
         @Test
         void testBlockingUni() {
-            given().body("rose").post("/flowers/mutiny/uni/blocking").then().statusCode(204);
-            given().body("peony").post("/flowers/mutiny/uni/blocking").then().statusCode(204);
-            given().body("daisy").post("/flowers/mutiny/uni/blocking").then().statusCode(204);
+            given().body("rose").post("/flowers/mutiny/uni/blocking").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("peony").post("/flowers/mutiny/uni/blocking").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("daisy").post("/flowers/mutiny/uni/blocking").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
         }
 
         @Test
         void testBlockingNamed() {
-            given().body("rose").post("/flowers/mutiny/blocking-named").then().statusCode(204);
-            given().body("peony").post("/flowers/mutiny/blocking-named").then().statusCode(204);
-            given().body("daisy").post("/flowers/mutiny/blocking-named").then().statusCode(204);
+            given().body("rose").post("/flowers/mutiny/blocking-named").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("peony").post("/flowers/mutiny/blocking-named").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("daisy").post("/flowers/mutiny/blocking-named").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
         }
 
         @Test
         void testBlockingNamedUni() {
-            given().body("rose").post("/flowers/mutiny/uni/blocking-named").then().statusCode(204);
-            given().body("peony").post("/flowers/mutiny/uni/blocking-named").then().statusCode(204);
-            given().body("daisy").post("/flowers/mutiny/uni/blocking-named").then().statusCode(204);
+            given().body("rose").post("/flowers/mutiny/uni/blocking-named").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("peony").post("/flowers/mutiny/uni/blocking-named").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("daisy").post("/flowers/mutiny/uni/blocking-named").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
         }
 
         @Test
         @EnabledForJreRange(min = JRE.JAVA_21)
         void testVirtualThread() {
-            given().body("rose").post("/flowers/mutiny/virtual-thread").then().statusCode(204);
-            given().body("peony").post("/flowers/mutiny/virtual-thread").then().statusCode(204);
-            given().body("daisy").post("/flowers/mutiny/virtual-thread").then().statusCode(204);
+            given().body("rose").post("/flowers/mutiny/virtual-thread").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("peony").post("/flowers/mutiny/virtual-thread").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("daisy").post("/flowers/mutiny/virtual-thread").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
         }
 
         @Test
         @EnabledForJreRange(min = JRE.JAVA_21)
         void testVirtualThreadUni() {
-            given().body("rose").post("/flowers/mutiny/uni/virtual-thread").then().statusCode(204);
-            given().body("peony").post("/flowers/mutiny/uni/virtual-thread").then().statusCode(204);
-            given().body("daisy").post("/flowers/mutiny/uni/virtual-thread").then().statusCode(204);
+            given().body("rose").post("/flowers/mutiny/uni/virtual-thread").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("peony").post("/flowers/mutiny/uni/virtual-thread").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
+            given().body("daisy").post("/flowers/mutiny/uni/virtual-thread").then()
+                    .statusCode(500)
+                    .body(assertBodyRequestScopedContextWasNotActive());
         }
     }
 

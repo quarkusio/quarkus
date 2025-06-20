@@ -15,13 +15,13 @@ describe('Maven Plugin E2E Smoke Tests', () => {
     // Just generate the shared graph file once for all tests
     console.log('📊 Generating shared project graph...');
     const graphGenStart = Date.now();
-    
+
     execSync(`npx nx graph --file ${sharedGraphFile} --verbose`, { stdio: 'inherit' });
-    
+
     const graphGenDuration = Date.now() - graphGenStart;
     const graphContent = readFileSync(sharedGraphFile, 'utf8');
     projectGraph = JSON.parse(graphContent);
-    
+
     console.log(`✅ Shared graph generated with ${Object.keys(projectGraph.graph.nodes).length} nodes`);
     console.log(`⏱️  Maven analysis completed in ${graphGenDuration}ms (${(graphGenDuration / 1000).toFixed(2)}s)`);
   }, TIMEOUT);
@@ -44,14 +44,8 @@ describe('Maven Plugin E2E Smoke Tests', () => {
 
     it('should handle nx install maven-plugin command', () => {
       // This command might fail, but we test that it doesn't crash
-      try {
-        const output = execSync('npx nx install maven-plugin', { encoding: 'utf8', stdio: 'pipe' });
-        console.log('✅ nx install maven-plugin succeeded');
-      } catch (error: any) {
-        console.log('⚠️ nx install maven-plugin failed (expected):', error.message);
-        // We expect this might fail, so we just ensure it doesn't crash completely
-        expect(error.status).toBeDefined();
-      }
+      execSync('npx nx install maven-plugin', { encoding: 'utf8', stdio: 'pipe' });
+      console.log('✅ nx install maven-plugin succeeded');
     }, TIMEOUT);
   });
 

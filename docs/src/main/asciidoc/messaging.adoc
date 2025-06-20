@@ -656,21 +656,18 @@ This means that context captured through Emitters won't be propagated to the out
 This behaviour can be configured using `quarkus.messaging.connector-context-propagation` configuration property, by listing the context types to propagate.
 For example `quarkus.messaging.connector-context-propagation=CDI` will only propagate the CDI context.
 
-<<internal-channels>> however do propagate the context, as they are part of the same application and the context is not lost.
+=== Context Propagation with Emitters
 
-For example, you might want to propagate the caller context from an incoming HTTP request to the message processing stage.
-For emitters, it is recommended to use the `MutinyEmitter`, as it exposes methods such as `sendAndAwait` that makes sure to wait until a message processing is terminated.
+When using messaging emitters, the context is not propagated by default.
 
-[WARNING]
-====
-The execution context to which the RequestScoped context is bound, in the previous example the REST call, controls the lifecycle of the context.
-This means that when the REST call is completed the RequestScoped context is destroyed.
-Therefore, you need to make sure that your processing or message dispatch is completed before the REST call completes.
+In some scenarios, you might want to propagate the caller context to the message processing stage, using <<internal-channels,internal channels>>.
 
-For more information check the xref:context-propagation.adoc#context-propagation-for-cdi[Context Propagation] guide.
-====
+Quarkus provides `ContextualEmitter`, a drop in replacement for `MutinyEmitter` and `Emitter`, that allows you to propagate the context when sending messages.
+You can use the context propagation annotation `@CurrentThreadContext` to configure the contexts that will be propagated from an _emitter_ method.
+The annotation configures the contexts that will be captured and propagated from that method,
+and needs to be present on the propagator method, i.e. the caller of the emitter, not the processing method.
 
-For example, let `RequestScopedBean` a request-scoped bean, `MutinyEmitter` can be used to dispatch messages locally through the internal channel `app`:
+Let `RequestScopedBean` a request-scoped bean, `ContextualEmitter` can be used to dispatch messages locally through the internal channel `app`:
 
 [source, java]
 ----
@@ -681,19 +678,15 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
 
 import org.eclipse.microprofile.reactive.messaging.Channel;
-import io.smallrye.reactive.messaging.MutinyEmitter;
 
 import io.quarkus.logging.Log;
-
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
+import io.quarkus.smallrye.reactivemessaging.runtime.ContextualEmitter;
 
 @Path("/")
 public class Resource {
 
     @Channel("app")
-    MutinyEmitter<String> emitter;
+    ContextualEmitter<String> emitter;
 
     @Inject
     RequestScopedBean requestScopedBean;
@@ -736,16 +729,7 @@ public class Processor {
 }
 ----
 
-[TIP]
-====
-You can use the context propagation annotation `@CurrentThreadContext` to configure the contexts that will be propagated from an _emitter_ method.
-The annotation configures the contexts that will be captured and propagated from that method,
-and needs to be present on the propagator method, i.e. the caller of the emitter, not the processing method.
-
-Because Quarkus Messaging dispatches messages on link:https://smallrye.io/smallrye-reactive-messaging/latest/concepts/message-context[message context],
-propagation plans with cleared or not propagated contexts can lead to race conditions using emitters in <<internal-channels,internal channels>>.
-It is recommended to use `ContextualEmitter` to ensure the context propagation plan is applied correctly.
-
+You can also use the `@CurrentThreadContext` annotation to control which contexts are propagated.
 The following example shows how to avoid propagating any context to the message processing stage:
 
 [source, java]
@@ -785,7 +769,15 @@ public class Resource {
 }
 ----
 
+[WARNING]
 ====
+The execution context to which the RequestScoped context is bound, in the previous example the REST call, controls the lifecycle of the context.
+This means that when the REST call is completed the RequestScoped context is destroyed.
+Therefore, you need to make sure that your processing or message dispatch is completed before the REST call completes.
+
+For more information check the xref:context-propagation.adoc#context-propagation-for-cdi[Context Propagation] guide.
+====
+
 
 === Request Context Activation
 

@@ -156,6 +156,11 @@ public abstract class WebSocketConnectionBase implements Connection {
     }
 
     @Override
+    public String subprotocol() {
+        return webSocket().subProtocol();
+    }
+
+    @Override
     public Instant creationTime() {
         return creationTime;
     }

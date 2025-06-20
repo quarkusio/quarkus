@@ -37,12 +37,6 @@ public interface WebSocketConnection extends Connection {
     Set<WebSocketConnection> getOpenConnections();
 
     /**
-     *
-     * @return the subprotocol selected by the handshake
-     */
-    String subprotocol();
-
-    /**
      * Makes it possible to send messages to all clients connected to the same WebSocket endpoint.
      *
      * @see WebSocketConnection#getOpenConnections()

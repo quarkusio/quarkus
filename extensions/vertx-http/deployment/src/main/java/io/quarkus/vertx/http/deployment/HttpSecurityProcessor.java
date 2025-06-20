@@ -38,23 +38,21 @@ import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
-import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.*;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
@@ -73,13 +71,7 @@ import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
-import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
-import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
-import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
-import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
-import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
-import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder;
+import io.quarkus.vertx.http.runtime.security.*;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityRecorder.AuthenticationHandler;
 import io.quarkus.vertx.http.runtime.security.MtlsAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.PathMatchingHttpSecurityPolicy;
@@ -90,6 +82,7 @@ import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
+import io.quarkus.vertx.http.security.token.OneTimeAuthenticationTokenSender;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
 
@@ -99,22 +92,35 @@ public class HttpSecurityProcessor {
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
     private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
 
+    @Produce(ServiceStartBuildItem.class)
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    AdditionalBeanBuildItem initFormAuth(
-            HttpSecurityRecorder recorder,
-            VertxHttpBuildTimeConfig buildTimeConfig,
-            BuildProducer<RouteBuildItem> filterBuildItemBuildProducer) {
-        if (buildTimeConfig.auth().form().enabled()) {
-            if (!buildTimeConfig.auth().proactive()) {
-                filterBuildItemBuildProducer
-                        .produce(RouteBuildItem.builder().route(buildTimeConfig.auth().form().postLocation())
-                                .handler(recorder.formAuthPostHandler()).build());
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void initFormAuthPathHandlers(VertxWebRouterBuildItem vertxWebRouterBuildItem, HttpSecurityRecorder recorder,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, VertxHttpConfig httpConfig,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryResult) {
+        var authBuildTimeConfig = httpBuildTimeConfig.auth();
+        if (authBuildTimeConfig.form().enabled()) {
+            var httpRouter = vertxWebRouterBuildItem.getHttpRouter();
+            if (!authBuildTimeConfig.proactive()) {
+                recorder.formAuthPostHandler(httpRouter, httpConfig);
             }
-            return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(FormAuthenticationMechanism.class)
-                    .setDefaultScope(SINGLETON).build();
+            DotName tokenSenderInterfaceName = DotName.createSimple(OneTimeAuthenticationTokenSender.class);
+            boolean tokenSenderNotFound = beanDiscoveryResult.beanStream().stream()
+                    .noneMatch(bi -> bi.hasType(tokenSenderInterfaceName));
+            recorder.validateOneTimeAuthToken(tokenSenderNotFound, httpConfig);
         }
-        return null;
+    }
+
+    @BuildStep
+    List<AdditionalBeanBuildItem> registerFormAuthMechanismBeans(VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer) {
+        if (httpBuildTimeConfig.auth().form().enabled()) {
+            unremovableBeanProducer.produce(UnremovableBeanBuildItem.beanTypes(OneTimeAuthenticationTokenSender.class));
+            return List.of(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClass(FormAuthenticationMechanism.class).setDefaultScope(SINGLETON).build());
+        }
+        return List.of();
     }
 
     @BuildStep

@@ -17,7 +17,7 @@ public class HibernateSearchDevModeTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(HibernateSearchOutboxPollingTestResource.class)
-                    .addAsResource("application.properties", "application.properties"))
+                    .addAsResource("application-dev-mode.properties", "application.properties"))
             .setLogRecordPredicate(r -> true);
 
     @Test

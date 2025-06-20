@@ -20,6 +20,7 @@ public class InfinispanDevUIProcessor {
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
         cardPageBuildItem.setLogo("infinispan_dark.svg", "infinispan_light.svg");
+        cardPageBuildItem.addLibraryVersion("org.infinispan", "infinispan-api", "Infinispan", "https://infinispan.org/");
 
         final PageBuilder consoleLink = Page.externalPageBuilder("Infinispan Server Console")
                 .dynamicUrlJsonRPCMethodName("getConsoleDefaultLink")

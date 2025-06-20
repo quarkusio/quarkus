@@ -5,6 +5,7 @@ import java.util.List;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.websockets.next.CloseReason;
+import io.quarkus.websockets.next.Connection;
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.OnClose;
@@ -32,6 +33,7 @@ final class WebSocketDotNames {
 
     static final DotName WEB_SOCKET = DotName.createSimple(WebSocket.class);
     static final DotName WEB_SOCKET_CLIENT = DotName.createSimple(WebSocketClient.class);
+    static final DotName CONNECTION = DotName.createSimple(Connection.class);
     static final DotName WEB_SOCKET_CONNECTION = DotName.createSimple(WebSocketConnection.class);
     static final DotName WEB_SOCKET_CLIENT_CONNECTION = DotName.createSimple(WebSocketClientConnection.class);
     static final DotName WEB_SOCKET_CONNECTOR = DotName.createSimple(WebSocketConnector.class);

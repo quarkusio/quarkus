@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next.test.client;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
@@ -8,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.inject.Inject;
 
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.websockets.next.Connection;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnPingMessage;
@@ -50,6 +53,8 @@ public class ClientEndpointTest {
                 // The value will be encoded automatically
                 .pathParam("name", "Lu=")
                 .connectAndAwait();
+        assertTrue(ClientEndpoint.OPEN_LATCH.await(5, TimeUnit.SECONDS));
+        assertInstanceOf(WebSocketClientConnection.class, ClientEndpoint.CONNECTION.get());
         assertEquals("Lu=", connection.pathParam("name"));
         connection.sendPingAndAwait(ping);
         connection.sendTextAndAwait("Hi!");
@@ -103,6 +108,10 @@ public class ClientEndpointTest {
     @WebSocketClient(path = "/endpoint/{name}")
     public static class ClientEndpoint {
 
+        static final CountDownLatch OPEN_LATCH = new CountDownLatch(1);
+
+        static final AtomicReference<Connection> CONNECTION = new AtomicReference<>();
+
         static final CountDownLatch PING_LATCH = new CountDownLatch(1);
 
         static final CountDownLatch MESSAGE_LATCH = new CountDownLatch(2);
@@ -110,6 +119,12 @@ public class ClientEndpointTest {
         static final List<String> MESSAGES = new CopyOnWriteArrayList<>();
 
         static final CountDownLatch CLOSED_LATCH = new CountDownLatch(1);
+
+        @OnOpen
+        void onOpen(Connection connection) {
+            CONNECTION.set(connection);
+            OPEN_LATCH.countDown();
+        }
 
         @OnTextMessage
         void onMessage(@PathParam String name, String message, WebSocketClientConnection connection) {

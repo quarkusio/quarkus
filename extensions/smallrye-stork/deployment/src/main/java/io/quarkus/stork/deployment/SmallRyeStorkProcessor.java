@@ -111,22 +111,26 @@ public class SmallRyeStorkProcessor {
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
             StorkRegistrarConfigRecorder registrarConfigRecorder, StorkConfiguration configuration, Capabilities capabilities,
             CombinedIndexBuildItem index) {
-        String smallryeHealthCheckDefaultUrl = "";
+        String smallryeHealthCheckDefaultPath = getDefaultHealthCheckPath(capabilities, ConfigProvider.getConfig());
         if (QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)) {
-            if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
-                Config quarkusConfig = ConfigProvider.getConfig();
-                smallryeHealthCheckDefaultUrl = quarkusConfig.getConfigValue("quarkus.management.root-path").getValue() + "/"
-                        + quarkusConfig.getConfigValue("quarkus.smallrye-health.root-path").getValue() + "/"
-                        + quarkusConfig.getConfigValue("quarkus.smallrye-health.liveness-path").getValue();
-            }
             registrarConfigRecorder.setupServiceRegistrarConfig(configuration, CONSUL_SERVICE_REGISTRAR_TYPE,
-                    smallryeHealthCheckDefaultUrl);
+                    smallryeHealthCheckDefaultPath);
         } else if (QuarkusClassLoader.isClassPresentAtRuntime(EUREKA_SERVICE_REGISTRAR_PROVIDER)) {
             registrarConfigRecorder.setupServiceRegistrarConfig(configuration, EUREKA_SERVICE_REGISTRAR_TYPE,
-                    smallryeHealthCheckDefaultUrl);
+                    smallryeHealthCheckDefaultPath);
         }
         registration.produce(new StorkRegistrationBuildItem());
 
+    }
+
+    private static String getDefaultHealthCheckPath(Capabilities capabilities, Config quarkusConfig) {
+        String smallryeHealthCheckDefaultPath = "";
+        if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+            smallryeHealthCheckDefaultPath = quarkusConfig.getConfigValue("quarkus.management.root-path").getValue() + "/"
+                    + quarkusConfig.getConfigValue("quarkus.smallrye-health.root-path").getValue() + "/"
+                    + quarkusConfig.getConfigValue("quarkus.smallrye-health.liveness-path").getValue();
+        }
+        return smallryeHealthCheckDefaultPath;
     }
 
     @BuildStep

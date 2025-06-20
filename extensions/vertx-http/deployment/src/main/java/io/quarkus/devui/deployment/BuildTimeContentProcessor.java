@@ -115,6 +115,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc-extension-link", contextRoot + "qwc/qwc-extension-link.js");
         // Quarkus UI
         internalImportMapBuildItem.add("qui-ide-link", contextRoot + "qui/qui-ide-link.js");
+        internalImportMapBuildItem.add("qui-themed-code-block", contextRoot + "qui/qui-themed-code-block.js");
         internalImportMapBuildItem.add("qui-assistant-warning", contextRoot + "qui/qui-assistant-warning.js");
         internalImportMapBuildItem.add("qui-assistant-button", contextRoot + "qui/qui-assistant-button.js");
 

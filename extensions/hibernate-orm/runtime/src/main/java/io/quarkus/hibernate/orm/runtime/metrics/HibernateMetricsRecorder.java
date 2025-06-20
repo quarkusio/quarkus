@@ -5,6 +5,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import jakarta.persistence.EntityManagerFactory;
+
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.CacheRegionStatistics;
 import org.hibernate.stat.Statistics;
@@ -13,6 +15,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 /**
  * This recorder is invoked IFF Hibernate metrics and Hibernate statistics are enabled
@@ -27,10 +30,10 @@ public class HibernateMetricsRecorder {
             @Override
             public void accept(MetricsFactory metricsFactory) {
                 JPAConfig jpaConfig = Arc.container().instance(JPAConfig.class).get();
-                for (String puName : jpaConfig.getPersistenceUnits()) {
-                    SessionFactory sessionFactory = jpaConfig.getEntityManagerFactory(puName).unwrap(SessionFactory.class);
+                for (Tuple2<String, EntityManagerFactory> emf : jpaConfig.getEntityManagerFactories()) {
+                    SessionFactory sessionFactory = emf.getItem2().unwrap(SessionFactory.class);
                     if (sessionFactory != null) {
-                        registerMetrics(metricsFactory, puName, sessionFactory.getStatistics());
+                        registerMetrics(metricsFactory, emf.getItem1(), sessionFactory.getStatistics());
                     }
                 }
             }

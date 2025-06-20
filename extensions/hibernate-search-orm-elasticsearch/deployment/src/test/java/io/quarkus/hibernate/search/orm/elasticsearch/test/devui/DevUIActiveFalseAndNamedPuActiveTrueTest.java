@@ -10,13 +10,14 @@ public class DevUIActiveFalseAndNamedPuActiveTrueTest extends AbstractDevUITest 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-devui-active-false-and-named-pu-active-true.properties",
+                    .addAsResource(
+                            "application-devui-active-false-and-named-pu-active-true.properties",
                             "application.properties")
-                    .addClasses(MyIndexedEntity.class)
-                    .addClasses(MyNamedPuIndexedEntity.class));
+                    .addClass(MyIndexedEntity.class)
+                    .addClass(MyNamedPuIndexedEntity.class)
+                    .addClass(RestClientStarterService.class));
 
     public DevUIActiveFalseAndNamedPuActiveTrueTest() {
         super("namedpu", MyNamedPuIndexedEntity.class.getName());
     }
-
 }

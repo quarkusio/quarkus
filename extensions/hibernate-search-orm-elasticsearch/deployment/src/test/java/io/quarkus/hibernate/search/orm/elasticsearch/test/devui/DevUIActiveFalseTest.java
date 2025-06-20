@@ -10,7 +10,8 @@ public class DevUIActiveFalseTest extends AbstractDevUITest {
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .withApplicationRoot(
                     (jar) -> jar.addAsResource("application-devui-active-false.properties", "application.properties")
-                            .addClasses(MyIndexedEntity.class));
+                            .addClass(MyIndexedEntity.class)
+                            .addClass(RestClientStarterService.class));
 
     public DevUIActiveFalseTest() {
         // Hibernate Search is inactive: the dev console should be empty.

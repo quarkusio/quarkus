@@ -29,16 +29,20 @@ public class InstrumentationRecorder {
 
     public static final OpenTelemetryVertxTracingFactory FACTORY = new OpenTelemetryVertxTracingFactory();
 
-    private final RuntimeValue<OTelRuntimeConfig> config;
+    private final OTelBuildConfig buildConfig;
+    private final RuntimeValue<OTelRuntimeConfig> runtimeConfig;
 
-    public InstrumentationRecorder(RuntimeValue<OTelRuntimeConfig> config) {
-        this.config = config;
+    public InstrumentationRecorder(
+            final OTelBuildConfig buildConfig,
+            final RuntimeValue<OTelRuntimeConfig> runtimeConfig) {
+        this.buildConfig = buildConfig;
+        this.runtimeConfig = runtimeConfig;
     }
 
     /* RUNTIME INIT */
     @RuntimeInit
     public Consumer<VertxOptions> getVertxTracingOptions() {
-        if (config.getValue().sdkDisabled()) {
+        if (runtimeConfig.getValue().sdkDisabled()) {
             return vertxOptions -> {
             };
         }
@@ -49,26 +53,25 @@ public class InstrumentationRecorder {
 
     /* RUNTIME INIT */
     @RuntimeInit
-    public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable,
-            boolean redisClientAvailable, OTelBuildConfig buildConfig) {
+    public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable, boolean redisClientAvailable) {
 
-        if (config.getValue().sdkDisabled()) {
+        if (runtimeConfig.getValue().sdkDisabled()) {
             return;
         }
 
         OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
         List<InstrumenterVertxTracer<?, ?>> tracers = new ArrayList<>(4);
-        if (config.getValue().instrument().vertxHttp()) {
-            tracers.add(new HttpInstrumenterVertxTracer(openTelemetry, config.getValue(), buildConfig));
+        if (runtimeConfig.getValue().instrument().vertxHttp()) {
+            tracers.add(new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig.getValue(), buildConfig));
         }
-        if (config.getValue().instrument().vertxEventBus()) {
-            tracers.add(new EventBusInstrumenterVertxTracer(openTelemetry, config.getValue()));
+        if (runtimeConfig.getValue().instrument().vertxEventBus()) {
+            tracers.add(new EventBusInstrumenterVertxTracer(openTelemetry, runtimeConfig.getValue()));
         }
-        if (sqlClientAvailable && config.getValue().instrument().vertxSqlClient()) {
-            tracers.add(new SqlClientInstrumenterVertxTracer(openTelemetry, config.getValue()));
+        if (sqlClientAvailable && runtimeConfig.getValue().instrument().vertxSqlClient()) {
+            tracers.add(new SqlClientInstrumenterVertxTracer(openTelemetry, runtimeConfig.getValue()));
         }
-        if (redisClientAvailable && config.getValue().instrument().vertxRedisClient()) {
-            tracers.add(new RedisClientInstrumenterVertxTracer(openTelemetry, config.getValue()));
+        if (redisClientAvailable && runtimeConfig.getValue().instrument().vertxRedisClient()) {
+            tracers.add(new RedisClientInstrumenterVertxTracer(openTelemetry, runtimeConfig.getValue()));
         }
         OpenTelemetryVertxTracer openTelemetryVertxTracer = new OpenTelemetryVertxTracer(tracers);
         FACTORY.getVertxTracerDelegator().setDelegate(openTelemetryVertxTracer);

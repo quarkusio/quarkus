@@ -17,13 +17,22 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class VirtualThreadsRecorder {
-
     private static final Logger logger = Logger.getLogger("io.quarkus.virtual-threads");
 
+    /**
+     * Should use the instance variable instead.
+     */
+    @Deprecated
     static volatile VirtualThreadsConfig config;
-
     private static volatile ExecutorService current;
     private static final Object lock = new Object();
+
+    private final VirtualThreadsConfig runtimeConfig;
+
+    public VirtualThreadsRecorder(final VirtualThreadsConfig runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+        config = runtimeConfig;
+    }
 
     public static Supplier<ExecutorService> VIRTUAL_THREADS_EXECUTOR_SUPPLIER = new Supplier<ExecutorService>() {
         @Override
@@ -32,9 +41,8 @@ public class VirtualThreadsRecorder {
         }
     };
 
-    public void setupVirtualThreads(VirtualThreadsConfig c, ShutdownContext shutdownContext, LaunchMode launchMode) {
-        config = c;
-        if (config.enabled()) {
+    public void setupVirtualThreads(ShutdownContext shutdownContext, LaunchMode launchMode) {
+        if (runtimeConfig.enabled()) {
             if (launchMode == LaunchMode.DEVELOPMENT) {
                 shutdownContext.addLastShutdownTask(new Runnable() {
                     @Override
@@ -55,8 +63,9 @@ public class VirtualThreadsRecorder {
                         if (service != null) {
                             service.shutdown();
 
-                            final long timeout = config.shutdownTimeout().toNanos();
-                            final long interval = config.shutdownCheckInterval().orElse(config.shutdownTimeout()).toNanos();
+                            final long timeout = runtimeConfig.shutdownTimeout().toNanos();
+                            final long interval = runtimeConfig.shutdownCheckInterval().orElse(
+                                    runtimeConfig.shutdownTimeout()).toNanos();
 
                             long start = System.nanoTime();
                             int loop = 1;

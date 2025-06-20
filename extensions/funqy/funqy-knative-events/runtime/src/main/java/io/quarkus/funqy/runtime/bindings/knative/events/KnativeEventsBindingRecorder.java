@@ -37,6 +37,7 @@ import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.funqy.runtime.bindings.knative.events.filters.CEAttributeLiteralEqualsFilter;
 import io.quarkus.funqy.runtime.query.QueryObjectMapper;
 import io.quarkus.funqy.runtime.query.QueryReader;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
@@ -61,6 +62,16 @@ public class KnativeEventsBindingRecorder {
     public static final String OUTPUT_CE_DATA_TYPE = "io.quarkus.funqy.knative.events.OUTPUT_CE_DATA_TYPE";
     public static final String DATA_OBJECT_READER = ObjectReader.class.getName() + "_DATA_OBJECT_READER";
     public static final String DATA_OBJECT_WRITER = ObjectWriter.class.getName() + "_DATA_OBJECT_WRITER";
+
+    private final RuntimeValue<FunqyConfig> runtimeConfig;
+    private final RuntimeValue<FunqyKnativeEventsConfig> eventsRuntimeConfig;
+
+    public KnativeEventsBindingRecorder(
+            final RuntimeValue<FunqyConfig> runtimeConfig,
+            final RuntimeValue<FunqyKnativeEventsConfig> eventsRuntimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+        this.eventsRuntimeConfig = eventsRuntimeConfig;
+    }
 
     public void init() {
         typeTriggers = new HashMap<>();
@@ -166,8 +177,6 @@ public class KnativeEventsBindingRecorder {
 
     public Handler<RoutingContext> start(
             String rootPath,
-            FunqyConfig funqyConfig,
-            FunqyKnativeEventsConfig eventsConfig,
             Supplier<Vertx> vertx,
             ShutdownContext shutdown,
             BeanContainer beanContainer,
@@ -187,16 +196,18 @@ public class KnativeEventsBindingRecorder {
         // This needs to happen in start at RUNTIME so that
         // mappings can be overridden by environment variables
         FunctionInvoker defaultInvoker = null;
-        if (funqyConfig.export().isPresent()) {
-            defaultInvoker = FunctionRecorder.registry.matchInvoker(funqyConfig.export().get());
+        if (runtimeConfig.getValue().export().isPresent()) {
+            defaultInvoker = FunctionRecorder.registry.matchInvoker(runtimeConfig.getValue().export().get());
             if (defaultInvoker == null) {
-                throw new RuntimeException("quarkus.funqy.export value does not map a function: " + funqyConfig.export().get());
+                throw new RuntimeException(
+                        "quarkus.funqy.export value does not map a function: " + runtimeConfig.getValue().export().get());
             }
 
         }
 
-        if (eventsConfig.mapping() != null) {
-            for (Map.Entry<String, FunqyKnativeEventsConfig.FunctionMapping> entry : eventsConfig.mapping().entrySet()) {
+        if (eventsRuntimeConfig.getValue().mapping() != null) {
+            for (Map.Entry<String, FunqyKnativeEventsConfig.FunctionMapping> entry : eventsRuntimeConfig.getValue().mapping()
+                    .entrySet()) {
                 String functionName = entry.getKey();
                 FunctionInvoker invoker = FunctionRecorder.registry.matchInvoker(functionName);
                 if (invoker == null) {
@@ -225,7 +236,7 @@ public class KnativeEventsBindingRecorder {
         }
 
         Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), rootPath, beanContainer, objectMapper,
-                eventsConfig,
+                eventsRuntimeConfig.getValue(),
                 defaultInvoker, typeTriggers, invokersFilters, executor);
 
         return handler;

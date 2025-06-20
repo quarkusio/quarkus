@@ -12,7 +12,14 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class GelfLogHandlerRecorder {
-    public RuntimeValue<Optional<Handler>> initializeHandler(final GelfConfig config) {
+    private final RuntimeValue<GelfConfig> runtimeConfig;
+
+    public GelfLogHandlerRecorder(final RuntimeValue<GelfConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public RuntimeValue<Optional<Handler>> initializeHandler() {
+        GelfConfig config = runtimeConfig.getValue();
         if (!config.enabled()) {
             return new RuntimeValue<>(Optional.empty());
         }

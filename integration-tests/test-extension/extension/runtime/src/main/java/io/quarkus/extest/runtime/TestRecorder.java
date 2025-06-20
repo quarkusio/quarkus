@@ -9,7 +9,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
 import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
-import io.quarkus.extest.runtime.config.TestMappingRunTime;
 import io.quarkus.extest.runtime.config.XmlConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -79,20 +78,12 @@ public class TestRecorder {
         }
     }
 
-    public void configMappingRuntime(TestMappingBuildTimeRunTime buildTimeRunTime, TestMappingRunTime runTime) {
+    public void configMappingRuntime(TestMappingBuildTimeRunTime buildTimeRunTime) {
         if (!buildTimeRunTime.value().equals("value")) {
             throw new IllegalStateException();
         }
 
         if (!buildTimeRunTime.group().value().equals("value")) {
-            throw new IllegalStateException();
-        }
-
-        if (!runTime.value().equals("value")) {
-            throw new IllegalStateException();
-        }
-
-        if (!runTime.group().value().equals("value")) {
             throw new IllegalStateException();
         }
     }

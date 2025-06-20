@@ -22,13 +22,18 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 @Recorder
 public class OidcDevUiRecorder {
-
     private static final Logger LOG = Logger.getLogger(OidcDevUiRecorder.class);
 
+    private final RuntimeValue<VertxHttpConfig> httpConfig;
+
+    public OidcDevUiRecorder(final RuntimeValue<VertxHttpConfig> httpConfig) {
+        this.httpConfig = httpConfig;
+    }
+
     public void createJsonRPCService(BeanContainer beanContainer,
-            RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean, VertxHttpConfig httpConfig) {
+            RuntimeValue<OidcDevUiRpcSvcPropertiesBean> oidcDevUiRpcSvcPropertiesBean) {
         OidcDevJsonRpcService jsonRpcService = beanContainer.beanInstance(OidcDevJsonRpcService.class);
-        jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBean.getValue(), httpConfig);
+        jsonRpcService.hydrate(oidcDevUiRpcSvcPropertiesBean.getValue(), httpConfig.getValue());
     }
 
     public RuntimeValue<OidcDevUiRpcSvcPropertiesBean> getRpcServiceProperties(String authorizationUrl, String tokenUrl,

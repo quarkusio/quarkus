@@ -17,6 +17,11 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class ManagementSecurityRecorder {
+    private final RuntimeValue<ManagementConfig> managementConfig;
+
+    public ManagementSecurityRecorder(final RuntimeValue<ManagementConfig> managementConfig) {
+        this.managementConfig = managementConfig;
+    }
 
     public RuntimeValue<AuthenticationHandler> managementAuthenticationHandler(boolean proactiveAuthentication) {
         return new RuntimeValue<>(new AuthenticationHandler(proactiveAuthentication));
@@ -26,10 +31,9 @@ public class ManagementSecurityRecorder {
         return handlerRuntimeValue.getValue();
     }
 
-    public void initializeAuthenticationHandler(RuntimeValue<AuthenticationHandler> handler,
-            ManagementConfig managementConfig, BeanContainer beanContainer) {
+    public void initializeAuthenticationHandler(RuntimeValue<AuthenticationHandler> handler, BeanContainer beanContainer) {
         handler.getValue().init(beanContainer.beanInstance(ManagementPathMatchingHttpSecurityPolicy.class),
-                RolesMapping.of(managementConfig.auth().rolesMapping()));
+                RolesMapping.of(managementConfig.getValue().auth().rolesMapping()));
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {

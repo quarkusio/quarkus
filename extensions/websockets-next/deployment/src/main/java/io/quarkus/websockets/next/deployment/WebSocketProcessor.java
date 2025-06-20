@@ -488,8 +488,7 @@ public class WebSocketProcessor {
             List<GeneratedEndpointBuildItem> generatedEndpoints, WebSocketsServerBuildConfig config,
             ValidationPhaseBuildItem validationPhase, BuildProducer<RouteBuildItem> routes,
             Optional<PermissionsAllowedMetaAnnotationBuildItem> metaPermissionsAllowed,
-            EndpointSecurityChecksBuildItem endpointSecurityChecks, Capabilities capabilities,
-            WebSocketsServerRuntimeConfig runtimeConfig) {
+            EndpointSecurityChecksBuildItem endpointSecurityChecks, Capabilities capabilities) {
         boolean securityEnabled = capabilities.isPresent(Capability.SECURITY);
         for (GeneratedEndpointBuildItem endpoint : generatedEndpoints.stream().filter(GeneratedEndpointBuildItem::isServer)
                 .toList()) {
@@ -506,7 +505,7 @@ public class WebSocketProcessor {
                                     new ScopeInfo(DotName.createSimple(SessionScoped.class), true), endpoint.endpointId,
                                     endpoints, validationPhase.getBeanResolver(), metaPermissionsAllowed, securityEnabled,
                                     httpUpgradeSecured),
-                            endpoint.path, runtimeConfig));
+                            endpoint.path));
             routes.produce(builder.build());
         }
     }

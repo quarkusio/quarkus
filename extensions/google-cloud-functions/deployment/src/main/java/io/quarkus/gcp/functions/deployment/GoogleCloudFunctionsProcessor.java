@@ -29,7 +29,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.gcp.functions.GoogleCloudFunctionInfo;
 import io.quarkus.gcp.functions.GoogleCloudFunctionRecorder;
-import io.quarkus.gcp.functions.GoogleCloudFunctionsConfig;
 
 public class GoogleCloudFunctionsProcessor {
     private static final String FEATURE_NAME = "google-cloud-functions";
@@ -96,14 +95,12 @@ public class GoogleCloudFunctionsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void selectDelegate(List<CloudFunctionBuildItem> cloudFunctions,
-            GoogleCloudFunctionsConfig config,
-            GoogleCloudFunctionRecorder recorder) throws BuildException {
+    public void selectDelegate(List<CloudFunctionBuildItem> cloudFunctions, GoogleCloudFunctionRecorder recorder) {
 
         List<GoogleCloudFunctionInfo> functionInfos = cloudFunctions.stream()
                 .map(CloudFunctionBuildItem::build)
                 .collect(Collectors.toList());
 
-        recorder.selectDelegate(config, functionInfos);
+        recorder.selectDelegate(functionInfos);
     }
 }

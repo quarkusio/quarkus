@@ -186,10 +186,9 @@ public class MicrometerProcessor {
     @Consume(BeanContainerBuildItem.class)
     @Record(ExecutionTime.STATIC_INIT)
     RootMeterRegistryBuildItem createRootRegistry(MicrometerRecorder recorder,
-            MicrometerConfig config,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
-        RuntimeValue<MeterRegistry> registry = recorder.createRootRegistry(config,
+        RuntimeValue<MeterRegistry> registry = recorder.createRootRegistry(
                 nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
                 nonApplicationRootPathBuildItem.getNormalizedHttpRootPath());
         return new RootMeterRegistryBuildItem(registry);
@@ -213,7 +212,6 @@ public class MicrometerProcessor {
     @Consume(LoggingSetupBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void configureRegistry(MicrometerRecorder recorder,
-            MicrometerConfig config,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
             ShutdownContextBuildItem shutdownContextBuildItem) {
@@ -224,7 +222,7 @@ public class MicrometerProcessor {
         }
 
         // Runtime config at play here: host+port, API keys, etc.
-        recorder.configureRegistries(config, typeClasses, shutdownContextBuildItem);
+        recorder.configureRegistries(typeClasses, shutdownContextBuildItem);
 
         for (MetricsFactoryConsumerBuildItem item : metricsFactoryConsumerBuildItems) {
             if (item != null && item.executionTime() == ExecutionTime.RUNTIME_INIT) {

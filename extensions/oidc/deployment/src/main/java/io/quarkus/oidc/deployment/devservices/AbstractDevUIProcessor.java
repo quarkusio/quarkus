@@ -19,7 +19,6 @@ import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRpcSvcPropertiesBean;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
-import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 public abstract class AbstractDevUIProcessor {
     protected static final String CONFIG_PREFIX = "quarkus.oidc.";
@@ -43,7 +42,8 @@ public abstract class AbstractDevUIProcessor {
             Map<String, String> keycloakUsers,
             List<String> keycloakRealms,
             boolean alwaysLogoutUserInDevUiOnReload,
-            VertxHttpConfig httpConfig, boolean discoverMetadata, String authServerUrl) {
+            boolean discoverMetadata,
+            String authServerUrl) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
         cardPage.setLogo("oidc_logo.png", "oidc_logo.png");
@@ -85,7 +85,7 @@ public abstract class AbstractDevUIProcessor {
                 graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload, discoverMetadata,
                 authServerUrl);
 
-        recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties, httpConfig);
+        recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties);
 
         return cardPage;
     }

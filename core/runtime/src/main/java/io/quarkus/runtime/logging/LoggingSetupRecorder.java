@@ -73,12 +73,18 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 
 @Recorder
 public class LoggingSetupRecorder {
-
     private static final org.jboss.logging.Logger log = org.jboss.logging.Logger.getLogger(LoggingSetupRecorder.class);
 
-    final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig;
+    private final LogBuildTimeConfig logBuildTimeConfig;
+    private final RuntimeValue<LogRuntimeConfig> logRuntimeConfig;
+    private final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig;
 
-    public LoggingSetupRecorder(RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig) {
+    public LoggingSetupRecorder(
+            final LogBuildTimeConfig logBuildTimeConfig,
+            final RuntimeValue<LogRuntimeConfig> logRuntimeConfig,
+            final RuntimeValue<ConsoleRuntimeConfig> consoleRuntimeConfig) {
+        this.logBuildTimeConfig = logBuildTimeConfig;
+        this.logRuntimeConfig = logRuntimeConfig;
         this.consoleRuntimeConfig = consoleRuntimeConfig;
     }
 
@@ -114,18 +120,17 @@ public class LoggingSetupRecorder {
                         return "Logging Config";
                     }
                 }).build();
-        LogRuntimeConfig logRuntimeConfig = loggingConfig.getConfigMapping(LogRuntimeConfig.class);
         LogBuildTimeConfig logBuildTimeConfig = loggingConfig.getConfigMapping(LogBuildTimeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = loggingConfig.getConfigMapping(LogRuntimeConfig.class);
         ConsoleRuntimeConfig consoleRuntimeConfig = loggingConfig.getConfigMapping(ConsoleRuntimeConfig.class);
-        new LoggingSetupRecorder(new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(logRuntimeConfig,
-                logBuildTimeConfig,
-                DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(), emptyList(),
-                emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
+        new LoggingSetupRecorder(logBuildTimeConfig, new RuntimeValue<>(logRuntimeConfig),
+                new RuntimeValue<>(consoleRuntimeConfig)).initializeLogging(
+                        DiscoveredLogComponents.ofEmpty(), emptyMap(), false, null, emptyList(), emptyList(), emptyList(),
+                        emptyList(),
+                        emptyList(), emptyList(), banner, LaunchMode.DEVELOPMENT, false);
     }
 
     public ShutdownListener initializeLogging(
-            final LogRuntimeConfig config,
-            final LogBuildTimeConfig buildConfig,
             final DiscoveredLogComponents discoveredLogComponents,
             final Map<String, InheritableLevel> categoryDefaultMinLevels,
             final boolean enableWebStream,
@@ -139,6 +144,9 @@ public class LoggingSetupRecorder {
             final RuntimeValue<Optional<Supplier<String>>> possibleBannerSupplier,
             final LaunchMode launchMode,
             final boolean includeFilters) {
+
+        LogBuildTimeConfig buildConfig = logBuildTimeConfig;
+        LogRuntimeConfig config = logRuntimeConfig.getValue();
 
         ShutdownNotifier shutdownNotifier = new ShutdownNotifier();
         Map<String, CategoryConfig> categories = config.categories();

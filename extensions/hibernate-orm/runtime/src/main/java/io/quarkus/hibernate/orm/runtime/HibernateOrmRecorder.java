@@ -10,7 +10,6 @@ import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import jakarta.inject.Inject;
 import jakarta.persistence.Cache;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.metamodel.Metamodel;
@@ -36,6 +35,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -43,12 +43,13 @@ import io.quarkus.runtime.annotations.Recorder;
  */
 @Recorder
 public class HibernateOrmRecorder {
-
+    private final RuntimeValue<HibernateOrmRuntimeConfig> runtimeConfig;
     private final PreGeneratedProxies proxyDefinitions;
     private final List<String> entities = new ArrayList<>();
 
-    @Inject
-    public HibernateOrmRecorder(PreGeneratedProxies proxyDefinitions) {
+    public HibernateOrmRecorder(final RuntimeValue<HibernateOrmRuntimeConfig> runtimeConfig,
+            final PreGeneratedProxies proxyDefinitions) {
+        this.runtimeConfig = runtimeConfig;
         this.proxyDefinitions = proxyDefinitions;
     }
 
@@ -66,9 +67,9 @@ public class HibernateOrmRecorder {
         Hibernate.featureInit(enabled);
     }
 
-    public void setupPersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+    public void setupPersistenceProvider(
             Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
-        PersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors);
+        PersistenceProviderSetup.registerRuntimePersistenceProvider(runtimeConfig.getValue(), integrationRuntimeDescriptors);
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
@@ -101,8 +102,8 @@ public class HibernateOrmRecorder {
         };
     }
 
-    public Supplier<JPAConfig> jpaConfigSupplier(HibernateOrmRuntimeConfig config) {
-        return () -> new JPAConfig(config);
+    public Supplier<JPAConfig> jpaConfigSupplier() {
+        return () -> new JPAConfig(runtimeConfig.getValue());
     }
 
     public void startAllPersistenceUnits(BeanContainer beanContainer) {
@@ -238,8 +239,8 @@ public class HibernateOrmRecorder {
         }
     }
 
-    public void doValidation(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig, String puName) {
-        HibernateOrmRuntimeConfigPersistenceUnit hibernateOrmRuntimeConfigPersistenceUnit = hibernateOrmRuntimeConfig
+    public void doValidation(String puName) {
+        HibernateOrmRuntimeConfigPersistenceUnit hibernateOrmRuntimeConfigPersistenceUnit = runtimeConfig.getValue()
                 .persistenceUnits().get(puName);
         String schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit.database().generation().generation()
                 .orElse(hibernateOrmRuntimeConfigPersistenceUnit.schemaManagement().strategy());

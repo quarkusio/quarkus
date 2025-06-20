@@ -11,10 +11,16 @@ import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateReactiveRecorder {
+    private final RuntimeValue<HibernateOrmRuntimeConfig> runtimeConfig;
+
+    public HibernateReactiveRecorder(final RuntimeValue<HibernateOrmRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
 
     /**
      * The feature needs to be initialized, even if it's not enabled.
@@ -25,9 +31,9 @@ public class HibernateReactiveRecorder {
         HibernateReactive.featureInit(enabled);
     }
 
-    public void initializePersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+    public void initializePersistenceProvider(
             Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
-        ReactivePersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig,
+        ReactivePersistenceProviderSetup.registerRuntimePersistenceProvider(runtimeConfig.getValue(),
                 integrationRuntimeDescriptors);
     }
 

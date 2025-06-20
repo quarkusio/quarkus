@@ -1,13 +1,11 @@
 import { LitElement, html, css} from 'lit';
 import { RouterController } from 'router-controller';
-import { observeState } from 'lit-element-state';
-import { themeState } from 'theme-state';
-import '@qomponent/qui-code-block';
+import 'qui-themed-code-block';
 
 /**
  * This component renders build time data in raw json format
  */
-export class QwcDataRawPage extends observeState(LitElement) {
+export class QwcDataRawPage extends LitElement {
     routerController = new RouterController(this);
     
     static styles = css`
@@ -51,12 +49,11 @@ export class QwcDataRawPage extends observeState(LitElement) {
         var json = JSON.stringify(this._buildTimeData, null, '\t');
 
         return html`<div class="codeBlock">
-                        <qui-code-block 
+                        <qui-themed-code-block
                             mode='json'
                             content='${json}'
-                            theme='${themeState.theme.name}'
                             showLineNumbers>
-                        </qui-code-block>
+                        </qui-themed-code-block>
             </div>`;
     }
 

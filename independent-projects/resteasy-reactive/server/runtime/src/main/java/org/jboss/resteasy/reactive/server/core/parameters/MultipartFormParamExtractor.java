@@ -16,6 +16,7 @@ public class MultipartFormParamExtractor implements ParameterExtractor {
     private final Class<Object> typeClass;
     // Note that this is only used for the String type, due to the TCK requiring it
     private final boolean encoded;
+    private final boolean allowEmpty;
 
     public enum Type {
         FileUpload,
@@ -28,7 +29,7 @@ public class MultipartFormParamExtractor implements ParameterExtractor {
     }
 
     public MultipartFormParamExtractor(String name, boolean single, Type type, Class<Object> typeClass,
-            java.lang.reflect.Type genericType, String mimeType, boolean encoded) {
+            java.lang.reflect.Type genericType, String mimeType, boolean encoded, boolean allowEmpty) {
         this.name = name;
         this.single = single;
         this.type = type;
@@ -36,6 +37,7 @@ public class MultipartFormParamExtractor implements ParameterExtractor {
         this.typeClass = typeClass;
         this.genericType = genericType;
         this.encoded = encoded;
+        this.allowEmpty = allowEmpty;
     }
 
     @Override

@@ -14,6 +14,7 @@ import jakarta.ws.rs.core.Application;
 import jakarta.ws.rs.ext.ParamConverter;
 import jakarta.ws.rs.ext.ParamConverterProvider;
 
+import org.jboss.resteasy.reactive.Parameter;
 import org.jboss.resteasy.reactive.common.ResteasyReactiveConfig;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.model.ResourceParamConverterProvider;
@@ -164,11 +165,14 @@ public class Deployment {
                 genericType = field.getGenericType();
             } else {
                 genericType = field.getGenericType();
-                if (genericType instanceof ParameterizedType) {
-                    Type[] args = Types.findInterfaceParameterizedTypes(field.getType(), (ParameterizedType) genericType,
+                if (genericType instanceof ParameterizedType parameterizedType) {
+                    Type[] args = Types.findInterfaceParameterizedTypes(field.getType(), parameterizedType,
                             Collection.class);
                     if (args != null && args.length == 1) {
                         genericType = args[0];
+                        klass = Types.getRawType(genericType);
+                    } else if (parameterizedType.getRawType() == Parameter.class) {
+                        genericType = parameterizedType.getActualTypeArguments()[0];
                         klass = Types.getRawType(genericType);
                     } else {
                         throw new RuntimeException("Failed to find Collection supertype of " + field);

@@ -10,7 +10,7 @@ import '@vaadin/grid';
 import '@vaadin/tabs';
 import '@vaadin/tabsheet';
 import { columnBodyRenderer, columnHeaderRenderer } from '@vaadin/grid/lit.js';
-import '@qomponent/qui-code-block';
+import 'qui-themed-code-block';
 import { notifier } from 'notifier';
 import '@vaadin/progress-bar';
 import '@vaadin/button';
@@ -405,7 +405,7 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
     }
     
     _renderImportSqlDialogContents(){
-        return html`<qui-code-block content="${this._insertSQL}" mode="sql" theme="dark"></qui-code-block>`;
+        return html`<qui-themed-code-block content="${this._insertSQL}" mode="sql"></qui-themed-code-block>`;
     }
     
     _renderDotViewerDialogContents(){
@@ -598,9 +598,9 @@ export class QwcAgroalDatasource extends observeState(QwcHotReloadElement) {
         if (this._allowSql) {
             return html`
                 <div class="sqlInput">
-                    <qui-code-block @shiftEnter=${this._shiftEnterPressed} content="${this._currentSQL}"
-                                    class="font-large cursor-text" id="sql" mode="sql" theme="dark"
-                                    value='${this._currentSQL}' editable></qui-code-block>
+                    <qui-themed-code-block @shiftEnter=${this._shiftEnterPressed} content="${this._currentSQL}"
+                                    class="font-large cursor-text" id="sql" mode="sql"
+                                    value='${this._currentSQL}' editable></qui-themed-code-block>
                     <vaadin-button class="no-margin" slot="suffix" theme="icon tertiary small" aria-label="Clear">
                         <vaadin-tooltip .hoverDelay=${500} slot="tooltip" text="Clear"></vaadin-tooltip>
                         <vaadin-icon class="small-icon" @click=${this._clearSqlInput}

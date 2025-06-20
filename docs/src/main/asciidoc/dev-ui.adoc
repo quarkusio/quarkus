@@ -506,13 +506,63 @@ https://github.com/qomponent[Qomponent]: A few custom build compoments that can 
 
 Currently the following UI component are available:
 
-- qui-dot - Render dot files
-- qui-code-block - Render code
-- qui-directory-tree - Render a directory tree (like in the workspace)
-- qui-alert - Show an alert
-- qui-card - Card component
-- qui-switch - Switch button
-- qui-badge - Badge component
+- qui-dot - Render dot files.
+- qui-code-block - Render code. (See below *Code block* section)
+- qui-directory-tree - Render a directory tree (like in the workspace).
+- qui-alert - Show an alert.
+- qui-card - Card component.
+- qui-switch - Switch button.
+- qui-badge - Badge component.
+
+====== Code block
+
+Creates a code block (containing marked up code). This could also be made editable. 
+This component use the above mentioned code block from qomponent, that is build with https://codemirror.net/[code-mirror], but adds the automatic theme state when switching themes.
+
+Code can be provided remotely (`src`) or as a property (`content`) or as a slotted value (example below).
+
+[source,javascript]
+----
+import 'qui-themed-code-block';
+----
+
+[source,html]
+----
+<qui-themed-code-block mode="properties">
+      <slot>
+foo = bar
+      </slot>
+</qui-themed-code-block>
+----
+
+Currently the following modes are supported:
+
+- xml
+- javascript
+- php
+- cpp
+- go
+- rust
+- python
+- json
+- java
+- sql
+- yaml
+- html
+- css
+- sass
+- less
+- markdown
+- asciidoc
+- properties
+- asciiArmor
+- powerShell
+- shell
+- protobuf
+- dockerFile
+- diff
+
+See the https://github.com/qomponent/qui-code-block[@qomponent/qui-code-block] for more details.
 
 ====== IDE link
 

@@ -5,7 +5,7 @@ import '@vaadin/button';
 import '@vaadin/split-layout';
 import '@vaadin/menu-bar';
 import '@vaadin/tooltip';
-import '@qomponent/qui-code-block';
+import 'qui-themed-code-block';
 import '@qomponent/qui-directory-tree';
 import '@qomponent/qui-badge';
 import '@vaadin/dialog';
@@ -15,7 +15,6 @@ import MarkdownIt from 'markdown-it';
 import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { dialogHeaderRenderer, dialogFooterRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import { observeState } from 'lit-element-state';
-import { themeState } from 'theme-state';
 import { notifier } from 'notifier';
 import './qwc-workspace-binary.js';
 import 'qui-ide-link';
@@ -332,12 +331,11 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             // Maybe return name|content ?
             return html`<div class="actionResult">
                             ${this._renderAssistantWarning()}    
-                            <qui-code-block id="code" class='codeBlock'
+                            <qui-themed-code-block id="code" class='codeBlock'
                                 mode='${this._getMode(this._actionResult?.name ?? this._actionResult?.path)}' 
-                                theme='${themeState.theme.name}'
                                 .content='${this._actionResult.content}'
                                 showLineNumbers>
-                            </qui-code-block>
+                            </qui-themed-code-block>
                         </div>`;
         }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "markdown"){
             const htmlContent = this.md.render(this._actionResult.content);
@@ -396,14 +394,13 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     }
     
     _renderTextContent(){
-        return html`<qui-code-block id="code" class='codeBlock' @keydown="${this._onKeyDown}"
+        return html`<qui-themed-code-block id="code" class='codeBlock' @keydown="${this._onKeyDown}"
                         mode='${this._getMode(this._selectedWorkspaceItem.name)}'
-                        theme='${themeState.theme.name}'
                         .content='${this._selectedWorkspaceItem.content}'
                         value='${this._selectedWorkspaceItem.content}'
                         showLineNumbers
                         editable>
-                    </qui-code-block>
+                    </qui-themed-code-block>
                     ${this._renderAssistantWarningInline()}`;
     }
 

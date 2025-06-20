@@ -3,8 +3,7 @@ import { JsonRpc } from 'jsonrpc';
 import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
 import { devuiState } from 'devui-state';
-import { themeState } from 'theme-state';
-import '@qomponent/qui-code-block';
+import 'qui-themed-code-block';
 import '@vaadin/button';
 import '@vaadin/icon';
 import '@vaadin/progress-bar';
@@ -76,13 +75,12 @@ export class QwcConfigurationEditor extends observeState(LitElement) {
 
         return html`
         ${this._renderToolbar()}
-        <qui-code-block id="code"
+        <qui-themed-code-block id="code"
             mode='${this._type}'
             content='${this._value}'
             value='${this._value}'
-            theme='${themeState.theme.name}'
             editable>
-        </qui-code-block>`;
+        </qui-themed-code-block>`;
     }
 
     _renderToolbar(){

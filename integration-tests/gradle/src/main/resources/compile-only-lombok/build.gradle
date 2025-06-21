@@ -31,8 +31,8 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured'
 }
 
-group 'io.playground'
-version '1.0'
+group = 'io.playground'
+version = '1.0'
 
 compileJava {
     options.encoding = 'UTF-8'

@@ -44,12 +44,12 @@ public final class GroovyGradleBuildFilesCreator extends AbstractGradleBuildFile
             res.append("}").append(System.lineSeparator());
 
         }
-        String groupLine = "group '" + groupId + "'";
+        String groupLine = "group = '" + groupId + "'";
         if (!buildContent.contains(groupLine)) {
             res.append(System.lineSeparator()).append(groupLine)
                     .append(System.lineSeparator());
         }
-        String versionLine = "version '" + version + "'";
+        String versionLine = "version = '" + version + "'";
         if (!buildContent.contains(versionLine)) {
             res.append(System.lineSeparator()).append(versionLine)
                     .append(System.lineSeparator());

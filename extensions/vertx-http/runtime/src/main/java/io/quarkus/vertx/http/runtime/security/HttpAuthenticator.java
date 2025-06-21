@@ -45,6 +45,7 @@ import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.AuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
@@ -73,7 +74,7 @@ public final class HttpAuthenticator {
      * Only set when detected and {@link HttpAuthenticator#TEST_IF_BASIC_AUTH_IMPLICITLY_REQUIRED} is true.
      */
     public static final String BASIC_AUTH_ANNOTATION_DETECTED = "io.quarkus.security.http.basic-authentication-annotation-detected";
-    private static final Logger log = Logger.getLogger(HttpAuthenticator.class);
+    private static final Logger LOG = Logger.getLogger(HttpAuthenticator.class);
     /**
      * Added to a {@link RoutingContext} as selected authentication mechanism.
      */
@@ -105,7 +106,7 @@ public final class HttpAuthenticator {
         for (HttpAuthenticationMechanism mechanism : httpAuthenticationMechanism) {
             if (mechanism.getCredentialTypes().isEmpty()) {
                 // mechanism does not require any IdentityProvider
-                log.debugf("HttpAuthenticationMechanism '%s' provided no required credential types, therefore it needs "
+                LOG.debugf("HttpAuthenticationMechanism '%s' provided no required credential types, therefore it needs "
                         + "to be able to perform authentication without any IdentityProvider", mechanism.getClass().getName());
                 mechanisms.add(mechanism);
                 continue;
@@ -128,7 +129,7 @@ public final class HttpAuthenticator {
                 mechanisms.add(mechanism);
             } else if (BasicAuthenticationMechanism.class.equals(mechanism.getClass())
                     && httpBuildTimeConfig.auth().basic().isEmpty()) {
-                log.debug("""
+                LOG.debug("""
                         BasicAuthenticationMechanism has been enabled because no other authentication mechanism has been
                         detected, but there is no IdentityProvider based on username and password. Please use
                         one of supported extensions if you plan to use the mechanism.
@@ -194,13 +195,13 @@ public final class HttpAuthenticator {
         }
 
         // determine whether user selected path specific mechanism via HTTP Security policy or annotation
-        final String pathSpecificMechanism;
+        final AuthenticationMechanism pathSpecificMechanism;
         if (selectAuthMechanismWithAnnotation && isAuthMechanismSelected(routingContext)) {
-            pathSpecificMechanism = routingContext.get(AUTH_MECHANISM);
+            pathSpecificMechanism = getAuthMechanism(routingContext);
         } else {
             AbstractPathMatchingHttpSecurityPolicy pathMatchingPolicy = routingContext
                     .get(AbstractPathMatchingHttpSecurityPolicy.class.getName());
-            pathSpecificMechanism = pathMatchingPolicy != null ? pathMatchingPolicy.getAuthMechanismName(routingContext) : null;
+            pathSpecificMechanism = pathMatchingPolicy != null ? pathMatchingPolicy.getAuthMechanism(routingContext) : null;
         }
 
         // authenticate
@@ -208,7 +209,7 @@ public final class HttpAuthenticator {
         if (pathSpecificMechanism == null) {
             result = createSecurityIdentity(routingContext, 0);
         } else {
-            result = findBestCandidateMechanism(routingContext, pathSpecificMechanism, 0).onItem().ifNotNull()
+            result = findBestCandidateMechanism(routingContext, pathSpecificMechanism).onItem().ifNotNull()
                     .transformToUni(new Function<HttpAuthenticationMechanism, Uni<? extends SecurityIdentity>>() {
                         @Override
                         public Uni<SecurityIdentity> apply(HttpAuthenticationMechanism mech) {
@@ -329,7 +330,7 @@ public final class HttpAuthenticator {
             @Override
             public Uni<? extends Boolean> apply(Boolean authDone) {
                 if (!authDone) {
-                    log.debug("Authentication has not been done, returning HTTP status 401");
+                    LOG.debug("Authentication has not been done, returning HTTP status 401");
                     routingContext.response().setStatusCode(401);
                     if (routingContext.get(DEV_MODE_AUTHENTICATION_FAILURE_BODY) == null) {
                         routingContext.response().end();
@@ -375,7 +376,7 @@ public final class HttpAuthenticator {
                     @Override
                     public Uni<SecurityIdentity> apply(HttpCredentialTransport httpCredentialTransport) {
                         if (httpCredentialTransport == null || httpCredentialTransport.getAuthenticationScheme() == null) {
-                            log.error("""
+                            LOG.error("""
                                     Illegal state - HttpAuthenticationMechanism '%s' authentication scheme is not available.
                                     The authentication scheme is required when inclusive authentication is enabled.
                                     """.formatted(ClientProxy.unwrap(mechanisms[i]).getClass().getName()));
@@ -401,6 +402,15 @@ public final class HttpAuthenticator {
                         }
                     }
                 });
+    }
+
+    private Uni<HttpAuthenticationMechanism> findBestCandidateMechanism(RoutingContext routingContext,
+            AuthenticationMechanism pathSpecificMechanism) {
+        if (pathSpecificMechanism.instance() != null) {
+            rememberAuthMechanism(routingContext, pathSpecificMechanism);
+            return Uni.createFrom().item(pathSpecificMechanism.instance());
+        }
+        return findBestCandidateMechanism(routingContext, pathSpecificMechanism.name(), 0);
     }
 
     private Uni<HttpAuthenticationMechanism> findBestCandidateMechanism(RoutingContext routingContext,
@@ -431,7 +441,7 @@ public final class HttpAuthenticator {
                     public HttpAuthenticationMechanism apply(HttpCredentialTransport t) {
                         if (t != null && t.getAuthenticationScheme().equalsIgnoreCase(pathSpecificMechanism)) {
                             routingContext.put(HttpAuthenticationMechanism.class.getName(), mechanisms[index]);
-                            routingContext.put(AUTH_MECHANISM, t.getAuthenticationScheme());
+                            rememberAuthMechanism(routingContext, t.getAuthenticationScheme());
                             return mechanisms[index];
                         }
                         return null;
@@ -445,6 +455,17 @@ public final class HttpAuthenticator {
 
     static void selectAuthMechanism(RoutingContext routingContext, String authMechanism) {
         if (requestAlreadyAuthenticated(routingContext, authMechanism)) {
+            AuthenticationMechanism authenticationMechanism = getAuthMechanism(routingContext);
+            final String previousMechanism;
+            if (authenticationMechanism != null) {
+                if (authenticationMechanism.name() != null) {
+                    previousMechanism = authenticationMechanism.name();
+                } else {
+                    previousMechanism = ClientProxy.unwrap(authenticationMechanism.instance()).getClass().getName();
+                }
+            } else {
+                previousMechanism = null;
+            }
             throw new AuthenticationFailedException("""
                     The '%1$s' authentication mechanism is required to authenticate the request but it was already
                     authenticated with the '%2$s' authentication mechanism. It can happen if the '%1$s' is selected with
@@ -453,9 +474,9 @@ public final class HttpAuthenticator {
                     'quarkus.http.auth.permission."permissions".applies-to=JAXRS' to all HTTP security policies
                     which secure the same REST endpoints as the ones secured by the '%1$s' authentication mechanism
                     selected with the annotation.
-                    """.formatted(authMechanism, routingContext.get(AUTH_MECHANISM)));
+                    """.formatted(authMechanism, previousMechanism));
         }
-        routingContext.put(AUTH_MECHANISM, authMechanism);
+        rememberAuthMechanism(routingContext, authMechanism);
     }
 
     private static void rememberAuthAttempted(RoutingContext routingContext) {
@@ -463,7 +484,7 @@ public final class HttpAuthenticator {
     }
 
     private static boolean isAuthMechanismSelected(RoutingContext routingContext) {
-        return routingContext.get(AUTH_MECHANISM) != null;
+        return getAuthMechanism(routingContext) != null;
     }
 
     private static boolean requestAlreadyAuthenticated(RoutingContext event, String newAuthMechanism) {
@@ -471,7 +492,7 @@ public final class HttpAuthenticator {
     }
 
     private static boolean authenticatedWithDifferentAuthMechanism(String newAuthMechanism, RoutingContext event) {
-        return !newAuthMechanism.equalsIgnoreCase(event.get(AUTH_MECHANISM));
+        return !newAuthMechanism.equalsIgnoreCase(getAuthMechanismScheme(event));
     }
 
     /**
@@ -485,10 +506,31 @@ public final class HttpAuthenticator {
                     @Override
                     public void accept(HttpCredentialTransport t) {
                         if (t.getAuthenticationScheme() != null) {
-                            event.put(AUTH_MECHANISM, t.getAuthenticationScheme());
+                            rememberAuthMechanism(event, t.getAuthenticationScheme());
                         }
                     }
                 });
+    }
+
+    private static void rememberAuthMechanism(RoutingContext event, AuthenticationMechanism newAuthMechanism) {
+        event.put(AUTH_MECHANISM, newAuthMechanism);
+        event.put(HttpAuthenticationMechanism.class.getName(), newAuthMechanism.instance());
+    }
+
+    private static void rememberAuthMechanism(RoutingContext event, String newAuthMechanism) {
+        event.put(AUTH_MECHANISM, new AuthenticationMechanism(newAuthMechanism, null));
+    }
+
+    private static AuthenticationMechanism getAuthMechanism(RoutingContext event) {
+        return event.get(AUTH_MECHANISM);
+    }
+
+    private static String getAuthMechanismScheme(RoutingContext event) {
+        AuthenticationMechanism authenticationMechanism = getAuthMechanism(event);
+        if (authenticationMechanism != null) {
+            return authenticationMechanism.name();
+        }
+        return null;
     }
 
     private static void addBasicAuthMechanismIfImplicitlyRequired(
@@ -506,7 +548,7 @@ public final class HttpAuthenticator {
                     return;
                 }
             }
-            log.debug("""
+            LOG.debug("""
                     BasicAuthenticationMechanism has been enabled because no custom authentication mechanism has been detected
                     and basic authentication is required either by the HTTP Security Policy or '@BasicAuthentication', but
                     there is no IdentityProvider based on username and password. Please use one of supported extensions.
@@ -521,8 +563,11 @@ public final class HttpAuthenticator {
         }
         VertxHttpConfig httpConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
                 .getConfigMapping(VertxHttpConfig.class);
-        for (var policy : httpConfig.auth().permissions().values()) {
-            if (BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(policy.authMechanism().orElse(null))) {
+        List<HttpSecurityConfiguration.HttpPermissionCarrier> httpPermissions = HttpSecurityConfiguration
+                .get(httpConfig).httpPermissions();
+        for (var permission : httpPermissions) {
+            if (permission.getAuthMechanism() != null
+                    && BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(permission.getAuthMechanism().name())) {
                 return false;
             }
         }
@@ -546,11 +591,6 @@ public final class HttpAuthenticator {
         @Override
         public Set<Class<? extends AuthenticationRequest>> getCredentialTypes() {
             return Collections.singleton(AnonymousAuthenticationRequest.class);
-        }
-
-        @Override
-        public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
-            return Uni.createFrom().nullItem();
         }
 
     }

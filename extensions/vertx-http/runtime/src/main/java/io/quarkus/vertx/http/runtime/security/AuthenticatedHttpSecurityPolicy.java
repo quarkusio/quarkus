@@ -11,6 +11,8 @@ import io.vertx.ext.web.RoutingContext;
  */
 public class AuthenticatedHttpSecurityPolicy implements HttpSecurityPolicy {
 
+    public static final String NAME = "authenticated";
+
     @Override
     public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
             AuthorizationRequestContext requestContext) {

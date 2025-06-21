@@ -6,7 +6,6 @@ import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -15,7 +14,6 @@ import io.quarkus.redis.devservices.it.profiles.DevServicesNonUniquePortProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 
-@Disabled("Tracked by https://github.com/quarkusio/quarkus/issues/45785")
 @QuarkusTest
 @TestProfile(DevServicesNonUniquePortProfile.class)
 public class DevServicesRedisNonUniquePortITest {

@@ -56,7 +56,7 @@ public class BasicRedisCacheTest {
         // Verified by: STEP 2.
         String value1 = simpleCachedService.cachedMethod(KEY_1);
         List<String> newKeys = TestUtil.allRedisKeys(redisDataSource);
-        assertEquals(allKeysAtStart.size() + 1, newKeys.size());
+        assertEquals(allKeysAtStart.size() + 1, newKeys.size(), "Compared " + allKeysAtStart + " and " + newKeys);
         Assertions.assertThat(newKeys).contains(expectedCacheKey(KEY_1));
 
         // STEP 2
@@ -121,7 +121,7 @@ public class BasicRedisCacheTest {
         // Verified by: comparison with previous number of keys, STEPS 9 and 10.
         simpleCachedService.invalidateAll();
         newKeys = TestUtil.allRedisKeys(redisDataSource);
-        assertEquals(allKeysAtStart.size(), newKeys.size());
+        assertEquals(allKeysAtStart.size(), newKeys.size(), "Compared " + allKeysAtStart + " and " + newKeys);
         Assertions.assertThat(newKeys).doesNotContain(expectedCacheKey(KEY_1), expectedCacheKey(KEY_2));
 
         // STEP 9

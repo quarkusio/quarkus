@@ -66,11 +66,6 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
     }
 
     @Override
-    public String subprotocol() {
-        return webSocket.subProtocol();
-    }
-
-    @Override
     public String toString() {
         return "WebSocket connection [endpointId=" + endpointId + ", path=" + webSocket.path() + ", id=" + identifier + "]";
     }

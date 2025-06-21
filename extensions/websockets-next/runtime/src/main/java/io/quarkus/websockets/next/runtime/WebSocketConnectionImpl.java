@@ -12,6 +12,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import io.quarkus.websockets.next.HandshakeRequest;
+import io.quarkus.websockets.next.UserData;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.smallrye.mutiny.Uni;
@@ -34,9 +35,9 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
 
     WebSocketConnectionImpl(String generatedEndpointClass, String endpointClass, ServerWebSocket webSocket,
             ConnectionManager connectionManager, Codecs codecs, RoutingContext ctx,
-            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
+            TrafficLogger trafficLogger, UserData userData, SendingInterceptor sendingInterceptor) {
         super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx), trafficLogger,
-                new UserDataImpl(), sendingInterceptor);
+                userData, sendingInterceptor);
         this.generatedEndpointClass = generatedEndpointClass;
         this.endpointId = endpointClass;
         this.webSocket = Objects.requireNonNull(webSocket);

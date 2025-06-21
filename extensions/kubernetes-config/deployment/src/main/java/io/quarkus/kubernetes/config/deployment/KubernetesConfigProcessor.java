@@ -9,7 +9,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigBuildTimeConfig;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigRecorder;
-import io.quarkus.kubernetes.config.runtime.KubernetesConfigSourceConfig;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigSourceFactoryBuilder;
 import io.quarkus.kubernetes.config.runtime.SecretsRoleConfig;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
@@ -35,7 +34,6 @@ public class KubernetesConfigProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void handleAccessToSecrets(
             KubernetesConfigBuildTimeConfig buildTimeConfig,
-            KubernetesConfigSourceConfig config,
             BuildProducer<KubernetesRoleBuildItem> roleProducer,
             BuildProducer<KubernetesClusterRoleBuildItem> clusterRoleProducer,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccountProducer,
@@ -61,6 +59,6 @@ public class KubernetesConfigProcessor {
             roleBindingProducer.produce(new KubernetesRoleBindingBuildItem(roleName, roleConfig.clusterWide()));
         }
 
-        recorder.warnAboutSecrets(buildTimeConfig, config);
+        recorder.warnAboutSecrets();
     }
 }

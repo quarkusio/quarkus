@@ -64,7 +64,6 @@ import io.quarkus.extest.runtime.config.TestBuildTimeConfig;
 import io.quarkus.extest.runtime.config.TestConfigRoot;
 import io.quarkus.extest.runtime.config.TestMappingBuildTime;
 import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
-import io.quarkus.extest.runtime.config.TestMappingRunTime;
 import io.quarkus.extest.runtime.config.UnremovableMappingFromBuildItem;
 import io.quarkus.extest.runtime.config.XmlConfig;
 import io.quarkus.extest.runtime.logging.AdditionalLogHandlerValueFactory;
@@ -392,8 +391,8 @@ public final class TestProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void configMappingRuntime(TestRecorder recorder, TestMappingBuildTimeRunTime buildTimeRunTime, TestMappingRunTime runTime) {
-        recorder.configMappingRuntime(buildTimeRunTime, runTime);
+    void configMappingRuntime(TestRecorder recorder, TestMappingBuildTimeRunTime buildTimeRunTime) {
+        recorder.configMappingRuntime(buildTimeRunTime);
     }
 
     /**

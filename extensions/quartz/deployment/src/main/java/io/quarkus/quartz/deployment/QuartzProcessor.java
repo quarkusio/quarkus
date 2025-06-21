@@ -62,7 +62,6 @@ import io.quarkus.quartz.runtime.QuarkusQuartzConnectionPoolProvider;
 import io.quarkus.quartz.runtime.QuartzBuildTimeConfig;
 import io.quarkus.quartz.runtime.QuartzExtensionPointConfig;
 import io.quarkus.quartz.runtime.QuartzRecorder;
-import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzSchedulerImpl;
 import io.quarkus.quartz.runtime.QuartzSupport;
 import io.quarkus.quartz.runtime.jdbc.QuarkusDBv8Delegate;
@@ -331,7 +330,7 @@ public class QuartzProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void quartzSupportBean(QuartzRuntimeConfig runtimeConfig, QuartzBuildTimeConfig buildTimeConfig,
+    public void quartzSupportBean(
             QuartzRecorder recorder,
             QuartzJDBCDriverDialectBuildItem driverDialect,
             List<ScheduledBusinessMethodItem> scheduledMethods,
@@ -347,9 +346,7 @@ public class QuartzProcessor {
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(QuartzSupport.class)
                 .scope(Singleton.class) // this should be @ApplicationScoped but it fails for some reason
                 .setRuntimeInit()
-                .supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig, driverDialect.getDriver(),
-                        nonconcurrentMethods))
+                .supplier(recorder.quartzSupportSupplier(driverDialect.getDriver(), nonconcurrentMethods))
                 .done());
     }
-
 }

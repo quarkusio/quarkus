@@ -42,6 +42,7 @@ import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.Hibernat
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.management.HibernateSearchManagementHandler;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.mapping.QuarkusHibernateOrmSearchMappingConfigurer;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.Handler;
@@ -49,10 +50,18 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class HibernateSearchElasticsearchRecorder {
+    private final HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig;
+    private final RuntimeValue<HibernateSearchElasticsearchRuntimeConfig> runtimeConfig;
+
+    public HibernateSearchElasticsearchRecorder(
+            final HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
+            final RuntimeValue<HibernateSearchElasticsearchRuntimeConfig> runtimeConfig) {
+        this.buildTimeConfig = buildTimeConfig;
+        this.runtimeConfig = runtimeConfig;
+    }
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
             HibernateSearchOrmElasticsearchMapperContext mapperContext,
-            HibernateSearchElasticsearchBuildTimeConfig buildTimeConfig,
             Set<String> rootAnnotationMappedClassNames,
             List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
         Set<Class<?>> rootAnnotationMappedClasses = new LinkedHashSet<>();
@@ -76,16 +85,16 @@ public class HibernateSearchElasticsearchRecorder {
 
     public HibernateOrmIntegrationRuntimeInitListener createRuntimeInitListener(
             HibernateSearchOrmElasticsearchMapperContext mapperContext,
-            HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
             List<HibernateOrmIntegrationRuntimeInitListener> integrationRuntimeInitListeners) {
-        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimeConfig.persistenceUnits()
+        HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puConfig = runtimeConfig.getValue()
+                .persistenceUnits()
                 .get(mapperContext.persistenceUnitName);
         return new HibernateSearchIntegrationRuntimeInitListener(mapperContext, puConfig,
                 integrationRuntimeInitListeners);
     }
 
-    public void checkNoExplicitActiveTrue(HibernateSearchElasticsearchRuntimeConfig runtimeConfig) {
-        for (var entry : runtimeConfig.persistenceUnits().entrySet()) {
+    public void checkNoExplicitActiveTrue() {
+        for (var entry : runtimeConfig.getValue().persistenceUnits().entrySet()) {
             var config = entry.getValue();
             if (config.active().orElse(false)) {
                 var puName = entry.getKey();
@@ -109,12 +118,12 @@ public class HibernateSearchElasticsearchRecorder {
         return new HibernateSearchIntegrationRuntimeInitInactiveListener();
     }
 
-    public Supplier<SearchMapping> searchMappingSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
-            String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+    public Supplier<SearchMapping> searchMappingSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
         return new Supplier<SearchMapping>() {
             @Override
             public SearchMapping get() {
                 HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
+                        .getValue()
                         .persistenceUnits().get(persistenceUnitName);
                 if (puRuntimeConfig != null && !puRuntimeConfig.active().orElse(true)) {
                     throw new IllegalStateException(
@@ -133,12 +142,11 @@ public class HibernateSearchElasticsearchRecorder {
         };
     }
 
-    public Supplier<SearchSession> searchSessionSupplier(HibernateSearchElasticsearchRuntimeConfig runtimeConfig,
-            String persistenceUnitName, boolean isDefaultPersistenceUnit) {
+    public Supplier<SearchSession> searchSessionSupplier(String persistenceUnitName, boolean isDefaultPersistenceUnit) {
         return new Supplier<SearchSession>() {
             @Override
             public SearchSession get() {
-                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig
+                HibernateSearchElasticsearchRuntimeConfigPersistenceUnit puRuntimeConfig = runtimeConfig.getValue()
                         .persistenceUnits().get(persistenceUnitName);
                 if (puRuntimeConfig != null && !puRuntimeConfig.active().orElse(true)) {
                     throw new IllegalStateException(

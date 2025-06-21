@@ -46,7 +46,6 @@ import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -253,7 +252,6 @@ class AgroalProcessor {
     @BuildStep
     @Consume(NarayanaInitBuildItem.class)
     void generateDataSourceBeans(AgroalRecorder recorder,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             Capabilities capabilities,
@@ -280,10 +278,7 @@ class AgroalProcessor {
                     .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
                     .startup()
                     .checkActive(recorder.agroalDataSourceCheckActiveSupplier(dataSourceName))
-                    // pass the runtime config into the recorder to ensure that the DataSource related beans
-                    // are created after runtime configuration has been set up
-                    .createWith(recorder.agroalDataSourceSupplier(
-                            dataSourceName, dataSourcesRuntimeConfig, isOtelSdkEnabled(openTelemetrySdkBuildItem)))
+                    .createWith(recorder.agroalDataSourceSupplier(dataSourceName, isOtelSdkEnabled(openTelemetrySdkBuildItem)))
                     .destroyer(BeanDestroyer.AutoCloseableDestroyer.class);
 
             if (!DataSourceUtil.isDefault(dataSourceName)) {

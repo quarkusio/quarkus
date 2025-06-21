@@ -58,7 +58,6 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
-import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
@@ -225,10 +224,9 @@ public final class HibernateReactiveProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     PersistenceProviderSetUpBuildItem setUpPersistenceProviderAndWaitForVertxPool(HibernateReactiveRecorder recorder,
-            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
             BuildProducer<RecorderBeanInitializedBuildItem> orderEnforcer) {
-        recorder.initializePersistenceProvider(hibernateOrmRuntimeConfig,
+        recorder.initializePersistenceProvider(
                 HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
         return new PersistenceProviderSetUpBuildItem();
     }

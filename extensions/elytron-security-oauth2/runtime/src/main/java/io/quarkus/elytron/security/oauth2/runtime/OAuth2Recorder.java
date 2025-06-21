@@ -30,9 +30,16 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 
 @Recorder
 public class OAuth2Recorder {
+    private final RuntimeValue<OAuth2RuntimeConfig> runtimeConfig;
 
-    public RuntimeValue<SecurityRealm> createRealm(OAuth2RuntimeConfig runtimeConfig)
+    public OAuth2Recorder(final RuntimeValue<OAuth2RuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public RuntimeValue<SecurityRealm> createRealm()
             throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, KeyManagementException {
+        OAuth2RuntimeConfig runtimeConfig = this.runtimeConfig.getValue();
+
         if (!runtimeConfig.clientId().isPresent() || !runtimeConfig.clientSecret().isPresent()
                 || !runtimeConfig.introspectionUrl().isPresent()) {
             throw new ConfigurationException(

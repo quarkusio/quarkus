@@ -219,11 +219,10 @@ public final class HibernateOrmProcessor {
     @Record(RUNTIME_INIT)
     @Consume(ServiceStartBuildItem.class)
     @BuildStep(onlyIf = IsDevelopment.class)
-    void warnOfSchemaProblems(HibernateOrmConfig hibernateOrmBuildTimeConfig,
-            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig, HibernateOrmRecorder recorder) {
+    void warnOfSchemaProblems(HibernateOrmRecorder recorder, HibernateOrmConfig hibernateOrmBuildTimeConfig) {
         for (var e : hibernateOrmBuildTimeConfig.persistenceUnits().entrySet()) {
             if (e.getValue().validateInDevMode()) {
-                recorder.doValidation(hibernateOrmRuntimeConfig, e.getKey());
+                recorder.doValidation(e.getKey());
             }
         }
     }
@@ -643,8 +642,8 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void build(HibernateOrmRecorder recorder, HibernateOrmConfig hibernateOrmConfig,
-            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+    public void build(
+            HibernateOrmRecorder recorder,
             BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) throws Exception {
@@ -665,12 +664,13 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public PersistenceProviderSetUpBuildItem setupPersistenceProvider(HibernateOrmRecorder recorder,
-            Capabilities capabilities, HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
+    public PersistenceProviderSetUpBuildItem setupPersistenceProvider(
+            HibernateOrmRecorder recorder,
+            Capabilities capabilities,
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
             BuildProducer<RecorderBeanInitializedBuildItem> orderEnforcer) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            recorder.setupPersistenceProvider(hibernateOrmRuntimeConfig,
+            recorder.setupPersistenceProvider(
                     HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
         }
 

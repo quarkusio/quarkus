@@ -7,8 +7,6 @@ import jakarta.inject.Singleton;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.datasource.runtime.DataSourceRecorder;
 import io.quarkus.datasource.runtime.DataSourceSupport;
-import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -21,12 +19,11 @@ public class DataSourcesExcludedFromHealthChecksProcessor {
     void produceBean(
             Capabilities capabilities,
             DataSourceRecorder recorder,
-            DataSourcesBuildTimeConfig buildTimeConfig, DataSourcesRuntimeConfig runtimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(DataSourceSupport.class)
                 .scope(Singleton.class)
                 .unremovable()
-                .runtimeValue(recorder.createDataSourceSupport(buildTimeConfig, runtimeConfig))
+                .runtimeValue(recorder.createDataSourceSupport())
                 .setRuntimeInit()
                 .done());
     }

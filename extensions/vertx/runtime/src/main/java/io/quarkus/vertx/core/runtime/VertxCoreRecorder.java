@@ -89,13 +89,20 @@ public class VertxCoreRecorder {
      */
     private static volatile ClassLoader currentDevModeNewThreadCreationClassLoader;
 
-    public Supplier<Vertx> configureVertx(VertxConfiguration config, ThreadPoolConfig threadPoolConfig,
-            LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers,
-            ExecutorService executorProxy) {
+    private final RuntimeValue<VertxConfiguration> vertxConfig;
+    private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
+
+    public VertxCoreRecorder(RuntimeValue<VertxConfiguration> vertxConfig, RuntimeValue<ThreadPoolConfig> threadPoolConfig) {
+        this.vertxConfig = vertxConfig;
+        this.threadPoolConfig = threadPoolConfig;
+    }
+
+    public Supplier<Vertx> configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
+            List<Consumer<VertxOptions>> customizers, ExecutorService executorProxy) {
         // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to the io.quarkus.runtime.ExecutorRecorder
         QuarkusExecutorFactory.sharedExecutor = executorProxy;
         if (launchMode != LaunchMode.DEVELOPMENT) {
-            vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
+            vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), customizers, threadPoolConfig.getValue(), shutdown);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks
             shutdown.addLastShutdownTask(new Runnable() {
@@ -108,7 +115,8 @@ public class VertxCoreRecorder {
             });
         } else {
             if (vertx == null) {
-                vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
+                vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), customizers, threadPoolConfig.getValue(),
+                        shutdown);
             } else if (vertx.v != null) {
                 tryCleanTccl();
             }
@@ -544,10 +552,10 @@ public class VertxCoreRecorder {
         };
     }
 
-    public Supplier<Integer> calculateEventLoopThreads(VertxConfiguration conf) {
+    public Supplier<Integer> calculateEventLoopThreads() {
         int threads;
-        if (conf.eventLoopsPoolSize().isPresent()) {
-            threads = conf.eventLoopsPoolSize().getAsInt();
+        if (vertxConfig.getValue().eventLoopsPoolSize().isPresent()) {
+            threads = vertxConfig.getValue().eventLoopsPoolSize().getAsInt();
         } else {
             threads = calculateDefaultIOThreads();
         }

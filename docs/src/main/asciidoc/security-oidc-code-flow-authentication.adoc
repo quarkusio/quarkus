@@ -48,6 +48,8 @@ If you want to protect service applications by using OIDC Bearer token authentic
 
 For information about how to support multiple tenants, see xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy].
 
+If you are a Vert.x OIDC user, learn about migration options in the xref:security-vertx-oidc-to-quarkus-oidc-migration.adoc[Migrate from Vert.x OIDC to Quarkus OIDC] guide.
+
 == Using the authorization code flow mechanism
 
 === Configuring Quarkus to support authorization code flow

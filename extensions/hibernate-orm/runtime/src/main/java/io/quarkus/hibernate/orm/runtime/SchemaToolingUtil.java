@@ -34,7 +34,7 @@ public class SchemaToolingUtil {
                         ZipUtils.unzip(zipFile, unzipDir);
                         try (DirectoryStream<Path> paths = Files.newDirectoryStream(unzipDir)) {
                             for (Path path : paths) {
-                                unzippedFilesNames.add(path.toAbsolutePath().toUri().toString());
+                                unzippedFilesNames.add(path.toAbsolutePath().toString());
                             }
                         }
                     } catch (Exception e) {

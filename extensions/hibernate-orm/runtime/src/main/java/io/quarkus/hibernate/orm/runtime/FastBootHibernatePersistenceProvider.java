@@ -292,7 +292,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
     private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
         String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
                 (String) runtimeSettingsBuilder.get(AvailableSettings.HBM2DDL_IMPORT_FILES));
-        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_IMPORT_FILES, newValue);
+        runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_IMPORT_FILES, null);
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, newValue);
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,

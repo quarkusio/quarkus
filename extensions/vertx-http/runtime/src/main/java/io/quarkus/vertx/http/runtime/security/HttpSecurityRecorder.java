@@ -68,7 +68,7 @@ public class HttpSecurityRecorder {
     public void initializeHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue,
             VertxHttpConfig httpConfig, BeanContainer beanContainer) {
         handlerRuntimeValue.getValue().init(beanContainer.beanInstance(PathMatchingHttpSecurityPolicy.class),
-                RolesMapping.of(httpConfig.auth().rolesMapping()));
+                HttpSecurityConfiguration.get(httpConfig).rolesMapping());
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {
@@ -161,6 +161,11 @@ public class HttpSecurityRecorder {
                 return Map.of();
             }
         };
+    }
+
+    public void prepareHttpSecurityConfiguration(VertxHttpConfig httpConfig) {
+        // this is done so that we prepare and validate HTTP Security config before the first incoming request
+        HttpSecurityConfiguration.get(httpConfig);
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {

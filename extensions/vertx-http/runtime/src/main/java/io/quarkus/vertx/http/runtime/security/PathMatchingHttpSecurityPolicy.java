@@ -18,8 +18,8 @@ public class PathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecu
     PathMatchingHttpSecurityPolicy(
             VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig,
             Instance<HttpSecurityPolicy> installedPolicies) {
-        super(httpConfig.auth().permissions(), httpConfig.auth().rolePolicy(), httpBuildTimeConfig.rootPath(),
-                installedPolicies,
-                ALL);
+        super(HttpSecurityConfiguration.get(httpConfig).httpPermissions(),
+                httpConfig.auth().rolePolicy(), httpBuildTimeConfig.rootPath(),
+                installedPolicies, ALL);
     }
 }

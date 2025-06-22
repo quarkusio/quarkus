@@ -23,6 +23,7 @@ import java.util.Set;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.artifacts.ResolvableDependencies;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
@@ -121,7 +122,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 .addReloadableWorkspaceModule(appArtifact.getKey())
                 .setPlatformImports(platformImports);
 
-        collectDependencies(classpathConfig.getResolvedConfiguration(), workspaceDiscovery,
+        collectDependencies(classpathConfig.getResolvedConfiguration(), classpathConfig.getIncoming(), workspaceDiscovery,
                 project, modelBuilder, appArtifact.getWorkspaceModule().mutable());
         collectExtensionDependencies(project, deploymentConfig, modelBuilder);
         addCompileOnly(project, classpathBuilder, modelBuilder);
@@ -266,14 +267,14 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
     }
 
-    private void collectDependencies(ResolvedConfiguration configuration,
+    private void collectDependencies(ResolvedConfiguration configuration, ResolvableDependencies dependencies,
             boolean workspaceDiscovery, Project project, ApplicationModelBuilder modelBuilder,
             WorkspaceModule.Mutable wsModule) {
 
         final Set<ResolvedArtifact> resolvedArtifacts = configuration.getResolvedArtifacts();
         // if the number of artifacts is less than the number of files then probably
         // the project includes direct file dependencies
-        final Set<File> artifactFiles = resolvedArtifacts.size() < configuration.getFiles().size()
+        final Set<File> artifactFiles = resolvedArtifacts.size() < dependencies.getFiles().getFiles().size()
                 ? new HashSet<>(resolvedArtifacts.size())
                 : null;
 
@@ -287,7 +288,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         if (artifactFiles != null) {
             // detect FS paths that aren't provided by the resolved artifacts
-            for (File f : configuration.getFiles()) {
+            for (File f : dependencies.getFiles().getFiles()) {
                 if (artifactFiles.contains(f) || !f.exists()) {
                     continue;
                 }

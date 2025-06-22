@@ -728,15 +728,17 @@ The value cannot be overridden at runtime.
 If you enable the management interface without customizing the management network interface and port, the metrics are exposed under: `http://0.0.0.0:9000/q/metrics`.
 
 You can configure the path of each exposed format using:
+
 [source, properties]
 ----
-quarkus.micrometer.export.json.enabled=true # Enable json metrics
+quarkus.micrometer.export.json.enabled=true <1>
 quarkus.micrometer.export.json.path=metrics/json
 quarkus.micrometer.export.prometheus.path=metrics/prometheus
 ----
+<1> Enable JSON metrics
 
-With such a configuration, the json metrics will be available from `http://0.0.0.0:9000/q/metrics/json`.
-The prometheus metrics will be available from `http://0.0.0.0:9000/q/metrics/prometheus`.
+With such a configuration, the JSON metrics will be available from `http://0.0.0.0:9000/q/metrics/json`.
+The Prometheus metrics will be available from `http://0.0.0.0:9000/q/metrics/prometheus`.
 
 Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
 

@@ -96,7 +96,7 @@ public class DependencyUtils {
             projectDependency = getProjectExtensionDependencyOrNull(
                     project,
                     componentId.getProjectPath(),
-                    componentId.getBuild().getName());
+                    componentId.getBuild().getBuildPath());
 
             if (projectDependency != null)
                 return projectDependency;
@@ -198,10 +198,10 @@ public class DependencyUtils {
     public static ExtensionDependency<?> getProjectExtensionDependencyOrNull(
             Project project,
             String projectPath,
-            @Nullable String buildName) {
+            @Nullable String buildPath) {
         Project extensionProject = project.getRootProject().findProject(projectPath);
         if (extensionProject == null) {
-            IncludedBuild extProjIncludedBuild = ToolingUtils.includedBuild(project, buildName);
+            IncludedBuild extProjIncludedBuild = ToolingUtils.includedBuild(project, buildPath);
             if (extProjIncludedBuild instanceof IncludedBuildInternal) {
                 extensionProject = ToolingUtils
                         .includedBuildProject((IncludedBuildInternal) extProjIncludedBuild, projectPath);

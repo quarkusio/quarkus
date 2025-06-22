@@ -171,7 +171,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 .setModuleId(
                         WorkspaceModuleId.of(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()))
                 .setModuleDir(project.getProjectDir().toPath())
-                .setBuildDir(project.getBuildDir().toPath())
+                .setBuildDir(project.getLayout().getBuildDirectory().getAsFile().get().toPath())
                 .setBuildFile(project.getBuildFile().toPath());
 
         initProjectModule(project, mainModule, sourceSets.getByName(SourceSet.MAIN_SOURCE_SET_NAME), ArtifactSources.MAIN);

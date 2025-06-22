@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
-import org.gradle.api.DefaultTask;
 import org.gradle.api.artifacts.ArtifactCollection;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
@@ -41,7 +40,6 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
@@ -80,7 +78,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 
 @CacheableTask
-public abstract class QuarkusApplicationModelTask extends DefaultTask {
+public abstract class QuarkusApplicationModelTask extends QuarkusTask {
 
     /* @formatter:off */
     private static final byte COLLECT_TOP_EXTENSION_RUNTIME_NODES = 0b001;
@@ -90,11 +88,25 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
     public static final String QUARKUS_PROJECT_DESCRIPTOR_ARTIFACT_TYPE = "quarkus-project-descriptor";
 
+    private final QuarkusPluginExtensionView extensionView;
+
+    @Inject
+    public QuarkusApplicationModelTask() {
+        super("Generates the Quarkus application model for the current project", true);
+        this.extensionView = getProject().getObjects().newInstance(QuarkusPluginExtensionView.class, extension());
+        getProjectBuildFile().set(getProject().getBuildFile());
+    }
+
     @Internal
     public abstract RegularFileProperty getProjectBuildFile();
 
     @Inject
     public abstract ProjectLayout getLayout();
+
+    @Nested
+    protected QuarkusPluginExtensionView getExtensionView() {
+        return extensionView;
+    }
 
     /**
      * Used just to track original classpath as an input, since resolving quarkus classpath is kinda expensive,
@@ -133,10 +145,6 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
     @OutputFile
     public abstract RegularFileProperty getApplicationModel();
-
-    public QuarkusApplicationModelTask() {
-        getProjectBuildFile().set(getProject().getBuildFile());
-    }
 
     @TaskAction
     public void execute() throws IOException {
@@ -473,9 +481,6 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         @Internal
         public abstract Property<ArtifactCollection> getResolvedArtifactCollection();
 
-        @Input
-        public abstract ListProperty<String> getArtifactNames();
-
         /**
          * TODO: Remove me
          */
@@ -505,12 +510,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         public void configureFrom(Configuration configuration) {
             ResolvableDependencies resolvableDependencies = configuration.getIncoming();
             getRoot().set(resolvableDependencies.getResolutionResult().getRootComponent());
-            ArtifactCollection artifactCollection = resolvableDependencies.getArtifacts();
-            getResolvedArtifactCollection().set(artifactCollection);
-            List<String> artifactNames = artifactCollection.getArtifactFiles().getFiles().stream()
-                    .map(File::getName)
-                    .collect(Collectors.toList());
-            getArtifactNames().set(artifactNames);
+            getResolvedArtifactCollection().set(resolvableDependencies.getArtifacts());
             // TODO: Remove me, since we don't apply workspace plugin anymore, so there are no project descriptors
             getProjectDescriptors().setFrom(configuration.getIncoming().artifactView(viewConfiguration -> {
                 // Project descriptors make sense only for projects

@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,8 +19,21 @@ import io.quarkus.runtime.graal.GraalVM.Distribution;
 
 public class GraalVMTest {
 
+    public static final String GRAALVM_VENDOR_VERSION_PROP = "org.graalvm.vendorversion";
+
+    @AfterAll
+    public static void tearDownAfterAll() {
+        System.clearProperty(GRAALVM_VENDOR_VERSION_PROP);
+    }
+
     @Test
     public void testGraalVMVersionDetected() {
+        // Version detection after JDK 25 which no longer uses a GraalVM version mapping,
+        // but uses the JDK version instead
+        assertVersion(new Version("GraalVM 26.0.0", "26.0.0", GRAALVM), GRAALVM,
+                Version.of(Stream.of(("native-image 26 2026-03-17\n"
+                        + "GraalVM Runtime Environment GraalVM CE 26-dev+1.1 (build 26+1-jvmci-b01)\n"
+                        + "Substrate VM GraalVM CE 26-dev+1.1 (build 26+1, serial gc)").split("\\n"))));
         // Version detection after: https://github.com/oracle/graal/pull/6302 (3 lines of version output)
         assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
@@ -169,6 +183,19 @@ public class GraalVMTest {
     }
 
     @Test
+    public void testGraalVM26CommunityVersionParser() {
+        final Version version = Version.of(Stream.of(("native-image 26 2026-03-17\n"
+                + "GraalVM Runtime Environment GraalVM CE 26-dev+1.1 (build 26+1-jvmci-b01)\n"
+                + "Substrate VM GraalVM CE 26-dev+1.1 (build 26+1, serial gc)").split("\\n")));
+        assertThat(version.toString().contains(GRAALVM.name()));
+        assertThat(version.getVersionAsString()).isEqualTo("26.0.0-dev");
+        assertThat(version.javaVersion.toString()).isEqualTo("26+1-jvmci-b01");
+        assertThat(version.javaVersion.feature()).isEqualTo(26);
+        assertThat(version.javaVersion.interim()).isEqualTo(0);
+        assertThat(version.javaVersion.update()).isEqualTo(0);
+    }
+
+    @Test
     public void testGraalVMVersionsOlderThan() {
         assertOlderThan("native-image 21 2023-09-19\n" +
                 "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n" +
@@ -182,6 +209,40 @@ public class GraalVMTest {
                 "native-image 21 2023-09-19\n" +
                         "GraalVM Runtime Environment GraalVM CE 21+35.1 (build 21+35-jvmci-23.1-b15)\n" +
                         "Substrate VM GraalVM CE 21+35.1 (build 21+35, serial gc)\n");
+    }
+
+    /*
+     * Exercise the code path used at native-image build time where the org.graalvm.vendorversion
+     * property is being fed to the GraalVM version parsing machinery.
+     */
+    @ParameterizedTest
+    // @formatter:off
+    @ValueSource(strings = {
+    // GraalVM CE/Community
+    "GraalVM CE 26-dev+1.1 |26.0|26|0",
+    "GraalVM CE 25-dev+26.1|25.0|25|0",
+    "GraalVM CE 24.0.1+9.1 |24.2|24|1",
+    // Mandrel
+    "Mandrel-24.2.1.0-Final|24.2|24|1",
+    "Mandrel-23.1.7.0-1b2  |23.1|21|7",
+    // Liberica-NIK
+    "Liberica-NIK-23.1.7-1 |23.1|21|7",
+    "Liberica-NIK-24.2.1-1 |24.2|24|1",
+    })
+    // @formatter:on
+    public void testGraalVMRuntimeVersion(String param) {
+        String tokens[] = param.split("\\|", 4);
+        Assertions.assertTrue(tokens.length == 4);
+        String propertyVal = tokens[0].trim();
+        String expectedMajorMinor = tokens[1].trim();
+        int expectedJDKFeature = Integer.parseInt(tokens[2].trim());
+        int expectedJDKUpdate = Integer.parseInt(tokens[3].trim());
+
+        System.setProperty(GRAALVM_VENDOR_VERSION_PROP, propertyVal);
+        io.quarkus.runtime.graal.GraalVM.Version v = io.quarkus.runtime.graal.GraalVM.Version.getCurrent();
+        Assertions.assertEquals(expectedMajorMinor, v.getMajorMinorAsString());
+        Assertions.assertEquals(expectedJDKFeature, v.javaVersion.feature());
+        Assertions.assertEquals(expectedJDKUpdate, v.javaVersion.update());
     }
 
     /**

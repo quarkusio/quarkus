@@ -28,7 +28,6 @@ public final class GraalVM {
         private static final String OPT = "(?:-(?<OPT>[-a-zA-Z0-9.]+))?";
         private static final String VSTR_FORMAT = VNUM + PRE + BUILD + OPT;
 
-        private static final String VNUM_GROUP = "VNUM";
         private static final String VENDOR_VERSION_GROUP = "VENDOR";
         private static final String BUILD_INFO_GROUP = "BUILDINFO";
 
@@ -67,7 +66,7 @@ public final class GraalVM {
 
                 String vendorVersion = secondMatcher.group(VENDOR_VERSION_GROUP);
 
-                String graalVersion = graalVersion(javaVersion, v.feature());
+                String graalVersion = graalVersion(javaVersion, v);
                 if (vendorVersion.contains("-dev")) {
                     graalVersion = graalVersion + "-dev";
                 }
@@ -137,7 +136,7 @@ public final class GraalVM {
             return null;
         }
 
-        private static String graalVersion(String buildInfo, int jdkFeature) {
+        private static String graalVersion(String buildInfo, Runtime.Version v) {
             if (buildInfo == null) {
                 return null;
             }
@@ -152,7 +151,10 @@ public final class GraalVM {
             if (versMatcher.find()) {
                 return matchVersion(version);
             } else {
-                return Version.GRAAL_MAPPING.get(Integer.toString(jdkFeature));
+                // Only versions from JDK 22 to JDK 25 had GraalVM version mappings.
+                // Use the JDK version triplet for JDK N where N > 25.
+                String fullJDKVersion = String.format("%d.%d.%d", v.feature(), v.interim(), v.update());
+                return Version.GRAAL_MAPPING.getOrDefault(Integer.toString(v.feature()), fullJDKVersion);
             }
         }
 

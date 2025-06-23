@@ -315,6 +315,8 @@ As above, the question whether this option should be propagated to the transitiv
 
 4. Opt in or out at class level
 
+NOTE: Options 3 and 4 are already supported by GraalVM. Quarkus is already using them for allowing packages and classes to be initialized at run time. 
+
 == Decision
 
 TBD

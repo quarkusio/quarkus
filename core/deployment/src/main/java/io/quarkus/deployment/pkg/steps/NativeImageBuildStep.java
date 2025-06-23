@@ -875,7 +875,9 @@ public class NativeImageBuildStep {
                  * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions
                  * @formatter:on
                  */
-                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_2_0) == 0 && AMD64.active) {
+                if (graalVMVersion.compareTo(GraalVM.Version.VERSION_24_2_0) >= 0
+                        && graalVMVersion.compareTo(GraalVM.Version.VERSION_25_0_0) < 0
+                        && AMD64.active) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
                 }
 

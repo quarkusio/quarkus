@@ -24,6 +24,26 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
         this.deferredIdentity = null;
     }
 
+    /**
+     * This method shouldn't be treated as part of public API, it can be removed at any time.
+     * It's meant to be used internally by Quarkus Security.
+     */
+    public void setIdentityIfAbsent(SecurityIdentity identity) {
+        if (this.identity == null && this.deferredIdentity == null) {
+            setIdentity(identity);
+        }
+    }
+
+    /**
+     * This method shouldn't be treated as part of public API, it can be removed at any time.
+     * It's meant to be used internally by Quarkus Security.
+     */
+    public void setIdentityIfAbsent(Uni<SecurityIdentity> identity) {
+        if (this.identity == null && this.deferredIdentity == null) {
+            setIdentity(identity);
+        }
+    }
+
     @Override
     public void setIdentity(Uni<SecurityIdentity> identity) {
         this.identity = null;

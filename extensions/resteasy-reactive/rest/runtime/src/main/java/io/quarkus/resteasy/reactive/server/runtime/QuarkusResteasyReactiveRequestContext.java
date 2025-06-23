@@ -14,6 +14,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.AbstractSecurityIdentityAssociation;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.smallrye.common.vertx.VertxContext;
@@ -37,14 +38,27 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
 
     protected void handleRequestScopeActivation() {
         super.handleRequestScopeActivation();
-        if (!userSetup && association != null) {
-            userSetup = true;
+        if (association != null) {
             QuarkusHttpUser existing = (QuarkusHttpUser) context.user();
             if (existing != null) {
                 SecurityIdentity identity = existing.getSecurityIdentity();
-                association.setIdentity(identity);
+                if (userSetup) {
+                    if (association instanceof AbstractSecurityIdentityAssociation abstractAssociation) {
+                        abstractAssociation.setIdentityIfAbsent(identity);
+                    }
+                } else {
+                    userSetup = true;
+                    association.setIdentity(identity);
+                }
             } else {
-                association.setIdentity(QuarkusHttpUser.getSecurityIdentity(context, null));
+                if (userSetup) {
+                    if (association instanceof AbstractSecurityIdentityAssociation abstractAssociation) {
+                        abstractAssociation.setIdentityIfAbsent(QuarkusHttpUser.getSecurityIdentity(context, null));
+                    }
+                } else {
+                    userSetup = true;
+                    association.setIdentity(QuarkusHttpUser.getSecurityIdentity(context, null));
+                }
             }
         }
     }

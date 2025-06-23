@@ -30,7 +30,6 @@ import com.dajudge.kindcontainer.K3sContainer;
 import com.dajudge.kindcontainer.K3sContainerVersion;
 import com.dajudge.kindcontainer.KindContainer;
 import com.dajudge.kindcontainer.KindContainerVersion;
-import com.dajudge.kindcontainer.KubernetesContainer;
 import com.dajudge.kindcontainer.KubernetesVersionEnum;
 import com.dajudge.kindcontainer.client.KubeConfigUtils;
 import com.dajudge.kindcontainer.client.config.Cluster;
@@ -77,7 +76,6 @@ public class DevServicesKubernetesProcessor {
     private static final String KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG = "quarkus.kubernetes-client.devservices.override-kubeconfig";
     private static final Logger log = Logger.getLogger(DevServicesKubernetesProcessor.class);
     private static final String KUBERNETES_CLIENT_MASTER_URL = "quarkus.kubernetes-client.api-server-url";
-    private static final String KUBERNETES_CLIENT_DEVSERVICES_FLAVOR = "quarkus.kubernetes-client.devservices.flavor";
     private static final String DEFAULT_MASTER_URL_ENDING_WITH_SLASH = Config.DEFAULT_MASTER_URL + "/";
 
     static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kubernetes";
@@ -88,6 +86,7 @@ public class DevServicesKubernetesProcessor {
     static volatile KubernetesDevServiceCfg cfg;
     static volatile boolean first = true;
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     @BuildStep
     public DevServicesResultBuildItem setupKubernetesDevService(
             DockerStatusBuildItem dockerStatusBuildItem,
@@ -172,7 +171,7 @@ public class DevServicesKubernetesProcessor {
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "OptionalUsedAsFieldOrParameterType" })
     private RunningDevService startKubernetes(DockerStatusBuildItem dockerStatusBuildItem,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             KubernetesDevServiceCfg config,
@@ -187,29 +186,27 @@ public class DevServicesKubernetesProcessor {
 
         // Check if kubernetes-client.api-server-url is set
         if (ConfigUtils.isPropertyNonEmpty(KUBERNETES_CLIENT_MASTER_URL)) {
-            log.debug("Not starting Dev Services for Kubernetes, the " + KUBERNETES_CLIENT_MASTER_URL + " is configured.");
+            log.debug("Not starting Dev Services for Kubernetes as the client has been explicitly configured via "
+                    + KUBERNETES_CLIENT_MASTER_URL);
             return null;
         }
 
-        // Check if we should create a kind test container and launch it
-        // based on the Dev services config or the KubernetesRequest of the producer
-        boolean shouldStart = config.overrideKubeconfig
-                || devServiceKubeRequest.isPresent();
-
+        // If we have an explicit request coming from extensions, start even if there's a non-explicitly overridden kube config
+        final boolean shouldStart = config.overrideKubeconfig || devServiceKubeRequest.isPresent();
         if (!shouldStart) {
             var autoConfigMasterUrl = Config.autoConfigure(null).getMasterUrl();
             if (!DEFAULT_MASTER_URL_ENDING_WITH_SLASH.equals(autoConfigMasterUrl)) {
                 log.debug(
-                        "Not starting Dev Services for Kubernetes, the Kubernetes client is auto-configured. Set "
+                        "Not starting Dev Services for Kubernetes as a kube config file has been found. Set "
                                 + KUBERNETES_CLIENT_DEVSERVICES_OVERRIDE_KUBECONFIG
-                                + " to true to use Dev Services for Kubernetes.");
+                                + " to true to disregard the config and start Dev Services for Kubernetes.");
                 return null;
             }
         }
 
         if (!dockerStatusBuildItem.isContainerRuntimeAvailable()) {
             log.warn(
-                    "Docker isn't working, please configure the Kubernetes client.");
+                    "A running container runtime is required for Dev Services to work. Please check if your container runtime is running.");
             return null;
         }
 
@@ -221,35 +218,26 @@ public class DevServicesKubernetesProcessor {
                         KUBERNETES_PORT, launchMode.getLaunchMode(), useSharedNetwork));
 
         final Supplier<RunningDevService> defaultKubernetesClusterSupplier = () -> {
-            KubernetesContainer container;
-
             Flavor clusterType = config.flavor
                     .or(() -> devServiceKubeRequest
                             .map(KubernetesDevServiceRequestBuildItem::getFlavor)
                             .map(Flavor::valueOf))
                     .orElse(api_only);
 
-            switch (clusterType) {
-                case api_only:
-                    container = new ApiServerContainer(
-                            config.apiVersion
-                                    .map(version -> findOrElseThrow(clusterType, version, ApiServerContainerVersion.class))
-                                    .orElseGet(() -> latest(ApiServerContainerVersion.class)));
-                    break;
-                case k3s:
-                    container = new K3sContainer(
-                            config.apiVersion.map(version -> findOrElseThrow(clusterType, version, K3sContainerVersion.class))
-                                    .orElseGet(() -> latest(K3sContainerVersion.class)));
-                    break;
-                case kind:
-                    container = new KindContainer(
-                            config.apiVersion
-                                    .map(version -> findOrElseThrow(clusterType, version, KindContainerVersion.class))
-                                    .orElseGet(() -> latest(KindContainerVersion.class)));
-                    break;
-                default:
-                    throw new RuntimeException(KUBERNETES_CLIENT_DEVSERVICES_FLAVOR + " must be a valid Flavor enum value.");
-            }
+            @SuppressWarnings("rawtypes")
+            final var container = switch (clusterType) {
+                case api_only -> new ApiServerContainer(
+                        config.apiVersion
+                                .map(version -> findOrElseThrow(clusterType, version, ApiServerContainerVersion.class))
+                                .orElseGet(() -> latest(ApiServerContainerVersion.class)));
+                case k3s -> new K3sContainer(
+                        config.apiVersion.map(version -> findOrElseThrow(clusterType, version, K3sContainerVersion.class))
+                                .orElseGet(() -> latest(K3sContainerVersion.class)));
+                case kind -> new KindContainer(
+                        config.apiVersion
+                                .map(version -> findOrElseThrow(clusterType, version, KindContainerVersion.class))
+                                .orElseGet(() -> latest(KindContainerVersion.class)));
+            };
 
             if (useSharedNetwork) {
                 ConfigureUtil.configureSharedNetwork(container, "quarkus-kubernetes-client");
@@ -323,6 +311,7 @@ public class DevServicesKubernetesProcessor {
         return new KubernetesDevServiceCfg(devServicesConfig);
     }
 
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
     private static final class KubernetesDevServiceCfg {
 
         public boolean devServicesEnabled;
@@ -352,9 +341,8 @@ public class DevServicesKubernetesProcessor {
         public boolean equals(Object obj) {
             if (this == obj)
                 return true;
-            if (!(obj instanceof KubernetesDevServiceCfg))
+            if (!(obj instanceof KubernetesDevServiceCfg other))
                 return false;
-            KubernetesDevServiceCfg other = (KubernetesDevServiceCfg) obj;
             return devServicesEnabled == other.devServicesEnabled && flavor == other.flavor
                     && Objects.equals(apiVersion, other.apiVersion) && overrideKubeconfig == other.overrideKubeconfig
                     && shared == other.shared && Objects.equals(serviceName, other.serviceName)

@@ -5,7 +5,7 @@ import io.quarkus.deployment.IsContainerRuntimeWorking;
 
 public abstract class ContainerRuntimeStatusBuildItem extends SimpleBuildItem {
     private final IsContainerRuntimeWorking isContainerRuntimeWorking;
-    private Boolean cachedStatus;
+    private volatile Boolean cachedStatus;
 
     protected ContainerRuntimeStatusBuildItem(IsContainerRuntimeWorking isContainerRuntimeWorking) {
         this.isContainerRuntimeWorking = isContainerRuntimeWorking;

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 
@@ -95,6 +96,11 @@ public final class EffectiveConfig {
 
     public Map<String, String> getValues() {
         return values;
+    }
+
+    public Map<String, String> getOnlyQuarkusValues() {
+        return values.entrySet().stream().filter(e -> e.getKey().startsWith("quarkus."))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private Map<String, String> asStringMap(Map<String, ?> map) {

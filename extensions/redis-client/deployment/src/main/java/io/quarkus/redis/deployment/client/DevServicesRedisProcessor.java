@@ -1,8 +1,6 @@
 package io.quarkus.redis.deployment.client;
 
-import static io.quarkus.devservices.common.ContainerLocator.MANAGED_DEV_SERVICE_LABEL;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
-import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
 import java.util.HashMap;
@@ -32,7 +30,6 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
-import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
 import io.quarkus.redis.deployment.client.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -51,7 +48,6 @@ public class DevServicesRedisProcessor {
      * This allows other applications to discover the running service and use it instead of starting a new instance.
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
-    private static final String LAUNCH_MODE_LABEL = "quarkus-launch-mode";
 
     private static final ContainerLocator redisContainerLocator = locateContainerWithLabels(REDIS_EXPOSED_PORT,
             DEV_SERVICE_LABEL);
@@ -197,13 +193,7 @@ public class DevServicesRedisProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
 
-            if (serviceName != null) {
-                withLabel(DEV_SERVICE_LABEL, serviceName);
-                withLabel(QUARKUS_DEV_SERVICE, serviceName);
-            }
-            withLabel(MANAGED_DEV_SERVICE_LABEL, RunningDevServicesRegistry.APPLICATION_UUID);
-            withLabel(LAUNCH_MODE_LABEL, launchMode.toString());
-
+            ConfigureUtil.configureLabels(this, launchMode, DEV_SERVICE_LABEL, serviceName);
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redis");
         }
 

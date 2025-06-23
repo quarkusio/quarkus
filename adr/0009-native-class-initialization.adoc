@@ -13,9 +13,9 @@ This complicates the development process and discourages developers from using Q
 Quarkus applications may depend at run time on:
 
 * Quarkus core and core extensions, which are distributed under the `io.quarkus` group ID.
-* Quarkiverse extensions, which may or ma not be distributed under the `io.quarkiverse` group ID.
+* Quarkiverse extensions, which may be distributed under the `io.quarkiverse` or another group ID.
 * User provided extensions not listed above
-* Third-party libraries not handled by Quarkus
+* Third-party libraries
 
 The goal of this ADR is to define:
 1. which of the above should be initialized at build time and which should be initialized at run time by default in native mode.
@@ -82,7 +82,7 @@ class QA,arc,core,Camel,R1,R2,R3,R4,R5,UserExtension,UserExtensionBT,RestAssured
 
 *Cons*:
 
-- It requires developers to deal with issues that arise from build time initialize and are often non-trivial.
+- It requires developers to deal with issues that arise from build time initialization that are often non-trivial.
 - There is no easy way to exclude specific dependencies and possibly their transitive dependencies as well from build time initialization.
 
 === Initialize all classes at runtime
@@ -134,7 +134,7 @@ The more classes we initialize at build time, the more we can take advantage of 
 ==== Proposal 1: Initialize Quarkus core and all extensions along with their transitive dependencies at build time
 
 In this scenario Quarkus core and all Quarkus extensions, including Quarkiverse extensions as well as user provided extensions along with their transitive closure of dependencies, are initialized at build time.
-This scenario reduces the entry barrier for most Quarkus users, as creating a custom Quarkus extensions is considered an advanced use case.
+This scenario reduces the entry barrier for most Quarkus users, as creating custom Quarkus extensions is considered an advanced use case.
 Advanced users creating custom extensions are expected to be able to configure their extensions to initialize classes at build time or run time as needed.
 
 [source, mermaid]
@@ -173,7 +173,7 @@ class QA,arc,core,BT,Camel,R1,R2,R3,R4,UserExtension,UserExtensionBT,jboss build
 
 ==== Proposal 2: Initialize Quarkus core and a vetted list of Quarkus extensions along with their transitive dependencies at build time
 
-In this scenario, Quarkus core and core extensions, as well as a vetted list of extensions along with the transitive closure of their dependencies, are initialized at build time, while user provided extensions and third-party libraries not handled by Quarkus are initialized at runtime.
+In this scenario, Quarkus core and core extensions, as well as a vetted list of extensions along with the transitive closure of their dependencies, are initialized at build time, while user provided extensions and third-party libraries are initialized at runtime.
 
 [source, mermaid]
 ....
@@ -207,7 +207,7 @@ class QA,arc,core,BT,Camel,R1,R2,R4,UserExtensionBT,jboss buildtime
 
 *Cons*:
 
-- Maintaining a vetted list of extensions might be cumbersome in the long run.
+- Maintaining a vetted list of extensions will be cumbersome in the long run.
 
 ==== Proposal 3: Initialize a vetted list of packages at build time
 

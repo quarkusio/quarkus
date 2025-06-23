@@ -25,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1610,9 +1609,13 @@ public class DevMojo extends AbstractMojo {
             jvmArgs = buf.toString();
         }
         if (jvmArgs != null) {
-            builder.jvmArgs(Arrays.asList(CommandLineUtils.translateCommandline(jvmArgs)));
+            final String[] arr = CommandLineUtils.translateCommandline(jvmArgs);
+            final List<String> list = new ArrayList<>(arr.length);
+            for (var s : arr) {
+                list.add(s.trim());
+            }
+            builder.jvmArgs(list);
         }
-
     }
 
     private void copySurefireVariables() {

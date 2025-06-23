@@ -11,9 +11,9 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.devservices.it.profiles.DevServiceRedis;
-import io.quarkus.redis.devservices.it.utils.SocketKit;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.ports.SocketKit;
 
 @QuarkusTest
 @TestProfile(DevServiceRedis.class)

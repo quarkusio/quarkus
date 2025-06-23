@@ -358,7 +358,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             final DevModeCommandLine runner = newLauncher(analyticsService);
             String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
             if (outputFile == null) {
-                getProject().getProviders().exec(action -> {
+                getProject().exec(action -> {
                     action.commandLine(runner.getArguments()).workingDir(getWorkingDirectory().get());
                     action.environment(getEnvVars());
                     action.setStandardInput(System.in)

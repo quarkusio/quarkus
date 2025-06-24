@@ -36,6 +36,11 @@
             <groupId>io.mvnpm</groupId>
             <artifactId>importmap</artifactId>
         </dependency>
+        <!-- importmap requires jackson-databind but for some reason it's a provided dependency -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
 
         <!-- Tests -->
         <dependency>

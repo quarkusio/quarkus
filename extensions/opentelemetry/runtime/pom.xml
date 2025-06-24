@@ -166,6 +166,10 @@
                     <groupId>com.squareup.okhttp3</groupId>
                     <artifactId>okhttp</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.opentelemetry</groupId>
+                    <artifactId>opentelemetry-exporter-sender-okhttp</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>

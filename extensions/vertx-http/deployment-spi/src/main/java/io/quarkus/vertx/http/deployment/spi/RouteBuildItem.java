@@ -81,7 +81,7 @@ public final class RouteBuildItem extends MultiBuildItem {
 
     private final Handler<RoutingContext> handler;
 
-    private final HandlerType typeOfHandler = HandlerType.NORMAL;
+    private final HandlerType typeOfHandler;
 
     private final boolean displayOnNotFoundPage;
     private final String notFoundPageTitle;
@@ -98,6 +98,7 @@ public final class RouteBuildItem extends MultiBuildItem {
             String routeConfigKey, OptionalInt order) {
         this.order = order;
         this.typeOfRoute = typeOfRoute;
+        this.typeOfHandler = HandlerType.NORMAL;
         this.path = path;
         this.handler = handler;
         this.displayOnNotFoundPage = displayOnNotFoundPage;
@@ -111,6 +112,7 @@ public final class RouteBuildItem extends MultiBuildItem {
     private RouteBuildItem(Builder builder) {
         this.order = builder.order;
         this.typeOfRoute = builder.typeOfRoute;
+        this.typeOfHandler = builder.typeOfHandler;
         this.path = builder.path;
         this.handler = builder.handler;
         this.displayOnNotFoundPage = builder.displayOnNotFoundPage;

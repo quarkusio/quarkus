@@ -538,6 +538,13 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             clientBuilder.http2(true);
         }
 
+        if (getConfiguration().hasProperty(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH)) {
+            clientBuilder.http2UpgradeMaxContentLength(
+                    (int) getConfiguration().getProperty(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH));
+        } else if (restClients.http2UpgradeMaxContentLength().isPresent()) {
+            clientBuilder.http2UpgradeMaxContentLength((int) restClients.http2UpgradeMaxContentLength().get().asLongValue());
+        }
+
         if (getConfiguration().hasProperty(QuarkusRestClientProperties.ALPN)) {
             clientBuilder.alpn((Boolean) getConfiguration().getProperty(QuarkusRestClientProperties.ALPN));
         } else if (restClients.alpn().isPresent()) {

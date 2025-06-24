@@ -89,6 +89,7 @@ public final class RouteBuildItem extends MultiBuildItem {
     private final String routeConfigKey;
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    @Deprecated(since = "3.25", forRemoval = true)
     public RouteBuildItem(RouteType typeOfRoute, String path, Consumer<Route> customizer,
             boolean isManagement,
             Handler<RoutingContext> handler,
@@ -104,6 +105,19 @@ public final class RouteBuildItem extends MultiBuildItem {
         this.routeConfigKey = routeConfigKey;
         this.customizer = customizer;
         this.isManagement = isManagement;
+    }
+
+    @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
+    private RouteBuildItem(Builder builder) {
+        this.order = builder.order;
+        this.typeOfRoute = builder.typeOfRoute;
+        this.path = builder.path;
+        this.handler = builder.handler;
+        this.displayOnNotFoundPage = builder.displayOnNotFoundPage;
+        this.notFoundPageTitle = builder.notFoundPageTitle;
+        this.routeConfigKey = builder.routeConfigKey;
+        this.customizer = builder.customizer;
+        this.isManagement = builder.isManagement;
     }
 
     public RouteType getTypeOfRoute() {
@@ -391,9 +405,7 @@ public final class RouteBuildItem extends MultiBuildItem {
                 throw new IllegalArgumentException("The route handler must be set");
             }
 
-            return new RouteBuildItem(typeOfRoute, path, customizer, isManagement, handler, displayOnNotFoundPage,
-                    notFoundPageTitle,
-                    routeConfigKey, order);
+            return new RouteBuildItem(this);
         }
     }
 

@@ -12,7 +12,12 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -45,6 +50,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
 import io.smallrye.mutiny.tuples.Functions;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -212,10 +218,25 @@ public class HttpSecurityRecorder {
                 proceed(throwable);
             } else if (throwable instanceof AuthenticationRedirectException redirectEx) {
                 event.response().setStatusCode(redirectEx.getCode());
-                event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
                 event.response().headers().set(HttpHeaders.CACHE_CONTROL, "no-store");
                 event.response().headers().set("Pragma", "no-cache");
-                proceed(throwable);
+
+                if (redirectEx.getCode() == 200) {
+                    // The target URL is embedded in the auto-submitted form post payload
+                    log.debugf("Form post redirect to %s", redirectEx.getRedirectUri());
+                    event.response().putHeader("Content-Type", "text/html; charset=UTF-8");
+                    event.response().write(redirectEx.getRedirectUri()).onComplete(
+                            new Handler<AsyncResult<Void>>() {
+                                @Override
+                                public void handle(AsyncResult<Void> v) {
+                                    proceed(redirectEx);
+                                }
+                            });
+                } else {
+                    log.debugf("Redirect to %s ", redirectEx.getRedirectUri());
+                    event.response().headers().set(HttpHeaders.LOCATION, redirectEx.getRedirectUri());
+                    proceed(throwable);
+                }
             } else {
                 event.put(OTHER_AUTHENTICATION_FAILURE, Boolean.TRUE);
                 event.fail(throwable);

@@ -10,7 +10,7 @@ public interface KubernetesDevServicesBuildTimeConfig {
 
     /**
      * If Dev Services for Kubernetes should be used. (default to true)
-     *
+     * <p>
      * If this is true and kubernetes client is not configured then a kubernetes cluster
      * will be started and will be used.
      */
@@ -19,15 +19,16 @@ public interface KubernetesDevServicesBuildTimeConfig {
 
     /**
      * The kubernetes api server version to use.
-     *
-     * If not set, Dev Services for Kubernetes will use the latest supported version of the given flavor.
-     * see https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json
+     * <p>
+     * If not set, Dev Services for Kubernetes will use the
+     * <a href="https://github.com/dajudge/kindcontainer/blob/master/k8s-versions.json">latest supported version</a> of the
+     * given flavor.
      */
     Optional<String> apiVersion();
 
     /**
      * The flavor to use (kind, k3s or api-only).
-     *
+     * <p>
      * If not set, Dev Services for Kubernetes will set it to: api-only.
      */
     Optional<Flavor> flavor();
@@ -74,16 +75,16 @@ public interface KubernetesDevServicesBuildTimeConfig {
 
     enum Flavor {
         /**
-         * kind (needs priviledge docker)
+         * kind (needs privileged docker)
          */
         kind,
         /**
-         * k3s (needs priviledge docker)
+         * k3s (needs privileged docker)
          */
         k3s,
         /**
          * api only
          */
-        api_only;
+        api_only
     }
 }

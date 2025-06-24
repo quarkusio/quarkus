@@ -87,7 +87,6 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         .mainMenuBarButtons {
             display: flex; 
             align-items: center; 
-            width: 100%;
         }
 
         .mainMenuBarTitle {
@@ -95,13 +94,14 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             color: var(--lumo-contrast-50pct);
             user-select: none;
             cursor: pointer;
+            width: 100%;
+            text-align: center;
         }
 
         .mainMenuBarActions {
             display: flex; 
             align-items: center; 
             gap: 0.5rem;
-            width: 100%;
             justify-content: end;
             padding-right: 10px;
         }
@@ -325,7 +325,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     _renderActionResult(){
         if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "raw"){
-            return html`<div class="actionResult">${this._actionResult.content}${this._renderAssistantWarning()}</div>`;
+            return html`<div class="actionResult">${this._actionResult.content}</div>${this._renderAssistantWarning()}`;
         }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "code"){
             // TODO: We can not assume the mode is the same as the input
             // Maybe return name|content ?
@@ -360,7 +360,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     _renderActions(){
         if(this._filteredActions){
             if(this._showActionProgress){
-                return html`<vaadin-progress-bar indeterminate></vaadin-progress-bar>`;
+                return html`<vaadin-progress-bar style="width:400px;" indeterminate></vaadin-progress-bar>`;
             }else{
                 return html`<div class="actions">
                             <vaadin-menu-bar .items="${this._filteredActions}" theme="dropdown-indicators tertiary" @item-selected="${(e) => this._actionSelected(e)}"></vaadin-menu-bar>
@@ -479,6 +479,21 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                                     content:newWorkspaceItemValue,
                                     type:this._selectedWorkspaceItem.type}).then(jsonRpcResponse => { 
             
+            if (!('content' in jsonRpcResponse.result.result) || !('name' in jsonRpcResponse.result.result)) {
+                const firstEntry = Object.entries(jsonRpcResponse.result.result).find(
+                    ([key]) => key !== 'path' && key !== 'name'
+                );
+                if (firstEntry) {
+                    const [key, value] = firstEntry;
+                    if (!('content' in jsonRpcResponse.result.result)) {
+                        jsonRpcResponse.result.result.content = value;
+                    }
+                    if (!('name' in jsonRpcResponse.result.result)) {
+                        jsonRpcResponse.result.result.name = key;
+                    }
+                }
+            }
+            
             if(e.detail.value.display === "notification"){
                 notifier.showInfoMessage(jsonRpcResponse.result.result);
             }else if(e.detail.value.display === "replace"){
@@ -489,7 +504,11 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                 this._selectedWorkspaceItem.isAssistant = jsonRpcResponse.result?.isAssistant ?? false;
             }else if(e.detail.value.display !== "nothing"){
                 this._actionResult = jsonRpcResponse.result.result;
-                this._actionResult.name = this._actionResult.path;
+                if(jsonRpcResponse.result.result.name){
+                    this._actionResult.name = jsonRpcResponse.result.result.name;
+                }else{
+                    this._actionResult.name = this._actionResult.path;
+                }
                 this._actionResult.path = jsonRpcResponse.result.path;
                 this._actionResult.display = e.detail.value.display;
                 this._actionResult.isAssistant = jsonRpcResponse.result?.isAssistant ?? false;

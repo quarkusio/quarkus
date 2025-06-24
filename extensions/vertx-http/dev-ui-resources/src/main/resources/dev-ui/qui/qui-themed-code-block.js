@@ -41,7 +41,11 @@ class QuiThemedCodeBlock extends observeState(LitElement) {
     }
 
     _onValueChanged(e) {
+        e.stopPropagation();
         // re-dispatch event so parent can listen on <qui-themed-code-block>
+        if (this.value !== e.detail.value) {
+            this.value = e.detail.value;
+        }
         this.dispatchEvent(new CustomEvent('value-changed', {
             detail: e.detail,
             bubbles: true,

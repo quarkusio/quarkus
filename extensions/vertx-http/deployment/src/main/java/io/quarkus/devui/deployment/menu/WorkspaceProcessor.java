@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -47,7 +47,7 @@ import io.quarkus.devui.spi.workspace.WorkspaceBuildItem;
 /**
  * This creates the workspace Page
  */
-@BuildSteps(onlyIf = IsDevelopment.class)
+@BuildSteps(onlyIf = IsLocalDevelopment.class)
 public class WorkspaceProcessor {
 
     @BuildStep
@@ -62,7 +62,6 @@ public class WorkspaceProcessor {
 
         Path outputDir = buildSystemTarget.getOutputDirectory();
         Path projectRoot = outputDir.getParent();
-
         if (projectRoot != null && Files.exists(projectRoot)) {
 
             List<WorkspaceBuildItem.WorkspaceItem> workspaceItems = new ArrayList<>();
@@ -87,7 +86,7 @@ public class WorkspaceProcessor {
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         String fileName = file.getFileName().toString();
                         boolean shouldIgnore = Files.isHidden(file)
-                                || file.startsWith(outputDir) || !Files.isReadable(file) || !Files.isExecutable(file)
+                                || file.startsWith(outputDir) || !Files.isReadable(file)
                                 || ignoreFilePatterns.stream().anyMatch(p -> p.matcher(fileName).matches());
 
                         if (!shouldIgnore) {

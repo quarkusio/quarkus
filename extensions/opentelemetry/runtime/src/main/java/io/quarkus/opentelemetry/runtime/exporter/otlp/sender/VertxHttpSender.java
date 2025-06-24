@@ -101,19 +101,33 @@ public final class VertxHttpSender implements HttpSender {
             return;
         }
 
+        String marshalerType = marshaler.getClass().getSimpleName();
         String requestURI = basePath + signalPath;
         var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
                 contentType,
                 contentLength, onHttpResponseRead,
                 onError, marshaler, 1, isShutdown::get);
-        initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, onError, isShutdown::get);
+        initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, new Consumer<>() {
+            @Override
+            public void accept(Throwable throwable) {
+                failOnClientRequest(marshalerType, throwable, onError);
+            }
+        });
+    }
+
+    private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
+        String message = "Failed to export "
+                + type
+                + ". The request could not be executed. Full error message: "
+                + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
+        logger.log(Level.WARNING, message);
+        onError.accept(t);
     }
 
     private static void initiateSend(HttpClient client, String requestURI,
             int numberOfAttempts,
             Handler<HttpClientRequest> clientRequestSuccessHandler,
-            Consumer<Throwable> onError,
-            Supplier<Boolean> isShutdown) {
+            Consumer<Throwable> onFailureCallback) {
         Uni.createFrom().completionStage(new Supplier<CompletionStage<HttpClientRequest>>() {
             @Override
             public CompletionStage<HttpClientRequest> get() {
@@ -144,7 +158,7 @@ public final class VertxHttpSender implements HttpSender {
                             public void accept(HttpClientRequest request) {
                                 clientRequestSuccessHandler.handle(request);
                             }
-                        }, onError);
+                        }, onFailureCallback);
     }
 
     @Override
@@ -234,8 +248,7 @@ public final class VertxHttpSender implements HttpSender {
                                             initiateSend(client, requestURI,
                                                     MAX_ATTEMPTS - attemptNumber,
                                                     newAttempt(),
-                                                    onError,
-                                                    isShutdown);
+                                                    onError);
                                             return;
                                         }
                                     }
@@ -261,8 +274,7 @@ public final class VertxHttpSender implements HttpSender {
                                         initiateSend(client, requestURI,
                                                 MAX_ATTEMPTS - attemptNumber,
                                                 newAttempt(),
-                                                onError,
-                                                isShutdown);
+                                                onError);
                                     } else {
                                         onError.accept(bodyResult.cause());
                                     }
@@ -275,8 +287,7 @@ public final class VertxHttpSender implements HttpSender {
                             initiateSend(client, requestURI,
                                     MAX_ATTEMPTS - attemptNumber,
                                     newAttempt(),
-                                    onError,
-                                    isShutdown);
+                                    onError);
                         } else {
                             onError.accept(callResult.cause());
                         }

@@ -179,7 +179,7 @@ public final class VertxGrpcSender implements GrpcSender {
     private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
         String message = "Failed to export "
                 + type
-                + "s. The request could not be executed. Full error message: "
+                + ". The request could not be executed. Full error message: "
                 + (t.getMessage() == null ? t.getClass().getName() : t.getMessage());
         logger.log(Level.WARNING, message);
         onError.accept(t);

@@ -889,6 +889,38 @@ When adding a new extension or updating the dependencies of an existing one,
 it is recommended to run in the extension directory the [OWASP Dependency Check](https://jeremylong.github.io/DependencyCheck) with `mvn -Dowasp-check`
 so that known security vulnerabilities in the extension dependencies can be detected early.
 
+## LLM Usage Policy
+
+At Quarkus, we welcome tools that help developers become more productive — including Large Language Models (LLMs) and Agents like ChatGPT, GitHub Copilot, and others.
+
+However, recent patterns of use have led to increased moderation burden, low-value contributions, and reduced community signal. To ensure a healthy and productive community, the following expectations apply:
+
+### Acceptable Use of LLMs
+
+- LLMs may be used to **assist your development** — e.g. drafting code, writing documentation, proposing fixes — as long as **you understand, validate**, and **take responsibility for the results.**
+- You should only submit contributions (PRs, comments, discussions, issues) that reflect your **own understanding** and **intent**, not what an Agent/LLM "spit out."
+- You may use Agents/LLMs to help you **write better**, but not to **post more**.
+
+### Unacceptable Use
+
+- Submitting code, tests, comments, or issues that appear to be **copied directly from an LLM with little or no human oversight** is **not acceptable**.
+- Posting **large volumes of low-effort suggestions, vague issues, or links with no context** — even if technically accurate — is considered spam.
+- Submitting **AI-generated tests that do not validate actual behavior** or meaningfully cover functionality is not helpful and will be rejected.
+- Using bots, agents, or automated tools to open PRs, file issues, or post content **without human authorship and responsibility** is not allowed.
+
+### Consequences
+
+- We may close issues, PRs, or discussions that violate this policy without detailed explanation.
+- Repeated violations may result in temporary or permanent restrictions from participating in the project.
+
+### If in Doubt
+
+If you're unsure whether your use of Agent/LLMs is acceptable — ask! We're happy to help contributors learn how to use AI tools effectively **without creating noise**.
+
+> This isn’t about banning AI — it’s about keeping Quarkus collaborative, human-driven, and focused on quality.
+
+
+
 ## The small print
 
 This project is an open source project, please act responsibly, be nice, polite and enjoy!

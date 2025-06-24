@@ -14,7 +14,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
 import io.quarkus.oidc.runtime.devui.OidcDevUiRpcSvcPropertiesBean;
 import io.quarkus.runtime.RuntimeValue;

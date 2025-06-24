@@ -41,7 +41,7 @@ public class SimpleGeneratorTest {
     public static void init() throws IOException {
         TestClassOutput classOutput = new TestClassOutput();
         Index index = index(MyService.class, PublicMyService.class, BaseService.class, MyItem.class, String.class,
-                CompletionStage.class, List.class, MyEnum.class, StringBuilder.class);
+                CompletionStage.class, List.class, MyEnum.class, StringBuilder.class, SomeBean.class, SomeInterface.class);
         ClassInfo myServiceClazz = index.getClassByName(DotName.createSimple(MyService.class.getName()));
         ValueResolverGenerator generator = ValueResolverGenerator.builder().setIndex(index).setClassOutput(classOutput)
                 .addClass(myServiceClazz)
@@ -51,6 +51,7 @@ public class SimpleGeneratorTest {
                 .addClass(index.getClassByName(List.class))
                 .addClass(index.getClassByName(MyEnum.class))
                 .addClass(index.getClassByName(StringBuilder.class), stringBuilderTemplateData())
+                .addClass(index.getClassByName(SomeBean.class))
                 .build();
 
         generator.generate();
@@ -150,6 +151,11 @@ public class SimpleGeneratorTest {
         assertEquals("one", engine.parse("{MyEnum:valueOf('ONE').name}").render());
         assertEquals("10", engine.parse("{io_quarkus_qute_generator_MyService:getDummy(5)}").render());
         assertEquals("foo", engine.parse("{builder.append('foo')}").data("builder", new StringBuilder()).render());
+
+        // Exact match takes precedence over the getter
+        assertEquals("bar::true::true::ping::false",
+                engine.parse("{some.image}::{some.hasImage}::{some.hasImage('bar')}::{some.png}::{some.hasPng('bar')}")
+                        .data("some", new SomeBean("bar")).render());
     }
 
     @Test

@@ -11,8 +11,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
-import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 

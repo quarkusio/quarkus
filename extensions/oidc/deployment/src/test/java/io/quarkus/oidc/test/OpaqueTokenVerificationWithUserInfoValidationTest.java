@@ -34,7 +34,8 @@ public class OpaqueTokenVerificationWithUserInfoValidationTest {
                 // assert UserInfo is required
                 assertTrue(
                         te.getMessage()
-                                .contains("UserInfo is not required but 'verifyAccessTokenWithUserInfo' is enabled"),
+                                .contains(
+                                        "UserInfo is not required but 'quarkus.oidc.token.verify-access-token-with-user-info' is enabled"),
                         te.getMessage());
             });
 

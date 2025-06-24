@@ -190,6 +190,7 @@ The context can be activated by users, for example with the `@ActivateRequestCon
 We recommend to let Quarkus activate and prepare CDI request context for you.
 For example, consider a situation where you want to inject a bean from the Jakarta REST context, such as the `jakarta.ws.rs.core.UriInfo` bean.
 In this case, you must apply the `HttpSecurityPolicy` to Jakarta REST endpoints. This can be achieved in one of the following ways:
+
 * Use the `@AuthorizationPolicy` security annotation.
 * Set the `quarkus.http.auth.permission.custom1.applies-to=jaxrs` configuration property.
 
@@ -445,6 +446,23 @@ quarkus.http.auth.roles-mapping.admin=Admin1 <1> <2>
 <1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
 <2> The `/*` path is not secured. You must secure your endpoints with standard security annotations or define HTTP permissions in addition to this configuration property.
 
+If you prefer a programmatic configuration, the same mapping can be added with the `io.quarkus.vertx.http.security.HttpSecurity` CDI event:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+
+public class HttpSecurityConfiguration {
+
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity.rolesMapping("admin", "Admin1");
+    }
+}
+----
+
 === Shared permission checks
 
 One important rule for unshared permission checks is that only one path match is applied, the most specific one.
@@ -487,6 +505,92 @@ quarkus.http.auth.permission.roles3.policy=role-policy3
 <1> Role `root` will be able to access `/secured/user/\*` and `/secured/admin/*` paths.
 <2> The `/secured/*` path can only be accessed by authenticated users. This way, you have secured the `/secured/all` path and so on.
 <3> Shared permissions are always applied before unshared ones, therefore a `SecurityIdentity` with the `root` role will have the `user` role as well.
+
+=== Set up path-specific authorization programmatically
+
+You can also configure the authorization policies presented by this guide so far programmatically.
+Consider the example mentioned earlier:
+
+[source,properties]
+----
+quarkus.http.auth.permission.permit1.paths=/public/*
+quarkus.http.auth.permission.permit1.policy=permit
+quarkus.http.auth.permission.permit1.methods=GET
+
+quarkus.http.auth.permission.deny1.paths=/forbidden
+quarkus.http.auth.permission.deny1.policy=deny
+
+quarkus.http.auth.permission.roles1.paths=/roles-secured/*,/other/*,/api/*
+quarkus.http.auth.permission.roles1.policy=role-policy1
+quarkus.http.auth.policy.role-policy1.roles-allowed=user,admin
+----
+
+The same authorization policies can be configured programmatically:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import jakarta.enterprise.event.Observes;
+
+import io.quarkus.vertx.http.security.HttpSecurity;
+
+public class HttpSecurityConfiguration {
+
+    void configure(@Observes HttpSecurity httpSecurity) {
+        httpSecurity
+                .get("/public/*").permit()
+                .path("/roles-secured/*", "/other/*", "/api/*").roles("admin", "user")
+                .path("/forbidden").authorization().deny();
+    }
+
+}
+----
+
+Additionally, the `io.quarkus.vertx.http.security.HttpSecurity` CDI event can be used to configure specific authentication mechanisms and policies:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.HttpSecurity;
+import jakarta.enterprise.event.Observes;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+public class HttpSecurityConfiguration {
+
+    void configure(@Observes HttpSecurity httpSecurity, CustomHttpSecurityPolicy customHttpSecurityPolicy,
+                        @ConfigProperty(name = "secured-path") String securedPath) {
+
+        httpSecurity.path("/api/*").authenticatedWith(new CustomAuthenticationMechanism());   <1>
+
+        httpSecurity.path("/other/*").basic().policy(customHttpSecurityPolicy); <2>
+
+        httpSecurity.path("/roles-secured/*").bearer().authorization()
+                .policy(identity -> identity.hasRole("user") || "root".equals(identity.getPrincipal().getName()));  <3>
+
+        httpSecurity.path("/other/administration").authorizationCodeFlow()
+                .authorization().policy((identity, routingContext) -> {
+                    if (!identity.isAnonymous()) {
+                        String customAuthorization = routingContext.request().getHeader("Custom Authorization");
+                        return yourCustomAuthorizationCheck(customAuthorization);
+                    }
+                    return false;
+                });     <4>
+
+        httpSecurity.path(securedPath).form();  <5>
+
+        httpSecurity.path("/user-info").bearer().authorization().permissions("openid", "email", "profile"); <6>
+    }
+}
+----
+<1> Authenticate all the '/api/' sub-paths with your own `HttpAuthenticationMechanism` instance.
+<2> Use the Basic authentication and authorize the requests with a custom `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy`.
+<3> Use the Bearer token authentication and authorize the `SecurityIdentity` with your own policy.
+<4> Use Authorization Code Flow mechanism and write your own policy based on incoming request headers.
+<5> When Quarkus fires the `HttpSecurity` CDI event, the runtime configuration is ready.
+<6> Require that all the requests to the `/user-info` path have string permissions `openid`, `email` and `profile`.
+The same authorization can be required with the `@PermissionsAllowed(value = { "openid", "email", "profile" }, inclusive = true)` annotation instance placed on an endpoint.
 
 [[standard-security-annotations]]
 == Authorization using annotations

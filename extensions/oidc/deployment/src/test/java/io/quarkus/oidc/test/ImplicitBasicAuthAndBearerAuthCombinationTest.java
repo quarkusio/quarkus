@@ -1,5 +1,6 @@
 package io.quarkus.oidc.test;
 
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -15,6 +16,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
+import io.quarkus.vertx.http.security.HttpSecurity;
 import io.restassured.RestAssured;
 
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
@@ -23,7 +25,7 @@ public class ImplicitBasicAuthAndBearerAuthCombinationTest {
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(BasicBearerResource.class)
+                    .addClasses(BasicBearerResource.class, BearerPathBasedResource.class)
                     .addAsResource(
                             new StringAsset("""
                                     quarkus.security.users.embedded.enabled=true
@@ -41,9 +43,13 @@ public class ImplicitBasicAuthAndBearerAuthCombinationTest {
         // endpoint is annotated with 'BasicAuthentication', so basic auth must be enabled
         RestAssured.given().auth().oauth2(getAccessToken()).get("/basic-bearer/bearer")
                 .then().statusCode(200).body(Matchers.is("alice"));
+        RestAssured.given().auth().oauth2(getAccessToken()).get("/basic-bearer/bearer-path-based")
+                .then().statusCode(200).body(Matchers.is("alice"));
         RestAssured.given().auth().basic("alice", "alice").get("/basic-bearer/basic")
                 .then().statusCode(204);
         RestAssured.given().auth().basic("alice", "alice").get("/basic-bearer/bearer")
+                .then().statusCode(401);
+        RestAssured.given().auth().basic("alice", "alice").get("/basic-bearer/bearer-path-based")
                 .then().statusCode(401);
         RestAssured.given().auth().oauth2(getAccessToken()).get("/basic-bearer/basic")
                 .then().statusCode(401);
@@ -71,6 +77,23 @@ public class ImplicitBasicAuthAndBearerAuthCombinationTest {
         @Path("bearer")
         public String bearer() {
             return accessToken.getName();
+        }
+
+    }
+
+    @Path("/basic-bearer/bearer-path-based")
+    public static class BearerPathBasedResource {
+
+        @Inject
+        JsonWebToken accessToken;
+
+        @GET
+        public String bearerPathBased() {
+            return accessToken.getName();
+        }
+
+        void selectBearerUsingPathRule(@Observes HttpSecurity httpSecurity) {
+            httpSecurity.path("/basic-bearer/bearer-path-based").bearer();
         }
     }
 

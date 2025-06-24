@@ -339,6 +339,25 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          * Clear-Site-Data header directives
          */
         Optional<Set<ClearSiteData>> clearSiteData();
+
+        enum LogoutMode {
+            /**
+             * Logout parameters are encoded in the query string
+             */
+            QUERY,
+
+            /**
+             * Logout parameters are encoded as HTML form values that are auto-submitted in the browser
+             * and transmitted by the HTTP POST method using the application/x-www-form-urlencoded content type
+             */
+            FORM_POST
+        }
+
+        /**
+         * Logout mode
+         */
+        @WithDefault("query")
+        LogoutMode logoutMode();
     }
 
     interface Backchannel {

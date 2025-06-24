@@ -643,6 +643,7 @@ Quarkus OIDC supports three standard OIDC logout options: <<rp-initiated-logout>
 |quarkus.oidc.logout.post-logout-path || Post logout path
 |quarkus.oidc.logout.post-logout-uri-param || Post logout uri param
 |quarkus.oidc.logout.extra-params || Logout extra params
+|quarkus.oidc.logout.logout-mode |query| Logout mode
 |====
 
 `quarkus.oidc.logout.path` is a relative path where a user logout request should be sent to. For example, given `quarkus.oidc.logout.path=/logout`, a `Logout` link in the SPA page can point to `http://localhost:8080/logout`. This path can be virtual, you do not have to create a JAX-RS endpoint or route handler listening on `/logout`. But for the `quarkus.oidc.logout.path` be effective, it must be secured, see the https://quarkus.io/guides/security-oidc-code-flow-authentication#user-initiated-logout[User-initiated logout] section for more details.
@@ -652,6 +653,9 @@ For example, the logged out user can be returned to the application's welcome pa
 For the post logout redirect to work, OIDC providers usually require registering absolute post logout URLs such as `http://localhost:8080/welcome.html`. Please do not forget, it must be a public endpoint, otherwise the user will be requested to login immediately after choosing to logout.
 
 `quarkus.oidc.logout.post-logout-uri-param` and `quarkus.oidc.logout.extra-params` can be used to customize the RP-initiated logout query parameters, for example, Auth0 might expect Auth0-specific logout query parameters, see the https://quarkus.io/guides/security-oidc-code-flow-authentication#user-initiated-logout[User-initiated logout] section for more details.
+
+By default, all the logout parameters are serialized as logout URL query parameters.
+Some OIDC providers may require that logout parameters are encoded as HTML form values and auto-submitted in the browser with the HTTP POST method and the `application/x-www-form-urlencoded` content type: set `quarkus.oidc.logout.logout-mode=form-post` in this case.
 
 [[back-channel-logout]]
 === Back-channel Logout

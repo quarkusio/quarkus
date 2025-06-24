@@ -40,9 +40,10 @@ public class PersistentLoginManager {
     private final CookieSameSite cookieSameSite;
     private final String cookiePath;
     private final long maxAgeSeconds;
+    private final String cookieDomain;
 
     public PersistentLoginManager(String encryptionKey, String cookieName, long timeoutMillis, long newCookieIntervalMillis,
-            boolean httpOnlyCookie, String cookieSameSite, String cookiePath, long maxAgeSeconds) {
+            boolean httpOnlyCookie, String cookieSameSite, String cookiePath, long maxAgeSeconds, String cookieDomain) {
         this.cookieName = cookieName;
         this.newCookieIntervalMillis = newCookieIntervalMillis;
         this.timeoutMillis = timeoutMillis;
@@ -50,6 +51,7 @@ public class PersistentLoginManager {
         this.cookieSameSite = CookieSameSite.valueOf(cookieSameSite);
         this.cookiePath = cookiePath;
         this.maxAgeSeconds = maxAgeSeconds;
+        this.cookieDomain = cookieDomain;
         try {
             if (encryptionKey == null) {
                 this.secretKey = KeyGenerator.getInstance("AES").generateKey();
@@ -149,6 +151,9 @@ public class PersistentLoginManager {
                     .setHttpOnly(httpOnlyCookie);
             if (maxAgeSeconds >= 0) {
                 cookie.setMaxAge(maxAgeSeconds);
+            }
+            if (cookieDomain != null) {
+                cookie.setDomain(cookieDomain);
             }
             context.addCookie(cookie);
         } catch (Exception e) {

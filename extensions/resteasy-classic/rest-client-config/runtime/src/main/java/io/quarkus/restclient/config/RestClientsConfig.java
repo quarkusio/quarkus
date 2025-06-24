@@ -277,6 +277,14 @@ public interface RestClientsConfig {
     boolean http2();
 
     /**
+     * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    @ConfigDocDefault("64K")
+    Optional<MemorySize> http2UpgradeMaxContentLength();
+
+    /**
      * Configures two different things:
      * <ul>
      * <li>The max HTTP chunk size, up to {@code Integer.MAX_VALUE} bytes.</li>
@@ -612,6 +620,14 @@ public interface RestClientsConfig {
          * If this is true then HTTP/2 will be enabled.
          */
         Optional<Boolean> http2();
+
+        /**
+         * Configures the HTTP/2 upgrade maximum length of the aggregated content in bytes.
+         * <p>
+         * This property is not applicable to the RESTEasy Client.
+         */
+        @ConfigDocDefault("64K")
+        Optional<MemorySize> http2UpgradeMaxContentLength();
 
         /**
          * Configures two different things:

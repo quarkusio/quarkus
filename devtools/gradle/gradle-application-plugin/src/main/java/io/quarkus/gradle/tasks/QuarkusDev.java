@@ -55,6 +55,7 @@ import org.gradle.api.tasks.options.Option;
 import org.gradle.jvm.toolchain.JavaLauncher;
 import org.gradle.jvm.toolchain.JavaToolchainService;
 import org.gradle.jvm.toolchain.JavaToolchainSpec;
+import org.gradle.process.ExecOperations;
 import org.gradle.util.GradleVersion;
 
 import io.quarkus.analytics.AnalyticsService;
@@ -324,6 +325,9 @@ public abstract class QuarkusDev extends QuarkusTask {
         getTests().set(tests);
     }
 
+    @Inject
+    public abstract ExecOperations getExecOperations();
+
     @TaskAction
     public void startDev() {
         if (!sourcesExist()) {
@@ -358,7 +362,7 @@ public abstract class QuarkusDev extends QuarkusTask {
             final DevModeCommandLine runner = newLauncher(analyticsService);
             String outputFile = System.getProperty(IO_QUARKUS_DEVMODE_ARGS);
             if (outputFile == null) {
-                getProject().exec(action -> {
+                getExecOperations().exec(action -> {
                     action.commandLine(runner.getArguments()).workingDir(getWorkingDirectory().get());
                     action.environment(getEnvVars());
                     action.setStandardInput(System.in)

@@ -107,6 +107,11 @@ public interface FormAuthRuntimeConfig {
     Optional<String> cookiePath();
 
     /**
+     * Cookie domain parameter value which, if set, will be used for the session and location cookies.
+     */
+    Optional<String> cookieDomain();
+
+    /**
      * Set the HttpOnly attribute to prevent access to the cookie via JavaScript.
      */
     @WithDefault("false")

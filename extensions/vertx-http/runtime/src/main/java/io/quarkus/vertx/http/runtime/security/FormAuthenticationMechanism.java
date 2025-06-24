@@ -65,6 +65,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     private final boolean redirectToLoginPage;
     private final CookieSameSite cookieSameSite;
     private final String cookiePath;
+    private final String cookieDomain;
     private final boolean isFormAuthEventObserver;
     private final PersistentLoginManager loginManager;
     private final Event<FormAuthenticationEvent> formAuthEvent;
@@ -97,7 +98,8 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         FormAuthRuntimeConfig runtimeForm = httpConfig.auth().form();
         this.loginManager = new PersistentLoginManager(key, runtimeForm.cookieName(), runtimeForm.timeout().toMillis(),
                 runtimeForm.newCookieInterval().toMillis(), runtimeForm.httpOnlyCookie(), runtimeForm.cookieSameSite().name(),
-                runtimeForm.cookiePath().orElse(null), runtimeForm.cookieMaxAge().map(Duration::toSeconds).orElse(-1L));
+                runtimeForm.cookiePath().orElse(null), runtimeForm.cookieMaxAge().map(Duration::toSeconds).orElse(-1L),
+                runtimeForm.cookieDomain().orElse(null));
         this.loginPage = startWithSlash(runtimeForm.loginPage().orElse(null));
         this.errorPage = startWithSlash(runtimeForm.errorPage().orElse(null));
         this.landingPage = startWithSlash(runtimeForm.landingPage().orElse(null));
@@ -106,6 +108,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.passwordParameter = runtimeForm.passwordParameter();
         this.locationCookie = runtimeForm.locationCookie();
         this.cookiePath = runtimeForm.cookiePath().orElse(null);
+        this.cookieDomain = runtimeForm.cookieDomain().orElse(null);
         boolean redirectAfterLogin = runtimeForm.redirectAfterLogin();
         this.redirectToLandingPage = landingPage != null && redirectAfterLogin;
         this.redirectToLoginPage = loginPage != null;
@@ -119,7 +122,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     public FormAuthenticationMechanism(String loginPage, String postLocation,
             String usernameParameter, String passwordParameter, String errorPage, String landingPage,
             boolean redirectAfterLogin, String locationCookie, String cookieSameSite, String cookiePath,
-            PersistentLoginManager loginManager) {
+            String cookieDomain, PersistentLoginManager loginManager) {
         this.loginPage = loginPage;
         this.postLocation = postLocation;
         this.usernameParameter = usernameParameter;
@@ -132,6 +135,7 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.redirectToErrorPage = errorPage != null;
         this.cookieSameSite = CookieSameSite.valueOf(cookieSameSite);
         this.cookiePath = cookiePath;
+        this.cookieDomain = cookieDomain;
         this.loginManager = loginManager;
         this.isFormAuthEventObserver = false;
         this.formAuthEvent = null;
@@ -239,8 +243,12 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
     }
 
     protected void storeInitialLocation(final RoutingContext exchange) {
-        exchange.response().addCookie(Cookie.cookie(locationCookie, exchange.request().absoluteURI())
-                .setPath(cookiePath).setSameSite(cookieSameSite).setSecure(exchange.request().isSSL()));
+        Cookie cookie = Cookie.cookie(locationCookie, exchange.request().absoluteURI())
+                .setPath(cookiePath).setSameSite(cookieSameSite).setSecure(exchange.request().isSSL());
+        if (cookieDomain != null) {
+            cookie.setDomain(cookieDomain);
+        }
+        exchange.response().addCookie(cookie);
     }
 
     protected void servePage(final RoutingContext exchange, final String location) {

@@ -106,7 +106,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
         try (CuratedApplication curatedApplication = QuarkusBootstrap.builder()
                 .setBaseClassLoader(getClass().getClassLoader())
                 .setExistingModel(appModel)
-                .setTargetDirectory(getProject().getBuildDir().toPath())
+                .setTargetDirectory(getProject().getLayout().getBuildDirectory().getAsFile().get().toPath())
                 .setBaseName(extension().finalName())
                 .setBuildSystemProperties(sysProps)
                 .setAppArtifact(appModel.getAppArtifact())

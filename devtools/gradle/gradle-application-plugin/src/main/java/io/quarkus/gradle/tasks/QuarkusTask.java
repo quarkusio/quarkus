@@ -34,7 +34,7 @@ public abstract class QuarkusTask extends DefaultTask {
         setGroup("quarkus");
         this.extension = getProject().getExtensions().findByType(QuarkusPluginExtension.class);
         this.projectDir = getProject().getProjectDir();
-        this.buildDir = getProject().getBuildDir();
+        this.buildDir = getProject().getLayout().getBuildDirectory().getAsFile().get();
 
         // Calling this method tells Gradle that it should not fail the build. Side effect is that the configuration
         // cache will be at least degraded, but the build will not fail.

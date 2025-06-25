@@ -31,6 +31,8 @@ import org.hibernate.tool.schema.spi.ScriptTargetOutput;
 import org.hibernate.tool.schema.spi.SourceDescriptor;
 import org.hibernate.tool.schema.spi.TargetDescriptor;
 
+import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
+
 public class HibernateOrmDevController {
 
     private static final HibernateOrmDevController INSTANCE = new HibernateOrmDevController();
@@ -48,8 +50,8 @@ public class HibernateOrmDevController {
         return info;
     }
 
-    void pushPersistenceUnit(SessionFactoryImplementor sessionFactoryImplementor, String persistenceUnitName,
-            Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {
+    void pushPersistenceUnit(SessionFactoryImplementor sessionFactoryImplementor, QuarkusPersistenceUnitDescriptor descriptor,
+            String persistenceUnitName, Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {
         List<HibernateOrmDevInfo.Entity> managedEntities = new ArrayList<>();
         for (PersistentClass entityBinding : metadata.getEntityBindings()) {
             managedEntities.add(new HibernateOrmDevInfo.Entity(entityBinding.getJpaEntityName(), entityBinding.getClassName(),
@@ -83,7 +85,8 @@ public class HibernateOrmDevController {
         DDLSupplier updateDDLSupplier = new DDLSupplier(Action.UPDATE, metadata, serviceRegistry, importFile);
 
         info.add(new HibernateOrmDevInfo.PersistenceUnit(sessionFactoryImplementor, persistenceUnitName, managedEntities,
-                namedQueries, namedNativeQueries, createDDLSupplier, dropDDLSupplier, updateDDLSupplier));
+                namedQueries, namedNativeQueries, createDDLSupplier, dropDDLSupplier, updateDDLSupplier,
+                descriptor.isReactive()));
     }
 
     class DDLSupplier implements Supplier<String> {

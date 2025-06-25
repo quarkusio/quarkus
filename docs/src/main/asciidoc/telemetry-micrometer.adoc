@@ -489,6 +489,8 @@ Precomputed percentile values can not. Percentiles are unique to each dataset (t
 
 == Automatically generated metrics
 
+=== HTTP server
+
 The Micrometer extension automatically times HTTP server requests. Following Prometheus naming conventions for
 timers, look for `http_server_requests_seconds_count`, `http_server_requests_seconds_sum`, and
 `http_server_requests_seconds_max`. Dimensional labels have been added for the requested uri, the HTTP method
@@ -522,6 +524,155 @@ For example, setting
 
 By default, the  metrics are exported using the Prometheus format `application/openmetrics-text`,
 you can revert to the former format by specifying the `Accept` request header to `text/plain` (`curl -H "Accept: text/plain" localhost:8080/q/metrics/`).
+
+=== Netty memory management metrics
+
+https://netty.io/[Netty] memory management metrics are important because Quarkus is built on top of https://vertx.io/[Eclipse Vert.x], which is a framework built on top of Netty to create reactive applications in Java. Even if you use imperative style programing in Quarkus, under the surface it is conveniently handled by Vert.x in a reactive way.
+
+In short, Netty provides an _efficient_ memory management system for asynchronous applications.
+It offers different types of memory allocation strategies, including **heap** (stored in the JVM heap) and direct memory (allocated outside the JVM memory), along with a **buffer pooling mechanism** to optimize allocations and reduce garbage collection (GC) overhead.
+
+==== Memory Categories in Netty
+Netty uses two primary memory categories:
+
+1. **Heap Memory**
+- Allocated from the JVM heap (`byte[]`).
+- Managed by the garbage collector.
+- Slower for I/O operations because it requires copying data to/from direct memory before sending over a socket.
+
+2. **Direct Memory**
+- Allocated outside the JVM heap using `ByteBuffer.allocateDirect()`.
+- Not managed by the garbage collector, reducing GC pressure.
+- Faster for I/O operations as it avoids unnecessary copying.
+
+[NOTE]
+====
+Using a very high value for -XX:MaxRAMPercentage (allocating most of the available RAM to the Java heap) is not recommended for Quarkus applications, as it’s important to leave room for Netty's native memory allocations.
+
+These Netty metrics help evaluate how much room is needed.
+====
+
+==== Pooling Mechanism
+Netty uses **PooledByteBufAllocator** to reduce memory allocation overhead and fragmentation. It is based on a **jemalloc-style arena system** (see https://github.com/jemalloc/jemalloc[jemalloc/jemalloc]), which includes:
+
+- **Arenas**: Large memory blocks that manage allocations.
+- **Chunks**: Memory segments within arenas (typically 16MB in size).
+- **Pages**: Fixed-size portions of a chunk (usually 8KB).
+- **Subpages**: Smaller allocations within a page for tiny objects.
+- **Thread-local Caches**: Per-thread cache for frequently used small buffers, reducing contention.
+
+==== Metrics for Netty Memory Management
+The Micrometer metrics report key metrics from Netty's allocator, helping monitor memory usage, pinned memory, pooling efficiency, and cache behavior.
+
+===== **1. Memory Usage Metrics (Every allocator)**
+These metrics track the current memory usage by Netty allocators (in bytes)
+
+|===
+| Metric Name | Description | Type | Tags
+
+|`allocator.memory.used`
+|Amount of memory currently used by the allocator
+|Gauge
+|`memory_type=[heap, direct]`, `name=allocator-name`
+
+|===
+
+===== **2. Pooled  Allocator - Pinned Memory Metrics**
+Pinned memory refers to buffers that cannot be recycled due to active references, preventing reuse by the allocator. A _high_ number may indicate some kind of leak (as reference are not released).
+
+|===
+| Metric Name | Description | Type | Tags
+
+| `allocator.memory.pinned`
+|Amount of pinned memory that cannot be reused
+|Gauge
+|`memory_type=[heap, direct]`, `name=allocator-name`
+
+|===
+
+===== **3. Pooled Allocator - Arena Metrics**
+Arenas (large size of memory) manage memory allocations efficiently by grouping chunks of memory. So this metric is the number of arenas allocated for a given allocator.
+
+|===
+| Metric Name | Description | Type | Tags
+
+| `allocator.pooled.arenas`
+|Number of arenas handling memory allocation
+|Gauge
+| `memory_type=[heap, direct]`
+
+|===
+
+===== **4. Cache Size Metrics**
+Netty caches small buffers within a given thread to avoid frequent memory allocations and improve performance. If the same thread needs memory, it will first check in its own cache. This is particularly efficient due to the event loop threading model (low number of threads). Note that the tiny caches are now merged into the small ones.
+
+|===
+| Metric Name | Description | Type | Tags
+
+| `allocator.pooled.cache.size`
+|Size of the buffer cache
+|Gauge
+| `cache_type=[small, normal]`
+
+|===
+
+===== **5. Thread-Local Cache Metrics**
+These metrics indicate the number of active thread-local caches used for memory pooling. It complements the cache size metrics (cache being the size, and this being the number of cache)
+
+|===
+| Metric Name | Description | Type | Tags
+
+| `allocator.pooled.threadlocal.caches`
+|Number of thread-local caches for buffers
+|Gauge
+| None
+
+|===
+
+===== **6. Chunk Size Metrics**
+Chunks are the primary unit of memory allocation in Netty's arenas.
+
+|===
+| Metric Name | Description | Type | Tags
+
+|  `allocator.pooled.chunk.size`
+|Size of a memory chunk in pooled allocator
+|Gauge
+| None
+
+|===
+
+[[quarkus-extensions-using-micrometer]]
+=== List of Quarkus core extensions automatically instrumented with Micrometer
+
+* https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
+* https://quarkus.io/guides/cache[`quarkus-cache`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-caffeine[`quarkus-caffeine`]
+* https://quarkus.io/guides/smallrye-fault-tolerance[`quarkus-smallrye-fault-tolerance`]
+* https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
+* https://quarkus.io/guides/hibernate-orm[`quarkus-hibernate-orm`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
+* https://quarkus.io/guides/deploying-to-kubernetes[`quarkus-kubernetes`]
+* https://quarkus.io/guides/logging[`jboss-logging`] (logging API in Quarkus)
+* https://quarkus.io/guides/mongodb[`quarkus-mongodb-client`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-netty[`quarkus-netty`]
+* https://quarkus.io/guides/redis[`quarkus-redis-client`]
+* https://quarkus.io/guides/rest[`quarkus-rest`]
+* https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
+* https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
+* https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
+* https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]
+** AMQP 1.0
+** RabbitMQ
+** Kafka
+** Pulsar
+** JMS
+** MQTT
+** Camel Messaging
+* https://quarkus.io/guides/stork-reference[`quarkus-smallrye-stork`]
+* https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
+* xref:websockets-next-reference.adoc[`websockets-next`]
 
 == Customizing Micrometer
 
@@ -727,49 +878,19 @@ The value cannot be overridden at runtime.
 If you enable the management interface without customizing the management network interface and port, the metrics are exposed under: `http://0.0.0.0:9000/q/metrics`.
 
 You can configure the path of each exposed format using:
+
 [source, properties]
 ----
-quarkus.micrometer.export.json.enabled=true # Enable json metrics
+quarkus.micrometer.export.json.enabled=true <1>
 quarkus.micrometer.export.json.path=metrics/json
 quarkus.micrometer.export.prometheus.path=metrics/prometheus
 ----
+<1> Enable JSON metrics
 
-With such a configuration, the json metrics will be available from `http://0.0.0.0:9000/q/metrics/json`.
-The prometheus metrics will be available from `http://0.0.0.0:9000/q/metrics/prometheus`.
+With such a configuration, the JSON metrics will be available from `http://0.0.0.0:9000/q/metrics/json`.
+The Prometheus metrics will be available from `http://0.0.0.0:9000/q/metrics/prometheus`.
 
 Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
-
-[[quarkus-extensions-using-micrometer]]
-== Quarkus core extensions instrumented with Micrometer
-
-* https://quarkus.io/extensions/io.quarkus/quarkus-agroal[`quarkus-agroal`]
-* https://quarkus.io/guides/cache[`quarkus-cache`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-caffeine[`quarkus-caffeine`]
-* https://quarkus.io/guides/smallrye-fault-tolerance[`quarkus-smallrye-fault-tolerance`]
-* https://quarkus.io/guides/grpc-getting-started[`quarkus-grpc`]
-* https://quarkus.io/guides/hibernate-orm[`quarkus-hibernate-orm`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-jaxrs-client-reactive[`quarkus-jaxrs-client-reactive`]
-* https://quarkus.io/guides/deploying-to-kubernetes[`quarkus-kubernetes`]
-* https://quarkus.io/guides/logging[`jboss-logging`] (logging API in Quarkus)
-* https://quarkus.io/guides/mongodb[`quarkus-mongodb-client`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-netty[`quarkus-netty`]
-* https://quarkus.io/guides/redis[`quarkus-redis-client`]
-* https://quarkus.io/guides/rest[`quarkus-rest`]
-* https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
-* https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
-* https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
-* https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
-* https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]
-** AMQP 1.0
-** RabbitMQ
-** Kafka
-** Pulsar
-** JMS
-** MQTT
-** Camel Messaging
-* https://quarkus.io/guides/stork-reference[`quarkus-smallrye-stork`]
-* https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
-* xref:websockets-next-reference.adoc[`websockets-next`]
 
 == Configuration Reference
 

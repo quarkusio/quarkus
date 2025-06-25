@@ -16,7 +16,9 @@ import jakarta.enterprise.context.ApplicationScoped;
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetrics;
+import io.opentelemetry.instrumentation.runtimemetrics.java17.RuntimeMetricsBuilder;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.Startup;
 
 @Startup
@@ -32,19 +34,28 @@ public class JvmMetricsService {
             return;
         }
 
-        // Will only produce mandatory metrics for MP Telemetry 2.0
-        runtimeMetrics = RuntimeMetrics.builder(openTelemetry)
-                .disableFeature(CONTEXT_SWITCH_METRICS)
-                .disableFeature(CPU_COUNT_METRICS)
-                .disableFeature(LOCK_METRICS)
-                .disableFeature(MEMORY_ALLOCATION_METRICS)
-                .disableFeature(NETWORK_IO_METRICS)
-                .enableFeature(MEMORY_POOL_METRICS)
-                .enableFeature(GC_DURATION_METRICS)
-                .enableFeature(THREAD_METRICS)
-                .enableFeature(CLASS_LOAD_METRICS)
-                .enableFeature(CPU_UTILIZATION_METRICS)
-                .build();
+        RuntimeMetricsBuilder builder = RuntimeMetrics.builder(openTelemetry)
+                .enableFeature(CONTEXT_SWITCH_METRICS)
+                .enableFeature(CPU_COUNT_METRICS)
+                .enableFeature(LOCK_METRICS)
+                .enableFeature(NETWORK_IO_METRICS)
+                .disableFeature(MEMORY_POOL_METRICS);
+
+        if (ImageMode.current().isNativeImage()) {
+            builder.enableFeature(THREAD_METRICS);
+            builder.enableFeature(CLASS_LOAD_METRICS);
+            builder.enableFeature(GC_DURATION_METRICS);
+            builder.enableFeature(CPU_UTILIZATION_METRICS);
+            builder.enableFeature(MEMORY_ALLOCATION_METRICS);
+        } else {
+            builder.disableFeature(THREAD_METRICS);
+            builder.disableFeature(CLASS_LOAD_METRICS);
+            builder.disableFeature(GC_DURATION_METRICS);
+            builder.disableFeature(CPU_UTILIZATION_METRICS);
+            builder.disableFeature(MEMORY_ALLOCATION_METRICS);
+        }
+
+        runtimeMetrics = builder.build();
     }
 
     @PreDestroy

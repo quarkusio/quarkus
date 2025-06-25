@@ -4,12 +4,10 @@ import '@vaadin/combo-box';
 import '@vaadin/progress-bar';
 import '@vaadin/button';
 import '@vaadin/icon';
-import '@qomponent/qui-code-block';
-import { themeState } from 'theme-state';
-import { observeState } from 'lit-element-state';
+import 'qui-themed-code-block';
 import { notifier } from 'notifier';
 
-export class QwcOpenapiGenerateClient extends observeState(LitElement) {
+export class QwcOpenapiGenerateClient extends LitElement {
     jsonRpc = new JsonRpc(this);
 
     static styles = css`
@@ -139,12 +137,11 @@ export class QwcOpenapiGenerateClient extends observeState(LitElement) {
                 Copy
             </vaadin-button>
         </div>
-        <qui-code-block
+        <qui-themed-code-block
             mode="${lang.mode}"
             content="${code}"
-            theme="${themeState.theme.name}"
             showLineNumbers>
-        </qui-code-block>
+        </qui-themed-code-block>
       </div>
     `;
     }

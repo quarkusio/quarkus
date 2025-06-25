@@ -21,6 +21,9 @@ public class SmallRyeGraphQLDevUIProcessor {
 
         cardPageBuildItem.addLibraryVersion("io.smallrye", "smallrye-graphql-cdi", "SmallRye GraphQL",
                 "https://smallrye.io/smallrye-graphql");
+        cardPageBuildItem.addLibraryVersion("org.eclipse.microprofile.graphql", "microprofile-graphql-api",
+                "MicroProfile GraphQL",
+                "https://github.com/microprofile/microprofile-graphql/");
         cardPageBuildItem.addLibraryVersion("com.graphql-java", "graphql-java", "GraphQL Java",
                 "https://www.graphql-java.com/");
 

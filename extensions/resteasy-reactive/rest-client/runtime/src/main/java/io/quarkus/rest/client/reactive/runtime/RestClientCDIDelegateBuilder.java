@@ -156,6 +156,13 @@ public class RestClientCDIDelegateBuilder<T> {
         Boolean http2 = oneOf(restClientConfig.http2()).orElse(configRoot.http2());
         builder.property(QuarkusRestClientProperties.HTTP2, http2);
 
+        Optional<MemorySize> http2UpgradeMaxContentLength = oneOf(restClientConfig.http2UpgradeMaxContentLength(),
+                configRoot.http2UpgradeMaxContentLength());
+        if (http2UpgradeMaxContentLength.isPresent()) {
+            builder.property(QuarkusRestClientProperties.HTTP2_UPGRADE_MAX_CONTENT_LENGTH,
+                    (int) http2UpgradeMaxContentLength.get().asLongValue());
+        }
+
         Optional<Boolean> alpn = oneOf(restClientConfig.alpn(), configRoot.alpn());
         if (alpn.isPresent()) {
             builder.property(QuarkusRestClientProperties.ALPN, alpn.get());

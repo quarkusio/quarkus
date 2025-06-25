@@ -26,6 +26,11 @@ public class SmallRyeHealthDevUiProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             SmallRyeHealthRecorder unused) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
+        pageBuildItem.setLogo("smallrye_dark.svg", "smallrye_light.svg");
+        pageBuildItem.addLibraryVersion("io.smallrye", "smallrye-health", "SmallRye Health",
+                "https://github.com/smallrye/smallrye-health/");
+        pageBuildItem.addLibraryVersion("org.eclipse.microprofile.health", "microprofile-health-api", "MicroProfile Health",
+                "https://github.com/microprofile/microprofile-health");
 
         String path = nonApplicationRootPathBuildItem.resolveManagementPath(config.rootPath(),
                 managementBuildTimeConfig, launchModeBuildItem, config.managementEnabled());

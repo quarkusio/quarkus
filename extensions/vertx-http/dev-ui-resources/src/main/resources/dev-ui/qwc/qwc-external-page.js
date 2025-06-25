@@ -1,16 +1,14 @@
 import { LitElement, html, css} from 'lit';
 import { RouterController } from 'router-controller';
 import { JsonRpc } from 'jsonrpc';
-import { observeState } from 'lit-element-state';
-import { themeState } from 'theme-state';
 import '@vaadin/icon';
-import '@qomponent/qui-code-block';
+import 'qui-themed-code-block';
 import '@vaadin/progress-bar';
 
 /**
  * This component loads an external page
  */
-export class QwcExternalPage extends observeState(LitElement) {
+export class QwcExternalPage extends LitElement {
     routerController = new RouterController(this);
     
     static styles = css`
@@ -113,11 +111,10 @@ export class QwcExternalPage extends observeState(LitElement) {
                                 <vaadin-icon class="icon" icon="font-awesome-solid:download"></vaadin-icon>
                                 Download
                             </span>
-                            <qui-code-block 
+                            <qui-themed-code-block 
                                 mode='${this._mode}'
-                                src='${this._externalUrl}'
-                                theme='${themeState.theme.name}'>
-                            </qui-code-block>
+                                src='${this._externalUrl}'>
+                            </qui-themed-code-block>
                         </div>
                         `;
             }

@@ -19,6 +19,8 @@ public class KafkaDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     public CardPageBuildItem pages() {
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+        cardPageBuildItem.setLogo("kafka_dark.png", "kafka_light.png");
+        cardPageBuildItem.addLibraryVersion("org.apache.kafka", "kafka-clients", "Apache Kafka", "https://kafka.apache.org/");
 
         cardPageBuildItem.addPage(Page.webComponentPageBuilder()
                 .icon("font-awesome-solid:folder-tree")

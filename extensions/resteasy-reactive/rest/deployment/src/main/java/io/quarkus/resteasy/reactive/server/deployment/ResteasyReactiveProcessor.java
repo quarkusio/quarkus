@@ -132,6 +132,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
+import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -739,9 +740,13 @@ public class ResteasyReactiveProcessor {
 
             checkForDuplicateEndpoint(config, allServerMethods);
 
-            Function<Type, DotName> typeToReturnName = new Function<Type, DotName>() {
+            Function<MethodInfo, DotName> methodToReturnName = new Function<MethodInfo, DotName>() {
                 @Override
-                public DotName apply(Type type) {
+                public DotName apply(MethodInfo method) {
+                    var type = method.returnType();
+                    if (type.name().equals(DotName.OBJECT_NAME) && KotlinUtils.isKotlinSuspendMethod(method)) {
+                        type = KotlinUtils.getKotlinSuspendMethodResult(method);
+                    }
                     DotName typeName = type.name();
                     if (type.kind() == Type.Kind.CLASS) {
                         return typeName;
@@ -757,6 +762,19 @@ public class ResteasyReactiveProcessor {
                 }
             };
 
+            // Provides a predicate for filtering classes/methods that have annotations from one of the client
+            // packages. This only reduces the false positives as a "base" interface could be derived and
+            // client-related annotation applies. Although it seems unlikely that an endpoint without any
+            // client annotations violates the specification for server resources methods; this type of false
+            // positive would only mean needless processing as there would be no exception thrown.
+            Predicate<AnnotationInstance> knownClientAnnotation = new Predicate<AnnotationInstance>() {
+                public boolean test(AnnotationInstance ann) {
+                    return ann.name().packagePrefix().startsWith("io.quarkus.rest.client") ||
+                            ann.name().packagePrefix().startsWith("org.eclipse.microprofile.rest.client") ||
+                            ann.name().packagePrefix().startsWith("org.jboss.resteasy.reactive.client");
+                }
+            };
+
             Map<DotName, Set<DotName>> returnsBySubResources = new HashMap<>();
             //now index possible sub resources. These are all classes that have method annotations
             //that are not annotated @Path
@@ -765,8 +783,16 @@ public class ResteasyReactiveProcessor {
                     MethodInfo method = instance.target().asMethod();
                     ClassInfo classInfo = method.declaringClass();
 
+                    // Reject known client interfaces (See predicate above)
+                    if (classInfo.annotations().stream().anyMatch(knownClientAnnotation)
+                            || method.annotations().stream().anyMatch(knownClientAnnotation)
+                            || method.parameters().stream().flatMap(p -> p.annotations().stream())
+                                    .anyMatch(knownClientAnnotation)) {
+                        continue;
+                    }
+
                     returnsBySubResources.computeIfAbsent(classInfo.name(), ignored -> new HashSet<>())
-                            .add(typeToReturnName.apply(method.returnType()));
+                            .add(methodToReturnName.apply(method));
                 }
             }
             //sub resources can also have just a path annotation
@@ -776,8 +802,16 @@ public class ResteasyReactiveProcessor {
                     MethodInfo method = instance.target().asMethod();
                     ClassInfo classInfo = method.declaringClass();
 
+                    // Reject known client interfaces (See predicate above)
+                    if (classInfo.annotations().stream().anyMatch(knownClientAnnotation)
+                            || method.annotations().stream().anyMatch(knownClientAnnotation)
+                            || method.parameters().stream().flatMap(p -> p.annotations().stream())
+                                    .anyMatch(knownClientAnnotation)) {
+                        continue;
+                    }
+
                     returnsBySubResources.computeIfAbsent(classInfo.name(), ignored -> new HashSet<>())
-                            .add(typeToReturnName.apply(method.returnType()));
+                            .add(methodToReturnName.apply(method));
                 }
             }
 

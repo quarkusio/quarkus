@@ -118,6 +118,10 @@ object CreateNodesResultGenerator {
                 executor = target.executor
                 metadata = target.metadata
                 dependsOn = ArrayList(target.dependsOn)
+                cache = target.cache  // Copy cache property
+                
+                // Debug: Log cache copying
+                println("DEBUG: Copying cache for target $targetName: ${target.cache} -> ${this.cache}")
                 
                 // Update cwd in options
                 val options = target.options.toMutableMap()

@@ -113,6 +113,14 @@ class TargetGenerationService(
             target.inputs = mutableListOf()
             target.outputs = mutableListOf()
 
+            // Enable caching for appropriate phases
+            val cacheEnabled = shouldEnableCachingForPhase(phase)
+            target.cache = true  // Test: Force cache to true
+            
+            if (verbose) {
+                log?.info("DEBUG: Setting cache for phase '$phase' to: $cacheEnabled (forced to true)")
+            }
+
             // Add metadata
             val description = "Maven lifecycle phase: $phase (depends on ${target.dependsOn.size} goals)"
             val metadata = TargetMetadata("phase", description).apply {
@@ -232,6 +240,14 @@ class TargetGenerationService(
         // Use pre-calculated dependencies
         target.dependsOn = dependencies.toMutableList()
 
+        // Enable caching for appropriate goals
+        val cacheEnabled = shouldEnableCaching(goal)
+        target.cache = true  // Test: Force cache to true
+        
+        if (verbose) {
+            log?.info("DEBUG: Setting cache for goal '$goal' to: $cacheEnabled (forced to true)")
+        }
+
         // Metadata
         val metadata = TargetMetadata("goal", generateGoalDescription(plugin.artifactId, goal)).apply {
             this.plugin = pluginKey
@@ -304,6 +320,14 @@ class TargetGenerationService(
 
         // Use pre-calculated dependencies
         target.dependsOn = dependencies.toMutableList()
+
+        // Enable caching for appropriate goals
+        val cacheEnabled = shouldEnableCaching(goal)
+        target.cache = true  // Test: Force cache to true
+        
+        if (verbose) {
+            log?.info("DEBUG: Setting cache for simple goal '$goal' to: $cacheEnabled (forced to true)")
+        }
 
         val metadata = TargetMetadata("goal", generateGoalDescription(plugin.artifactId, goal)).apply {
             this.plugin = pluginKey
@@ -446,6 +470,130 @@ class TargetGenerationService(
             "enforce" -> "Enforce build rules"
             "create" -> "Create build metadata"
             else -> "$pluginName $goal"
+        }
+    }
+
+    /**
+     * Determine if caching should be enabled for a given Maven goal.
+     * 
+     * Caching is enabled for:
+     * - Build goals (compile, testCompile, jar, war, package, etc.)
+     * - Test goals (test, integration-test, etc.) 
+     * - Analysis goals (enforce, checkstyle, spotbugs, etc.)
+     * - Documentation goals (javadoc, site, etc.)
+     * 
+     * Caching is disabled for:
+     * - Runtime goals (dev, run, exec, etc.)
+     * - Deployment goals (deploy, release, etc.)
+     * - Interactive goals (interactive mode, etc.)
+     */
+    private fun shouldEnableCaching(goal: String): Boolean {
+        if (verbose) {
+            log?.info("DEBUG: shouldEnableCaching called with goal: '$goal'")
+        }
+        return when {
+            // Build and compilation goals - always cacheable
+            goal.endsWith(":compile") || goal == "compile" -> true
+            goal.endsWith(":testCompile") || goal == "testCompile" -> true
+            goal.endsWith(":jar") || goal == "jar" -> true
+            goal.endsWith(":war") || goal == "war" -> true
+            goal.endsWith(":package") || goal == "package" -> true
+            goal.endsWith(":build") || goal == "build" -> true
+            goal.endsWith(":jar-no-fork") || goal == "jar-no-fork" -> true
+            goal.contains("process-classes") || goal.contains("process-sources") -> true
+            goal.contains("process-resources") || goal.contains("generate-") -> true
+            
+            // Test goals - cacheable  
+            goal.endsWith(":test") || goal == "test" -> true
+            goal.contains("integration-test") -> true
+            goal.endsWith(":verify") || goal == "verify" -> true
+            goal.contains("jacoco") -> true
+            
+            // Analysis and quality goals - cacheable
+            goal.endsWith(":enforce") || goal == "enforce" -> true
+            goal.endsWith(":check") || goal.contains("checkstyle") || goal.contains("spotbugs") -> true
+            goal.contains("pmd") || goal.contains("findbugs") -> true
+            goal.contains("dependency") && (goal.contains("analyze") || goal.contains("tree")) -> true
+            goal.contains("versions") && goal.contains("display") -> true
+            goal.contains("forbiddenapis") -> true
+            
+            // Documentation goals - cacheable
+            goal.contains("javadoc") || goal.contains("site") -> true
+            
+            // Resource processing goals - cacheable
+            goal.endsWith(":resources") || goal.endsWith(":testResources") -> true
+            goal.contains("copy-resources") -> true
+            
+            // Build metadata goals - cacheable
+            goal.endsWith(":create") || goal == "create" -> true
+            goal.contains("buildnumber") -> true
+            goal.contains("properties") && goal.contains("set") -> true
+            goal.contains("formatter") && goal.contains("format") -> true
+            goal.contains("impsort") -> true
+            
+            // Extension/plugin specific goals that are cacheable
+            goal.contains("extension-descriptor") -> true
+            
+            // Runtime and deployment goals - not cacheable
+            goal.endsWith(":dev") || goal == "dev" -> false
+            goal.endsWith(":run") || goal == "run" -> false
+            goal.contains("exec") && (goal.contains("exec") || goal.contains("java")) -> false
+            goal.contains("spring-boot:run") || goal.contains("quarkus:dev") -> false
+            goal.contains("quarkus:run") || goal.contains("tomcat:run") -> false
+            goal.contains("jetty:run") -> false
+            
+            // Deployment goals - not cacheable
+            goal.endsWith(":deploy") || goal == "deploy" -> false
+            goal.endsWith(":install") || goal == "install" -> false
+            goal.contains("release") -> false
+            
+            // Interactive goals - not cacheable
+            goal.contains("archetype:generate") -> false
+            goal.contains("dependency:resolve-sources") -> false
+            
+            // Default to cacheable for unknown goals
+            // This is safe because most Maven goals are deterministic
+            else -> true
+        }
+    }
+
+    /**
+     * Determine if caching should be enabled for a given Maven lifecycle phase.
+     * 
+     * Caching is enabled for phases that represent deterministic build steps:
+     * - Compilation phases (compile, test-compile)
+     * - Test phases (test, integration-test, verify)
+     * - Package phases (package, prepare-package)
+     * - Processing phases (process-sources, process-resources, etc.)
+     * 
+     * Caching is disabled for phases that involve external systems or runtime:
+     * - Deployment phases (deploy, install)
+     * - Interactive phases
+     */
+    private fun shouldEnableCachingForPhase(phase: String): Boolean {
+        if (verbose) {
+            log?.info("DEBUG: shouldEnableCachingForPhase called with phase: '$phase'")
+        }
+        return when (phase) {
+            // Build phases - cacheable
+            "validate", "initialize", "generate-sources", "process-sources", 
+            "generate-resources", "process-resources", "compile", "process-classes",
+            "generate-test-sources", "process-test-sources", "generate-test-resources",
+            "process-test-resources", "test-compile", "process-test-classes",
+            "test", "prepare-package", "package", "pre-integration-test",
+            "integration-test", "post-integration-test", "verify" -> true
+            
+            // Clean phases - cacheable (deterministic)
+            "pre-clean", "clean", "post-clean" -> true
+            
+            // Site phases - cacheable
+            "pre-site", "site", "post-site" -> true
+            
+            // Deployment phases - not cacheable (external systems)
+            "install", "deploy", "site-deploy" -> false
+            
+            // Default to cacheable for unknown phases
+            else -> true
         }
     }
 }

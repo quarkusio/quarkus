@@ -12,10 +12,18 @@ export async function setup() {
   const cleanDuration = Date.now() - cleanStart;
   console.log(`⏱️  Maven clean completed in ${cleanDuration}ms`);
 
-  // Step 2: Recompile Java components
-  console.log('📦 Recompiling Java components...');
+  // Step 2: Recompile Java components (with cache disabled to ensure fresh compilation)
+  console.log('📦 Recompiling Java components with fresh build...');
   const javaCompileStart = Date.now();
-  execSync('cd maven-plugin && mvn install -DskipTests', { stdio: 'inherit' });
+  // Disable Develocity build cache to ensure source changes are compiled
+  const env = {
+    ...process.env,
+    GRADLE_ENTERPRISE_BUILD_CACHE_ENABLED: 'false'
+  };
+  execSync('cd maven-plugin && mvn clean install -DskipTests -Dno-build-cache', {
+    stdio: 'inherit',
+    env
+  });
   const javaCompileDuration = Date.now() - javaCompileStart;
   console.log(`⏱️  Java compilation completed in ${javaCompileDuration}ms`);
 

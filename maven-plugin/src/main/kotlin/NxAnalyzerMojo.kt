@@ -390,9 +390,9 @@ class NxAnalyzerMojo : AbstractMojo() {
     
     @Throws(IOException::class)
     private fun writeResult(result: Map<String, Any>, outputPath: String) {
+        
         val gson = GsonBuilder()
             .setPrettyPrinting()
-            .serializeNulls()
             .create()
             
         FileWriter(outputPath).use { writer ->

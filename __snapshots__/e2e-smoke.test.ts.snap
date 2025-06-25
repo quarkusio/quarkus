@@ -170,15 +170,14 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
     "name": "io.quarkus:quarkus-core",
     "projectType": "library",
     "root": "core/runtime",
-    "sourceRoot": null,
     "tags": [],
     "targets": {
       "buildnumber:create": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -218,6 +217,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "clean": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-clean:clean",
@@ -226,8 +226,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: clean (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "clean",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -240,6 +238,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "compile": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-compiler:compile",
@@ -248,8 +247,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: compile (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "compile",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -262,6 +259,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "deploy": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-deploy:deploy",
@@ -270,8 +268,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: deploy (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "deploy",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -284,6 +280,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "forbiddenapis:check": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -297,7 +294,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-surefire:test",
           "maven-jar:jar",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -337,12 +333,12 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "formatter:format": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
           "buildnumber:create",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -382,14 +378,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "generate-resources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: generate-resources (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "generate-resources",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -402,14 +397,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "generate-sources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: generate-sources (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "generate-sources",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -422,14 +416,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "generate-test-resources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: generate-test-resources (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "generate-test-resources",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -442,14 +435,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "generate-test-sources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: generate-test-sources (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "generate-test-sources",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -462,6 +454,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "impsort:sort": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
@@ -472,7 +465,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "description": "impsort sort",
           "executionId": "sort-imports",
           "goal": "sort",
-          "phase": null,
           "plugin": "net.revelc.code:impsort-maven-plugin",
           "technologies": [
             "maven",
@@ -492,6 +484,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "initialize": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "buildnumber:create",
@@ -500,8 +493,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: initialize (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "initialize",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -514,6 +505,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "install": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-install:install",
@@ -522,8 +514,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: install (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "install",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -536,14 +526,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "integration-test": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: integration-test (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "integration-test",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -556,11 +545,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-clean:clean": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-clean:clean",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -600,6 +589,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-compiler:compile": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -608,7 +598,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "quarkus-extension:extension-descriptor",
           "maven-resources:resources",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -649,6 +638,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-compiler:testCompile": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -659,7 +649,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-compiler:compile",
           "maven-resources:testResources",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -701,6 +690,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-deploy:deploy": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -716,7 +706,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "forbiddenapis:check",
           "maven-install:install",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -756,10 +745,10 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-enforcer:enforce": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -799,6 +788,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-install:install": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -813,7 +803,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-jar:jar",
           "forbiddenapis:check",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -853,6 +842,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-jar:jar": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -865,7 +855,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-compiler:testCompile",
           "maven-surefire:test",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -905,13 +894,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-resources:resources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
           "buildnumber:create",
           "formatter:format",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -951,6 +940,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-resources:testResources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -960,7 +950,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-resources:resources",
           "maven-compiler:compile",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -1000,6 +989,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-site:deploy": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -1015,7 +1005,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "forbiddenapis:check",
           "maven-install:install",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -1055,10 +1044,10 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-site:site": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -1099,6 +1088,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-source:jar-no-fork": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -1111,7 +1101,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-compiler:testCompile",
           "maven-surefire:test",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -1155,6 +1144,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "maven-surefire:test": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -1166,7 +1156,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-resources:testResources",
           "maven-compiler:testCompile",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -1208,6 +1197,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "package": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-source:jar-no-fork",
@@ -1217,8 +1207,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: package (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "package",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1231,14 +1219,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "post-clean": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: post-clean (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "post-clean",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1251,14 +1238,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "post-integration-test": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: post-integration-test (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "post-integration-test",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1271,14 +1257,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "post-site": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: post-site (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "post-site",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1291,14 +1276,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "pre-clean": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: pre-clean (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "pre-clean",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1311,14 +1295,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "pre-integration-test": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: pre-integration-test (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "pre-integration-test",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1331,14 +1314,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "pre-site": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: pre-site (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "pre-site",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1351,14 +1333,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "prepare-package": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: prepare-package (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "prepare-package",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1371,14 +1352,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "process-classes": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: process-classes (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "process-classes",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1391,6 +1371,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "process-resources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "quarkus-extension:extension-descriptor",
@@ -1400,8 +1381,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: process-resources (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "process-resources",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1414,6 +1393,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "process-sources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "formatter:format",
@@ -1422,8 +1402,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: process-sources (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "process-sources",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1436,14 +1414,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "process-test-classes": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: process-test-classes (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "process-test-classes",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1456,6 +1433,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "process-test-resources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-resources:testResources",
@@ -1464,8 +1442,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: process-test-resources (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "process-test-resources",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1478,14 +1454,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "process-test-sources": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "nx:noop",
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: process-test-sources (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "process-test-sources",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1498,6 +1473,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "quarkus-extension:build": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
@@ -1506,9 +1482,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         ],
         "metadata": {
           "description": "Build application",
-          "executionId": null,
           "goal": "build",
-          "phase": null,
           "plugin": "io.quarkus:quarkus-extension-maven-plugin",
           "technologies": [
             "maven",
@@ -1528,6 +1502,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "quarkus-extension:dev": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
@@ -1536,9 +1511,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         ],
         "metadata": {
           "description": "Start development mode",
-          "executionId": null,
           "goal": "dev",
-          "phase": null,
           "plugin": "io.quarkus:quarkus-extension-maven-plugin",
           "technologies": [
             "maven",
@@ -1558,13 +1531,13 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "quarkus-extension:extension-descriptor": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
           "buildnumber:create",
           "formatter:format",
           {
-            "dependencies": null,
             "params": "ignore",
             "projects": [
               "io.quarkus:quarkus-ide-launcher",
@@ -1604,6 +1577,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "site": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-site:site",
@@ -1612,8 +1586,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: site (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "site",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1626,6 +1598,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "site-deploy": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-site:deploy",
@@ -1634,8 +1607,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: site-deploy (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "site-deploy",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1648,6 +1619,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "test": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-surefire:test",
@@ -1656,8 +1628,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: test (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "test",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1670,6 +1640,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "test-compile": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-compiler:testCompile",
@@ -1678,8 +1649,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: test-compile (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "test-compile",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1692,6 +1661,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "validate": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce",
@@ -1700,8 +1670,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: validate (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "validate",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [
@@ -1714,6 +1682,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "parallelism": true,
       },
       "verify": {
+        "cache": true,
         "configurations": {},
         "dependsOn": [
           "forbiddenapis:check",
@@ -1722,8 +1691,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "inputs": [],
         "metadata": {
           "description": "Maven lifecycle phase: verify (depends on 0 goals)",
-          "executionId": null,
-          "goal": null,
           "phase": "verify",
           "plugin": "org.apache.maven:maven-core",
           "technologies": [

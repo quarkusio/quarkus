@@ -66,8 +66,8 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>io.github.crac</groupId>
-            <artifactId>org-crac</artifactId>
+            <groupId>org.crac</groupId>
+            <artifactId>crac</artifactId>
         </dependency>
         <!-- needed when quarkus.http.compressors contains "br" see https://github.com/quarkusio/quarkus/issues/43556 -->
         <dependency>

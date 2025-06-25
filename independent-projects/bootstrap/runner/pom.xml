@@ -55,8 +55,8 @@
             <artifactId>jboss-logging</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.github.crac</groupId>
-            <artifactId>org-crac</artifactId>
+            <groupId>org.crac</groupId>
+            <artifactId>crac</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

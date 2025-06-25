@@ -1,5 +1,6 @@
 package io.quarkus.kubernetes.client.runtime.internal;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -48,6 +49,13 @@ public interface KubernetesDevServicesBuildTimeConfig {
      */
     @WithDefault("false")
     boolean overrideKubeconfig();
+
+    /**
+     * A list of manifest file paths that should be applied to the Kubernetes cluster Dev Service on startup.
+     *
+     * If not set, no manifests are applied.
+     */
+    Optional<List<String>> manifests();
 
     /**
      * Indicates if the Kubernetes cluster managed by Quarkus Dev Services is shared.

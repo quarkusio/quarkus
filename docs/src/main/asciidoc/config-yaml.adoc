@@ -159,6 +159,13 @@ quarkus:
     port: 8082
 ----
 
+[IMPORTANT]
+====
+An `application.yaml` file must exist (even if empty) in the exact location of the profile-aware
+(`application-{profile}.yaml`) file to be included in the configuration to ensure a consistent order when
+loading the files.
+====
+
 == Expressions
 
 The YAML format also supports xref:config-reference.adoc#property-expressions[property expressions], by using the same format as Java properties:

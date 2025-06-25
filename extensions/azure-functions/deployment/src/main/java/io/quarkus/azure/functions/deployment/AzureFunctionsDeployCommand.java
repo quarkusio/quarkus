@@ -57,7 +57,6 @@ import io.quarkus.deployment.cmd.DeployCommandActionBuildItem;
 import io.quarkus.deployment.cmd.DeployCommandDeclarationBuildItem;
 import io.quarkus.deployment.cmd.DeployConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.logging.Log;
 
 public class AzureFunctionsDeployCommand {
     private static final Logger log = Logger.getLogger(AzureFunctionsDeployCommand.class);
@@ -323,7 +322,7 @@ public class AzureFunctionsDeployCommand {
         final List<Subscription> subscriptions = Azure.az(IAzureAccount.class).account().getSelectedSubscriptions();
         final Subscription subscription = subscriptions.get(0);
         if (subscription != null) {
-            Log.info(format(SUBSCRIPTION_TEMPLATE, TextUtils.cyan(subscription.getName()),
+            log.info(format(SUBSCRIPTION_TEMPLATE, TextUtils.cyan(subscription.getName()),
                     TextUtils.cyan(subscription.getId())));
         }
     }

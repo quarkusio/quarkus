@@ -9,10 +9,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.jboss.logging.Logger;
+
 import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.TargetClass;
-
-import io.quarkus.logging.Log;
 
 /**
  * Implements version parsing from the {@code com.oracle.svm.core.VM} property inspired by
@@ -21,6 +21,7 @@ import io.quarkus.logging.Log;
  * {@code org.graalvm.polyglot:polyglot}.
  */
 public final class GraalVM {
+    private static final Logger log = Logger.getLogger(GraalVM.class);
 
     static final class VersionParseHelper {
 
@@ -67,7 +68,7 @@ public final class GraalVM {
                 }
             }
 
-            Log.warnf("Failed to parse GraalVM version from: %s. Defaulting to currently supported version %s ", value,
+            log.warnf("Failed to parse GraalVM version from: %s. Defaulting to currently supported version %s ", value,
                     Version.CURRENT);
             return Version.CURRENT;
         }
@@ -175,7 +176,7 @@ public final class GraalVM {
                 }
             } catch (Throwable e) {
                 // fall-through do default
-                Log.warnf("Failed to parse JDK version from GraalVM version: %s. Defaulting to currently supported version %s ",
+                log.warnf("Failed to parse JDK version from GraalVM version: %s. Defaulting to currently supported version %s ",
                         communityVersion,
                         DEFAULT_JDK_VERSION);
             }

@@ -8,7 +8,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 
 @Path("/kafka")
-public class KafkaEndpoint {
+public class BundledEndpoint {
 
     @Inject
     KafkaAdminManager admin;
@@ -21,13 +21,7 @@ public class KafkaEndpoint {
 
     @GET
     @Path("/port")
-    public Integer partitions() throws ExecutionException, InterruptedException {
+    public Integer port() throws ExecutionException, InterruptedException {
         return admin.port();
-    }
-
-    @GET
-    @Path("/image")
-    public String image() throws ExecutionException, InterruptedException {
-        return admin.image();
     }
 }

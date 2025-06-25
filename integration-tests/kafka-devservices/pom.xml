@@ -58,6 +58,16 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devservices-common</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.rest-assured</groupId>
             <artifactId>rest-assured</artifactId>
             <scope>test</scope>
@@ -205,7 +215,31 @@
                         <configuration>
                             <skip>false</skip>
                         </configuration>
-                    </plugin>
+                            <executions>
+                                <execution>
+                                    <id>default-test</id>
+                                    <goals>
+                                        <goal>test</goal>
+                                    </goals>
+                                    <configuration>
+                                        <excludes>
+                                            <exclude>**/continuoustesting/**/*.java</exclude>
+                                        </excludes>
+                                    </configuration>
+                                </execution>
+                                <execution>
+                                    <id>devmode-test</id>
+                                    <goals>
+                                        <goal>test</goal>
+                                    </goals>
+                                    <configuration>
+                                        <includes>
+                                            <include>**/continuoustesting/**/*.java</include>
+                                        </includes>
+                                    </configuration>
+                                </execution>
+                            </executions>
+                        </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>

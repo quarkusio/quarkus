@@ -41,6 +41,7 @@ public class KafkaAdminManager {
     }
 
     public int partitions(String topic) {
+
         TopicDescription topicDescription;
         try {
             Map<String, TopicDescription> partitions = admin.describeTopics(Collections.singletonList(topic))
@@ -53,6 +54,17 @@ public class KafkaAdminManager {
             throw new IllegalArgumentException("Topic doesn't exist: " + topic);
         }
         return topicDescription.partitions().size();
+    }
+
+    int port() throws InterruptedException, ExecutionException {
+        return admin.describeCluster().controller().get().port();
+    }
+
+    String image() throws InterruptedException, ExecutionException {
+        // By observation, the red panda does not return anything for the supported features call
+        // It would be nice to have a more robust check, but hopefully this fragile check is good enough
+        boolean isRedPanda = admin.describeFeatures().featureMetadata().get().supportedFeatures().size() == 0;
+        return isRedPanda ? "redpanda" : "kafka-native";
     }
 
 }

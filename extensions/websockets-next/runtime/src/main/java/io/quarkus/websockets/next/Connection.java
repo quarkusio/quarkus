@@ -99,6 +99,12 @@ public interface Connection extends Sender {
 
     /**
      *
+     * @return the subprotocol selected by the handshake
+     */
+    String subprotocol();
+
+    /**
+     *
      * @return the time when this connection was created
      */
     Instant creationTime();

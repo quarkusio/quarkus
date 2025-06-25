@@ -27,6 +27,15 @@ public interface KubernetesDevServicesBuildTimeConfig {
     Optional<String> apiVersion();
 
     /**
+     * The kubernetes image to use.
+     * <p>
+     * If not set, Dev Services for Kubernetes will use default image for the specified {@link #apiVersion()} for the given
+     * {@link #flavor()}.
+     */
+
+    Optional<String> imageName();
+
+    /**
      * The flavor to use (kind, k3s or api-only).
      * <p>
      * If not set, Dev Services for Kubernetes will set it to: api-only.

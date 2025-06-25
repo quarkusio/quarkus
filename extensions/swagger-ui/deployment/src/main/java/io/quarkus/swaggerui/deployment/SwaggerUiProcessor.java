@@ -3,6 +3,7 @@ package io.quarkus.swaggerui.deployment;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.util.UriNormalizationUtil;
 import io.quarkus.devui.deployment.menu.EndpointsProcessor;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -108,7 +110,17 @@ public class SwaggerUiProcessor {
 
             }
 
-            String openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
+            String openApiPath;
+            if (swaggerUiConfig.rootPath().isPresent()) {
+                URI root = UriNormalizationUtil.toURI("/", true);
+                openApiPath = UriNormalizationUtil.normalizeWithBase(
+                        root,
+                        swaggerUiConfig.rootPath().get()
+                                + nonApplicationRootPathBuildItem.resolvePath(openapi.path()),
+                        false).getPath();
+            } else {
+                openApiPath = nonApplicationRootPathBuildItem.resolvePath(openapi.path());
+            }
 
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             ThemeHref theme = swaggerUiConfig.theme().orElse(ThemeHref.feeling_blue);
@@ -380,6 +392,12 @@ public class SwaggerUiProcessor {
         if (swaggerUiConfig.queryConfigEnabled()) {
             options.put(Option.queryConfigEnabled, "true");
         }
+        if (swaggerUiConfig.rootPath().isPresent()) {
+            var rootPath = swaggerUiConfig.rootPath().get();
+            addRootPath(rootPath, Option.selfHref, options);
+            addRootPath(rootPath, Option.backHref, options);
+            addRootPath(rootPath, Option.oauth2RedirectUrl, options);
+        }
 
         ObjectMapper objectMapper = new ObjectMapper();
         Map<String, String> oauthAdditionalQueryStringParamMap = new HashMap<>();
@@ -437,6 +455,16 @@ public class SwaggerUiProcessor {
         }
 
         return IndexHtmlCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName().orElse(null), options);
+    }
+
+    private void addRootPath(String rootPath, Option key, Map<Option, String> options) {
+        var value = options.get(key);
+        if (value != null) {
+            URI root = UriNormalizationUtil.toURI("/", true);
+            var behindRootPath = UriNormalizationUtil.normalizeWithBase(root, rootPath + value, false)
+                    .getPath();
+            options.put(key, behindRootPath);
+        }
     }
 
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SwaggerUiConfig swaggerUiConfig) {

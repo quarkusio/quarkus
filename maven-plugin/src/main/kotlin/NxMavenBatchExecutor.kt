@@ -108,10 +108,21 @@ object NxMavenBatchExecutor {
             
             val invoker = DefaultInvoker()
             
-            // Find Maven executable
+            // Find Maven executable - check MAVEN_HOME first, then try to find mvn in PATH
             val mavenHome = System.getenv("MAVEN_HOME")
             if (mavenHome != null) {
                 invoker.mavenHome = File(mavenHome)
+            } else {
+                // Try to find Maven executable in PATH
+                val mavenExecutable = findMavenExecutable()
+                if (mavenExecutable != null) {
+                    // Set Maven home to parent directory of mvn executable
+                    val mvnFile = File(mavenExecutable)
+                    val binDir = mvnFile.parentFile
+                    if (binDir != null && binDir.name == "bin") {
+                        invoker.mavenHome = binDir.parentFile
+                    }
+                }
             }
             
             val request = DefaultInvocationRequest().apply {
@@ -187,6 +198,26 @@ object NxMavenBatchExecutor {
         }
         
         return goalResult
+    }
+
+    /**
+     * Find Maven executable in PATH
+     */
+    private fun findMavenExecutable(): String? {
+        val pathEnv = System.getenv("PATH") ?: return null
+        val pathSeparator = System.getProperty("path.separator")
+        val paths = pathEnv.split(pathSeparator)
+        
+        val mvnCommand = if (System.getProperty("os.name").lowercase().contains("windows")) "mvn.cmd" else "mvn"
+        
+        for (path in paths) {
+            val mvnFile = File(path, mvnCommand)
+            if (mvnFile.exists() && mvnFile.canExecute()) {
+                return mvnFile.absolutePath
+            }
+        }
+        
+        return null
     }
 
     /**

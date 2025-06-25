@@ -45,7 +45,11 @@ import com.dajudge.kindcontainer.client.config.UserSpec;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
+import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.client.ConfigBuilder;
+import io.fabric8.kubernetes.client.DefaultKubernetesClient;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -158,6 +162,8 @@ public class DevServicesKubernetesProcessor {
                     "Dev Services for Kubernetes started. Other Quarkus applications in dev mode will find the "
                             + "cluster automatically.");
         }
+
+        configuration.manifests.ifPresent(manifests -> deployManifests(manifests, devService.getConfig()));
 
         return devService.toBuildItem();
     }
@@ -281,6 +287,53 @@ public class DevServicesKubernetesProcessor {
         return constructor.apply(imageSpec);
     }
 
+    /**
+     * Pre-deploys a set of user-specified manifests to the Kubernetes dev service.
+     * Certain Quarkus applications may expect their Kubernetes environment to have certain resources deployed.
+     * E.g. Certain custom resources should be available for the application to deploy.
+     */
+    private void deployManifests(List<String> manifests, Map<String, String> config) {
+        Config kubeConfig = new ConfigBuilder()
+                .withMasterUrl(config.get(KUBERNETES_CLIENT_MASTER_URL))
+                .withCaCertData(config.get("quarkus.kubernetes-client.ca-cert-data"))
+                .withClientCertData(config.get("quarkus.kubernetes-client.client-cert-data"))
+                .withClientKeyData(config.get("quarkus.kubernetes-client.client-key-data"))
+                .withClientKeyAlgo(config.get("quarkus.kubernetes-client.client-key-algo"))
+                .withNamespace(config.get("quarkus.kubernetes-client.namespace"))
+                .build();
+
+        try (KubernetesClient client = new DefaultKubernetesClient(kubeConfig)) {
+            for (String manifestPath : manifests) {
+                // Load the manifest from the resources directory
+                InputStream manifestStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(manifestPath);
+
+                if (manifestStream == null) {
+                    log.errorf("Could not find manifest file in resources: %s", manifestPath);
+                    continue;
+                }
+
+                try (manifestStream) {
+                    try {
+                        // A single manifest file may contain multiple resources to deploy
+                        List<HasMetadata> resources = client.load(manifestStream).items();
+
+                        if (resources.isEmpty()) {
+                            log.warnf("No resources found in manifest: %s", manifestPath);
+                        } else {
+                            resources.forEach(resource -> client.resource(resource).create());
+                        }
+                    } catch (Exception ex) {
+                        log.errorf("Failed to deploy manifest %s: %s", manifestPath, ex.getMessage());
+                    }
+                }
+
+                log.infof("Deployed manifest %s.", manifestPath);
+            }
+        } catch (Exception e) {
+            log.error("Failed to create Kubernetes client while trying to deploy manifests.", e);
+        }
+    }
+
     private <T extends KubernetesVersionEnum<T>> T findOrElseThrow(final Flavor flavor, final String version,
             final Class<T> versions) {
         final String versionWithPrefix = !version.startsWith("v") ? "v" + version : version;
@@ -333,6 +386,7 @@ public class DevServicesKubernetesProcessor {
         public boolean shared;
         public String serviceName;
         public Map<String, String> containerEnv;
+        public Optional<List<String>> manifests;
 
         public KubernetesDevServiceCfg(KubernetesDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled();
@@ -344,6 +398,7 @@ public class DevServicesKubernetesProcessor {
             this.flavor = config.flavor();
             this.shared = config.shared();
             this.containerEnv = config.containerEnv();
+            this.manifests = config.manifests();
         }
 
         @Override

@@ -234,7 +234,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         if (a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
             ProjectComponentIdentifier projectComponentIdentifier = (ProjectComponentIdentifier) a.getId()
                     .getComponentIdentifier();
-            var includedBuild = ToolingUtils.includedBuild(project, projectComponentIdentifier.getBuild().getName());
+            var includedBuild = ToolingUtils.includedBuild(project, projectComponentIdentifier.getBuild().getBuildPath());
             final Project projectDep;
             if (includedBuild != null) {
                 projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
@@ -361,7 +361,7 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 final String classifier = a.getClassifier();
                 if (classifier == null || classifier.isEmpty()) {
                     final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(),
-                            compId.getBuild().getName());
+                            compId.getBuild().getBuildPath());
                     if (includedBuild != null) {
                         if (includedBuild instanceof IncludedBuildInternal ib) {
                             projectDep = ToolingUtils.includedBuildProject(ib, compId.getProjectPath());

@@ -46,7 +46,7 @@ public class ToolingUtils {
                 || Category.REGULAR_PLATFORM.equals(category.getName()));
     }
 
-    public static IncludedBuild includedBuild(final Project project, final String buildName) {
+    public static IncludedBuild includedBuild(final Project project, final String buildPath) {
         Gradle currentGradle = project.getRootProject().getGradle();
         while (null != currentGradle) {
             for (IncludedBuild ib : currentGradle.getIncludedBuilds()) {
@@ -54,7 +54,7 @@ public class ToolingUtils {
                     continue;
                 }
 
-                if (ib.getName().equals(buildName)) {
+                if (((IncludedBuildInternal) ib).getTarget().getBuildIdentifier().getBuildPath().equals(buildPath)) {
                     return ib;
                 }
             }

@@ -24,4 +24,10 @@ public class DevServicesKubernetesTest {
         Assertions.assertEquals("v" + DevServiceKubernetes.API_VERSION,
                 kubernetesClient.getKubernetesVersion().getGitVersion());
     }
+
+    @Test
+    @DisplayName("specified manifest must be applied to the cluster by the dev service")
+    public void manifestIsApplied() {
+        Assertions.assertNotNull(kubernetesClient.namespaces().withName("example-namespace").get());
+    }
 }

@@ -52,7 +52,8 @@ env:
   COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
   NATIVE_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.native.native-image-xmx=6g -Dnative -Dnative.surefire.skip -Dno-descriptor-tests clean install -DskipDocs"
   JVM_TEST_MAVEN_ARGS: "-Dtest-containers -Dstart-containers -Dquarkus.test.hang-detection-timeout=60"
-  PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
+  #PTS_MAVEN_ARGS: "-Ddevelocity.pts.enabled=${{ github.event_name == 'pull_request' && github.base_ref == 'main' && 'true' || 'false' }}"
+  PTS_MAVEN_ARGS: ""
   DB_USER: hibernate_orm_test
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test

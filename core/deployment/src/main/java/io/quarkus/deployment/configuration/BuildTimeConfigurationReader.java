@@ -128,6 +128,7 @@ public final class BuildTimeConfigurationReader {
     final List<ConfigClass> buildTimeRunTimeMappings;
     final List<ConfigClass> runTimeMappings;
     final List<ConfigClass> buildTimeVisibleMappings;
+    final Set<String> mappingsIgnorePaths;
 
     final Set<String> deprecatedProperties;
     final Set<String> deprecatedRuntimeProperties;
@@ -255,6 +256,28 @@ public final class BuildTimeConfigurationReader {
         buildTimeVisibleMappings = new ArrayList<>(buildTimeMappings.size() + buildTimeRunTimeMappings.size());
         buildTimeVisibleMappings.addAll(buildTimeMappings);
         buildTimeVisibleMappings.addAll(buildTimeRunTimeMappings);
+
+        mappingsIgnorePaths = new HashSet<>();
+        for (ConfigClass buildTimeMapping : buildTimeMappings) {
+            // Already ignored all the quarkus namespace in QuarkusConfigBuilderCustomizer
+            if (buildTimeMapping.getPrefix().equals("quarkus") || buildTimeMapping.getPrefix().startsWith("quarkus.")) {
+                continue;
+            }
+
+            for (ConfigClass staticMapping : buildTimeRunTimeMappings) {
+                if (buildTimeMapping.getPrefix().equals(staticMapping.getPrefix())) {
+                    mappingsIgnorePaths.add(buildTimeMapping.getPrefix() + ".**");
+                    break;
+                }
+            }
+
+            for (ConfigClass runtimeMapping : runTimeMappings) {
+                if (buildTimeMapping.getPrefix().equals(runtimeMapping.getPrefix())) {
+                    mappingsIgnorePaths.add(buildTimeMapping.getPrefix() + ".**");
+                    break;
+                }
+            }
+        }
 
         deprecatedProperties = getDeprecatedProperties(allRoots);
         deprecatedRuntimeProperties = getDeprecatedProperties(runTimeRoots);
@@ -421,6 +444,9 @@ public final class BuildTimeConfigurationReader {
 
         for (ConfigClass mapping : getBuildTimeVisibleMappings()) {
             builder.withMapping(mapping);
+        }
+        for (String mappingsIgnorePath : mappingsIgnorePaths) {
+            builder.withMappingIgnore(mappingsIgnorePath);
         }
 
         builder.withInterceptors(buildConfigTracker);
@@ -672,7 +698,7 @@ public final class BuildTimeConfigurationReader {
 
             // ConfigMappings
             for (ConfigClass mapping : buildTimeVisibleMappings) {
-                objectsByClass.put(mapping.getKlass(), config.getConfigMapping(mapping.getKlass(), mapping.getPrefix()));
+                objectsByClass.put(mapping.getType(), config.getConfigMapping(mapping.getType(), mapping.getPrefix()));
             }
 
             Set<PropertyName> buildTimeNames = mappingsToNames(buildTimeMappings).keySet();
@@ -725,6 +751,7 @@ public final class BuildTimeConfigurationReader {
                     .setBuildTimeMappings(buildTimeMappings)
                     .setBuildTimeRunTimeMappings(buildTimeRunTimeMappings)
                     .setRunTimeMappings(runTimeMappings)
+                    .setMappingsIgnorePaths(mappingsIgnorePaths)
                     .setUnknownBuildProperties(unknownBuildProperties)
                     .setDeprecatedRuntimeProperties(deprecatedRuntimeProperties)
                     .setBuildConfigTracker(buildConfigTracker)
@@ -1319,6 +1346,7 @@ public final class BuildTimeConfigurationReader {
         final List<ConfigClass> buildTimeRunTimeMappings;
         final List<ConfigClass> runTimeMappings;
         final List<ConfigClass> allMappings;
+        final Set<String> mappingsIgnorePaths;
         final Map<Class<?>, ConfigClass> allMappingsByClass;
 
         final Set<String> unknownBuildProperties;
@@ -1343,6 +1371,7 @@ public final class BuildTimeConfigurationReader {
             this.buildTimeMappings = builder.getBuildTimeMappings();
             this.buildTimeRunTimeMappings = builder.getBuildTimeRunTimeMappings();
             this.runTimeMappings = builder.getRunTimeMappings();
+            this.mappingsIgnorePaths = builder.getMappingsIgnorePaths();
             this.allMappings = new ArrayList<>(mappingsToMap(builder).values());
             this.allMappingsByClass = mappingsToMap(builder);
 
@@ -1363,13 +1392,13 @@ public final class BuildTimeConfigurationReader {
         private static Map<Class<?>, ConfigClass> mappingsToMap(Builder builder) {
             Map<Class<?>, ConfigClass> map = new HashMap<>();
             for (ConfigClass mapping : builder.getBuildTimeMappings()) {
-                map.put(mapping.getKlass(), mapping);
+                map.put(mapping.getType(), mapping);
             }
             for (ConfigClass mapping : builder.getBuildTimeRunTimeMappings()) {
-                map.put(mapping.getKlass(), mapping);
+                map.put(mapping.getType(), mapping);
             }
             for (ConfigClass mapping : builder.getRunTimeMappings()) {
-                map.put(mapping.getKlass(), mapping);
+                map.put(mapping.getType(), mapping);
             }
             return map;
         }
@@ -1426,6 +1455,10 @@ public final class BuildTimeConfigurationReader {
             return runTimeMappings;
         }
 
+        public Set<String> getMappingsIgnorePaths() {
+            return mappingsIgnorePaths;
+        }
+
         public List<ConfigClass> getAllMappings() {
             return allMappings;
         }
@@ -1467,6 +1500,7 @@ public final class BuildTimeConfigurationReader {
             private List<ConfigClass> buildTimeMappings;
             private List<ConfigClass> buildTimeRunTimeMappings;
             private List<ConfigClass> runTimeMappings;
+            private Set<String> mappingsIgnorePaths;
             private Set<String> unknownBuildProperties;
             private Set<String> deprecatedRuntimeProperties;
             private ConfigTrackingInterceptor buildConfigTracker;
@@ -1576,6 +1610,15 @@ public final class BuildTimeConfigurationReader {
 
             Builder setRunTimeMappings(final List<ConfigClass> runTimeMappings) {
                 this.runTimeMappings = runTimeMappings;
+                return this;
+            }
+
+            Set<String> getMappingsIgnorePaths() {
+                return mappingsIgnorePaths;
+            }
+
+            Builder setMappingsIgnorePaths(final Set<String> mappingsIgnorePaths) {
+                this.mappingsIgnorePaths = mappingsIgnorePaths;
                 return this;
             }
 

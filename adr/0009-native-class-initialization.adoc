@@ -7,8 +7,9 @@
 == Context and Problem Statement
 
 Build time initialization of classes in native mode aligns with Quarkus' philosophy of doing as much as possible at build time to optimize run time performance and reduce startup time.
-However, build time initialization often leads to issues that require additional configuration or even code substitutions to be worked around.
-This complicates the development process and discourages developers from using Quarkus' native mode due to increased complexity if they rely on libraries not handled by Quarkus or some of its extensions.
+However, build time initialization of a class forces the class it transitively depends on to get build time initialized as well.
+This often leads to classes that should be run time initialized to get build time initialized resulting in issues that require additional configuration or even code substitutions to be worked around.
+This complicates the development process and discourages Quarkus users from using Quarkus' native mode due to increased complexity if they rely on libraries not handled by Quarkus or some of its extensions.
 
 Quarkus applications may depend at run time on:
 
@@ -23,7 +24,7 @@ The goal of this ADR is to define:
 
 == Decision Drivers
 
-* Reduce entry barrier for developers that want to use Quarkus native mode
+* Reduce entry barrier for Quarkus users that want to use Quarkus native mode
 * Benefit from build time initialization when possible
 * Allow developers to opt-in to build time initialization of parts that are run time initialized by default
 
@@ -82,7 +83,7 @@ class QA,arc,core,Camel,R1,R2,R3,R4,R5,UserExtension,UserExtensionBT,RestAssured
 
 *Cons*:
 
-- It requires developers to deal with issues that arise from build time initialization that are often non-trivial.
+- It requires Quarkus users to deal with issues that arise from build time initialization that are often non-trivial.
 - There is no easy way to exclude specific dependencies and possibly their transitive dependencies as well from build time initialization.
 
 === Initialize all classes at runtime
@@ -122,6 +123,7 @@ class UserExtensionBT buildtime
 *Cons*:
 
 - It does not allow Quarkus to take advantage of build time initialization, which can lead to slower startup times and higher memory usage.
+- It forces Quarkus users to take extra steps to support code that can't run at run time out of the box due to native image limitations (such as reflection, bytecode manipulation/generation, etc.), while build time initialization could enable them to run that code at build time without any limitations or special configuration.
 - It requires developers to explicitly configure classes to be initialized at build time, which can be cumbersome.
 - Is expected to result in bigger native executables.
 
@@ -169,7 +171,7 @@ class QA,arc,core,BT,Camel,R1,R2,R3,R4,UserExtension,UserExtensionBT,jboss build
 
 *Cons*:
 
-- Keeps the entry barrier for extension developers high.
+- Keeps the entry barrier for Quarkus extension writers high.
 
 ==== Proposal 2: Initialize Quarkus core and a vetted list of Quarkus extensions along with their transitive dependencies at build time
 
@@ -203,7 +205,7 @@ class QA,arc,core,BT,Camel,R1,R2,R4,UserExtensionBT,jboss buildtime
 *Pros*:
 
 - Changes the current behavior as little as possible.
-- Reduces the entry barrier for most Quarkus users as well as extension developers.
+- Reduces the entry barrier for most Quarkus users as well as Quarkus extension writers.
 
 *Cons*:
 
@@ -277,12 +279,13 @@ class QA,arc,core,R1,R2,jboss buildtime
 
 *Pros*:
 
-- Reduces the entry barrier for most Quarkus users as well as extension developers.
+- Reduces the entry barrier for most Quarkus users as well as Quarkus extension writers.
 - Reduce maintenance burden as only a small set of dependencies is initialized at build time.
 
 *Cons*:
 
 - Expected to result in slower startup times and higher memory usage.
+- Expected to result in lower run time performance, due to reduced dead code elimination and thus optimizations.
 - Expected to result in bigger native executables.
 - Expected to result in some behavior differences.
 

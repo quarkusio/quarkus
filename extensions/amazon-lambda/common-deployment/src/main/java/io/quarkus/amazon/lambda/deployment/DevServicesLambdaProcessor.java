@@ -93,8 +93,10 @@ public class DevServicesLambdaProcessor {
             System.setProperty(propName, portPropertyValue);
         }
 
-        devServicePropertiesProducer.produce(
-                new DevServicesResultBuildItem(Feature.AMAZON_LAMBDA.getName(), null, properties));
+        devServicePropertiesProducer.produce(DevServicesResultBuildItem.discovered()
+                .feature(Feature.AMAZON_LAMBDA)
+                .config(properties)
+                .build());
         Runnable closeTask = () -> {
             if (server != null) {
                 try {

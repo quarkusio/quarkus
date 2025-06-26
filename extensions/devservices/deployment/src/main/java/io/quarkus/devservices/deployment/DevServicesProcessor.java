@@ -45,7 +45,6 @@ import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
-import io.quarkus.deployment.builditem.DevServicesRequestBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -127,7 +126,7 @@ public class DevServicesProcessor {
 
     @BuildStep
     public RunTimeConfigBuilderBuildItem registerDevResourcesConfigSource(
-            List<DevServicesRequestBuildItem> devServicesRequestBuildItems) {
+            List<DevServicesResultBuildItem> devServicesRequestBuildItems) {
         // Once all the dev services are registered, we can share config
         return new RunTimeConfigBuilderBuildItem(DevServicesConfigBuilder.class);
     }
@@ -140,12 +139,11 @@ public class DevServicesProcessor {
             LaunchModeBuildItem launchModeBuildItem,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             List<DevServicesResultBuildItem> devServicesResults,
-            List<DevServicesRequestBuildItem> devServicesRequests,
             DevServicesRegistryBuildItem devServicesRegistry) {
         containerLogForwarders.clear();
         boolean isContainerRuntimeAvailable = dockerStatusBuildItem.isContainerRuntimeAvailable();
         List<DevServiceDescriptionBuildItem> serviceDescriptions = buildServiceDescriptions(
-                isContainerRuntimeAvailable, devServicesResults, devServicesRequests, devServicesRegistry,
+                isContainerRuntimeAvailable, devServicesResults, devServicesRegistry,
                 devServicesLauncherConfig);
 
         for (DevServiceDescriptionBuildItem devService : serviceDescriptions) {
@@ -177,7 +175,7 @@ public class DevServicesProcessor {
         context.reset(
                 new ConsoleCommand('c', "Show Dev Services containers", null, () -> {
                     List<DevServiceDescriptionBuildItem> descriptions = buildServiceDescriptions(
-                            isContainerRuntimeAvailable, devServicesResults, devServicesRequests, devServicesRegistry,
+                            isContainerRuntimeAvailable, devServicesResults, devServicesRegistry,
                             devServicesLauncherConfig);
                     StringBuilder builder = new StringBuilder();
                     builder.append("\n\n")
@@ -226,7 +224,6 @@ public class DevServicesProcessor {
     private List<DevServiceDescriptionBuildItem> buildServiceDescriptions(
             boolean isContainerRuntimeAvailable,
             List<DevServicesResultBuildItem> devServicesResults,
-            List<DevServicesRequestBuildItem> devServicesRequests,
             DevServicesRegistryBuildItem devServicesRegistry,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
 
@@ -235,20 +232,8 @@ public class DevServicesProcessor {
         List<DevServiceDescriptionBuildItem> descriptions = new ArrayList<>();
         for (DevServicesResultBuildItem buildItem : devServicesResults) {
             configKeysFromDevServices.addAll(buildItem.getConfig().keySet());
-            descriptions.add(toDevServiceDescription(buildItem, buildItem::getContainerId, isContainerRuntimeAvailable));
-        }
-        for (DevServicesRequestBuildItem request : devServicesRequests) {
-            descriptions.add(new DevServiceDescriptionBuildItem(request.featureName,
-                    toContainerInfo(() -> {
-                        RunningService runningService = devServicesRegistry.getRunningServices(request.featureName,
-                                request.serviceName, request.serviceConfig);
-                        return runningService == null ? null : runningService.containerId();
-                    }, isContainerRuntimeAvailable), () -> {
-                        RunningService runningService = devServicesRegistry.getRunningServices(request.featureName,
-                                request.serviceName, request.serviceConfig);
-                        return runningService == null ? null : runningService.configs();
-                    }));
-
+            descriptions.add(toDevServiceDescription(buildItem, buildItem::getContainerId, isContainerRuntimeAvailable,
+                    devServicesRegistry));
         }
         // Sort descriptions by name
         descriptions.sort(Comparator.comparing(DevServiceDescriptionBuildItem::getName));
@@ -279,10 +264,24 @@ public class DevServicesProcessor {
 
     private DevServiceDescriptionBuildItem toDevServiceDescription(DevServicesResultBuildItem buildItem,
             Supplier<String> containerIdFun,
-            boolean isContainerRuntimeAvailable) {
-        return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(),
-                toContainerInfo(containerIdFun, isContainerRuntimeAvailable), buildItem.getConfig());
-
+            boolean isContainerRuntimeAvailable,
+            DevServicesRegistryBuildItem devServicesRegistry) {
+        if (buildItem.isDiscovered()) {
+            return new DevServiceDescriptionBuildItem(buildItem.getName(), buildItem.getDescription(),
+                    toContainerInfo(containerIdFun, isContainerRuntimeAvailable), buildItem.getConfig());
+        } else {
+            return new DevServiceDescriptionBuildItem(buildItem.getName(),
+                    buildItem.getDescription(),
+                    toContainerInfo(() -> {
+                        RunningService runningService = devServicesRegistry.getRunningServices(buildItem.getName(),
+                                buildItem.getServiceName(), buildItem.getServiceConfig());
+                        return runningService == null ? null : runningService.containerId();
+                    }, isContainerRuntimeAvailable), () -> {
+                        RunningService runningService = devServicesRegistry.getRunningServices(buildItem.getName(),
+                                buildItem.getServiceName(), buildItem.getServiceConfig());
+                        return runningService == null ? null : runningService.configs();
+                    });
+        }
     }
 
     private Supplier<ContainerInfo> toContainerInfo(Supplier<String> containerIdFun, boolean isContainerRuntimeAvailable) {

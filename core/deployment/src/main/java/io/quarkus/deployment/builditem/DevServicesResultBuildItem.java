@@ -5,39 +5,116 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.jboss.logging.Logger;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.SupplierMap;
 
 /**
- * BuildItem for running dev services.
+ * BuildItem for discoevered (running) or to be started dev services.
  * Combines injected configs to the application with container id (if it exists).
  * <p>
  * Processors are expected to return this build item not only when the dev service first starts,
  * but also if a running dev service already exists.
  * <p>
  * {@link RunningDevService} helps to manage the lifecycle of the running dev service.
+ * TODO deprecate RunningDevService and complete this javadoc
  */
 public final class DevServicesResultBuildItem extends MultiBuildItem {
 
-    private static final Logger log = Logger.getLogger(DevServicesResultBuildItem.class);
-
+    /**
+     * The name of the dev service, usually feature name.
+     */
     private final String name;
-    private final String description;
-    // Will be null if there is a runnable dev service
-    private final String containerId;
-    protected final Map<String, String> config;
 
+    /**
+     * A description of the dev service, usually feature name with additional information.
+     */
+    private final String description;
+
+    /**
+     * The container id of the dev service, if it is running in a container.
+     * If the dev service is not running in a container, this will be null.
+     */
+    private final String containerId;
+
+    /**
+     * The map of static application config
+     */
+    private final Map<String, String> config;
+
+    /**
+     * If the feature provides multiple dev services, this is the name of the service
+     */
+    private final String serviceName;
+
+    /**
+     * The config object that is used to identify the dev service
+     */
+    private final Object serviceConfig;
+
+    /**
+     * Supplier of a startable dev service
+     */
+    private final Supplier<Startable> startableSupplier;
+
+    /**
+     * A map of application config that is dependent on the started service
+     */
+    private final Map<String, Function<Startable, String>> applicationConfigProvider;
+
+    public static DiscoveredServiceBuilder discovered() {
+        return new DiscoveredServiceBuilder();
+    }
+
+    public static OwnedServiceBuilder owned() {
+        return new OwnedServiceBuilder();
+    }
+
+    /**
+     * @deprecated use DevServicesResultBuildItem.builder() instead
+     */
+    @Deprecated
     public DevServicesResultBuildItem(String name, String containerId, Map<String, String> config) {
         this(name, null, containerId, config);
     }
 
+    /**
+     * @deprecated use DevServicesResultBuildItem.builder() instead
+     */
+    @Deprecated
     public DevServicesResultBuildItem(String name, String description, String containerId, Map<String, String> config) {
         this.name = name;
         this.description = description;
         this.containerId = containerId;
         this.config = config;
+        this.serviceName = null;
+        this.serviceConfig = null;
+        this.applicationConfigProvider = null;
+        this.startableSupplier = null;
+    }
+
+    /**
+     * @deprecated use DevServicesResultBuildItem.builder() instead
+     */
+    @Deprecated
+    public DevServicesResultBuildItem(String name,
+            String description,
+            String serviceName,
+            Object serviceConfig,
+            Map<String, String> config,
+            Supplier<Startable> startableSupplier,
+            Map<String, Function<Startable, String>> applicationConfigProvider) {
+        this.name = name;
+        this.description = description;
+        this.containerId = null;
+        this.config = config == null ? Collections.emptyMap() : Collections.unmodifiableMap(config);
+        this.serviceName = serviceName;
+        this.serviceConfig = serviceConfig;
+        this.startableSupplier = startableSupplier;
+        this.applicationConfigProvider = applicationConfigProvider;
     }
 
     public String getName() {
@@ -52,12 +129,130 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         return containerId;
     }
 
+    public boolean isDiscovered() {
+        return containerId != null;
+    }
+
     public Map<String, String> getConfig() {
         return config;
     }
 
-    public void start() {
+    public String getServiceName() {
+        return serviceName;
+    }
 
+    public Object getServiceConfig() {
+        return serviceConfig;
+    }
+
+    public Supplier<Startable> getStartableSupplier() {
+        return startableSupplier;
+    }
+
+    public Map<String, Function<Startable, String>> getApplicationConfigProvider() {
+        return applicationConfigProvider;
+    }
+
+    public Map<String, String> getConfig(Startable startable) {
+        SupplierMap<String, String> map = new SupplierMap<>();
+        if (config != null && !config.isEmpty()) {
+            map.putAll(config);
+        }
+        for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
+            map.put(entry.getKey(), () -> entry.getValue().apply(startable));
+        }
+        return map;
+    }
+
+    public static class DiscoveredServiceBuilder {
+        private String name;
+        private String containerId;
+        private Map<String, String> config;
+        private String description;
+
+        public DiscoveredServiceBuilder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public DiscoveredServiceBuilder feature(Feature feature) {
+            this.name = feature.getName();
+            return this;
+        }
+
+        public DiscoveredServiceBuilder containerId(String containerId) {
+            this.containerId = containerId;
+            return this;
+        }
+
+        public DiscoveredServiceBuilder config(Map<String, String> config) {
+            this.config = config;
+            return this;
+        }
+
+        public DiscoveredServiceBuilder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public DevServicesResultBuildItem build() {
+            return new DevServicesResultBuildItem(name, description, containerId, config);
+        }
+    }
+
+    public static class OwnedServiceBuilder {
+        private String name;
+        private String description;
+        private Map<String, String> config;
+        private String serviceName;
+        private Object serviceConfig;
+        private Supplier<Startable> startableSupplier;
+        private Map<String, Function<Startable, String>> applicationConfigProvider;
+
+        public OwnedServiceBuilder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public OwnedServiceBuilder feature(Feature feature) {
+            this.name = feature.getName();
+            return this;
+        }
+
+        public OwnedServiceBuilder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public OwnedServiceBuilder config(Map<String, String> config) {
+            this.config = config;
+            return this;
+        }
+
+        public OwnedServiceBuilder serviceName(String serviceName) {
+            this.serviceName = serviceName;
+            return this;
+        }
+
+        public OwnedServiceBuilder serviceConfig(Object serviceConfig) {
+            this.serviceConfig = serviceConfig;
+            return this;
+        }
+
+        public OwnedServiceBuilder startable(Supplier<Startable> startableSupplier) {
+            this.startableSupplier = startableSupplier;
+            return this;
+        }
+
+        public OwnedServiceBuilder configProvider(Map<String, Function<Startable, String>> applicationConfigProvider) {
+            this.applicationConfigProvider = applicationConfigProvider;
+            return this;
+        }
+
+        public DevServicesResultBuildItem build() {
+            return new DevServicesResultBuildItem(name, description, serviceName, serviceConfig, config,
+                    startableSupplier, applicationConfigProvider);
+        }
     }
 
     public static class RunningDevService implements Closeable {
@@ -135,7 +330,11 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         public DevServicesResultBuildItem toBuildItem() {
-            return new DevServicesResultBuildItem(name, description, getContainerId(), getConfig());
+            return DevServicesResultBuildItem.discovered()
+                    .name(name)
+                    .description(description)
+                    .containerId(getContainerId())
+                    .config(getConfig()).build();
         }
     }
 

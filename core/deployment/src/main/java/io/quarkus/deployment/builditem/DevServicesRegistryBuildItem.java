@@ -3,6 +3,7 @@ package io.quarkus.deployment.builditem;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -63,17 +64,17 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         return config;
     }
 
-    public void start(DevServicesRequestBuildItem request) {
+    public void start(DevServicesResultBuildItem request) {
         StartupLogCompressor compressor = new StartupLogCompressor("Dev Services Startup", null, null);
         try {
             // These RunnableDevService classes could be from another classloader, so don't make assumptions about the class
-            RunningService matchedDevService = this.getRunningServices(request.featureName, request.serviceName,
-                    request.serviceConfig);
+            RunningService matchedDevService = this.getRunningServices(request.getName(), request.getServiceName(),
+                    request.getServiceConfig());
             // if the redis containers have already started we just return; if we wanted to be very cautious we could check the entries for an isRunningStatus, but they might be in the wrong classloader, so that's hard work
             if (matchedDevService == null) {
                 // There isn't a running container that has the right config, we need to do work
                 // Let's get all the running dev services associated with this feature (+ launch mode plus named section), so we can close them
-                closeAllRunningServices(request.featureName, request.serviceName);
+                closeAllRunningServices(request.getName(), request.getServiceName());
 
                 reallyStart(request);
             }
@@ -86,16 +87,21 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
 
     }
 
-    private void reallyStart(DevServicesRequestBuildItem request) {
-        Startable container = request.startableSupplier.get();
+    private void reallyStart(DevServicesResultBuildItem request) {
+        Supplier<Startable> startableSupplier = request.getStartableSupplier();
+        if (startableSupplier == null) {
+            throw new IllegalStateException(
+                    "Dev services for " + request.getName() + " requires a startable supplier, but none was provided.");
+        }
+        Startable container = startableSupplier.get();
         container.start();
 
-        RunningService service = new RunningService(request.featureName, request.featureName + " - " + request.serviceName,
+        RunningService service = new RunningService(request.getName(), request.getDescription(),
                 request.getConfig(container), container.getContainerId(), container);
-        this.addRunningService(request.featureName, request.serviceName, request.serviceConfig, service);
+        this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
         // Ideally we'd print out a port number here, but we can only do that if we add a dependency on GenericContainer (or update startable to add a method)
 
-        log.infof("The %s dev service is ready to accept connections on %s", request.featureName,
+        log.infof("The %s dev service is ready to accept connections on %s", request.getName(),
                 container.getConnectionInfo());
     }
 

@@ -8,7 +8,7 @@ import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
-import io.quarkus.deployment.builditem.DevServicesRequestBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 
 public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult> {
     @Override
@@ -25,11 +25,11 @@ public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult>
             propertyConsumer.accept("quarkus.test.container.network", compose.getNetworkId());
         }
 
-        List<DevServicesRequestBuildItem> devServicesRequests = buildResult
-                .consumeMulti(DevServicesRequestBuildItem.class);
+        List<DevServicesResultBuildItem> devServicesRequests = buildResult
+                .consumeMulti(DevServicesResultBuildItem.class);
         DevServicesRegistryBuildItem devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
         if (devServicesRegistry != null) {
-            for (DevServicesRequestBuildItem serviceRequest : devServicesRequests) {
+            for (DevServicesResultBuildItem serviceRequest : devServicesRequests) {
                 devServicesRegistry.start(serviceRequest);
             }
             // It would be nice to use the config source, but since we have the build item right there and this is a one-shot operation, just ask it instead

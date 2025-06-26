@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-oidc-client-reactive-filter-deployment</artifactId>
+    <name>Quarkus - Relocations - quarkus-oidc-client-reactive-filter-deployment</name>
 
     <distributionManagement>
         <relocation>

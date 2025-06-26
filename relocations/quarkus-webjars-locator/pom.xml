@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-webjars-locator</artifactId>
+    <name>Quarkus - Relocations - quarkus-webjars-locator</name>
 
     <distributionManagement>
         <relocation>

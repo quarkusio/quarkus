@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+    <name>Quarkus - Relocations - quarkus-resteasy-reactive-jackson</name>
 
     <distributionManagement>
         <relocation>

@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-reactive-kotlin-serialization</artifactId>
+    <name>Quarkus - Relocations - quarkus-rest-client-reactive-kotlin-serialization</name>
 
     <distributionManagement>
         <relocation>

@@ -39,8 +39,8 @@ class ClientContextResolverHandler {
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final ResultHandle[] EMPTY_RESULT_HANDLES_ARRAY = new ResultHandle[0];
-    private static final MethodDescriptor GET_INVOKED_METHOD =
-            MethodDescriptor.ofMethod(RestClientRequestContext.class, "getInvokedMethod", Method.class);
+    private static final MethodDescriptor GET_INVOKED_METHOD = MethodDescriptor.ofMethod(RestClientRequestContext.class,
+            "getInvokedMethod", Method.class);
 
     private final DotName annotation;
     private final Class<?> expectedReturnType;
@@ -89,13 +89,16 @@ class ClientContextResolverHandler {
             throw new IllegalStateException(annotation
                     + " is only supported on static methods of REST Client interfaces that return '" + expectedReturnType + "'."
                     + " Offending instance is '" + targetMethod.declaringClass().name().toString() + "#"
-                        + targetMethod.name() + "'");
+                    + targetMethod.name() + "'");
         }
 
         ClassInfo restClientInterfaceClassInfo = targetMethod.declaringClass();
         String generatedClassName = getGeneratedClassName(targetMethod);
         try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
-                .signature(SignatureBuilder.forClass().addInterface(io.quarkus.gizmo.Type.parameterizedType(io.quarkus.gizmo.Type.classType(ResteasyReactiveContextResolver.class), io.quarkus.gizmo.Type.classType(returnTypeClassName))))
+                .signature(SignatureBuilder.forClass()
+                        .addInterface(io.quarkus.gizmo.Type.parameterizedType(
+                                io.quarkus.gizmo.Type.classType(ResteasyReactiveContextResolver.class),
+                                io.quarkus.gizmo.Type.classType(returnTypeClassName))))
                 .build()) {
             MethodCreator getContext = cc.getMethodCreator("getContext", Object.class, Class.class);
             LinkedHashMap<String, ResultHandle> targetMethodParams = new LinkedHashMap<>();
@@ -138,7 +141,6 @@ class ClientContextResolverHandler {
                             + targetMethod.name() + "'");
                 }
 
-
             }
         }
 
@@ -148,7 +150,8 @@ class ClientContextResolverHandler {
     private static Class<?> lookupReturnClass(MethodInfo targetMethod) {
         Class<?> returnTypeClassName = null;
         try {
-            returnTypeClassName = Class.forName(targetMethod.returnType().name().toString(), false, Thread.currentThread().getContextClassLoader());
+            returnTypeClassName = Class.forName(targetMethod.returnType().name().toString(), false,
+                    Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException ignored) {
 
         }
@@ -158,10 +161,13 @@ class ClientContextResolverHandler {
     private static ResultHandle getFromCDI(MethodCreator getContext, String className) {
         ResultHandle containerHandle = getContext
                 .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle instanceHandle = getContext.invokeInterfaceMethod(MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
+        ResultHandle instanceHandle = getContext.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
+                        Annotation[].class),
                 containerHandle, getContext.loadClassFromTCCL(className),
                 getContext.newArray(Annotation.class, 0));
-        return getContext.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+        return getContext.invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+                instanceHandle);
     }
 
     public static String getGeneratedClassName(MethodInfo methodInfo) {

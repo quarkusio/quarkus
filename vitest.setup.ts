@@ -20,7 +20,7 @@ export async function setup() {
     ...process.env,
     GRADLE_ENTERPRISE_BUILD_CACHE_ENABLED: 'false'
   };
-  execSync('cd maven-plugin && mvn clean install -DskipTests -Dno-build-cache', {
+  execSync('npm run compile-java:fresh', {
     stdio: 'inherit',
     env
   });

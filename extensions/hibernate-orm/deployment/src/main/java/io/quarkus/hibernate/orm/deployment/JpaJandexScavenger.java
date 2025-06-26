@@ -94,6 +94,10 @@ public final class JpaJandexScavenger {
             enlistPotentialCdiBeanClasses(collector, annotation);
         }
 
+        enlistPotentialClassReferences(collector, ClassNames.GENERIC_GENERATOR, "type", "strategy");
+        enlistPotentialClassReferences(collector, ClassNames.ID_GENERATOR_TYPE, "value");
+        enlistPotentialClassReferences(collector, ClassNames.VALUE_GENERATION_TYPE, "generatedBy");
+
         for (JpaModelPersistenceUnitContributionBuildItem persistenceUnitContribution : persistenceUnitContributions) {
             enlistExplicitMappings(collector, persistenceUnitContribution);
         }
@@ -214,10 +218,16 @@ public final class JpaJandexScavenger {
             String nodeName) {
         String name = safeGetClassName(packagePrefix, managed, nodeName);
         enlistExplicitClass(collector, name);
-        if (managed instanceof JaxbEntity) {
+        if (managed instanceof JaxbEntity entity) {
             // The call to 'enlistExplicitClass' above may not
             // detect that this class is an entity if it is not annotated
             collector.entityTypes.add(name);
+
+            // Generators may be instantiated reflectively
+            if (entity.getGenericGenerator() != null) {
+                var generator = entity.getGenericGenerator();
+                enlistPotentialClassReference(collector, generator == null ? null : generator.getClazz());
+            }
         }
 
         enlistOrmXmlMappingListeners(collector, packagePrefix, managed.getEntityListenerContainer());
@@ -435,6 +445,47 @@ public final class JpaJandexScavenger {
             DotName beanTypeDotName = beanType.name();
             collector.potentialCdiBeanTypes.add(beanTypeDotName);
         }
+    }
+
+    private void enlistPotentialClassReferences(Collector collector, DotName dotName, String... referenceAttributes) {
+        Collection<AnnotationInstance> jpaAnnotations = index.getAnnotations(dotName);
+
+        if (jpaAnnotations == null) {
+            return;
+        }
+
+        for (AnnotationInstance annotation : jpaAnnotations) {
+            for (String referenceAttribute : referenceAttributes) {
+                var referenceValue = annotation.value(referenceAttribute);
+                if (referenceValue == null) {
+                    continue;
+                }
+                String reference = switch (referenceValue.kind()) {
+                    case CLASS -> referenceValue.asClass().name().toString();
+                    case STRING -> {
+                        String stringRef = referenceValue.asString();
+                        if (stringRef.isEmpty() || index.getClassByName(stringRef) == null) {
+                            // No reference, or reference to a built-in strategy name like 'sequence'
+                            // (which we can't resolve here and handle through GraalVMFeatures.registerGeneratorAndOptimizerClassesForReflections)
+                            yield null;
+                        }
+                        yield stringRef;
+                    }
+                    default -> null;
+                };
+                enlistPotentialClassReference(collector, reference);
+            }
+        }
+    }
+
+    /**
+     * Add the class to the reflective list with only constructor and method access.
+     */
+    private void enlistPotentialClassReference(Collector collector, String reference) {
+        if (reference == null) {
+            return;
+        }
+        collector.javaTypes.add(reference);
     }
 
     /**

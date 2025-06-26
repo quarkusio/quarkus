@@ -24,7 +24,8 @@ public class AmazonLambdaMapperRecorder {
         objectMapper = getObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
-                .registerModule(new JodaModule());
+                .registerModule(new JodaModule())
+                .registerModule(new DateModule());
     }
 
     public void initContextReaders() {

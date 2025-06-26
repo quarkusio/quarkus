@@ -334,7 +334,7 @@ class NxAnalyzerMojo : AbstractMojo() {
             // Add goals from executions
             plugin.executions?.forEach { execution ->
                 execution.goals?.forEach { goal ->
-                    val targetName = ExecutionPlanAnalysisService.getTargetName(artifactId, goal)
+                    val targetName = ExecutionPlanAnalysisService.getTargetName(artifactId, goal, execution.id)
                     goalTargets.add(targetName)
                 }
             }

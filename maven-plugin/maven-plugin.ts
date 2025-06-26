@@ -75,7 +75,7 @@ export const createNodesV2: CreateNodesV2 = [
         ['{projectRoot}/pom.xml', '{workspaceRoot}/**/pom.xml']
       );
       const cacheKey = projectHash;
-      
+
       // OPTIMIZATION: Check global in-memory cache first
       if (globalAnalysisCache && globalCacheKey === cacheKey) {
         if (opts.verbose) {
@@ -83,11 +83,11 @@ export const createNodesV2: CreateNodesV2 = [
         }
         return globalAnalysisCache.createNodesResults || [];
       }
-      
+
       // Set up cache path
       const cachePath = join(workspaceDataDirectory, 'maven-analysis-cache.json');
       const cache = readMavenCache(cachePath);
-      
+
       // Check if we have valid cached results
       if (cache[cacheKey]) {
         if (opts.verbose) {
@@ -105,7 +105,7 @@ export const createNodesV2: CreateNodesV2 = [
       // Cache the complete result
       cache[cacheKey] = result;
       writeMavenCache(cachePath, cache);
-      
+
       // Store in global cache
       globalAnalysisCache = result;
       globalCacheKey = cacheKey;
@@ -134,7 +134,7 @@ export const createDependencies: CreateDependencies = async (options, context) =
       ['{projectRoot}/pom.xml', '{workspaceRoot}/**/pom.xml']
     );
     const cacheKey = projectHash;
-    
+
     // OPTIMIZATION: Check global in-memory cache first
     if (globalAnalysisCache && globalCacheKey === cacheKey) {
       if (opts.verbose) {
@@ -142,11 +142,11 @@ export const createDependencies: CreateDependencies = async (options, context) =
       }
       return globalAnalysisCache.createDependencies || [];
     }
-    
+
     // Set up cache path
     const cachePath = join(workspaceDataDirectory, 'maven-analysis-cache.json');
     const cache = readMavenCache(cachePath);
-    
+
     // Check if we have valid cached results
     if (cache[cacheKey]) {
       if (opts.verbose) {
@@ -164,7 +164,7 @@ export const createDependencies: CreateDependencies = async (options, context) =
     // Cache the complete result
     cache[cacheKey] = result;
     writeMavenCache(cachePath, cache);
-    
+
     // Store in global cache
     globalAnalysisCache = result;
     globalCacheKey = cacheKey;
@@ -210,11 +210,12 @@ async function runMavenAnalysis(options: MavenPluginOptions): Promise<any> {
 
   // Always use quiet mode to suppress expected reactor dependency warnings
   // These warnings are normal in large multi-module projects and don't affect functionality
-  mavenArgs.push('-q');
 
   if (isVerbose) {
     console.log(`Executing Maven command: ${options.mavenExecutable} ${mavenArgs.join(' ')}`);
     console.log(`Working directory: ${workspaceRoot}`);
+  } else {
+    mavenArgs.push('-q');
   }
 
   // Run Maven plugin

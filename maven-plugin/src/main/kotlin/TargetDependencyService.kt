@@ -154,7 +154,7 @@ class TargetDependencyService(
                 // Check if this execution is bound to the phase we're looking for
                 if (phase == executionPhase && execution.goals != null) {
                     execution.goals.forEach { goal ->
-                        val pluginGoal = ExecutionPlanAnalysisService.getTargetName(plugin.artifactId, goal)
+                        val pluginGoal = ExecutionPlanAnalysisService.getTargetName(plugin.artifactId, goal, execution.id)
                         goals.add(pluginGoal)
                     }
                 }

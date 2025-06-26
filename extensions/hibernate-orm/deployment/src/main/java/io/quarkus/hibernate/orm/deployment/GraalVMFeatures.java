@@ -26,6 +26,8 @@ public class GraalVMFeatures {
 
     // TODO try to limit registration to those that are actually needed, based on configuration + mapping.
     //   https://github.com/quarkusio/quarkus/pull/32433#issuecomment-1497615958
+    //   See also io.quarkus.hibernate.orm.deployment.JpaJandexScavenger.enlistClassReferences for
+    //   the beginning of a solution (which only handles custom types, not references by name such as 'sequence').
     @BuildStep
     ReflectiveClassBuildItem registerGeneratorAndOptimizerClassesForReflections() {
         return ReflectiveClassBuildItem

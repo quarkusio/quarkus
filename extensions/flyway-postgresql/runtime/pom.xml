@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-flyway-postgresql</artifactId>
-    <name>Quarkus Flyway - PostgreSQL - Runtime</name>
+    <name>Quarkus - Flyway - PostgreSQL - Runtime</name>
     <description>This extensions is added by Quarkus automatically when quarkus-flyway and quarkus-jdbc-postgresql are on the classpath</description>
 
     <dependencies>

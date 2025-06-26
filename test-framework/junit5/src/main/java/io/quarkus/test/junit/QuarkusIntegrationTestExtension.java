@@ -197,10 +197,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         boolean isDockerLaunch = isContainer(artifactType)
                 || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
 
-        ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
-                isDockerLaunch);
-        devServicesProps = devServicesLaunchResult.properties();
-        containerNetworkId = devServicesLaunchResult.networkId();
         quarkusTestProfile = profile;
         currentJUnitTestClass = context.getRequiredTestClass();
         TestResourceManager testResourceManager = null;
@@ -208,10 +204,17 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             Class<?> requiredTestClass = context.getRequiredTestClass();
 
             Map<String, String> sysPropRestore = getSysPropsToRestore();
+
+            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
+            // prepare dev services after profile and properties have been determined
+            ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult = handleDevServices(context,
+                    isDockerLaunch);
+
+            devServicesProps = devServicesLaunchResult.properties();
+            containerNetworkId = devServicesLaunchResult.networkId();
             for (String devServicesProp : devServicesProps.keySet()) {
                 sysPropRestore.put(devServicesProp, null); // used to signal that the property needs to be cleared
             }
-            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
                     copyEntriesFromProfile(testProfileAndProperties.testProfile,

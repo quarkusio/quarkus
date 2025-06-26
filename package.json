@@ -6,7 +6,7 @@
     "test:e2e": "vitest run e2e-smoke.test.ts",
     "test:e2e:watch": "vitest watch e2e-smoke.test.ts",
     "compile-java": "rm -rf maven-plugin/target && cd maven-plugin && mvn clean install -DskipTests",
-    "compile-java:fresh": "cd maven-plugin && GRADLE_ENTERPRISE_BUILD_CACHE_ENABLED=false mvn clean install -DskipTests -Dgradle.enterprise.build-cache.enabled=false"
+    "compile-java:fresh": "rm -rf maven-plugin/target && cd maven-plugin && GRADLE_ENTERPRISE_BUILD_CACHE_ENABLED=false mvn clean install -DskipTests -Dgradle.enterprise.build-cache.enabled=false"
   },
   "devDependencies": {
     "@nx/devkit": "0.0.0-pr-31581-fa41031",

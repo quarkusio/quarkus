@@ -170,6 +170,11 @@ public class AbstractResponseWrapper implements HttpServerResponse {
     }
 
     @Override
+    public Future<Void> writeHead() {
+        return delegate.writeHead();
+    }
+
+    @Override
 
     public Future<Void> write(String chunk, String enc) {
         return delegate.write(chunk, enc);

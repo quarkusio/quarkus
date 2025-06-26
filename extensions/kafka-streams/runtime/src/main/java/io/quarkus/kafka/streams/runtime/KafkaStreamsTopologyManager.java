@@ -136,6 +136,9 @@ public class KafkaStreamsTopologyManager {
     }
 
     public void waitForTopicsToBeCreated() throws InterruptedException {
+        if (!isTopicsCheckEnabled()) {
+            return;
+        }
         Set<String> lastMissingTopics = null;
         while (!closed) {
             try {

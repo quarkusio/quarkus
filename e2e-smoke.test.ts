@@ -210,4 +210,19 @@ describe('Maven Plugin E2E Smoke Tests', () => {
       console.log(`⏱️ nx show projects completed in ${duration}ms`);
     });
   });
+
+  describe('Target Validation', () => {
+    it('should successfully validate quarkus-core project', () => {
+      const start = Date.now();
+
+      const output = execSync('npx nx validate quarkus-core', {
+        encoding: 'utf8',
+        stdio: 'pipe'
+      });
+
+      const duration = Date.now() - start;
+      console.log(`✅ nx validate quarkus-core completed in ${duration}ms`);
+      expect(output).toBeTruthy();
+    }, TIMEOUT);
+  });
 });

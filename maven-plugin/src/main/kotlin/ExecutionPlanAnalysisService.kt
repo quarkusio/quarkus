@@ -171,28 +171,8 @@ class ExecutionPlanAnalysisService(
             val phase = lifecyclePhases[i]
             val phaseGoals = getGoalsForPhase(project, phase)
             
-            // Convert to proper plugin:goal format
-            for (goal in phaseGoals) {
-                if (goal.contains(":")) {
-                    // Goal is already in plugin:goal format
-                    val parts = goal.split(":")
-                    when {
-                        parts.size >= 3 -> {
-                            // Format: groupId:artifactId:goal
-                            val groupId = parts[0]
-                            val artifactId = parts[1]
-                            val goalName = parts[2]
-                            uniqueGoals.add("$groupId:$artifactId:$goalName")
-                        }
-                        parts.size == 2 -> {
-                            // Format: plugin:goal - convert to full format
-                            val plugin = parts[0]
-                            val goalName = parts[1]
-                            uniqueGoals.add("org.apache.maven.plugins:maven-$plugin-plugin:$goalName")
-                        }
-                    }
-                }
-            }
+            // Use the goal names as-is since they're already in proper target format with execution IDs
+            uniqueGoals.addAll(phaseGoals)
         }
         
         completedGoals.addAll(uniqueGoals)
@@ -356,13 +336,31 @@ class ExecutionPlanAnalysisService(
         }
         
         /**
-         * Extract goal name from target name (e.g., "compiler:compile" -> "compile")
+         * Generate target name from artifact ID, goal, and execution ID
+         */
+        fun getTargetName(artifactId: String?, goal: String, executionId: String?): String {
+            val pluginName = normalizePluginName(artifactId)
+            return if (executionId != null && executionId.isNotEmpty()) {
+                "$pluginName:$goal@$executionId"
+            } else {
+                "$pluginName:$goal"
+            }
+        }
+        
+        /**
+         * Extract goal name from target name (e.g., "compiler:compile" -> "compile", "compiler:compile@execution" -> "compile")
          */
         fun extractGoalFromTargetName(targetName: String?): String? {
             if (targetName == null || !targetName.contains(":")) {
                 return targetName
             }
-            return targetName.substring(targetName.lastIndexOf(":") + 1)
+            val goalWithExecutionId = targetName.substring(targetName.lastIndexOf(":") + 1)
+            // Remove execution ID if present (format: goal@executionId)
+            return if (goalWithExecutionId.contains("@")) {
+                goalWithExecutionId.substring(0, goalWithExecutionId.indexOf("@"))
+            } else {
+                goalWithExecutionId
+            }
         }
         
         /**
@@ -493,8 +491,8 @@ class ExecutionPlanAnalysisService(
                     )
                     goalToExecutionInfo[goal] = execInfo
                     
-                    // Handle plugin:goal format too
-                    val targetName = getTargetName(pluginArtifactId, goal)
+                    // Handle plugin:goal format too - include execution ID
+                    val targetName = getTargetName(pluginArtifactId, goal, mojoExecution.executionId)
                     goalToPhaseMap[targetName] = phase
                     goalToExecutionInfo[targetName] = execInfo
                     

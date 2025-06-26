@@ -92,7 +92,7 @@ class TargetGenerationService(
                     val goalTargetDependencies = mutableListOf<Any>()
                     goalsToComplete.forEach { goalName ->
                         // goalName is in format "pluginArtifactId:goalName" 
-                        val targetName = getTargetNameFromGoal(goalName)
+                        val targetName = getTargetNameFromGoal(goalName, project)
                         if (allTargets.containsKey(targetName)) {
                             goalTargetDependencies.add(targetName)
                         } else if (verbose) {
@@ -141,19 +141,12 @@ class TargetGenerationService(
     }
     
     /**
-     * Convert a full goal name (plugin:goal) to target name (plugin:goal format)
+     * Convert a goal name to target name. Since getGoalsCompletedByPhase now returns
+     * properly formatted target names with execution IDs, we can use them as-is.
      */
-    private fun getTargetNameFromGoal(goalName: String): String {
-        // goalName is already in format "artifactId:goal" or "groupId:artifactId:goal"
-        // Extract just the artifactId:goal part for target name
-        val parts = goalName.split(":")
-        return if (parts.size >= 2) {
-            val artifactId = parts[parts.size - 2] // Second to last part is artifactId
-            val goal = parts[parts.size - 1]       // Last part is goal
-            ExecutionPlanAnalysisService.getTargetName(artifactId, goal)
-        } else {
-            goalName // Fallback to original name
-        }
+    private fun getTargetNameFromGoal(goalName: String, project: MavenProject): String {
+        // goalName is now already a properly formatted target name (e.g., "maven-clean:clean@clean-cache-dirs")
+        return goalName
     }
 
     /**
@@ -182,7 +175,7 @@ class TargetGenerationService(
             // Process actual executions from effective POM
             plugin.executions?.forEach { execution ->
                 execution.goals?.forEach { goal ->
-                    val targetName = ExecutionPlanAnalysisService.getTargetName(plugin.artifactId, goal)
+                    val targetName = ExecutionPlanAnalysisService.getTargetName(plugin.artifactId, goal, execution.id)
 
                     if (!goalTargets.containsKey(targetName)) {
                         val target = createGoalTarget(
@@ -221,8 +214,14 @@ class TargetGenerationService(
             log?.info("DEBUG: Creating goal target with TypeScript executor: $pluginKey:$goal")
         }
 
+        val goalWithExecution = if (execution.id != null && execution.id.isNotEmpty()) {
+            "$pluginKey:$goal@${execution.id}"
+        } else {
+            "$pluginKey:$goal"
+        }
+        
         val options = linkedMapOf<String, Any>(
-            "goals" to listOf("$pluginKey:$goal"),
+            "goals" to listOf(goalWithExecution),
             "projectRoot" to actualProjectPath,
             "verbose" to verbose,
             "mavenPluginPath" to "maven-plugin",

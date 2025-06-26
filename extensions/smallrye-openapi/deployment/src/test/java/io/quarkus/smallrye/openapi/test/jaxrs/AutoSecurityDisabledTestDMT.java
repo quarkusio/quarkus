@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class AutoSecurityDisabledTestCase {
+public class AutoSecurityDisabledTestDMT {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()

@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 
-public class OpenApiHotReloadTest {
+public class OpenApiHotReloadDMT {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()

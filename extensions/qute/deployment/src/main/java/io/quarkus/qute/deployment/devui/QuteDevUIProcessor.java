@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.SuppressForbidden;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
@@ -148,6 +149,7 @@ public class QuteDevUIProcessor {
         return data;
     }
 
+    @SuppressForbidden(reason = "Type#toString() is what we want to use here")
     private List<Map<String, String>> createExtensionMethodsJson(
             List<TemplateExtensionMethodBuildItem> sortedExtensionMethods) {
         List<Map<String, String>> extensionMethods = new ArrayList<>();

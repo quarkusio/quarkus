@@ -123,8 +123,8 @@ class SpringDataRestProcessor {
             ResourcePropertiesProvider propertiesProvider = new RepositoryPropertiesProvider(index, paged);
             List<Type> generics = getGenericTypes(classInfo);
             String repositoryName = classInfo.name().toString();
-            String entityType = generics.get(0).toString();
-            String idType = generics.get(1).toString();
+            String entityType = generics.get(0).name().toString();
+            String idType = generics.get(1).name().toString();
 
             String resourceClass = resourceImplementor.implement(classOutput, repositoryName, entityType);
 

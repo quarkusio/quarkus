@@ -84,6 +84,7 @@ public final class TestProcessor {
     TestConfigRoot configRoot;
     TestBuildTimeConfig buildTimeConfig;
     TestBuildAndRunTimeConfig buildAndRunTimeConfig;
+    IgnoreSharedBuildTimeConfig ignoreSharedBuildTimeConfig;
 
     /**
      * Register an extension capability and feature

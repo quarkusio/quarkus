@@ -4,8 +4,8 @@ plugins{
 
 
 
-group 'org.acme.libs'
-version '1.0-SNAPSHOT'
+group = 'org.acme.libs'
+version = '1.0-SNAPSHOT'
 
 
 repositories {

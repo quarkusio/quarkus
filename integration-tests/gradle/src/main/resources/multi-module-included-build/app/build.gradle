@@ -19,8 +19,8 @@ dependencies {
     implementation 'org.acme:external-library:1.0.0-SNAPSHOT'
 }
 
-group 'org.acme'
-version '1.0.0-SNAPSHOT'
+group = 'org.acme'
+version = '1.0.0-SNAPSHOT'
 
 compileJava {
     options.encoding = 'UTF-8'

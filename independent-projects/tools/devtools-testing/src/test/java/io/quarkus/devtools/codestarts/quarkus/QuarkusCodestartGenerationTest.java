@@ -398,8 +398,8 @@ class QuarkusCodestartGenerationTest {
         assertThat(projectDir.resolve("settings.gradle.kts")).doesNotExist();
         assertThat(projectDir.resolve("build.gradle"))
                 .exists()
-                .satisfies(checkContains("group 'org.test'"))
-                .satisfies(checkContains("version '1.0.0-codestart'"));
+                .satisfies(checkContains("group = 'org.test'"))
+                .satisfies(checkContains("version = '1.0.0-codestart'"));
         assertThat(projectDir.resolve("gradle.properties")).exists();
         assertThat(projectDir.resolve("settings.gradle"))
                 .exists()

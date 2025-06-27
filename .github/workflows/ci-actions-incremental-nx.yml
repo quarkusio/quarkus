@@ -272,6 +272,12 @@ jobs:
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
+      - name: Prep
+        env:
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          npm run compile-java:fresh
+
       - name: Clean
         env:
           CAPTURE_BUILD_SCAN: true

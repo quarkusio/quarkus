@@ -198,7 +198,7 @@ jobs:
         with:
           # this is important for GIB to work
           fetch-depth: 0
-      - run: npx exec nx-cloud start-ci-run --distribute-on="3 linux-large-jvm"
+      - run: npx nx-cloud start-ci-run --distribute-on="3 linux-large-jvm"
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space

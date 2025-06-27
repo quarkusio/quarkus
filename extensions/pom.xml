@@ -194,6 +194,9 @@
         <module>openshift-client</module>
         <module>kubernetes-service-binding</module>
 
+       <!-- Dockerfiles -->
+       <module>dockerfiles</module>
+
         <!-- Database migrations -->
         <module>flyway</module>
         <module>flyway-postgresql</module>

@@ -11,8 +11,8 @@
     <packaging>maven-plugin</packaging>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.version>3.8.8</maven.version>
         <maven-enforcer-plugin.phase>validate</maven-enforcer-plugin.phase>
@@ -33,7 +33,7 @@
             <version>3.9.0</version>
             <scope>provided</scope>
         </dependency>
-        
+
         <!-- Maven Core for MavenSession -->
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -41,7 +41,7 @@
             <version>${maven.version}</version>
             <scope>provided</scope>
         </dependency>
-        
+
         <!-- Maven Project -->
         <dependency>
             <groupId>org.apache.maven</groupId>
@@ -49,21 +49,21 @@
             <version>${maven.version}</version>
             <scope>provided</scope>
         </dependency>
-        
+
         <!-- JSON output -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
-        
+
         <!-- Maven Invoker API for batch execution -->
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-invoker</artifactId>
             <version>3.2.0</version>
         </dependency>
-        
+
         <!-- Test Dependencies -->
         <dependency>
             <groupId>org.apache.maven.plugin-testing</groupId>
@@ -83,7 +83,7 @@
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- Kotlin dependencies -->
         <dependency>
             <groupId>org.jetbrains.kotlin</groupId>
@@ -96,7 +96,7 @@
             <version>${kotlin.version}</version>
             <scope>test</scope>
         </dependency>
-        
+
         <!-- SLF4J implementation to resolve logging warnings -->
         <dependency>
             <groupId>org.slf4j</groupId>

@@ -7,7 +7,7 @@
 == Context and Problem Statement
 
 Build time initialization of classes in native mode aligns with Quarkus' philosophy of doing as much as possible at build time to optimize run time performance and reduce startup time.
-However, build time initialization of a class forces the class it transitively depends on to get build time initialized as well.
+However, build time initialization of a class forces the classes it transitively depends on to get build time initialized as well.
 This often leads to classes that should be run time initialized to get build time initialized resulting in issues that require additional configuration or even code substitutions to be worked around.
 This complicates the development process and discourages Quarkus users from using Quarkus' native mode due to increased complexity if they rely on libraries not handled by Quarkus or some of its extensions.
 
@@ -132,6 +132,14 @@ class UserExtensionBT buildtime
 Since Quarkus already defaults to initializing classes at build time, it is possible to configure it to keep initializing some classes at build time while initializing the rest at runtime.
 In this approach there are multiple scenarios between the two extremes of initializing all classes at build time or at runtime.
 The more classes we initialize at build time, the more we can take advantage of build time initialization, but the more we risk running into issues that require additional configuration or code substitutions and vice versa.
+
+[NOTE]
+====
+When defining a set of classes that Quarkus should initialize at build time, native-image will also build-time initialize all classes that are transitively reachable through the static initializers of these artifacts/classes.
+
+Additionally, the static initializers of some classes may result in the execution of code from classes not marked for build time initialization at build time.
+This might be counterintuitive, as Quarkus users will probably expect their code to run at run-time if not explicitly configured to be build time initialized.
+====
 
 ==== Proposal 1: Initialize Quarkus core and all extensions along with their transitive dependencies at build time
 

@@ -198,7 +198,7 @@ jobs:
         with:
           # this is important for GIB to work
           fetch-depth: 0
-      - run: pnpm exec nx-cloud start-ci-run --distribute-on="3 linux-large-jvm"
+      - run: npx exec nx-cloud start-ci-run --distribute-on="3 linux-large-jvm"
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
@@ -632,12 +632,18 @@ jobs:
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
+      - name: Clean
+        env:
+          CAPTURE_BUILD_SCAN: true
+        # Important: keep -pl ... in sync with "Calculate run flags"!
+        # Despite the pre-calculated run_maven flag, GIB has to be re-run here to figure out the exact submodules to build.
+        run: nx run-many -t clean --projects 'integration-tests/maven','integration-tests/devmode' $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
         # Important: keep -pl ... in sync with "Calculate run flags"!
         # Despite the pre-calculated run_maven flag, GIB has to be re-run here to figure out the exact submodules to build.
-        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS clean install -pl 'integration-tests/maven' -pl 'integration-tests/devmode' ${{ needs.build-jdk17.outputs.gib_args }}
+        run: nx run-many -t install --projects 'integration-tests/maven','integration-tests/devmode' $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $PTS_MAVEN_ARGS $JVM_TEST_MAVEN_ARGS ${{ needs.build-jdk17.outputs.gib_args }}
       - name: Prepare failure archive (if maven failed)
         if: failure()
         run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -

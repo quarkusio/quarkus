@@ -11,7 +11,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -28,7 +27,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
-import org.jboss.jandex.PrimitiveType.Primitive;
+import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
@@ -41,9 +40,7 @@ import io.quarkus.arc.impl.TypeVariableImpl;
 import io.quarkus.arc.impl.TypeVariableReferenceImpl;
 import io.quarkus.arc.impl.WildcardTypeImpl;
 import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 
@@ -55,8 +52,6 @@ public final class Types {
 
     static final Logger LOGGER = Logger.getLogger(Types.class);
 
-    private static final Type OBJECT_TYPE = Type.create(DotNames.OBJECT, Kind.CLASS);
-
     private static final Set<String> PRIMITIVE_CLASS_NAMES = Set.of(
             "boolean",
             "byte",
@@ -67,16 +62,6 @@ public final class Types {
             "double",
             "char");
 
-    private static final Set<DotName> PRIMITIVE_WRAPPERS = Set.of(
-            DotNames.BOOLEAN,
-            DotNames.BYTE,
-            DotNames.SHORT,
-            DotNames.INTEGER,
-            DotNames.LONG,
-            DotNames.FLOAT,
-            DotNames.DOUBLE,
-            DotNames.CHARACTER);
-
     // we ban these interfaces because of mismatch between building JDK version and target JDK version
     // TODO:  add a extensible banning mechanism based on predicates if we find that this set needs to grow...
     private static final Set<DotName> BANNED_INTERFACE_TYPES = Set.of(DotName.createSimple("java.util.SequencedCollection"));
@@ -84,46 +69,7 @@ public final class Types {
     private Types() {
     }
 
-    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type) {
-        return getTypeHandle(creator, type, null);
-    }
-
-    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
-        return getTypeHandle(creator, type, tccl, null);
-    }
-
-    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl, IndexView index) {
-        AssignableResultHandle result = creator.createVariable(Object.class);
-        TypeVariables typeVariables = new TypeVariables();
-        getTypeHandle(result, creator, type, tccl, null, typeVariables, index);
-        typeVariables.patchReferences(creator);
-        return result;
-    }
-
-    /**
-     * @deprecated use {@link Type#create(Class)}
-     */
     @Deprecated(forRemoval = true, since = "3.30")
-    public static Type jandexType(Class<?> clazz) {
-        return Type.create(clazz);
-    }
-
-    public static Type jandexType(java.lang.reflect.Type type) {
-        if (type instanceof java.lang.Class) {
-            return jandexType((Class<?>) type);
-        } else if (type instanceof java.lang.reflect.ParameterizedType) {
-            java.lang.reflect.ParameterizedType p = (java.lang.reflect.ParameterizedType) type;
-            org.jboss.jandex.ParameterizedType.Builder builder = org.jboss.jandex.ParameterizedType
-                    .builder((Class<?>) p.getRawType());
-            for (java.lang.reflect.Type typeArgument : p.getActualTypeArguments()) {
-                builder.addArgument(jandexType(typeArgument));
-            }
-            return builder.build();
-        } else {
-            throw new IllegalArgumentException("Unsupported type: " + type);
-        }
-    }
-
     private static class TypeVariables {
         private final Map<String, ResultHandle> typeVariable = new HashMap<>();
         private final Map<String, ResultHandle> typeVariableReference = new HashMap<>();
@@ -155,27 +101,31 @@ public final class Types {
         }
     }
 
-    static void getTypeHandle(AssignableResultHandle variable, BytecodeCreator creator, Type type, ResultHandle tccl,
-            TypeCache cache) {
-        TypeVariables typeVariables = new TypeVariables();
-        getTypeHandle(variable, creator, type, tccl, cache, typeVariables, null);
-        typeVariables.patchReferences(creator);
+    @Deprecated(forRemoval = true, since = "3.30")
+    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type) {
+        return getTypeHandle(creator, type, null);
     }
 
+    @Deprecated(forRemoval = true, since = "3.30")
+    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
+        return getTypeHandle(creator, type, tccl, null);
+    }
+
+    @Deprecated(forRemoval = true, since = "3.30")
+    public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl, IndexView index) {
+        AssignableResultHandle result = creator.createVariable(Object.class);
+        TypeVariables typeVariables = new TypeVariables();
+        getTypeHandle(result, creator, type, tccl, typeVariables, index);
+        typeVariables.patchReferences(creator);
+        return result;
+    }
+
+    @Deprecated(forRemoval = true, since = "3.30")
     private static void getTypeHandle(AssignableResultHandle variable, BytecodeCreator creator, Type type,
-            ResultHandle tccl, TypeCache cache, TypeVariables typeVariables, IndexView index) {
-        if (cache != null) {
-            ResultHandle cachedType = cache.get(type, creator);
-            BranchResult cachedNull = creator.ifNull(cachedType);
-            cachedNull.falseBranch().assign(variable, cachedType);
-            creator = cachedNull.trueBranch();
-        }
+            ResultHandle tccl, TypeVariables typeVariables, IndexView index) {
         if (Kind.CLASS.equals(type.kind())) {
             String className = type.asClassType().name().toString();
             ResultHandle classHandle = doLoadClass(creator, className, tccl);
-            if (cache != null) {
-                cache.put(type, classHandle, creator);
-            }
             creator.assign(variable, classHandle);
         } else if (Kind.TYPE_VARIABLE.equals(type.kind())) {
             // E.g. T -> new TypeVariableImpl("T")
@@ -192,23 +142,20 @@ public final class Types {
                     boundsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(bounds.size()));
                     for (int i = 0; i < bounds.size(); i++) {
                         AssignableResultHandle boundHandle = creator.createVariable(Object.class);
-                        getTypeHandle(boundHandle, creator, bounds.get(i), tccl, cache, typeVariables, index);
+                        getTypeHandle(boundHandle, creator, bounds.get(i), tccl, typeVariables, index);
                         creator.writeArrayValue(boundsHandle, i, boundHandle);
                     }
                 }
                 typeVariableHandle = creator.newInstance(
                         MethodDescriptor.ofConstructor(TypeVariableImpl.class, String.class, java.lang.reflect.Type[].class),
                         creator.load(identifier), boundsHandle);
-                if (cache != null) {
-                    cache.put(typeVariable, typeVariableHandle, creator);
-                }
                 typeVariables.setTypeVariable(identifier, typeVariableHandle);
             }
             creator.assign(variable, typeVariableHandle);
 
         } else if (Kind.PARAMETERIZED_TYPE.equals(type.kind())) {
             // E.g. List<String> -> new ParameterizedTypeImpl(List.class, String.class)
-            getParameterizedType(variable, creator, tccl, type.asParameterizedType(), cache, typeVariables, index);
+            getParameterizedType(variable, creator, tccl, type.asParameterizedType(), typeVariables, index);
 
         } else if (Kind.ARRAY.equals(type.kind())) {
             ArrayType array = type.asArrayType();
@@ -223,13 +170,10 @@ public final class Types {
                 // E.g. List<String>[] -> new GenericArrayTypeImpl(new ParameterizedTypeImpl(List.class, String.class))
                 Type componentType = type.asArrayType().constituent();
                 AssignableResultHandle componentTypeHandle = creator.createVariable(Object.class);
-                getTypeHandle(componentTypeHandle, creator, componentType, tccl, cache, typeVariables, index);
+                getTypeHandle(componentTypeHandle, creator, componentType, tccl, typeVariables, index);
                 arrayHandle = creator.newInstance(
                         MethodDescriptor.ofConstructor(GenericArrayTypeImpl.class, java.lang.reflect.Type.class),
                         componentTypeHandle);
-            }
-            if (cache != null) {
-                cache.put(type, arrayHandle, creator);
             }
             creator.assign(variable, arrayHandle);
 
@@ -239,21 +183,18 @@ public final class Types {
             ResultHandle wildcardHandle;
             if (wildcardType.superBound() == null) {
                 AssignableResultHandle extendsBoundHandle = creator.createVariable(Object.class);
-                getTypeHandle(extendsBoundHandle, creator, wildcardType.extendsBound(), tccl, cache, typeVariables, index);
+                getTypeHandle(extendsBoundHandle, creator, wildcardType.extendsBound(), tccl, typeVariables, index);
                 wildcardHandle = creator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withUpperBound",
                                 java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
                         extendsBoundHandle);
             } else {
                 AssignableResultHandle superBoundHandle = creator.createVariable(Object.class);
-                getTypeHandle(superBoundHandle, creator, wildcardType.superBound(), tccl, cache, typeVariables, index);
+                getTypeHandle(superBoundHandle, creator, wildcardType.superBound(), tccl, typeVariables, index);
                 wildcardHandle = creator.invokeStaticMethod(
                         MethodDescriptor.ofMethod(WildcardTypeImpl.class, "withLowerBound",
                                 java.lang.reflect.WildcardType.class, java.lang.reflect.Type.class),
                         superBoundHandle);
-            }
-            if (cache != null) {
-                cache.put(wildcardType, wildcardHandle, creator);
             }
             creator.assign(variable, wildcardHandle);
         } else if (Kind.PRIMITIVE.equals(type.kind())) {
@@ -304,35 +245,26 @@ public final class Types {
         }
     }
 
+    @Deprecated(forRemoval = true, since = "3.30")
     private static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
-            ParameterizedType parameterizedType, TypeCache cache, TypeVariables typeVariables, IndexView index) {
+            ParameterizedType parameterizedType, TypeVariables typeVariables, IndexView index) {
         List<Type> arguments = parameterizedType.arguments();
         ResultHandle typeArgsHandle = creator.newArray(java.lang.reflect.Type.class, creator.load(arguments.size()));
         for (int i = 0; i < arguments.size(); i++) {
             AssignableResultHandle argumentHandle = creator.createVariable(Object.class);
-            getTypeHandle(argumentHandle, creator, arguments.get(i), tccl, cache, typeVariables, index);
+            getTypeHandle(argumentHandle, creator, arguments.get(i), tccl, typeVariables, index);
             creator.writeArrayValue(typeArgsHandle, i, argumentHandle);
         }
-        Type rawType = Type.create(parameterizedType.name(), Kind.CLASS);
-        ResultHandle rawTypeHandle = null;
-        if (cache != null) {
-            rawTypeHandle = cache.get(rawType, creator);
-        }
-        if (rawTypeHandle == null) {
-            rawTypeHandle = doLoadClass(creator, parameterizedType.name().toString(), tccl);
-            if (cache != null) {
-                cache.put(rawType, rawTypeHandle, creator);
-            }
-        }
+        ResultHandle rawTypeHandle = doLoadClass(creator, parameterizedType.name().toString(), tccl);
         AssignableResultHandle ownerTypeHandle = creator.createVariable(Object.class);
         if (parameterizedType.owner() != null) {
-            getTypeHandle(ownerTypeHandle, creator, parameterizedType.owner(), tccl, cache, typeVariables, index);
+            getTypeHandle(ownerTypeHandle, creator, parameterizedType.owner(), tccl, typeVariables, index);
         } else if (index != null) {
             ClassInfo clazz = index.getClassByName(parameterizedType.name());
             if (clazz != null && clazz.enclosingClass() != null) {
                 // this is not entirely precise, but generic classes with more than 1 level of nesting are very rare
                 ClassType owner = ClassType.create(clazz.enclosingClass());
-                getTypeHandle(ownerTypeHandle, creator, owner, tccl, cache, typeVariables, index);
+                getTypeHandle(ownerTypeHandle, creator, owner, tccl, typeVariables, index);
             } else {
                 creator.assign(ownerTypeHandle, creator.loadNull());
             }
@@ -343,49 +275,82 @@ public final class Types {
                 MethodDescriptor.ofConstructor(ParameterizedTypeImpl.class, java.lang.reflect.Type.class,
                         java.lang.reflect.Type[].class, java.lang.reflect.Type.class),
                 rawTypeHandle, typeArgsHandle, ownerTypeHandle);
-        if (cache != null) {
-            cache.put(parameterizedType, parameterizedTypeHandle, creator);
-        }
         creator.assign(variable, parameterizedTypeHandle);
     }
 
+    @Deprecated(forRemoval = true, since = "3.30")
     public static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
         TypeVariables typeVariables = new TypeVariables();
-        getParameterizedType(variable, creator, tccl, parameterizedType, null, typeVariables, null);
+        getParameterizedType(variable, creator, tccl, parameterizedType, typeVariables, null);
         typeVariables.patchReferences(creator);
     }
 
+    @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getParameterizedType(BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
         AssignableResultHandle result = creator.createVariable(Object.class);
         TypeVariables typeVariables = new TypeVariables();
-        getParameterizedType(result, creator, tccl, parameterizedType, null, typeVariables, null);
+        getParameterizedType(result, creator, tccl, parameterizedType, typeVariables, null);
         typeVariables.patchReferences(creator);
         return result;
     }
 
+    @Deprecated(forRemoval = true, since = "3.30")
+    private static final MethodDescriptor THREAD_CURRENT_THREAD = MethodDescriptor.ofMethod(Thread.class, "currentThread",
+            Thread.class);
+
+    @Deprecated(forRemoval = true, since = "3.30")
+    private static final MethodDescriptor THREAD_GET_TCCL = MethodDescriptor.ofMethod(Thread.class, "getContextClassLoader",
+            ClassLoader.class);
+
+    @Deprecated(forRemoval = true, since = "3.30")
+    private static final MethodDescriptor CL_FOR_NAME = MethodDescriptor.ofMethod(Class.class, "forName",
+            Class.class, String.class, boolean.class, ClassLoader.class);
+
+    @Deprecated(forRemoval = true, since = "3.30")
     private static ResultHandle doLoadClass(BytecodeCreator creator, String className, ResultHandle tccl) {
         if (className.startsWith("java.")) {
             return creator.loadClass(className);
         } else {
             //we need to use Class.forName as the class may be package private
             if (tccl == null) {
-                ResultHandle currentThread = creator
-                        .invokeStaticMethod(MethodDescriptors.THREAD_CURRENT_THREAD);
-                tccl = creator.invokeVirtualMethod(MethodDescriptors.THREAD_GET_TCCL, currentThread);
+                ResultHandle currentThread = creator.invokeStaticMethod(THREAD_CURRENT_THREAD);
+                tccl = creator.invokeVirtualMethod(THREAD_GET_TCCL, currentThread);
             }
-            return creator.invokeStaticMethod(MethodDescriptors.CL_FOR_NAME, creator.load(className), creator.load(false),
-                    tccl);
+            return creator.invokeStaticMethod(CL_FOR_NAME, creator.load(className), creator.load(false), tccl);
+        }
+    }
+
+    /**
+     * @deprecated use {@link Type#create(Class)}
+     */
+    @Deprecated(forRemoval = true, since = "3.30")
+    public static Type jandexType(Class<?> clazz) {
+        return Type.create(clazz);
+    }
+
+    public static Type jandexType(java.lang.reflect.Type type) {
+        if (type instanceof java.lang.Class<?> c) {
+            return jandexType(c);
+        } else if (type instanceof java.lang.reflect.ParameterizedType p) {
+            org.jboss.jandex.ParameterizedType.Builder builder = org.jboss.jandex.ParameterizedType
+                    .builder((Class<?>) p.getRawType());
+            for (java.lang.reflect.Type typeArgument : p.getActualTypeArguments()) {
+                builder.addArgument(jandexType(typeArgument));
+            }
+            return builder.build();
+        } else {
+            throw new IllegalArgumentException("Unsupported type: " + type);
         }
     }
 
     static Type getProviderType(ClassInfo classInfo) {
         List<TypeVariable> typeParameters = classInfo.typeParameters();
         if (!typeParameters.isEmpty()) {
-            return ParameterizedType.create(classInfo.name(), typeParameters.toArray(new Type[] {}), null);
+            return ParameterizedType.create(classInfo.name(), typeParameters.toArray(new Type[0]), null);
         } else {
-            return Type.create(classInfo.name(), Kind.CLASS);
+            return ClassType.create(classInfo.name());
         }
     }
 
@@ -402,7 +367,7 @@ public final class Types {
         if (returnType.kind() == Kind.PRIMITIVE || returnType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
             types.add(returnType);
-            types.add(OBJECT_TYPE);
+            types.add(ClassType.OBJECT_TYPE);
             return new TypeClosure(types);
         } else {
             ClassInfo returnTypeClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), returnType);
@@ -439,7 +404,7 @@ public final class Types {
         if (fieldType.kind() == Kind.PRIMITIVE || fieldType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
             types.add(fieldType);
-            types.add(OBJECT_TYPE);
+            types.add(ClassType.OBJECT_TYPE);
             return new TypeClosure(types);
         } else {
             ClassInfo fieldClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), producerField.type());
@@ -492,7 +457,7 @@ public final class Types {
         if (jandexType.kind() == Kind.PRIMITIVE || jandexType.kind() == Kind.ARRAY) {
             types = new HashSet<>();
             types.add(jandexType);
-            types.add(OBJECT_TYPE);
+            types.add(ClassType.OBJECT_TYPE);
             return new TypeClosure(types);
         } else {
             ClassInfo jandexTypeClassInfo = getClassByName(beanDeployment.getBeanArchiveIndex(), jandexType);
@@ -641,11 +606,9 @@ public final class Types {
                 return true;
             }
         } else if (type.kind().equals(Kind.PARAMETERIZED_TYPE)) {
-            boolean wildcardFound = false;
             for (Type t : type.asParameterizedType().arguments()) {
-                // recursive check of all parameterized types
-                wildcardFound = containsWildcard(t, producerFieldOrMethod, throwIfDetected);
-                if (wildcardFound) {
+                // recursive check of all type arguments
+                if (containsWildcard(t, producerFieldOrMethod, throwIfDetected)) {
                     return true;
                 }
             }
@@ -788,7 +751,7 @@ public final class Types {
             AnnotationValue typedValue = typed.value();
             if (typedValue == null) {
                 types.clear();
-                types.add(OBJECT_TYPE);
+                types.add(ClassType.OBJECT_TYPE);
             } else {
                 typedClasses = new HashSet<>();
                 for (Type type : typedValue.asClassArray()) {
@@ -798,7 +761,7 @@ public final class Types {
         }
         // check if all classes declared in @Typed match some class in the unrestricted bean type set
         for (DotName typeName : typedClasses) {
-            if (!unrestrictedBeanTypes.stream().anyMatch(type -> type.name().equals(typeName))) {
+            if (unrestrictedBeanTypes.stream().noneMatch(type -> type.name().equals(typeName))) {
                 throw new DefinitionException(
                         "Cannot limit bean types to types outside of the transitive closure of bean types. Bean: " + target
                                 + " illegal bean types: " + typedClasses);
@@ -857,91 +820,19 @@ public final class Types {
         return typeParam;
     }
 
-    static String getPackageName(String className) {
-        className = className.replace('/', '.');
-        return className.contains(".") ? className.substring(0, className.lastIndexOf(".")) : "";
-    }
-
     static String getSimpleName(String className) {
-        return className.contains(".") ? className.substring(className.lastIndexOf(".") + 1, className.length()) : className;
+        return className.contains(".") ? className.substring(className.lastIndexOf(".") + 1) : className;
     }
 
     static Type box(Type type) {
         if (type.kind() == Kind.PRIMITIVE) {
-            return box(type.asPrimitiveType().primitive());
+            return PrimitiveType.box(type.asPrimitiveType());
         }
         return type;
     }
 
-    static Type box(Primitive primitive) {
-        switch (primitive) {
-            case BOOLEAN:
-                return Type.create(DotNames.BOOLEAN, Kind.CLASS);
-            case DOUBLE:
-                return Type.create(DotNames.DOUBLE, Kind.CLASS);
-            case FLOAT:
-                return Type.create(DotNames.FLOAT, Kind.CLASS);
-            case LONG:
-                return Type.create(DotNames.LONG, Kind.CLASS);
-            case INT:
-                return Type.create(DotNames.INTEGER, Kind.CLASS);
-            case BYTE:
-                return Type.create(DotNames.BYTE, Kind.CLASS);
-            case CHAR:
-                return Type.create(DotNames.CHARACTER, Kind.CLASS);
-            case SHORT:
-                return Type.create(DotNames.SHORT, Kind.CLASS);
-            default:
-                throw new IllegalArgumentException("Unsupported primitive: " + primitive);
-        }
-    }
-
     static boolean isPrimitiveClassName(String className) {
         return PRIMITIVE_CLASS_NAMES.contains(className);
-    }
-
-    static boolean isPrimitiveWrapperType(Type type) {
-        if (type.kind() == Kind.CLASS) {
-            return PRIMITIVE_WRAPPERS.contains(type.name());
-        }
-        return false;
-    }
-
-    /**
-     * Emits a bytecode instruction to load the default value of given {@code primitive} type
-     * into given {@code bytecode} creator and returns the {@link ResultHandle} of the loaded
-     * default value. The default primitive value is {@code 0} for integral types, {@code 0.0}
-     * for floating point types, {@code false} for {@code boolean} and the null character for
-     * {@code char}.
-     * <p>
-     * Can also be used to load a default primitive value of the corresponding wrapper type,
-     * because Gizmo will box automatically.
-     *
-     * @param primitive primitive type, must not be {@code null}
-     * @param bytecode bytecode creator that will receive the load instruction, must not be {@code null}
-     * @return a result handle of the loaded default primitive value
-     */
-    static ResultHandle loadPrimitiveDefault(Primitive primitive, BytecodeCreator bytecode) {
-        switch (Objects.requireNonNull(primitive)) {
-            case BOOLEAN:
-                return bytecode.load(false);
-            case BYTE:
-                return bytecode.load((byte) 0);
-            case SHORT:
-                return bytecode.load((short) 0);
-            case INT:
-                return bytecode.load(0);
-            case LONG:
-                return bytecode.load(0L);
-            case FLOAT:
-                return bytecode.load(0.0F);
-            case DOUBLE:
-                return bytecode.load(0.0);
-            case CHAR:
-                return bytecode.load((char) 0);
-            default:
-                throw new IllegalArgumentException("Unknown primitive type: " + primitive);
-        }
     }
 
     static boolean containsTypeVariable(Type type) {
@@ -955,28 +846,6 @@ public final class Types {
             }
         }
         return false;
-    }
-
-    interface TypeCache {
-
-        void initialize(MethodCreator method);
-
-        /**
-         *
-         * @param type
-         * @param bytecode
-         * @return the cached value or {@code null}
-         */
-        ResultHandle get(Type type, BytecodeCreator bytecode);
-
-        /**
-         *
-         * @param type
-         * @param value
-         * @param bytecode
-         */
-        void put(Type type, ResultHandle value, BytecodeCreator bytecode);
-
     }
 
 }

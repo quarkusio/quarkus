@@ -36,7 +36,7 @@ public final class InjectableReferenceProviders {
                 parent.removeDependentInstance(instance, false);
             }
         } else {
-            throw new IllegalArgumentException("Injetable reference provider is not a bean: " + provider.getClass());
+            throw new IllegalArgumentException("Injectable reference provider is not a bean: " + provider.getClass());
         }
     }
 

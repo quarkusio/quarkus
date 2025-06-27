@@ -9,9 +9,6 @@ import jakarta.enterprise.inject.Default;
 
 import org.jboss.jandex.AnnotationInstance;
 
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.StaticFieldVar;
 import io.quarkus.gizmo2.desc.FieldDesc;
@@ -38,11 +35,7 @@ enum BuiltinQualifier {
         return instance;
     }
 
-    ResultHandle getLiteralInstance(BytecodeCreator creator) {
-        return creator.readStaticField(FieldDescriptor.of(literalType, "INSTANCE", literalType));
-    }
-
-    StaticFieldVar getLiteralInstance_2() {
+    StaticFieldVar getLiteralInstance() {
         ClassDesc literalClass = ClassDesc.of(literalType);
         return Expr.staticField(FieldDesc.of(literalClass, "INSTANCE", literalClass));
     }

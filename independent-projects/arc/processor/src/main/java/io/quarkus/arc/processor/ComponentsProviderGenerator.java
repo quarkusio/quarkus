@@ -440,7 +440,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                                 BuiltinQualifier btBuiltinQualifier = BuiltinQualifier.of(btQualifier);
                                 if (btBuiltinQualifier != null) {
                                     // Use the literal instance for built-in qualifiers
-                                    b0.withSet(rtQualifiers).add(btBuiltinQualifier.getLiteralInstance_2());
+                                    b0.withSet(rtQualifiers).add(btBuiltinQualifier.getLiteralInstance());
                                 } else {
                                     LocalVar rtSharedQualifier = sharedQualifers.get(btQualifier.createEquivalenceProxy());
                                     if (rtSharedQualifier == null) {

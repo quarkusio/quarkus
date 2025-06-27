@@ -40,6 +40,7 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -116,7 +117,8 @@ public class DevServicesMongoProcessor {
                         devServicesSharedNetworkBuildItem);
                 devService = startMongo(dockerStatusBuildItem, composeProjectBuildItem, connectionName,
                         currentCapturedProperties.get(connectionName),
-                        useSharedNetwork, devServicesConfig.timeout(), launchMode.getLaunchMode());
+                        useSharedNetwork, devServicesConfig.timeout(), launchMode.getLaunchMode(),
+                        mongoClientBuildTimeConfig.devservices().serviceName());
                 if (devService == null) {
                     compressor.closeAndDumpCaptured();
                 } else {
@@ -159,7 +161,7 @@ public class DevServicesMongoProcessor {
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             String connectionName, CapturedProperties capturedProperties,
             boolean useSharedNetwork, Optional<Duration> timeout,
-            LaunchMode launchMode) {
+            LaunchMode launchMode, String serviceName) {
         if (!capturedProperties.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting devservices for " + (isDefault(connectionName) ? "default datasource" : connectionName)
@@ -192,10 +194,10 @@ public class DevServicesMongoProcessor {
                         DockerImageName.parse(capturedProperties.imageName).asCompatibleSubstituteFor("mongo"),
                         capturedProperties.fixedExposedPort,
                         composeProjectBuildItem.getDefaultNetworkId(),
-                        useSharedNetwork);
+                        useSharedNetwork, launchMode, serviceName);
             } else {
                 mongoDBContainer = new QuarkusMongoDBContainer(capturedProperties.fixedExposedPort,
-                        composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork);
+                        composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork, launchMode, serviceName);
             }
             timeout.ifPresent(mongoDBContainer::withStartupTimeout);
             mongoDBContainer.withEnv(capturedProperties.containerEnv);
@@ -285,18 +287,22 @@ public class DevServicesMongoProcessor {
         private static final int MONGODB_INTERNAL_PORT = 27017;
 
         @SuppressWarnings("deprecation")
-        private QuarkusMongoDBContainer(Integer fixedExposedPort, String defaultNetworkId, boolean useSharedNetwork) {
+        private QuarkusMongoDBContainer(Integer fixedExposedPort, String defaultNetworkId, boolean useSharedNetwork,
+                LaunchMode launchMode, String serviceName) {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mongo");
+            this.withLabel(Labels.QUARKUS_DEV_SERVICE, launchMode == LaunchMode.DEVELOPMENT ? serviceName : null);
         }
 
         private QuarkusMongoDBContainer(DockerImageName dockerImageName, Integer fixedExposedPort,
-                String defaultNetworkId, boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork,
+                LaunchMode launchMode, String serviceName) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mongo");
+            this.withLabel(Labels.QUARKUS_DEV_SERVICE, launchMode == LaunchMode.DEVELOPMENT ? serviceName : null);
         }
 
         @Override

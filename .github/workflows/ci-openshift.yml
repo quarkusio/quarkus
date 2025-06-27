@@ -1,4 +1,4 @@
-name: Quarkus CI - Kubernetes
+name: Quarkus CI - OpenShift
 
 on:
   workflow_dispatch:

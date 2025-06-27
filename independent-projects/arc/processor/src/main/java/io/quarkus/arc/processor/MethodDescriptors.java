@@ -50,10 +50,7 @@ import io.quarkus.arc.impl.RemovedBeanImpl;
 import io.quarkus.arc.impl.Sets;
 import io.quarkus.gizmo.MethodDescriptor;
 
-/**
- *
- * @author Martin Kouba
- */
+@Deprecated(forRemoval = true, since = "3.30")
 public final class MethodDescriptors {
 
     public static final MethodDescriptor FIXED_VALUE_SUPPLIER_CONSTRUCTOR = MethodDescriptor.ofConstructor(

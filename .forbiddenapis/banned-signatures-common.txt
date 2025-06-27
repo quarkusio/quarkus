@@ -16,3 +16,28 @@ org.wildfly.common.os.**
 io.smallrye.common.Assert.assertTrue(**)
 io.smallrye.common.Assert.assertFalse(**)
 io.smallrye.common.Assert.assertNotNull(**)
+
+@defaultMessage Use JBoss Logging
+# Forbid all logging methods in java.util.logging.Logger
+# Simple message logging methods:
+java.util.logging.Logger#severe(java.lang.String)
+java.util.logging.Logger#warning(java.lang.String)
+java.util.logging.Logger#info(java.lang.String)
+java.util.logging.Logger#config(java.lang.String)
+java.util.logging.Logger#fine(java.lang.String)
+java.util.logging.Logger#finer(java.lang.String)
+java.util.logging.Logger#finest(java.lang.String)
+# Methods with Supplier<String>:
+java.util.logging.Logger#severe(java.util.function.Supplier)
+java.util.logging.Logger#warning(java.util.function.Supplier)
+java.util.logging.Logger#info(java.util.function.Supplier)
+java.util.logging.Logger#config(java.util.function.Supplier)
+java.util.logging.Logger#fine(java.util.function.Supplier)
+java.util.logging.Logger#finer(java.util.function.Supplier)
+java.util.logging.Logger#finest(java.util.function.Supplier)
+# Generic log methods:
+java.util.logging.Logger#log(java.util.logging.Level,java.lang.String)
+java.util.logging.Logger#log(java.util.logging.Level,java.util.function.Supplier)
+java.util.logging.Logger#log(java.util.logging.Level,java.lang.String,java.lang.Object)
+java.util.logging.Logger#log(java.util.logging.Level,java.lang.String,java.lang.Object[])
+java.util.logging.Logger#log(java.util.logging.Level,java.lang.String,java.lang.Throwable)

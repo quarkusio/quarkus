@@ -13,8 +13,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
@@ -25,11 +23,14 @@ import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.jboss.logging.Logger;
 
 import io.quarkus.devtools.testing.RegistryClientTestHelper;
 import io.quarkus.test.devmode.util.DevModeClient;
 
 public class MojoTestBase {
+
+    private static final Logger LOGGER = Logger.getLogger(MojoTestBase.class);
 
     public Invoker initInvoker(File root) {
         Invoker invoker = new DefaultInvoker() {
@@ -74,8 +75,7 @@ public class MojoTestBase {
 
         initDotMvn();
 
-        Logger.getLogger(MojoTestBase.class.getName())
-                .log(Level.FINE, "test-classes created? %s", mkdirs);
+        LOGGER.debugf("test-classes created? %s", mkdirs);
         return tc;
     }
 
@@ -83,8 +83,7 @@ public class MojoTestBase {
         File tc = new File("target/test-classes");
         if (!tc.isDirectory()) {
             boolean mkdirs = tc.mkdirs();
-            Logger.getLogger(MojoTestBase.class.getName())
-                    .log(Level.FINE, "test-classes created? %s", mkdirs);
+            LOGGER.debugf("test-classes created? %s", mkdirs);
         }
 
         File in = new File(tc, name);
@@ -105,8 +104,7 @@ public class MojoTestBase {
         File tc = new File("target/test-classes");
         if (!tc.isDirectory()) {
             boolean mkdirs = tc.mkdirs();
-            Logger.getLogger(MojoTestBase.class.getName())
-                    .log(Level.FINE, "test-classes created? %s", mkdirs);
+            LOGGER.debugf("test-classes created? %s", mkdirs);
         }
 
         File in = new File(tc, name);
@@ -119,8 +117,7 @@ public class MojoTestBase {
             FileUtils.deleteQuietly(out);
         }
         boolean mkdirs = out.mkdirs();
-        Logger.getLogger(MojoTestBase.class.getName())
-                .log(Level.FINE, out.getAbsolutePath() + " created? " + mkdirs);
+        LOGGER.debugf(out.getAbsolutePath() + " created? %s", mkdirs);
 
         initDotMvn();
 

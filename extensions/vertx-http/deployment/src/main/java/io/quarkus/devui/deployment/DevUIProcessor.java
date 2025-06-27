@@ -1,5 +1,6 @@
 package io.quarkus.devui.deployment;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,6 +38,7 @@ import org.yaml.snakeyaml.Yaml;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
@@ -72,6 +75,8 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.devui.spi.page.QuteDataPageBuilder;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
+import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -101,8 +106,6 @@ public class DevUIProcessor {
     private static final String DEVUI = "dev-ui";
     private static final String SLASH = "/";
     private static final String DOT = ".";
-    private static final String DOUBLE_POINT = ":";
-    private static final String DASH_DEPLOYMENT = "-deployment";
     private static final String SLASH_ALL = SLASH + "*";
     private static final String JSONRPC = "json-rpc-ws";
 
@@ -112,7 +115,6 @@ public class DevUIProcessor {
 
     private static final String JAR = "jar";
     private static final GACT UI_JAR = new GACT("io.quarkus", "quarkus-vertx-http-dev-ui-resources", null, JAR);
-    private static final String YAML_FILE = "/META-INF/quarkus-extension.yaml";
     private static final String NAME = "name";
     private static final String DESCRIPTION = "description";
     private static final String ARTIFACT = "artifact";
@@ -519,17 +521,27 @@ public class DevUIProcessor {
         Map<String, CardPageBuildItem> cardPagesMap = getCardPagesMap(curateOutcomeBuildItem, cardPageBuildItems);
         Map<String, MenuPageBuildItem> menuPagesMap = getMenuPagesMap(curateOutcomeBuildItem, menuPageBuildItems);
         Map<String, List<FooterPageBuildItem>> footerPagesMap = getFooterPagesMap(curateOutcomeBuildItem, footerPageBuildItems);
-        try {
-            final Yaml yaml = new Yaml();
-            List<Extension> activeExtensions = new ArrayList<>();
-            List<Extension> inactiveExtensions = new ArrayList<>();
-            List<Extension> sectionMenuExtensions = new ArrayList<>();
-            List<Extension> footerTabExtensions = new ArrayList<>();
-            ClassPathUtils.consumeAsPaths(YAML_FILE, (var p) -> {
+
+        final Yaml yaml = new Yaml();
+        List<Extension> activeExtensions = new ArrayList<>();
+        List<Extension> inactiveExtensions = new ArrayList<>();
+        List<Extension> sectionMenuExtensions = new ArrayList<>();
+        List<Extension> footerTabExtensions = new ArrayList<>();
+
+        for (ResolvedDependency runtimeExt : curateOutcomeBuildItem.getApplicationModel()
+                .getDependencies(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT)) {
+            runtimeExt.getContentTree().accept(BootstrapConstants.EXTENSION_METADATA_PATH, extYamlVisit -> {
+                if (extYamlVisit == null) {
+                    // this could be an exception but previously the code was simply looking for this resource on the classpath
+                    log.error("Failed to locate " + BootstrapConstants.EXTENSION_METADATA_PATH + " in "
+                            + runtimeExt.toCompactCoords());
+                    return;
+                }
+                final Path extYaml = extYamlVisit.getPath();
                 try {
                     Extension extension = new Extension();
                     final String extensionYaml;
-                    try (Scanner scanner = new Scanner(Files.newBufferedReader(p, StandardCharsets.UTF_8))) {
+                    try (Scanner scanner = new Scanner(Files.newBufferedReader(extYaml, StandardCharsets.UTF_8))) {
                         scanner.useDelimiter("\\A");
                         extensionYaml = scanner.hasNext() ? scanner.next() : null;
                     }
@@ -551,8 +563,7 @@ public class DevUIProcessor {
                                 extension.setNamespace(namespace);
                                 extension.setName((String) extensionMap.get(NAME));
                                 extension.setDescription((String) extensionMap.getOrDefault(DESCRIPTION, null));
-                                String artifactId = (String) extensionMap.getOrDefault(ARTIFACT, null);
-                                extension.setArtifact(artifactId);
+                                extension.setArtifact((String) extensionMap.getOrDefault(ARTIFACT, null));
 
                                 extension.setKeywords((List<String>) metaData.getOrDefault(KEYWORDS, null));
                                 extension.setShortName((String) metaData.getOrDefault(SHORT_NAME, null));
@@ -614,14 +625,12 @@ public class DevUIProcessor {
                                     addLibraryLinks(extension, cardPageBuildItem, curateOutcomeBuildItem, metaData);
 
                                     // Also make sure the static resources for that static resource is available
-                                    produceResources(artifactId, webJarBuildProducer,
-                                            devUIWebJarProducer);
+                                    produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
                                     activeExtensions.add(extension);
                                 } else { // Inactive
                                     if (addLogo(extension, cardPagesMap.get(namespace), metaData)) {
                                         // Also make sure the static resources for that static resource is available
-                                        produceResources(artifactId, webJarBuildProducer,
-                                                devUIWebJarProducer);
+                                        produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
                                     }
 
                                     addLibraryLinks(extension, cardPagesMap.get(namespace), curateOutcomeBuildItem,
@@ -643,8 +652,7 @@ public class DevUIProcessor {
                                         }
                                     }
                                     // Also make sure the static resources for that static resource is available
-                                    produceResources(artifactId, webJarBuildProducer,
-                                            devUIWebJarProducer);
+                                    produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
                                     sectionMenuExtensions.add(extension);
                                 }
 
@@ -663,8 +671,7 @@ public class DevUIProcessor {
                                             }
                                         }
                                         // Also make sure the static resources for that static resource is available
-                                        produceResources(artifactId, webJarBuildProducer,
-                                                devUIWebJarProducer);
+                                        produceResources(runtimeExt, webJarBuildProducer, devUIWebJarProducer);
                                         footerTabExtensions.add(extension);
                                     }
                                 }
@@ -676,41 +683,39 @@ public class DevUIProcessor {
                     }
                 } catch (IOException | RuntimeException e) {
                     // don't abort, just log, to prevent a single extension from breaking entire dev ui
-                    log.error("Failed to process extension descriptor " + p.toUri(), e);
+                    log.error("Failed to process extension descriptor " + extYaml.toUri(), e);
                 }
             });
+        }
 
-            // Also add footers for extensions that might not have a runtime
-            if (!footerPagesMap.isEmpty()) {
-                for (Map.Entry<String, List<FooterPageBuildItem>> footer : footerPagesMap.entrySet()) {
-                    List<FooterPageBuildItem> fbis = footer.getValue();
-                    for (FooterPageBuildItem footerPageBuildItem : fbis) {
-                        if (footerPageBuildItem.isInternal()) {
-                            Extension deploymentOnlyExtension = new Extension();
-                            deploymentOnlyExtension.setName(footer.getKey());
-                            deploymentOnlyExtension.setNamespace(FOOTER_LOG_NAMESPACE);
+        // Also add footers for extensions that might not have a runtime
+        if (!footerPagesMap.isEmpty()) {
+            for (Map.Entry<String, List<FooterPageBuildItem>> footer : footerPagesMap.entrySet()) {
+                List<FooterPageBuildItem> fbis = footer.getValue();
+                for (FooterPageBuildItem footerPageBuildItem : fbis) {
+                    if (footerPageBuildItem.isInternal()) {
+                        Extension deploymentOnlyExtension = new Extension();
+                        deploymentOnlyExtension.setName(footer.getKey());
+                        deploymentOnlyExtension.setNamespace(FOOTER_LOG_NAMESPACE);
 
-                            List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
+                        List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
 
-                            for (PageBuilder pageBuilder : footerPageBuilders) {
-                                pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
-                                pageBuilder.extension(deploymentOnlyExtension.getName());
-                                pageBuilder.internal();
-                                Page page = pageBuilder.build();
-                                deploymentOnlyExtension.addFooterPage(page);
-                            }
-
-                            footerTabExtensions.add(deploymentOnlyExtension);
+                        for (PageBuilder pageBuilder : footerPageBuilders) {
+                            pageBuilder.namespace(deploymentOnlyExtension.getNamespace());
+                            pageBuilder.extension(deploymentOnlyExtension.getName());
+                            pageBuilder.internal();
+                            Page page = pageBuilder.build();
+                            deploymentOnlyExtension.addFooterPage(page);
                         }
+
+                        footerTabExtensions.add(deploymentOnlyExtension);
                     }
                 }
             }
-
-            extensionsProducer.produce(
-                    new ExtensionsBuildItem(activeExtensions, inactiveExtensions, sectionMenuExtensions, footerTabExtensions));
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
         }
+
+        extensionsProducer.produce(
+                new ExtensionsBuildItem(activeExtensions, inactiveExtensions, sectionMenuExtensions, footerTabExtensions));
     }
 
     private void addLibraryLinks(Extension extension, CardPageBuildItem cardPageBuildItem,
@@ -805,19 +810,19 @@ public class DevUIProcessor {
         return List.of(String.valueOf(value));
     }
 
-    private void produceResources(String artifactId,
+    private void produceResources(ResolvedDependency runtimeExt,
             BuildProducer<WebJarBuildItem> webJarBuildProducer,
             BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer) {
 
-        GACT gact = getGACT(artifactId);
-        String namespace = getNamespace(gact);
+        String namespace = getNamespace(runtimeExt.getKey());
         if (namespace.isEmpty()) {
             namespace = "devui";
         }
         String buildTimeDataImport = namespace + "-data";
 
+        final GACT deploymentKey = getDeploymentKey(runtimeExt);
         webJarBuildProducer.produce(WebJarBuildItem.builder()
-                .artifactKey(gact)
+                .artifactKey(deploymentKey)
                 .root(DEVUI + SLASH)
                 .filter(new WebJarResourcesFilter() {
                     @Override
@@ -834,9 +839,29 @@ public class DevUIProcessor {
                 })
                 .build());
 
-        devUIWebJarProducer.produce(
-                new DevUIWebJarBuildItem(gact,
-                        DEVUI));
+        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(deploymentKey, DEVUI));
+    }
+
+    private static GACT getDeploymentKey(ResolvedDependency runtimeExt) {
+        return runtimeExt.getContentTree().apply(BootstrapConstants.DESCRIPTOR_PATH, extPropsVisit -> {
+            if (extPropsVisit == null) {
+                throw new RuntimeException("Failed to locate " + BootstrapConstants.DESCRIPTOR_PATH
+                        + " in " + runtimeExt.toCompactCoords());
+            }
+            final Properties props = new Properties();
+            try (BufferedReader reader = Files.newBufferedReader(extPropsVisit.getPath())) {
+                props.load(reader);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read " + extPropsVisit.getUrl(), e);
+            }
+            final String deploymentCoords = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
+            if (deploymentCoords == null) {
+                throw new RuntimeException(
+                        "Failed to locate " + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT + " in " + extPropsVisit.getUrl());
+            }
+            var coords = GACTV.fromString(deploymentCoords);
+            return new GACT(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
+        });
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
@@ -860,7 +885,7 @@ public class DevUIProcessor {
         }
     }
 
-    private String getNamespace(GACT artifactKey) {
+    private String getNamespace(ArtifactKey artifactKey) {
         String namespace = artifactKey.getGroupId() + "." + artifactKey.getArtifactId();
 
         if (namespace.equals("io.quarkus.quarkus-vertx-http-dev-ui-resources")) {
@@ -903,11 +928,6 @@ public class DevUIProcessor {
             throw new UncheckedIOException(ex);
         }
         return pageBuilder.build();
-    }
-
-    private GACT getGACT(String artifactKey) {
-        String[] split = artifactKey.split(DOUBLE_POINT);
-        return new GACT(split[0], split[1] + DASH_DEPLOYMENT, null, JAR);
     }
 
     private Class toClass(Type type) {

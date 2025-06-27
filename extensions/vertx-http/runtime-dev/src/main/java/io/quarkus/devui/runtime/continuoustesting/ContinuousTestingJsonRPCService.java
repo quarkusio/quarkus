@@ -30,7 +30,7 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
 
     @Override
     public void accept(final ContinuousTestingSharedStateManager.State state) {
-        final var results = DevConsoleManager.<TestRunResultsInterface> invoke("devui-continuous-testing.getResults");
+        final var results = DevConsoleManager.<TestRunResultsInterface> invoke("devui-continuous-testing/getResults");
         final List<Item> passedTests = new LinkedList<>();
         final List<Item> failedTests = new LinkedList<>();
         final List<Item> skippedTests = new LinkedList<>();

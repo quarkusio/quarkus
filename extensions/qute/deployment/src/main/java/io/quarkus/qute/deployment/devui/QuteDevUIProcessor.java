@@ -14,7 +14,6 @@ import java.util.stream.Collectors;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.SuppressForbidden;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
@@ -30,6 +29,7 @@ import io.quarkus.qute.deployment.TemplatePathBuildItem;
 import io.quarkus.qute.deployment.TemplateVariantsBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class QuteDevUIProcessor {
 

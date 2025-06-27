@@ -34,6 +34,11 @@
             <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>
+        
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus.gizmo</groupId>

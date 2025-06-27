@@ -28,11 +28,6 @@
       "description": "Path to the Maven plugin directory containing the batch executor",
       "default": "maven-plugin"
     },
-    "timeout": {
-      "type": "number",
-      "description": "Timeout in milliseconds for Maven execution",
-      "default": 300000
-    },
     "outputFile": {
       "type": "string",
       "description": "Optional file to write execution results"

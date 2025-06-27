@@ -8,7 +8,6 @@ export interface MavenBatchExecutorOptions {
   projectRoot?: string;
   verbose?: boolean;
   mavenPluginPath?: string;
-  timeout?: number;
   outputFile?: string;
   failOnError?: boolean;
 }
@@ -46,7 +45,6 @@ export default async function runExecutor(
     projectRoot = '.',
     verbose = false,
     mavenPluginPath = 'maven-plugin',
-    timeout = 300000,
     outputFile,
     failOnError = true
   } = options;
@@ -113,7 +111,6 @@ export default async function runExecutor(
     const output = execSync(command, {
       cwd: pluginDir,
       encoding: 'utf-8',
-      timeout: timeout,
       maxBuffer: 10 * 1024 * 1024 // 10MB buffer
     });
 
@@ -303,8 +300,7 @@ async function executeMultiProjectMavenBatch(
 ): Promise<MavenBatchResult> {
   const {
     verbose = false,
-    mavenPluginPath = 'maven-plugin',
-    timeout = 300000
+    mavenPluginPath = 'maven-plugin'
   } = options;
 
   // Resolve paths
@@ -340,7 +336,6 @@ async function executeMultiProjectMavenBatch(
   const output = execSync(command, {
     cwd: pluginDir,
     encoding: 'utf-8',
-    timeout: timeout,
     maxBuffer: 10 * 1024 * 1024 // 10MB buffer
   });
 

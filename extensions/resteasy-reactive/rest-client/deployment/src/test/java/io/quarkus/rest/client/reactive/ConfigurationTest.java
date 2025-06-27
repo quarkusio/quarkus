@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.rest.client.reactive.configuration.EchoResource;
 import io.quarkus.restclient.config.RestClientsConfig;
+import io.quarkus.runtime.configuration.MemorySizeConverter;
 import io.quarkus.test.QuarkusUnitTest;
 
 class ConfigurationTest {
@@ -91,6 +92,10 @@ class ConfigurationTest {
         assertThat(clientConfig.followRedirects().get()).isEqualTo(true);
         assertTrue(clientConfig.queryParamStyle().isPresent());
         assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
+        assertThat(clientConfig.multipart().fileThreshold().get().asBigInteger())
+                .isEqualTo(new MemorySizeConverter().convert("5M").asBigInteger());
+        assertThat(clientConfig.multipart().memoryThreshold().get().asBigInteger())
+                .isEqualTo(new MemorySizeConverter().convert("10M").asBigInteger());
 
         if (checkExtraProperties) {
             assertTrue(clientConfig.connectionTTL().isPresent());

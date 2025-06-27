@@ -194,20 +194,20 @@ code to destroy the cookie.
 
 [source,java]
 ----
-import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.POST;
 
 @Inject
-CurrentIdentityAssociation identity;
+SecurityIdentity identity;
 
 @POST
 public Response logout() {
-    if (identity.getIdentity().isAnonymous()) {
+    if (identity.isAnonymous()) {
         throw new UnauthorizedException("Not authenticated");
     }
-    FormAuthenticationMechanism.logout(identity.getIdentity()); <1>
+    FormAuthenticationMechanism.logout(identity); <1>
     return Response.noContent().build();
 }
 ----
@@ -216,6 +216,32 @@ public Response logout() {
 The following properties can be used to configure form-based authentication:
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.auth.adoc[opts=optional, leveloffset=+1]
+
+[[form-based-auth-programmatic-set-up]]
+==== Set up Form-based authentication programmatically
+
+In addition to the configuration properties listed above, Quarkus supports programmatic set up during the runtime as in the example below:
+
+[source,java]
+----
+package org.acme.http.security;
+
+import io.quarkus.vertx.http.security.event.Form;
+import jakarta.enterprise.event.Observes;
+
+public class FormConfiguration {
+
+    void configure(@Observes Form form) { <1>
+        form
+                .enable()
+                .httpOnlyCookie()
+                .loginPage("/my-login.html")
+                .errorPage("/my-error.html");
+    }
+
+}
+----
+<1> Observe the `io.quarkus.vertx.http.security.event.Form` CDI event and customize the configuration provided in the `application.properties` file.
 
 [[mutual-tls]]
 === Mutual TLS authentication

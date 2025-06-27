@@ -3,20 +3,27 @@ package io.quarkus.vertx.http.runtime.security;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import jakarta.enterprise.event.Event;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
-import io.quarkus.vertx.http.security.HttpSecurity;
+import io.quarkus.vertx.http.security.event.Basic;
+import io.quarkus.vertx.http.security.event.Form;
+import io.quarkus.vertx.http.security.event.HttpSecurity;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * This singleton carries final HTTP Security configuration and act as a single source of truth for it.
  */
-record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionCarrier> httpPermissions) {
+record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionCarrier> httpPermissions, BasicImpl basicAuth,
+        FormImpl formAuth) {
 
     private static volatile HttpSecurityConfiguration instance = null;
 
@@ -46,18 +53,39 @@ record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionC
     }
 
     // this instance is not in the CDI container to avoid "potential" (I am guessing) circular dependencies
-    // during the bean instantiation as we can't be sure what users will inject when they observe the HTTP Security;
-    // we could get 'VertxHttpConfig' from SR Config, but this way, we have "guaranteed" that the runtime config is ready
-    static HttpSecurityConfiguration get(VertxHttpConfig vertxHttpConfig) {
+    // during the bean instantiation as we can't be sure what users will inject when they observe the HTTP Security
+    static HttpSecurityConfiguration get() {
         if (instance == null) {
             synchronized (HttpSecurityConfiguration.class) {
                 if (instance == null) {
+                    VertxHttpConfig vertxHttpConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                            .getConfigMapping(VertxHttpConfig.class);
                     HttpSecurityImpl httpSecurity = prepareHttpSecurity(vertxHttpConfig.auth());
-                    instance = new HttpSecurityConfiguration(httpSecurity.getRolesMapping(), httpSecurity.getHttpPermissions());
+                    BasicImpl basicAuth = prepareBasicAuthentication(vertxHttpConfig.auth());
+                    FormImpl formAuth = prepareFormBasedAuthentication(vertxHttpConfig);
+                    instance = new HttpSecurityConfiguration(httpSecurity.getRolesMapping(), httpSecurity.getHttpPermissions(),
+                            basicAuth, formAuth);
                 }
             }
         }
         return instance;
+    }
+
+    private static BasicImpl prepareBasicAuthentication(AuthRuntimeConfig auth) {
+        Optional<Boolean> basicEnabled = ConfigProvider.getConfig().getOptionalValue("quarkus.http.auth.basic", Boolean.class);
+        String authenticationRealm = auth.realm().orElse(null);
+        BasicImpl basic = new BasicImpl(basicEnabled, authenticationRealm);
+        Event<Basic> basicEvent = Arc.container().beanManager().getEvent().select(Basic.class);
+        basicEvent.fire(basic);
+        return basic.build();
+    }
+
+    private static FormImpl prepareFormBasedAuthentication(VertxHttpConfig httpConfig) {
+        boolean formAuthEnabled = ConfigProvider.getConfig().getValue("quarkus.http.auth.form.enabled", Boolean.class);
+        FormImpl form = new FormImpl(formAuthEnabled, httpConfig.auth().form(), httpConfig.encryptionKey());
+        Event<Form> formEvent = Arc.container().beanManager().getEvent().select(Form.class);
+        formEvent.fire(form);
+        return form.build();
     }
 
     private static HttpSecurityImpl prepareHttpSecurity(AuthRuntimeConfig authConfig) {

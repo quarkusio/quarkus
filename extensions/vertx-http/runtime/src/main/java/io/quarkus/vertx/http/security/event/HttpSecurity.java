@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.security;
+package io.quarkus.vertx.http.security.event;
 
 import java.security.Permission;
 import java.util.List;
@@ -63,7 +63,7 @@ import io.vertx.ext.web.RoutingContext;
  * {@code
  * import jakarta.enterprise.event.Observes;
  *
- * import io.quarkus.vertx.http.security.HttpSecurity;
+ * import io.quarkus.vertx.http.security.event.HttpSecurity;
  * import org.eclipse.microprofile.config.inject.ConfigProperty;
  *
  * public class HttpSecurityConfiguration {
@@ -78,7 +78,7 @@ import io.vertx.ext.web.RoutingContext;
 public interface HttpSecurity {
 
     /**
-     * Creates {@link HttpPermission}.
+     * Creates {@link HttpPermission} in addition to the permissions configured in the 'application.properties' file.
      *
      * @param paths path patterns; this is programmatic analogy to the 'quarkus.http.auth.permission."permissions".paths'
      *        configuration property, same rules apply

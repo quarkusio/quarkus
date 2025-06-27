@@ -178,17 +178,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "configurations": {},
         "dependsOn": [
           "maven-enforcer:enforce@enforce",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "initialize",
-          },
+          "io.quarkus:quarkus-ide-launcher:buildnumber:create@get-scm-revision",
+          "io.quarkus:quarkus-development-mode-spi:buildnumber:create@get-scm-revision",
+          "io.quarkus:quarkus-bootstrap-runner:buildnumber:create@get-scm-revision",
+          "io.quarkus:quarkus-extension-processor:buildnumber:create@get-scm-revision",
+          "io.quarkus:quarkus-bom:buildnumber:create@get-scm-revision",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -294,17 +288,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-compiler:testCompile@default-testCompile",
           "maven-surefire:test@default-test",
           "maven-jar:jar@default-jar",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "verify",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -339,17 +322,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "dependsOn": [
           "maven-enforcer:enforce@enforce",
           "buildnumber:create@get-scm-revision",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "process-sources",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -550,17 +522,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "configurations": {},
         "dependsOn": [
           "maven-clean:clean@clean-cache-dirs",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "clean",
-          },
+          "io.quarkus:quarkus-ide-launcher:maven-clean:clean@default-clean",
+          "io.quarkus:quarkus-development-mode-spi:maven-clean:clean@default-clean",
+          "io.quarkus:quarkus-bootstrap-runner:maven-clean:clean@default-clean",
+          "io.quarkus:quarkus-extension-processor:maven-clean:clean@default-clean",
+          "io.quarkus:quarkus-bom:maven-clean:clean@default-clean",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -594,17 +560,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "configurations": {},
         "dependsOn": [
           "maven-clean:clean@clean-cache-dirs",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "clean",
-          },
+          "io.quarkus:quarkus-ide-launcher:maven-clean:clean@default-clean",
+          "io.quarkus:quarkus-development-mode-spi:maven-clean:clean@default-clean",
+          "io.quarkus:quarkus-bootstrap-runner:maven-clean:clean@default-clean",
+          "io.quarkus:quarkus-extension-processor:maven-clean:clean@default-clean",
+          "io.quarkus:quarkus-bom:maven-clean:clean@default-clean",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -642,17 +602,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "formatter:format@default",
           "quarkus-extension:extension-descriptor@generate-extension-descriptor",
           "maven-resources:resources@default-resources",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "compile",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -689,17 +638,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "formatter:format@default",
           "quarkus-extension:extension-descriptor@generate-extension-descriptor",
           "maven-resources:resources@default-resources",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "compile",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -740,17 +678,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-resources:resources@default-resources",
           "maven-compiler:compile@default-compile",
           "maven-resources:testResources@default-testResources",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "test-compile",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -790,17 +717,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-resources:resources@default-resources",
           "maven-compiler:compile@default-compile",
           "maven-resources:testResources@default-testResources",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "test-compile",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -847,17 +763,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-jar:jar@default-jar",
           "forbiddenapis:check@verify-forbidden-apis",
           "maven-install:install@default-install",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "deploy",
-          },
+          "io.quarkus:quarkus-ide-launcher:maven-deploy:deploy@default-deploy",
+          "io.quarkus:quarkus-development-mode-spi:maven-deploy:deploy@default-deploy",
+          "io.quarkus:quarkus-bootstrap-runner:maven-deploy:deploy@default-deploy",
+          "io.quarkus:quarkus-extension-processor:maven-deploy:deploy@default-deploy",
+          "io.quarkus:quarkus-bom:maven-deploy:deploy@default-deploy",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -889,19 +799,7 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
       "maven-enforcer:enforce@enforce": {
         "cache": true,
         "configurations": {},
-        "dependsOn": [
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "validate",
-          },
-        ],
+        "dependsOn": [],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
           "{projectRoot}/pom.xml",
@@ -944,17 +842,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-surefire:test@default-test",
           "maven-jar:jar@default-jar",
           "forbiddenapis:check@verify-forbidden-apis",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "install",
-          },
+          "io.quarkus:quarkus-ide-launcher:maven-install:install@default-install",
+          "io.quarkus:quarkus-development-mode-spi:maven-install:install@default-install",
+          "io.quarkus:quarkus-bootstrap-runner:maven-install:install@default-install",
+          "io.quarkus:quarkus-extension-processor:maven-install:install@default-install",
+          "io.quarkus:quarkus-bom:maven-install:install@default-install",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -996,17 +888,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-resources:testResources@default-testResources",
           "maven-compiler:testCompile@default-testCompile",
           "maven-surefire:test@default-test",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "package",
-          },
+          "io.quarkus:quarkus-ide-launcher:maven-source:jar-no-fork@attach-sources",
+          "io.quarkus:quarkus-development-mode-spi:maven-source:jar-no-fork@attach-sources",
+          "io.quarkus:quarkus-bootstrap-runner:maven-source:jar-no-fork@attach-sources",
+          "io.quarkus:quarkus-extension-processor:maven-source:jar-no-fork@attach-sources",
+          "io.quarkus:quarkus-bom:maven-source:jar-no-fork@attach-sources",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -1042,17 +928,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-enforcer:enforce@enforce",
           "buildnumber:create@get-scm-revision",
           "formatter:format@default",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "process-resources",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -1091,17 +966,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "quarkus-extension:extension-descriptor@generate-extension-descriptor",
           "maven-resources:resources@default-resources",
           "maven-compiler:compile@default-compile",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "process-test-resources",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -1146,17 +1010,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-jar:jar@default-jar",
           "forbiddenapis:check@verify-forbidden-apis",
           "maven-install:install@default-install",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "deploy",
-          },
+          "io.quarkus:quarkus-ide-launcher:maven-deploy:deploy@default-deploy",
+          "io.quarkus:quarkus-development-mode-spi:maven-deploy:deploy@default-deploy",
+          "io.quarkus:quarkus-bootstrap-runner:maven-deploy:deploy@default-deploy",
+          "io.quarkus:quarkus-extension-processor:maven-deploy:deploy@default-deploy",
+          "io.quarkus:quarkus-bom:maven-deploy:deploy@default-deploy",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -1189,17 +1047,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
         "cache": true,
         "configurations": {},
         "dependsOn": [
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "site",
-          },
+          "io.quarkus:quarkus-ide-launcher:maven-site:site@default-site",
+          "io.quarkus:quarkus-development-mode-spi:maven-site:site@default-site",
+          "io.quarkus:quarkus-bootstrap-runner:maven-site:site@default-site",
+          "io.quarkus:quarkus-extension-processor:maven-site:site@default-site",
+          "io.quarkus:quarkus-bom:maven-site:site@default-site",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -1242,17 +1094,11 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-resources:testResources@default-testResources",
           "maven-compiler:testCompile@default-testCompile",
           "maven-surefire:test@default-test",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "package",
-          },
+          "io.quarkus:quarkus-ide-launcher:maven-source:jar-no-fork@attach-sources",
+          "io.quarkus:quarkus-development-mode-spi:maven-source:jar-no-fork@attach-sources",
+          "io.quarkus:quarkus-bootstrap-runner:maven-source:jar-no-fork@attach-sources",
+          "io.quarkus:quarkus-extension-processor:maven-source:jar-no-fork@attach-sources",
+          "io.quarkus:quarkus-bom:maven-source:jar-no-fork@attach-sources",
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -1297,17 +1143,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-compiler:compile@default-compile",
           "maven-resources:testResources@default-testResources",
           "maven-compiler:testCompile@default-testCompile",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "test",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -1348,17 +1183,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-compiler:compile@default-compile",
           "maven-resources:testResources@default-testResources",
           "maven-compiler:testCompile@default-testCompile",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "test",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [
@@ -1732,17 +1556,6 @@ exports[`Maven Plugin E2E Smoke Tests > Snapshot Testing > should snapshot quark
           "maven-enforcer:enforce@enforce",
           "buildnumber:create@get-scm-revision",
           "formatter:format@default",
-          {
-            "params": "ignore",
-            "projects": [
-              "io.quarkus:quarkus-ide-launcher",
-              "io.quarkus:quarkus-development-mode-spi",
-              "io.quarkus:quarkus-bootstrap-runner",
-              "io.quarkus:quarkus-extension-processor",
-              "io.quarkus:quarkus-bom",
-            ],
-            "target": "process-resources",
-          },
         ],
         "executor": "@nx-quarkus/maven-plugin:maven-batch",
         "inputs": [

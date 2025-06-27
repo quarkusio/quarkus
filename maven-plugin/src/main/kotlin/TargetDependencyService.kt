@@ -25,7 +25,7 @@ class TargetDependencyService(
         targetName: String,
         actualDependencies: List<MavenProject>
     ): List<Any> {
-        val dependencies = mutableListOf<Any>()
+        val dependencies = mutableSetOf<Any>() // Use Set to prevent duplicates
 
         val effectivePhase = when {
             executionPhase.isNullOrEmpty() || executionPhase.startsWith("\${") -> {
@@ -42,19 +42,14 @@ class TargetDependencyService(
             val precedingGoals = getPrecedingGoalsInLifecycle(project, effectivePhase)
             dependencies.addAll(precedingGoals) // Simple string dependencies for same project
 
-            // Add cross-module dependencies using object form for better precision
+            // Add cross-module goal dependencies - goals depend on specific goals, not phases
             if (actualDependencies.isNotEmpty()) {
-                val dependentProjects = actualDependencies.map { depProject ->
-                    MavenUtils.formatProjectKey(depProject)
-                }
-                
-                // Create object dependency for cross-module goals in the same phase
-                val crossModuleDep = TargetDependency(effectivePhase, dependentProjects)
-                dependencies.add(crossModuleDep)
+                val crossModuleGoals = getCrossModuleGoalsForPhase(project, effectivePhase, actualDependencies)
+                dependencies.addAll(crossModuleGoals) // Direct goal-to-goal dependencies
             }
         }
 
-        return dependencies
+        return dependencies.toList() // Convert back to list for return
     }
 
     /**
@@ -66,13 +61,13 @@ class TargetDependencyService(
         project: MavenProject,
         reactorProjects: List<MavenProject>
     ): List<Any> {
-        val dependsOn = mutableListOf<Any>()
+        val dependsOn = mutableSetOf<Any>() // Use Set to prevent duplicates
 
         // Add dependencies on all goals that belong to this phase
         val goalsForPhase = getGoalsForPhase(phase, allTargets)
         dependsOn.addAll(goalsForPhase) // Simple string dependencies for goals in same project
 
-        return dependsOn
+        return dependsOn.toList() // Convert back to list for return
     }
 
     /**

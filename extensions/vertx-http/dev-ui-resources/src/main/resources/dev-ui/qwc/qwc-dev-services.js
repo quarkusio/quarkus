@@ -1,6 +1,6 @@
-import {css, html, QwcHotReloadElement} from 'qwc-hot-reload-element';
-import {JsonRpc} from 'jsonrpc';
-import {devServices} from 'devui-data';
+import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
+import { devServices } from 'devui-data';
+import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import 'qui-themed-code-block';
 import '@qomponent/qui-card';

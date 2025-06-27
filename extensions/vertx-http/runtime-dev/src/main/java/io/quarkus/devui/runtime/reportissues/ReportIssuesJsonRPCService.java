@@ -18,6 +18,7 @@ import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.logging.Log;
+import io.quarkus.runtime.annotations.JsonRpcDescription;
 import io.smallrye.common.os.OS;
 import io.vertx.core.json.JsonObject;
 
@@ -28,6 +29,7 @@ public class ReportIssuesJsonRPCService {
     @ConfigProperty(name = "quarkus.devui.report-issues.url", defaultValue = "https://github.com/quarkusio/quarkus/issues/new?labels=kind%2Fbug&template=bug_report.yml")
     String reportURL;
 
+    @JsonRpcDescription("Creates a url that if opened, will go to issue report for the Quarkus project with some of the value pre-filled")
     public JsonObject reportBug() {
         URLBuilder urlBuilder = new URLBuilder(reportURL);
         gatherInfo(urlBuilder);

@@ -53,7 +53,8 @@ public class DependenciesProcessor {
             buildTree(curateOutcomeBuildItem.getApplicationModel(), root, Optional.of(allGavs), Optional.empty());
 
             page.addBuildTimeData("root", root);
-            page.addBuildTimeData("allGavs", allGavs);
+            page.addBuildTimeData("allGavs", allGavs,
+                    "This is a list of all the GAVs (groupId, artifactId, version) of all the dependencies of this Quarkus application");
 
             menuProducer.produce(page);
         }
@@ -64,19 +65,26 @@ public class DependenciesProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (isEnabled()) {
             BuildTimeActionBuildItem pathToTargetAction = new BuildTimeActionBuildItem(NAMESPACE);
-            pathToTargetAction.addAction("pathToTarget", p -> {
-                String target = p.get("target");
-                Root root = new Root();
-                root.rootId = curateOutcomeBuildItem.getApplicationModel().getAppArtifact().toCompactCoords();
+            pathToTargetAction.actionBuilder()
+                    .methodName("pathToTarget")
+                    .description(
+                            "The get the dependency path to a certain target. This is useful when wanting to know what dependency/dependencies are pulling in a certain libtrary")
+                    .parameter("target", "The target as a GAV string (groupId:artifactId:version")
+                    .function(p -> {
+                        String target = p.get("target");
+                        Root root = new Root();
+                        root.rootId = curateOutcomeBuildItem.getApplicationModel().getAppArtifact().toCompactCoords();
 
-                if (target == null || target.isBlank()) {
-                    buildTree(curateOutcomeBuildItem.getApplicationModel(), root, Optional.empty(), Optional.empty());
-                } else {
-                    buildTree(curateOutcomeBuildItem.getApplicationModel(), root, Optional.empty(), Optional.of(target));
-                }
+                        if (target == null || target.isBlank()) {
+                            buildTree(curateOutcomeBuildItem.getApplicationModel(), root, Optional.empty(), Optional.empty());
+                        } else {
+                            buildTree(curateOutcomeBuildItem.getApplicationModel(), root, Optional.empty(),
+                                    Optional.of(target));
+                        }
 
-                return root;
-            });
+                        return root;
+                    })
+                    .build();
 
             buildTimeActionProducer.produce(pathToTargetAction);
         }
@@ -134,7 +142,7 @@ public class DependenciesProcessor {
             link.source = node.id;
             link.target = dep.toCompactCoords();
             link.type = type;
-            link.direct = (link.source == root.rootId);
+            link.direct = (link.source.equals(root.rootId));
             links.add(link);
         }
     }
@@ -163,7 +171,7 @@ public class DependenciesProcessor {
             link.source = dependent.resolvedDep.toCompactCoords();
             link.target = node.id;
             link.type = dependent.resolvedDep.isRuntimeCp() ? "runtime" : "deployment";
-            link.direct = (link.source == root.rootId);
+            link.direct = (link.source.equals(root.rootId));
             links.add(link);
         }
     }

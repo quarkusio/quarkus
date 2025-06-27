@@ -60,79 +60,107 @@ public class LogStreamProcessor {
 
         BuildTimeActionBuildItem keyStrokeActions = new BuildTimeActionBuildItem(namespace);
 
-        keyStrokeActions.addAction("forceRestart", ignored -> {
-            RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
-            return Map.of();
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("forceRestart")
+                .description("This force a Quarkus application restart (like pressing 's' in the console)")
+                .function(ignored -> {
+                    RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
+                    return Map.of();
+                })
+                .build();
 
-        keyStrokeActions.addAction("rerunAllTests", ignored -> {
-            if (testsDisabled(launchModeBuildItem, ts)) {
-                return Map.of();
-            }
-            if (ts.get().isStarted()) {
-                ts.get().runAllTests();
-                return Map.of();
-            } else {
-                ts.get().start();
-                return Map.of("running", ts.get().isRunning());
-            }
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("rerunAllTests")
+                .function(ignored -> {
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return Map.of();
+                    }
+                    if (ts.get().isStarted()) {
+                        ts.get().runAllTests();
+                        return Map.of();
+                    } else {
+                        ts.get().start();
+                        return Map.of("running", ts.get().isRunning());
+                    }
+                })
+                .build();
 
-        keyStrokeActions.addAction("rerunFailedTests", ignored -> {
-            if (testsDisabled(launchModeBuildItem, ts)) {
-                return Map.of();
-            }
-            ts.get().runFailedTests();
-            return Map.of();
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("rerunFailedTests")
+                .function(ignored -> {
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return Map.of();
+                    }
+                    ts.get().runFailedTests();
+                    return Map.of();
+                })
+                .build();
 
-        keyStrokeActions.addAction("toggleBrokenOnly", ignored -> {
-            if (testsDisabled(launchModeBuildItem, ts)) {
-                return Map.of();
-            }
-            boolean brokenOnlyMode = ts.get().toggleBrokenOnlyMode();
-            return Map.of("brokenOnlyMode", brokenOnlyMode);
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("toggleBrokenOnly")
+                .function(ignored -> {
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return Map.of();
+                    }
+                    boolean brokenOnlyMode = ts.get().toggleBrokenOnlyMode();
+                    return Map.of("brokenOnlyMode", brokenOnlyMode);
+                })
+                .build();
 
-        keyStrokeActions.addAction("printFailures", ignored -> {
-            if (testsDisabled(launchModeBuildItem, ts)) {
-                return Map.of();
-            }
-            ts.get().printFullResults();
-            return Map.of();
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("printFailures")
+                .function(ignored -> {
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return Map.of();
+                    }
+                    ts.get().printFullResults();
+                    return Map.of();
+                })
+                .build();
 
-        keyStrokeActions.addAction("toggleTestOutput", ignored -> {
-            if (testsDisabled(launchModeBuildItem, ts)) {
-                return Map.of();
-            }
-            boolean isTestOutput = ts.get().toggleTestOutput();
-            return Map.of("isTestOutput", isTestOutput);
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("toggleTestOutput")
+                .function(ignored -> {
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return Map.of();
+                    }
+                    boolean isTestOutput = ts.get().toggleTestOutput();
+                    return Map.of("isTestOutput", isTestOutput);
+                })
+                .build();
 
-        keyStrokeActions.addAction("toggleInstrumentationReload", ignored -> {
-            boolean instrumentationEnabled = RuntimeUpdatesProcessor.INSTANCE.toggleInstrumentation();
-            return Map.of("instrumentationEnabled", instrumentationEnabled);
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("toggleInstrumentationReload")
+                .function(ignored -> {
+                    boolean instrumentationEnabled = RuntimeUpdatesProcessor.INSTANCE.toggleInstrumentation();
+                    return Map.of("instrumentationEnabled", instrumentationEnabled);
+                })
+                .build();
 
-        keyStrokeActions.addAction("pauseTests", ignored -> {
-            if (testsDisabled(launchModeBuildItem, ts)) {
-                return Map.of();
-            }
-            if (ts.get().isStarted()) {
-                ts.get().stop();
-                return Map.of("running", ts.get().isRunning());
-            }
-            return Map.of();
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("pauseTests")
+                .function(ignored -> {
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return Map.of();
+                    }
+                    if (ts.get().isStarted()) {
+                        ts.get().stop();
+                        return Map.of("running", ts.get().isRunning());
+                    }
+                    return Map.of();
+                })
+                .build();
 
-        keyStrokeActions.addAction("toggleLiveReload", ignored -> {
-            if (testsDisabled(launchModeBuildItem, ts)) {
-                return Map.of();
-            }
-            boolean liveReloadEnabled = ts.get().toggleLiveReloadEnabled();
-            return Map.of("liveReloadEnabled", liveReloadEnabled);
-        });
+        keyStrokeActions.actionBuilder()
+                .methodName("toggleLiveReload")
+                .function(ignored -> {
+                    if (testsDisabled(launchModeBuildItem, ts)) {
+                        return Map.of();
+                    }
+                    boolean liveReloadEnabled = ts.get().toggleLiveReloadEnabled();
+                    return Map.of("liveReloadEnabled", liveReloadEnabled);
+                })
+                .build();
 
         buildTimeActionProducer.produce(keyStrokeActions);
     }

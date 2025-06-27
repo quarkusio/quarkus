@@ -44,7 +44,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
-import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -65,6 +64,7 @@ import io.quarkus.quartz.runtime.QuartzRecorder;
 import io.quarkus.quartz.runtime.QuartzRuntimeConfig;
 import io.quarkus.quartz.runtime.QuartzSchedulerImpl;
 import io.quarkus.quartz.runtime.QuartzSupport;
+import io.quarkus.quartz.runtime.jdbc.JDBCDataSource;
 import io.quarkus.quartz.runtime.jdbc.QuarkusDBv8Delegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusHSQLDBDelegate;
 import io.quarkus.quartz.runtime.jdbc.QuarkusMSSQLDelegate;
@@ -122,8 +122,8 @@ public class QuartzProcessor {
             if (config.clustered()) {
                 throw new ConfigurationException("Clustered jobs configured with unsupported job store option");
             }
-
-            return new QuartzJDBCDriverDialectBuildItem(Optional.empty());
+            // No DB storage, the driver can stay empty, and we don't need data sources either
+            return new QuartzJDBCDriverDialectBuildItem(Optional.empty(), null);
         }
 
         if (capabilities.isMissing(Capability.AGROAL)) {
@@ -162,43 +162,17 @@ public class QuartzProcessor {
                     throw new ConfigurationException(message);
                 }
             }
+            // A custom delegate implementation, we don't need to check datasources
+            return new QuartzJDBCDriverDialectBuildItem(driverDelegate, null);
         } else {
-            Optional<JdbcDataSourceBuildItem> selectedJdbcDataSourceBuildItem = jdbcDataSourceBuildItems.stream()
-                    .filter(i -> config.dataSourceName().isPresent() ? config.dataSourceName().get().equals(i.getName())
-                            : i.isDefault())
-                    .findFirst();
-
-            if (!selectedJdbcDataSourceBuildItem.isPresent()) {
-                String message = String.format(
-                        "JDBC Store configured but the '%s' datasource is not configured properly. You can configure your datasource by following the guide available at: https://quarkus.io/guides/datasource",
-                        config.dataSourceName().isPresent() ? config.dataSourceName().get() : "default");
-                throw new ConfigurationException(message);
+            List<JDBCDataSource> dataSources = new ArrayList<>();
+            for (JdbcDataSourceBuildItem jdbcDataSourceBuildItem : jdbcDataSourceBuildItems) {
+                dataSources.add(new JDBCDataSource(jdbcDataSourceBuildItem.getName(), jdbcDataSourceBuildItem.isDefault(),
+                        jdbcDataSourceBuildItem.getDbKind()));
             }
-            driverDelegate = Optional.of(guessDriver(selectedJdbcDataSourceBuildItem));
+            // Defer driver determination to runtime
+            return new QuartzJDBCDriverDialectBuildItem(Optional.empty(), dataSources);
         }
-        return new QuartzJDBCDriverDialectBuildItem(driverDelegate);
-    }
-
-    private String guessDriver(Optional<JdbcDataSourceBuildItem> jdbcDataSource) {
-        if (!jdbcDataSource.isPresent()) {
-            return QuarkusStdJDBCDelegate.class.getName();
-        }
-
-        String dataSourceKind = jdbcDataSource.get().getDbKind();
-        if (DatabaseKind.isPostgreSQL(dataSourceKind)) {
-            return QuarkusPostgreSQLDelegate.class.getName();
-        }
-        if (DatabaseKind.isH2(dataSourceKind)) {
-            return QuarkusHSQLDBDelegate.class.getName();
-        }
-        if (DatabaseKind.isMsSQL(dataSourceKind)) {
-            return QuarkusMSSQLDelegate.class.getName();
-        }
-        if (DatabaseKind.isDB2(dataSourceKind)) {
-            return QuarkusDBv8Delegate.class.getName();
-        }
-
-        return QuarkusStdJDBCDelegate.class.getName();
     }
 
     @BuildStep
@@ -250,12 +224,32 @@ public class QuartzProcessor {
             reflectiveClasses.add(ReflectiveClassBuildItem.builder(Connection.class)
                     .reason(getClass().getName()).methods()
                     .fields().build());
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder(driverDialect.getDriver().get())
-                    .reason(getClass().getName())
-                    .methods().build());
-            reflectiveClasses.add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob")
-                    .reason(getClass().getName())
-                    .methods().fields().build());
+            // For a custom delegate, register its class; otherwise, register all built-in delegates
+            if (driverDialect.getDriver().isPresent()) {
+                reflectiveClasses.add(ReflectiveClassBuildItem.builder(driverDialect.getDriver().get())
+                        .reason(getClass().getName())
+                        .methods().build());
+            } else {
+                reflectiveClasses.add(ReflectiveClassBuildItem.builder(QuarkusDBv8Delegate.class.getName())
+                        .reason(getClass().getName())
+                        .methods().build());
+                reflectiveClasses.add(ReflectiveClassBuildItem.builder(QuarkusHSQLDBDelegate.class.getName())
+                        .reason(getClass().getName())
+                        .methods().build());
+                reflectiveClasses.add(ReflectiveClassBuildItem.builder(QuarkusMSSQLDelegate.class.getName())
+                        .reason(getClass().getName())
+                        .methods().build());
+                reflectiveClasses.add(ReflectiveClassBuildItem.builder(QuarkusPostgreSQLDelegate.class.getName())
+                        .reason(getClass().getName())
+                        .methods().build());
+                reflectiveClasses.add(ReflectiveClassBuildItem.builder(QuarkusStdJDBCDelegate.class.getName())
+                        .reason(getClass().getName())
+                        .methods().build());
+                reflectiveClasses
+                        .add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$InvokerJob")
+                                .reason(getClass().getName())
+                                .methods().fields().build());
+            }
         }
 
         reflectiveClasses
@@ -348,6 +342,7 @@ public class QuartzProcessor {
                 .scope(Singleton.class) // this should be @ApplicationScoped but it fails for some reason
                 .setRuntimeInit()
                 .supplier(recorder.quartzSupportSupplier(runtimeConfig, buildTimeConfig, driverDialect.getDriver(),
+                        driverDialect.getDataSources(),
                         nonconcurrentMethods))
                 .done());
     }

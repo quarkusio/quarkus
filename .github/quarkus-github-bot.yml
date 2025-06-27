@@ -49,7 +49,7 @@ triage:
     - id: amazon-lambda
       labels: [area/amazon-lambda]
       title: "lambda"
-      notify: [patriot1burke, matejvasek]
+      notify: [patriot1burke]
       directories:
         - extensions/amazon-lambda
         - integration-tests/amazon-lambda

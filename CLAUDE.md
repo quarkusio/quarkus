@@ -51,7 +51,7 @@ When making changes to the Maven plugin:
 
 ```bash
 # 1. Recompile the Java components (disable build cache to ensure fresh compilation)
-npm run compile-java
+npm run compile-java:fresh
 
 # 2. Reset Nx state to pick up changes
 nx reset
@@ -62,27 +62,6 @@ nx show projects
 # 4. Run end-to-end tests (MANDATORY before committing)
 npm run test:e2e
 ```
-
-### ⚠️ Build Cache Issue
-
-This repository uses **Develocity (Gradle Enterprise) build caching** which can prevent Kotlin/Java source code changes from being compiled. If you make changes to Kotlin files but don't see them reflected in the output, you may need to disable the build cache:
-
-```bash
-# Disable build cache for compilation
-GRADLE_ENTERPRISE_BUILD_CACHE_ENABLED=false mvn clean compile
-
-# Or use system property
-mvn clean compile -Dgradle.enterprise.build-cache.enabled=false
-
-# Alternative: Force fresh compilation by touching source files
-find maven-plugin/src -name "*.kt" -exec touch {} \;
-mvn clean compile
-```
-
-**Symptoms of cached compilation:**
-- Changes to Kotlin classes (like TargetConfiguration) don't appear in JSON output
-- Maven logs show "Loaded from the build cache, saving X.Xs"
-- New properties added to classes don't appear in compiled bytecode
 
 ## Commit Guidelines
 

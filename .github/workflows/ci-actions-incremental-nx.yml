@@ -225,6 +225,10 @@ jobs:
         uses: nrwl/nx-set-shas@v4
         with:
           main-branch-name: 'main'
+
+      - name: Install project dependencies
+        run: |
+          pnpm install --frozen-lockfile
       - name: Restore Maven Repository
         uses: actions/cache/restore@v4
         if: github.event_name != 'push' || github.repository != 'quarkusio/quarkus' || github.actor == 'dependabot[bot]'

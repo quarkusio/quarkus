@@ -66,56 +66,50 @@ export const createNodesV2: CreateNodesV2 = [
       return [];
     }
 
-    try {
-      // Generate cache key based on pom.xml files and options
-      const projectHash = await calculateHashForCreateNodes(
-        workspaceRoot,
-        (options as object) ?? {},
-        context,
-        ['{projectRoot}/pom.xml', '{workspaceRoot}/**/pom.xml']
-      );
-      const cacheKey = projectHash;
+    // Generate cache key based on pom.xml files and options
+    const projectHash = await calculateHashForCreateNodes(
+      workspaceRoot,
+      (options as object) ?? {},
+      context,
+      ['{projectRoot}/pom.xml', '{workspaceRoot}/**/pom.xml']
+    );
+    const cacheKey = projectHash;
 
-      // OPTIMIZATION: Check global in-memory cache first
-      if (globalAnalysisCache && globalCacheKey === cacheKey) {
-        if (opts.verbose) {
-          console.log('Using global in-memory cache for createNodes');
-        }
-        return globalAnalysisCache.createNodesResults || [];
+    // OPTIMIZATION: Check global in-memory cache first
+    if (globalAnalysisCache && globalCacheKey === cacheKey) {
+      if (opts.verbose) {
+        console.log('Using global in-memory cache for createNodes');
       }
-
-      // Set up cache path
-      const cachePath = join(workspaceDataDirectory, 'maven-analysis-cache.json');
-      const cache = readMavenCache(cachePath);
-
-      // Check if we have valid cached results
-      if (cache[cacheKey]) {
-        if (opts.verbose) {
-          console.log('Using cached Maven analysis results for createNodes');
-        }
-        // Store in global cache for faster subsequent access
-        globalAnalysisCache = cache[cacheKey];
-        globalCacheKey = cacheKey;
-        return cache[cacheKey].createNodesResults || [];
-      }
-
-      // Run analysis if not cached
-      const result = await runMavenAnalysis(opts);
-
-      // Cache the complete result
-      cache[cacheKey] = result;
-      writeMavenCache(cachePath, cache);
-
-      // Store in global cache
-      globalAnalysisCache = result;
-      globalCacheKey = cacheKey;
-
-      return result.createNodesResults || [];
-
-    } catch (error) {
-      console.error(`Maven analysis failed:`, error.message);
-      return [];
+      return globalAnalysisCache.createNodesResults || [];
     }
+
+    // Set up cache path
+    const cachePath = join(workspaceDataDirectory, 'maven-analysis-cache.json');
+    const cache = readMavenCache(cachePath);
+
+    // Check if we have valid cached results
+    if (cache[cacheKey]) {
+      if (opts.verbose) {
+        console.log('Using cached Maven analysis results for createNodes');
+      }
+      // Store in global cache for faster subsequent access
+      globalAnalysisCache = cache[cacheKey];
+      globalCacheKey = cacheKey;
+      return cache[cacheKey].createNodesResults || [];
+    }
+
+    // Run analysis if not cached
+    const result = await runMavenAnalysis(opts);
+
+    // Cache the complete result
+    cache[cacheKey] = result;
+    writeMavenCache(cachePath, cache);
+
+    // Store in global cache
+    globalAnalysisCache = result;
+    globalCacheKey = cacheKey;
+
+    return result.createNodesResults || [];
   },
 ];
 
@@ -186,12 +180,9 @@ async function runMavenAnalysis(options: MavenPluginOptions): Promise<any> {
   // Check if verbose mode is enabled
   const isVerbose = options.verbose || process.env.NX_VERBOSE_LOGGING === 'true' || process.argv.includes('--verbose');
 
-  // Skip Java analyzer check during testing to avoid git HEAD issues
-  if (process.env.NODE_ENV !== 'test') {
-    // Check if Java analyzer is available
-    if (!findJavaAnalyzer()) {
-      throw new Error('Maven analyzer not found. Please ensure maven-plugin is compiled.');
-    }
+  // Check if Java analyzer is available
+  if (!findJavaAnalyzer()) {
+    throw new Error('Maven analyzer not found. Please ensure maven-plugin is compiled.');
   }
 
   if (isVerbose) {

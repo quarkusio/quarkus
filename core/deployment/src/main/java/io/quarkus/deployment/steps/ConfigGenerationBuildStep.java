@@ -492,13 +492,11 @@ public class ConfigGenerationBuildStep {
             LaunchModeBuildItem launchModeBuildItem,
             ConfigRecorder configRecorder) throws Exception {
 
+        Set<Path> buildTimeFiles = new HashSet<>();
         PathCollection rootDirectories = applicationArchives.getRootArchive().getRootDirectories();
-        if (!rootDirectories.isSinglePath()) {
-            return;
+        for (Path directory : rootDirectories) {
+            buildTimeFiles.addAll(ConfigDiagnostic.configFiles(directory));
         }
-
-        Set<String> buildTimeFiles = new HashSet<>();
-        buildTimeFiles.addAll(ConfigDiagnostic.configFiles(rootDirectories.getSinglePath()));
         buildTimeFiles.addAll(ConfigDiagnostic.configFilesFromLocations());
 
         // Report always at build time since config folder and locations may differ from build to runtime

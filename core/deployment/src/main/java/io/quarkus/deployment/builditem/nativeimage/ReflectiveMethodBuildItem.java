@@ -8,6 +8,9 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Registering methods for reflective access during the build
+ */
 public final class ReflectiveMethodBuildItem extends MultiBuildItem {
 
     final String declaringClass;

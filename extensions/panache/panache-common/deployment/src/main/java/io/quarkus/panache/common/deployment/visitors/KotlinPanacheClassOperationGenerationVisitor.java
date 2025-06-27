@@ -47,12 +47,12 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
-import io.quarkus.deployment.SuppressForbidden;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  * kotlinc compiles default methods in to the implementing classes, so we need to elide them first, and then we can

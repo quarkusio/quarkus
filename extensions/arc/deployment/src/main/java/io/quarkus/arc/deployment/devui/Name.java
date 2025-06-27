@@ -11,7 +11,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
-import io.quarkus.deployment.SuppressForbidden;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class Name implements Comparable<Name> {
 

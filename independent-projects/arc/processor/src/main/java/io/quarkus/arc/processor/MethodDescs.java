@@ -163,8 +163,6 @@ final class MethodDescs {
 
     static final MethodDesc SETS_OF = MethodDesc.of(Sets.class, "of", Set.class, Object[].class);
 
-    static final MethodDesc ARC_CONTAINER = MethodDesc.of(Arc.class, "container", ArcContainer.class);
-
     static final MethodDesc ARC_REQUIRE_CONTAINER = MethodDesc.of(Arc.class, "requireContainer", ArcContainer.class);
 
     static final MethodDesc ARC_CONTAINER_BEAN = MethodDesc.of(ArcContainer.class,

@@ -33,7 +33,7 @@ import io.quarkus.arc.InjectableObserverMethod;
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.Mockable;
 import io.quarkus.arc.processor.BeanProcessor.PrivateMembersCollector;
-import io.quarkus.arc.processor.BuiltinBean.GeneratorContext_2;
+import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.gizmo2.Const;
@@ -278,7 +278,7 @@ public class ObserverGenerator extends AbstractGenerator {
                 bc.invokeSpecial(MethodDescs.OBJECT_CONSTRUCTOR, cc.this_());
 
                 if (observer.isSynthetic()) {
-                    SyntheticComponentsUtil.addParamsFieldAndInit_2(cc, bc, observer.getParams(), annotationLiterals,
+                    SyntheticComponentsUtil.addParamsFieldAndInit(cc, bc, observer.getParams(), annotationLiterals,
                             observer.getBeanDeployment().getBeanArchiveIndex());
                 } else {
                     bc.set(cc.this_().field(declaringProviderField), declaringProviderSupplier);
@@ -290,7 +290,7 @@ public class ObserverGenerator extends AbstractGenerator {
                             BuiltinBean builtinBean = BuiltinBean.resolve(injectionPoint);
                             assert builtinBean != null;
                             FieldDesc providerField = injectionPointToProviderField.get(injectionPoint);
-                            builtinBean.getGenerator_2().generate(new GeneratorContext_2(
+                            builtinBean.getGenerator().generate(new GeneratorContext(
                                     observer.getDeclaringBean().getDeployment(), observer, injectionPoint, cc, bc,
                                     providerField, annotationLiterals, reflectionRegistration,
                                     injectionPointAnnotationsPredicate, declaringProviderSupplier));
@@ -300,7 +300,7 @@ public class ObserverGenerator extends AbstractGenerator {
                                 // Wrap the constructor arg in a Supplier so we can pass it to CurrentInjectionPointProvider ctor.
                                 Expr delegateSupplier = bc.new_(MethodDescs.FIXED_VALUE_SUPPLIER_CONSTRUCTOR,
                                         injectionPointParam);
-                                Expr wrap = BeanGenerator.wrapCurrentInjectionPoint_2(observer.getDeclaringBean(),
+                                Expr wrap = BeanGenerator.wrapCurrentInjectionPoint(observer.getDeclaringBean(),
                                         bc, injectionPoint, Const.ofNull(Object.class), delegateSupplier, null,
                                         annotationLiterals, reflectionRegistration, injectionPointAnnotationsPredicate);
                                 supplier = bc.new_(MethodDescs.FIXED_VALUE_SUPPLIER_CONSTRUCTOR, wrap);
@@ -321,7 +321,7 @@ public class ObserverGenerator extends AbstractGenerator {
                     for (AnnotationInstance qualifier : qualifiers) {
                         BuiltinQualifier builtin = BuiltinQualifier.of(qualifier);
                         if (builtin != null) {
-                            bc.set(qualifiersArray.elem(i), builtin.getLiteralInstance_2());
+                            bc.set(qualifiersArray.elem(i), builtin.getLiteralInstance());
                         } else {
                             ClassInfo qualifierClass = observer.getBeanDeployment().getQualifier(qualifier.name());
                             bc.set(qualifiersArray.elem(i), annotationLiterals.create(bc, qualifierClass, qualifier));
@@ -581,7 +581,7 @@ public class ObserverGenerator extends AbstractGenerator {
                         Expr childCtx = b0.invokeStatic(MethodDescs.CREATIONAL_CTX_CHILD, ctx);
                         Expr dependency = b0.invokeInterface(MethodDescs.INJECTABLE_REF_PROVIDER_GET, provider, childCtx);
                         LocalVar arg = b0.localVar("arg" + i, dependency);
-                        BeanGenerator.checkPrimitiveInjection_2(b0, injectionPoint, arg);
+                        BeanGenerator.checkPrimitiveInjection(b0, injectionPoint, arg);
                         args[i] = arg;
                     }
                 }

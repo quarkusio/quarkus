@@ -40,8 +40,6 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.arc.processor.Methods.MethodKey;
 import io.quarkus.arc.processor.Methods.SubclassSkipPredicate;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
@@ -95,9 +93,9 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final boolean removable;
 
-    private final Consumer<MethodCreator> creatorConsumer;
+    private final Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer;
 
-    private final Consumer<MethodCreator> destroyerConsumer;
+    private final Consumer<BeanConfiguratorBase.DestroyGeneration> destroyerConsumer;
 
     private final Map<String, Object> params;
 
@@ -109,7 +107,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     // used to create the implementation of `InjectableBean.checkActive()`,
     // which returns whether this particular bean is active at runtime
-    private final Consumer<MethodCreator> checkActiveConsumer;
+    private final Consumer<BeanConfiguratorBase.CheckActiveGeneration> checkActiveConsumer;
 
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
@@ -123,10 +121,11 @@ public class BeanInfo implements InjectionTargetInfo {
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
             Set<Type> types, Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean,
             DisposerInfo disposer, boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean,
-            Consumer<MethodCreator> creatorConsumer, Consumer<MethodCreator> destroyerConsumer, Map<String, Object> params,
-            boolean isRemovable, boolean forceApplicationClass, String targetPackageName, Integer priority, String identifier,
-            Set<Type> unrestrictedTypes, Integer startupPriority, InterceptionProxyInfo interceptionProxy,
-            Consumer<MethodCreator> checkActiveConsumer) {
+            Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer,
+            Consumer<BeanConfiguratorBase.DestroyGeneration> destroyerConsumer,
+            Map<String, Object> params, boolean isRemovable, boolean forceApplicationClass, String targetPackageName,
+            Integer priority, String identifier, Set<Type> unrestrictedTypes, Integer startupPriority,
+            InterceptionProxyInfo interceptionProxy, Consumer<BeanConfiguratorBase.CheckActiveGeneration> checkActiveConsumer) {
 
         this.target = Optional.ofNullable(target);
         if (implClazz == null && target != null) {
@@ -404,30 +403,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     // Returns a map of method descriptor -> next decorator in the chain
     // e.g. foo() -> BravoDecorator
-    Map<MethodDescriptor, DecoratorMethod> getNextDecorators(DecoratorInfo decorator) {
-        Map<MethodDescriptor, DecoratorMethod> next = new HashMap<>();
-        for (Entry<MethodInfo, DecorationInfo> entry : decoratedMethods.entrySet()) {
-            List<DecoratorMethod> decoratorMethods = entry.getValue().decoratorMethods;
-            int index = -1;
-            for (ListIterator<DecoratorMethod> it = decoratorMethods.listIterator(); it.hasNext();) {
-                DecoratorMethod dm = it.next();
-                if (dm.decorator.equals(decorator)) {
-                    index = it.previousIndex();
-                    break;
-                }
-            }
-            if (index != -1) {
-                if (index != (decoratorMethods.size() - 1)) {
-                    next.put(MethodDescriptor.of(entry.getKey()), decoratorMethods.get(index + 1));
-                }
-            }
-        }
-        return next;
-    }
-
-    // Returns a map of method descriptor -> next decorator in the chain
-    // e.g. foo() -> BravoDecorator
-    Map<MethodDesc, DecoratorMethod> getNextDecorators_2(DecoratorInfo decorator) {
+    Map<MethodDesc, DecoratorMethod> getNextDecorators(DecoratorInfo decorator) {
         Map<MethodDesc, DecoratorMethod> next = new HashMap<>();
         for (Entry<MethodInfo, DecorationInfo> entry : decoratedMethods.entrySet()) {
             List<DecoratorMethod> decoratorMethods = entry.getValue().decoratorMethods;
@@ -618,15 +594,15 @@ public class BeanInfo implements InjectionTargetInfo {
         return beanDeployment.getBeanResolver().matches(this, requiredType, qualifiers);
     }
 
-    Consumer<MethodCreator> getCreatorConsumer() {
+    Consumer<BeanConfiguratorBase.CreateGeneration> getCreatorConsumer() {
         return creatorConsumer;
     }
 
-    Consumer<MethodCreator> getDestroyerConsumer() {
+    Consumer<BeanConfiguratorBase.DestroyGeneration> getDestroyerConsumer() {
         return destroyerConsumer;
     }
 
-    Consumer<MethodCreator> getCheckActiveConsumer() {
+    Consumer<BeanConfiguratorBase.CheckActiveGeneration> getCheckActiveConsumer() {
         return checkActiveConsumer;
     }
 
@@ -1056,7 +1032,7 @@ public class BeanInfo implements InjectionTargetInfo {
                     break;
             }
         } else if (implClazz != null) {
-            return Type.create(implClazz.name(), org.jboss.jandex.Type.Kind.CLASS);
+            return ClassType.create(implClazz.name());
         }
         throw new IllegalStateException("Cannot infer the provider type");
     }
@@ -1172,9 +1148,9 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private boolean isDefaultBean;
 
-        private Consumer<MethodCreator> creatorConsumer;
+        private Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer;
 
-        private Consumer<MethodCreator> destroyerConsumer;
+        private Consumer<BeanConfiguratorBase.DestroyGeneration> destroyerConsumer;
 
         private Map<String, Object> params;
 
@@ -1190,7 +1166,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private InterceptionProxyInfo interceptionProxy;
 
-        private Consumer<MethodCreator> checkActiveConsumer;
+        private Consumer<BeanConfiguratorBase.CheckActiveGeneration> checkActiveConsumer;
 
         Builder() {
             injections = Collections.emptyList();
@@ -1282,12 +1258,12 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
-        Builder creator(Consumer<MethodCreator> creatorConsumer) {
+        Builder creator(Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer) {
             this.creatorConsumer = creatorConsumer;
             return this;
         }
 
-        Builder destroyer(Consumer<MethodCreator> destroyerConsumer) {
+        Builder destroyer(Consumer<BeanConfiguratorBase.DestroyGeneration> destroyerConsumer) {
             this.destroyerConsumer = destroyerConsumer;
             return this;
         }
@@ -1312,7 +1288,7 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
-        Builder checkActive(Consumer<MethodCreator> checkActiveConsumer) {
+        Builder checkActive(Consumer<BeanConfiguratorBase.CheckActiveGeneration> checkActiveConsumer) {
             this.checkActiveConsumer = checkActiveConsumer;
             return this;
         }

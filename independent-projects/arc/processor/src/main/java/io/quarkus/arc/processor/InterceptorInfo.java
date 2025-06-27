@@ -29,8 +29,11 @@ import io.quarkus.arc.InterceptorCreator;
 import io.quarkus.arc.InterceptorCreator.InterceptFunction;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.impl.Sets;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 /**
  *
@@ -55,15 +58,17 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
         super(null, ClassType.create(InterceptFunction.class), null, beanDeployment, BuiltinScope.DEPENDENT.getInfo(),
                 Sets.singletonHashSet(Type.create(DotName.OBJECT_NAME, Kind.CLASS)), new HashSet<>(), injections, null,
                 null, false,
-                Collections.emptyList(), null, false, mc -> {
-                    ResultHandle creatorHandle = mc.newInstance(MethodDescriptor.ofConstructor(creatorClass));
-                    ResultHandle ret = mc.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(InterceptorCreator.class, "create", InterceptFunction.class,
-                                    SyntheticCreationalContext.class),
-                            creatorHandle, mc.getMethodParam(0));
-                    mc.ifNull(ret).trueBranch().throwException(IllegalStateException.class,
-                            creatorClass.getName() + "#create() must not return null");
-                    mc.returnValue(ret);
+                Collections.emptyList(), null, false, cg -> {
+                    BlockCreator b0 = cg.createMethod();
+
+                    Expr creator = b0.new_(ConstructorDesc.of(creatorClass));
+                    LocalVar result = b0.localVar("result", b0.invokeInterface(MethodDesc.of(InterceptorCreator.class,
+                            "create", InterceptFunction.class, SyntheticCreationalContext.class),
+                            creator, cg.syntheticCreationalContext()));
+                    b0.ifNull(result, b1 -> {
+                        b1.throw_(IllegalStateException.class, creatorClass.getName() + ".create() must not return null");
+                    });
+                    b0.return_(result);
                 },
                 null, params, true, false, null, priority, creatorClass.getName() + (identifier != null ? identifier : ""),
                 null, null, null, null);

@@ -41,7 +41,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.InvokerCleanupTasks;
-import io.quarkus.arc.processor.BuiltinBean.GeneratorContext_2;
+import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
@@ -300,7 +300,7 @@ public class InvokerGenerator extends AbstractGenerator {
                                 } else {
                                     BuiltinBean builtinBean = resolved.getBuiltinBean();
                                     InjectionPointInfo injectionPoint = invoker.getInjectionPointForArgument(i);
-                                    builtinBean.getGenerator_2().generate(new GeneratorContext_2(beanDeployment,
+                                    builtinBean.getGenerator().generate(new GeneratorContext(beanDeployment,
                                             invoker, injectionPoint, cc, bc, argumentSuppliers[i], annotationLiterals,
                                             reflectionRegistration, injectionPointAnnotationsPredicate, null));
                                 }

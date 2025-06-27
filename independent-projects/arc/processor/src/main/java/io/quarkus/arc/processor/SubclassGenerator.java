@@ -611,9 +611,9 @@ public class SubclassGenerator extends AbstractGenerator {
             decoratedMethodDescriptors.add(methodDescOf(m));
         }
 
-        Map<MethodDesc, DecoratorMethod> nextDecorators = bean.getNextDecorators_2(decorator);
+        Map<MethodDesc, DecoratorMethod> nextDecorators = bean.getNextDecorators(decorator);
         List<DecoratorInfo> decoratorParameters = new ArrayList<>();
-        for (DecoratorMethod decoratorMethod : bean.getNextDecorators(decorator).values()) {
+        for (DecoratorMethod decoratorMethod : nextDecorators.values()) {
             decoratorParameters.add(decoratorMethod.decorator);
         }
         Collections.sort(decoratorParameters);

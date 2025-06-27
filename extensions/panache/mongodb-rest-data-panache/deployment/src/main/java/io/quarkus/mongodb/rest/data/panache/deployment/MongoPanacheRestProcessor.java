@@ -81,8 +81,8 @@ class MongoPanacheRestProcessor {
             validateResource(index.getComputingIndex(), resourceInterface);
 
             List<Type> generics = getGenericTypes(resourceInterface);
-            String entityType = generics.get(0).toString();
-            String idType = generics.get(1).toString();
+            String entityType = generics.get(0).name().toString();
+            String idType = generics.get(1).name().toString();
 
             DataAccessImplementor dataAccessImplementor = new EntityDataAccessImplementor(entityType);
             String resourceClass = resourceImplementor.implement(
@@ -113,9 +113,9 @@ class MongoPanacheRestProcessor {
             validateResource(index.getComputingIndex(), resourceInterface);
 
             List<Type> generics = getGenericTypes(resourceInterface);
-            String repositoryClassName = generics.get(0).toString();
-            String entityType = generics.get(1).toString();
-            String idType = generics.get(2).toString();
+            String repositoryClassName = generics.get(0).name().toString();
+            String entityType = generics.get(1).name().toString();
+            String idType = generics.get(2).name().toString();
 
             DataAccessImplementor dataAccessImplementor = new RepositoryDataAccessImplementor(repositoryClassName);
             String resourceClass = resourceImplementor.implement(

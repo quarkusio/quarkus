@@ -243,7 +243,7 @@ class RestClientProcessor {
                             .ignoreTypePredicate(ResteasyDotNames.IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                             .ignoreFieldPredicate(ResteasyDotNames.IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
                             .ignoreMethodPredicate(ResteasyDotNames.IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                            .source(getClass().getSimpleName() + " > " + returnType.toString())
+                            .source(getClass().getSimpleName() + " > " + returnType)
                             .build());
         }
 
@@ -520,7 +520,7 @@ class RestClientProcessor {
         }
         for (AnnotationInstance annotationInstance : allInstances) {
             reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString())
+                    .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().name().toString())
                             .build());
         }
 
@@ -529,7 +529,7 @@ class RestClientProcessor {
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
                 reflectiveClass
-                        .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().toString())
+                        .produce(ReflectiveClassBuildItem.builder(annotationInstance.value().asClass().name().toString())
                                 .build());
             }
         }
@@ -559,7 +559,7 @@ class RestClientProcessor {
             // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as beans
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
-                builder.addBeanClass(value.asClass().toString());
+                builder.addBeanClass(value.asClass().name().toString());
             }
         }
         return builder.build();

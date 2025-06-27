@@ -82,6 +82,7 @@ import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsTest;
+import io.quarkus.deployment.SuppressForbidden;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -952,6 +953,7 @@ public class QuteProcessor {
     }
 
     @SuppressWarnings("incomplete-switch")
+    @SuppressForbidden(reason = "Type#toString() is what we want to use here")
     private static String getCheckedTemplateParameterTypeName(Type type) {
         switch (type.kind()) {
             case PARAMETERIZED_TYPE:
@@ -1196,6 +1198,7 @@ public class QuteProcessor {
         return pattern.toString();
     }
 
+    @SuppressForbidden(reason = "Type#toString() is what we want to use here")
     static MatchResult validateNestedExpressions(QuteConfig config, TemplateAnalysis templateAnalysis, ClassInfo rootClazz,
             Map<String, MatchResult> results,
             Iterable<Predicate<TypeCheck>> excludes, BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,

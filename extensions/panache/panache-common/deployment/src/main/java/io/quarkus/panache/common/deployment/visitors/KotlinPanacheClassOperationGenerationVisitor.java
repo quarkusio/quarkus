@@ -47,6 +47,7 @@ import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.deployment.SuppressForbidden;
 import io.quarkus.deployment.util.AsmUtil;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.panache.common.deployment.ByteCodeType;
@@ -280,6 +281,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 "(Ljava/lang/Object;Ljava/lang/String;)V", false);
     }
 
+    @SuppressForbidden(reason = "Using Type#toString() is what we want here")
     private void emitNullCheck(MethodVisitor mv, Type returnType) {
         Label label = addLabel();
         mv.visitInsn(DUP);

@@ -255,7 +255,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     }
 
     private void serializeJsonValue(SerializationContext ctx, MethodCreator bytecode, FieldSpecs jsonValueFieldSpecs) {
-        String typeName = jsonValueFieldSpecs.fieldType.toString();
+        String typeName = jsonValueFieldSpecs.fieldType.name().toString();
         ResultHandle arg = jsonValueFieldSpecs.toValueReaderHandle(bytecode, ctx.valueHandle);
         writeFieldValue(jsonValueFieldSpecs, bytecode, ctx, typeName, arg, null);
     }

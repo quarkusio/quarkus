@@ -354,7 +354,7 @@ public class DerivedMethodsAdder extends AbstractMethodsAdder {
                         .getFieldDescriptor();
 
                 // create getter (based on the interface)
-                try (MethodCreator getter = implClassCreator.getMethodCreator(getterName, returnType.toString())) {
+                try (MethodCreator getter = implClassCreator.getMethodCreator(getterName, returnType.name().toString())) {
                     getter.setModifiers(Modifier.PUBLIC);
                     getter.returnValue(getter.readInstanceField(field, getter.getThis()));
                 }

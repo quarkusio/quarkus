@@ -98,6 +98,7 @@ env:
   DB_PASSWORD: hibernate_orm_test
   DB_NAME: hibernate_orm_test
   PULL_REQUEST_NUMBER: ${{ github.event.number }}
+  NX_BATCH_MODE: true
 
 defaults:
   run:
@@ -197,6 +198,7 @@ jobs:
         with:
           # this is important for GIB to work
           fetch-depth: 0
+      - run: pnpm exec nx-cloud start-ci-run --distribute-on="3 linux-large-jvm"
       - name: Add quarkusio remote
         run: git remote show quarkusio &> /dev/null || git remote add quarkusio https://github.com/quarkusio/quarkus.git
       - name: Reclaim Disk Space
@@ -209,8 +211,8 @@ jobs:
       - name: Setup Node.js for Nx
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '24'
+          cache: 'pnpm'
       - name: Install Nx
         run: npm install -g nx@latest
       - name: Nx set-shas
@@ -260,11 +262,16 @@ jobs:
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
+      - name: Clean
+        env:
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          npx nx run-many -t clean --parallel 4 $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true
         run: |
-          ./mvnw -T1C $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations clean install
+          npx nx run-many -t install --parallel 4 $COMMON_MAVEN_ARGS -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dtcks -Prelocations
       - name: Verify extension dependencies
         run: ./update-extension-dependencies.sh $COMMON_MAVEN_ARGS
       - name: Get GIB arguments

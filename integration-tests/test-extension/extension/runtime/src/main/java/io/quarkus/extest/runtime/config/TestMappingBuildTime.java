@@ -40,6 +40,14 @@ public interface TestMappingBuildTime {
      */
     Optional<List<Group>> optionalGroups();
 
+    /**
+     * Deprecated
+     *
+     * @deprecated deprecated.
+     */
+    @Deprecated
+    String deprecated();
+
     interface Group {
         /**
          * A Group value.

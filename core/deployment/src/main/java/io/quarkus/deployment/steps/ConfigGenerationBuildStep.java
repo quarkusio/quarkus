@@ -1,5 +1,6 @@
 package io.quarkus.deployment.steps;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.processConfigMapping;
 import static io.quarkus.deployment.configuration.ConfigMappingUtils.processExtensionConfigMapping;
 import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.CONFIG_RUNTIME_NAME;
@@ -99,6 +100,8 @@ import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSourceBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
+import io.smallrye.config.ConfigMappingInterface;
+import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
@@ -483,6 +486,37 @@ public class ConfigGenerationBuildStep {
         for (String configWatchedFile : configWatchedFiles) {
             watchedFiles.produce(new HotDeploymentWatchedFileBuildItem(configWatchedFile));
         }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void reportDeprecatedMappingProperties(ConfigRecorder configRecorder, ConfigurationBuildItem configBuildItem) {
+        // Build Time
+        List<ConfigClass> visibleBuildTimeMappings = new ArrayList<>();
+        visibleBuildTimeMappings.addAll(configBuildItem.getReadResult().getBuildTimeMappings());
+        visibleBuildTimeMappings.addAll(configBuildItem.getReadResult().getBuildTimeRunTimeMappings());
+        Map<String, String> deprecatedProperties = deprecatedProperties(visibleBuildTimeMappings);
+        ConfigDiagnostic.deprecatedProperties(deprecatedProperties);
+
+        // Runtime
+        Map<String, String> runtimeDeprecatedProperties = deprecatedProperties(
+                configBuildItem.getReadResult().getRunTimeMappings());
+        configRecorder.deprecatedProperties(runtimeDeprecatedProperties);
+    }
+
+    private static Map<String, String> deprecatedProperties(List<ConfigClass> configClasses) {
+        Map<String, String> deprecatedProperties = new HashMap<>();
+        for (ConfigClass buildTimeMapping : configClasses) {
+            Map<String, ConfigMappingInterface.Property> properties = ConfigMappings.getProperties(buildTimeMapping);
+            for (Map.Entry<String, ConfigMappingInterface.Property> entry : properties.entrySet()) {
+                Deprecated deprecated = entry.getValue().getMethod().getAnnotation(Deprecated.class);
+                if (deprecated != null) {
+                    // TODO - add javadoc message
+                    deprecatedProperties.put(entry.getKey(), null);
+                }
+            }
+        }
+        return deprecatedProperties;
     }
 
     @BuildStep

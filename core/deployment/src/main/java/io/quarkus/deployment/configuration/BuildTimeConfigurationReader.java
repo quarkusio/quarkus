@@ -42,10 +42,6 @@ import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.configuration.definition.ClassDefinition;
-import io.quarkus.deployment.configuration.definition.ClassDefinition.ClassMember;
-import io.quarkus.deployment.configuration.definition.ClassDefinition.GroupMember;
-import io.quarkus.deployment.configuration.definition.ClassDefinition.ItemMember;
-import io.quarkus.deployment.configuration.definition.ClassDefinition.MapMember;
 import io.quarkus.deployment.configuration.definition.GroupDefinition;
 import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.configuration.matching.ConfigPatternMap;
@@ -129,9 +125,6 @@ public final class BuildTimeConfigurationReader {
     final List<ConfigClass> runTimeMappings;
     final List<ConfigClass> buildTimeVisibleMappings;
     final Set<String> mappingsIgnorePaths;
-
-    final Set<String> deprecatedProperties;
-    final Set<String> deprecatedRuntimeProperties;
 
     final ConfigTrackingInterceptor buildConfigTracker;
 
@@ -278,9 +271,6 @@ public final class BuildTimeConfigurationReader {
                 }
             }
         }
-
-        deprecatedProperties = getDeprecatedProperties(allRoots);
-        deprecatedRuntimeProperties = getDeprecatedProperties(runTimeRoots);
 
         buildConfigTracker = new ConfigTrackingInterceptor();
     }
@@ -460,57 +450,6 @@ public final class BuildTimeConfigurationReader {
         return SecretKeys.doUnlocked(() -> new ReadOperation(config, buildConfigTracker).run());
     }
 
-    private Set<String> getDeprecatedProperties(Iterable<RootDefinition> rootDefinitions) {
-        Set<String> ret = new HashSet<>();
-        StringBuilder nameBuilder = new StringBuilder();
-        for (RootDefinition rootDefinition : rootDefinitions) {
-            int len = nameBuilder.length();
-            try {
-                nameBuilder.append(rootDefinition.getName());
-                collectDeprecatedConfigItems(rootDefinition, ret, nameBuilder);
-            } finally {
-                nameBuilder.setLength(len);
-            }
-        }
-        return Set.copyOf(ret);
-    }
-
-    private void collectDeprecatedConfigItems(ClassDefinition classDefinition, Set<String> deprecatedConfigItems,
-            StringBuilder nameBuilder) {
-        for (ClassMember m : classDefinition.getMembers()) {
-            collectDeprecatedConfigItems(m, deprecatedConfigItems, nameBuilder);
-        }
-    }
-
-    private void collectDeprecatedConfigItems(ClassMember classMember, Set<String> deprecatedConfigItems,
-            StringBuilder nameBuilder) {
-        if (classMember instanceof ItemMember) {
-            ItemMember im = (ItemMember) classMember;
-            if (im.getField().isAnnotationPresent(Deprecated.class)) {
-                int len = nameBuilder.length();
-                try {
-                    nameBuilder.append(".").append(im.getPropertyName());
-                    deprecatedConfigItems.add(nameBuilder.toString());
-                } finally {
-                    nameBuilder.setLength(len);
-                }
-            }
-        } else if (classMember instanceof GroupMember) {
-            GroupMember gm = (GroupMember) classMember;
-            int len = nameBuilder.length();
-            try {
-                nameBuilder.append(".").append(gm.getPropertyName());
-                collectDeprecatedConfigItems(gm.getGroupDefinition(), deprecatedConfigItems, nameBuilder);
-            } finally {
-                nameBuilder.setLength(len);
-            }
-
-        } else if (classMember instanceof MapMember) {
-            MapMember mm = (MapMember) classMember;
-            collectDeprecatedConfigItems(mm.getNested(), deprecatedConfigItems, nameBuilder);
-        }
-    }
-
     final class ReadOperation {
         final SmallRyeConfig config;
         final ConfigTrackingInterceptor buildConfigTracker;
@@ -567,9 +506,6 @@ public final class BuildTimeConfigurationReader {
             for (String propertyName : allProperties) {
                 if (propertyName.equals(ConfigSource.CONFIG_ORDINAL)) {
                     continue;
-                }
-                if (deprecatedProperties.contains(propertyName)) {
-                    log.warnf("The '%s' config property is deprecated and should not be used anymore", propertyName);
                 }
 
                 NameIterator ni = new NameIterator(propertyName);
@@ -753,7 +689,6 @@ public final class BuildTimeConfigurationReader {
                     .setRunTimeMappings(runTimeMappings)
                     .setMappingsIgnorePaths(mappingsIgnorePaths)
                     .setUnknownBuildProperties(unknownBuildProperties)
-                    .setDeprecatedRuntimeProperties(deprecatedRuntimeProperties)
                     .setBuildConfigTracker(buildConfigTracker)
                     .createReadResult();
         }
@@ -1350,7 +1285,6 @@ public final class BuildTimeConfigurationReader {
         final Map<Class<?>, ConfigClass> allMappingsByClass;
 
         final Set<String> unknownBuildProperties;
-        final Set<String> deprecatedRuntimeProperties;
         final ConfigTrackingInterceptor.ReadOptionsProvider readOptionsProvider;
 
         public ReadResult(final Builder builder) {
@@ -1376,7 +1310,6 @@ public final class BuildTimeConfigurationReader {
             this.allMappingsByClass = mappingsToMap(builder);
 
             this.unknownBuildProperties = builder.getUnknownBuildProperties();
-            this.deprecatedRuntimeProperties = builder.deprecatedRuntimeProperties;
             this.readOptionsProvider = builder.buildConfigTracker == null ? null
                     : builder.buildConfigTracker.getReadOptionsProvider();
         }
@@ -1471,10 +1404,6 @@ public final class BuildTimeConfigurationReader {
             return unknownBuildProperties;
         }
 
-        public Set<String> getDeprecatedRuntimeProperties() {
-            return deprecatedRuntimeProperties;
-        }
-
         public Object requireObjectForClass(Class<?> clazz) {
             Object obj = objectsByClass.get(clazz);
             if (obj == null) {
@@ -1502,7 +1431,6 @@ public final class BuildTimeConfigurationReader {
             private List<ConfigClass> runTimeMappings;
             private Set<String> mappingsIgnorePaths;
             private Set<String> unknownBuildProperties;
-            private Set<String> deprecatedRuntimeProperties;
             private ConfigTrackingInterceptor buildConfigTracker;
 
             Map<Class<?>, Object> getObjectsByClass() {
@@ -1628,11 +1556,6 @@ public final class BuildTimeConfigurationReader {
 
             Builder setUnknownBuildProperties(final Set<String> unknownBuildProperties) {
                 this.unknownBuildProperties = unknownBuildProperties;
-                return this;
-            }
-
-            Builder setDeprecatedRuntimeProperties(Set<String> deprecatedRuntimeProperties) {
-                this.deprecatedRuntimeProperties = deprecatedRuntimeProperties;
                 return this;
             }
 

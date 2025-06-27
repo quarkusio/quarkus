@@ -2,6 +2,7 @@ import { ExecutorContext, logger, TaskGraph } from '@nx/devkit';
 import { execSync } from 'child_process';
 import { join } from 'path';
 import { existsSync, writeFileSync } from 'fs';
+import { createPseudoTerminal } from 'nx/src/tasks-runner/pseudo-terminal';
 
 export interface MavenBatchExecutorOptions {
   goals: string[];
@@ -106,14 +107,9 @@ export default async function runExecutor(
       logger.info(`  Command: ${command}`);
     }
 
-    // Execute the batch command
+    // Execute the batch command with streaming
     const startTime = Date.now();
-    const output = execSync(command, {
-      cwd: pluginDir,
-      encoding: 'utf-8',
-      maxBuffer: 10 * 1024 * 1024 // 10MB buffer
-    });
-
+    const output = await executeWithStreaming(command, pluginDir, verbose);
     const duration = Date.now() - startTime;
     
     // Parse JSON output from batch executor
@@ -331,13 +327,9 @@ async function executeMultiProjectMavenBatch(
   const classpath = `${batchExecutorClasspath}:${dependencyPath}/*`;
   const command = `java -Dmaven.multiModuleProjectDirectory="${workspaceRoot}" -cp "${classpath}" NxMavenBatchExecutor "${goalsString}" "${workspaceRoot}" "${projectsString}" ${verboseFlag}`;
 
-  // Execute the batch command
+  // Execute the batch command with streaming
   const startTime = Date.now();
-  const output = execSync(command, {
-    cwd: pluginDir,
-    encoding: 'utf-8',
-    maxBuffer: 10 * 1024 * 1024 // 10MB buffer
-  });
+  const output = await executeWithStreaming(command, pluginDir, verbose);
 
   // Parse JSON output from batch executor
   // The output may contain Maven warnings before the JSON, so find the JSON part
@@ -383,4 +375,49 @@ async function executeMultiProjectMavenBatch(
   }
   
   return result;
+}
+
+// Execute Maven command with streaming output using PseudoTerminal
+async function executeWithStreaming(command: string, cwd: string, verbose: boolean): Promise<string> {
+  // Create PseudoTerminal with skipSupportCheck=true to bypass TTY requirement
+  const pseudoTerminal = createPseudoTerminal(true);
+  let terminalOutput = '';
+  
+  if (verbose) {
+    logger.info(`Executing with PseudoTerminal: ${command}`);
+  }
+  
+  try {
+    // Initialize the pseudo terminal
+    await pseudoTerminal.init();
+    
+    // Run the Maven command
+    const process = pseudoTerminal.runCommand(command, {
+      cwd,
+      quiet: false, // Always stream output
+      tty: false
+    });
+    
+    // Collect output for JSON parsing
+    process.onOutput((output: string) => {
+      terminalOutput += output;
+      // Output is automatically streamed to console by PseudoTerminal
+    });
+    
+    // Wait for process completion using async/await
+    const { code } = await process.getResults();
+    
+    // Shutdown the terminal
+    pseudoTerminal.shutdown(code);
+    
+    if (code === 0) {
+      return terminalOutput;
+    } else {
+      throw new Error(`Maven command failed with exit code ${code}`);
+    }
+    
+  } catch (error: any) {
+    pseudoTerminal.shutdown(1);
+    throw new Error(`Failed to execute Maven command: ${error.message}`);
+  }
 }

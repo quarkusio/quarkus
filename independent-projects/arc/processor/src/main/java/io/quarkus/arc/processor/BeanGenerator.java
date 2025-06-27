@@ -1294,11 +1294,10 @@ public class BeanGenerator extends AbstractGenerator {
             });
         }
 
-        // If the declaring bean is @Dependent we must destroy the instance afterwards
-        // TODO what is the field is `static`? this seems useless then; see also `implementCreateForProducerMethod()`
-        if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope())) {
-            b0.invokeInterface(MethodDescs.INJECTABLE_BEAN_DESTROY, declaringProvider,
-                    declaringProviderInstance, creationalContext);
+        // If the declaring bean is `@Dependent` and the producer is not `static`, we must destroy the instance afterwards
+        if (BuiltinScope.DEPENDENT.is(bean.getDeclaringBean().getScope()) && !isStatic) {
+            b0.invokeInterface(MethodDescs.INJECTABLE_BEAN_DESTROY, declaringProvider, declaringProviderInstance,
+                    creationalContext);
         }
 
         b0.return_(instance);

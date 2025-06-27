@@ -24,6 +24,7 @@ import io.quarkus.bootstrap.logging.InitialConfigurator;
 public class QuarkusEntryPoint {
 
     public static final String QUARKUS_APPLICATION_DAT = "quarkus/quarkus-application.dat";
+    public static final String LIB_DEPLOYMENT_APPMODEL_DAT = "lib/deployment/appmodel.dat";
     public static final String LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT = "lib/deployment/deployment-class-path.dat";
 
     public static void main(String... args) throws Throwable {

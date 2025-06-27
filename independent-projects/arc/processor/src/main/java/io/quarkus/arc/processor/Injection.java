@@ -457,6 +457,9 @@ public class Injection {
     public Injection(AnnotationTarget target, List<InjectionPointInfo> injectionPoints) {
         this.target = target;
         this.injectionPoints = injectionPoints;
+        if (injectionPoints.stream().anyMatch(Objects::isNull)) {
+            throw new IllegalArgumentException("Null injection point detected for " + target);
+        }
     }
 
     boolean isMethod() {

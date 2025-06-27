@@ -825,9 +825,9 @@ public class DevMojo extends AbstractMojo {
      * @param reloadPoms POM files to be reloaded from disk instead of taken from the reactor
      * @return map of parameters for the Quarkus plugin goals
      */
-    private static Map<String, String> getQuarkusGoalParams(String bootstrapId, List<String> reloadPoms) {
+    private Map<String, String> getQuarkusGoalParams(String bootstrapId, List<String> reloadPoms) {
         final Map<String, String> result = new HashMap<>(4);
-        result.put(QuarkusBootstrapMojo.MODE_PARAM, LaunchMode.DEVELOPMENT.name());
+        result.put(QuarkusBootstrapMojo.MODE_PARAM, getLaunchModeClasspath().name());
         result.put(QuarkusBootstrapMojo.CLOSE_BOOTSTRAPPED_APP_PARAM, "false");
         result.put(QuarkusBootstrapMojo.BOOTSTRAP_ID_PARAM, bootstrapId);
         if (reloadPoms != null && !reloadPoms.isEmpty()) {
@@ -1524,7 +1524,7 @@ public class DevMojo extends AbstractMojo {
             // the Maven resolver will be checking for newer snapshots in the remote repository and might end up resolving the artifact from there.
             final BootstrapMavenContext mvnCtx = workspaceProvider.createMavenContext(mvnConfig);
             appModel = new BootstrapAppModelResolver(new MavenArtifactResolver(mvnCtx))
-                    .setDevMode(true)
+                    .setDevMode(getLaunchModeClasspath().isDevOrTest())
                     .setTest(LaunchMode.TEST.equals(getLaunchModeClasspath()))
                     .setCollectReloadableDependencies(!noDeps)
                     .setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(project.getProperties()))

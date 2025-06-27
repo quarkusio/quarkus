@@ -180,6 +180,10 @@ public class OidcRecorder {
         return beanContainer.beanInstance(BackChannelLogoutHandler.class);
     }
 
+    public Handler<RoutingContext> getResourceMetadataHandler(BeanContainer beanContainer) {
+        return beanContainer.beanInstance(ResourceMetadataHandler.class);
+    }
+
     private static final class TenantSpecificOidcIdentityProvider extends OidcIdentityProvider
             implements TenantIdentityProvider {
 

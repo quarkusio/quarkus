@@ -142,6 +142,35 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     Roles roles();
 
     /**
+     * Configuration to provide protected resource metadata.
+     */
+    @ConfigDocSection
+    ResourceMetadata resourceMetadata();
+
+    /**
+     * Protected resource metadata.
+     */
+    interface ResourceMetadata {
+        /**
+         * If the resource metadata can be provided.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * Protected resource identifier.
+         */
+        Optional<String> resource();
+
+        /**
+         * Force a protected resource identifier HTTPS scheme.
+         * This property is ignored if {@link #resource() is an absolute URL}
+         */
+        @WithDefault("true")
+        boolean forceHttpsScheme();
+    }
+
+    /**
      * Configuration to customize validation of token claims.
      */
     @ConfigDocSection

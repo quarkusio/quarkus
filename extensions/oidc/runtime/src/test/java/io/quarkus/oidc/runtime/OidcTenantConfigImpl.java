@@ -96,6 +96,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         CODE_GRANT,
         AUTHENTICATION,
         CERTIFICATION_CHAIN,
+        RESOURCE_METADATA,
         LOGOUT,
         TOKEN,
         ROLES,
@@ -158,6 +159,9 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         CERTIFICATION_CHAIN_TRUST_STORE_PASSWORD,
         CERTIFICATION_CHAIN_TRUST_STORE_CERT_ALIAS,
         CERTIFICATION_CHAIN_TRUST_STORE_FILE_TYPE,
+        RESOURCE_METADATA_ENABLED,
+        RESOURCE_METADATA_RESOURCE,
+        RESOURCE_METADATA_FORCE_HTTPS_SCHEME,
         LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_URI_PARAM,
@@ -596,6 +600,30 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<String> trustStoreFileType() {
                 invocationsRecorder.put(ConfigMappingMethods.CERTIFICATION_CHAIN_TRUST_STORE_FILE_TYPE, true);
                 return Optional.empty();
+            }
+        };
+    }
+
+    @Override
+    public ResourceMetadata resourceMetadata() {
+        invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA, true);
+        return new ResourceMetadata() {
+            @Override
+            public boolean enabled() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_ENABLED, true);
+                return false;
+            }
+
+            @Override
+            public Optional<String> resource() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_RESOURCE, true);
+                return Optional.empty();
+            }
+
+            @Override
+            public boolean forceHttpsScheme() {
+                invocationsRecorder.put(ConfigMappingMethods.RESOURCE_METADATA_FORCE_HTTPS_SCHEME, true);
+                return false;
             }
         };
     }

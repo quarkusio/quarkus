@@ -2,8 +2,13 @@ package io.quarkus.oidc;
 
 import java.util.Map;
 
+import jakarta.enterprise.event.Event;
+
+import io.quarkus.arc.Arc;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.quarkus.oidc.runtime.BackChannelLogoutHandler.NewBackChannelLogoutPath;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout;
+import io.quarkus.oidc.runtime.TenantConfigContext;
 
 public final class LogoutUtils {
 
@@ -46,6 +51,30 @@ public final class LogoutUtils {
         sb.append("<input type=\"hidden\" name=\"").append(name).append("\" ")
                 .append("value=\"").append(value).append("\"")
                 .append("/>");
+    }
+
+    public static void fireBackChannelLogoutChangedEvent(OidcTenantConfig oidcConfig, TenantConfigContext tenant) {
+        if (oidcConfig.logout().backchannel().path().isPresent()) {
+            boolean pathChanged = tenant.oidcConfig() == null || !oidcConfig.logout().backchannel().path().get()
+                    .equals(tenant.oidcConfig().logout().backchannel().path().orElse(null));
+            if (pathChanged) {
+                fireBackChannelLogoutEvent();
+            }
+        }
+
+    }
+
+    public static void fireBackChannelLogoutReadyEvent(OidcTenantConfig oidcConfig) {
+        if (oidcConfig.logout().backchannel().path().isPresent()) {
+            fireBackChannelLogoutEvent();
+        }
+
+    }
+
+    private static void fireBackChannelLogoutEvent() {
+        Event<NewBackChannelLogoutPath> event = Arc.container().beanManager().getEvent()
+                .select(NewBackChannelLogoutPath.class);
+        event.fire(new NewBackChannelLogoutPath());
     }
 
 }

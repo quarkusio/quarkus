@@ -66,6 +66,16 @@ public interface LgtmConfig extends GrafanaConfig {
     Optional<Boolean> forceScraping();
 
     /**
+     * The gRPC port of the OTel container, if set it will be a fixed value.
+     */
+    Optional<Integer> otelGrpcPort();
+
+    /**
+     * The HTTP port of the OTel container, if set it will be a fixed value.
+     */
+    Optional<Integer> otelHttpPort();
+
+    /**
      * A way to override `quarkus.otel.metric.export.interval` property's default value.
      */
     @OverrideProperty("quarkus.otel.metric.export.interval")

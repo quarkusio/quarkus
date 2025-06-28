@@ -1,8 +1,8 @@
 package io.quarkus.observability.common.config;
 
 import java.time.Duration;
+import java.util.Optional;
 
-import io.quarkus.observability.common.ContainerConstants;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 
@@ -24,8 +24,7 @@ public interface GrafanaConfig extends ContainerConfig {
     /**
      * The port of the Grafana container.
      */
-    @WithDefault("" + ContainerConstants.GRAFANA_PORT)
-    int grafanaPort();
+    Optional<Integer> grafanaPort();
 
     /**
      * The timeout.

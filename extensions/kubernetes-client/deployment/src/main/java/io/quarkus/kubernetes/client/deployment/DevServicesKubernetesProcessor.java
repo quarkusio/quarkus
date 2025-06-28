@@ -66,6 +66,7 @@ import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
@@ -166,6 +167,13 @@ public class DevServicesKubernetesProcessor {
         configuration.manifests.ifPresent(manifests -> deployManifests(manifests, devService.getConfig()));
 
         return devService.toBuildItem();
+    }
+
+    @BuildStep
+    public void deployManifests(
+            KubernetesDevServiceInfoBuildItem kubernetesDevServiceInfoBuildItem,
+            BuildProducer<ArtifactResultBuildItem> fakeProducer) {
+        log.info("Deploying manifests...");
     }
 
     private void shutdownCluster() {

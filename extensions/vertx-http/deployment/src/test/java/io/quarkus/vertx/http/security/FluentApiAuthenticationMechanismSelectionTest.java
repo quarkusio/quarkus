@@ -34,6 +34,8 @@ import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.quarkus.vertx.http.security.event.Basic;
+import io.quarkus.vertx.http.security.event.HttpSecurity;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 import io.smallrye.certs.Format;
@@ -53,7 +55,6 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                     CustomSchemeAuthenticationMechanism.class, AbstractCustomAuthenticationMechanism.class)
             .addAsResource(new StringAsset("""
                     quarkus.http.auth.form.enabled=true
-                    quarkus.http.auth.basic=true
                     quarkus.http.ssl.client-auth=request
                     quarkus.http.ssl.certificate.key-store-file=server-keystore.p12
                     quarkus.http.ssl.certificate.key-store-password=secret
@@ -225,6 +226,10 @@ public class FluentApiAuthenticationMechanismSelectionTest {
 
     public static class AuthMechanismConfig {
 
+        void configure(@Observes Basic basic) {
+            basic.enable();
+        }
+
         void configure(@Observes HttpSecurity httpSecurity) {
             httpSecurity
                     .get("/form/admin").form().authorization()
@@ -264,7 +269,7 @@ public class FluentApiAuthenticationMechanismSelectionTest {
     }
 
     public static abstract class AbstractCustomAuthenticationMechanism implements HttpAuthenticationMechanism {
-        private final HttpAuthenticationMechanism delegate = new BasicAuthenticationMechanism(null);
+        private final HttpAuthenticationMechanism delegate = new BasicAuthenticationMechanism(null, false);
 
         @Override
         public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {

@@ -446,13 +446,13 @@ quarkus.http.auth.roles-mapping.admin=Admin1 <1> <2>
 <1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
 <2> The `/*` path is not secured. You must secure your endpoints with standard security annotations or define HTTP permissions in addition to this configuration property.
 
-If you prefer a programmatic configuration, the same mapping can be added with the `io.quarkus.vertx.http.security.HttpSecurity` CDI event:
+If you prefer a programmatic configuration, the same mapping can be added with the `io.quarkus.vertx.http.security.event.HttpSecurity` CDI event:
 
 [source,java]
 ----
 package org.acme.http.security;
 
-import io.quarkus.vertx.http.security.HttpSecurity;
+import io.quarkus.vertx.http.security.event.HttpSecurity;
 import jakarta.enterprise.event.Observes;
 
 public class HttpSecurityConfiguration {
@@ -506,6 +506,7 @@ quarkus.http.auth.permission.roles3.policy=role-policy3
 <2> The `/secured/*` path can only be accessed by authenticated users. This way, you have secured the `/secured/all` path and so on.
 <3> Shared permissions are always applied before unshared ones, therefore a `SecurityIdentity` with the `root` role will have the `user` role as well.
 
+[[path-specific-authz-programmatic-set-up]]
 === Set up path-specific authorization programmatically
 
 You can also configure the authorization policies presented by this guide so far programmatically.
@@ -533,7 +534,7 @@ package org.acme.http.security;
 
 import jakarta.enterprise.event.Observes;
 
-import io.quarkus.vertx.http.security.HttpSecurity;
+import io.quarkus.vertx.http.security.event.HttpSecurity;
 
 public class HttpSecurityConfiguration {
 
@@ -547,13 +548,13 @@ public class HttpSecurityConfiguration {
 }
 ----
 
-Additionally, the `io.quarkus.vertx.http.security.HttpSecurity` CDI event can be used to configure specific authentication mechanisms and policies:
+Additionally, the `io.quarkus.vertx.http.security.event.HttpSecurity` CDI event can be used to configure specific authentication mechanisms and policies:
 
 [source,java]
 ----
 package org.acme.http.security;
 
-import io.quarkus.vertx.http.security.HttpSecurity;
+import io.quarkus.vertx.http.security.event.HttpSecurity;
 import jakarta.enterprise.event.Observes;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -591,6 +592,12 @@ public class HttpSecurityConfiguration {
 <5> When Quarkus fires the `HttpSecurity` CDI event, the runtime configuration is ready.
 <6> Require that all the requests to the `/user-info` path have string permissions `openid`, `email` and `profile`.
 The same authorization can be required with the `@PermissionsAllowed(value = { "openid", "email", "profile" }, inclusive = true)` annotation instance placed on an endpoint.
+
+==== Programmatic set up references
+
+* xref:security-basic-authentication.adoc#basic-auth-programmatic-set-up[Set up Basic authentication programmatically]
+* xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
+* xref:security-authentication-mechanisms.adoc#form-based-auth-programmatic-set-up[Set up Form-based authentication programmatically]
 
 [[standard-security-annotations]]
 == Authorization using annotations

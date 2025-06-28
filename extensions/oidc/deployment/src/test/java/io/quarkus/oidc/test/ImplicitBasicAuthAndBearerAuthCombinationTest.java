@@ -16,7 +16,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
-import io.quarkus.vertx.http.security.HttpSecurity;
+import io.quarkus.vertx.http.security.event.HttpSecurity;
 import io.restassured.RestAssured;
 
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)

@@ -25,7 +25,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Singleton;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
@@ -43,11 +42,9 @@ import io.quarkus.security.spi.runtime.AuthenticationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
-import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.AuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -90,10 +87,8 @@ public final class HttpAuthenticator {
     private final boolean inclusiveAuth;
     private final boolean strictInclusiveMode;
 
-    HttpAuthenticator(IdentityProviderManager identityProviderManager,
-            Event<AuthenticationFailureEvent> authFailureEvent,
-            Event<AuthenticationSuccessEvent> authSuccessEvent,
-            BeanManager beanManager, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+    HttpAuthenticator(IdentityProviderManager identityProviderManager, Event<AuthenticationFailureEvent> authFailureEvent,
+            Event<AuthenticationSuccessEvent> authSuccessEvent, BeanManager beanManager,
             VertxHttpConfig httpConfig, Instance<HttpAuthenticationMechanism> httpAuthenticationMechanism,
             Instance<IdentityProvider<?>> providers,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
@@ -104,46 +99,20 @@ public final class HttpAuthenticator {
         this.strictInclusiveMode = httpConfig.auth().inclusiveMode() == AuthRuntimeConfig.InclusiveMode.STRICT;
         List<HttpAuthenticationMechanism> mechanisms = new ArrayList<>();
         for (HttpAuthenticationMechanism mechanism : httpAuthenticationMechanism) {
-            if (mechanism.getCredentialTypes().isEmpty()) {
-                // mechanism does not require any IdentityProvider
-                LOG.debugf("HttpAuthenticationMechanism '%s' provided no required credential types, therefore it needs "
-                        + "to be able to perform authentication without any IdentityProvider", mechanism.getClass().getName());
-                mechanisms.add(mechanism);
-                continue;
-            }
-
-            // mechanism requires an IdentityProvider, therefore we verify that such a provider exists
-            boolean found = false;
-            for (Class<? extends AuthenticationRequest> mechType : mechanism.getCredentialTypes()) {
-                for (IdentityProvider<?> i : providers) {
-                    if (i.getRequestType().equals(mechType)) {
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) {
-                    break;
-                }
-            }
-            if (found) {
-                mechanisms.add(mechanism);
-            } else if (BasicAuthenticationMechanism.class.equals(mechanism.getClass())
-                    && httpBuildTimeConfig.auth().basic().isEmpty()) {
-                LOG.debug("""
-                        BasicAuthenticationMechanism has been enabled because no other authentication mechanism has been
-                        detected, but there is no IdentityProvider based on username and password. Please use
-                        one of supported extensions if you plan to use the mechanism.
-                        For more information go to the https://quarkus.io/guides/security-basic-authentication-howto.
-                        """);
-            } else {
-                throw new RuntimeException("""
-                        HttpAuthenticationMechanism '%s' requires one or more IdentityProviders supporting at least one
-                        of the following credentials types: %s.
-                        Please refer to the https://quarkus.io/guides/security-identity-providers for more information.
-                        """.formatted(mechanism.getClass().getName(), mechanism.getCredentialTypes()));
-            }
+            addAuthenticationMechanism(providers, mechanism, mechanisms);
         }
-        addBasicAuthMechanismIfImplicitlyRequired(httpAuthenticationMechanism, mechanisms, providers);
+        if (HttpSecurityConfiguration.get().basicAuth().isExplicitlyEnabled()
+                && !Arc.container().select(BasicAuthenticationMechanism.class).isResolvable()) {
+            // basic auth enabled at runtime
+            addAuthenticationMechanism(providers, new BasicAuthenticationMechanism(), mechanisms);
+        } else {
+            addBasicAuthMechanismIfImplicitlyRequired(httpAuthenticationMechanism, mechanisms, providers);
+        }
+        if (HttpSecurityConfiguration.get().formAuth().isEnabled()
+                && !Arc.container().select(FormAuthenticationMechanism.class).isResolvable()) {
+            // form-based auth enabled at runtime
+            addAuthenticationMechanism(providers, new FormAuthenticationMechanism(), mechanisms);
+        }
         if (mechanisms.isEmpty()) {
             this.mechanisms = new HttpAuthenticationMechanism[] { new NoAuthenticationMechanism() };
         } else {
@@ -170,6 +139,48 @@ public final class HttpAuthenticator {
                                     MtlsAuthenticationMechanism.INCLUSIVE_AUTHENTICATION_PRIORITY));
                 }
             }
+        }
+    }
+
+    private static void addAuthenticationMechanism(Instance<IdentityProvider<?>> providers,
+            HttpAuthenticationMechanism mechanism, List<HttpAuthenticationMechanism> mechanisms) {
+        if (mechanism.getCredentialTypes().isEmpty()) {
+            // mechanism does not require any IdentityProvider
+            LOG.debugf("HttpAuthenticationMechanism '%s' provided no required credential types, therefore it needs "
+                    + "to be able to perform authentication without any IdentityProvider", mechanism.getClass().getName());
+            mechanisms.add(mechanism);
+            return;
+        }
+
+        // mechanism requires an IdentityProvider, therefore we verify that such a provider exists
+        boolean found = false;
+        for (Class<? extends AuthenticationRequest> mechType : mechanism.getCredentialTypes()) {
+            for (IdentityProvider<?> i : providers) {
+                if (i.getRequestType().equals(mechType)) {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) {
+                break;
+            }
+        }
+        if (found) {
+            mechanisms.add(mechanism);
+        } else if (BasicAuthenticationMechanism.class.equals(mechanism.getClass())
+                && HttpSecurityConfiguration.get().basicAuth().getEnabled().isEmpty()) {
+            LOG.debug("""
+                    BasicAuthenticationMechanism has been enabled because no other authentication mechanism has been
+                    detected, but there is no IdentityProvider based on username and password. Please use
+                    one of supported extensions if you plan to use the mechanism.
+                    For more information go to the https://quarkus.io/guides/security-basic-authentication-howto.
+                    """);
+        } else {
+            throw new RuntimeException("""
+                    HttpAuthenticationMechanism '%s' requires one or more IdentityProviders supporting at least one
+                    of the following credentials types: %s.
+                    Please refer to the https://quarkus.io/guides/security-identity-providers for more information.
+                    """.formatted(mechanism.getClass().getName(), mechanism.getCredentialTypes()));
         }
     }
 
@@ -561,10 +572,8 @@ public final class HttpAuthenticator {
         if (Boolean.getBoolean(BASIC_AUTH_ANNOTATION_DETECTED)) {
             return false;
         }
-        VertxHttpConfig httpConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
-                .getConfigMapping(VertxHttpConfig.class);
         List<HttpSecurityConfiguration.HttpPermissionCarrier> httpPermissions = HttpSecurityConfiguration
-                .get(httpConfig).httpPermissions();
+                .get().httpPermissions();
         for (var permission : httpPermissions) {
             if (permission.getAuthMechanism() != null
                     && BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(permission.getAuthMechanism().name())) {

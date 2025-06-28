@@ -8,6 +8,7 @@ import jakarta.enterprise.event.Observes;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.vertx.http.security.event.HttpSecurity;
 
 public class FluentApiPathMatchingHttpSecurityPolicyTest extends PathMatchingHttpSecurityPolicyTest {
 

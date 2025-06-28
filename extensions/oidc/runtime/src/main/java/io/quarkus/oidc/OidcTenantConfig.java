@@ -488,6 +488,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          */
         Optional<Set<ClearSiteData>> clearSiteData = Optional.of(Set.of());
 
+        LogoutMode logoutMode = LogoutMode.QUERY;
+
         /**
          * Back-Channel Logout configuration
          */
@@ -552,6 +554,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             postLogoutUriParam = mapping.postLogoutUriParam();
             extraParams = mapping.extraParams();
             clearSiteData = mapping.clearSiteData();
+            logoutMode = mapping.logoutMode();
             backchannel.addConfigMappingValues(mapping.backchannel());
             frontchannel.addConfigMappingValues(mapping.frontchannel());
         }
@@ -589,6 +592,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public Optional<Set<ClearSiteData>> clearSiteData() {
             return clearSiteData;
+        }
+
+        @Override
+        public LogoutMode logoutMode() {
+            return logoutMode;
         }
     }
 

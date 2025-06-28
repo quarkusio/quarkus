@@ -651,11 +651,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                                 .ifPresent(quarkusTask -> quarkusTask.configure(t -> t.dependsOn(jarTask)));
                     }
                 });
-
         getLazyTask(project, QUARKUS_DEV_TASK_NAME).ifPresent(quarkusDev -> {
             getLazyTask(project, JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
                     .ifPresent(t -> quarkusDev.configure(qd -> qd.dependsOn(t)));
-            addDependencyOnJandexIfConfigured(dep, quarkusDev);
+            if (project.getRootProject().equals(dep.getRootProject())) {
+                addDependencyOnJandexIfConfigured(dep, quarkusDev);
+            }
         });
 
         visitProjectDependencies(project, dep, visited);

@@ -14,6 +14,8 @@ public class KafkaStreamsDevUIProcessor {
     public void createPages(BuildProducer<CardPageBuildItem> cardPageProducer) {
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+        cardPageBuildItem.setLogo("kafka_dark.png", "kafka_light.png");
+        cardPageBuildItem.addLibraryVersion("org.apache.kafka", "kafka-streams", "Apache Kafka", "https://kafka.apache.org/");
 
         cardPageBuildItem.addPage(Page.webComponentPageBuilder()
                 .componentLink("qwc-kafka-streams-topology.js")

@@ -2,6 +2,7 @@ package io.quarkus.observability.testcontainers;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -103,6 +104,8 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         this.scrapingRequired = scrapingRequired;
         // always expose both -- since the LGTM image already does that as well
         addExposedPorts(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, ContainerConstants.OTEL_HTTP_EXPORTER_PORT);
+        config.otelGrpcPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_GRPC_EXPORTER_PORT));
+        config.otelHttpPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_HTTP_EXPORTER_PORT));
 
         Optional<Set<LgtmComponent>> logging = config.logging();
         logging.ifPresent(set -> set.forEach(l -> withEnv("ENABLE_LOGS_" + l.name(), "true")));
@@ -236,6 +239,16 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         @Override
         public Optional<Boolean> forceScraping() {
             return Optional.empty();
+        }
+
+        @Override
+        public OptionalInt otelGrpcPort() {
+            return OptionalInt.empty();
+        }
+
+        @Override
+        public OptionalInt otelHttpPort() {
+            return OptionalInt.empty();
         }
 
         @Override

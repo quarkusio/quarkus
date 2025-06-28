@@ -1,6 +1,7 @@
 package io.quarkus.observability.common.config;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
 import io.quarkus.observability.common.ContainerConstants;
@@ -64,6 +65,16 @@ public interface LgtmConfig extends GrafanaConfig {
      * Do we force scraping.
      */
     Optional<Boolean> forceScraping();
+
+    /**
+     * The gRPC port of the OTel container, if set it will be a fixed value.
+     */
+    OptionalInt otelGrpcPort();
+
+    /**
+     * The HTTP port of the OTel container, if set it will be a fixed value.
+     */
+    OptionalInt otelHttpPort();
 
     /**
      * A way to override `quarkus.otel.metric.export.interval` property's default value.

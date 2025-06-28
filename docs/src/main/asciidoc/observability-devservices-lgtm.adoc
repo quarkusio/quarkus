@@ -203,6 +203,20 @@ quarkus.observability.enabled=false
 quarkus.observability.dev-resources=true
 ----
 
+By default Quarkus lets Testcontainers expose random ports for Grafana and OTel, but you can force the usage of user-side fixed ports via setting the ports yourself - but then be aware of port conflicts.
+
+[source,properties]
+----
+quarkus.observability.lgtm.grafana-port=3001
+quarkus.observability.lgtm.otel-grpc-port=5317
+quarkus.observability.lgtm.otel-http-port=5318
+----
+
+[NOTE]
+====
+Internal container ports stay the same; e.g. 3000 for Grafana, 4317 for OTel gRPC, 4318 for OTel HTTP, etc
+====
+
 === Tests
 
 And for the least 'auto-magical' usage in the tests, simply disable both (Dev Resources are already disabled by default):

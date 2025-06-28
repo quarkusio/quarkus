@@ -8,12 +8,12 @@ import java.net.URI;
 
 import jakarta.ws.rs.Encoded;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
-import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -33,7 +33,7 @@ public class ClientWithPathParamAndEncodedTest {
         ClientWithoutEncoded client = RestClientBuilder.newBuilder()
                 .baseUri(baseUri)
                 .build(ClientWithoutEncoded.class);
-        ClientWebApplicationException ex = assertThrows(ClientWebApplicationException.class, () -> client.call("a/b"));
+        NotFoundException ex = assertThrows(NotFoundException.class, () -> client.call("a/b"));
         assertTrue(ex.getMessage().contains("Not Found"));
     }
 

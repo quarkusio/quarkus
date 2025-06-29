@@ -78,7 +78,6 @@ import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
-import io.quarkus.logging.Log;
 import io.quarkus.util.GlobUtil;
 
 /**
@@ -100,6 +99,7 @@ public class JunitTestRunner {
     public static final DotName NESTED = DotName.createSimple(Nested.class.getName());
     private static final String ARCHUNIT_FIELDSOURCE_FQCN = "com.tngtech.archunit.junit.FieldSource";
     public static final String FACADE_CLASS_LOADER_NAME = "io.quarkus.test.junit.classloading.FacadeClassLoader";
+
     private final long runId;
     private final DevModeContext.ModuleInfo moduleInfo;
     private final CuratedApplication testApplication;
@@ -748,10 +748,10 @@ public class JunitTestRunner {
                 | InvocationTargetException e) {
             // This is fine, and usually just means that test-framework/junit5 isn't one of the project dependencies
             // In that case, fallback to loading classes as we normally would, using a TCCL
-            Log.debug(
+            log.debug(
                     "Could not load class for FacadeClassLoader. This might be because quarkus-junit5 is not on the project classpath: "
                             + e);
-            Log.debug(e);
+            log.debug(e);
             classLoaderForLoadingTests = Thread.currentThread()
                     .getContextClassLoader();
         }
@@ -763,7 +763,7 @@ public class JunitTestRunner {
                 // While we're doing that, we may as well share the classloading logic
                 itClasses.add(classLoaderForLoadingTests.loadClass(i));
             } catch (Exception e) {
-                Log.debug(e);
+                log.debug(e);
                 log.warnf(
                         "Failed to load test class %s (possibly as it was added after the test run started), it will not be executed this run.",
                         i);

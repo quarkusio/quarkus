@@ -1,67 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPresent;
-import static org.hibernate.cfg.CacheSettings.JAKARTA_SHARED_CACHE_MODE;
-import static org.hibernate.cfg.CacheSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
-import static org.hibernate.cfg.CacheSettings.USE_QUERY_CACHE;
-import static org.hibernate.cfg.CacheSettings.USE_SECOND_LEVEL_CACHE;
-
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.OptionalInt;
-import java.util.Properties;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-
-import javax.xml.namespace.QName;
-
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Default;
-import jakarta.persistence.SharedCacheMode;
-import jakarta.persistence.ValidationMode;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
-import jakarta.xml.bind.JAXBElement;
-
-import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
-import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
-import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
-import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.id.SequenceMismatchStrategy;
-import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.internal.util.collections.ArrayHelper;
-import org.hibernate.jpa.boot.spi.JpaSettings;
-import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.loader.BatchFetchStyle;
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.CompositeIndex;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.IndexView;
-import org.jboss.jandex.Indexer;
-import org.jboss.logging.Logger;
-import org.jboss.logmanager.Level;
-
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -141,10 +79,69 @@ import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegister
 import io.quarkus.panache.hibernate.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Default;
+import jakarta.persistence.SharedCacheMode;
+import jakarta.persistence.ValidationMode;
+import jakarta.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.xml.bind.JAXBElement;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.pool.TypePool;
+import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
+import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
+import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
+import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.id.SequenceMismatchStrategy;
+import org.hibernate.integrator.spi.Integrator;
+import org.hibernate.internal.util.collections.ArrayHelper;
+import org.hibernate.jpa.boot.spi.JpaSettings;
+import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.loader.BatchFetchStyle;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget.Kind;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.CompositeIndex;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Indexer;
+import org.jboss.logging.Logger;
+import org.jboss.logmanager.Level;
+
+import javax.xml.namespace.QName;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Properties;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
+import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.hibernate.orm.deployment.HibernateConfigUtil.firstPresent;
+import static org.hibernate.cfg.CacheSettings.JAKARTA_SHARED_CACHE_MODE;
+import static org.hibernate.cfg.CacheSettings.USE_DIRECT_REFERENCE_CACHE_ENTRIES;
+import static org.hibernate.cfg.CacheSettings.USE_QUERY_CACHE;
+import static org.hibernate.cfg.CacheSettings.USE_SECOND_LEVEL_CACHE;
 
 /**
  * Simulacrum of JPA bootstrap.
@@ -1089,11 +1086,11 @@ public final class HibernateOrmProcessor {
 
             // only set the found import files if configured
             if (persistenceUnitConfig.sqlLoadScript().isPresent()) {
-                descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, String.join(",", importFiles));
+                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, String.join(",", importFiles));
             }
         } else {
             //Disable implicit loading of the default import script (import.sql)
-            descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");
+            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, "");
             descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
         }
 

@@ -2,7 +2,12 @@ package io.quarkus.hibernate.orm.runtime.dev;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.hibernate.boot.Metadata;
@@ -117,7 +122,7 @@ public class HibernateOrmDevController {
         Map<String, Object> config = new HashMap<>(ssr.getService(ConfigurationService.class).getSettings());
         config.put(AvailableSettings.HBM2DDL_DELIMITER, ";");
         config.put(AvailableSettings.FORMAT_SQL, true);
-        config.put(AvailableSettings.HBM2DDL_IMPORT_FILES, importFiles);
+        config.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, importFiles);
         ExceptionHandlerCollectingImpl exceptionHandler = new ExceptionHandlerCollectingImpl();
         try {
             final ExecutionOptions executionOptions = SchemaManagementToolCoordinator.buildExecutionOptions(

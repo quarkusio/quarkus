@@ -12,6 +12,7 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -26,6 +27,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ImageMode;
 import io.smallrye.config.ConfigValue;
+import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
@@ -63,8 +65,24 @@ public final class ConfigDiagnostic {
         errorKeys.add(name);
     }
 
-    public static void deprecated(String name) {
-        log.warnf("Configuration key \"%s\" is deprecated", name);
+    public static void deprecatedProperties(Map<String, String> deprecatedProperties) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        for (Map.Entry<String, String> entry : deprecatedProperties.entrySet()) {
+            String propertyName = entry.getKey();
+            ConfigValue configValue = config.getConfigValue(propertyName);
+            if (configValue.getValue() != null && !DefaultValuesConfigSource.NAME.equals(configValue.getConfigSourceName())) {
+                ConfigDiagnostic.deprecated(propertyName, entry.getValue());
+            }
+        }
+    }
+
+    public static void deprecated(String name, String javadoc) {
+        if (javadoc != null) {
+            log.warnf("The \"%s\" config property is deprecated and should not be used anymore. Deprecated message: %s", name,
+                    javadoc);
+        } else {
+            log.warnf("The \"%s\" config property is deprecated and should not be used anymore.", name);
+        }
     }
 
     public static void unknown(String name) {

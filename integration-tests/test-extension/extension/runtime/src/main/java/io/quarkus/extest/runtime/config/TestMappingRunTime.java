@@ -40,6 +40,14 @@ public interface TestMappingRunTime {
     @WithDefault("${quarkus.mapping.rt.expression.value}")
     Optional<String> expression();
 
+    /**
+     * Deprecated
+     *
+     * @deprecated deprecated.
+     */
+    @Deprecated
+    String deprecated();
+
     interface Group {
         /**
          * A Group value.

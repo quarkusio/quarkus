@@ -95,6 +95,10 @@ public class ConfigRecorder {
         }
     }
 
+    public void deprecatedProperties(Map<String, String> deprecatedProperties) {
+        ConfigDiagnostic.deprecatedProperties(deprecatedProperties);
+    }
+
     public void unknownConfigFiles() throws Exception {
         ConfigDiagnostic.unknownConfigFiles(ConfigDiagnostic.configFilesFromLocations());
     }

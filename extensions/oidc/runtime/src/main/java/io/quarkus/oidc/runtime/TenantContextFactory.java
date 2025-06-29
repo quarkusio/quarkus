@@ -79,10 +79,6 @@ final class TenantContextFactory {
         if (OidcUtils.DEFAULT_TENANT_ID.equals(tenantId)) {
             throw new ConfigurationException("Dynamic tenant ID cannot be same as the default tenant ID: " + tenantId);
         }
-        if (oidcConfig.logout().backchannel().path().isPresent()) {
-            throw new ConfigurationException(
-                    "BackChannel Logout is currently not supported for dynamic tenants");
-        }
         return createTenantContext(oidcConfig, false, tenantId)
                 .onFailure().transform(new Function<Throwable, Throwable>() {
                     @Override

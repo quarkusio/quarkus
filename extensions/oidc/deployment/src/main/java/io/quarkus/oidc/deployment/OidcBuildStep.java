@@ -111,6 +111,7 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
+import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpAuthMechanismAnnotationBuildItem;
 import io.quarkus.vertx.http.deployment.HttpSecurityUtils;
 import io.quarkus.vertx.http.deployment.PreRouterFinalizationBuildItem;
@@ -120,6 +121,8 @@ import io.smallrye.jwt.auth.cdi.ClaimValueProducer;
 import io.smallrye.jwt.auth.cdi.CommonJwtProducer;
 import io.smallrye.jwt.auth.cdi.JsonValueProducer;
 import io.smallrye.jwt.auth.cdi.RawClaimTypeProducer;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.RoutingContext;
 
 @BuildSteps(onlyIf = OidcBuildStep.IsEnabled.class)
 public class OidcBuildStep {
@@ -480,6 +483,13 @@ public class OidcBuildStep {
         if (config.healthEnabled() && capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
             healthBuildItems.produce(new HealthBuildItem(OidcTenantHealthCheck.class.getName(), true));
         }
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    FilterBuildItem registerBackChannelLogoutHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        Handler<RoutingContext> handler = recorder.getBackChannelLogoutHandler(beanContainerBuildItem.getValue());
+        return new FilterBuildItem(handler, FilterBuildItem.AUTHORIZATION - 50);
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

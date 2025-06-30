@@ -18,6 +18,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.hibernate.orm.deployment.ClassNames;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
@@ -41,8 +42,7 @@ public class HibernateReactiveCdiProcessor {
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
-            String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
-            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitConfigName);
+            boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
             boolean isReactive = persistenceUnitDescriptor.isReactive();
 
             if (isReactive) {
@@ -62,6 +62,9 @@ public class HibernateReactiveCdiProcessor {
 
                 if (isDefaultPU) {
                     configurator.addQualifier(Default.class);
+                } else {
+                    configurator.addQualifier().annotation(ClassNames.QUARKUS_PERSISTENCE_UNIT)
+                            .addValue("value", persistenceUnitName).done();
                 }
 
                 syntheticBeanBuildItemBuildProducer

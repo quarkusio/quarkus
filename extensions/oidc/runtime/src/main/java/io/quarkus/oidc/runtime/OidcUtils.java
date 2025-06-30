@@ -842,4 +842,8 @@ public final class OidcUtils {
         String remainder = ct.substring(APPLICATION_JWT.length()).trim();
         return remainder.indexOf(';') == 0;
     }
+
+    public static boolean isDPoPScheme(String authorizationScheme) {
+        return OidcConstants.DPOP_SCHEME.equalsIgnoreCase(authorizationScheme);
+    }
 }

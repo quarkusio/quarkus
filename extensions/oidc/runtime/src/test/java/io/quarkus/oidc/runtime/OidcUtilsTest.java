@@ -34,6 +34,15 @@ import io.vertx.core.json.JsonObject;
 public class OidcUtilsTest {
 
     @Test
+    public void testDpopScheme() throws Exception {
+
+        assertTrue(OidcUtils.isDPoPScheme("DPoP"));
+        assertTrue(OidcUtils.isDPoPScheme("dpop"));
+        assertFalse(OidcUtils.isDPoPScheme("pop"));
+
+    }
+
+    @Test
     public void testGetSingleSessionCookie() throws Exception {
 
         OidcTenantConfig oidcConfig = new OidcTenantConfig();

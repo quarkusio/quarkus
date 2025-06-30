@@ -34,6 +34,11 @@ public class GraalVMTest {
                 Version.of(Stream.of(("native-image 26 2026-03-17\n"
                         + "GraalVM Runtime Environment GraalVM CE 26-dev+1.1 (build 26+1-jvmci-b01)\n"
                         + "Substrate VM GraalVM CE 26-dev+1.1 (build 26+1, serial gc)").split("\\n"))));
+        assertVersion(new Version("GraalVM 25.0.0", "25.0.0", GRAALVM), MANDREL,
+                Version.of(Stream.of(("native-image 25-beta 2025-09-16\n" +
+                        "OpenJDK Runtime Environment Mandrel-25.0.0.0-dev2df1dd18912 (build 25-beta+29-ea)\n" +
+                        "OpenJDK 64-Bit Server VM Mandrel-25.0.0.0-dev2df1dd18912 (build 25-beta+29-ea, mixed mode)")
+                        .split("\n"))));
         // Version detection after: https://github.com/oracle/graal/pull/6302 (3 lines of version output)
         assertVersion(new Version("GraalVM 23.0.0", "23.0.0", GRAALVM), MANDREL,
                 Version.of(Stream.of(("native-image 17.0.6 2023-01-17\n"
@@ -223,6 +228,7 @@ public class GraalVMTest {
     "GraalVM CE 25-dev+26.1|25.0|25|0",
     "GraalVM CE 24.0.1+9.1 |24.2|24|1",
     // Mandrel
+    "Mandrel-25.0.0.0-dev2df1dd18912|25.0|25|0",
     "Mandrel-24.2.1.0-Final|24.2|24|1",
     "Mandrel-23.1.7.0-1b2  |23.1|21|7",
     // Liberica-NIK

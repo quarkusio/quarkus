@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeData;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 
@@ -17,7 +18,7 @@ public final class InternalPageBuildItem extends MultiBuildItem {
     private final String namespaceLabel;
     private final int position;
     private final List<Page> pages = new ArrayList<>();
-    private final Map<String, Object> buildTimeData = new HashMap<>();
+    private final Map<String, BuildTimeData> buildTimeData = new HashMap<>();
     private final String menuActionComponent;
 
     public InternalPageBuildItem(String namespaceLabel, int position) {
@@ -36,7 +37,11 @@ public final class InternalPageBuildItem extends MultiBuildItem {
     }
 
     public void addBuildTimeData(String key, Object value) {
-        this.buildTimeData.put(key, value);
+        this.addBuildTimeData(key, value, null);
+    }
+
+    public void addBuildTimeData(String key, Object value, String description) {
+        this.buildTimeData.put(key, new BuildTimeData(value, description));
     }
 
     public List<Page> getPages() {
@@ -55,7 +60,7 @@ public final class InternalPageBuildItem extends MultiBuildItem {
         return namespaceLabel;
     }
 
-    public Map<String, Object> getBuildTimeData() {
+    public Map<String, BuildTimeData> getBuildTimeData() {
         return buildTimeData;
     }
 }

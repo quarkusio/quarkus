@@ -9,6 +9,6 @@ repositories {
 }
 
 allprojects {
-    group 'my-groupId'
-    version 'my-version'
+    group = 'my-groupId'
+    version = 'my-version'
 }

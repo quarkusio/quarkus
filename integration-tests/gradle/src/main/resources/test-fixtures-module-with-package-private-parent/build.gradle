@@ -22,8 +22,8 @@ dependencies {
     testImplementation 'io.rest-assured:rest-assured'
 }
 
-group 'my-groupId'
-version 'my-version'
+group = 'my-groupId'
+version = 'my-version'
 
 compileJava {
     options.encoding = 'UTF-8'

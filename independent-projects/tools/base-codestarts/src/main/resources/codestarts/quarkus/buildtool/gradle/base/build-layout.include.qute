@@ -40,8 +40,8 @@ dependencies {
 {/}
 
 {#insert project}
-group '{project.group-id}'
-version '{project.version}'
+group = '{project.group-id}'
+version = '{project.version}'
 {/}
 
 {#insert java}

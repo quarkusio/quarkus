@@ -6,8 +6,8 @@ subprojects {subProject->
     apply plugin: 'java-library'
     apply plugin: 'maven-publish'
 
-    group 'org.acme.extensions'
-    version '1.0-SNAPSHOT'
+    group = 'org.acme.extensions'
+    version = '1.0-SNAPSHOT'
     publishing {
         publications {
             maven(MavenPublication) {
@@ -30,5 +30,5 @@ publishing {
         }
     }
 }
-group 'org.acme.extensions'
-version '1.0-SNAPSHOT'
+group = 'org.acme.extensions'
+version = '1.0-SNAPSHOT'

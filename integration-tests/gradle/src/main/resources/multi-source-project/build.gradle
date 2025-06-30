@@ -25,8 +25,8 @@ dependencies {
     testImplementation 'io.rest-assured:kotlin-extensions'
 }
 
-group 'org.acme'
-version '1.0.0-SNAPSHOT'
+group = 'org.acme'
+version = '1.0.0-SNAPSHOT'
 
 allOpen {
     annotation("jakarta.ws.rs.Path")

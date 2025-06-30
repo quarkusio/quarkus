@@ -17,8 +17,8 @@ dependencies {
     implementation enforcedPlatform("io.quarkus:quarkus-bom:${quarkusPlatformVersion}")
 }
 
-group 'org.acme'
-version '1.0-SNAPSHOT'
+group = 'org.acme'
+version = '1.0-SNAPSHOT'
 
 
 compileTestJava {

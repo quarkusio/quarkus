@@ -276,7 +276,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 @Override
                 public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
                     if (dir.endsWith(TARGET)) {
-                        targets.add(dir);
+                        // we check if there is a POM around as it might happen that the target/ directory is still around
+                        // while the module has been dropped
+                        if (Files.exists(dir.resolve("../pom.xml"))) {
+                            targets.add(dir);
+                        }
 
                         // a target directory can contain target directories for test projects
                         // so let's make sure we ignore whatever is nested in a target

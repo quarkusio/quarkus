@@ -27,7 +27,7 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
-import io.quarkus.deployment.util.ExecUtil;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
     private static final Logger LOG = Logger.getLogger(PodmanProcessor.class);
@@ -162,25 +162,13 @@ public class PodmanProcessor extends CommonProcessor<PodmanConfig> {
     }
 
     private void pushManifest(String image, String executableName) {
-        String[] pushArgs = { "manifest", "push", image };
-        var pushSuccessful = ExecUtil.exec(executableName, pushArgs);
-
-        if (!pushSuccessful) {
-            throw containerRuntimeException(executableName, pushArgs);
-        }
-
+        ProcessBuilder.exec(executableName, "manifest", "push", image);
         LOG.infof("Successfully pushed podman manifest %s", image);
     }
 
     private void createManifest(String image, String executableName) {
-        var manifestCreateArgs = new String[] { "manifest", "create", image };
-
-        LOG.infof("Running '%s %s'", executableName, String.join(" ", manifestCreateArgs));
-        var createManifestSuccessful = ExecUtil.exec(executableName, manifestCreateArgs);
-
-        if (!createManifestSuccessful) {
-            throw containerRuntimeException(executableName, manifestCreateArgs);
-        }
+        LOG.infof("Running '%s manifest create %s'", executableName, image);
+        ProcessBuilder.exec(executableName, "manifest", "create", image);
     }
 
     private boolean isMultiPlatformBuild(PodmanConfig podmanConfig) {

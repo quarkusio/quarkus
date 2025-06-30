@@ -15,6 +15,10 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
+/**
+ * @deprecated Use the {@code smallrye-common-process} API instead.
+ */
+@Deprecated(forRemoval = true)
 public class ExecUtil {
 
     private static final Logger LOG = Logger.getLogger(ExecUtil.class);

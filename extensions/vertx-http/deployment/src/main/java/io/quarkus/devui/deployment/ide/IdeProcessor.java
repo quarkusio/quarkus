@@ -2,11 +2,9 @@ package io.quarkus.devui.deployment.ide;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
@@ -18,11 +16,12 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.ide.Ide;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
-import io.quarkus.utilities.OS;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.ide.IdeRecorder;
+import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessBuilder;
 
 /**
  * Processor for Ide interaction in Dev UI
@@ -110,11 +109,10 @@ public class IdeProcessor {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    List<String> command = new ArrayList<>();
-                    command.add(effectiveCommand);
-                    command.addAll(args);
-                    new ProcessBuilder(command).inheritIO().start().waitFor(10,
-                            TimeUnit.SECONDS);
+                    ProcessBuilder.newBuilder(effectiveCommand)
+                            .arguments(args)
+                            .output().inherited().gatherOnFail(true)
+                            .run();
                 } catch (Exception e) {
                     log.error("Could not launch IDE", e);
                 }
@@ -146,21 +144,14 @@ public class IdeProcessor {
         String url = sb.toString();
 
         Runtime rt = Runtime.getRuntime();
-        OS os = OS.determineOS();
+        OS os = OS.current();
         String[] command = null;
         try {
             switch (os) {
-                case MAC:
-                    command = new String[] { "open", url };
-                    break;
-                case LINUX:
-                    command = new String[] { "xdg-open", url };
-                    break;
-                case WINDOWS:
-                    command = new String[] { "rundll32", "url.dll,FileProtocolHandler", url };
-                    break;
-                case OTHER:
-                    log.error("Cannot launch browser on this operating system");
+                case MAC -> command = new String[] { "open", url };
+                case LINUX -> command = new String[] { "xdg-open", url };
+                case WINDOWS -> command = new String[] { "rundll32", "url.dll,FileProtocolHandler", url };
+                case OTHER -> log.error("Cannot launch browser on this operating system");
             }
             if (command != null) {
                 rt.exec(command);

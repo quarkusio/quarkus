@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -94,6 +95,56 @@ public class BearerTokenAuthorizationTest {
             webClient.getCookieManager().clearCookies();
 
             checkHealth();
+        }
+    }
+
+    @Test
+    public void testFormPostLogoutWebApp() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            HtmlPage page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            HtmlForm loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getButtonByName("login").click();
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
+
+            // First RP initiated form-post logout check
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(
+                            new WebRequest(URI.create("http://localhost:8081/tenant/tenant-web-app/form-post-logout").toURL()));
+            // Session cookie must be null
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+
+            assertEquals(200, webResponse.getStatusCode());
+            String formPostLogout = webResponse.getContentAsString();
+            assertTrue(formPostLogout.startsWith("<html>"));
+            assertTrue(formPostLogout.contains("<form method=\"post\" action=\"http://localhost:8081/oidc/form-post-logout\""));
+            assertTrue(formPostLogout.endsWith("</html>"));
+            // Re-login
+            webClient.getOptions().setRedirectEnabled(true);
+            webClient.getCookieManager().clearCookies();
+
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/api/user/webapp");
+            assertEquals("Sign in to quarkus-webapp", page.getTitleText());
+            loginForm = page.getForms().get(0);
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            page = loginForm.getButtonByName("login").click();
+            assertEquals("tenant-web-app:alice:reauthenticated", page.getBody().asNormalizedText());
+            // Session cookie must not be null
+            assertNotNull(getSessionCookie(webClient, "tenant-web-app"));
+
+            // Complete RP initiated form-post logout
+            page = webClient.getPage("http://localhost:8081/tenant/tenant-web-app/form-post-logout");
+            assertEquals("alice, you have been logged out with the form post logout", page.getBody().asNormalizedText());
+            // Session cookie must be null
+            assertNull(getSessionCookie(webClient, "tenant-web-app"));
+            webClient.getCookieManager().clearCookies();
         }
     }
 

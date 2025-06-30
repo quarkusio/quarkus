@@ -252,4 +252,9 @@ public class TenantResource {
         return name;
     }
 
+    @GET
+    @Path("form-post-post-logout")
+    public String formPostPostLogout(@QueryParam("username") String userName) {
+        return userName + ", you have been logged out with the form post logout";
+    }
 }

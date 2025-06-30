@@ -1,5 +1,6 @@
 package io.quarkus.it.keycloak;
 
+import java.net.URI;
 import java.security.PublicKey;
 import java.time.Duration;
 import java.util.Arrays;
@@ -16,13 +17,16 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import org.jboss.logging.Logger;
 import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 
+import io.quarkus.oidc.runtime.OidcUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.auth.principal.DefaultJWTParser;
 import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
@@ -33,6 +37,7 @@ import io.smallrye.jwt.util.KeyUtils;
 
 @Path("oidc")
 public class OidcResource {
+    private static final Logger LOG = Logger.getLogger(OidcResource.class);
 
     @Context
     UriInfo ui;
@@ -367,6 +372,16 @@ public class OidcResource {
     public boolean disableRotate() {
         rotate = false;
         return rotate;
+    }
+
+    @POST
+    @Path("form-post-logout")
+    public Response formPostLogout(@FormParam("id_token_hint") String idTokenHint,
+            @FormParam("post_logout_redirect_uri") String postLogoutRedirectUri) throws Exception {
+        String userName = OidcUtils.decodeJwtContent(idTokenHint).getString("upn");
+        LOG.infof("OIDC provider: logging the user out using the form post logout. post logout redirect URI: %s",
+                postLogoutRedirectUri);
+        return Response.seeOther(URI.create(postLogoutRedirectUri + "?username=" + userName)).build();
     }
 
     private String jwt(String audience, String subject, String kid) {

@@ -162,6 +162,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         LOGOUT_POST_LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_URI_PARAM,
         LOGOUT_CLEAR_SITE_DATA,
+        LOGOUT_MODE,
         LOGOUT_EXTRA_PARAMS,
         LOGOUT_BACK_CHANNEL,
         LOGOUT_FRONT_CHANNEL,
@@ -504,6 +505,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<Set<ClearSiteData>> clearSiteData() {
                 invocationsRecorder.put(ConfigMappingMethods.LOGOUT_CLEAR_SITE_DATA, true);
                 return Optional.of(Set.of());
+            }
+
+            @Override
+            public LogoutMode logoutMode() {
+                invocationsRecorder.put(ConfigMappingMethods.LOGOUT_MODE, true);
+                return LogoutMode.QUERY;
             }
 
             @Override

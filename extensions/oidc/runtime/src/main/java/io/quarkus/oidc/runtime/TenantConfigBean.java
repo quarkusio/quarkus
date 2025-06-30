@@ -1,15 +1,20 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.event.Event;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.runtime.BackChannelLogoutHandler.NewBackChannelLogoutPath;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -46,7 +51,12 @@ public final class TenantConfigBean {
                 new Function<TenantConfigContext, TenantConfigContext>() {
                     @Override
                     public TenantConfigContext apply(TenantConfigContext t) {
-                        dynamicTenantsConfig.putIfAbsent(tenantId, t);
+                        var previousValue = dynamicTenantsConfig.putIfAbsent(tenantId, t);
+                        if (previousValue == null && oidcConfig.logout().backchannel().path().isPresent()) {
+                            Event<NewBackChannelLogoutPath> event = Arc.container().beanManager().getEvent()
+                                    .select(NewBackChannelLogoutPath.class);
+                            event.fire(new NewBackChannelLogoutPath());
+                        }
                         return t;
                     }
                 });
@@ -59,6 +69,15 @@ public final class TenantConfigBean {
             LOG.debugf("Updating the resolved tenant %s configuration with a new configuration", tenantId);
             var newTenant = new TenantConfigContextImpl(tenant, oidcConfig);
             dynamicTenantsConfig.put(tenantId, newTenant);
+            if (oidcConfig.logout().backchannel().path().isPresent()) {
+                boolean pathChanged = tenant.oidcConfig() == null || !oidcConfig.logout().backchannel().path().get()
+                        .equals(tenant.oidcConfig().logout().backchannel().path().orElse(null));
+                if (pathChanged) {
+                    Event<NewBackChannelLogoutPath> event = Arc.container().beanManager().getEvent()
+                            .select(NewBackChannelLogoutPath.class);
+                    event.fire(new NewBackChannelLogoutPath());
+                }
+            }
             return Uni.createFrom().item(newTenant);
         } else {
             return createDynamicTenantContext(oidcConfig);
@@ -74,6 +93,14 @@ public final class TenantConfigBean {
 
     public Map<String, TenantConfigContext> getStaticTenantsConfig() {
         return staticTenantsConfig;
+    }
+
+    List<TenantConfigContext> getAllTenantConfigs() {
+        List<TenantConfigContext> result = new ArrayList<>();
+        result.add(getDefaultTenant());
+        result.addAll(getStaticTenantsConfig().values());
+        result.addAll(dynamicTenantsConfig.values());
+        return result;
     }
 
     public TenantConfigContext getStaticTenant(String tenantId) {

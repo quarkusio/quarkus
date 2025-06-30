@@ -18,6 +18,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.Oidc;
@@ -34,6 +35,7 @@ import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
 
@@ -172,6 +174,10 @@ public class OidcRecorder {
                 };
             }
         };
+    }
+
+    public Handler<RoutingContext> getBackChannelLogoutHandler(BeanContainer beanContainer) {
+        return beanContainer.beanInstance(BackChannelLogoutHandler.class);
     }
 
     private static final class TenantSpecificOidcIdentityProvider extends OidcIdentityProvider

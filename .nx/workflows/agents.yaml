@@ -1,0 +1,17 @@
+launch-templates:
+  linux-extra-large-plus-jvm:
+    resource-class: 'docker_linux_amd64/extra_large+'
+    image: 'ubuntu22.04-node20.19-v2'
+    init-steps:
+      - name: Checkout
+        uses: 'nrwl/nx-cloud-workflows/v4/workflow-steps/checkout/main.yaml'
+      - name: Restore Node Modules Cache
+        uses: 'nrwl/nx-cloud-workflows/v4/workflow-steps/cache/main.yaml'
+        inputs:
+          key: 'package-lock.json|yarn.lock|pnpm-lock.yaml'
+          paths: 'node_modules'
+          base-branch: 'main'
+      - name: Install Node
+        uses: 'nrwl/nx-cloud-workflows/v4/workflow-steps/install-node/main.yaml'
+      - name: Install Node Modules
+        uses: 'nrwl/nx-cloud-workflows/v4/workflow-steps/install-node-modules/main.yaml'

@@ -323,7 +323,7 @@ public class DefaultTenantConfigResolver {
         return enableHttpForwardedPrefix;
     }
 
-    public Map<String, BackChannelLogoutTokenCache> getBackChannelLogoutTokens() {
+    Map<String, BackChannelLogoutTokenCache> getBackChannelLogoutTokens() {
         return backChannelLogoutTokens;
     }
 

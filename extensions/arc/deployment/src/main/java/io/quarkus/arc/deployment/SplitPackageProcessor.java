@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -73,7 +74,22 @@ public class SplitPackageProcessor {
                 String packageName = DotNames.packageName(classInfo.name());
                 packageToArchiveMap.compute(packageName, (key, val) -> {
                     Set<ApplicationArchive> returnValue = val == null ? new HashSet<>() : val;
-                    returnValue.add(archive);
+                    boolean add = true;
+
+                    // this special case essentially ensures that no archive which is built from an indexed dependency is added twice
+                    // the primary use case for this is to avoid duplicate warnings for dependencies that use multiple languages
+                    if (archive.getResolvedDependency() != null) {
+                        if (returnValue.stream().map(ApplicationArchive::getResolvedDependency).filter(Objects::nonNull)
+                                .collect(
+                                        Collectors.toSet())
+                                .contains(archive.getResolvedDependency())) {
+                            add = false;
+                        }
+                    }
+
+                    if (add) {
+                        returnValue.add(archive);
+                    }
                     return returnValue;
                 });
             }

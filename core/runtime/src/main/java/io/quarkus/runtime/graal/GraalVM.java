@@ -167,6 +167,10 @@ public final class GraalVM {
                     String feature = MANDREL_JDK_REV_MAP.getOrDefault(mandrelMajorMinor, parts[0]);
                     // Heuristic: The update version of Mandrel and the JDK match.
                     // Interim is usually 0 for the JDK version.
+                    // Skip trailing zeroes, as they are not supported by java.lang.Runtime.Version.parse.
+                    if ("0".equals(parts[2])) {
+                        return feature;
+                    }
                     return String.format("%s.%s.%s", feature, "0", parts[2]);
                 }
             } catch (Throwable e) {

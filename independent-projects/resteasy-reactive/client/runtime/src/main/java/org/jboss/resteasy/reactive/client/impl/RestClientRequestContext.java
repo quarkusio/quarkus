@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.WebApplicationException;
@@ -106,6 +107,8 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private ServiceInstance callStatsCollector;
     private Map<Class<?>, MultipartResponseData> multipartResponsesData;
     private StackTraceElement[] callerStackTrace;
+
+    private final AtomicBoolean userCanceled = new AtomicBoolean();
 
     public RestClientRequestContext(ClientImpl restClient,
             HttpClient httpClient, String httpMethod, URI uri,
@@ -600,5 +603,13 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     @Override
     protected boolean isRequestScopeManagementRequired() {
         return false;
+    }
+
+    public void setUserCanceled() {
+        userCanceled.set(true);
+    }
+
+    public boolean isUserCanceled() {
+        return userCanceled.get();
     }
 }

@@ -101,6 +101,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         future.subscribe().with(new Consumer<>() {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
+                if (requestContext.isUserCanceled()) {
+                    // in this case the user aborted before the request was even created
+                    return;
+                }
+
                 requestContext.setHttpClientRequest(httpClientRequest);
 
                 // adapt headers to HTTP/2 depending on the underlying HTTP connection

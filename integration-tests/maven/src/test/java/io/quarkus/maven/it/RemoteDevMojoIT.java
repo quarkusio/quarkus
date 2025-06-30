@@ -6,6 +6,7 @@ import static org.awaitility.Awaitility.await;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
@@ -26,8 +27,28 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
 public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
 
     @Test
+    public void testThatTheApplicationIsReloadedMultiModule() throws IOException {
+        testDir = initProject("projects/multimodule", "projects/multimodule-remote-dev/remote");
+        agentDir = initProject("projects/multimodule", "projects/multimodule-remote-dev/local");
+        runAndCheckModule("runner");
+
+        final Path remoteLog = testDir.toPath().resolve("runner").resolve("target").resolve("output.log");
+        assertThat(devModeClient.getHttpResponse("/app/hello")).isEqualTo("hello");
+
+        // Edit the "Hello" message.
+        File source = new File(agentDir, "rest/src/main/java/org/acme/HelloResource.java");
+        String uuid = UUID.randomUUID().toString();
+        filter(source, Collections.singletonMap("return \"hello\";", "return \"" + uuid + "\";"));
+
+        await()
+                .pollDelay(1, TimeUnit.SECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/app/hello").contains(uuid));
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedOnJavaChange()
-            throws MavenInvocationException, IOException, InterruptedException {
+            throws MavenInvocationException, IOException {
         testDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-java-change-remote");
         agentDir = initProject("projects/classic-remote-dev", "projects/project-classic-run-java-change-local");
         runAndCheck();

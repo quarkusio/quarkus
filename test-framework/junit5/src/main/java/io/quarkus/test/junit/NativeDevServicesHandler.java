@@ -7,6 +7,7 @@ import java.util.function.BiConsumer;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 
 public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult> {
@@ -24,16 +25,16 @@ public class NativeDevServicesHandler implements BiConsumer<Object, BuildResult>
             propertyConsumer.accept("quarkus.test.container.network", compose.getNetworkId());
         }
 
-        List<DevServicesResultBuildItem> devServicesResultBuildItems = buildResult
+        List<DevServicesResultBuildItem> devServicesRequests = buildResult
                 .consumeMulti(DevServicesResultBuildItem.class);
-        for (DevServicesResultBuildItem devServicesResultBuildItem : devServicesResultBuildItems) {
-            devServicesResultBuildItem.start();
-
+        DevServicesRegistryBuildItem devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
+        if (devServicesRegistry != null) {
+            for (DevServicesResultBuildItem serviceRequest : devServicesRequests) {
+                devServicesRegistry.start(serviceRequest);
+            }
             // It would be nice to use the config source, but since we have the build item right there and this is a one-shot operation, just ask it instead
-            Map<String, String> dynamicConfig = devServicesResultBuildItem.getDynamicConfig();
-            for (Map.Entry<String, String> entry : dynamicConfig.entrySet()) {
+            for (Map.Entry<String, String> entry : devServicesRegistry.getConfigForAllRunningServices().entrySet()) {
                 propertyConsumer.accept(entry.getKey(), entry.getValue());
-
             }
         }
     }

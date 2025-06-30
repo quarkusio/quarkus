@@ -1,0 +1,10 @@
+package io.quarkus.redis.devservices.it;
+
+import io.quarkus.test.junit.QuarkusIntegrationTest;
+
+@QuarkusIntegrationTest
+//@Disabled
+// TODO
+public class DevServicesRedisIT extends DevServicesRedisITest {
+
+}

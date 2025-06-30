@@ -52,7 +52,11 @@ import jakarta.ws.rs.Priorities;
 public @interface ClientExceptionMapper {
 
     /**
-     * The priority with which the exception mapper will be executed
+     * The priority with which the exception mapper will be executed.
+     * <p>
+     * They are sorted in ascending order; the lower the number the higher the priority.
+     *
+     * @see Priorities
      */
     int priority() default Priorities.USER;
 }

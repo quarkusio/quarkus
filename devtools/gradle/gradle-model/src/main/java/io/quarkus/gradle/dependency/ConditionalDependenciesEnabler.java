@@ -178,9 +178,10 @@ public class ConditionalDependenciesEnabler {
         // on conditional dependencies (https://github.com/gradle/gradle/issues/6881)
         // However, if we use a named configuration we run into issues preventing IDEs to import projects
         // (https://github.com/quarkusio/quarkus/issues/41825) and ./gradlew refreshVersions seems to break as well.
-        Configuration conditionalDepConfiguration = project.getConfigurations()
-                .detachedConfiguration()
-                .extendsFrom(enforcedPlatforms);
+        Configuration conditionalDepConfiguration = project.getConfigurations().detachedConfiguration();
+        enforcedPlatforms.getAllDependencies().forEach(dependency -> {
+            conditionalDepConfiguration.getDependencies().add(dependency);
+        });
         conditionalDepConfiguration.getDependencies().add(conditionalDep);
         return conditionalDepConfiguration;
     }

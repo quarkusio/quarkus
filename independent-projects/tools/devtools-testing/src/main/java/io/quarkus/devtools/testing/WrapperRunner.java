@@ -1,58 +1,49 @@
 package io.quarkus.devtools.testing;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.TimeUnit;
 
 import io.quarkus.bootstrap.resolver.maven.options.BootstrapMavenOptions;
+import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessBuilder;
 
 public final class WrapperRunner {
 
     public enum Wrapper {
-        GRADLE("gradlew", "gradlew.bat", new String[] { "--no-daemon", "build", "--info", "--stacktrace" }),
-        MAVEN("mvnw", "mvnw.cmd", new String[] { "-B", "package" });
+        GRADLE("gradlew", "gradlew.bat", List.of("--no-daemon", "build", "--info", "--stacktrace")),
+        MAVEN("mvnw", "mvnw.cmd", List.of("-B", "package"));
 
         private final String execUnix;
         private final String execWindows;
-        private final String[] cmdArgs;
+        private final List<String> cmdArgs;
 
-        Wrapper(String execUnix, String execWindows, String[] cmdArgs) {
+        Wrapper(String execUnix, String execWindows, List<String> cmdArgs) {
             this.execUnix = execUnix;
             this.execWindows = execWindows;
             this.cmdArgs = cmdArgs;
         }
 
         public String getExec() {
-            return System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows") ? execWindows : execUnix;
+            return switch (OS.current()) {
+                case WINDOWS -> execWindows;
+                default -> execUnix;
+            };
         }
 
-        public String[] getCmdArgs() {
+        public List<String> getCmdArgs() {
             return cmdArgs;
         }
 
         public static Wrapper fromBuildtool(String buildtool) {
-            switch (buildtool) {
-                case "maven":
-                    return MAVEN;
-                case "gradle":
-                case "gradle-kotlin-dsl":
-                    return GRADLE;
-                default:
-                    throw new IllegalStateException("No wrapper linked to build tool: " + buildtool);
-            }
+            return switch (buildtool) {
+                case "maven" -> MAVEN;
+                case "gradle", "gradle-kotlin-dsl" -> GRADLE;
+                default -> throw new IllegalStateException("No wrapper linked to build tool: " + buildtool);
+            };
         }
 
         public static Wrapper detect(Path projectDir) {
@@ -71,38 +62,35 @@ public final class WrapperRunner {
     }
 
     public static int run(Path projectDir, Wrapper wrapper) {
-        List<String> command = new LinkedList<>();
-        command.add(projectDir.resolve(wrapper.getExec()).toAbsolutePath().toString());
-        command.addAll(Arrays.asList(wrapper.getCmdArgs()));
+        Path command = projectDir.resolve(wrapper.getExec()).toAbsolutePath();
+        List<String> args = new ArrayList<>(wrapper.getCmdArgs().size() + 2);
+        args.addAll(wrapper.getCmdArgs());
 
-        propagateSystemPropertyIfSet("maven.repo.local", command);
+        propagateSystemPropertyIfSet("maven.repo.local", args);
 
         if (wrapper == Wrapper.MAVEN) {
             final String mavenSettings = getMavenSettingsArg();
             if (mavenSettings != null) {
-                command.add("-s");
-                command.add(mavenSettings);
+                args.add("-s");
+                args.add(mavenSettings);
             }
         }
 
-        try {
-            System.out.println("Running command: " + command);
-            final Process p = new ProcessBuilder()
-                    .directory(projectDir.toFile())
-                    .command(command)
-                    .start();
-            try {
-                streamToSysOutSysErr(p);
-                p.waitFor(10, TimeUnit.MINUTES);
-                return p.exitValue();
-            } catch (InterruptedException e) {
-                p.destroyForcibly();
-                Thread.currentThread().interrupt();
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-        return -1;
+        var holder = new Object() {
+            int exitCode;
+        };
+        System.out.printf("Running command: %s %s%n", command, args);
+        ProcessBuilder.newBuilder(command)
+                .arguments(args)
+                .directory(projectDir)
+                .exitCodeChecker(ec -> {
+                    holder.exitCode = ec;
+                    return true;
+                })
+                .output().inherited()
+                .error().inherited()
+                .run();
+        return holder.exitCode;
     }
 
     private static String getMavenSettingsArg() {
@@ -124,54 +112,4 @@ public final class WrapperRunner {
             command.add(buf.toString());
         }
     }
-
-    private static void streamToSysOutSysErr(final Process process) {
-        streamOutputToSysOut(process);
-        streamErrorToSysErr(process);
-    }
-
-    private static void streamOutputToSysOut(final Process process) {
-        final InputStream processStdOut = process.getInputStream();
-        final Thread t = new Thread(new Streamer(processStdOut, System.out));
-        t.setName("Process stdout streamer");
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private static void streamErrorToSysErr(final Process process) {
-        streamErrorTo(System.err, process);
-    }
-
-    private static void streamErrorTo(final PrintStream printStream, final Process process) {
-        final InputStream processStdErr = process.getErrorStream();
-        final Thread t = new Thread(new Streamer(processStdErr, printStream));
-        t.setName("Process stderr streamer");
-        t.setDaemon(true);
-        t.start();
-    }
-
-    private static final class Streamer implements Runnable {
-
-        private final InputStream processStream;
-        private final PrintStream consumer;
-
-        private Streamer(final InputStream processStream, final PrintStream consumer) {
-            this.processStream = processStream;
-            this.consumer = consumer;
-        }
-
-        @Override
-        public void run() {
-            try (final BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(processStream, StandardCharsets.UTF_8))) {
-                String line = null;
-                while ((line = reader.readLine()) != null) {
-                    consumer.println(line);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-    }
-
 }

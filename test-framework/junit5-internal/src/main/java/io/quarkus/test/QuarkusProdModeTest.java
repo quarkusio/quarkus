@@ -60,7 +60,7 @@ import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.RestAssuredURLManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 /**
  * A test extension for producing a prod-mode jar. This is meant to be used by extension authors, it's not intended for end user
@@ -592,7 +592,7 @@ public class QuarkusProdModeTest
                 .map(e -> "-D" + e.getKey() + "=" + e.getValue()).collect(Collectors.toList());
         List<String> command = new ArrayList<>(systemProperties.size() + 3);
         if (builtResultArtifact.getFileName().toString().endsWith(".jar")) {
-            command.add(JavaBinFinder.findBin());
+            command.add(ProcessUtil.pathOfJava().toString());
             if (this.jvmArgs != null) {
                 command.addAll(this.jvmArgs);
             }

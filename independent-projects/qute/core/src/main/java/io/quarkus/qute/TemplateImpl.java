@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.qute.trace.TemplateEvent;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -273,6 +274,12 @@ class TemplateImpl implements Template {
             ResolutionContext rootContext = new ResolutionContextImpl(data,
                     engine.getEvaluator(), null, this);
             setAttribute(DataNamespaceResolver.ROOT_CONTEXT, rootContext);
+            TemplateEvent event = engine.hasTraceListeners() ? new TemplateEvent(this, engine) : null;
+            if (engine.hasTraceListeners()) {
+                // Notify trace listeners that template rendering has started.
+                TraceManager traceManager = engine.getTraceManager();
+                traceManager.fireStartTemplate(event);
+            }
             // Async resolution
             root.resolve(rootContext).whenComplete((r, t) -> {
                 if (t != null) {
@@ -296,6 +303,12 @@ class TemplateImpl implements Template {
                         }
 
                     }
+                }
+                if (engine.hasTraceListeners()) {
+                    // Notify trace listeners that template rendering has ended.
+                    TraceManager traceManager = engine.getTraceManager();
+                    event.done();
+                    traceManager.fireEndTemplate(event);
                 }
             });
             return result;

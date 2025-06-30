@@ -31,13 +31,15 @@ public class SectionNode implements TemplateNode {
     final SectionHelper helper;
     private final Origin origin;
     private final boolean traceLevel;
+    private final Engine engine;
 
-    SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin) {
+    SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin, Engine engine) {
         this.name = name;
         this.blocks = blocks;
         this.helper = helper;
         this.origin = origin;
         this.traceLevel = LOG.isTraceEnabled();
+        this.engine = engine;
     }
 
     public CompletionStage<ResultNode> resolve(ResolutionContext context, Map<String, Object> params) {
@@ -46,12 +48,12 @@ public class SectionNode implements TemplateNode {
         }
         if (traceLevel && !Parser.ROOT_HELPER_NAME.equals(name)) {
             LOG.tracef("Resolve {#%s} started:%s", name, origin);
-            return helper.resolve(new SectionResolutionContextImpl(context, params)).thenApply(r -> {
+            return helper.resolve(new SectionResolutionContextImpl(context, params, engine)).thenApply(r -> {
                 LOG.tracef("Resolve {#%s} completed:%s", name, origin);
                 return r;
             });
         }
-        return helper.resolve(new SectionResolutionContextImpl(context, params));
+        return helper.resolve(new SectionResolutionContextImpl(context, params, engine));
     }
 
     @Override
@@ -59,6 +61,7 @@ public class SectionNode implements TemplateNode {
         return resolve(context, null);
     }
 
+    @Override
     public Origin getOrigin() {
         return origin;
     }
@@ -212,7 +215,7 @@ public class SectionNode implements TemplateNode {
             return new SectionNode(helperName, blocks,
                     factory.initialize(
                             new SectionInitContextImpl(engine, blocks, errorInitializer, currentTemlate, helperName)),
-                    origin);
+                    origin, engine);
         }
 
     }
@@ -221,10 +224,12 @@ public class SectionNode implements TemplateNode {
 
         private final Map<String, Object> params;
         private final ResolutionContext resolutionContext;
+        private final Engine engine;
 
-        public SectionResolutionContextImpl(ResolutionContext resolutionContext, Map<String, Object> params) {
+        public SectionResolutionContextImpl(ResolutionContext resolutionContext, Map<String, Object> params, Engine engine) {
             this.resolutionContext = resolutionContext;
             this.params = params;
+            this.engine = engine;
         }
 
         @Override
@@ -238,7 +243,7 @@ public class SectionNode implements TemplateNode {
                 // Use the main block
                 block = blocks.get(0);
             }
-            return Results.resolveAndProcess(block.nodes, context);
+            return Results.resolveAndProcess(block.nodes, context, engine);
         }
 
         @Override

@@ -37,6 +37,28 @@ public class FilerUtil {
     /**
      * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
      */
+    public void write(String filePath, String value) {
+        if (value == null || value.isBlank()) {
+            return;
+        }
+
+        try {
+            final FileObject listResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
+                    filePath);
+
+            try (BufferedWriter writer = new BufferedWriter(
+                    new OutputStreamWriter(listResource.openOutputStream(), StandardCharsets.UTF_8))) {
+                writer.write(value);
+            }
+        } catch (IOException e) {
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to write " + filePath + ": " + e);
+            return;
+        }
+    }
+
+    /**
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     */
     public void write(String filePath, Set<String> set) {
         if (set.isEmpty()) {
             return;
@@ -44,7 +66,7 @@ public class FilerUtil {
 
         try {
             final FileObject listResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+                    filePath);
 
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(listResource.openOutputStream(), StandardCharsets.UTF_8))) {
@@ -69,7 +91,7 @@ public class FilerUtil {
 
         try {
             final FileObject propertiesResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+                    filePath);
 
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(propertiesResource.openOutputStream(), StandardCharsets.UTF_8))) {
@@ -91,7 +113,7 @@ public class FilerUtil {
 
         try {
             final FileObject jsonResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+                    filePath);
 
             try (OutputStream os = jsonResource.openOutputStream()) {
                 JacksonMappers.jsonObjectWriter().writeValue(os, value);
@@ -112,7 +134,7 @@ public class FilerUtil {
 
         try {
             final FileObject yamlResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+                    filePath);
 
             try (OutputStream os = yamlResource.openOutputStream()) {
                 JacksonMappers.yamlObjectWriter().writeValue(os, value);

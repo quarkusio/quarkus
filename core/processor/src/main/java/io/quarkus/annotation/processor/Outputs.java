@@ -17,8 +17,8 @@ public final class Outputs {
     public static final String META_INF_QUARKUS_CONFIG = "META-INF/" + QUARKUS_CONFIG_DOC;
     public static final String META_INF_QUARKUS_CONFIG_JAVADOC_JSON = META_INF_QUARKUS_CONFIG + "/quarkus-config-javadoc.json";
     public static final String META_INF_QUARKUS_CONFIG_MODEL_JSON = META_INF_QUARKUS_CONFIG + "/quarkus-config-model.json";
-    public static final String META_INF_QUARKUS_CONFIG_JAVADOC_YAML = META_INF_QUARKUS_CONFIG + "/quarkus-config-javadoc.yaml";
-    public static final String META_INF_QUARKUS_CONFIG_MODEL_YAML = META_INF_QUARKUS_CONFIG + "/quarkus-config-model.yaml";
+    public static final String META_INF_QUARKUS_CONFIG_MODEL_VERSION = META_INF_QUARKUS_CONFIG
+            + "/quarkus-config-model-version";
 
     /**
      * Ideally, we should remove this file at some point.

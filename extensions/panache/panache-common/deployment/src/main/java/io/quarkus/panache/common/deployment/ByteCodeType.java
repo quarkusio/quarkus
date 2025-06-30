@@ -1,7 +1,6 @@
 package io.quarkus.panache.common.deployment;
 
 import java.util.Map;
-import java.util.StringJoiner;
 
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
@@ -50,9 +49,7 @@ public class ByteCodeType {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", ByteCodeType.class.getSimpleName() + "[", "]")
-                .add(type.toString())
-                .toString();
+        return ByteCodeType.class.getSimpleName() + "[" + type + "]";
     }
 
     public org.objectweb.asm.Type type() {

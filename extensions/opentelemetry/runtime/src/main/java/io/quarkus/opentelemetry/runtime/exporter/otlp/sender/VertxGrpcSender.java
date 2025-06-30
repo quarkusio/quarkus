@@ -24,6 +24,7 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterUtil;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
+import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -107,6 +108,7 @@ public final class VertxGrpcSender implements GrpcSender {
     }
 
     @Override
+    @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
     public CompletableResultCode shutdown() {
         if (!isShutdown.compareAndSet(false, true)) {
             logger.log(Level.FINE, "Calling shutdown() multiple times.");
@@ -176,6 +178,7 @@ public final class VertxGrpcSender implements GrpcSender {
                         }, onFailureCallback);
     }
 
+    @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
     private void failOnClientRequest(String type, Throwable t, Consumer<Throwable> onError) {
         String message = "Failed to export "
                 + type
@@ -346,6 +349,7 @@ public final class VertxGrpcSender implements GrpcSender {
                         }
                     }
 
+                    @SuppressForbidden(reason = "The use of ThrottlingLogger mandates the use of java.util.logging")
                     private void logUnimplemented(Logger logger, String type, String fullErrorMessage) {
                         String envVar;
                         switch (type) {

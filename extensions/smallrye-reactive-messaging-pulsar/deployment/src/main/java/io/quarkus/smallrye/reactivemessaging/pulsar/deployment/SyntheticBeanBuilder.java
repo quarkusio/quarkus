@@ -38,15 +38,16 @@ public class SyntheticBeanBuilder {
     }
 
     String schemaIdFor(Type type) {
-        return alreadyGeneratedSchema.get(type.toString());
+        return alreadyGeneratedSchema.get(type.name().toString());
     }
 
     void produceObjectMapperSchemaBean(String schemaId, Type type) {
-        if (!alreadyGeneratedSchema.containsKey(type.toString())
-                || alreadyGeneratedSchema.get(type.toString()).equals(schemaId)) {
-            var runtimeValue = recorder.createObjectMapperSchema(recorderContext.classProxy(type.name().toString()));
+        String typeName = type.name().toString();
+        if (!alreadyGeneratedSchema.containsKey(typeName)
+                || alreadyGeneratedSchema.get(typeName).equals(schemaId)) {
+            var runtimeValue = recorder.createObjectMapperSchema(recorderContext.classProxy(typeName));
             produceSyntheticBeanSchema(syntheticBeanBuildItem, runtimeValue, schemaId, type);
-            alreadyGeneratedSchema.put(type.toString(), schemaId);
+            alreadyGeneratedSchema.put(typeName, schemaId);
         }
     }
 
@@ -54,14 +55,15 @@ public class SyntheticBeanBuilder {
         if (syntheticBeanBuildItem != null && type.kind() == Type.Kind.CLASS) {
             String schemaId = schemaIdFor(type);
             if (schemaId == null) {
+                String typeName = type.name().toString();
                 if (discovery.isAvroGenerated(type.name()) || DotNames.AVRO_GENERIC_RECORD.equals(type.name())) {
                     schemaId = generateId(type, "AVRO");
                     produceSyntheticBeanSchema(syntheticBeanBuildItem,
-                            recorder.createAvroSchema(recorderContext.classProxy(type.name().toString())), schemaId, type);
+                            recorder.createAvroSchema(recorderContext.classProxy(typeName)), schemaId, type);
                 } else if (discovery.isProtobufGenerated(type.name())) {
                     schemaId = generateId(type, "PROTOBUF");
                     produceSyntheticBeanSchema(syntheticBeanBuildItem,
-                            recorder.createProtoBufSchema(recorderContext.classProxy(type.name().toString())), schemaId, type);
+                            recorder.createProtoBufSchema(recorderContext.classProxy(typeName)), schemaId, type);
                 } else if (type.name().equals(DotNames.VERTX_JSON_OBJECT)) {
                     schemaId = generateId(type, "JSON_OBJECT");
                     produceSyntheticBeanSchema(syntheticBeanBuildItem, recorder.createJsonObjectSchema(), schemaId, type);
@@ -77,9 +79,9 @@ public class SyntheticBeanBuilder {
                 } else {
                     schemaId = generateId(type, "JSON");
                     produceSyntheticBeanSchema(syntheticBeanBuildItem,
-                            recorder.createJsonSchema(recorderContext.classProxy(type.name().toString())), schemaId, type);
+                            recorder.createJsonSchema(recorderContext.classProxy(typeName)), schemaId, type);
                 }
-                alreadyGeneratedSchema.put(type.toString(), schemaId);
+                alreadyGeneratedSchema.put(typeName, schemaId);
             }
             return schemaId;
         }

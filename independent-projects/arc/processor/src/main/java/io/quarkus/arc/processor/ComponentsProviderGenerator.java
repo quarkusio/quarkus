@@ -42,6 +42,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  *

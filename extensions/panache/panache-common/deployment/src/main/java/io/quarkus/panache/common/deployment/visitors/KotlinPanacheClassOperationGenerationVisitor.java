@@ -52,6 +52,7 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.panache.common.deployment.ByteCodeType;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizer;
 import io.quarkus.panache.common.deployment.TypeBundle;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 /**
  * kotlinc compiles default methods in to the implementing classes, so we need to elide them first, and then we can
@@ -280,6 +281,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
                 "(Ljava/lang/Object;Ljava/lang/String;)V", false);
     }
 
+    @SuppressForbidden(reason = "Using Type#toString() is what we want here")
     private void emitNullCheck(MethodVisitor mv, Type returnType) {
         Label label = addLabel();
         mv.visitInsn(DUP);

@@ -369,7 +369,7 @@ class RestClientReactiveProcessor {
             // Make sure all providers not annotated with @Provider but used in @RegisterProvider are registered as beans
             AnnotationValue value = annotationInstance.value();
             if (value != null) {
-                builder.addBeanClass(value.asClass().toString());
+                builder.addBeanClass(value.asClass().name().toString());
             }
         }
         return builder.build();

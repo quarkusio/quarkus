@@ -84,6 +84,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
                         return CompletableFuture.completedFuture(htmlPadRight(context.getBase().toString(), 5));
                     }
                 })
+                .debuggable(false)
                 .build()
                 .parse(PROBLEM_TEMPLATE);
         TemplateHtmlBuilder builder;

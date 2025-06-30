@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.jboss.logging.Logger;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,6 +31,7 @@ import io.quarkus.funqy.runtime.FunqyConfig;
 import io.quarkus.funqy.runtime.FunqyServerResponse;
 import io.quarkus.funqy.runtime.RequestContextImpl;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -41,19 +40,28 @@ import io.quarkus.runtime.annotations.Recorder;
  */
 @Recorder
 public class FunqyLambdaBindingRecorder {
-    private static final Logger log = Logger.getLogger(FunqyLambdaBindingRecorder.class);
-
     private static FunctionInvoker invoker;
     private static BeanContainer beanContainer;
     private static LambdaInputReader reader;
     private static LambdaOutputWriter writer;
     private static EventProcessor eventProcessor;
-    private static FunqyAmazonBuildTimeConfig amazonBuildTimeConfig;
 
-    public void init(BeanContainer bc, FunqyAmazonBuildTimeConfig buildTimeConfig) {
+    private final RuntimeValue<FunqyConfig> runtimeConfig;
+    private final FunqyAmazonBuildTimeConfig amazonBuildTimeConfig;
+    private final RuntimeValue<FunqyAmazonConfig> amazonRuntimeConfig;
+
+    public FunqyLambdaBindingRecorder(
+            final RuntimeValue<FunqyConfig> runtimeConfig,
+            final FunqyAmazonBuildTimeConfig amazonBuildTimeConfig,
+            final RuntimeValue<FunqyAmazonConfig> amazonRuntimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+        this.amazonBuildTimeConfig = amazonBuildTimeConfig;
+        this.amazonRuntimeConfig = amazonRuntimeConfig;
+    }
+
+    public void init(BeanContainer bc) {
         beanContainer = bc;
         FunctionConstructor.CONTAINER = bc;
-        amazonBuildTimeConfig = buildTimeConfig;
         ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper;
 
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
@@ -70,12 +78,13 @@ public class FunqyLambdaBindingRecorder {
         }
     }
 
-    public void chooseInvoker(FunqyConfig config, FunqyAmazonConfig amazonConfig) {
+    public void chooseInvoker() {
         // this is done at Runtime so that we can change it with an environment variable.
-        if (config.export().isPresent()) {
-            invoker = FunctionRecorder.registry.matchInvoker(config.export().get());
+        if (runtimeConfig.getValue().export().isPresent()) {
+            invoker = FunctionRecorder.registry.matchInvoker(runtimeConfig.getValue().export().get());
             if (invoker == null) {
-                throw new RuntimeException("quarkus.funqy.export does not match a function: " + config.export().get());
+                throw new RuntimeException(
+                        "quarkus.funqy.export does not match a function: " + runtimeConfig.getValue().export().get());
             }
         } else if (FunctionRecorder.registry.invokers().size() == 0) {
             throw new RuntimeException("There are no functions to process lambda");
@@ -111,7 +120,7 @@ public class FunqyLambdaBindingRecorder {
             ObjectMapper objectMapper = AmazonLambdaMapperRecorder.objectMapper.copy();
             writer = new AwsEventOutputWriter(objectMapper);
 
-            eventProcessor = new EventProcessor(objectReader, amazonBuildTimeConfig, amazonConfig);
+            eventProcessor = new EventProcessor(objectReader, amazonBuildTimeConfig, amazonRuntimeConfig.getValue());
         }
     }
 

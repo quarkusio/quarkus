@@ -26,7 +26,6 @@ import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.opentelemetry.runtime.MicrometerOtelBridgeRecorder;
 import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 
 @BuildSteps(onlyIf = {
         MicrometerProcessor.MicrometerEnabled.class,
@@ -56,11 +55,12 @@ public class MicrometerOtelBridgeProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void createBridgeBean(OTelRuntimeConfig otelRuntimeConfig,
+    void createBridgeBean(
+            OTelBuildConfig oTelBuildConfig,
             MicrometerOtelBridgeRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer) {
 
-        if (otelRuntimeConfig.sdkDisabled()) {
+        if (!oTelBuildConfig.enabled()) {
             return; // No point in creating the bridge if the SDK is disabled
         }
 
@@ -71,7 +71,7 @@ public class MicrometerOtelBridgeProcessor {
                 .scope(Singleton.class)
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(OpenTelemetry.class.getName())) }, null))
-                .createWith(recorder.createBridge(otelRuntimeConfig))
+                .createWith(recorder.createBridge())
                 .done());
     }
 

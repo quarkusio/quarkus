@@ -17,10 +17,13 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OpenApiRecorder {
+    private final RuntimeValue<OpenApiRuntimeConfig> openApiConfig;
+    private final RuntimeValue<VertxHttpConfig> httpConfig;
 
-    final RuntimeValue<VertxHttpConfig> httpConfig;
-
-    public OpenApiRecorder(RuntimeValue<VertxHttpConfig> httpConfig) {
+    public OpenApiRecorder(
+            final RuntimeValue<OpenApiRuntimeConfig> openApiConfig,
+            final RuntimeValue<VertxHttpConfig> httpConfig) {
+        this.openApiConfig = openApiConfig;
         this.httpConfig = httpConfig;
     }
 
@@ -36,8 +39,8 @@ public class OpenApiRecorder {
         return null;
     }
 
-    public Handler<RoutingContext> handler(OpenApiRuntimeConfig runtimeConfig) {
-        if (runtimeConfig.enable()) {
+    public Handler<RoutingContext> handler() {
+        if (openApiConfig.getValue().enable()) {
             return new OpenApiHandler();
         } else {
             return new OpenApiNotFoundHandler();

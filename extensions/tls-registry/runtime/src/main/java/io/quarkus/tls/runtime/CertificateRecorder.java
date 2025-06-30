@@ -33,7 +33,12 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     private final Map<String, TlsConfiguration> certificates = new ConcurrentHashMap<>();
     private volatile TlsCertificateUpdater reloader;
     private volatile Vertx vertx;
-    private volatile TlsConfig config;
+
+    private final RuntimeValue<TlsConfig> runtimeConfig;
+
+    public CertificateRecorder(final RuntimeValue<TlsConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
 
     /**
      * Validate the certificate configuration.
@@ -43,21 +48,19 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
      *
      * @param providerBucketNames the bucket names from {@link Identifier @Identifer} annotations on any
      *        {@link KeyStoreProvider} or {@link TrustStoreProvider} beans
-     * @param config the configuration
      * @param vertx the Vert.x instance
      */
     public void validateCertificates(Set<String> providerBucketNames,
-            TlsConfig config,
             RuntimeValue<Vertx> vertx,
             ShutdownContext shutdownContext) {
         this.vertx = vertx.getValue();
-        this.config = config;
         // Verify the default config
-        if (config.defaultCertificateConfig().isPresent()) {
-            verifyCertificateConfig(config.defaultCertificateConfig().get(), vertx.getValue(), TlsConfig.DEFAULT_NAME);
+        if (runtimeConfig.getValue().defaultCertificateConfig().isPresent()) {
+            verifyCertificateConfig(runtimeConfig.getValue().defaultCertificateConfig().get(), vertx.getValue(),
+                    TlsConfig.DEFAULT_NAME);
         }
 
-        var bucketNames = new HashSet<>(config.namedCertificateConfig().keySet());
+        var bucketNames = new HashSet<>(runtimeConfig.getValue().namedCertificateConfig().keySet());
         bucketNames.addAll(providerBucketNames);
 
         // Verify the named configs
@@ -72,7 +75,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
                         "The TLS configuration name " + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
                                 + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust or override it");
             }
-            verifyCertificateConfig(config.namedCertificateConfig().get(name), vertx.getValue(), name);
+            verifyCertificateConfig(runtimeConfig.getValue().namedCertificateConfig().get(name), vertx.getValue(), name);
         }
 
         shutdownContext.addShutdownTask(new Runnable() {
@@ -85,7 +88,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         });
     }
 
-    public void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
+    private void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
         final TlsConfiguration tlsConfig = verifyCertificateConfigInternal(config, vertx, name);
         certificates.put(name, tlsConfig);
 
@@ -178,7 +181,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         if (TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME.equals(name)) {
             final TlsConfiguration result = certificates.computeIfAbsent(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME, k -> {
                 final TrustStoreAndTrustOptions ts = JavaxNetSslTrustStoreProvider.getTrustStore(vertx);
-                return new VertxCertificateHolder(vertx, k, config.namedCertificateConfig().get(k), null, ts);
+                return new VertxCertificateHolder(vertx, k, runtimeConfig.getValue().namedCertificateConfig().get(k), null, ts);
             });
             return Optional.ofNullable(result);
         }

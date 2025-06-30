@@ -12,7 +12,6 @@ import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.keycloak.pep.runtime.DefaultPolicyEnforcerResolver;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerBuildTimeConfig;
-import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
@@ -23,10 +22,9 @@ public class KeycloakPolicyEnforcerBuildStep {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     RequireBodyHandlerBuildItem requireBody(OidcBuildTimeConfig oidcBuildTimeConfig,
-            KeycloakPolicyEnforcerRecorder recorder,
-            KeycloakPolicyEnforcerConfig runtimeConfig) {
+            KeycloakPolicyEnforcerRecorder recorder) {
         if (oidcBuildTimeConfig.enabled()) {
-            return new RequireBodyHandlerBuildItem(recorder.createBodyHandlerRequiredEvaluator(runtimeConfig));
+            return new RequireBodyHandlerBuildItem(recorder.createBodyHandlerRequiredEvaluator());
         }
         return null;
     }

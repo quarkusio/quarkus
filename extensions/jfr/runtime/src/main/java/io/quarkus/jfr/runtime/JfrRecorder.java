@@ -6,21 +6,27 @@ import io.quarkus.jfr.runtime.config.JfrRuntimeConfig;
 import io.quarkus.jfr.runtime.http.rest.RestEndEvent;
 import io.quarkus.jfr.runtime.http.rest.RestPeriodEvent;
 import io.quarkus.jfr.runtime.http.rest.RestStartEvent;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import jdk.jfr.FlightRecorder;
 
 @Recorder
 public class JfrRecorder {
+    private final RuntimeValue<JfrRuntimeConfig> runtimeConfig;
 
-    public void runtimeInit(JfrRuntimeConfig runtimeConfig) {
+    public JfrRecorder(final RuntimeValue<JfrRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public void runtimeInit() {
 
         Logger logger = Logger.getLogger(JfrRecorder.class);
 
-        if (!runtimeConfig.enabled()) {
+        if (!runtimeConfig.getValue().enabled()) {
             logger.info("quarkus-jfr is disabled at runtime");
             this.disabledQuarkusJfr();
         } else {
-            if (!runtimeConfig.restEnabled()) {
+            if (!runtimeConfig.getValue().restEnabled()) {
                 logger.info("quarkus-jfr for REST server is disabled at runtime");
                 this.disabledRestJfr();
             }

@@ -361,10 +361,14 @@ public class SchedulerProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public FeatureBuildItem build(SchedulerConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            SchedulerRecorder recorder, List<ScheduledBusinessMethodItem> scheduledMethods,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            AnnotationProxyBuildItem annotationProxy, List<ForceStartSchedulerBuildItem> schedulerForcedStartItems,
+    public FeatureBuildItem build(
+            SchedulerRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            List<ScheduledBusinessMethodItem> scheduledMethods,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            AnnotationProxyBuildItem annotationProxy,
+            List<ForceStartSchedulerBuildItem> schedulerForcedStartItems,
             DiscoveredImplementationsBuildItem discoveredImplementations) {
 
         List<MutableScheduledMethod> scheduledMetadata = new ArrayList<>();
@@ -399,7 +403,7 @@ public class SchedulerProcessor {
         }
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SchedulerContext.class).setRuntimeInit()
-                .supplier(recorder.createContext(config, scheduledMetadata, !schedulerForcedStartItems.isEmpty(),
+                .supplier(recorder.createContext(scheduledMetadata, !schedulerForcedStartItems.isEmpty(),
                         discoveredImplementations.getAutoImplementation()))
                 .done());
 

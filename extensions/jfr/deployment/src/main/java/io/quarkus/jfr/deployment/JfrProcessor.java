@@ -11,7 +11,6 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.jfr.runtime.JfrRecorder;
 import io.quarkus.jfr.runtime.OTelIdProducer;
 import io.quarkus.jfr.runtime.QuarkusIdProducer;
-import io.quarkus.jfr.runtime.config.JfrRuntimeConfig;
 import io.quarkus.jfr.runtime.http.rest.classic.ClassicServerFilter;
 import io.quarkus.jfr.runtime.http.rest.classic.ClassicServerRecorderProducer;
 import io.quarkus.jfr.runtime.http.rest.reactive.ReactiveServerFilters;
@@ -88,7 +87,7 @@ public class JfrProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void runtimeInit(JfrRecorder recorder, JfrRuntimeConfig runtimeConfig) {
-        recorder.runtimeInit(runtimeConfig);
+    public void runtimeInit(JfrRecorder recorder) {
+        recorder.runtimeInit();
     }
 }

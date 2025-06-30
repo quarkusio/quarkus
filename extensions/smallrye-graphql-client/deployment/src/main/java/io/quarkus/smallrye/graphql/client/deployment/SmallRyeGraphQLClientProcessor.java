@@ -50,7 +50,6 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientBuildConfig;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientCertificateUpdateEventListener;
 import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientSupport;
-import io.quarkus.smallrye.graphql.client.runtime.GraphQLClientsConfig;
 import io.quarkus.smallrye.graphql.client.runtime.SmallRyeGraphQLClientRecorder;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.smallrye.graphql.client.model.ClientModelBuilder;
@@ -200,7 +199,6 @@ public class SmallRyeGraphQLClientProcessor {
     @Record(RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     GraphQLClientConfigInitializedBuildItem mergeClientConfigurations(SmallRyeGraphQLClientRecorder recorder,
-            GraphQLClientsConfig quarkusConfig,
             BeanArchiveIndexBuildItem index) {
         // to store config keys of all clients found in the application code
         List<String> knownConfigKeys = new ArrayList<>();
@@ -226,7 +224,7 @@ public class SmallRyeGraphQLClientProcessor {
         support.setShortNamesToQualifiedNamesMapping(shortNamesToQualifiedNames);
         support.setKnownConfigKeys(knownConfigKeys);
 
-        recorder.mergeClientConfigurations(support, quarkusConfig);
+        recorder.mergeClientConfigurations(support);
         return new GraphQLClientConfigInitializedBuildItem();
     }
 

@@ -15,9 +15,14 @@ import io.quarkus.scheduler.common.runtime.SchedulerContext;
 
 @Recorder
 public class SchedulerRecorder {
+    private final SchedulerConfig schedulerConfig;
 
-    public Supplier<Object> createContext(SchedulerConfig config,
-            List<MutableScheduledMethod> scheduledMethods, boolean forceSchedulerStart, String autoImplementation) {
+    public SchedulerRecorder(final SchedulerConfig schedulerConfig) {
+        this.schedulerConfig = schedulerConfig;
+    }
+
+    public Supplier<Object> createContext(List<MutableScheduledMethod> scheduledMethods, boolean forceSchedulerStart,
+            String autoImplementation) {
         // Defensive design - make an immutable copy of the scheduled method metadata
         List<ScheduledMethod> metadata = immutableCopy(scheduledMethods);
         return new Supplier<Object>() {
@@ -27,7 +32,7 @@ public class SchedulerRecorder {
 
                     @Override
                     public CronType getCronType() {
-                        return config.cronType();
+                        return schedulerConfig.cronType();
                     }
 
                     @Override

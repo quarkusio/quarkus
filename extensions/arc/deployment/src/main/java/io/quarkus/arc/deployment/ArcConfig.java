@@ -19,8 +19,7 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "quarkus.arc")
 public interface ArcConfig {
 
-    public static final Set<String> ALLOWED_REMOVE_UNUSED_BEANS_VALUES = Set.of("all", "true", "none", "false", "fwk",
-            "framework");
+    Set<String> ALLOWED_REMOVE_UNUSED_BEANS_VALUES = Set.of("all", "true", "none", "false", "fwk", "framework");
 
     /**
      * <ul>

@@ -7,6 +7,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 /**
  * A build item that carries all the "fake" run time config objects for use by recorders.
  */
+@Deprecated(forRemoval = true, since = "3.25")
 public final class RunTimeConfigurationProxyBuildItem extends SimpleBuildItem {
     private final Map<Class<?>, Object> objects;
 

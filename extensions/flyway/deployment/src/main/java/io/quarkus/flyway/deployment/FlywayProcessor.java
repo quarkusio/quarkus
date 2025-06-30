@@ -68,7 +68,6 @@ import io.quarkus.flyway.runtime.FlywayContainer;
 import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayDataSourceBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayRecorder;
-import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 @BuildSteps(onlyIf = FlywayEnabled.class)
@@ -273,7 +272,6 @@ class FlywayProcessor {
     @Consume(BeanContainerBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public ServiceStartBuildItem startActions(FlywayRecorder recorder,
-            FlywayRuntimeConfig config,
             BuildProducer<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
             BuildProducer<InitTaskCompletedBuildItem> initializationCompleteBuildItem,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems,

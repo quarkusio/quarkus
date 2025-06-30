@@ -7,14 +7,20 @@ import java.util.stream.Collectors;
 
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfig;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchRuntimeConfigPersistenceUnit;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateSearchElasticsearchDevRecorder {
+    private final RuntimeValue<HibernateSearchElasticsearchRuntimeConfig> runtimeConfig;
 
-    public void initController(
-            HibernateSearchElasticsearchRuntimeConfig runtimeConfig, Set<String> persistenceUnitNames) {
-        Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> puConfigs = runtimeConfig
+    public HibernateSearchElasticsearchDevRecorder(
+            final RuntimeValue<HibernateSearchElasticsearchRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public void initController(Set<String> persistenceUnitNames) {
+        Map<String, HibernateSearchElasticsearchRuntimeConfigPersistenceUnit> puConfigs = runtimeConfig.getValue()
                 .persistenceUnits();
         Set<String> activePersistenceUnitNames = persistenceUnitNames.stream()
                 .filter(name -> {

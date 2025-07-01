@@ -27,5 +27,6 @@
         <module>gradle</module>
         <module>cli</module>
         <module>config-doc-maven-plugin</module>
+        <module>extension-deployment-maven-plugin</module>
     </modules>
 </project>

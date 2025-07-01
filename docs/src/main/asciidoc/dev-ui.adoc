@@ -163,7 +163,7 @@ guide: "https://quarkus.io/guides/hibernate-orm"
 metadata:
   categories:
     - "data"
-  config-filter:
+  config:
     - "quarkus.hibernate-orm"
 ----
 
@@ -172,7 +172,7 @@ Key fields:
 - `name`: Displayed as the extension title in the Dev UI card.
 - `description`: Shown as the card's summary.
 - `guide`: URL to the extension's guide; used to render the guide icon on the card.
-- `metadata.config-filter`: Filters configuration keys shown when clicking "Configuration" on the card.
+- `metadata.config`: Filters configuration keys shown when clicking "Configuration" on the card.
 
 === Adding Pages to the Dev UI
 

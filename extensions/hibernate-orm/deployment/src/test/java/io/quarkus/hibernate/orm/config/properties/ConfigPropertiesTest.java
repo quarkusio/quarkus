@@ -2,13 +2,13 @@ package io.quarkus.hibernate.orm.config.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
+
 import jakarta.inject.Inject;
-import jakarta.persistence.Persistence;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
-import org.hibernate.SessionFactory;
 import org.hibernate.cfg.AvailableSettings;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -19,8 +19,6 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.config.properties.defaultpu.MyEntityForDefaultPU;
 import io.quarkus.hibernate.orm.config.properties.overridespu.MyEntityForOverridesPU;
 import io.quarkus.test.QuarkusUnitTest;
-
-import java.util.List;
 
 /**
  * Tests that configuration properties set in Quarkus are translated to the right key and value in Hibernate ORM.

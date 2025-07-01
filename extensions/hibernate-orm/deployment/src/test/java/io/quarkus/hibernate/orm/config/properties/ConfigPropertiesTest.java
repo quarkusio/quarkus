@@ -29,9 +29,9 @@ public class ConfigPropertiesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addPackage(MyEntityForDefaultPU.class.getPackage())
-                            .addPackage(MyEntityForOverridesPU.class.getPackage()))
+            () -> ShrinkWrap.create(JavaArchive.class)
+                    .addPackage(MyEntityForDefaultPU.class.getPackage())
+                    .addPackage(MyEntityForOverridesPU.class.getPackage()))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.packages", MyEntityForDefaultPU.class.getPackageName())
             .overrideConfigKey("quarkus.hibernate-orm.\"overrides\".packages", MyEntityForOverridesPU.class.getPackageName())
@@ -58,7 +58,8 @@ public class ConfigPropertiesTest {
     @Test
     @Transactional
     public void extraPhysicalTableTypes() {
-        Object extraPhysicalTableTypes = sessionForOverridesPU.getProperties().get(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES);
+        Object extraPhysicalTableTypes = sessionForOverridesPU.getProperties()
+                .get(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES);
 
         assertThat(extraPhysicalTableTypes).isNotNull();
         assertThat(extraPhysicalTableTypes).isInstanceOf(List.class);

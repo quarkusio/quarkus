@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ import io.undertow.httpcore.OutputChannel;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceManager;
+import io.undertow.server.handlers.resource.URLResource;
 import io.undertow.util.ETag;
 import io.undertow.util.MimeMappings;
 
@@ -66,10 +68,11 @@ public class KnownPathResourceManager implements ResourceManager {
         if (directories.contains(path)) {
             return new DirectoryResource(path);
         }
+
         if (!files.contains(path)) {
             return null;
         }
-        return underlying.getResource(path);
+        return getUnderlyingResource(underlying.getResource(path));
     }
 
     @Override
@@ -141,7 +144,7 @@ public class KnownPathResourceManager implements ResourceManager {
                         i = evaluatePath(i);
                         if (!i.substring(slashPath.length()).contains("/")) {
                             try {
-                                Resource resource = underlying.getResource(i);
+                                Resource resource = getUnderlyingResource(underlying.getResource(i));
                                 if (resource == null && directories.contains(file)) {
                                     resource = new DirectoryResource(file);
                                 }
@@ -213,5 +216,40 @@ public class KnownPathResourceManager implements ResourceManager {
         public URL getUrl() {
             return null;
         }
+    }
+
+    private class JarUrlResource extends URLResource {
+
+        public JarUrlResource(URL url, String path) {
+            super(url, path);
+        }
+
+        @Override
+        public Path getResourceManagerRootPath() {
+            return getFilePath().getParent();
+        }
+    }
+
+    private Resource getUnderlyingResource(Resource resource) {
+        if (resource == null) {
+            return null;
+        }
+
+        if (!resource.getClass().isAssignableFrom(URLResource.class)) {
+            return resource;
+        }
+
+        // for jar:file:/ resources we need to strip the JAR protocol
+        URLResource urlResource = (URLResource) resource;
+        if (urlResource.getUrl().getProtocol().equals("jar")) {
+            try {
+                String filePath = urlResource.getUrl().getPath();
+                URL url = new URL(filePath);
+                urlResource = new JarUrlResource(url, urlResource.getPath());
+            } catch (MalformedURLException e) {
+                return null;
+            }
+        }
+        return urlResource;
     }
 }

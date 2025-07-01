@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-jaxrs-client-reactive-deployment</artifactId>
+    <name>Quarkus - Relocations - quarkus-jaxrs-client-reactive-deployment</name>
 
     <distributionManagement>
         <relocation>

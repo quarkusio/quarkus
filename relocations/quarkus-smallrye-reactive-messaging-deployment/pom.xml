@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-smallrye-reactive-messaging-deployment</artifactId>
+    <name>Quarkus - Relocations - quarkus-smallrye-reactive-messaging-deployment</name>
 
     <distributionManagement>
         <relocation>

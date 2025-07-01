@@ -158,11 +158,12 @@ public class generaterelocations implements Runnable {
             "    <parent>\n" + //
             "        <artifactId>quarkus-relocations-parent</artifactId>\n" + //
             "        <groupId>io.quarkus</groupId>\n" + //
-            "        <version>999-SNAPSHOT</version>\n" + //
+            "        <version>3.15.999-SNAPSHOT</version>\n" + //
             "    </parent>\n" + //
             "    <modelVersion>4.0.0</modelVersion>\n" + //
             "\n" + //
             "    <artifactId>%1$s</artifactId>\n" + //
+            "    <name>Quarkus - Relocations - %1$s</name>\n" + //
             "\n" + //
             "    <distributionManagement>\n" + //
             "        <relocation>\n" + //

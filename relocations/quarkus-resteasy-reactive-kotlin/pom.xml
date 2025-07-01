@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-reactive-kotlin</artifactId>
+    <name>Quarkus - Relocations - quarkus-resteasy-reactive-kotlin</name>
 
     <distributionManagement>
         <relocation>

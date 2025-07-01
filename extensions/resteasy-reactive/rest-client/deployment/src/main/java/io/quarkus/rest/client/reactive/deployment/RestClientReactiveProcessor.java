@@ -49,7 +49,6 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.RestClientDefinitionException;
-import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.jboss.jandex.AnnotationInstance;
@@ -85,7 +84,6 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -145,11 +143,6 @@ class RestClientReactiveProcessor {
     @BuildStep
     void announceFeature(BuildProducer<FeatureBuildItem> features) {
         features.produce(new FeatureBuildItem(Feature.REST_CLIENT));
-    }
-
-    @BuildStep
-    void registerQueryParamStyleForConfig(BuildProducer<ConfigurationTypeBuildItem> configurationTypes) {
-        configurationTypes.produce(new ConfigurationTypeBuildItem(QueryParamStyle.class));
     }
 
     @BuildStep

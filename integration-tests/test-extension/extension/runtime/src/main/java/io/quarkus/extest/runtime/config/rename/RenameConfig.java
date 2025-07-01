@@ -1,34 +1,36 @@
 package io.quarkus.extest.runtime.config.rename;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
+@ConfigMapping(prefix = "quarkus.rename")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
-public class RenameConfig {
+public interface RenameConfig {
     /**
      *
      */
-    @ConfigItem
-    public String prop;
+    String prop();
+
     /**
      *
      */
-    @ConfigItem
-    public String onlyInNew;
+    String onlyInNew();
+
     /**
      *
      */
-    @ConfigItem
-    public String onlyInOld;
+    String onlyInOld();
+
     /**
      *
      */
-    @ConfigItem
-    public String inBoth;
+    String inBoth();
+
     /**
      *
      */
-    @ConfigItem(defaultValue = "default")
-    public String withDefault;
+    @WithDefault("default")
+    String withDefault();
 }

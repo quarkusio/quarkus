@@ -183,25 +183,30 @@ public final class ConfigDiagnostic {
         return new HashSet<>(errorKeys);
     }
 
+    private static final String APPLICATION = "application";
+    private static final int APPLICATION_LENGTH = APPLICATION.length();
+
     private static final DirectoryStream.Filter<Path> CONFIG_FILES_FILTER = new DirectoryStream.Filter<>() {
         @Override
         public boolean accept(final Path entry) {
-            // Ignore .properties, because we know these are have a default loader in core
-            // Ignore profile files. The loading rules require the main file to be present, so we only need the type
             String filename = entry.getFileName().toString();
-            return Files.isRegularFile(entry) && filename.startsWith("application.") && !filename.endsWith(".properties");
+            // Include application files with any extension and profiled files
+            return Files.isRegularFile(entry)
+                    && filename.length() > APPLICATION_LENGTH
+                    && filename.startsWith(APPLICATION)
+                    && (filename.charAt(APPLICATION_LENGTH) == '.' || filename.charAt(APPLICATION_LENGTH) == '-');
         }
     };
 
-    public static Set<String> configFiles(Path configFilesLocation) throws IOException {
+    public static Set<Path> configFiles(Path configFilesLocation) throws IOException {
         if (!Files.exists(configFilesLocation)) {
             return Collections.emptySet();
         }
 
-        Set<String> configFiles = new HashSet<>();
+        Set<Path> configFiles = new HashSet<>();
         try (DirectoryStream<Path> candidates = Files.newDirectoryStream(configFilesLocation, CONFIG_FILES_FILTER)) {
             for (Path candidate : candidates) {
-                configFiles.add(candidate.toUri().toURL().toString());
+                configFiles.add(candidate);
             }
         } catch (NotDirectoryException ignored) {
             log.debugf("File %s is not a directory", configFilesLocation.toAbsolutePath());
@@ -210,10 +215,10 @@ public final class ConfigDiagnostic {
         return configFiles;
     }
 
-    public static Set<String> configFilesFromLocations() throws Exception {
+    public static Set<Path> configFilesFromLocations() throws Exception {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
 
-        Set<String> configFiles = new HashSet<>();
+        Set<Path> configFiles = new HashSet<>();
         configFiles.addAll(configFiles(Paths.get(System.getProperty("user.dir"), "config")));
         Optional<List<URI>> optionalLocations = config.getOptionalValues(SMALLRYE_CONFIG_LOCATIONS, URI.class);
         optionalLocations.ifPresent(new Consumer<List<URI>>() {
@@ -236,27 +241,41 @@ public final class ConfigDiagnostic {
         return configFiles;
     }
 
-    public static void unknownConfigFiles(final Set<String> configFiles) {
+    public static void unknownConfigFiles(final Set<Path> configFiles) throws Exception {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         Set<String> configNames = new HashSet<>();
         for (ConfigSource configSource : config.getConfigSources()) {
-            if (configSource.getName() != null && configSource.getName().contains("application")) {
+            if (configSource.getName() != null && configSource.getName().contains(APPLICATION)) {
                 configNames.add(configSource.getName());
             }
         }
 
-        for (String configFile : configFiles) {
+        // Config sources names include the full path of the file, so we can check for unknowns if the file was not loaded by a source
+        for (Path configFile : configFiles) {
             boolean found = false;
             for (String configName : configNames) {
-                if (configName.contains(configFile)) {
+                if (configName.contains(configFile.toUri().toURL().toString())) {
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                log.warnf(
-                        "Unrecognized configuration file %s found; Please, check if your are providing the proper extension to load the file",
-                        configFile);
+                String filename = configFile.getFileName().toString();
+                // is a Profile aware file
+                if (filename.charAt(APPLICATION_LENGTH) == '-' && filename.lastIndexOf('.') != -1) {
+                    String unprofiledConfigFile = APPLICATION + "." + filename.substring(filename.lastIndexOf('.') + 1);
+                    String profile = filename.substring(APPLICATION_LENGTH + 1, filename.lastIndexOf('.'));
+                    if (config.getProfiles().contains(profile)
+                            && !Files.exists(Path.of(configFile.getParent().toString(), unprofiledConfigFile))) {
+                        log.warnf(
+                                "Profiled configuration file %s is ignored; a main %s configuration file must exist in the same location to load %s",
+                                configFile, unprofiledConfigFile, filename);
+                    }
+                } else {
+                    log.warnf(
+                            "Unrecognized configuration file %s found; Please, check if your are providing the proper extension to load the file",
+                            configFile);
+                }
             }
         }
     }

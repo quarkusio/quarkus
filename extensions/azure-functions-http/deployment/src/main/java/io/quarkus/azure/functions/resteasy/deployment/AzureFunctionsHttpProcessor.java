@@ -9,13 +9,14 @@ import io.quarkus.azure.functions.resteasy.runtime.Function;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 
 public class AzureFunctionsHttpProcessor {
     private static final Logger log = Logger.getLogger(AzureFunctionsHttpProcessor.class);
 
-    @BuildStep
+    @BuildStep(onlyIfNot = NativeOrNativeSourcesBuild.class)
     public RequireVirtualHttpBuildItem requestVirtualHttp(LaunchModeBuildItem launchMode) {
         return launchMode.getLaunchMode() == LaunchMode.NORMAL ? RequireVirtualHttpBuildItem.MARKER : null;
     }

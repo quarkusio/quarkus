@@ -69,6 +69,8 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
     public void finalizeProcessing() {
         ConfigCollector configCollector = configAnnotationScanner.finalizeProcessing();
 
+        // TODO radcortez drop this once we don't need them anymore
+        // we will still need to read the quarkus-javadoc.properties in the Dev UI for now to allow for extensions built with older Quarkus versions
         Properties javadocProperties = new Properties();
         for (Entry<String, JavadocElement> javadocElementEntry : configCollector.getJavadocElements().entrySet()) {
             if (javadocElementEntry.getValue().description() == null
@@ -84,12 +86,12 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
 
         // the model is not written in the jar file
         JavadocElements javadocElements = configResolver.resolveJavadoc();
-        if (!javadocElements.elements().isEmpty()) {
+        if (!javadocElements.isEmpty()) {
             utils.filer().writeModel(Outputs.QUARKUS_CONFIG_DOC_JAVADOC, javadocElements);
         }
 
         ResolvedModel resolvedModel = configResolver.resolveModel();
-        if (!resolvedModel.getConfigRoots().isEmpty()) {
+        if (!resolvedModel.isEmpty()) {
             Path resolvedModelPath = utils.filer().writeModel(Outputs.QUARKUS_CONFIG_DOC_MODEL, resolvedModel);
 
             if (config.isDebug()) {
@@ -100,6 +102,18 @@ public class ConfigDocExtensionProcessor implements ExtensionProcessor {
                     throw new IllegalStateException("Unable to read the resolved model from: " + resolvedModelPath, e);
                 }
             }
+        }
+
+        // Generate files that will be stored in the jar and can be consumed freely.
+        // We generate JSON files to avoid requiring an additional dependency to the YAML mapper
+        if (!javadocElements.isEmpty()) {
+            utils.filer().writeJson(Outputs.META_INF_QUARKUS_CONFIG_JAVADOC_JSON, javadocElements);
+        }
+        if (!resolvedModel.isEmpty()) {
+            utils.filer().writeJson(Outputs.META_INF_QUARKUS_CONFIG_MODEL_JSON, resolvedModel);
+        }
+        if (!javadocElements.isEmpty() || !resolvedModel.isEmpty()) {
+            utils.filer().write(Outputs.META_INF_QUARKUS_CONFIG_MODEL_VERSION, "1");
         }
     }
 }

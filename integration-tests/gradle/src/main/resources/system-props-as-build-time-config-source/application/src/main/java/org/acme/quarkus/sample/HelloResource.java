@@ -28,6 +28,6 @@ public class HelloResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/runtime-name")
     public String runtimeName() {
-        return rtConfig.runtimeName;
+        return rtConfig.runtimeName();
     }
 }

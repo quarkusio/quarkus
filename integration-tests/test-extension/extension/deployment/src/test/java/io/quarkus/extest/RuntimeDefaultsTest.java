@@ -57,11 +57,6 @@ public class RuntimeDefaultsTest {
     void recordDefaultFromRootEvenIfInActiveProfile() {
         Optional<ConfigSource> defaultValues = config.getConfigSource("DefaultValuesConfigSource");
         assertTrue(defaultValues.isPresent());
-
-        // Old Roots
-        assertEquals("from-app", defaultValues.get().getValue("%test.quarkus.rt.record-default"));
-        assertEquals("from-default", defaultValues.get().getValue("quarkus.rt.record-default"));
-        // Mappings
         assertEquals("from-app", defaultValues.get().getValue("%test.quarkus.mapping.rt.record-default"));
         assertEquals("from-default", defaultValues.get().getValue("quarkus.mapping.rt.record-default"));
     }

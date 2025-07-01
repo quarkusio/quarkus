@@ -28,9 +28,6 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
-import jakarta.enterprise.context.Dependent;
-import jakarta.enterprise.inject.CreationException;
-
 import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.inject.ConfigProperties;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -66,15 +63,11 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigPropertiesBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
-import io.quarkus.runtime.annotations.ConfigPhase;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.inject.ConfigProducer;
 
@@ -245,27 +238,6 @@ public class ConfigBuildStep {
                         .filter(ConfigPropertyBuildItem::isRuntimeInit)
                         .map(p -> configPropertyToConfigValidation(p, reflectiveClass))
                         .collect(toSet()));
-    }
-
-    @BuildStep
-    void registerConfigRootsAsBeans(ConfigurationBuildItem configItem, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
-        for (RootDefinition rootDefinition : configItem.getReadResult().getAllRoots()) {
-            if (rootDefinition.getConfigPhase() == ConfigPhase.BUILD_AND_RUN_TIME_FIXED
-                    || rootDefinition.getConfigPhase() == ConfigPhase.RUN_TIME) {
-                Class<?> configRootClass = rootDefinition.getConfigurationClass();
-                syntheticBeans.produce(SyntheticBeanBuildItem.configure(configRootClass).types(configRootClass)
-                        .scope(Dependent.class).creator(mc -> {
-                            // e.g. return Config.ApplicationConfig
-                            ResultHandle configRoot = mc.readStaticField(rootDefinition.getDescriptor());
-                            // BUILD_AND_RUN_TIME_FIXED roots are always set before the container is started (in the static initializer of the generated Config class)
-                            // However, RUN_TIME roots may be not be set when the bean instance is created
-                            mc.ifNull(configRoot).trueBranch().throwException(CreationException.class,
-                                    String.format("Config root [%s] with config phase [%s] not initialized yet.",
-                                            configRootClass.getName(), rootDefinition.getConfigPhase().name()));
-                            mc.returnValue(configRoot);
-                        }).done());
-            }
-        }
     }
 
     @BuildStep

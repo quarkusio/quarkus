@@ -5,7 +5,7 @@ tags: example
 metadata:
   title: Amazon Lambda Integration example
   description: This example contains a Quarkus Greeting Lambda ready for Amazon.
-  related-guide-section: https://quarkus.io/guides/amazon-lambda
+  related-guide-section: https://quarkus.io/guides/aws-lambda
 language:
   base:
     dependencies:

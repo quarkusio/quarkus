@@ -13,20 +13,23 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.SmallRyeConfig;
 
 public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
 
-    private final BuildTimeConfigurationReader.ReadResult readResult;
     private final LaunchMode launchMode;
     private final DevModeType devModeType;
-    private final ClassValue<BooleanSupplier> suppliers = new ClassValue<BooleanSupplier>() {
+    private final ClassValue<BooleanSupplier> suppliers = new ClassValue<>() {
+        final SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+
         @Override
         protected BooleanSupplier computeValue(Class<?> type) {
             // construct a new supplier instance
@@ -49,7 +52,7 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
                     final ConfigRoot annotation = parameterClass.getAnnotation(ConfigRoot.class);
                     final ConfigPhase phase = annotation.phase();
                     if (phase.isAvailableAtBuild()) {
-                        paramSuppList.add(() -> readResult.requireObjectForClass(parameterClass));
+                        paramSuppList.add(() -> config.getConfigMapping(parameterClass));
                     } else if (phase.isReadAtMain()) {
                         throw reportError(parameter, phase + " configuration cannot be consumed here");
                     } else {
@@ -81,8 +84,7 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
                     final ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
                     final ConfigPhase phase = annotation.phase();
                     if (phase.isAvailableAtBuild()) {
-                        setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o,
-                                readResult.requireObjectForClass(fieldClass)));
+                        setup = setup.andThen(o -> ReflectUtil.setFieldVal(field, o, config.getConfigMapping(fieldClass)));
                     } else if (phase.isReadAtMain()) {
                         throw reportError(field, phase + " configuration cannot be consumed here");
                     } else {
@@ -120,9 +122,7 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
         }
     };
 
-    BooleanSupplierFactoryBuildItem(BuildTimeConfigurationReader.ReadResult readResult, LaunchMode launchMode,
-            DevModeType devModeType) {
-        this.readResult = readResult;
+    BooleanSupplierFactoryBuildItem(LaunchMode launchMode, DevModeType devModeType) {
         this.launchMode = launchMode;
         this.devModeType = devModeType;
     }

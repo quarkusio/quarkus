@@ -8,7 +8,6 @@ import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.
 import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 import java.io.Closeable;
@@ -53,7 +52,6 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
-import io.quarkus.deployment.builditem.ConfigurationTypeBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -346,7 +344,6 @@ public class ConfigGenerationBuildStep {
     @BuildStep
     void generateConfigClass(
             ConfigurationBuildItem configItem,
-            List<ConfigurationTypeBuildItem> typeItems,
             LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             LiveReloadBuildItem liveReloadBuildItem) {
@@ -366,10 +363,8 @@ public class ConfigGenerationBuildStep {
                 .builder()
                 .setBuildTimeReadResult(configItem.getReadResult())
                 .setClassOutput(new GeneratedClassGizmoAdaptor(generatedClass, false))
-                .setLaunchMode(launchModeBuildItem.getLaunchMode())
                 .setLiveReloadPossible(launchModeBuildItem.getLaunchMode() == LaunchMode.DEVELOPMENT
                         || launchModeBuildItem.isAuxiliaryApplication())
-                .setAdditionalTypes(typeItems.stream().map(ConfigurationTypeBuildItem::getValueType).collect(toList()))
                 .build()
                 .run();
     }

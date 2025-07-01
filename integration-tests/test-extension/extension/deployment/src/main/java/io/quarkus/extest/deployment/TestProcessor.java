@@ -20,7 +20,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
@@ -28,6 +27,7 @@ import jakarta.xml.bind.JAXBContext;
 import jakarta.xml.bind.JAXBException;
 import jakarta.xml.bind.Unmarshaller;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -55,13 +55,9 @@ import io.quarkus.extest.runtime.RuntimeXmlConfigService;
 import io.quarkus.extest.runtime.TestRecorder;
 import io.quarkus.extest.runtime.beans.CommandServlet;
 import io.quarkus.extest.runtime.beans.PublicKeyProducer;
-import io.quarkus.extest.runtime.config.ObjectOfValue;
-import io.quarkus.extest.runtime.config.ObjectValueOf;
+import io.quarkus.extest.runtime.config.OverrideBuildTimeConfigBuilder;
 import io.quarkus.extest.runtime.config.RunTimeConfigBuilder;
 import io.quarkus.extest.runtime.config.StaticInitConfigBuilder;
-import io.quarkus.extest.runtime.config.TestBuildAndRunTimeConfig;
-import io.quarkus.extest.runtime.config.TestBuildTimeConfig;
-import io.quarkus.extest.runtime.config.TestConfigRoot;
 import io.quarkus.extest.runtime.config.TestMappingBuildTime;
 import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
 import io.quarkus.extest.runtime.config.UnremovableMappingFromBuildItem;
@@ -80,9 +76,6 @@ import io.smallrye.config.ConfigValue;
 public final class TestProcessor {
     static final Logger log = Logger.getLogger(TestProcessor.class);
 
-    TestConfigRoot configRoot;
-    TestBuildTimeConfig buildTimeConfig;
-    TestBuildAndRunTimeConfig buildAndRunTimeConfig;
     IgnoreSharedBuildTimeConfig ignoreSharedBuildTimeConfig;
 
     /**
@@ -183,9 +176,9 @@ public final class TestProcessor {
      */
     @BuildStep
     @Record(STATIC_INIT)
-    PublicKeyBuildItem loadDSAPublicKey(TestRecorder recorder,
-            BuildProducer<ObjectSubstitutionBuildItem> substitutions) throws IOException, GeneralSecurityException {
-        String path = configRoot.dsaKeyLocation;
+    PublicKeyBuildItem loadDSAPublicKey(TestRecorder recorder, BuildProducer<ObjectSubstitutionBuildItem> substitutions)
+            throws IOException, GeneralSecurityException {
+        String path = ConfigProvider.getConfig().getValue("keys.root.dsa-key-location", String.class);
         try (InputStream is = getClass().getResourceAsStream(path)) {
             if (is == null) {
                 throw new IOException("Failed to load resource: " + path);
@@ -232,110 +225,9 @@ public final class TestProcessor {
                 .build();
     }
 
-    /**
-     * Validate the expected BUILD_TIME configuration
-     */
     @BuildStep
-    void checkConfig(BuildProducer<ReflectiveClassBuildItem> unused) {
-        if (!configRoot.validateBuildConfig) {
-            return;
-        }
-
-        // Deployment time configuration
-        if (!buildTimeConfig.btSBV.getValue().equals("StringBasedValue")) {
-            throw new IllegalStateException("buildTimeConfig.btSBV != StringBasedValue; " + buildTimeConfig.btSBV.getValue());
-        }
-        if (!buildTimeConfig.btSBVWithDefault.getValue().equals("btSBVWithDefaultValue")) {
-            throw new IllegalStateException("buildTimeConfig.btSBVWithDefault != btSBVWithDefaultValue; "
-                    + buildTimeConfig.btSBVWithDefault.getValue());
-        }
-        if (!buildTimeConfig.btStringOpt.equals("btStringOptValue")) {
-            throw new IllegalStateException("buildTimeConfig.btStringOpt != btStringOptValue; " + buildTimeConfig.btStringOpt);
-        }
-        if (!buildTimeConfig.btStringOptWithDefault.equals("btStringOptWithDefaultValue")) {
-            throw new IllegalStateException("buildTimeConfig.btStringOptWithDefault != btStringOptWithDefaultValue; "
-                    + buildTimeConfig.btStringOptWithDefault);
-        }
-        if (!buildTimeConfig.allValues.oov.equals(new ObjectOfValue("configPart1", "configPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oov != configPart1+configPart2; " + buildTimeConfig.allValues.oov);
-        }
-        if (!buildTimeConfig.allValues.oovWithDefault.equals(new ObjectOfValue("defaultPart1", "defaultPart2"))) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.oovWithDefault != defaultPart1+defaultPart2; " + buildTimeConfig.allValues.oovWithDefault);
-        }
-        if (!buildTimeConfig.allValues.ovo.equals(new ObjectValueOf("configPart1", "configPart2"))) {
-            throw new IllegalStateException("buildTimeConfig.oov != configPart1+configPart2; " + buildTimeConfig.allValues.oov);
-        }
-        if (!buildTimeConfig.allValues.ovoWithDefault.equals(new ObjectValueOf("defaultPart1", "defaultPart2"))) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.oovWithDefault != defaultPart1+defaultPart2; " + buildTimeConfig.allValues.oovWithDefault);
-        }
-        if (buildTimeConfig.allValues.longPrimitive != 1234567891L) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.longPrimitive != 1234567891L; " + buildTimeConfig.allValues.longPrimitive);
-        }
-        // quarkus.bt.all-values.double-primitive=3.1415926535897932384
-        if (Math.IEEEremainder(buildTimeConfig.allValues.doublePrimitive, 3.1415926535897932384) != 0) {
-            throw new IllegalStateException("buildTimeConfig.allValues.doublePrimitive != 3.1415926535897932384; "
-                    + buildTimeConfig.allValues.doublePrimitive);
-        }
-        // quarkus.bt.all-values.opt-double-value=3.1415926535897932384
-        if (Math.IEEEremainder(buildTimeConfig.allValues.optDoubleValue.getAsDouble(), 3.1415926535897932384) != 0) {
-            throw new IllegalStateException("buildTimeConfig.allValues.optDoubleValue != 3.1415926535897932384; "
-                    + buildTimeConfig.allValues.optDoubleValue);
-        }
-        if (buildTimeConfig.allValues.longValue != 1234567892L) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.longValue != 1234567892L; " + buildTimeConfig.allValues.longValue);
-        }
-        if (buildTimeConfig.allValues.optLongValue.getAsLong() != 1234567893L) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.optLongValue != 1234567893L; " + buildTimeConfig.allValues.optLongValue.getAsLong());
-        }
-        if (buildTimeConfig.allValues.optionalLongValue.get() != 1234567894L) {
-            throw new IllegalStateException("buildTimeConfig.allValues.optionalLongValue != 1234567894L; "
-                    + buildTimeConfig.allValues.optionalLongValue.get());
-        }
-        if (buildTimeConfig.allValues.nestedConfigMap.size() != 2) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.simpleMap.size != 2; " + buildTimeConfig.allValues.nestedConfigMap.size());
-        }
-        //quarkus.bt.all-values.string-list=value1,value2
-        if (buildTimeConfig.allValues.stringList.size() != 2) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.stringList.size != 2; " + buildTimeConfig.allValues.stringList.size());
-        }
-        if (!buildTimeConfig.allValues.stringList.get(0).equals("value1")) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.stringList[0] != value1; " + buildTimeConfig.allValues.stringList.get(0));
-        }
-        if (!buildTimeConfig.allValues.stringList.get(1).equals("value2")) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.stringList[1] != value2; " + buildTimeConfig.allValues.stringList.get(1));
-        }
-        // quarkus.rt.all-values.long-list=1,2,3
-        if (buildTimeConfig.allValues.longList.size() != 3) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.longList.size != 3; " + buildTimeConfig.allValues.longList.size());
-        }
-        if (buildTimeConfig.allValues.longList.get(0) != 1) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.longList[0] != 1; " + buildTimeConfig.allValues.longList.get(0));
-        }
-        if (buildTimeConfig.allValues.longList.get(2) != 3) {
-            throw new IllegalStateException(
-                    "buildTimeConfig.allValues.longList[2] != 3; " + buildTimeConfig.allValues.longList.get(2));
-        }
-        if (buildTimeConfig.btConfigValue == null || !buildTimeConfig.btConfigValue.getValue().equals("value")) {
-            throw new IllegalStateException("buildTimeConfig.btConfigValue");
-        }
-        if (buildTimeConfig.btConfigValueEmpty == null || !buildTimeConfig.btConfigValueEmpty.getValue().equals("")) {
-            throw new IllegalStateException("buildTimeConfig.btConfigValueEmpty");
-        }
-    }
-
-    @BuildStep
-    void configMapping(BuildProducer<ConfigPropertyBuildItem> configProperties,
+    void configMapping(
+            BuildProducer<ConfigPropertyBuildItem> configProperties,
             ConfigurationBuildItem configItem,
             TestMappingBuildTime testMappingBuildTime,
             TestMappingBuildTimeRunTime testMappingBuildTimeRunTime) {
@@ -461,16 +353,6 @@ public final class TestProcessor {
     }
 
     @BuildStep
-    void checkMapMap(TestBuildAndRunTimeConfig btrt, TestBuildTimeConfig bt, BuildProducer<ReflectiveClassBuildItem> unused) {
-        if (!Objects.equals("1234", btrt.mapMap.get("outer-key").get("inner-key"))) {
-            throw new AssertionError("BTRT map map failed");
-        }
-        if (!Objects.equals("1234", bt.mapMap.get("outer-key").get("inner-key"))) {
-            throw new AssertionError("BT map map failed");
-        }
-    }
-
-    @BuildStep
     RuntimeInitializedPackageBuildItem runtimeInitializedPackage() {
         return new RuntimeInitializedPackageBuildItem(RuntimeInitializedClass.class.getPackage().getName());
     }
@@ -478,11 +360,13 @@ public final class TestProcessor {
     @BuildStep
     void staticInitConfigBuilder(BuildProducer<StaticInitConfigBuilderBuildItem> configBuilders) {
         configBuilders.produce(new StaticInitConfigBuilderBuildItem(StaticInitConfigBuilder.class.getName()));
+        configBuilders.produce(new StaticInitConfigBuilderBuildItem(OverrideBuildTimeConfigBuilder.class.getName()));
     }
 
     @BuildStep
     void runTimeConfigBuilder(BuildProducer<RunTimeConfigBuilderBuildItem> configBuilders) {
         configBuilders.produce(new RunTimeConfigBuilderBuildItem(RunTimeConfigBuilder.class.getName()));
+        configBuilders.produce(new RunTimeConfigBuilderBuildItem(OverrideBuildTimeConfigBuilder.class.getName()));
     }
 
     @BuildStep
@@ -506,7 +390,7 @@ public final class TestProcessor {
     }
 
     public static final class Never implements BooleanSupplier {
-        TestBuildTimeConfig config;
+        TestMappingBuildTime config;
 
         public boolean getAsBoolean() {
             if (config == null) {

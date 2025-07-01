@@ -15,7 +15,6 @@ public class StaticInitSourcesTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(ConfiguredBean.class)
                     // Don't change this to types, because of classloader class cast exception.
                     .addAsServiceProvider("io.smallrye.config.SmallRyeConfigBuilderCustomizer",
                             StaticInitSafeConfigBuilderCustomizer.class.getName(),

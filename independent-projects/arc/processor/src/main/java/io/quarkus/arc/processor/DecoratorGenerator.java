@@ -64,8 +64,8 @@ public class DecoratorGenerator extends BeanGenerator {
      */
     void precomputeGeneratedName(DecoratorInfo decorator) {
         ClassInfo decoratorClass = decorator.getTarget().get().asClass();
-        String baseName = createBaseName(decoratorClass);
-        String targetPackage = DotNames.packageName(decorator.getProviderType().name());
+        String baseName = decoratorClass.name().withoutPackagePrefix();
+        String targetPackage = DotNames.packagePrefix(decorator.getProviderType().name());
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
         beanToGeneratedName.put(decorator, generatedName);
         beanToGeneratedBaseName.put(decorator, baseName);
@@ -79,7 +79,7 @@ public class DecoratorGenerator extends BeanGenerator {
     Collection<Resource> generate(DecoratorInfo decorator) {
         String baseName = beanToGeneratedBaseName.get(decorator);
         String generatedName = beanToGeneratedName.get(decorator);
-        String targetPackage = DotNames.packageName(decorator.getProviderType().name());
+        String targetPackage = DotNames.packagePrefix(decorator.getProviderType().name());
 
         if (existingClasses.contains(generatedName)) {
             return Collections.emptyList();
@@ -100,8 +100,7 @@ public class DecoratorGenerator extends BeanGenerator {
     private void generateDecorator(Gizmo gizmo, DecoratorInfo decorator, String generatedName, String baseName,
             String targetPackage, boolean isApplicationClass) {
         ClassInfo decoratorClass = decorator.getTarget().get().asClass();
-        // TODO generated name includes `/` instead of `.`
-        gizmo.class_(generatedName.replace('/', '.'), cc -> {
+        gizmo.class_(generatedName, cc -> {
             cc.implements_(InjectableDecorator.class);
             cc.implements_(Supplier.class);
 
@@ -109,8 +108,7 @@ public class DecoratorGenerator extends BeanGenerator {
             if (decorator.isAbstract()) {
                 String generatedImplName = generateAbstractDecoratorImplementation(gizmo, baseName, targetPackage,
                         decorator, decoratorClass);
-                // TODO generated name includes `/` instead of `.`
-                providerType = ClassType.create(generatedImplName.replace('/', '.'));
+                providerType = ClassType.create(generatedImplName);
             }
 
             FieldDesc beanTypesField = cc.field(FIELD_NAME_BEAN_TYPES, fc -> {
@@ -217,16 +215,6 @@ public class DecoratorGenerator extends BeanGenerator {
                 });
     }
 
-    static String createBaseName(ClassInfo decoratorClass) {
-        String baseName;
-        if (decoratorClass.enclosingClass() != null) {
-            baseName = DotNames.simpleName(decoratorClass.enclosingClass()) + "_" + DotNames.simpleName(decoratorClass);
-        } else {
-            baseName = DotNames.simpleName(decoratorClass);
-        }
-        return baseName;
-    }
-
     static boolean isAbstractDecoratorImpl(BeanInfo bean, String providerTypeName) {
         return bean.isDecorator() && ((DecoratorInfo) bean).isAbstract() && providerTypeName.endsWith(ABSTRACT_IMPL_SUFFIX);
     }
@@ -239,8 +227,7 @@ public class DecoratorGenerator extends BeanGenerator {
         // MyDecorator_Impl
         String generatedImplName = generatedNameFromTarget(targetPackage, baseName, ABSTRACT_IMPL_SUFFIX);
 
-        // TODO generated name includes `/` instead of `.`
-        gizmo.class_(generatedImplName.replace('/', '.'), cc -> {
+        gizmo.class_(generatedImplName, cc -> {
             cc.extends_(classDescOf(decoratorClass));
 
             FieldDesc delegateField = cc.field("impl$delegate", fc -> {
@@ -362,6 +349,7 @@ public class DecoratorGenerator extends BeanGenerator {
                 });
             }
         });
+
         return generatedImplName;
     }
 

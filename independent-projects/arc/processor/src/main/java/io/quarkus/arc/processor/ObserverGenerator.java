@@ -58,7 +58,6 @@ public class ObserverGenerator extends AbstractGenerator {
     static final String DECLARING_PROVIDER_SUPPLIER = "declaringProviderSupplier";
 
     private final Map<ObserverInfo, String> observerToGeneratedName;
-    private final Map<ObserverInfo, String> observerToGeneratedBaseName;
 
     private final AnnotationLiteralProcessor annotationLiterals;
     private final Predicate<DotName> applicationClassPredicate;
@@ -78,7 +77,6 @@ public class ObserverGenerator extends AbstractGenerator {
         this.privateMembers = privateMembers;
         this.existingClasses = existingClasses;
         this.observerToGeneratedName = observerToGeneratedName;
-        this.observerToGeneratedBaseName = new HashMap<>();
         this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
         this.mockable = mockable;
         this.generatedClasses = new ConcurrentHashMap<>();
@@ -94,15 +92,9 @@ public class ObserverGenerator extends AbstractGenerator {
         // "org.acme.Registrar_Observer_Synthetic_hash" for synthetic observer where hash represents the basic attrs of the observer
         String classBase;
         if (observer.isSynthetic()) {
-            classBase = DotNames.simpleName(observer.getBeanClass());
+            classBase = observer.getBeanClass().withoutPackagePrefix();
         } else {
-            ClassInfo declaringClass = observer.getObserverMethod().declaringClass();
-            if (declaringClass.enclosingClass() != null) {
-                classBase = DotNames.simpleName(declaringClass.enclosingClass()) + UNDERSCORE
-                        + DotNames.simpleName(declaringClass);
-            } else {
-                classBase = DotNames.simpleName(declaringClass);
-            }
+            classBase = observer.getObserverMethod().declaringClass().name().withoutPackagePrefix();
         }
 
         StringBuilder baseNameBuilder = new StringBuilder();
@@ -114,16 +106,15 @@ public class ObserverGenerator extends AbstractGenerator {
         }
         baseNameBuilder.append(UNDERSCORE).append(observer.getIdentifier());
         String baseName = baseNameBuilder.toString();
-        this.observerToGeneratedBaseName.put(observer, baseName);
 
         // No suffix added at the end of generated name because it's already
         // included in a baseName, e.g. Foo_Observer_fooMethod_hash
 
         String targetPackage;
         if (observer.isSynthetic()) {
-            targetPackage = DotNames.packageName(observer.getBeanClass());
+            targetPackage = DotNames.packagePrefix(observer.getBeanClass());
         } else {
-            targetPackage = DotNames.packageName(observer.getObserverMethod().declaringClass().name());
+            targetPackage = DotNames.packagePrefix(observer.getObserverMethod().declaringClass().name());
         }
         String generatedName = generatedNameFromTarget(targetPackage, baseName, "");
         this.observerToGeneratedName.put(observer, generatedName);
@@ -135,7 +126,6 @@ public class ObserverGenerator extends AbstractGenerator {
      * @return a collection of resources
      */
     Collection<Resource> generate(ObserverInfo observer) {
-        String baseName = observerToGeneratedBaseName.get(observer);
         String generatedName = observerToGeneratedName.get(observer);
 
         ObserverInfo generatedObserver = generatedClasses.putIfAbsent(generatedName, observer);
@@ -167,8 +157,7 @@ public class ObserverGenerator extends AbstractGenerator {
 
     private void createObserver(Gizmo gizmo, ObserverInfo observer, String generatedName, boolean isApplicationClass) {
         // Foo_Observer_fooMethod_hash implements ObserverMethod<T>
-        // TODO generated name includes `/` instead of `.`
-        gizmo.class_(generatedName.replace('/', '.'), cc -> {
+        gizmo.class_(generatedName, cc -> {
             cc.implements_(InjectableObserverMethod.class);
             if (mockable) {
                 // Observers declared on mocked beans can be disabled during tests

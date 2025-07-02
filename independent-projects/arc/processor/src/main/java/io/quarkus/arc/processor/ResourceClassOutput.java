@@ -11,9 +11,6 @@ import java.util.function.Function;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 
-/**
- *
- */
 public class ResourceClassOutput implements io.quarkus.gizmo.ClassOutput, io.quarkus.gizmo2.ClassOutput {
 
     private static final Function<String, SpecialType> NO_SPECIAL_TYPE = cn -> null;
@@ -23,10 +20,20 @@ public class ResourceClassOutput implements io.quarkus.gizmo.ClassOutput, io.qua
     private final boolean applicationClass;
     private final Function<String, SpecialType> specialTypeFunction;
 
+    /**
+     * @param applicationClass whether the generated classes are application classes or not
+     * @param generateSource whether to also generate textual representation of the code
+     */
     public ResourceClassOutput(boolean applicationClass, boolean generateSource) {
         this(applicationClass, NO_SPECIAL_TYPE, generateSource);
     }
 
+    /**
+     * @param applicationClass whether the generated classes are application classes or not
+     * @param specialTypeFunction function accepting a binary name of the generated class and returning
+     *        the {@link SpecialType} of the class (or {@code null})
+     * @param generateSource whether to also generate textual representation of the code
+     */
     public ResourceClassOutput(boolean applicationClass, Function<String, SpecialType> specialTypeFunction,
             boolean generateSource) {
         this.applicationClass = applicationClass;
@@ -41,7 +48,8 @@ public class ResourceClassOutput implements io.quarkus.gizmo.ClassOutput, io.qua
             // Gizmo 2 calls `write()` with the full file path
             name = name.substring(0, name.length() - ".class".length());
         }
-        resources.add(ResourceImpl.javaClass(name, data, specialTypeFunction.apply(name),
+        String className = name.replace('/', '.');
+        resources.add(ResourceImpl.javaClass(name, data, specialTypeFunction.apply(className),
                 applicationClass, getSource(name)));
     }
 

@@ -259,9 +259,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 ParamVar beanIdToBean = mc.parameter("beanIdToBean", Map.class);
                 mc.body(bc -> {
                     for (BeanInfo bean : group.beans()) {
-                        // TODO generated name includes `/` instead of `.`
                         ClassDesc beanType = beanToGeneratedName.containsKey(bean)
-                                ? ClassDesc.of(beanToGeneratedName.get(bean).replace('/', '.'))
+                                ? ClassDesc.of(beanToGeneratedName.get(bean))
                                 : null;
                         if (beanType == null) {
                             throw new IllegalStateException("No bean type found for: " + bean);
@@ -350,9 +349,8 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 ParamVar observers = mc.parameter("observers", List.class);
                 mc.body(bc -> {
                     for (ObserverInfo observer : group.observers()) {
-                        // TODO generated name includes `/` instead of `.`
                         ClassDesc observerType = observerToGeneratedName.containsKey(observer)
-                                ? ClassDesc.of(observerToGeneratedName.get(observer).replace('/', '.'))
+                                ? ClassDesc.of(observerToGeneratedName.get(observer))
                                 : null;
                         if (observerType == null) {
                             throw new IllegalStateException("No observer type found for: " + observerType);

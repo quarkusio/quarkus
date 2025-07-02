@@ -530,7 +530,7 @@ final class Methods {
 
             List<Type> parameters = method.parameterTypes();
             if (!parameters.isEmpty() && (beanArchiveIndex != null)) {
-                String originalClassPackage = DotNames.packageName(originalClazz.name());
+                String originalClassPackage = DotNames.packagePrefix(originalClazz.name());
                 for (Type type : parameters) {
                     if (type.kind() == Kind.PRIMITIVE) {
                         continue;
@@ -555,7 +555,7 @@ final class Methods {
                     }
                     // e.g. parameters whose class is package-private and the package is not the same as the package of the method for which we are checking can not be loaded,
                     // as we would end up with IllegalAccessError when trying to access the use the load the class
-                    if (!DotNames.packageName(param.name()).equals(originalClassPackage)) {
+                    if (!DotNames.packagePrefix(param.name()).equals(originalClassPackage)) {
                         LOGGER.warn(String.format(
                                 "A method %s() declared on %s has a non-public parameter of type %s which prevents it from being intercepted. Please change the parameter type visibility in order to make it intercepted.",
                                 method.name(), method.declaringClass().name(), type));

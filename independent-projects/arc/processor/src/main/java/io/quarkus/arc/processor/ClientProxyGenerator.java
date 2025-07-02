@@ -98,7 +98,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
             return Collections.emptySet();
         }
 
-        String baseName = getBaseName(beanClassName);
+        String baseName = getBeanBaseName(beanClassName);
         String targetPackage = bean.getClientProxyPackageName();
         String generatedName = generatedNameFromTarget(targetPackage, baseName, CLIENT_PROXY_SUFFIX);
         if (existingClasses.contains(generatedName)) {
@@ -129,8 +129,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
         ClassDesc superClass = isInterface ? CD_Object : providerClassDesc;
 
         // Foo_ClientProxy extends Foo implements ClientProxy
-        // TODO generated name includes `/` instead of `.`
-        gizmo.class_(generatedName.replace('/', '.'), cc -> {
+        gizmo.class_(generatedName, cc -> {
             copyTypeParameters(providerClass, cc);
 
             GenericType.OfClass providerGenericType = genericTypeOfClass(providerType);

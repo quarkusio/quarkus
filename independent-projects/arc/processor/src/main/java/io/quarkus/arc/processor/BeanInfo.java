@@ -636,7 +636,7 @@ public class BeanInfo implements InjectionTargetInfo {
                 providerTypeName = providerType.name();
             }
         }
-        String packageName = DotNames.packageName(providerTypeName);
+        String packageName = DotNames.packagePrefix(providerTypeName);
         if (packageName.startsWith("java.")) {
             // It is not possible to place a class in a JDK package
             packageName = AbstractGenerator.DEFAULT_PACKAGE;
@@ -649,7 +649,7 @@ public class BeanInfo implements InjectionTargetInfo {
             AnnotationTarget target = getTarget().get();
             DotName typeName = target.kind() == Kind.FIELD ? target.asField().type().name()
                     : target.asMethod().returnType().name();
-            String packageName = DotNames.packageName(typeName);
+            String packageName = DotNames.packagePrefix(typeName);
             if (packageName.startsWith("java.")) {
                 // It is not possible to place a class in a JDK package
                 packageName = AbstractGenerator.DEFAULT_PACKAGE;

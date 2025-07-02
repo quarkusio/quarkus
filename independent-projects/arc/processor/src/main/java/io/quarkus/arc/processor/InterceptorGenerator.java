@@ -72,15 +72,11 @@ public class InterceptorGenerator extends BeanGenerator {
         if (interceptor.isSynthetic()) {
             DotName creatorClassName = DotName.createSimple(interceptor.getCreatorClass());
             baseName = InterceptFunction.class.getSimpleName() + "_" + interceptor.getIdentifier();
-            targetPackage = DotNames.packageName(creatorClassName);
+            targetPackage = DotNames.packagePrefix(creatorClassName);
         } else {
             ClassInfo interceptorClass = interceptor.getTarget().get().asClass();
-            if (interceptorClass.enclosingClass() != null) {
-                baseName = DotNames.simpleName(interceptorClass.enclosingClass()) + "_" + DotNames.simpleName(interceptorClass);
-            } else {
-                baseName = DotNames.simpleName(interceptorClass);
-            }
-            targetPackage = DotNames.packageName(interceptor.getProviderType().name());
+            baseName = interceptorClass.name().withoutPackagePrefix();
+            targetPackage = DotNames.packagePrefix(interceptor.getProviderType().name());
         }
         beanToGeneratedBaseName.put(interceptor, baseName);
         String generatedName = generatedNameFromTarget(targetPackage, baseName, BEAN_SUFFIX);
@@ -101,7 +97,7 @@ public class InterceptorGenerator extends BeanGenerator {
                 : interceptor.getBeanClass();
 
         String baseName = beanToGeneratedBaseName.get(interceptor);
-        String targetPackage = DotNames.packageName(targetPackageClassName);
+        String targetPackage = DotNames.packagePrefix(targetPackageClassName);
         String generatedName = beanToGeneratedName.get(interceptor);
 
         if (existingClasses.contains(generatedName)) {
@@ -122,8 +118,7 @@ public class InterceptorGenerator extends BeanGenerator {
 
     private void generateInterceptor(Gizmo gizmo, InterceptorInfo interceptor, String generatedName, String baseName,
             String targetPackage, boolean isApplicationClass) {
-        // TODO generated name includes `/` instead of `.`
-        gizmo.class_(generatedName.replace('/', '.'), cc -> {
+        gizmo.class_(generatedName, cc -> {
             cc.implements_(InjectableInterceptor.class);
             cc.implements_(Supplier.class);
 

@@ -25,6 +25,9 @@
         <polymer.version>3.5.2</polymer.version>
         <shadycss.version>1.11.2</shadycss.version>
         <dedupe-mixin.version>1.4.0</dedupe-mixin.version>
+        <style-observer.version>0.0.8</style-observer.version>
+        <marked.version>15.0.12</marked.version>
+        <dompurify.version>3.2.6</dompurify.version>
         <vaadin-router.version>1.7.5</vaadin-router.version>
         <lit-state.version>1.7.0</lit-state.version>
         <echarts.version>5.6.0</echarts.version>
@@ -107,7 +110,26 @@
                 <version>${dedupe-mixin.version}</version>
                 <scope>runtime</scope>
             </dependency>
-
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>style-observer</artifactId>
+                <version>${style-observer.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>marked</artifactId>
+                <version>${marked.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>dompurify</artifactId>
+                <version>${dompurify.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            
+            
             <!-- Lit -->
             <dependency>
                 <groupId>org.mvnpm</groupId>

@@ -212,4 +212,17 @@ public class MCPResourcesService {
     private static final String SUB_SCHEME_RECORDED = "recorded/";
     private static final String SLASH = "/";
     private static final String DASH_DATA_DOT_JS = "-data.js";
+
+    /**
+     * Defines a MCP Content
+     *
+     * @see https://modelcontextprotocol.io/docs/concepts/resources
+     */
+    public static class Content {
+        private static final String MIME_TYPE_JSON = "application/json";
+
+        public String uri;
+        public Object text;
+        public String mimeType = MIME_TYPE_JSON; // default
+    }
 }

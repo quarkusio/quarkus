@@ -11,9 +11,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -24,11 +26,16 @@ import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
+import io.quarkus.devui.runtime.mcp.McpServerRuntimeConfig;
+import io.quarkus.devui.runtime.mcp.ResponseHandlers;
+import io.quarkus.devui.runtime.mcp.StreamableHttpHandler;
+import io.quarkus.devui.runtime.mcp.ToolMessageHandler;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarStaticHandler;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -80,8 +87,19 @@ public class DevUIRecorder {
         return new DevUIWebSocket();
     }
 
-    public Handler<RoutingContext> serverSendEventHandler() {
-        return new DevUIServerSentEvents();
+    public Handler<RoutingContext> streamableHttpHandler(Supplier<Vertx> vertx) {
+        // TODO: determine config
+        McpServerRuntimeConfig config = new McpServerRuntimeConfig() {
+            @Override
+            public Duration connectionIdleTimeout() {
+                return Duration.ofMinutes(30);
+            }
+        };
+        return new StreamableHttpHandler(
+                vertx.get(),
+                new ToolMessageHandler(),
+                new ResponseHandlers(),
+                config);
     }
 
     public Handler<RoutingContext> uiHandler(String finalDestination,

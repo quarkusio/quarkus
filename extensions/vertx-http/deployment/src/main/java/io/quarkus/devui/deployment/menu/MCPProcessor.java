@@ -14,7 +14,9 @@ import io.quarkus.devui.runtime.mcp.MCPResourcesService;
 import io.quarkus.devui.runtime.mcp.MCPToolsService;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 
 public class MCPProcessor {
@@ -52,11 +54,13 @@ public class MCPProcessor {
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    @io.quarkus.deployment.annotations.Record(ExecutionTime.STATIC_INIT)
+    @io.quarkus.deployment.annotations.Record(ExecutionTime.RUNTIME_INIT)
     void registerDevUiHandlers(
+            CoreVertxBuildItem vertx,
             BuildProducer<RouteBuildItem> routeProducer,
             DevUIRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
+            BuildProducer<RequireBodyHandlerBuildItem> requireBodyHandlerProducer, // TODO: is this really needed to read the request body?
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) throws IOException {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
@@ -67,8 +71,9 @@ public class MCPProcessor {
         routeProducer.produce(
                 nonApplicationRootPathBuildItem
                         .routeBuilder().route(DEVMCP)
-                        .handler(recorder.serverSendEventHandler())
+                        .handler(recorder.streamableHttpHandler(vertx.getVertx()))
                         .build());
+        requireBodyHandlerProducer.produce(new RequireBodyHandlerBuildItem());
 
     }
 

@@ -592,7 +592,13 @@ public class QuartzSchedulerImpl extends BaseScheduler implements QuartzSchedule
                 "" + runtimeConfig.misfireThreshold().toMillis());
 
         if (buildTimeConfig.storeType().isDbStore()) {
-            String dataSource = buildTimeConfig.dataSourceName().orElse("QUARKUS_QUARTZ_DEFAULT_DATASOURCE");
+            String dataSource;
+            if (buildTimeConfig.dataSourceName().isEmpty() && buildTimeConfig.deferDatasourceCheck()) {
+                // deferred datasource resolution; pick the runtime config value
+                dataSource = runtimeConfig.deferredDatasourceName().orElse("QUARKUS_QUARTZ_DEFAULT_DATASOURCE");
+            } else {
+                dataSource = buildTimeConfig.dataSourceName().orElse("QUARKUS_QUARTZ_DEFAULT_DATASOURCE");
+            }
             QuarkusQuartzConnectionPoolProvider.setDataSourceName(dataSource);
             boolean serializeJobData = buildTimeConfig.serializeJobData();
             props.put(StdSchedulerFactory.PROP_JOB_STORE_USE_PROP, serializeJobData ? "false" : "true");

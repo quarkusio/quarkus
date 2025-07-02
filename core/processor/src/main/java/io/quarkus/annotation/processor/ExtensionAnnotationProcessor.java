@@ -43,6 +43,13 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
         boolean useConfigMapping = !Boolean
                 .parseBoolean(utils.processingEnv().getOptions().getOrDefault(Options.LEGACY_CONFIG_ROOT, "false"));
+
+        if (!useConfigMapping) {
+            throw new IllegalArgumentException(
+                    "Starting with Quarkus 3.25, legacy config classes (deprecated since Quarkus 3.19) are not supported anymore. "
+                            + "Please migrate the configuration of your extension to interfaces annotated with @ConfigMapping. See https://quarkus.io/guides/config-mappings#config-mappings for more information.");
+        }
+
         boolean debug = Boolean.getBoolean(DEBUG);
 
         ExtensionModule extensionModule = utils.extension().getExtensionModule();

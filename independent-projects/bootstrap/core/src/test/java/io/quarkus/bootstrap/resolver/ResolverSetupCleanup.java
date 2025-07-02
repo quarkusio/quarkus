@@ -139,6 +139,10 @@ public class ResolverSetupCleanup {
         return settingsXml;
     }
 
+    protected Path getLocalRepoHome() {
+        return localRepoHome;
+    }
+
     protected boolean cleanWorkDir() {
         return true;
     }

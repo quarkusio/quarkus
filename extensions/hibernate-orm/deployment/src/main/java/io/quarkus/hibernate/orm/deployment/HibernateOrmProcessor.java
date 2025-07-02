@@ -4,7 +4,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureProperties;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureSqlLoadScript;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.hasEntities;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonMapperKind;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
@@ -308,13 +307,6 @@ public final class HibernateOrmProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
-
-        if (!hasEntities(jpaModel)) {
-            // we can bail out early as there are no entities
-            LOG.warn("Hibernate ORM is disabled because no JPA entities were found");
-            return;
-        }
-
         // First produce the PUs having a persistence.xml: these are not reactive, as we don't allow using a persistence.xml for them.
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             PersistenceUnitDescriptor xmlDescriptor = persistenceXmlDescriptorBuildItem.getDescriptor();
@@ -525,7 +517,7 @@ public final class HibernateOrmProcessor {
             LaunchModeBuildItem launchMode) throws Exception {
         validateHibernatePropertiesNotUsed();
 
-        final boolean enableORM = hasEntities(jpaModel);
+        final boolean enableORM = !persistenceUnitDescriptorBuildItems.isEmpty();
         final boolean hibernateReactivePresent = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
         //The Hibernate Reactive extension is able to handle registration of PersistenceProviders for both reactive and
         //traditional blocking Hibernate, by depending on this module and delegating to this code.
@@ -603,11 +595,7 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     void handleNativeImageImportSql(BuildProducer<NativeImageResourceBuildItem> resources,
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
-            JpaModelBuildItem jpaModel) {
-        if (!hasEntities(jpaModel)) {
-            return;
-        }
+            List<PersistenceUnitDescriptorBuildItem> descriptors) {
         for (PersistenceUnitDescriptorBuildItem i : descriptors) {
             //add resources
             String resourceName = i.getExplicitSqlImportScriptResourceName();
@@ -640,9 +628,8 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     public void build(BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
-            JpaModelBuildItem jpaModel) throws Exception {
-        if (!hasEntities(jpaModel)) {
+            List<PersistenceUnitDescriptorBuildItem> descriptors) throws Exception {
+        if (descriptors.isEmpty()) {
             return;
         }
 
@@ -686,9 +673,9 @@ public final class HibernateOrmProcessor {
     @Consume(PersistenceProviderSetUpBuildItem.class)
     @Record(RUNTIME_INIT)
     public ServiceStartBuildItem startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
-            JpaModelBuildItem jpaModel,
+            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             ShutdownContextBuildItem shutdownContextBuildItem) {
-        if (hasEntities(jpaModel)) {
+        if (!persistenceUnitDescriptors.isEmpty()) {
             recorder.startAllPersistenceUnits(beanContainer.getValue(), shutdownContextBuildItem);
         }
 
@@ -927,10 +914,6 @@ public final class HibernateOrmProcessor {
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = findJdbcDataSource(persistenceUnitName, persistenceUnitConfig,
                 jdbcDataSources);
-
-        if (modelClassesAndPackages.isEmpty()) {
-            LOG.warnf("Could not find any entities affected to the persistence unit '%s'.", persistenceUnitName);
-        }
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName, persistenceUnitName,

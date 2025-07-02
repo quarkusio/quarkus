@@ -1,14 +1,15 @@
 package org.acme.example.extension.deployment;
 
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigRoot;
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
+@ConfigMapping(prefix = "quarkus.example")
 @ConfigRoot
-public class ExampleConfig {
-
+public interface ExampleConfig {
     /**
      * name
      */
-    @ConfigItem(defaultValue = "none")
-    String name;
+    @WithDefault("none")
+    String name();
 }

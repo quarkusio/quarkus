@@ -25,7 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.OptionalInt;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -248,8 +247,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    List<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles(HibernateOrmConfig config,
-            LaunchModeBuildItem launchMode) {
+    List<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles(HibernateOrmConfig config) {
         List<HotDeploymentWatchedFileBuildItem> watchedFiles = new ArrayList<>();
         if (!shouldIgnorePersistenceXmlResources(config)) {
             watchedFiles.add(new HotDeploymentWatchedFileBuildItem("META-INF/persistence.xml"));
@@ -605,8 +603,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void handleNativeImageImportSql(BuildProducer<NativeImageResourceBuildItem> resources,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
-            JpaModelBuildItem jpaModel,
-            LaunchModeBuildItem launchMode) {
+            JpaModelBuildItem jpaModel) {
         if (!hasEntities(jpaModel)) {
             return;
         }
@@ -641,10 +638,7 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
-    public void build(
-            HibernateOrmRecorder recorder,
-            BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+    public void build(BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) throws Exception {
         if (!hasEntities(jpaModel)) {
@@ -663,12 +657,12 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
+    @Consume(RecorderBeanInitializedBuildItem.class)
     @Record(RUNTIME_INIT)
     public PersistenceProviderSetUpBuildItem setupPersistenceProvider(
             HibernateOrmRecorder recorder,
             Capabilities capabilities,
-            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
-            BuildProducer<RecorderBeanInitializedBuildItem> orderEnforcer) {
+            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems) {
         if (capabilities.isPresent(Capability.AGROAL)) {
             recorder.setupPersistenceProvider(
                     HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
@@ -679,12 +673,12 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
+    @Consume(JdbcDataSourceBuildItem.class)
+    @Consume(JdbcDataSourceSchemaReadyBuildItem.class)
+    @Consume(PersistenceProviderSetUpBuildItem.class)
     @Record(RUNTIME_INIT)
     public ServiceStartBuildItem startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
-            List<JdbcDataSourceBuildItem> dataSourcesConfigured,
-            JpaModelBuildItem jpaModel,
-            List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItem,
-            List<PersistenceProviderSetUpBuildItem> persistenceProviderSetUp) throws Exception {
+            JpaModelBuildItem jpaModel) {
         if (hasEntities(jpaModel)) {
             recorder.startAllPersistenceUnits(beanContainer.getValue());
         }
@@ -1058,10 +1052,6 @@ public final class HibernateOrmProcessor {
             // if it's not the default persistence unit, we mandate an explicit datasource to prevent common errors
             return Optional.empty();
         }
-    }
-
-    private static void setMaxFetchDepth(PersistenceUnitDescriptor descriptor, OptionalInt maxFetchDepth) {
-        descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
     }
 
     @SuppressWarnings("deprecation")

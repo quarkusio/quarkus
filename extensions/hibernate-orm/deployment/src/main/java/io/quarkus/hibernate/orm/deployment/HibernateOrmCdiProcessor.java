@@ -70,7 +70,6 @@ import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
-import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
@@ -160,7 +159,6 @@ public class HibernateOrmCdiProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void generateJpaConfigBean(HibernateOrmRecorder recorder,
             Capabilities capabilities,
-            HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                 .configure(JPAConfig.class)
@@ -168,7 +166,7 @@ public class HibernateOrmCdiProcessor {
                 .scope(Singleton.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.jpaConfigSupplier(hibernateOrmRuntimeConfig))
+                .supplier(recorder.jpaConfigSupplier())
                 .destroyer(JPAConfig.Destroyer.class);
 
         // Add a synthetic dependency from JPAConfig to any datasource/pool,

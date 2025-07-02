@@ -248,6 +248,9 @@ public class FastBootMetadataBuilder {
 
         if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE
                 && multiTenancyStrategy != MultiTenancyStrategy.DISCRIMINATOR) {
+            // Note: the counterpart of this code, but for single-tenancy (injecting the datasource),
+            // can be found in io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.injectDataSource
+
             // We need to initialize the multi tenant connection provider
             // on static init as it is used in MetadataBuildingOptionsImpl
             // to determine if multi-tenancy is enabled.

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -15,10 +16,13 @@ public class ShutdownRecorder {
     private static final Logger log = Logger.getLogger(ShutdownRecorder.class);
 
     private static volatile List<ShutdownListener> shutdownListeners;
-    private static volatile ShutdownConfig shutdownConfig;
+    private static volatile RuntimeValue<ShutdownConfig> shutdownConfig;
     private static volatile boolean delayEnabled;
 
-    public ShutdownRecorder(ShutdownConfig shutdownConfig) {
+    /**
+     * ShutdownRecorder is only called in <code>RUNTIME_INIT</code> build steps, so it is safe to set ShutdownConfig.
+     */
+    public ShutdownRecorder(RuntimeValue<ShutdownConfig> shutdownConfig) {
         ShutdownRecorder.shutdownConfig = shutdownConfig;
     }
 
@@ -50,9 +54,9 @@ public class ShutdownRecorder {
     }
 
     private static void waitForDelay() {
-        if (delayEnabled && shutdownConfig.isDelayEnabled()) {
+        if (delayEnabled && shutdownConfig.getValue().isDelayEnabled()) {
             try {
-                Thread.sleep(shutdownConfig.delay().get().toMillis());
+                Thread.sleep(shutdownConfig.getValue().delay().get().toMillis());
             } catch (InterruptedException e) {
                 log.error("Interrupted while waiting for delay, continuing to shutdown immediately");
             }
@@ -64,8 +68,8 @@ public class ShutdownRecorder {
         for (ShutdownListener i : shutdownListeners) {
             i.shutdown(new LatchShutdownNotification(shutdown));
         }
-        if (shutdownConfig.isTimeoutEnabled()
-                && !shutdown.await(shutdownConfig.timeout().get().toMillis(), TimeUnit.MILLISECONDS)) {
+        if (shutdownConfig.getValue().isTimeoutEnabled()
+                && !shutdown.await(shutdownConfig.getValue().timeout().get().toMillis(), TimeUnit.MILLISECONDS)) {
             log.error("Timed out waiting for graceful shutdown, shutting down anyway.");
         }
     }

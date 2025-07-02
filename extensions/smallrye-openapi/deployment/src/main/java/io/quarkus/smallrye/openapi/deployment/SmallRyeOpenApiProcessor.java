@@ -106,7 +106,6 @@ import io.quarkus.smallrye.openapi.deployment.spi.OpenApiDocumentBuildItem;
 import io.quarkus.smallrye.openapi.runtime.OpenApiConstants;
 import io.quarkus.smallrye.openapi.runtime.OpenApiDocumentService;
 import io.quarkus.smallrye.openapi.runtime.OpenApiRecorder;
-import io.quarkus.smallrye.openapi.runtime.OpenApiRuntimeConfig;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoBasicSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoBearerTokenSecurityFilter;
 import io.quarkus.smallrye.openapi.runtime.filter.AutoSecurityFilter;
@@ -255,7 +254,6 @@ public class SmallRyeOpenApiProcessor {
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            OpenApiRuntimeConfig openApiRuntimeConfig,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
             List<FilterBuildItem> filterBuildItems,
@@ -275,7 +273,7 @@ public class SmallRyeOpenApiProcessor {
             recorder.setupClDevMode(shutdownContext);
         }
 
-        Handler<RoutingContext> handler = recorder.handler(openApiRuntimeConfig);
+        Handler<RoutingContext> handler = recorder.handler();
 
         Consumer<Route> corsFilter = null;
         // Add CORS filter if the path is not attached to main root

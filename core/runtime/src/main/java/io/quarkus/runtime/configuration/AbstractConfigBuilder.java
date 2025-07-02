@@ -123,7 +123,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
     public static ConfigClass configClass(final String mappingClass, final String prefix) {
         try {
             // To support mappings that are not public
-            return ConfigClass.configClass(Thread.currentThread().getContextClassLoader().loadClass(mappingClass), prefix);
+            Class<?> klass = Thread.currentThread().getContextClassLoader().loadClass(mappingClass);
+            return ConfigClass.configClass(klass, prefix);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -132,7 +133,8 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
     public static void ensureLoaded(final String mappingClass) {
         try {
             // To support mappings that are not public
-            ConfigMappingLoader.ensureLoaded(Thread.currentThread().getContextClassLoader().loadClass(mappingClass));
+            Class<?> klass = Thread.currentThread().getContextClassLoader().loadClass(mappingClass);
+            ConfigMappingLoader.ensureLoaded(klass);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

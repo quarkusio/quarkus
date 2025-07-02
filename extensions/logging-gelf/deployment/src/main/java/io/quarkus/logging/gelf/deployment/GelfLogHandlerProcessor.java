@@ -8,7 +8,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.logging.gelf.GelfConfig;
 import io.quarkus.logging.gelf.GelfLogHandlerRecorder;
 
 class GelfLogHandlerProcessor {
@@ -20,8 +19,8 @@ class GelfLogHandlerProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    LogHandlerBuildItem build(GelfLogHandlerRecorder recorder, GelfConfig config) {
-        return new LogHandlerBuildItem(recorder.initializeHandler(config));
+    LogHandlerBuildItem build(GelfLogHandlerRecorder recorder) {
+        return new LogHandlerBuildItem(recorder.initializeHandler());
     }
 
     @BuildStep

@@ -24,6 +24,7 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantIdentityProvider;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
@@ -41,15 +42,23 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class OidcRecorder {
-
     public static final String ACR_VALUES_TO_MAX_AGE_SEPARATOR = "@#$%@";
+
     static final Logger LOG = Logger.getLogger(OidcRecorder.class);
 
-    public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(OidcConfig config, Supplier<Vertx> vertx) {
+    private final RuntimeValue<OidcConfig> oidcConfig;
+    private final RuntimeValue<SecurityConfig> securityConfig;
+
+    public OidcRecorder(final RuntimeValue<OidcConfig> oidcConfig, final RuntimeValue<SecurityConfig> securityConfig) {
+        this.oidcConfig = oidcConfig;
+        this.securityConfig = securityConfig;
+    }
+
+    public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(Supplier<Vertx> vertx) {
         return new Supplier<DefaultTokenIntrospectionUserInfoCache>() {
             @Override
             public DefaultTokenIntrospectionUserInfoCache get() {
-                return new DefaultTokenIntrospectionUserInfoCache(config, vertx.get());
+                return new DefaultTokenIntrospectionUserInfoCache(oidcConfig.getValue(), vertx.get());
             }
         };
     }
@@ -61,15 +70,14 @@ public class OidcRecorder {
 
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
-            OidcConfig config, Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
-            SecurityConfig securityConfig) {
+            Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry) {
         return new Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean>() {
             @Override
             public TenantConfigBean apply(SyntheticCreationalContext<TenantConfigBean> ctx) {
-                final OidcImpl oidc = new OidcImpl(config);
+                final OidcImpl oidc = new OidcImpl(oidcConfig.getValue());
                 ctx.getInjectedReference(new TypeLiteral<Event<Oidc>>() {
                 }).fire(oidc);
-                return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.events().enabled());
+                return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled());
             }
         };
     }

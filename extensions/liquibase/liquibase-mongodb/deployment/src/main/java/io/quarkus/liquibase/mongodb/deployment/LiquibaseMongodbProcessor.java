@@ -44,11 +44,9 @@ import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.liquibase.mongodb.LiquibaseMongodbFactory;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbBuildTimeConfig;
-import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbConfig;
 import io.quarkus.liquibase.mongodb.runtime.LiquibaseMongodbRecorder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.Dependency;
-import io.quarkus.mongodb.runtime.MongodbConfig;
 import io.quarkus.paths.PathFilter;
 import liquibase.change.Change;
 import liquibase.change.DatabaseChangeProperty;
@@ -215,9 +213,6 @@ class LiquibaseMongodbProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void createBeans(LiquibaseMongodbRecorder recorder,
-            LiquibaseMongodbConfig liquibaseMongodbConfig,
-            LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig,
-            MongodbConfig mongodbConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
@@ -225,7 +220,7 @@ class LiquibaseMongodbProcessor {
                 .scope(ApplicationScoped.class) // this is what the existing code does, but it doesn't seem reasonable
                 .setRuntimeInit()
                 .unremovable()
-                .supplier(recorder.liquibaseSupplier(liquibaseMongodbConfig, liquibaseMongodbBuildTimeConfig, mongodbConfig));
+                .supplier(recorder.liquibaseSupplier());
 
         syntheticBeanBuildItemBuildProducer.produce(configurator.done());
     }

@@ -36,6 +36,7 @@ import io.quarkus.hibernate.orm.runtime.boot.registry.PreconfiguredServiceRegist
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 
@@ -222,7 +223,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
         if (dataSourceName.isPresent()) {
             // Inject the datasource
-            injectDataSource(persistenceUnitName, dataSourceName.get(), runtimeSettingsBuilder);
+            injectDataSource(persistenceUnitName, dataSourceName.get(), recordedState.getMultiTenancyStrategy(),
+                    runtimeSettingsBuilder);
         }
 
         // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
@@ -397,8 +399,10 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
     }
 
     private static void injectDataSource(String persistenceUnitName, String dataSourceName,
+            MultiTenancyStrategy multiTenancyStrategy,
             RuntimeSettings.Builder runtimeSettingsBuilder) {
-        // first convert
+        // Note: the counterpart of this code, but for multitenancy (injecting the connection provider),
+        // can be found in io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder.mergeSettings
 
         if (runtimeSettingsBuilder.isConfigured(AvailableSettings.URL) ||
                 runtimeSettingsBuilder.isConfigured(AvailableSettings.DATASOURCE) ||
@@ -407,6 +411,16 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 runtimeSettingsBuilder.isConfigured(AvailableSettings.JAKARTA_JTA_DATASOURCE) ||
                 runtimeSettingsBuilder.isConfigured(AvailableSettings.JAKARTA_NON_JTA_DATASOURCE)) {
             // the datasource has been defined in the persistence unit, we can bail out
+            return;
+        }
+
+        if (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE
+                && multiTenancyStrategy != MultiTenancyStrategy.DISCRIMINATOR) {
+            // Nothing to do: the datasource retrieval will be handled dynamically
+            // by an implementation of TenantConnectionResolver -- for instance
+            // io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver.
+            // In the case of database multi-tenancy, that connection resolver
+            // might not even use the assigned datasource.
             return;
         }
 

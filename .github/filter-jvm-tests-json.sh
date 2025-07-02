@@ -19,6 +19,19 @@ if [[ "${GITHUB_REPOSITORY:-DEFINED_ON_CI}" != "quarkusio/quarkus" ]]; then
   JSON=$(echo -n "$JSON" | jq 'map(. | select(.["os-name"]!="macos-arm64-latest"))')
 fi
 
+JSON=$(echo "$JSON" | jq '
+  map(
+    . + {
+      tag: (
+        .name
+        | ascii_downcase
+        | gsub(" "; "-")
+        | gsub("-+"; "-")
+      )
+    }
+  )
+')
+
 # Step 0: print unfiltered json and exit in case the parameter is '_all_' (full build) or print nothing if empty (no changes)
 if [ "$1" == '_all_' ]
 then
@@ -57,6 +70,5 @@ else
   done
   JSON=$(echo -n $JSON | jq --arg category Integration --arg modules "${INTEGRATION_TESTS_COMMAND}" '( .[] | select(.category == $category) ).modules = $modules')
 fi
-
 
 echo \{java: ${JSON}\}

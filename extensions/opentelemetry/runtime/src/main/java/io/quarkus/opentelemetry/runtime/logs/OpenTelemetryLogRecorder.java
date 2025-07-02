@@ -11,14 +11,19 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class OpenTelemetryLogRecorder {
-    public RuntimeValue<Optional<Handler>> initializeHandler(final BeanContainer beanContainer,
-            final OTelRuntimeConfig config) {
-        if (config.sdkDisabled() || !config.logs().handlerEnabled()) {
+    private final RuntimeValue<OTelRuntimeConfig> runtimeConfig;
+
+    public OpenTelemetryLogRecorder(final RuntimeValue<OTelRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public RuntimeValue<Optional<Handler>> initializeHandler(final BeanContainer beanContainer) {
+        if (runtimeConfig.getValue().sdkDisabled() || !runtimeConfig.getValue().logs().handlerEnabled()) {
             return new RuntimeValue<>(Optional.empty());
         }
         final OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
         final OpenTelemetryLogHandler logHandler = new OpenTelemetryLogHandler(openTelemetry);
-        logHandler.setLevel(config.logs().level());
+        logHandler.setLevel(runtimeConfig.getValue().logs().level());
         return new RuntimeValue<>(Optional.of(logHandler));
     }
 }

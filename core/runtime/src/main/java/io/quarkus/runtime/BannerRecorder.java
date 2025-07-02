@@ -7,7 +7,7 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class BannerRecorder {
-    final RuntimeValue<BannerRuntimeConfig> bannerRuntimeConfig;
+    private final RuntimeValue<BannerRuntimeConfig> bannerRuntimeConfig;
 
     public BannerRecorder(RuntimeValue<BannerRuntimeConfig> bannerRuntimeConfig) {
         this.bannerRuntimeConfig = bannerRuntimeConfig;

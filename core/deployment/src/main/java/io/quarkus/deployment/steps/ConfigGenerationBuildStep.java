@@ -101,6 +101,8 @@ import io.quarkus.runtime.configuration.RuntimeOverrideConfigSource;
 import io.quarkus.runtime.configuration.RuntimeOverrideConfigSourceBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
 import io.smallrye.config.ConfigMappingInterface;
+import io.smallrye.config.ConfigMappingLoader;
+import io.smallrye.config.ConfigMappingMetadata;
 import io.smallrye.config.ConfigMappings;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
@@ -677,6 +679,13 @@ public class ConfigGenerationBuildStep {
                         .setModifiers(Opcodes.ACC_STATIC).getFieldDescriptor();
                 clinit.writeStaticField(mappingField, clinit.invokeStaticMethod(CONFIG_CLASS,
                         clinit.load(mapping.getType().getName()), clinit.load(mapping.getPrefix())));
+
+                // Cache implementation types of nested elements
+                List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader
+                        .getConfigMappingsMetadata(mapping.getType());
+                for (ConfigMappingMetadata configMappingMetadata : configMappingsMetadata) {
+                    clinit.invokeStaticMethod(ENSURE_LOADED, clinit.load(configMappingMetadata.getInterfaceType().getName()));
+                }
 
                 fields.put(mapping, mappingField);
             }

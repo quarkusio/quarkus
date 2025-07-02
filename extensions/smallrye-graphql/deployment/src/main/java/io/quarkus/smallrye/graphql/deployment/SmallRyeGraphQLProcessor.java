@@ -69,7 +69,6 @@ import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfig;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLConfigMapping;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLLocaleResolver;
 import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRecorder;
-import io.quarkus.smallrye.graphql.runtime.SmallRyeGraphQLRuntimeConfig;
 import io.quarkus.vertx.http.deployment.BodyHandlerBuildItem;
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
@@ -367,8 +366,7 @@ public class SmallRyeGraphQLProcessor {
         if (graphQLDevUILogBuildItem.isPresent()) {
             publisher = Optional.of(graphQLDevUILogBuildItem.get().getPublisher());
         }
-        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, graphQLConfig,
-                publisher);
+        RuntimeValue<Boolean> initialized = recorder.createExecutionService(beanContainer.getValue(), schema, publisher);
         graphQLInitializedProducer.produce(new SmallRyeGraphQLInitializedBuildItem(initialized));
 
         // Make sure the complex object from the application can work in native mode
@@ -838,7 +836,6 @@ public class SmallRyeGraphQLProcessor {
     void registerGraphQLUiHandler(
             BuildProducer<RouteBuildItem> routeProducer,
             SmallRyeGraphQLRecorder recorder,
-            SmallRyeGraphQLRuntimeConfig runtimeConfig,
             LaunchModeBuildItem launchMode,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeGraphQLConfig graphQLConfig,
@@ -856,7 +853,7 @@ public class SmallRyeGraphQLProcessor {
                     .produce(new SmallRyeGraphQLBuildItem(result.getFinalDestination(), graphQLUiPath));
 
             Handler<RoutingContext> handler = recorder.uiHandler(result.getFinalDestination(),
-                    graphQLUiPath, result.getWebRootConfigurations(), runtimeConfig, shutdownContext);
+                    graphQLUiPath, result.getWebRootConfigurations(), shutdownContext);
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .route(graphQLConfig.ui().rootPath())
                     .displayOnNotFoundPage("GraphQL UI")

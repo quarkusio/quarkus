@@ -73,7 +73,6 @@ import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.core.deployment.IgnoredContextLocalDataKeysBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
-import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.AuthorizationPolicyStorage;
 import io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism;
@@ -132,10 +131,9 @@ public class HttpSecurityProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setMtlsCertificateRoleProperties(
             HttpSecurityRecorder recorder,
-            VertxHttpConfig httpConfig,
             VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (isMtlsClientAuthenticationEnabled(httpBuildTimeConfig)) {
-            recorder.setMtlsCertificateRoleProperties(httpConfig);
+            recorder.setMtlsCertificateRoleProperties();
         }
     }
 
@@ -178,7 +176,6 @@ public class HttpSecurityProcessor {
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initBasicAuth(HttpSecurityRecorder recorder,
-            VertxHttpConfig httpConfig,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
 
@@ -190,7 +187,7 @@ public class HttpSecurityProcessor {
                 .configure(BasicAuthenticationMechanism.class)
                 .types(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class)
                 .scope(Singleton.class)
-                .supplier(recorder.basicAuthenticationMechanismBean(httpConfig, httpBuildTimeConfig.auth().form().enabled()))
+                .supplier(recorder.basicAuthenticationMechanismBean(httpBuildTimeConfig.auth().form().enabled()))
                 .setRuntimeInit()
                 .unremovable();
         if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
@@ -272,11 +269,10 @@ public class HttpSecurityProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void initializeHttpSecurity(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
-            HttpSecurityRecorder recorder, VertxHttpConfig httpConfig, BeanContainerBuildItem beanContainerBuildItem) {
+            HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem) {
         if (authenticationHandler.isPresent()) {
-            recorder.prepareHttpSecurityConfiguration(httpConfig);
-            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, httpConfig,
-                    beanContainerBuildItem.getValue());
+            recorder.prepareHttpSecurityConfiguration();
+            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, beanContainerBuildItem.getValue());
         }
     }
 

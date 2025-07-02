@@ -26,16 +26,22 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class LdapRecorder {
-
     private static final Logger log = LoggerFactory.getLogger(LdapRecorder.class);
+
+    private final RuntimeValue<LdapSecurityRealmRuntimeConfig> runtimeConfig;
+
+    public LdapRecorder(final RuntimeValue<LdapSecurityRealmRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
 
     /**
      * Create a runtime value for a {@linkplain LdapSecurityRealm}
      *
-     * @param runtimeConfig the realm config
      * @return runtime value wrapper for the SecurityRealm
      */
-    public RuntimeValue<SecurityRealm> createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig) {
+    public RuntimeValue<SecurityRealm> createRealm() {
+        LdapSecurityRealmRuntimeConfig runtimeConfig = this.runtimeConfig.getValue();
+
         LdapSecurityRealmBuilder.IdentityMappingBuilder identityMappingBuilder = LdapSecurityRealmBuilder.builder()
                 .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext()))
                 .identityMapping();

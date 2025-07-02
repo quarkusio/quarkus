@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import jakarta.ws.rs.core.HttpHeaders;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -55,5 +56,10 @@ public class DefaultFileUpload implements FileUpload {
             return null;
         }
         return HeaderUtil.extractQuotedValueFromHeader(ct, "charset");
+    }
+
+    @Override
+    public MultivaluedMap<String, String> getHeaders() {
+        return fileUpload.getHeaders();
     }
 }

@@ -673,14 +673,13 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                     //we have some filters, for files that we don't want to delete
                     continue;
                 }
-                log.info("Scheduled for removal " + file);
                 if (removedFiles.isEmpty()) {
                     removedFiles = new ArrayList<>();
                 }
                 removedFiles.add(applicationRoot.resolve(file));
             }
             if (!removedFiles.isEmpty()) {
-                DevModeMediator.removedFiles.addLast(removedFiles);
+                DevModeMediator.scheduleDelete(removedFiles);
             }
             return ret;
         } catch (IOException e) {
@@ -727,12 +726,11 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             final List<Path> moduleChangedSourceFilePaths = new ArrayList<>();
 
             for (Path sourcePath : cuf.apply(module).getSourcePaths()) {
-                final Set<File> changedSourceFiles;
-                Path start = sourcePath;
-                if (!Files.exists(start)) {
+                if (!Files.exists(sourcePath)) {
                     continue;
                 }
-                try (final Stream<Path> sourcesStream = Files.walk(start)) {
+                final Set<File> changedSourceFiles;
+                try (final Stream<Path> sourcesStream = Files.walk(sourcePath)) {
                     changedSourceFiles = sourcesStream
                             .parallel()
                             .filter(p -> matchingHandledExtension(p).isPresent()

@@ -10,7 +10,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
-public class DisplayOpenAPiEndpointInNotFoundExceptionPageTest {
+public class DisplayOpenAPiEndpointInNotFoundExceptionPageDMT {
     private static final String OPEN_API_PATH = "/openapi-path";
     private static final String SWAGGER_UI_PATH = "/swagger-path";
 

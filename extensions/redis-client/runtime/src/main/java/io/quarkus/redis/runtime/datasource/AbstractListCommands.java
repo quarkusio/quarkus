@@ -127,7 +127,6 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         validate(timeout, "timeout");
 
         RedisCommand cmd = RedisCommand.of(Command.BLPOP);
-        cmd.put(timeout.toSeconds());
         cmd.putAll(marshaller.encode(keys));
         cmd.put(timeout.toSeconds());
 
@@ -140,7 +139,6 @@ class AbstractListCommands<K, V> extends ReactiveSortable<K, V> {
         validate(timeout, "timeout");
 
         RedisCommand cmd = RedisCommand.of(Command.BRPOP);
-        cmd.put(timeout.toSeconds());
         cmd.putAll(marshaller.encode(keys));
         cmd.put(timeout.toSeconds());
 

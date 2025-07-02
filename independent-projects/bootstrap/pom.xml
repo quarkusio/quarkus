@@ -40,7 +40,7 @@
         <assertj.version>3.27.3</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <junit5.version>5.13.1</junit5.version>
+        <junit5.version>5.13.2</junit5.version>
         <maven-core.version>3.9.9</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.9.0.M4</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.13.1</maven-plugin-annotations.version>
@@ -69,7 +69,7 @@
         <plexus-interpolation.version>1.26</plexus-interpolation.version>
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
         <plexus-utils.version>3.5.1</plexus-utils.version>
-        <smallrye-common.version>2.12.0</smallrye-common.version>
+        <smallrye-common.version>2.12.2</smallrye-common.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
         <gradle-tooling.version>8.14</gradle-tooling.version>
         <quarkus-fs-util.version>1.0.0</quarkus-fs-util.version>

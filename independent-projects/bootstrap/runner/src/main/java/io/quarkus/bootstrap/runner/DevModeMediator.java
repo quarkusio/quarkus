@@ -9,11 +9,12 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Deque;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.LinkedBlockingDeque;
 
 import org.jboss.logging.Logger;
 
@@ -26,20 +27,30 @@ public class DevModeMediator {
 
     protected static final Logger LOGGER = Logger.getLogger(DevModeMediator.class);
 
-    public static final Deque<List<Path>> removedFiles = new LinkedBlockingDeque<>();
+    private static final Set<Path> removedFiles = new HashSet<>();
+
+    public static void scheduleDelete(Collection<Path> deletedPaths) {
+        synchronized (removedFiles) {
+            for (Path deletedPath : deletedPaths) {
+                if (removedFiles.add(deletedPath)) {
+                    LOGGER.info("Scheduled for removal " + deletedPath);
+                }
+            }
+        }
+    }
 
     static void doDevMode(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
         Path deploymentClassPath = appRoot.resolve(QuarkusEntryPoint.LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT);
         Closeable closeable = doStart(appRoot, deploymentClassPath);
         Timer timer = new Timer("Classpath Change Timer", false);
-        timer.schedule(new ChangeDetector(appRoot, deploymentClassPath, closeable), 1000, 1000);
+        timer.schedule(new ChangeDetector(appRoot, appRoot.resolve(QuarkusEntryPoint.LIB_DEPLOYMENT_APPMODEL_DAT),
+                deploymentClassPath, closeable), 1000, 1000);
 
     }
 
     private static Closeable doStart(Path appRoot, Path deploymentClassPath) throws IOException, ClassNotFoundException,
             IllegalAccessException, InvocationTargetException, NoSuchMethodException {
-        Closeable closeable = null;
         try (ObjectInputStream in = new ObjectInputStream(
                 Files.newInputStream(deploymentClassPath))) {
             List<String> paths = (List<String>) in.readObject();
@@ -51,12 +62,11 @@ public class DevModeMediator {
                     throw new RuntimeException(e);
                 }
             }).toArray(URL[]::new));
-            closeable = new AppProcessCleanup(
+            return new AppProcessCleanup(
                     (Closeable) loader.loadClass("io.quarkus.deployment.mutability.DevModeTask")
                             .getDeclaredMethod("main", Path.class).invoke(null, appRoot),
                     loader);
         }
-        return closeable;
     }
 
     private static class AppProcessCleanup implements Closeable {
@@ -77,45 +87,58 @@ public class DevModeMediator {
     }
 
     private static class ChangeDetector extends TimerTask {
+
+        private static long getLastModified(Path appModelDat) throws IOException {
+            return Files.getLastModifiedTime(appModelDat).toMillis();
+        }
+
         private final Path appRoot;
-        /**
-         * If the pom.xml file is changed then this file will be updated
-         *
-         * So we just check it for changes.
-         *
-         * TODO: is there a potential issue with rsync based implementations not being fully synced? We can just sync this file
-         * last
-         * but it gets tricky if we can't control the sync
-         */
         private final Path deploymentClassPath;
 
+        /**
+         * If a pom.xml file is changed then this file will be updated. So we just check it for changes.
+         *
+         * We use the {@link QuarkusEntryPoint#LIB_DEPLOYMENT_APPMODEL_DAT} instead of the
+         * {@link QuarkusEntryPoint#LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT}
+         * because the application model contains more information about the dependencies.
+         * A mutable-jar will typically be built as a production application, which may be missing information about reloadable
+         * dependencies.
+         * When a mutable-jar is launched in remote-dev mode, the client will update the appmodel.dat with the information about
+         * the reloadable dependencies.
+         *
+         * TODO: is there a potential issue with rsync based implementations not being fully synced? We can just sync this file
+         * last but it gets tricky if we can't control the sync
+         */
+        private final Path appModelDat;
         private long lastModified;
 
         private Closeable closeable;
 
-        public ChangeDetector(Path appRoot, Path deploymentClassPath, Closeable closeable) throws IOException {
+        public ChangeDetector(Path appRoot, Path appModelDat, Path deploymentClassPath, Closeable closeable)
+                throws IOException {
             this.appRoot = appRoot;
             this.deploymentClassPath = deploymentClassPath;
             this.closeable = closeable;
-            lastModified = Files.getLastModifiedTime(deploymentClassPath).toMillis();
+            this.appModelDat = appModelDat;
+            lastModified = getLastModified(appModelDat);
         }
 
         @Override
         public void run() {
-
             try {
-                long time = Files.getLastModifiedTime(deploymentClassPath).toMillis();
+                long time = getLastModified(appModelDat);
                 if (lastModified != time) {
                     lastModified = time;
                     if (closeable != null) {
                         closeable.close();
                     }
-                    closeable = null;
-                    final List<Path> pathsToDelete = removedFiles.pollFirst();
-                    if (pathsToDelete != null) {
-                        for (Path p : pathsToDelete) {
-                            var sb = new StringBuilder().append("Deleting ").append(p);
-                            if (!Files.deleteIfExists(p)) {
+                    synchronized (removedFiles) {
+                        var removedFilesIterator = removedFiles.iterator();
+                        while (removedFilesIterator.hasNext()) {
+                            final Path removedFile = removedFilesIterator.next();
+                            removedFilesIterator.remove();
+                            var sb = new StringBuilder().append("Deleting ").append(removedFile);
+                            if (!Files.deleteIfExists(removedFile)) {
                                 sb.append(" didn't succeed");
                             }
                             LOGGER.info(sb.toString());
@@ -132,7 +155,5 @@ public class DevModeMediator {
             }
 
         }
-
     }
-
 }

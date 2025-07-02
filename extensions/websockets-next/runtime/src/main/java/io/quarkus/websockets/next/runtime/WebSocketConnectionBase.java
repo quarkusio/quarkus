@@ -8,6 +8,7 @@ import javax.net.ssl.SSLSession;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.vertx.utils.NoBoundChecksBuffer;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.Connection;
@@ -168,9 +169,13 @@ public abstract class WebSocketConnectionBase implements Connection {
         WebSocketBase ws = webSocket();
         if (ws.isClosed()) {
             Short code = ws.closeStatusCode();
-            if (code == null) {
+            if (code == null || code == WebSocketCloseStatus.EMPTY.code()) {
                 // This could happen if the connection is terminated abruptly
-                return CloseReason.INTERNAL_SERVER_ERROR;
+                return CloseReason.EMPTY;
+            }
+            if (code == WebSocketCloseStatus.ABNORMAL_CLOSURE.code()) {
+                // This could happen if a close frame is never received
+                return CloseReason.ABNORMAL;
             }
             return new CloseReason(code, ws.closeReason());
         }

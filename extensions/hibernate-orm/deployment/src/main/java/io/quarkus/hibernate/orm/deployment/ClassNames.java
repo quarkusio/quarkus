@@ -62,6 +62,10 @@ public final class ClassNames {
     public static final DotName HIBERNATE_CACHE = createConstant("org.hibernate.Cache");
     public static final DotName PERSISTENCE_UNIT_UTIL = createConstant("jakarta.persistence.PersistenceUnitUtil");
 
+    public static final DotName GENERIC_GENERATOR = createConstant("org.hibernate.annotations.GenericGenerator");
+    public static final DotName ID_GENERATOR_TYPE = createConstant("org.hibernate.annotations.IdGeneratorType");
+    public static final DotName VALUE_GENERATION_TYPE = createConstant("org.hibernate.annotations.ValueGenerationType");
+
     public static final DotName INTERCEPTOR = createConstant("org.hibernate.Interceptor");
     public static final DotName STATEMENT_INSPECTOR = createConstant("org.hibernate.resource.jdbc.spi.StatementInspector");
     public static final DotName FORMAT_MAPPER = createConstant("org.hibernate.type.format.FormatMapper");

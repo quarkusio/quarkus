@@ -9,7 +9,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -462,7 +461,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                     });
 
                     tasks.withType(Test.class).configureEach(t -> {
-                        t.setSystemProperties(extractQuarkusTestSystemProperties());
+                        t.setSystemProperties(extractQuarkusTestSystemProperties(project));
 
                         t.getInputs().files(quarkusGenerateTestAppModelTask);
                         // Quarkus test configuration action which should be executed before any Quarkus test
@@ -661,11 +660,12 @@ public class QuarkusPlugin implements Plugin<Project> {
                                 .ifPresent(quarkusTask -> quarkusTask.configure(t -> t.dependsOn(jarTask)));
                     }
                 });
-
         getLazyTask(project, QUARKUS_DEV_TASK_NAME).ifPresent(quarkusDev -> {
             getLazyTask(project, JavaPlugin.PROCESS_RESOURCES_TASK_NAME)
                     .ifPresent(t -> quarkusDev.configure(qd -> qd.dependsOn(t)));
-            addDependencyOnJandexIfConfigured(dep, quarkusDev);
+            if (project.getRootProject().equals(dep.getRootProject())) {
+                addDependencyOnJandexIfConfigured(dep, quarkusDev);
+            }
         });
 
         visitProjectDependencies(project, dep, visited);
@@ -731,16 +731,9 @@ public class QuarkusPlugin implements Plugin<Project> {
         }
     }
 
-    private static Map<String, Object> extractQuarkusTestSystemProperties() {
-        Properties systemProperties = System.getProperties();
-        Map<String, Object> quarkusSystemProperties = new HashMap<>();
-        for (String propertyName : systemProperties.stringPropertyNames()) {
-            if (!propertyName.startsWith("quarkus.test.")) {
-                continue;
-            }
-
-            quarkusSystemProperties.put(propertyName, systemProperties.get(propertyName));
-        }
-        return quarkusSystemProperties;
+    private static Map<String, Object> extractQuarkusTestSystemProperties(Project project) {
+        return new HashMap<>(project.getProviders()
+                .systemPropertiesPrefixedBy("quarkus.test.")
+                .get());
     }
 }

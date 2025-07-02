@@ -204,7 +204,7 @@ jobs:
   build-jdk17:
     name: "Initial JDK 17 Build"
     needs: [ configure ]
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn || 'ubuntu-latest' }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn, 'initial-jdk-17') || 'ubuntu-latest' }}
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
@@ -428,7 +428,7 @@ jobs:
 
   jvm-tests:
     name: ${{ matrix.java.name }}
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     if: needs.calculate-test-jobs.outputs.jvm_matrix
     timeout-minutes: 400
@@ -588,7 +588,7 @@ jobs:
 
   maven-tests:
     name: Maven Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     env:
       MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
@@ -604,12 +604,14 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            tag: "maven-jdk-17"
           }
           - {
             name: "17 Windows",
             java-version: 17,
-            os-name: "windows-latest"
+            os-name: "windows-latest",
+            tag: "maven-jdk-17-windows"
           }
     steps:
       - uses: runs-on/action@v2
@@ -697,7 +699,7 @@ jobs:
 
   gradle-tests:
     name: Gradle Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     env:
       # leave more space for the actual gradle execution (which is just wrapped by maven)
@@ -714,12 +716,14 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            tag: "gradle-jdk-17"
           }
           - {
             name: "17 Windows",
             java-version: 17,
-            os-name: "windows-latest"
+            os-name: "windows-latest",
+            tag: "gradle-jdk-17-windows"
           }
     steps:
       - uses: runs-on/action@v2
@@ -790,7 +794,7 @@ jobs:
 
   devtools-tests:
     name: Devtools Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_devtools == 'true'
@@ -805,17 +809,20 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            tag: "devtools-jdk-17"
           }
           - {
             name: "21",
             java-version: 21,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            tag: "devtools-jdk-21"
           }
           - {
             name: "17 Windows",
             java-version: 17,
-            os-name: "windows-latest"
+            os-name: "windows-latest",
+            tag: "devtools-jdk-17-windows"
           }
     steps:
       - uses: runs-on/action@v2
@@ -890,7 +897,7 @@ jobs:
 
   kubernetes-tests:
     name: Kubernetes Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_kubernetes == 'true'
@@ -905,17 +912,20 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            tag: "kubernetes-jdk-17"
           }
           - {
             name: "21",
             java-version: 21,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            tag: "kubernetes-jdk-21"
           }
           - {
             name: "17 Windows",
             java-version: 17,
-            os-name: "windows-latest"
+            os-name: "windows-latest",
+            tag: "kubernetes-jdk-17-windows"
           }
     steps:
       - uses: runs-on/action@v2
@@ -990,7 +1000,7 @@ jobs:
 
   quickstarts-tests:
     name: Quickstarts Compilation - JDK ${{matrix.java.name}}
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_quickstarts == 'true'
@@ -1005,7 +1015,8 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            tag: "quickstarts-jdk-17"
           }
     steps:
       - uses: runs-on/action@v2
@@ -1087,7 +1098,7 @@ jobs:
 
   platform-tests:
     name: Platform Tests - JDK ${{matrix.java.name}}
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn || matrix.java.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn, matrix.java.tag) || matrix.java.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: ${{ contains( github.event.pull_request.labels.*.name, 'ci/test-platform') }}
@@ -1102,7 +1113,8 @@ jobs:
           - {
             name: "17",
             java-version: 17,
-            os-name: "ubuntu-latest"
+            os-name: "ubuntu-latest",
+            tag: "platform-jdk-17"
           }
     steps:
       - uses: runs-on/action@v2
@@ -1184,7 +1196,7 @@ jobs:
 
   virtual-thread-native-tests:
     name: Native Tests - Virtual Thread - ${{matrix.category}}
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn || matrix.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn, matrix.tag) || matrix.os-name }}
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.virtual_threads_matrix != '{}'
@@ -1268,7 +1280,7 @@ jobs:
     needs: [configure, build-jdk17, calculate-test-jobs]
     # Skip main in forks
     if: needs.calculate-test-jobs.outputs.run_tcks == 'true'
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn || 'ubuntu-latest' }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn, 'microprofile-tcks') || 'ubuntu-latest' }}
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners['ubuntu-latest'].runsOn && 'true' || 'false' }}
@@ -1356,7 +1368,7 @@ jobs:
   native-tests:
     name: Native Tests - ${{matrix.category}}
     needs: [configure, build-jdk17, calculate-test-jobs]
-    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn || matrix.os-name }}
+    runs-on: ${{ fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn && format('{0}/tag={1}', fromJson(needs.configure.outputs.config).runners[matrix.os-name].runsOn, matrix.tag) || matrix.os-name }}
     env:
       # leave more space for the actual native compilation and execution
       MAVEN_OPTS: -Xmx1g

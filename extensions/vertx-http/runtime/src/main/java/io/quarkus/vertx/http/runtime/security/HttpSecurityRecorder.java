@@ -59,8 +59,13 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class HttpSecurityRecorder {
-
     private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
+
+    private final RuntimeValue<VertxHttpConfig> httpConfig;
+
+    public HttpSecurityRecorder(final RuntimeValue<VertxHttpConfig> httpConfig) {
+        this.httpConfig = httpConfig;
+    }
 
     public RuntimeValue<AuthenticationHandler> authenticationMechanismHandler(boolean proactiveAuthentication,
             boolean propagateRoutingContext) {
@@ -72,9 +77,9 @@ public class HttpSecurityRecorder {
     }
 
     public void initializeHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue,
-            VertxHttpConfig httpConfig, BeanContainer beanContainer) {
+            BeanContainer beanContainer) {
         handlerRuntimeValue.getValue().init(beanContainer.beanInstance(PathMatchingHttpSecurityPolicy.class),
-                HttpSecurityConfiguration.get(httpConfig).rolesMapping());
+                HttpSecurityConfiguration.get(httpConfig.getValue()).rolesMapping());
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {
@@ -169,9 +174,9 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public void prepareHttpSecurityConfiguration(VertxHttpConfig httpConfig) {
+    public void prepareHttpSecurityConfiguration() {
         // this is done so that we prepare and validate HTTP Security config before the first incoming request
-        HttpSecurityConfiguration.get(httpConfig);
+        HttpSecurityConfiguration.get(httpConfig.getValue());
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
@@ -461,11 +466,11 @@ public class HttpSecurityRecorder {
         }
     }
 
-    public void setMtlsCertificateRoleProperties(VertxHttpConfig httpConfig) {
+    public void setMtlsCertificateRoleProperties() {
         InstanceHandle<MtlsAuthenticationMechanism> mtls = Arc.container().instance(MtlsAuthenticationMechanism.class);
 
-        if (mtls.isAvailable() && httpConfig.auth().certificateRoleProperties().isPresent()) {
-            Path rolesPath = httpConfig.auth().certificateRoleProperties().get();
+        if (mtls.isAvailable() && httpConfig.getValue().auth().certificateRoleProperties().isPresent()) {
+            Path rolesPath = httpConfig.getValue().auth().certificateRoleProperties().get();
             URL rolesResource = null;
             if (Files.exists(rolesPath)) {
                 try {
@@ -494,7 +499,8 @@ public class HttpSecurityRecorder {
                 }
 
                 if (!roles.isEmpty()) {
-                    var certRolesAttribute = new CertificateRoleAttribute(httpConfig.auth().certificateRoleAttribute(), roles);
+                    var certRolesAttribute = new CertificateRoleAttribute(
+                            httpConfig.getValue().auth().certificateRoleAttribute(), roles);
                     mtls.get().setCertificateToRolesMapper(certRolesAttribute.rolesMapper());
                 }
             } catch (Exception e) {
@@ -556,14 +562,12 @@ public class HttpSecurityRecorder {
         return Set.copyOf(roles);
     }
 
-    public Supplier<BasicAuthenticationMechanism> basicAuthenticationMechanismBean(VertxHttpConfig httpConfig,
-            boolean formAuthEnabled) {
+    public Supplier<BasicAuthenticationMechanism> basicAuthenticationMechanismBean(boolean formAuthEnabled) {
         return new Supplier<>() {
             @Override
             public BasicAuthenticationMechanism get() {
-                return new BasicAuthenticationMechanism(httpConfig.auth().realm().orElse(null), formAuthEnabled);
+                return new BasicAuthenticationMechanism(httpConfig.getValue().auth().realm().orElse(null), formAuthEnabled);
             }
         };
     }
-
 }

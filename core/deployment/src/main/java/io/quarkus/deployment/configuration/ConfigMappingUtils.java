@@ -191,9 +191,9 @@ public class ConfigMappingUtils {
         }
     }
 
+    @Deprecated(forRemoval = true, since = "3.25")
     public static Object newInstance(Class<?> configClass) {
         if (configClass.isAnnotationPresent(ConfigMapping.class)) {
-            // TODO - radcortez - mapping classes cannot be initialized like this.
             return ReflectUtil.newInstance(ConfigMappingLoader.ensureLoaded(configClass).implementation());
         } else {
             return ReflectUtil.newInstance(configClass);

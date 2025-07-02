@@ -15,7 +15,6 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchStandaloneEnabled;
 import io.quarkus.hibernate.search.standalone.elasticsearch.deployment.HibernateSearchStandaloneEnabledBuildItem;
-import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.HibernateSearchStandaloneRuntimeConfig;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.dev.HibernateSearchStandaloneDevJsonRpcService;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.dev.HibernateSearchStandaloneDevRecorder;
 
@@ -25,9 +24,8 @@ public class HibernateSearchStandaloneDevUIProcessor {
     @BuildStep
     @Record(RUNTIME_INIT)
     public CardPageBuildItem create(HibernateSearchStandaloneDevRecorder recorder,
-            HibernateSearchStandaloneRuntimeConfig runtimeConfig,
             Optional<HibernateSearchStandaloneEnabledBuildItem> enabled) {
-        recorder.initController(enabled.isPresent(), runtimeConfig);
+        recorder.initController(enabled.isPresent());
 
         CardPageBuildItem card = new CardPageBuildItem();
         card.addPage(Page.webComponentPageBuilder()

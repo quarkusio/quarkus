@@ -22,8 +22,7 @@ public class MailerRecorder {
         };
     }
 
-    public Function<SyntheticCreationalContext<MailClient>, MailClient> mailClientFunction(String name,
-            @SuppressWarnings("unused") MailersRuntimeConfig mailersRuntimeConfig) {
+    public Function<SyntheticCreationalContext<MailClient>, MailClient> mailClientFunction(String name) {
         return new Function<SyntheticCreationalContext<MailClient>, MailClient>() {
             @Override
             public MailClient apply(SyntheticCreationalContext<MailClient> context) {
@@ -33,8 +32,7 @@ public class MailerRecorder {
     }
 
     public Function<SyntheticCreationalContext<io.vertx.mutiny.ext.mail.MailClient>, io.vertx.mutiny.ext.mail.MailClient> reactiveMailClientFunction(
-            String name,
-            @SuppressWarnings("unused") MailersRuntimeConfig mailersRuntimeConfig) {
+            String name) {
         return new Function<SyntheticCreationalContext<io.vertx.mutiny.ext.mail.MailClient>, io.vertx.mutiny.ext.mail.MailClient>() {
             @Override
             public io.vertx.mutiny.ext.mail.MailClient apply(
@@ -44,8 +42,7 @@ public class MailerRecorder {
         };
     }
 
-    public Function<SyntheticCreationalContext<Mailer>, Mailer> mailerFunction(String name,
-            @SuppressWarnings("unused") MailersRuntimeConfig mailersRuntimeConfig) {
+    public Function<SyntheticCreationalContext<Mailer>, Mailer> mailerFunction(String name) {
         return new Function<SyntheticCreationalContext<Mailer>, Mailer>() {
             @Override
             public Mailer apply(SyntheticCreationalContext<Mailer> context) {
@@ -54,8 +51,7 @@ public class MailerRecorder {
         };
     }
 
-    public Function<SyntheticCreationalContext<ReactiveMailer>, ReactiveMailer> reactiveMailerFunction(String name,
-            @SuppressWarnings("unused") MailersRuntimeConfig mailersRuntimeConfig) {
+    public Function<SyntheticCreationalContext<ReactiveMailer>, ReactiveMailer> reactiveMailerFunction(String name) {
         return new Function<SyntheticCreationalContext<ReactiveMailer>, ReactiveMailer>() {
             @Override
             public ReactiveMailer apply(SyntheticCreationalContext<ReactiveMailer> context) {
@@ -64,8 +60,7 @@ public class MailerRecorder {
         };
     }
 
-    public Function<SyntheticCreationalContext<MockMailbox>, MockMailbox> mockMailboxFunction(String name,
-            @SuppressWarnings("unused") MailersRuntimeConfig mailersRuntimeConfig) {
+    public Function<SyntheticCreationalContext<MockMailbox>, MockMailbox> mockMailboxFunction(String name) {
         return new Function<SyntheticCreationalContext<MockMailbox>, MockMailbox>() {
             @Override
             public MockMailbox apply(SyntheticCreationalContext<MockMailbox> context) {

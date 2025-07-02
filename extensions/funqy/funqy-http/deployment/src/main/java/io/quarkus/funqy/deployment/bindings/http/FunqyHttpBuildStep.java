@@ -52,7 +52,7 @@ public class FunqyHttpBuildStep {
     public void staticInit(FunqyHttpBindingRecorder binding,
             BeanContainerBuildItem beanContainer, // dependency
             Optional<FunctionInitializedBuildItem> hasFunctions,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;
 
@@ -72,7 +72,7 @@ public class FunqyHttpBuildStep {
             List<FunctionBuildItem> functions,
             BeanContainerBuildItem beanContainer,
             VertxHttpBuildTimeConfig httpConfig,
-            ExecutorBuildItem executorBuildItem) throws Exception {
+            ExecutorBuildItem executorBuildItem) {
 
         if (!hasFunctions.isPresent() || hasFunctions.get() == null)
             return;

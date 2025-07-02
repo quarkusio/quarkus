@@ -55,9 +55,24 @@ public class MicrometerRecorder {
     public static String nonApplicationUri = "/q/";
     public static String httpRootUri = "/";
 
-    @StaticInit
-    public RuntimeValue<MeterRegistry> createRootRegistry(MicrometerConfig config, String qUri, String httpUri) {
+    private final MicrometerConfig config;
+    private final RuntimeValue<HttpServerConfig> httpServerConfig;
+    private final RuntimeValue<HttpClientConfig> httpClientConfig;
+    private final RuntimeValue<VertxConfig> vertxConfig;
 
+    public MicrometerRecorder(
+            final MicrometerConfig config,
+            final RuntimeValue<HttpServerConfig> httpServerConfig,
+            final RuntimeValue<HttpClientConfig> clientConfig,
+            final RuntimeValue<VertxConfig> vertxConfig) {
+        this.config = config;
+        this.httpServerConfig = httpServerConfig;
+        this.httpClientConfig = clientConfig;
+        this.vertxConfig = vertxConfig;
+    }
+
+    @StaticInit
+    public RuntimeValue<MeterRegistry> createRootRegistry(String qUri, String httpUri) {
         CompositeMeterRegistry globalRegistry = Metrics.globalRegistry;
         factory = new MicrometerMetricsFactory(config, globalRegistry);
         nonApplicationUri = qUri;
@@ -66,9 +81,7 @@ public class MicrometerRecorder {
     }
 
     @RuntimeInit
-    public void configureRegistries(MicrometerConfig config,
-            Set<Class<? extends MeterRegistry>> registryClasses,
-            ShutdownContext context) {
+    public void configureRegistries(Set<Class<? extends MeterRegistry>> registryClasses, ShutdownContext context) {
         BeanManager beanManager = Arc.container().beanManager();
 
         Map<Class<? extends MeterRegistry>, List<MeterFilter>> classMeterFilters = new HashMap<>(registryClasses.size());
@@ -269,15 +282,10 @@ public class MicrometerRecorder {
     }
 
     @RuntimeInit
-    public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(
-            boolean httpServerMetricsEnabled,
-            boolean httpClientMetricsEnabled,
-            HttpServerConfig serverConfig,
-            HttpClientConfig clientConfig,
-            VertxConfig vertxConfig) {
+    public RuntimeValue<HttpBinderConfiguration> configureHttpMetrics(boolean httpServerMetricsEnabled,
+            boolean httpClientMetricsEnabled) {
         return new RuntimeValue<HttpBinderConfiguration>(
-                new HttpBinderConfiguration(httpServerMetricsEnabled,
-                        httpClientMetricsEnabled,
-                        serverConfig, clientConfig, vertxConfig));
+                new HttpBinderConfiguration(httpServerMetricsEnabled, httpClientMetricsEnabled, httpServerConfig.getValue(),
+                        httpClientConfig.getValue(), vertxConfig.getValue()));
     }
 }

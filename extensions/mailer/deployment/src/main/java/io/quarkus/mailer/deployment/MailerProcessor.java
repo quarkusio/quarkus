@@ -52,7 +52,6 @@ import io.quarkus.mailer.runtime.MailerRecorder;
 import io.quarkus.mailer.runtime.MailerSupport;
 import io.quarkus.mailer.runtime.Mailers;
 import io.quarkus.mailer.runtime.MailersBuildTimeConfig;
-import io.quarkus.mailer.runtime.MailersRuntimeConfig;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.deployment.CheckedTemplateAdapterBuildItem;
 import io.quarkus.qute.deployment.QuteProcessor;
@@ -165,16 +164,15 @@ public class MailerProcessor {
     @BuildStep
     void generateMailerBeans(MailerRecorder recorder,
             MailersBuildItem mailers,
-            MailersRuntimeConfig mailersRuntimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             // Just to make sure it is initialized
             TlsRegistryBuildItem tlsRegistryBuildItem) {
         if (mailers.hasDefaultMailer()) {
-            generateMailerBeansForName(Mailers.DEFAULT_MAILER_NAME, recorder, mailersRuntimeConfig, syntheticBeans);
+            generateMailerBeansForName(Mailers.DEFAULT_MAILER_NAME, recorder, syntheticBeans);
         }
 
         for (String name : mailers.getNamedMailers()) {
-            generateMailerBeansForName(name, recorder, mailersRuntimeConfig, syntheticBeans);
+            generateMailerBeansForName(name, recorder, syntheticBeans);
         }
     }
 
@@ -185,7 +183,6 @@ public class MailerProcessor {
 
     private void generateMailerBeansForName(String name,
             MailerRecorder recorder,
-            MailersRuntimeConfig mailersRuntimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         AnnotationInstance qualifier;
         if (Mailers.DEFAULT_MAILER_NAME.equals(name)) {
@@ -201,7 +198,7 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mailClientFunction(name, mailersRuntimeConfig))
+                .createWith(recorder.mailClientFunction(name))
                 .done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(io.vertx.mutiny.ext.mail.MailClient.class)
                 .scope(Singleton.class)
@@ -210,7 +207,7 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.reactiveMailClientFunction(name, mailersRuntimeConfig))
+                .createWith(recorder.reactiveMailClientFunction(name))
                 .done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Mailer.class)
                 .scope(Singleton.class)
@@ -219,7 +216,7 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mailerFunction(name, mailersRuntimeConfig))
+                .createWith(recorder.mailerFunction(name))
                 .done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(ReactiveMailer.class)
                 .scope(Singleton.class)
@@ -228,7 +225,7 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.reactiveMailerFunction(name, mailersRuntimeConfig))
+                .createWith(recorder.reactiveMailerFunction(name))
                 .done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(MockMailbox.class)
                 .scope(Singleton.class)
@@ -237,7 +234,7 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mockMailboxFunction(name, mailersRuntimeConfig))
+                .createWith(recorder.mockMailboxFunction(name))
                 .done());
     }
 

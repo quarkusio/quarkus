@@ -30,8 +30,13 @@ import io.vertx.core.Vertx;
 
 @Recorder
 public class SmallRyeGraphQLClientRecorder {
-
     private final Logger logger = Logger.getLogger(SmallRyeGraphQLClientRecorder.class);
+
+    private final RuntimeValue<GraphQLClientsConfig> runtimeConfig;
+
+    public SmallRyeGraphQLClientRecorder(final RuntimeValue<GraphQLClientsConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
 
     public <T> Function<SyntheticCreationalContext<T>, T> typesafeClientSupplier(Class<T> targetClassName) {
         return new Function<>() {
@@ -57,9 +62,9 @@ public class SmallRyeGraphQLClientRecorder {
         configBean.addTypesafeClientApis(classes);
     }
 
-    public void mergeClientConfigurations(GraphQLClientSupport support, GraphQLClientsConfig quarkusConfiguration) {
+    public void mergeClientConfigurations(GraphQLClientSupport support) {
         GraphQLClientsConfiguration upstreamConfigs = GraphQLClientsConfiguration.getInstance();
-        for (Map.Entry<String, GraphQLClientConfig> client : quarkusConfiguration.clients().entrySet()) {
+        for (Map.Entry<String, GraphQLClientConfig> client : runtimeConfig.getValue().clients().entrySet()) {
             // the raw config key provided in the config, this might be a short class name,
             // so translate that into the fully qualified name if applicable
             String rawConfigKey = client.getKey();

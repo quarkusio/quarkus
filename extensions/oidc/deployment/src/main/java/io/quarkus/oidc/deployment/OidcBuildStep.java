@@ -89,7 +89,6 @@ import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
 import io.quarkus.oidc.runtime.DefaultTokenStateManager;
 import io.quarkus.oidc.runtime.Jose4jRecorder;
 import io.quarkus.oidc.runtime.OidcAuthenticationMechanism;
-import io.quarkus.oidc.runtime.OidcConfig;
 import io.quarkus.oidc.runtime.OidcConfigurationAndProviderProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
@@ -103,7 +102,6 @@ import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
-import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
@@ -221,12 +219,12 @@ public class OidcBuildStep {
 
     @BuildStep(onlyIf = IsCacheEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    public SyntheticBeanBuildItem addDefaultCacheBean(OidcConfig config,
+    public SyntheticBeanBuildItem addDefaultCacheBean(
             OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem) {
         return SyntheticBeanBuildItem.configure(DefaultTokenIntrospectionUserInfoCache.class).unremovable()
                 .types(DefaultTokenIntrospectionUserInfoCache.class, TokenIntrospectionCache.class, UserInfoCache.class)
-                .supplier(recorder.setupTokenCache(config, vertxBuildItem.getVertx()))
+                .supplier(recorder.setupTokenCache(vertxBuildItem.getVertx()))
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();
@@ -350,12 +348,11 @@ public class OidcBuildStep {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    SyntheticBeanBuildItem setup(OidcConfig config, OidcRecorder recorder, SecurityConfig securityConfig,
-            CoreVertxBuildItem vertxBuildItem, TlsRegistryBuildItem tlsRegistryBuildItem) {
+    SyntheticBeanBuildItem setup(OidcRecorder recorder, CoreVertxBuildItem vertxBuildItem,
+            TlsRegistryBuildItem tlsRegistryBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
-                .createWith(recorder.createTenantConfigBean(config, vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
-                        securityConfig))
+                .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry()))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()

@@ -18,16 +18,20 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class JdbcRecorder {
-
     private static final Provider[] PROVIDERS = new Provider[] { new WildFlyElytronPasswordProvider() };
+
+    private final RuntimeValue<JdbcSecurityRealmRuntimeConfig> runtimeConfig;
+
+    public JdbcRecorder(final RuntimeValue<JdbcSecurityRealmRuntimeConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
 
     /**
      * Create a runtime value for a {@linkplain JdbcSecurityRealm}
      *
-     * @param config - the realm config
      * @return - runtime value wrapper for the SecurityRealm
      */
-    public RuntimeValue<SecurityRealm> createRealm(JdbcSecurityRealmRuntimeConfig config) {
+    public RuntimeValue<SecurityRealm> createRealm() {
         Supplier<Provider[]> providers = new Supplier<Provider[]>() {
             @Override
             public Provider[] get() {
@@ -35,7 +39,7 @@ public class JdbcRecorder {
             }
         };
         JdbcSecurityRealmBuilder builder = JdbcSecurityRealm.builder().setProviders(providers);
-        PrincipalQueriesConfig principalQueries = config.principalQueries();
+        PrincipalQueriesConfig principalQueries = runtimeConfig.getValue().principalQueries();
         registerPrincipalQuery(principalQueries.defaultPrincipalQuery(), builder);
         principalQueries.namedPrincipalQueries()
                 .forEach((name, principalQuery) -> registerPrincipalQuery(principalQuery, builder));

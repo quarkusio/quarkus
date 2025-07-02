@@ -26,9 +26,7 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.build.exporter.OtlpExporterBuildConfig;
-import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfigBuilder;
-import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.OTelExporterRecorder;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProcessor;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -94,9 +92,6 @@ public class OtlpExporterProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(TlsRegistryBuildItem.class)
     void createSpanProcessor(OTelExporterRecorder recorder,
-            OTelBuildConfig oTelBuildConfig,
-            OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
             CoreVertxBuildItem vertxBuildItem,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
@@ -113,8 +108,7 @@ public class OtlpExporterProcessor {
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.spanProcessorForOtlp(oTelBuildConfig, otelRuntimeConfig,
-                        exporterRuntimeConfig, vertxBuildItem.getVertx()))
+                .createWith(recorder.spanProcessorForOtlp(vertxBuildItem.getVertx()))
                 .done());
     }
 
@@ -125,8 +119,6 @@ public class OtlpExporterProcessor {
             BeanDiscoveryFinishedBuildItem beanDiscovery,
             OTelExporterRecorder recorder,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
-            OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
@@ -150,8 +142,7 @@ public class OtlpExporterProcessor {
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(MetricExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.createMetricExporter(otelRuntimeConfig, exporterRuntimeConfig,
-                        vertxBuildItem.getVertx()))
+                .createWith(recorder.createMetricExporter(vertxBuildItem.getVertx()))
                 .done());
     }
 
@@ -162,8 +153,6 @@ public class OtlpExporterProcessor {
             BeanDiscoveryFinishedBuildItem beanDiscovery,
             OTelExporterRecorder recorder,
             List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
-            OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
             CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
@@ -187,8 +176,7 @@ public class OtlpExporterProcessor {
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(LogRecordExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.createLogRecordExporter(otelRuntimeConfig, exporterRuntimeConfig,
-                        vertxBuildItem.getVertx()))
+                .createWith(recorder.createLogRecordExporter(vertxBuildItem.getVertx()))
                 .done());
     }
 }

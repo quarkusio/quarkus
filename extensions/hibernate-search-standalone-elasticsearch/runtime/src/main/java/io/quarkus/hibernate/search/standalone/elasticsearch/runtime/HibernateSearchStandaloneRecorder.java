@@ -31,6 +31,7 @@ import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.bean.ArcBean
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.management.HibernateSearchStandaloneManagementHandler;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.mapping.QuarkusHibernateSearchStandaloneMappingConfigurer;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.Handler;
@@ -38,9 +39,17 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class HibernateSearchStandaloneRecorder {
+    private final HibernateSearchStandaloneBuildTimeConfig buildTimeConfig;
+    private final RuntimeValue<HibernateSearchStandaloneRuntimeConfig> runtimeConfig;
+
+    public HibernateSearchStandaloneRecorder(
+            final HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
+            final RuntimeValue<HibernateSearchStandaloneRuntimeConfig> runtimeConfig) {
+        this.buildTimeConfig = buildTimeConfig;
+        this.runtimeConfig = runtimeConfig;
+    }
 
     public void preBoot(HibernateSearchStandaloneElasticsearchMapperContext mapperContext,
-            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
             Set<String> rootAnnotationMappedClassNames) {
         Set<Class<?>> rootAnnotationMappedClasses = new LinkedHashSet<>();
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
@@ -65,8 +74,8 @@ public class HibernateSearchStandaloneRecorder {
         HibernateSearchStandalonePreBootState.set(bootProperties);
     }
 
-    public void checkNoExplicitActiveTrue(HibernateSearchStandaloneRuntimeConfig runtimeConfig) {
-        if (runtimeConfig.active().orElse(false)) {
+    public void checkNoExplicitActiveTrue() {
+        if (runtimeConfig.getValue().active().orElse(false)) {
             String enabledPropertyKey = HibernateSearchStandaloneRuntimeConfig.extensionPropertyKey("enabled");
             String activePropertyKey = HibernateSearchStandaloneRuntimeConfig.mapperPropertyKey("active");
             throw new ConfigurationException(
@@ -87,17 +96,16 @@ public class HibernateSearchStandaloneRecorder {
     }
 
     public Function<SyntheticCreationalContext<SearchMapping>, SearchMapping> createSearchMappingFunction(
-            HibernateSearchStandaloneElasticsearchMapperContext mapperContext,
-            HibernateSearchStandaloneRuntimeConfig runtimeConfig) {
+            HibernateSearchStandaloneElasticsearchMapperContext mapperContext) {
         return new Function<SyntheticCreationalContext<SearchMapping>, SearchMapping>() {
             @Override
             public SearchMapping apply(SyntheticCreationalContext<SearchMapping> context) {
-                if (runtimeConfig != null && !runtimeConfig.active().orElse(true)) {
+                if (!runtimeConfig.getValue().active().orElse(true)) {
                     throw new IllegalStateException(
                             "Cannot retrieve the SearchMapping: Hibernate Search Standalone was deactivated through configuration properties");
                 }
                 Map<String, Object> bootProperties = new LinkedHashMap<>(HibernateSearchStandalonePreBootState.pop());
-                new RuntimeInitListener(mapperContext, runtimeConfig)
+                new RuntimeInitListener(mapperContext, runtimeConfig.getValue())
                         .contributeRuntimeProperties(bootProperties::put);
                 StandalonePojoIntegrationBooter booter = StandalonePojoIntegrationBooter.builder()
                         .properties(bootProperties)
@@ -107,8 +115,8 @@ public class HibernateSearchStandaloneRecorder {
         };
     }
 
-    public void bootEagerly(HibernateSearchStandaloneRuntimeConfig runtimeConfig) {
-        if (runtimeConfig != null && !runtimeConfig.active().orElse(true)) {
+    public void bootEagerly() {
+        if (!runtimeConfig.getValue().active().orElse(true)) {
             // Hibernate Search is deactivated: skip eager bootstrap.
             return;
         }

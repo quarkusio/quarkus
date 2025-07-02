@@ -240,8 +240,6 @@ public final class LoggingResourceProcessor {
     LoggingSetupBuildItem setupLoggingRuntimeInit(
             final RecorderContext context,
             final LoggingSetupRecorder recorder,
-            final LogRuntimeConfig logRuntimeConfig,
-            final LogBuildTimeConfig logBuildTimeConfig,
             final CombinedIndexBuildItem combinedIndexBuildItem,
             final LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final Optional<StreamingLogHandlerBuildItem> streamingLogStreamHandlerBuildItem,
@@ -308,7 +306,7 @@ public final class LoggingResourceProcessor {
             }
 
             shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
-                    recorder.initializeLogging(logRuntimeConfig, logBuildTimeConfig, discoveredLogComponents,
+                    recorder.initializeLogging(discoveredLogComponents,
                             categoryMinLevelDefaults.content, alwaysEnableLogStream,
                             streamingDevUiLogHandler, handlers, namedHandlers,
                             possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
@@ -326,6 +324,7 @@ public final class LoggingResourceProcessor {
             }
 
             SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+            LogBuildTimeConfig logBuildTimeConfig = config.getConfigMapping(LogBuildTimeConfig.class);
             LogRuntimeConfig logRuntimeConfigInBuild = config.getConfigMapping(LogRuntimeConfig.class);
             ConsoleRuntimeConfig consoleRuntimeConfig = config.getConfigMapping(ConsoleRuntimeConfig.class);
 

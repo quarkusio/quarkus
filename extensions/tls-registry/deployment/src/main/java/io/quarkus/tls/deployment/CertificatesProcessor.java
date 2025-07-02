@@ -27,7 +27,6 @@ import io.quarkus.tls.runtime.CertificateRecorder;
 import io.quarkus.tls.runtime.KeyStoreProvider;
 import io.quarkus.tls.runtime.LetsEncryptRecorder;
 import io.quarkus.tls.runtime.TrustStoreProvider;
-import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.smallrye.common.annotation.Identifier;
@@ -45,7 +44,7 @@ public class CertificatesProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public TlsRegistryBuildItem initializeCertificate(TlsConfig config,
+    public TlsRegistryBuildItem initializeCertificate(
             Optional<VertxBuildItem> vertx,
             BeanDiscoveryFinishedBuildItem beadDiscovery,
             CertificateRecorder recorder,
@@ -55,7 +54,7 @@ public class CertificatesProcessor {
 
         if (vertx.isPresent()) {
             var providerBucketNames = getProviderBucketNames(beadDiscovery);
-            recorder.validateCertificates(providerBucketNames, config, vertx.get().getVertx(), shutdown);
+            recorder.validateCertificates(providerBucketNames, vertx.get().getVertx(), shutdown);
         }
 
         for (TlsCertificateBuildItem certificate : otherCertificates) {

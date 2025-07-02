@@ -56,6 +56,7 @@ import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.LateBoundSpanProce
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.RemoveableLateBoundSpanProcessor;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxGrpcSpanExporter;
 import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxHttpSpanExporter;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -68,21 +69,30 @@ import io.vertx.core.net.ProxyOptions;
 @SuppressWarnings("deprecation")
 @Recorder
 public class OTelExporterRecorder {
-
     public static final String BASE2EXPONENTIAL_AGGREGATION_NAME = AggregationUtil
             .aggregationName(Aggregation.base2ExponentialBucketHistogram());
 
+    private final OTelBuildConfig buildConfig;
+    private final RuntimeValue<OTelRuntimeConfig> runtimeConfig;
+    private final RuntimeValue<OtlpExporterRuntimeConfig> exporterRuntimeConfig;
+
+    public OTelExporterRecorder(
+            final OTelBuildConfig buildConfig,
+            final RuntimeValue<OTelRuntimeConfig> runtimeConfig,
+            final RuntimeValue<OtlpExporterRuntimeConfig> exporterRuntimeConfig) {
+        this.buildConfig = buildConfig;
+        this.runtimeConfig = runtimeConfig;
+        this.exporterRuntimeConfig = exporterRuntimeConfig;
+    }
+
     public Function<SyntheticCreationalContext<LateBoundSpanProcessor>, LateBoundSpanProcessor> spanProcessorForOtlp(
-            OTelBuildConfig oTelBuildConfig,
-            OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
             Supplier<Vertx> vertx) {
-        URI baseUri = getTracesUri(exporterRuntimeConfig); // do the creation and validation here in order to preserve backward compatibility
+        URI baseUri = getTracesUri(exporterRuntimeConfig.getValue()); // do the creation and validation here in order to preserve backward compatibility
         return new Function<>() {
             @Override
             public LateBoundSpanProcessor apply(
                     SyntheticCreationalContext<LateBoundSpanProcessor> context) {
-                if (otelRuntimeConfig.sdkDisabled() || baseUri == null) {
+                if (runtimeConfig.getValue().sdkDisabled() || baseUri == null) {
                     return RemoveableLateBoundSpanProcessor.INSTANCE;
                 }
                 // Only create the OtlpGrpcSpanExporter if an endpoint was set in runtime config and was properly validated at startup
@@ -95,16 +105,16 @@ public class OTelExporterRecorder {
                 try {
                     TlsConfigurationRegistry tlsConfigurationRegistry = context
                             .getInjectedReference(TlsConfigurationRegistry.class);
-                    var spanExporter = createSpanExporter(exporterRuntimeConfig, vertx.get(), baseUri,
+                    var spanExporter = createSpanExporter(exporterRuntimeConfig.getValue(), vertx.get(), baseUri,
                             tlsConfigurationRegistry);
 
-                    if (oTelBuildConfig.simple()) {
+                    if (buildConfig.simple()) {
                         SimpleSpanProcessorBuilder processorBuilder = SimpleSpanProcessor.builder(spanExporter);
                         return new LateBoundSpanProcessor(processorBuilder.build());
                     } else {
                         BatchSpanProcessorBuilder processorBuilder = BatchSpanProcessor.builder(spanExporter);
 
-                        BatchSpanProcessorConfig bspc = otelRuntimeConfig.bsp();
+                        BatchSpanProcessorConfig bspc = runtimeConfig.getValue().bsp();
                         processorBuilder.setScheduleDelay(bspc.scheduleDelay());
                         processorBuilder.setMaxQueueSize(bspc.maxQueueSize());
                         processorBuilder.setMaxExportBatchSize(bspc.maxExportBatchSize());
@@ -185,18 +195,15 @@ public class OTelExporterRecorder {
         };
     }
 
-    public Function<SyntheticCreationalContext<MetricExporter>, MetricExporter> createMetricExporter(
-            OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            Supplier<Vertx> vertx) {
+    public Function<SyntheticCreationalContext<MetricExporter>, MetricExporter> createMetricExporter(Supplier<Vertx> vertx) {
 
-        final URI baseUri = getMetricsUri(exporterRuntimeConfig);
+        final URI baseUri = getMetricsUri(exporterRuntimeConfig.getValue());
 
         return new Function<>() {
             @Override
             public MetricExporter apply(SyntheticCreationalContext<MetricExporter> context) {
 
-                if (otelRuntimeConfig.sdkDisabled() || baseUri == null) {
+                if (runtimeConfig.getValue().sdkDisabled() || baseUri == null) {
                     return NoopMetricExporter.INSTANCE;
                 }
 
@@ -205,7 +212,7 @@ public class OTelExporterRecorder {
                 try {
                     TlsConfigurationRegistry tlsConfigurationRegistry = context
                             .getInjectedReference(TlsConfigurationRegistry.class);
-                    OtlpExporterMetricsConfig metricsConfig = exporterRuntimeConfig.metrics();
+                    OtlpExporterMetricsConfig metricsConfig = exporterRuntimeConfig.getValue().metrics();
                     if (metricsConfig.protocol().isEmpty()) {
                         throw new IllegalStateException("No OTLP protocol specified. " +
                                 "Please check `quarkus.otel.exporter.otlp.metrics.protocol` property");
@@ -261,14 +268,14 @@ public class OTelExporterRecorder {
     }
 
     public Function<SyntheticCreationalContext<LogRecordExporter>, LogRecordExporter> createLogRecordExporter(
-            OTelRuntimeConfig otelRuntimeConfig, OtlpExporterRuntimeConfig exporterRuntimeConfig, Supplier<Vertx> vertx) {
-        final URI baseUri = getLogsUri(exporterRuntimeConfig);
+            Supplier<Vertx> vertx) {
+        final URI baseUri = getLogsUri(exporterRuntimeConfig.getValue());
 
         return new Function<>() {
             @Override
             public LogRecordExporter apply(SyntheticCreationalContext<LogRecordExporter> context) {
 
-                if (otelRuntimeConfig.sdkDisabled() || baseUri == null) {
+                if (runtimeConfig.getValue().sdkDisabled() || baseUri == null) {
                     return NoopLogRecordExporter.INSTANCE;
                 }
 
@@ -277,7 +284,7 @@ public class OTelExporterRecorder {
                 try {
                     TlsConfigurationRegistry tlsConfigurationRegistry = context
                             .getInjectedReference(TlsConfigurationRegistry.class);
-                    OtlpExporterLogsConfig logsConfig = exporterRuntimeConfig.logs();
+                    OtlpExporterLogsConfig logsConfig = exporterRuntimeConfig.getValue().logs();
                     if (logsConfig.protocol().isEmpty()) {
                         throw new IllegalStateException("No OTLP protocol specified. " +
                                 "Please check `quarkus.otel.exporter.otlp.logs.protocol` property");

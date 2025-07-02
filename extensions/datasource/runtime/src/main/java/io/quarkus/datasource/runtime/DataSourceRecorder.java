@@ -12,10 +12,17 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class DataSourceRecorder {
+    private final DataSourcesBuildTimeConfig buildTimeConfig;
+    private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
 
-    public RuntimeValue<DataSourceSupport> createDataSourceSupport(
-            DataSourcesBuildTimeConfig buildTimeConfig,
-            DataSourcesRuntimeConfig runtimeConfig) {
+    public DataSourceRecorder(
+            final DataSourcesBuildTimeConfig buildTimeConfig,
+            final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig) {
+        this.buildTimeConfig = buildTimeConfig;
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public RuntimeValue<DataSourceSupport> createDataSourceSupport() {
         Stream.Builder<String> excludedForHealthChecks = Stream.builder();
         for (Map.Entry<String, DataSourceBuildTimeConfig> dataSource : buildTimeConfig.dataSources().entrySet()) {
             if (dataSource.getValue().healthExclude()) {
@@ -25,7 +32,7 @@ public class DataSourceRecorder {
         Set<String> excludedNames = excludedForHealthChecks.build().collect(toUnmodifiableSet());
 
         Stream.Builder<String> inactive = Stream.builder();
-        for (Map.Entry<String, DataSourceRuntimeConfig> entry : runtimeConfig.dataSources().entrySet()) {
+        for (Map.Entry<String, DataSourceRuntimeConfig> entry : runtimeConfig.getValue().dataSources().entrySet()) {
             Optional<Boolean> active = entry.getValue().active();
             if (active.isPresent() && !active.get()) {
                 inactive.add(entry.getKey());

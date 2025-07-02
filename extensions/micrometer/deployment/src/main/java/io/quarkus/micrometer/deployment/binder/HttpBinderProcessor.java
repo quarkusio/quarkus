@@ -19,9 +19,6 @@ import io.quarkus.micrometer.deployment.MicrometerProcessor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.binder.HttpBinderConfiguration;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
-import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 
 /**
  * Avoid directly referencing optional dependencies
@@ -60,9 +57,6 @@ public class HttpBinderProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem enableHttpBinders(MicrometerRecorder recorder,
             MicrometerConfig buildTimeConfig,
-            HttpServerConfig serverConfig,
-            HttpClientConfig clientConfig,
-            VertxConfig vertxConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
         boolean clientEnabled = buildTimeConfig.checkBinderEnabledWithDefault(buildTimeConfig.binder().httpClient());
@@ -79,8 +73,7 @@ public class HttpBinderProcessor {
                 .scope(Singleton.class)
                 .setRuntimeInit()
                 .unremovable()
-                .runtimeValue(recorder.configureHttpMetrics(serverEnabled, clientEnabled,
-                        serverConfig, clientConfig, vertxConfig))
+                .runtimeValue(recorder.configureHttpMetrics(serverEnabled, clientEnabled))
                 .done();
     }
 

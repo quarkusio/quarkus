@@ -158,10 +158,17 @@ public class UndertowDeploymentRecorder {
 
     }
 
-    final RuntimeValue<VertxHttpConfig> httpConfig;
+    private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
+    private final RuntimeValue<VertxHttpConfig> httpRuntimeConfig;
+    private final RuntimeValue<ServletRuntimeConfig> servletRuntimeConfig;
 
-    public UndertowDeploymentRecorder(RuntimeValue<VertxHttpConfig> httpConfig) {
-        this.httpConfig = httpConfig;
+    public UndertowDeploymentRecorder(
+            final VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            final RuntimeValue<VertxHttpConfig> httpRuntimeConfig,
+            final RuntimeValue<ServletRuntimeConfig> servletRuntimeConfig) {
+        this.httpBuildTimeConfig = httpBuildTimeConfig;
+        this.httpRuntimeConfig = httpRuntimeConfig;
+        this.servletRuntimeConfig = servletRuntimeConfig;
     }
 
     public static void setHotDeploymentResources(List<Path> resources) {
@@ -354,9 +361,7 @@ public class UndertowDeploymentRecorder {
     }
 
     public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
-            DeploymentManager manager, List<HandlerWrapper> wrappers,
-            ServletRuntimeConfig servletRuntimeConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) throws Exception {
-
+            DeploymentManager manager, List<HandlerWrapper> wrappers) throws Exception {
         shutdown.addShutdownTask(new Runnable() {
             @Override
             public void run() {
@@ -383,11 +388,12 @@ public class UndertowDeploymentRecorder {
         DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);
 
         UndertowBufferAllocator allocator = new UndertowBufferAllocator(
-                servletRuntimeConfig.directBuffers().orElse(DEFAULT_DIRECT_BUFFERS), (int) servletRuntimeConfig.bufferSize()
+                servletRuntimeConfig.getValue().directBuffers().orElse(DEFAULT_DIRECT_BUFFERS),
+                (int) servletRuntimeConfig.getValue().bufferSize()
                         .orElse(new MemorySize(BigInteger.valueOf(DEFAULT_BUFFER_SIZE))).asLongValue());
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
-        undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters());
+        undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.getValue().maxParameters());
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
         Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression()
@@ -422,11 +428,11 @@ public class UndertowDeploymentRecorder {
                     });
                 }
 
-                Optional<MemorySize> maxBodySize = httpConfig.getValue().limits().maxBodySize();
+                Optional<MemorySize> maxBodySize = httpRuntimeConfig.getValue().limits().maxBodySize();
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
-                Duration readTimeout = httpConfig.getValue().readTimeout();
+                Duration readTimeout = httpRuntimeConfig.getValue().readTimeout();
                 exchange.setReadTimeout(readTimeout.toMillis());
 
                 exchange.setUndertowOptions(undertowOptionMap);

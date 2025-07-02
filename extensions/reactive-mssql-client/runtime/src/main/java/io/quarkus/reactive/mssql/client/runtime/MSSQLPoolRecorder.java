@@ -20,7 +20,6 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.util.TypeLiteral;
-import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
@@ -57,12 +56,15 @@ public class MSSQLPoolRecorder {
 
     private final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig;
     private final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig;
+    private final RuntimeValue<DataSourcesReactiveMSSQLConfig> reactiveMSSQLRuntimeConfig;
 
-    @Inject
-    public MSSQLPoolRecorder(RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
-            RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig) {
+    public MSSQLPoolRecorder(
+            final RuntimeValue<DataSourcesRuntimeConfig> runtimeConfig,
+            final RuntimeValue<DataSourcesReactiveRuntimeConfig> reactiveRuntimeConfig,
+            final RuntimeValue<DataSourcesReactiveMSSQLConfig> reactiveMSSQLRuntimeConfig) {
         this.runtimeConfig = runtimeConfig;
         this.reactiveRuntimeConfig = reactiveRuntimeConfig;
+        this.reactiveMSSQLRuntimeConfig = reactiveMSSQLRuntimeConfig;
     }
 
     public Supplier<ActiveResult> poolCheckActiveSupplier(String dataSourceName) {
@@ -83,22 +85,16 @@ public class MSSQLPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> configureMSSQLPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
-            DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveMSSQLConfig dataSourcesReactiveMSSQLConfig,
-            ShutdownContext shutdown) {
-
+            Supplier<Integer> eventLoopCount, String dataSourceName, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public MSSQLPool apply(SyntheticCreationalContext<MSSQLPool> context) {
                 MSSQLPool pool = initialize((VertxInternal) vertx.getValue(),
                         eventLoopCount.get(),
                         dataSourceName,
-                        dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
-                        dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactiveMSSQLConfig.dataSources().get(dataSourceName).reactive().mssql(),
+                        runtimeConfig.getValue().dataSources().get(dataSourceName),
+                        reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive(),
+                        reactiveMSSQLRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().mssql(),
                         context);
 
                 shutdown.addShutdownTask(pool::close);

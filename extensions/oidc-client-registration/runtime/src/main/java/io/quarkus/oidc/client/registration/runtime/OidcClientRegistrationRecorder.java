@@ -24,6 +24,7 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -35,20 +36,23 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 
 @Recorder
 public class OidcClientRegistrationRecorder {
-
     private static final Logger LOG = Logger.getLogger(OidcClientRegistrationRecorder.class);
     private static final String DEFAULT_ID = "Default";
 
-    public OidcClientRegistrations setup(OidcClientRegistrationsConfig oidcClientRegsConfig,
-            Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registrySupplier) {
+    private final RuntimeValue<OidcClientRegistrationsConfig> runtimeConfig;
 
+    public OidcClientRegistrationRecorder(final RuntimeValue<OidcClientRegistrationsConfig> runtimeConfig) {
+        this.runtimeConfig = runtimeConfig;
+    }
+
+    public OidcClientRegistrations setup(Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registrySupplier) {
         var tlsSupport = OidcTlsSupport.of(registrySupplier);
         OidcClientRegistration defaultClientReg = createOidcClientRegistration(
-                getDefaultClientRegistration(oidcClientRegsConfig),
+                getDefaultClientRegistration(runtimeConfig.getValue()),
                 tlsSupport, vertx);
 
         Map<String, OidcClientRegistration> staticOidcClientRegs = new HashMap<>();
-        for (var config : oidcClientRegsConfig.namedClientRegistrations().entrySet()) {
+        for (var config : runtimeConfig.getValue().namedClientRegistrations().entrySet()) {
             staticOidcClientRegs.put(config.getKey(), createOidcClientRegistration(config.getValue(), tlsSupport, vertx));
         }
 

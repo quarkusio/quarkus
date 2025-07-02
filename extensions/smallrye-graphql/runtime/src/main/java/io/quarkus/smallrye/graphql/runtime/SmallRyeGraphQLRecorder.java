@@ -27,14 +27,21 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class SmallRyeGraphQLRecorder {
+    private final SmallRyeGraphQLConfig graphQLConfig;
+    private final RuntimeValue<SmallRyeGraphQLRuntimeConfig> runtimeConfig;
+
+    public SmallRyeGraphQLRecorder(
+            final SmallRyeGraphQLConfig graphQLConfig,
+            final RuntimeValue<SmallRyeGraphQLRuntimeConfig> runtimeConfig) {
+        this.graphQLConfig = graphQLConfig;
+        this.runtimeConfig = runtimeConfig;
+    }
 
     public RuntimeValue<SubmissionPublisher<String>> createTraficLogPublisher() {
         return new RuntimeValue<>(new SubmissionPublisher<>());
     }
 
-    public RuntimeValue<Boolean> createExecutionService(BeanContainer beanContainer,
-            Schema schema,
-            SmallRyeGraphQLConfig graphQLConfig,
+    public RuntimeValue<Boolean> createExecutionService(BeanContainer beanContainer, Schema schema,
             Optional<RuntimeValue<SubmissionPublisher<String>>> publisher) {
         GraphQLProducer graphQLProducer = beanContainer.beanInstance(GraphQLProducer.class);
         if (graphQLConfig.extraScalars().isPresent()) {
@@ -95,9 +102,9 @@ public class SmallRyeGraphQLRecorder {
 
     public Handler<RoutingContext> uiHandler(String graphqlUiFinalDestination,
             String graphqlUiPath, List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations,
-            SmallRyeGraphQLRuntimeConfig runtimeConfig, ShutdownContext shutdownContext) {
+            ShutdownContext shutdownContext) {
 
-        if (runtimeConfig.enable()) {
+        if (runtimeConfig.getValue().enable()) {
             WebJarStaticHandler handler = new WebJarStaticHandler(graphqlUiFinalDestination, graphqlUiPath,
                     webRootConfigurations);
             shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(handler));

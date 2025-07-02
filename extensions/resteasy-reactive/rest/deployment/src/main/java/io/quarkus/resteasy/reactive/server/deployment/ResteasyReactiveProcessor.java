@@ -179,7 +179,6 @@ import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerPathBodyHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
-import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveServerRuntimeConfig;
 import io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
@@ -1707,13 +1706,12 @@ public class ResteasyReactiveProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void runtimeConfiguration(ResteasyReactiveRuntimeRecorder recorder,
             Optional<ResteasyReactiveDeploymentBuildItem> deployment,
-            ResteasyReactiveServerRuntimeConfig resteasyReactiveServerRuntimeConf,
             BuildProducer<HandlerConfigurationProviderBuildItem> producer) {
         if (deployment.isEmpty()) {
             return;
         }
         producer.produce(new HandlerConfigurationProviderBuildItem(RuntimeConfiguration.class,
-                recorder.runtimeConfiguration(deployment.get().getDeployment(), resteasyReactiveServerRuntimeConf)));
+                recorder.runtimeConfiguration(deployment.get().getDeployment())));
     }
 
     @BuildStep

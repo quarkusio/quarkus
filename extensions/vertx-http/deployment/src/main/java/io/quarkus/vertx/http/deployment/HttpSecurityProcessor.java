@@ -44,6 +44,7 @@ import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Capabilities;
@@ -57,6 +58,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
@@ -100,22 +102,34 @@ public class HttpSecurityProcessor {
     private static final DotName BASIC_AUTH_ANNOTATION_NAME = DotName.createSimple(BasicAuthentication.class);
     private static final String KOTLIN_SUSPEND_IMPL_SUFFIX = "$suspendImpl";
 
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
+    @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    AdditionalBeanBuildItem initFormAuth(
-            HttpSecurityRecorder recorder,
-            VertxHttpBuildTimeConfig buildTimeConfig,
-            BuildProducer<RouteBuildItem> filterBuildItemBuildProducer) {
-        if (buildTimeConfig.auth().form().enabled()) {
-            if (!buildTimeConfig.auth().proactive()) {
-                filterBuildItemBuildProducer
-                        .produce(RouteBuildItem.builder().route(buildTimeConfig.auth().form().postLocation())
-                                .handler(recorder.formAuthPostHandler()).build());
-            }
-            return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(FormAuthenticationMechanism.class)
-                    .setDefaultScope(SINGLETON).build();
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void initFormAuth(VertxWebRouterBuildItem vertxWebRouterBuildItem, HttpSecurityRecorder recorder,
+            VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (!buildTimeConfig.auth().proactive()) {
+            var httpRouter = vertxWebRouterBuildItem.getHttpRouter();
+            recorder.formAuthPostHandler(httpRouter);
         }
-        return null;
+    }
+
+    @BuildStep
+    void makeRequiredBeansUnremovable(BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer,
+            Capabilities capabilities) {
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            unremovableBeanProducer.produce(UnremovableBeanBuildItem
+                    .beanTypes(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class));
+        }
+    }
+
+    @BuildStep
+    void registerFormAuthMechanism(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
+            VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.auth().form()) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClass(FormAuthenticationMechanism.class).setDefaultScope(SINGLETON).build());
+        }
     }
 
     @BuildStep
@@ -127,11 +141,10 @@ public class HttpSecurityProcessor {
         return null;
     }
 
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void setMtlsCertificateRoleProperties(
-            HttpSecurityRecorder recorder,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+    void setMtlsCertificateRoleProperties(HttpSecurityRecorder recorder, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (isMtlsClientAuthenticationEnabled(httpBuildTimeConfig)) {
             recorder.setMtlsCertificateRoleProperties();
         }
@@ -173,6 +186,7 @@ public class HttpSecurityProcessor {
         }
     }
 
+    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep(onlyIf = IsApplicationBasicAuthRequired.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem initBasicAuth(HttpSecurityRecorder recorder,
@@ -187,7 +201,7 @@ public class HttpSecurityProcessor {
                 .configure(BasicAuthenticationMechanism.class)
                 .types(io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism.class)
                 .scope(Singleton.class)
-                .supplier(recorder.basicAuthenticationMechanismBean(httpBuildTimeConfig.auth().form().enabled()))
+                .supplier(recorder.basicAuthenticationMechanismBean())
                 .setRuntimeInit()
                 .unremovable();
         if (makeBasicAuthMechDefaultBean(httpBuildTimeConfig)) {
@@ -198,7 +212,7 @@ public class HttpSecurityProcessor {
     }
 
     private static boolean makeBasicAuthMechDefaultBean(VertxHttpBuildTimeConfig httpBuildTimeConfig) {
-        return !httpBuildTimeConfig.auth().form().enabled() && !isMtlsClientAuthenticationEnabled(httpBuildTimeConfig)
+        return !httpBuildTimeConfig.auth().form() && !isMtlsClientAuthenticationEnabled(httpBuildTimeConfig)
                 && !httpBuildTimeConfig.auth().basic().orElse(false);
     }
 
@@ -209,7 +223,7 @@ public class HttpSecurityProcessor {
             return false;
         }
         if (!httpBuildTimeConfig.auth().basic().orElse(false)) {
-            if ((httpBuildTimeConfig.auth().form().enabled() || isMtlsClientAuthenticationEnabled(httpBuildTimeConfig))
+            if ((httpBuildTimeConfig.auth().form() || isMtlsClientAuthenticationEnabled(httpBuildTimeConfig))
                     || managementBuildTimeConfig.auth().basic().orElse(false)) {
                 //if form auth is enabled and we are not then we don't install
                 return false;
@@ -229,7 +243,7 @@ public class HttpSecurityProcessor {
             Capabilities capabilities,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             BuildProducer<SecurityInformationBuildItem> securityInformationProducer) {
-        if (!httpBuildTimeConfig.auth().form().enabled() && httpBuildTimeConfig.auth().basic().orElse(false)) {
+        if (!httpBuildTimeConfig.auth().form() && httpBuildTimeConfig.auth().basic().orElse(false)) {
             securityInformationProducer.produce(SecurityInformationBuildItem.BASIC());
         }
 
@@ -272,7 +286,8 @@ public class HttpSecurityProcessor {
             HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem) {
         if (authenticationHandler.isPresent()) {
             recorder.prepareHttpSecurityConfiguration();
-            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler, beanContainerBuildItem.getValue());
+            recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler,
+                    beanContainerBuildItem.getValue());
         }
     }
 

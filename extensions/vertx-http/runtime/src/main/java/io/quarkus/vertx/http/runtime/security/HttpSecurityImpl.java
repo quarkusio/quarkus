@@ -15,7 +15,6 @@ import java.util.function.Predicate;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
@@ -24,6 +23,8 @@ import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.Policy;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
+import io.quarkus.vertx.http.security.Basic;
+import io.quarkus.vertx.http.security.Form;
 import io.quarkus.vertx.http.security.HttpSecurity;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.mutiny.Uni;
@@ -35,11 +36,36 @@ final class HttpSecurityImpl implements HttpSecurity {
     private static final Logger LOG = Logger.getLogger(HttpSecurityImpl.class.getName());
 
     private final List<HttpPermissionCarrier> httpPermissions;
+    private final List<HttpAuthenticationMechanism> mechanisms;
     private RolesMapping rolesMapping;
+    private Basic basicAuth;
+    private Form formAuth;
 
     HttpSecurityImpl() {
         this.rolesMapping = null;
         this.httpPermissions = new ArrayList<>();
+        this.mechanisms = new ArrayList<>();
+    }
+
+    @Override
+    public HttpSecurity mechanism(Basic basic) {
+        Objects.requireNonNull(basic);
+        this.basicAuth = basic;
+        return this;
+    }
+
+    @Override
+    public HttpSecurity mechanism(Form form) {
+        Objects.requireNonNull(form);
+        this.formAuth = form;
+        return this;
+    }
+
+    @Override
+    public HttpSecurity mechanism(HttpAuthenticationMechanism mechanism) {
+        Objects.requireNonNull(mechanism);
+        this.mechanisms.add(mechanism);
+        return this;
     }
 
     @Override
@@ -249,26 +275,37 @@ final class HttpSecurityImpl implements HttpSecurity {
 
         @Override
         public HttpPermission basic() {
-            // TODO: we can enable it automatically during the runtime instead of this
-            boolean isBasicAuthDisabled = !Arc.container().select(BasicAuthenticationMechanism.class).isResolvable();
-            if (isBasicAuthDisabled) {
-                LOG.debug("Basic authentication is not available, you can enable it by setting " +
-                        "the 'quarkus.http.auth.basic' configuration property to 'true'. " +
-                        "Please ignore this warning if you provided a custom basic authentication mechanism.");
-            }
             return authenticatedWith(BasicAuthentication.AUTH_MECHANISM_SCHEME);
         }
 
         @Override
         public HttpPermission form() {
-            // TODO: we can enable it automatically during the runtime instead of this
-            boolean isFormAuthDisabled = !Arc.container().select(FormAuthenticationMechanism.class).isResolvable();
-            if (isFormAuthDisabled) {
-                LOG.debug("Form-based authentication is not available, you can enable it by setting " +
-                        "the 'quarkus.http.auth.form.enabled' configuration property to 'true'. " +
-                        "Please ignore this warning if you provided a custom form-based authentication mechanism.");
-            }
             return authenticatedWith(FormAuthentication.AUTH_MECHANISM_SCHEME);
+        }
+
+        @Override
+        public HttpPermission basic(Basic basic) {
+            String realmName = basic.realm();
+            return authenticatedWith(new BasicAuthenticationMechanism(realmName, false));
+        }
+
+        @Override
+        public HttpPermission form(Form form) {
+            Objects.requireNonNull(form);
+            String postLocationFromGlobalConfig = formAuth != null ? formAuth.postLocation()
+                    : Form.builder().build().postLocation();
+            String thisPostLocation = form.postLocation();
+            if (thisPostLocation != null && !thisPostLocation.equals(postLocationFromGlobalConfig)) {
+                throw new IllegalArgumentException("Form-based authentication is set to the '" + thisPostLocation
+                        + "' path, however the '" + postLocationFromGlobalConfig
+                        + "' path was configured globally. The post location can only be configured globally.");
+            }
+            if (formAuth == null) {
+                // make sure that form-auth mechanism is enabled globally
+                // as we need to make sure that post-location handler is configured
+                formAuth = Form.builder().build();
+            }
+            return authenticatedWith(new FormAuthenticationMechanism(form));
         }
 
         @Override
@@ -490,6 +527,18 @@ final class HttpSecurityImpl implements HttpSecurity {
 
     RolesMapping getRolesMapping() {
         return rolesMapping;
+    }
+
+    Basic getBasicAuth() {
+        return basicAuth;
+    }
+
+    Form getFormAuth() {
+        return formAuth;
+    }
+
+    public List<HttpAuthenticationMechanism> getMechanisms() {
+        return List.copyOf(mechanisms);
     }
 
     private static VertxHttpBuildTimeConfig getHttpBuildTimeConfig() {

@@ -506,6 +506,7 @@ quarkus.http.auth.permission.roles3.policy=role-policy3
 <2> The `/secured/*` path can only be accessed by authenticated users. This way, you have secured the `/secured/all` path and so on.
 <3> Shared permissions are always applied before unshared ones, therefore a `SecurityIdentity` with the `root` role will have the `user` role as well.
 
+[[path-specific-authz-programmatic-set-up]]
 === Set up path-specific authorization programmatically
 
 You can also configure the authorization policies presented by this guide so far programmatically.
@@ -591,6 +592,12 @@ public class HttpSecurityConfiguration {
 <5> When Quarkus fires the `HttpSecurity` CDI event, the runtime configuration is ready.
 <6> Require that all the requests to the `/user-info` path have string permissions `openid`, `email` and `profile`.
 The same authorization can be required with the `@PermissionsAllowed(value = { "openid", "email", "profile" }, inclusive = true)` annotation instance placed on an endpoint.
+
+==== Programmatic set up references
+
+* xref:security-basic-authentication.adoc#basic-auth-programmatic-set-up[Set up Basic authentication programmatically]
+* xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
+* xref:security-authentication-mechanisms.adoc#form-based-auth-programmatic-set-up[Set up Form-based authentication programmatically]
 
 [[standard-security-annotations]]
 == Authorization using annotations

@@ -75,7 +75,7 @@ public interface AuthRuntimeConfig {
     /**
      * Form Auth config
      */
-    FormAuthRuntimeConfig form();
+    FormAuthConfig form();
 
     /**
      * Require that all registered HTTP authentication mechanisms must attempt to verify the request credentials.

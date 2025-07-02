@@ -241,7 +241,7 @@ javadoc...).
 Be sure to test your pull request in:
 
 1. Java mode
-2. Native mode
+2. Native mode (with `-Dnative`)
 
 Also, make sure that any native tests you add will actually get executed on CI.
 In the interest of speeding up CI, the native build job `native-tests` have been split into multiple categories which
@@ -548,6 +548,17 @@ this is by executing the following command:
 ```shell
 ./mvnw test -f integration-tests/resteasy-jackson/ -Dtest=GreetingResourceTest
 ```
+
+#### Running integration tests 
+
+By default, in the Quarkus codebase, all tests ending in *IT are skipped, even with the verify goal. 
+This means most `@QuarkusIntegrationTest` tests in the Quarkus codebase only run when `-Dnative` is added to the command line. 
+Even using the `verify` goal and adding `-DskipITs=false` is not enough to run these tests. 
+Only `-Dnative` will trigger them.
+Note that this is a behaviour difference to what's [documented externally](https://quarkus.io/guides/getting-started-testing#quarkus-integration-test).
+
+Why the different behaviour? Quarkus builds are _long_, and running every integration test twice would make them even longer.
+In most cases, coverage in the native build is sufficient. 
 
 ##### Maven Invoker tests
 

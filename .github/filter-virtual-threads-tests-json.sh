@@ -13,6 +13,21 @@ PRG_PATH=$( cd "$(dirname "$0")" ; pwd -P )
 
 JSON=$(cat ${PRG_PATH}/virtual-threads-tests.json)
 
+JSON=$( echo "$JSON" | jq '
+  .include |= map(
+    . + {
+      tag: (
+        "virtual-threads-" +
+        (.category
+          | ascii_downcase
+          | gsub(" "; "-")
+          | gsub("-+"; "-")
+        )
+      )
+    }
+  )
+')
+
 # Step 0: print unfiltered json and exit in case the parameter is '_all_' (full build) or print nothing if empty (no changes)
 if [ "$1" == '_all_' ]
 then

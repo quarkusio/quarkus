@@ -1,9 +1,9 @@
 package io.quarkus.deployment.runnerjar;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -41,7 +41,7 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 
 public abstract class PackageAppTestBase extends BootstrapTestBase {
 
-    private static final String LIB_PREFIX = "lib/";
+    private static final String LIB_BOOT_PREFIX = "lib/boot/";
     private static final String MAIN_CLS = "io.quarkus.bootstrap.runner.QuarkusEntryPoint";
 
     protected List<String> expectedLib = new ArrayList<>();
@@ -209,44 +209,16 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
                     .toArray(String[]::new);
             assertEquals(actualBootLib.size(), cpEntries.length);
             for (String entry : cpEntries) {
-                assertTrue(entry.startsWith(LIB_PREFIX));
-                assertTrue(actualBootLib.contains(entry.substring(LIB_PREFIX.length())));
+                assertThat(entry).startsWith(LIB_BOOT_PREFIX);
+                String entryFile = entry.substring(LIB_BOOT_PREFIX.length());
+                assertThat(actualBootLib).contains(entryFile);
             }
         }
+        assertLibDirectoryContent(actualMainLib);
+    }
 
-        List<String> missingEntries = List.of();
-        for (String entry : expectedLib) {
-            if (!actualMainLib.remove(entry)) {
-                if (missingEntries.isEmpty()) {
-                    missingEntries = new ArrayList<>();
-                }
-                missingEntries.add(entry);
-            }
-        }
-
-        StringBuilder buf = null;
-        if (!missingEntries.isEmpty()) {
-            buf = new StringBuilder();
-            buf.append("Missing entries: ").append(missingEntries.get(0));
-            for (int i = 1; i < missingEntries.size(); ++i) {
-                buf.append(", ").append(missingEntries.get(i));
-            }
-        }
-        if (!actualMainLib.isEmpty()) {
-            if (buf == null) {
-                buf = new StringBuilder();
-            } else {
-                buf.append("; ");
-            }
-            final Iterator<String> i = actualMainLib.iterator();
-            buf.append("Extra entries: ").append(i.next());
-            while (i.hasNext()) {
-                buf.append(", ").append(i.next());
-            }
-        }
-        if (buf != null) {
-            fail(buf.toString());
-        }
+    protected void assertLibDirectoryContent(Set<String> actualMainLib) {
+        assertThat(actualMainLib).containsExactlyInAnyOrderElementsOf(expectedLib);
     }
 
     protected Set<String> getDirContent(final Path dir) throws IOException {

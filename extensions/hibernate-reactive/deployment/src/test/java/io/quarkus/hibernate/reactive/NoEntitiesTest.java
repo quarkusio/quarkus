@@ -9,7 +9,8 @@ public class NoEntitiesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withEmptyApplication();
+            .withEmptyApplication()
+            .withConfigurationResource("application.properties");
 
     @Test
     public void testNoEntities() {

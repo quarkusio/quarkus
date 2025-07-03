@@ -26,7 +26,7 @@ public class EagerResolutionTaskTest {
     @TempDir
     Path testProjectDir;
 
-    private static Stream<String> compatibleTasks() {
+    private static Stream<String> tasksToTest() {
         return Stream.of(
                 QUARKUS_GENERATE_CODE_TASK_NAME,
                 QUARKUS_BUILD_TASK_NAME,
@@ -35,8 +35,8 @@ public class EagerResolutionTaskTest {
     }
 
     @ParameterizedTest
-    @MethodSource("compatibleTasks")
-    public void configurationCacheIsReusedTest(String taskName) throws IOException, URISyntaxException {
+    @MethodSource("tasksToTest")
+    public void eagerResolutionConfigurationBuildsSuccessfully(String taskName) throws IOException, URISyntaxException {
         URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/crypto/main");
         FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
         FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());

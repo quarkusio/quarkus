@@ -1,7 +1,8 @@
 package io.quarkus.gradle.tasks;
 
-import static io.quarkus.gradle.tasks.AbstractQuarkusExtension.*;
 import static io.quarkus.gradle.tasks.AbstractQuarkusExtension.QUARKUS_PROFILE;
+import static io.quarkus.gradle.tasks.AbstractQuarkusExtension.toManifestAttributeKey;
+import static io.quarkus.gradle.tasks.AbstractQuarkusExtension.toManifestSectionAttributeKey;
 
 import java.io.File;
 import java.util.HashMap;

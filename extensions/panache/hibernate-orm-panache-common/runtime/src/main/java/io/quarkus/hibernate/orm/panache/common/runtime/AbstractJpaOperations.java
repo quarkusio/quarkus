@@ -28,9 +28,11 @@ import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
 
 public abstract class AbstractJpaOperations<PanacheQueryType> {
     private static volatile Map<String, String> entityToPersistenceUnit = Collections.emptyMap();
+    private static volatile boolean entityToPersistenceUnitIsIncomplete = true;
 
-    public static void setEntityToPersistenceUnit(Map<String, String> map) {
+    public static void setEntityToPersistenceUnit(Map<String, String> map, boolean incomplete) {
         entityToPersistenceUnit = Collections.unmodifiableMap(map);
+        entityToPersistenceUnitIsIncomplete = incomplete;
     }
 
     protected abstract PanacheQueryType createPanacheQuery(Session session, String query, String originalQuery, String orderBy,
@@ -57,6 +59,22 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
     public Session getSession(Class<?> clazz) {
         String clazzName = clazz.getName();
         String persistentUnitName = entityToPersistenceUnit.get(clazzName);
+        if (persistentUnitName == null) {
+            if (entityToPersistenceUnitIsIncomplete) {
+                // When using persistence.xml, `entityToPersistenceUnit` is most likely empty,
+                // so we'll just return the default PU and hope for the best.
+                // The error will be thrown later by Hibernate ORM if necessary;
+                // it will be a bit less clear, but this is an edge case.
+                Session session = getSession(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+                if (session != null) {
+                    return session;
+                }
+            }
+            // For Quarkus-configured PUs, or if there is no PU, this is definitely an error.
+            throw new IllegalStateException(String.format(
+                    "Entity '%s' was not found. Did you forget to annotate your Panache Entity classes with '@Entity'?",
+                    clazzName));
+        }
         return getSession(persistentUnitName);
     }
 
@@ -64,26 +82,16 @@ public abstract class AbstractJpaOperations<PanacheQueryType> {
         ArcContainer arcContainer = Arc.container();
         if (persistentUnitName == null || PersistenceUnitUtil.isDefaultPersistenceUnit(persistentUnitName)) {
             InstanceHandle<Session> sessionHandle = arcContainer.instance(Session.class);
-            if (sessionHandle.isAvailable()) {
-                return sessionHandle.get();
-            }
-            if (!arcContainer.instance(AgroalDataSource.class).isAvailable()) {
+            if (!sessionHandle.isAvailable() && !arcContainer.instance(AgroalDataSource.class).isAvailable()) {
                 throw new IllegalStateException(
                         "The default datasource has not been properly configured. See https://quarkus.io/guides/datasource#jdbc-datasource for information on how to do that.");
             }
-            throw new IllegalStateException(
-                    "No entities were found. Did you forget to annotate your Panache Entity classes with '@Entity'?");
-        }
-
-        InstanceHandle<Session> sessionHandle = arcContainer.instance(Session.class,
-                new PersistenceUnit.PersistenceUnitLiteral(persistentUnitName));
-        if (sessionHandle.isAvailable()) {
             return sessionHandle.get();
+        } else {
+            return arcContainer.instance(Session.class,
+                    new PersistenceUnit.PersistenceUnitLiteral(persistentUnitName))
+                    .get();
         }
-        throw new IllegalStateException(
-                "No entities were attached to persistence unit '" + persistentUnitName
-                        + "'. Did you forget to annotate your Panache Entity classes with '@Entity' or improperly configure the 'quarkus.hibernate-orm.\" "
-                        + persistentUnitName + "\".packages' property?");
     }
 
     public Session getSession() {

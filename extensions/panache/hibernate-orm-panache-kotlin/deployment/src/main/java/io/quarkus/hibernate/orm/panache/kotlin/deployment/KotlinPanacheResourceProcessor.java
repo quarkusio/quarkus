@@ -142,8 +142,10 @@ public final class KotlinPanacheResourceProcessor {
         }
 
         Map<String, Set<String>> collectedEntityToPersistenceUnits = new HashMap<>();
+        boolean incomplete = true;
         if (jpaModelPersistenceUnitMapping.isPresent()) {
             collectedEntityToPersistenceUnits = jpaModelPersistenceUnitMapping.get().getEntityToPersistenceUnits();
+            incomplete = jpaModelPersistenceUnitMapping.get().isIncomplete();
         }
 
         Map<String, String> panacheEntityToPersistenceUnit = new HashMap<>();
@@ -159,7 +161,7 @@ public final class KotlinPanacheResourceProcessor {
 
             panacheEntityToPersistenceUnit.put(entityName, selectedPersistenceUnits.get(0));
         }
-        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit);
+        recorder.setEntityToPersistenceUnit(panacheEntityToPersistenceUnit, incomplete);
     }
 
     private void processRepositories(CombinedIndexBuildItem index,

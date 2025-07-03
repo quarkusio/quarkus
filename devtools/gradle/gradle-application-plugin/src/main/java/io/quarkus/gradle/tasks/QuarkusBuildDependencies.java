@@ -144,7 +144,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         }
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        SmallRyeConfig config = getExtensionView()
+        SmallRyeConfig config = effectiveProvider()
                 .buildEffectiveConfiguration(appModel, new HashMap<>())
                 .getConfig();
 

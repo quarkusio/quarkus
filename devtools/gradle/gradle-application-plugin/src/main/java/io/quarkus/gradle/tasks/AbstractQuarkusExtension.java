@@ -28,6 +28,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.process.JavaForkOptions;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.dsl.Manifest;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.smallrye.common.expression.Expression;
@@ -97,7 +99,7 @@ public abstract class AbstractQuarkusExtension {
         return new BaseConfig(effectiveConfig);
     }
 
-    protected BaseConfig baseConfig() {
+    public BaseConfig baseConfig() {
         this.baseConfig.finalizeValue();
         return this.baseConfig.get();
     }
@@ -114,8 +116,24 @@ public abstract class AbstractQuarkusExtension {
         return classpath;
     }
 
-    protected Manifest manifest() {
+    public Manifest manifest() {
         return baseConfig().manifest();
+    }
+
+    public Map<String, Attributes> getAttributes() {
+        return manifest().getSections();
+    }
+
+    public PackageConfig packageConfig() {
+        return baseConfig().packageConfig();
+    }
+
+    public Map<String, String> cachingRelevantProperties(List<String> propertyPatterns) {
+        return baseConfig().cachingRelevantProperties(propertyPatterns);
+    }
+
+    public NativeConfig nativeConfig() {
+        return baseConfig().nativeConfig();
     }
 
     protected EffectiveConfig buildEffectiveConfiguration(ApplicationModel appModel) {

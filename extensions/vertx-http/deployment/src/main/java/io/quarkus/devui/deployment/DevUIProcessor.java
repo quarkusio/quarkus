@@ -621,6 +621,12 @@ public class DevUIProcessor {
                                         extension.setCard(card);
                                     });
 
+                                    // See if there is a headless component
+                                    String headlessJs = cardPageBuildItem.getHeadlessComponentLink();
+                                    if (headlessJs != null) {
+                                        extension.setHeadlessComponent(headlessJs);
+                                    }
+
                                     addLogo(extension, cardPageBuildItem, metaData);
                                     addLibraryLinks(extension, cardPageBuildItem, curateOutcomeBuildItem, metaData);
 

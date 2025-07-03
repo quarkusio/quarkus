@@ -15,6 +15,7 @@ public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
 
     protected final Map<String, Object> buildTimeData;
     protected final List<PageBuilder> pageBuilders;
+    protected String headlessComponentLink = null;
 
     public AbstractPageBuildItem() {
         super();
@@ -62,5 +63,13 @@ public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
 
     public boolean hasBuildTimeData() {
         return this.buildTimeData != null && !this.buildTimeData.isEmpty();
+    }
+
+    public void setHeadlessComponentLink(String headlessComponentLink) {
+        this.headlessComponentLink = headlessComponentLink;
+    }
+
+    public String getHeadlessComponentLink() {
+        return this.headlessComponentLink;
     }
 }

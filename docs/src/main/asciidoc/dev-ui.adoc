@@ -1295,6 +1295,68 @@ There might be cases where you develop an extension outside of Quarkus core (lik
 
 image::dev-ui-jsonrpc-log-v2.png[alt=Dev UI Json RPC Log,role="center"]
 
+=== Advanced: Headless Components
+
+In rare cases, an extension might need to execute logic *even when its main component is not added to the DOM*. This is typically useful for setting global state or triggering background tasks without displaying any UI.
+
+To support this, extensions can declare a *headless component* — a web component with no visual representation that runs automatically on page load.
+
+Declare the headless component in your extension:
+
+[source,java]
+----
+CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+cardPageBuildItem.setHeadlessComponentLink("qwc-chappie-init.js"); // <1>
+----
+<1> Set the path to the headless component JavaScript file (relative to the extension resources).
+
+Then create the component alongside your other Dev UI pages:
+
+[source,javascript]
+----
+import { LitElement } from 'lit';
+import { JsonRpc } from 'jsonrpc';
+import { assistantState } from 'assistant-state';
+
+/**
+ * This load on browser load (headless components) to set the initial assistant state
+ */
+class QwcChappieInit extends LitElement {
+
+    static properties = {
+        namespace: {attribute: true}, // <1>
+    }
+
+    connectedCallback() {
+        super.connectedCallback();
+        this._init().then(() => this.remove()); // <2>
+    }
+
+    async _init() {
+        const jsonRpc = new JsonRpc(this.namespace); // <3>
+
+        jsonRpc.loadConfiguration().then(jsonRpcResponse => { 
+            if(jsonRpcResponse.result && jsonRpcResponse.result.name){
+                assistantState.ready();
+            }else{
+                assistantState.available();
+            }
+        });
+    }
+
+    // prevent rendering anything
+    createRenderRoot() { // <3>
+        return this;
+    }
+}
+customElements.define('qwc-chappie-init', QwcChappieInit); // <4>
+----
+<1> The `namespace` attribute will always be provided automatically by Dev UI.
+<2> Perform your logic in `connectedCallback`, then remove the element if no longer needed.
+<3> When using JsonRPC, pass in the provided namespace (instead of `this`, as in normal components).
+<4> Your tag definition have to be the filename without the `.js`
+
+
 === Testing
 
 You can add tests to your extension that test:

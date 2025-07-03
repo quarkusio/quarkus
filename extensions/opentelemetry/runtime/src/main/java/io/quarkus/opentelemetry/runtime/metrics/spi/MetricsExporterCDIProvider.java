@@ -21,7 +21,7 @@ public class MetricsExporterCDIProvider implements ConfigurableMetricExporterPro
     public MetricExporter createExporter(ConfigProperties configProperties) {
         Instance<MetricExporter> exporters = CDI.current().select(MetricExporter.class, Any.Literal.INSTANCE);
         if (LOG.isDebugEnabled()) {
-            LOG.debug("available exporters: " + exporters.stream()
+            LOG.debugf("available exporters: %s", exporters.stream()
                     .map(e -> e.getClass().getName())
                     .reduce((a, b) -> a + ", " + b)
                     .orElse("none"));

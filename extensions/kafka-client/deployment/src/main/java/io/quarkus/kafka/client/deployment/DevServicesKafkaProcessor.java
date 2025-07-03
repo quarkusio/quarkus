@@ -103,7 +103,10 @@ public class DevServicesKafkaProcessor {
                     config.port().orElse(0),
                     composeProjectBuildItem.getDefaultNetworkId(),
                     useSharedNetwork, config.redpanda())
-                    .withEnv(config.containerEnv());
+                    .withEnv(config.containerEnv())
+                    // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
+                    // for backwards compatibility we still add the custom label
+                    .withLabel(DEV_SERVICE_LABEL, config.serviceName());
             case STRIMZI -> {
                 StrimziKafkaContainer strimzi = new StrimziKafkaContainer(config.effectiveImageName())
                         .withBrokerId(1)
@@ -118,12 +121,15 @@ public class DevServicesKafkaProcessor {
                     strimzi.withPort(config.port().get());
                 }
                 strimzi.withEnv(config.containerEnv());
+                strimzi.withLabel(DEV_SERVICE_LABEL, config.serviceName());
                 yield new StartableContainer<>(strimzi, StrimziKafkaContainer::getBootstrapServers);
             }
             case KAFKA_NATIVE -> new KafkaNativeContainer(DockerImageName.parse(config.effectiveImageName()),
                     config.port().orElse(0),
                     composeProjectBuildItem.getDefaultNetworkId(),
-                    useSharedNetwork).withEnv(config.containerEnv());
+                    useSharedNetwork)
+                    .withEnv(config.containerEnv())
+                    .withLabel(DEV_SERVICE_LABEL, config.serviceName());
         };
         return startable;
     }

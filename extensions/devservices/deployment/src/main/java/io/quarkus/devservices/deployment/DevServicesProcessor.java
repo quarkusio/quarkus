@@ -48,7 +48,6 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
@@ -88,18 +87,17 @@ public class DevServicesProcessor {
         return new DevServicesNetworkIdBuildItem(networkId);
     }
 
-    @BuildStep
-    public DevServicesCustomizerBuildItem containerCustomizer(
-            LaunchModeBuildItem launchMode,
-            List<DevServicesSharedNetworkBuildItem> sharedNetwork,
+    @BuildStep(onlyIfNot = IsNormal.class)
+    @Produce(ServiceStartBuildItem.class)
+    public DevServicesCustomizerBuildItem containerCustomizer(LaunchModeBuildItem launchMode,
             DevServicesConfig globalDevServicesConfig) {
         return new DevServicesCustomizerBuildItem((devService, startable) -> {
-            if (startable instanceof StartableContainer<?> startableContainer) {
+            if (startable instanceof StartableContainer startableContainer) {
                 GenericContainer<?> container = startableContainer.getContainer();
                 ConfigureUtil.configureLabels(container, launchMode.getLaunchMode());
                 container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
                 globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
-            } else if (startable instanceof GenericContainer<?> container) {
+            } else if (startable instanceof GenericContainer container) {
                 ConfigureUtil.configureLabels(container, launchMode.getLaunchMode());
                 globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
                 container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());

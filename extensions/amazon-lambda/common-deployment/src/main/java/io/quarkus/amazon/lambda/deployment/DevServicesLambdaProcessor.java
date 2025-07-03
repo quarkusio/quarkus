@@ -2,10 +2,9 @@ package io.quarkus.amazon.lambda.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
-import java.util.HashMap;
+import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -18,17 +17,14 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.runtime.LaunchMode;
 
 public class DevServicesLambdaProcessor {
     private static final Logger log = Logger.getLogger(DevServicesLambdaProcessor.class);
-
-    static MockEventServer server;
-    static LaunchMode startMode;
 
     @BuildStep(onlyIfNot = IsNormal.class)
     @Record(STATIC_INIT)
@@ -53,61 +49,81 @@ public class DevServicesLambdaProcessor {
 
     @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class) // This is required for testing so run it even if devservices.enabled=false
-    public void startEventServer(LaunchModeBuildItem launchMode,
+    public void startEventServer(LaunchModeBuildItem launchModeBuildItem,
             LambdaConfig config,
             Optional<EventServerOverrideBuildItem> override,
-            BuildProducer<DevServicesResultBuildItem> devServicePropertiesProducer,
-            CuratedApplicationShutdownBuildItem closeBuildItem)
-            throws Exception {
-        if (!launchMode.getLaunchMode().isDevOrTest())
+            BuildProducer<DevServicesResultBuildItem> devServicePropertiesProducer) {
+        LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
+        if (!launchMode.isDevOrTest())
             return;
         if (legacyTestingEnabled())
             return;
         if (!config.mockEventServer().enabled()) {
             return;
         }
-        if (server != null) {
-            return;
-        }
-        Supplier<MockEventServer> supplier = null;
+
+        MockEventServer server;
         if (override.isPresent()) {
-            supplier = override.get().getServer();
+            server = override.get().getServer().get();
         } else {
-            supplier = () -> new MockEventServer();
+            server = new MockEventServer();
         }
 
-        server = supplier.get();
-        int port = launchMode.getLaunchMode() == LaunchMode.TEST ? config.mockEventServer().testPort()
+        int configuredPort = launchMode == LaunchMode.TEST ? config.mockEventServer().testPort()
                 : config.mockEventServer().devPort();
-        startMode = launchMode.getLaunchMode();
-        server.start(port);
-        int actualPort = server.getPort();
-        String baseUrl = "localhost:" + actualPort + MockEventServer.BASE_PATH;
-        Map<String, String> properties = new HashMap<>();
-        properties.put(AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, baseUrl);
+        String portPropertySuffix = launchMode == LaunchMode.TEST ? "test-port" : "dev-port";
+        String propName = "quarkus.lambda.mock-event-server." + portPropertySuffix;
 
-        if (actualPort != port) {
-            String portPropertyValue = String.valueOf(actualPort);
-            String portPropertySuffix = launchMode.getLaunchMode() == LaunchMode.TEST ? "test-port" : "dev-port";
-            String propName = "quarkus.lambda.mock-event-server." + portPropertySuffix;
-            System.setProperty(propName, portPropertyValue);
+        // No compose support, and no using of external services, so no need to discover existing services
+
+        DevServicesResultBuildItem buildItem = DevServicesResultBuildItem.owned().feature(Feature.AMAZON_LAMBDA)
+                .serviceName(Feature.AMAZON_LAMBDA.getName())
+                .serviceConfig(config)
+                .startable(() -> new StartableEventServer(
+                        server, configuredPort))
+                .configProvider(
+                        Map.of(propName, s -> String.valueOf(s.getExposedPort()),
+                                AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API,
+                                StartableEventServer::getConnectionInfo))
+                .build();
+
+        devServicePropertiesProducer.produce(buildItem);
+
+    }
+
+    private static class StartableEventServer implements Startable {
+
+        private final MockEventServer server;
+        private final int configuredPort;
+
+        public StartableEventServer(MockEventServer server, int configuredPort) {
+            this.server = server;
+            this.configuredPort = configuredPort;
         }
 
-        devServicePropertiesProducer.produce(
-                new DevServicesResultBuildItem(Feature.AMAZON_LAMBDA.getName(), null, properties));
-        Runnable closeTask = () -> {
-            if (server != null) {
-                try {
-                    server.close();
-                } catch (Throwable e) {
-                    log.error("Failed to stop the Lambda Mock Event Server", e);
-                } finally {
-                    server = null;
-                }
-            }
-            startMode = null;
-            server = null;
-        };
-        closeBuildItem.addCloseTask(closeTask, true);
+        @Override
+        public void start() {
+            server.start(configuredPort);
+            log.debugf("Starting event server on port %d", configuredPort);
+        }
+
+        public int getExposedPort() {
+            return server.getPort();
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return "localhost:" + getExposedPort() + MockEventServer.BASE_PATH;
+        }
+
+        @Override
+        public String getContainerId() {
+            return null;
+        }
+
+        @Override
+        public void close() throws IOException {
+            server.close();
+        }
     }
 }

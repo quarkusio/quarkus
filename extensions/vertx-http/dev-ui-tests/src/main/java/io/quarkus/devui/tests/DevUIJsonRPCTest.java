@@ -178,7 +178,7 @@ public class DevUIJsonRPCTest {
 
         request.put("jsonrpc", "2.0");
         request.put("id", id);
-        request.put("method", this.namespace + "." + methodName);
+        request.put("method", this.namespace + "/" + methodName);
         ObjectNode jsonParams = mapper.createObjectNode();
         if (params != null && !params.isEmpty()) {
             for (Map.Entry<String, Object> p : params.entrySet()) {

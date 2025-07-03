@@ -51,21 +51,28 @@ public class IdeProcessor {
                 // For Dev UI (like from the server log)
                 BuildTimeActionBuildItem ideActions = new BuildTimeActionBuildItem(NAMESPACE);
 
-                ideActions.addAction("open", map -> {
-                    String fileName = map.get("fileName");
-                    String lang = map.get("lang");
-                    String lineNumber = map.get("lineNumber");
+                ideActions.actionBuilder()
+                        .methodName("open")
+                        .description("Opens a certain workspace item in the user's IDE")
+                        .parameter("fileName", "The filename that should be opened")
+                        .parameter("lang", "The language of that file, example java or js")
+                        .parameter("lineNumber", "The lineNumber where the cursor should be in the IDE. Use 0 if unknown")
+                        .function(map -> {
+                            String fileName = map.get("fileName");
+                            String lang = map.get("lang");
+                            String lineNumber = map.get("lineNumber");
 
-                    if (fileName != null && fileName.startsWith(FILE_PROTOCOL)) {
-                        fileName = fileName.substring(FILE_PROTOCOL.length());
-                        return typicalProcessLaunch(fileName, lineNumber, ide);
-                    } else {
-                        if (isNullOrEmpty(fileName) || isNullOrEmpty(lang)) {
-                            return false;
-                        }
-                        return typicalProcessLaunch(fileName, lang, lineNumber, ide);
-                    }
-                });
+                            if (fileName != null && fileName.startsWith(FILE_PROTOCOL)) {
+                                fileName = fileName.substring(FILE_PROTOCOL.length());
+                                return typicalProcessLaunch(fileName, lineNumber, ide);
+                            } else {
+                                if (isNullOrEmpty(fileName) || isNullOrEmpty(lang)) {
+                                    return false;
+                                }
+                                return typicalProcessLaunch(fileName, lang, lineNumber, ide);
+                            }
+                        })
+                        .build();
 
                 buildTimeActionProducer.produce(ideActions);
             }

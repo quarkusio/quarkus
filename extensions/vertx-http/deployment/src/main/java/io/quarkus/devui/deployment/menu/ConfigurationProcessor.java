@@ -104,28 +104,44 @@ public class ConfigurationProcessor {
 
         BuildTimeActionBuildItem configActions = new BuildTimeActionBuildItem(NAMESPACE);
 
-        configActions.addAction("updateProperty", map -> {
-            Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
-            updateConfig(values);
-            return true;
-        });
-        configActions.addAction("updateProperties", map -> {
-            String type = map.get("type");
-
-            if (type.equalsIgnoreCase("properties")) {
-                String content = map.get("content");
-
-                Properties p = new Properties();
-                try (StringReader sr = new StringReader(content)) {
-                    p.load(sr); // Validate
-                    setConfig(content);
+        configActions.actionBuilder()
+                .methodName("updateProperty")
+                .description("Update a configuration/property in the Quarkus application")
+                .parameter("name", "The name of the configuration/property to update")
+                .parameter("value", "The new value for the configuration/property")
+                .function(map -> {
+                    Map<String, String> values = Collections.singletonMap(map.get("name"), map.get("value"));
+                    updateConfig(values);
                     return true;
-                } catch (IOException ex) {
+                })
+                .build();
+
+        configActions.actionBuilder()
+                .methodName("updateProperties")
+                .description("Update multiple configurations/properties in the Quarkus application")
+                .parameter("type",
+                        "The type should always be 'properties' as the content should be the contents of serialized properties object")
+                .parameter("content",
+                        "The string value of serialized properties, with the keys being the name of the configuration/property and the value the new value for that configuration/property")
+                .function(map -> {
+                    String type = map.get("type");
+
+                    if (type.equalsIgnoreCase("properties")) {
+                        String content = map.get("content");
+
+                        Properties p = new Properties();
+                        try (StringReader sr = new StringReader(content)) {
+                            p.load(sr); // Validate
+                            setConfig(content);
+                            return true;
+                        } catch (IOException ex) {
+                            return false;
+                        }
+                    }
                     return false;
-                }
-            }
-            return false;
-        });
+                })
+                .build();
+
         buildTimeActionProducer.produce(configActions);
 
         syntheticBeanProducer.produce(

@@ -11,9 +11,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
@@ -22,15 +24,18 @@ import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
-import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethodName;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonTypeAdapter;
-import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.devui.runtime.mcp.McpServerRuntimeConfig;
+import io.quarkus.devui.runtime.mcp.ResponseHandlers;
+import io.quarkus.devui.runtime.mcp.StreamableHttpHandler;
+import io.quarkus.devui.runtime.mcp.ToolMessageHandler;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.devmode.FileSystemStaticHandler;
 import io.quarkus.vertx.http.runtime.webjar.WebJarStaticHandler;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -46,16 +51,16 @@ public class DevUIRecorder {
     }
 
     public void createJsonRpcRouter(BeanContainer beanContainer,
-            Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
-            List<String> deploymentMethods,
-            List<String> deploymentSubscriptions,
-            Map<String, RuntimeValue> recordedValues) {
+            Map<String, JsonRpcMethod> runtimeMethods,
+            Map<String, JsonRpcMethod> runtimeSubscriptions,
+            Map<String, JsonRpcMethod> deploymentMethods,
+            Map<String, JsonRpcMethod> deploymentSubscriptions,
+            Map<String, JsonRpcMethod> recordedMethods,
+            Map<String, JsonRpcMethod> recordedSubscriptions) {
+
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
-        jsonRpcRouter.populateJsonRPCRuntimeMethods(extensionMethodsMap);
-        jsonRpcRouter.setJsonRPCDeploymentActions(deploymentMethods, deploymentSubscriptions);
-        if (recordedValues != null && !recordedValues.isEmpty()) {
-            jsonRpcRouter.setRecordedValues(recordedValues);
-        }
+        jsonRpcRouter.populateJsonRpcEndpoints(runtimeMethods, runtimeSubscriptions, deploymentMethods, deploymentSubscriptions,
+                recordedMethods, recordedSubscriptions);
 
         jsonRpcRouter.initializeCodec(createJsonMapper());
     }
@@ -68,7 +73,7 @@ public class DevUIRecorder {
         // We need to pass some information so that the mapper, who lives in the deployment classloader,
         // knows how to deal with JsonObject/JsonArray/JsonBuffer, who live in the runtime classloader.
         return factory.create(new JsonTypeAdapter<>(JsonObject.class, JsonObject::getMap, JsonObject::new),
-                new JsonTypeAdapter<JsonArray, List<?>>(JsonArray.class, JsonArray::getList, JsonArray::new),
+                new JsonTypeAdapter<>(JsonArray.class, JsonArray::getList, JsonArray::new),
                 new JsonTypeAdapter<>(Buffer.class, buffer -> BASE64_ENCODER.encodeToString(buffer.getBytes()), text -> {
                     try {
                         return Buffer.buffer(BASE64_DECODER.decode(text));
@@ -78,8 +83,23 @@ public class DevUIRecorder {
                 }));
     }
 
-    public Handler<RoutingContext> communicationHandler() {
+    public Handler<RoutingContext> webSocketHandler() {
         return new DevUIWebSocket();
+    }
+
+    public Handler<RoutingContext> streamableHttpHandler(Supplier<Vertx> vertx) {
+        // TODO: determine config
+        McpServerRuntimeConfig config = new McpServerRuntimeConfig() {
+            @Override
+            public Duration connectionIdleTimeout() {
+                return Duration.ofMinutes(30);
+            }
+        };
+        return new StreamableHttpHandler(
+                vertx.get(),
+                new ToolMessageHandler(),
+                new ResponseHandlers(),
+                config);
     }
 
     public Handler<RoutingContext> uiHandler(String finalDestination,
@@ -92,8 +112,14 @@ public class DevUIRecorder {
         return handler;
     }
 
-    public Handler<RoutingContext> buildTimeStaticHandler(String basePath, Map<String, String> urlAndPath) {
-        return new DevUIBuildTimeStaticHandler(basePath, urlAndPath);
+    public Handler<RoutingContext> buildTimeStaticHandler(BeanContainer beanContainer,
+            String basePath,
+            Map<String, String> urlAndPath,
+            Map<String, String> descriptions) {
+        DevUIBuildTimeStaticService buildTimeStaticService = beanContainer.beanInstance(DevUIBuildTimeStaticService.class);
+        buildTimeStaticService.addData(basePath, urlAndPath, descriptions);
+
+        return new DevUIBuildTimeStaticHandler();
     }
 
     public Handler<RoutingContext> endpointInfoHandler(String basePath) {

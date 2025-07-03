@@ -33,9 +33,9 @@ public class StartableContainer<T extends GenericContainer<?>> implements Starta
     @Override
     public String getConnectionInfo() {
         if (connectionInfoFunction == null) {
-            return container.getContainerId();
+            return null;
         }
-        return null;
+        return connectionInfoFunction.apply(container);
     }
 
     public T getContainer() {

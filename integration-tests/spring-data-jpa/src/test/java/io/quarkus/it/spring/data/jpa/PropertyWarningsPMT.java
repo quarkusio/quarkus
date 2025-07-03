@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.logging.LogRecord;
 
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,7 +17,8 @@ public class PropertyWarningsPMT {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .withApplicationRoot((jar) -> jar.addClasses(FruitResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(FruitResource.class)
+                    .addAsResource(new StringAsset(""), "import.sql"))
             .setApplicationName("property-warnings")
             .setApplicationVersion("0.1-SNAPSHOT")
             .setLogRecordPredicate(r -> "io.quarkus.spring.data.deployment.SpringDataJPAProcessor".equals(r.getLoggerName()))

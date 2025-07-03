@@ -37,8 +37,6 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
-import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
@@ -73,9 +71,7 @@ class HibernateSearchElasticsearchProcessor {
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateSearchElasticsearchPersistenceUnitConfiguredBuildItem> configuredPersistenceUnits,
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations,
-            BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations,
-            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+            BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<AnnotationInstance> indexedAnnotations = index.getAnnotations(INDEXED);
 

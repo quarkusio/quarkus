@@ -37,6 +37,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -48,7 +49,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
@@ -96,8 +96,7 @@ public final class HibernateReactiveProcessor {
 
     @BuildStep
     @Record(STATIC_INIT)
-    public void build(RecorderContext recorderContext,
-            HibernateReactiveRecorder recorder,
+    public void build(HibernateReactiveRecorder recorder,
             JpaModelBuildItem jpaModel) {
         final boolean enableRx = hasEntities(jpaModel);
         recorder.callHibernateReactiveFeatureInit(enableRx);
@@ -210,8 +209,8 @@ public final class HibernateReactiveProcessor {
     }
 
     @BuildStep
-    void waitForVertxPool(List<VertxPoolBuildItem> vertxPool,
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
+    @Consume(VertxPoolBuildItem.class)
+    void waitForVertxPool(List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeConfigured) {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available

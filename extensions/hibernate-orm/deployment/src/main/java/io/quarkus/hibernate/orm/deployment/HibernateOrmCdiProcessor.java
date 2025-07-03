@@ -62,10 +62,10 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.hibernate.orm.PersistenceUnit;
@@ -191,13 +191,10 @@ public class HibernateOrmCdiProcessor {
     // These beans must be initialized at runtime because their initialization
     // depends on runtime configuration (to activate/deactivate a persistence unit)
     @Record(ExecutionTime.RUNTIME_INIT)
+    @Consume(JdbcDataSourceBuildItem.class) // just make sure the datasources are initialized
     @BuildStep
-    void generateDataSourceBeans(HibernateOrmRecorder recorder,
+    void generateHibernateBeans(HibernateOrmRecorder recorder,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            ImpliedBlockingPersistenceUnitTypeBuildItem impliedBlockingPersistenceUnitType,
-            List<JdbcDataSourceBuildItem> jdbcDataSources, // just make sure the datasources are initialized
-            Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (persistenceUnitDescriptors.isEmpty()) {
             // No persistence units have been configured so bail out
@@ -257,12 +254,9 @@ public class HibernateOrmCdiProcessor {
     }
 
     @BuildStep
-    void registerBeans(HibernateOrmConfig hibernateOrmConfig,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             Capabilities capabilities,
-            CombinedIndexBuildItem combinedIndex,
-            List<PersistenceUnitDescriptorBuildItem> descriptors,
             JpaModelBuildItem jpaModel) {
         if (!hasEntities(jpaModel)) {
             return;

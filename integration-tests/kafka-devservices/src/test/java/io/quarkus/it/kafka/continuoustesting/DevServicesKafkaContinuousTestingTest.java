@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,9 +18,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.testcontainers.DockerClientFactory;
 
-import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerPort;
 
@@ -37,16 +34,12 @@ import io.quarkus.test.QuarkusDevModeTest;
  * will override the maven executions and cause it to run twice.
  * That doesn't help debug anything.
  */
-public class DevServicesKafkaContinuousTestingTest {
+public class DevServicesKafkaContinuousTestingTest extends BaseDevServiceTest {
 
     static final String DEVSERVICES_DISABLED_PROPERTIES = ContinuousTestingTestUtils.appProperties(
             "quarkus.devservices.enabled=false");
 
-    static final String FIXED_PORT_PROPERTIES = ContinuousTestingTestUtils.appProperties(
-            "quarkus.kafka.devservices.port=6377");
-
-    static final String UPDATED_FIXED_PORT_PROPERTIES = ContinuousTestingTestUtils.appProperties(
-            "quarkus.kafka.devservices.port=6342");
+    static final String UPDATED_FIXED_PORT_PROPERTIES = "\nquarkus.kafka.devservices.port=6342\n";
 
     @RegisterExtension
     public static QuarkusDevModeTest test = new QuarkusDevModeTest()
@@ -139,16 +132,6 @@ public class DevServicesKafkaContinuousTestingTest {
 
     }
 
-    private static String prettyPrintContainerList(List<Container> newContainers) {
-        return newContainers.stream()
-                .map(c -> Arrays.toString(c.getPorts()) + " -- " + Arrays.toString(c.getNames()) + " -- " + c.getLabels())
-                .collect(Collectors.joining(", \n"));
-    }
-
-    private static boolean hasPublicPort(Container newContainer, int newPort) {
-        return Arrays.stream(newContainer.getPorts()).anyMatch(p -> p.getPublicPort() == newPort);
-    }
-
     void ping() {
         when().get("/kafka/partitions/test").then()
                 .statusCode(200)
@@ -179,7 +162,6 @@ public class DevServicesKafkaContinuousTestingTest {
     }
 
     @Test
-    @Disabled("This seems to work in dev mode with continuous testing mode, but not in tests")
     public void testContinuousTestingCreatesANewInstanceWhenPropertiesAreChanged() {
 
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
@@ -213,10 +195,10 @@ public class DevServicesKafkaContinuousTestingTest {
             assertFalse(ports.containsAll(existingPorts), "Container ports: " + ports);
             existingContainers.addAll(newContainers);
         }
-        test.modifyResourceFile("application.properties", s -> UPDATED_FIXED_PORT_PROPERTIES);
+        test.modifyResourceFile("application.properties", s -> s + UPDATED_FIXED_PORT_PROPERTIES);
 
         result = utils.waitForNextCompletion();
-        assertEquals(1, result.getTestsPassed());
+        assertEquals(2, result.getTestsPassed());
         assertEquals(0, result.getTestsFailed());
 
         // Another new container should have appeared
@@ -236,36 +218,4 @@ public class DevServicesKafkaContinuousTestingTest {
         }
     }
 
-    private static List<Container> getAllContainers() {
-        return DockerClientFactory.lazyClient().listContainersCmd().exec().stream()
-                .filter(container -> isKafkaContainer(container)).toList();
-    }
-
-    private static void stopAllContainers() {
-        DockerClient dockerClient = DockerClientFactory.lazyClient();
-        dockerClient.listContainersCmd().exec().stream()
-                .filter(DevServicesKafkaContinuousTestingTest::isKafkaContainer)
-                .forEach(c -> dockerClient.stopContainerCmd(c.getId()).exec());
-    }
-
-    private static List<Container> getKafkaContainers() {
-        return getAllContainers();
-    }
-
-    private static List<Container> getKafkaContainersExcludingExisting(Collection<Container> existingContainers) {
-        return getKafkaContainers().stream().filter(
-                container -> existingContainers.stream().noneMatch(existing -> existing.getId().equals(container.getId())))
-                .toList();
-    }
-
-    private static List<Container> getAllContainersExcludingExisting(Collection<Container> existingContainers) {
-        return getAllContainers().stream().filter(
-                container -> existingContainers.stream().noneMatch(existing -> existing.getId().equals(container.getId())))
-                .toList();
-    }
-
-    private static boolean isKafkaContainer(Container container) {
-        // The output of getCommand() seems to vary by host OS (it's different on CI and mac), but the image name should be reliable
-        return container.getImage().contains("kafka") || container.getImage().contains("redpanda");
-    }
 }

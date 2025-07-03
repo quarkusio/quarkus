@@ -1,6 +1,5 @@
 package io.quarkus.devservices.common;
 
-import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.devservices.common.Labels.QUARKUS_LAUNCH_MODE;
 import static io.quarkus.devservices.common.Labels.QUARKUS_PROCESS_UUID;
 
@@ -47,13 +46,16 @@ public final class ConfigureUtil {
         return container.getHost();
     }
 
-    public static void configureLabels(GenericContainer<?> container, LaunchMode launchMode, String serviceLabel,
-            String serviceName) {
-        if (serviceName != null) {
-            container.withLabel(serviceLabel, serviceName);
-            container.withLabel(QUARKUS_DEV_SERVICE, serviceName);
+    public static boolean shouldConfigureSharedServiceLabel(LaunchMode launchMode) {
+        return launchMode == LaunchMode.DEVELOPMENT;
+    }
+
+    public static <T extends GenericContainer<T>> T configureSharedServiceLabel(T container, LaunchMode launchMode,
+            String serviceLabel, String serviceName) {
+        if (shouldConfigureSharedServiceLabel(launchMode)) {
+            return container.withLabel(serviceLabel, serviceName);
         }
-        configureLabels(container, launchMode);
+        return container;
     }
 
     public static void configureLabels(GenericContainer<?> container, LaunchMode launchMode) {

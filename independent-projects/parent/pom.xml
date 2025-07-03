@@ -167,6 +167,10 @@
                                     </message>
                                     <version>${maven.min.version}</version>
                                 </requireMavenVersion>
+                                <banDynamicVersions>
+                                    <!-- while we don't allow snapshots in the tree, it's handy to be able to use a snapshot for testing -->
+                                    <allowSnapshots>true</allowSnapshots>
+                                </banDynamicVersions>
                             </rules>
                         </configuration>
                     </execution>

@@ -69,6 +69,12 @@ You will need to implement an `AnnotationsTransformer` and strip out out the pro
 
 A `LogHandlerBuildItem` is a convenient way to redirect application logs. See this link:https://quarkus.io/blog/quarkus-aws-cloudwatch_extension/[worked example of an extension which directs output to AWS CloudWatch].
 
+=== How can I ensure a build step always runs even if it doesn't produce anything consumed by another build step?
+
+There are cases where an extension needs some of its build steps to run regardless of whether another part of the build process consumes any of its output (if such output even exists). One could argue that maybe such functionality shouldn't be put in a separate build step, but rather be part of another. However, it might make sense to run independent processing in separate build steps so that they can execute concurrently of other build tasks.
+
+In that situation, you can annotate your build step with `@Produce(ServiceStartBuildItem.class)` to make your build step produce an automatically generated `ServiceStartBuildItem` which is consumed by an internal Quarkus build step thus ensuring that your build step is always "consumed" and therefore is included in the build process. Another option could also be to annotation your build step with `@Produce(ArtifactResultBuildItem.class)`, however, this item is not consumed by Quarkus in Dev mode so your build step won't take effect in that case.
+
 == Build and hosting infrastructure for extensions
 
 === Can I use Gradle to build my extension?

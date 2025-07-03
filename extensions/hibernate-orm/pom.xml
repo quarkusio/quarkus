@@ -71,7 +71,7 @@
                                     <bundledSignature>jdk-internal-19</bundledSignature>
                                 </bundledSignatures>
                                 <signaturesFiles>
-                                    <signaturesFile>./banned-signatures.txt</signaturesFile>
+                                    <signaturesFile>${maven.multiModuleProjectDirectory}/extensions/hibernate-orm/banned-signatures.txt</signaturesFile>
                                 </signaturesFiles>
                                 <failOnMissingClasses>false</failOnMissingClasses>
                                 <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>

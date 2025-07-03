@@ -5,7 +5,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.interfaces.DSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.logging.Logger;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.ObjectSubstitution;
 

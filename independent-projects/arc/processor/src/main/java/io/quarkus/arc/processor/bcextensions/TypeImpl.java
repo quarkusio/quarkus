@@ -12,7 +12,7 @@ import jakarta.enterprise.lang.model.types.Type;
 
 import org.jboss.jandex.DotName;
 
-import io.quarkus.arc.processor.SuppressForbidden;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 abstract class TypeImpl<JandexType extends org.jboss.jandex.Type> extends AnnotationTargetImpl implements Type {
     final JandexType jandexType;

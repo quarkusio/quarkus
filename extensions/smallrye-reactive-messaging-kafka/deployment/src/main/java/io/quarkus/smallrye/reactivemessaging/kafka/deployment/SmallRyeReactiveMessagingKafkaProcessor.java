@@ -879,7 +879,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // also, only generate the serializer/deserializer for classes and only generate once
         if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
             // Check if already generated
-            result = alreadyGeneratedDeserializers.get(type.toString());
+            result = alreadyGeneratedDeserializers.get(type.name().toString());
             if (result == null) {
                 String clazz = JacksonSerdeGenerator.generateDeserializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson deserializer for type %s", type.name().toString());
@@ -888,7 +888,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                         ReflectiveClassBuildItem.builder(clazz)
                                 .reason(getClass().getName())
                                 .methods().build());
-                alreadyGeneratedDeserializers.put(type.toString(), result);
+                alreadyGeneratedDeserializers.put(type.name().toString(), result);
                 // if the channel has a DLQ config generate a serializer as well
                 if (hasDLQConfig(channelName, discovery.getConfig())) {
                     Result serializer = serializerFor(discovery, type, generatedClass, reflection, alreadyGeneratedSerializers);
@@ -918,7 +918,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
         // also, only generate the serializer/deserializer for classes and only generate once
         if (result == null && type != null && generatedClass != null && type.kind() == Type.Kind.CLASS) {
             // Check if already generated
-            result = alreadyGeneratedSerializers.get(type.toString());
+            result = alreadyGeneratedSerializers.get(type.name().toString());
             if (result == null) {
                 String clazz = JacksonSerdeGenerator.generateSerializer(generatedClass, type);
                 LOGGER.infof("Generating Jackson serializer for type %s", type.name().toString());
@@ -928,7 +928,7 @@ public class SmallRyeReactiveMessagingKafkaProcessor {
                                 .reason(getClass().getName())
                                 .methods().build());
                 result = Result.of(clazz);
-                alreadyGeneratedSerializers.put(type.toString(), result);
+                alreadyGeneratedSerializers.put(type.name().toString(), result);
             }
         }
 

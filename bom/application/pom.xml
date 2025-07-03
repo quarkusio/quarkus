@@ -16,7 +16,7 @@
     <properties>
         <angus-activation.version>2.0.2</angus-activation.version>
         <angus-mail.version>2.0.3</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.80</bouncycastle.version>
+        <bouncycastle.version>1.81</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.5</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.19</bouncycastle.tls.fips.version>
         <cyclonedx.version>9.0.5</cyclonedx.version>
@@ -50,10 +50,10 @@
         <smallrye-config.version>3.11.4</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>4.0.10</smallrye-open-api.version>
+        <smallrye-open-api.version>4.0.11</smallrye-open-api.version>
         <smallrye-graphql.version>2.12.2</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.9.0</smallrye-fault-tolerance.version>
-        <smallrye-jwt.version>4.6.1</smallrye-jwt.version>
+        <smallrye-jwt.version>4.6.2</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.2.1</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
@@ -95,8 +95,8 @@
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
-        <narayana.version>7.2.1.Final</narayana.version>
-        <narayana-lra.version>1.0.0.Final</narayana-lra.version>
+        <narayana.version>7.2.2.Final</narayana.version>
+        <narayana-lra.version>1.0.1.Final</narayana-lra.version>
         <agroal.version>2.7.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.17.2</elasticsearch-opensource-components.version>

@@ -1010,8 +1010,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             try {
                 json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getStateEncryptionKey());
             } catch (Exception ex) {
-                LOG.errorf("State cookie value can not be decrypted for the %s tenant",
-                        configContext.oidcConfig().tenantId().get());
+                LOG.errorf("State cookie value for the %s tenant can not be decrypted: %s",
+                        configContext.oidcConfig().tenantId().get(), ex.getMessage());
                 throw new AuthenticationCompletionException(ex);
             }
             bean.setRestorePath(json.getString(OidcUtils.STATE_COOKIE_RESTORE_PATH));
@@ -1239,7 +1239,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             try {
                 return OidcUtils.encryptJson(json, configContext.getStateEncryptionKey());
             } catch (Exception ex) {
-                LOG.errorf("State containing the code verifier can not be encrypted: %s", ex.getMessage());
+                LOG.errorf("State cookie value for the %s tenant can not be encrypted: %s",
+                        configContext.oidcConfig().tenantId().get(), ex.getMessage());
                 throw new AuthenticationCompletionException(ex);
             }
         } else {

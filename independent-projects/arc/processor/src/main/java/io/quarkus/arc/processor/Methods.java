@@ -116,7 +116,7 @@ final class Methods {
         if (Modifier.isFinal(method.flags())) {
             String className = method.declaringClass().name().toString();
             if (!className.startsWith("java.")) {
-                if (transformUnproxyableClasses && (methodsFromWhichToRemoveFinal != null)) {
+                if (transformUnproxyableClasses && methodsFromWhichToRemoveFinal != null) {
                     methodsFromWhichToRemoveFinal.computeIfAbsent(className, (k) -> new HashSet<>())
                             .add(new MethodKey(method));
                     return false;

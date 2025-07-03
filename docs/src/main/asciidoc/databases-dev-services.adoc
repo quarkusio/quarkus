@@ -150,11 +150,13 @@ Dev Services volumes can be mapped to the filesystem or the classpath:
 # Using a filesystem volume:
 quarkus.datasource.devservices.volumes."/path/from"=/container/to <1>
 # Using a classpath volume:
-quarkus.datasource.devservices.volumes."classpath:./file"=/container/to <2>
+quarkus.datasource.devservices.volumes."classpath\:./file"=/container/to <2>
 ----
 
 <1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container.
 <2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container.
+
+CAUTION: The colon character `:` needs to be escaped in `.properties` files as `\:`, or it will be interpreted as a key/value separator.
 
 IMPORTANT: when using a classpath volume, the container will only be granted read permission. On the other hand, when using a filesystem volume, the container will be granted read and write permission.
 
@@ -217,7 +219,7 @@ Login credentials are the same for most databases, except when the database requ
 |`quarkus` for the default datasource or name of the datasource
 
 |Microsoft SQL Server
-|`SA`
+|`sa`
 |`Quarkus123`
 |
 

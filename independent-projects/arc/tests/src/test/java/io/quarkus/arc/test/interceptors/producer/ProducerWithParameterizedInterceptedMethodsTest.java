@@ -31,10 +31,10 @@ public class ProducerWithParameterizedInterceptedMethodsTest {
     @Test
     public void test() {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
-        assertEquals("intercepted1: intercepted2: hello1_1", nonbean.hello1(1));
-        assertEquals("intercepted1: hello2_2_3", nonbean.hello2(2, 3));
-        assertEquals("intercepted2: hello3_4_5_6", nonbean.hello3(4, 5, 6));
-        assertEquals("hello4_7", nonbean.hello4(7));
+        assertEquals("intercepted1: intercepted2: hello1_1_foobar", nonbean.hello1(1));
+        assertEquals("intercepted1: hello2_2_3_foobar", nonbean.hello2(2, 3));
+        assertEquals("intercepted2: hello3_4_5_6_foobar", nonbean.hello3(4, 5, 6));
+        assertEquals("hello4_7_foobar", nonbean.hello4(7));
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -71,24 +71,34 @@ public class ProducerWithParameterizedInterceptedMethodsTest {
 
     @MyBinding1
     static class MyNonbean {
+        private final String value;
+
+        MyNonbean() {
+            this(null);
+        }
+
+        MyNonbean(String value) {
+            this.value = value;
+        }
+
         @MyBinding2
         String hello1(int i) {
-            return "hello1_" + i;
+            return "hello1_" + i + "_" + value;
         }
 
         String hello2(int i, int j) {
-            return "hello2_" + i + "_" + j;
+            return "hello2_" + i + "_" + j + "_" + value;
         }
 
         @NoClassInterceptors
         @MyBinding2
         String hello3(int i, int j, int k) {
-            return "hello3_" + i + "_" + j + "_" + k;
+            return "hello3_" + i + "_" + j + "_" + k + "_" + value;
         }
 
         @NoClassInterceptors
         String hello4(int i) {
-            return "hello4_" + i;
+            return "hello4_" + i + "_" + value;
         }
     }
 
@@ -96,7 +106,7 @@ public class ProducerWithParameterizedInterceptedMethodsTest {
     static class MyProducer {
         @Produces
         MyNonbean produce(InterceptionProxy<MyNonbean> proxy) {
-            return proxy.create(new MyNonbean());
+            return proxy.create(new MyNonbean("foobar"));
         }
     }
 }

@@ -31,10 +31,10 @@ public class ProducerWithClassAndMethodLevelInterceptorsTest {
     @Test
     public void test() {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
-        assertEquals("intercepted1: intercepted2: hello1", nonbean.hello1());
-        assertEquals("intercepted1: hello2", nonbean.hello2());
-        assertEquals("hello3", nonbean.hello3());
-        assertEquals("intercepted2: hello4", nonbean.hello4());
+        assertEquals("intercepted1: intercepted2: hello1_foobar", nonbean.hello1());
+        assertEquals("intercepted1: hello2_foobar", nonbean.hello2());
+        assertEquals("intercepted2: hello3_foobar", nonbean.hello3());
+        assertEquals("hello4_foobar", nonbean.hello4());
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -71,24 +71,34 @@ public class ProducerWithClassAndMethodLevelInterceptorsTest {
 
     @MyBinding1
     static class MyNonbean {
+        private final String value;
+
+        MyNonbean() {
+            this(null);
+        }
+
+        MyNonbean(String value) {
+            this.value = value;
+        }
+
         @MyBinding2
         String hello1() {
-            return "hello1";
+            return "hello1_" + value;
         }
 
         String hello2() {
-            return "hello2";
-        }
-
-        @NoClassInterceptors
-        String hello3() {
-            return "hello3";
+            return "hello2_" + value;
         }
 
         @NoClassInterceptors
         @MyBinding2
+        String hello3() {
+            return "hello3_" + value;
+        }
+
+        @NoClassInterceptors
         String hello4() {
-            return "hello4";
+            return "hello4_" + value;
         }
     }
 
@@ -96,7 +106,7 @@ public class ProducerWithClassAndMethodLevelInterceptorsTest {
     static class MyProducer {
         @Produces
         MyNonbean produce(InterceptionProxy<MyNonbean> proxy) {
-            return proxy.create(new MyNonbean());
+            return proxy.create(new MyNonbean("foobar"));
         }
     }
 }

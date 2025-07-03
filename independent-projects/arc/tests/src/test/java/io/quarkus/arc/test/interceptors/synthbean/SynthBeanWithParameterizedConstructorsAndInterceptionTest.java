@@ -67,6 +67,7 @@ public class SynthBeanWithParameterizedConstructorsAndInterceptionTest {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
         assertEquals("intercepted1: intercepted2: hello1_0_0", nonbean.hello1());
         assertEquals("intercepted2: hello2_0_0_6", nonbean.hello2(6));
+        assertEquals("hello3_0_0", nonbean.hello3());
     }
 
     @Test
@@ -76,6 +77,7 @@ public class SynthBeanWithParameterizedConstructorsAndInterceptionTest {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
         assertEquals("intercepted1: intercepted2: hello1_1_0", nonbean.hello1());
         assertEquals("intercepted2: hello2_1_0_7", nonbean.hello2(7));
+        assertEquals("hello3_1_0", nonbean.hello3());
     }
 
     @Test
@@ -85,6 +87,7 @@ public class SynthBeanWithParameterizedConstructorsAndInterceptionTest {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
         assertEquals("intercepted1: intercepted2: hello1_2_3", nonbean.hello1());
         assertEquals("intercepted2: hello2_2_3_8", nonbean.hello2(8));
+        assertEquals("hello3_2_3", nonbean.hello3());
     }
 
     @Test
@@ -94,6 +97,7 @@ public class SynthBeanWithParameterizedConstructorsAndInterceptionTest {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
         assertEquals("intercepted1: intercepted2: hello1_4_5", nonbean.hello1());
         assertEquals("intercepted2: hello2_4_5_9", nonbean.hello2(9));
+        assertEquals("hello3_4_5", nonbean.hello3());
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -162,6 +166,11 @@ public class SynthBeanWithParameterizedConstructorsAndInterceptionTest {
         @MyBinding2
         String hello2(int k) {
             return "hello2_" + i + "_" + j + "_" + k;
+        }
+
+        @NoClassInterceptors
+        String hello3() {
+            return "hello3_" + i + "_" + j;
         }
     }
 }

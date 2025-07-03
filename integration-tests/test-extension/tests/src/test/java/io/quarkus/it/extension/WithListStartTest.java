@@ -8,16 +8,16 @@ import io.quarkus.test.junit.QuarkusTest;
 
 @CustomResourceWithList
 @QuarkusTest
-public class EndTestWithList {
+public class WithListStartTest {
 
     @Test
     public void test1() {
-        assertTrue(Counter.endCounter.get() <= 1);
+        assertTrue(Counter.startCounter.get() <= 1);
     }
 
     @Test
     public void test2() {
-        assertTrue(Counter.endCounter.get() <= 1);
+        assertTrue(Counter.startCounter.get() <= 1);
     }
 
 }

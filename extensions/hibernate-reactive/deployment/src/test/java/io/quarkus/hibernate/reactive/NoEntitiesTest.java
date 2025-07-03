@@ -13,7 +13,8 @@ public class NoEntitiesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withEmptyApplication();
+            .withEmptyApplication()
+            .withConfigurationResource("application.properties");
 
     // When having no entities,
     // as long as the Hibernate Reactive beans are not injected anywhere,

@@ -1,5 +1,9 @@
 package io.quarkus.devservices.common;
 
+import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.devservices.common.Labels.QUARKUS_LAUNCH_MODE;
+import static io.quarkus.devservices.common.Labels.QUARKUS_PROCESS_UUID;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -18,6 +22,9 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.utility.Base58;
 
 import com.github.dockerjava.api.command.CreateNetworkCmd;
+
+import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
+import io.quarkus.runtime.LaunchMode;
 
 public final class ConfigureUtil {
 
@@ -38,6 +45,21 @@ public final class ConfigureUtil {
             return configureSharedNetwork(container, hostNamePrefix);
         }
         return container.getHost();
+    }
+
+    public static void configureLabels(GenericContainer<?> container, LaunchMode launchMode, String serviceLabel,
+            String serviceName) {
+        if (serviceName != null) {
+            container.withLabel(serviceLabel, serviceName);
+            container.withLabel(QUARKUS_DEV_SERVICE, serviceName);
+        }
+        configureLabels(container, launchMode);
+    }
+
+    public static void configureLabels(GenericContainer<?> container, LaunchMode launchMode) {
+        // Configure the labels for the container
+        container.withLabel(QUARKUS_PROCESS_UUID, RunningDevServicesRegistry.APPLICATION_UUID);
+        container.withLabel(QUARKUS_LAUNCH_MODE, launchMode.toString());
     }
 
     public static String configureSharedNetwork(GenericContainer<?> container, String hostNamePrefix) {

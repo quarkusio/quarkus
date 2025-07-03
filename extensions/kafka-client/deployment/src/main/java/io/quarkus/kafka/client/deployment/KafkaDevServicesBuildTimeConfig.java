@@ -123,4 +123,11 @@ public interface KafkaDevServicesBuildTimeConfig {
      */
     RedpandaBuildTimeConfig redpanda();
 
+    /**
+     * @return the image name if set, otherwise the default image name for the provider.
+     */
+    default String effectiveImageName() {
+        return imageName().orElseGet(() -> provider().getDefaultImageName());
+    }
+
 }

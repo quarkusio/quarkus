@@ -19,18 +19,10 @@ import io.quarkus.runtime.LaunchMode;
 
 public class ContainerLocator {
 
-    /**
-     * Label which indicates that this dev service was started by this process, and therefore should not be discovered for
-     * re-use;
-     * instead reuse should be managed by the DevServicesRegistry, so that config updates apply.
-     * We use a UUID as the value so that we don't filter out dev services from other processes.
-     */
-    public static final String MANAGED_DEV_SERVICE_LABEL = "quarkus-dev-service-process-uuid";
-
     // Read the UUID off the RunningDevServicesRegistry, because it's guaranteed to be parent-first, unlike this class
     public static final BiPredicate<Container, String> IS_NOT_CREATED_BY_US_SELECTOR = (container,
             expectedLabel) -> !RunningDevServicesRegistry.APPLICATION_UUID
-                    .equals(container.getLabels().get(MANAGED_DEV_SERVICE_LABEL));
+                    .equals(container.getLabels().get(Labels.QUARKUS_PROCESS_UUID));
 
     private static final Logger log = Logger.getLogger(ContainerLocator.class);
 

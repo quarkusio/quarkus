@@ -68,6 +68,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
+import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
@@ -79,6 +80,7 @@ import io.quarkus.deployment.builditem.LogSocketFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
@@ -330,13 +332,8 @@ public final class LoggingResourceProcessor {
 
             initializeBuildTimeLogging(logRuntimeConfigInBuild, logBuildTimeConfig, consoleRuntimeConfig,
                     categoryMinLevelDefaults.content, additionalLogCleanupFilters, launchModeBuildItem.getLaunchMode());
-
-            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
-                @Override
-                public void run() {
-                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
-                }
-            });
+            // Build time logging is terminated before the application is started, after dev services are started.
+            // When there is no devservices build time logging is still closed at deployment classloader close #closeBuildTimeLogging
         }
         return new LoggingSetupBuildItem();
     }
@@ -532,6 +529,19 @@ public final class LoggingResourceProcessor {
             generateDefaultLoggers(log.minLevel(), output);
         } else {
             generateCategoryMinLevelLoggers(log.categories(), categoryMinLevelDefaults.content, log.minLevel(), output);
+        }
+    }
+
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    void closeBuildTimeLogging(List<DevServicesResultBuildItem> devServices) {
+        if (devServices.isEmpty()) {
+            ((QuarkusClassLoader) Thread.currentThread().getContextClassLoader()).addCloseTask(new Runnable() {
+                @Override
+                public void run() {
+                    InitialConfigurator.DELAYED_HANDLER.buildTimeComplete();
+                }
+            });
         }
     }
 

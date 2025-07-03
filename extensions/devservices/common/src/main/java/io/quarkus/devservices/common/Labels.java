@@ -30,6 +30,16 @@ public final class Labels {
 
     public static final String COMPOSE_EXPOSED_PORTS = QUARKUS_COMPOSE_PREFIX + ".exposed_ports";
 
+    public static final String QUARKUS_LAUNCH_MODE = QUARKUS_DEV_SERVICE + ".launch-mode";
+
+    /**
+     * Label which indicates that this dev service was started by this process, and therefore should not be discovered for
+     * re-use;
+     * instead reuse should be managed by the DevServicesRegistry, so that config updates apply.
+     * We use a UUID as the value so that we don't filter out dev services from other processes.
+     */
+    public static final String QUARKUS_PROCESS_UUID = QUARKUS_DEV_SERVICE + ".process-uuid";
+
     private static final String DATASOURCE = "datasource";
 
     public static void addDataSourceLabel(GenericContainer<?> container, String datasourceName) {

@@ -222,8 +222,10 @@ public class SmallryeJwtDevModeProcessor {
     }
 
     private DevServicesResultBuildItem smallryeJwtDevServiceWith(Map<String, String> properties) {
-        return new DevServicesResultBuildItem(
-                Feature.SMALLRYE_JWT.name(), null, properties);
+        return DevServicesResultBuildItem.discovered()
+                .feature(Feature.SMALLRYE_JWT)
+                .config(properties)
+                .build();
     }
 
     private static Map<String, String> generateDevServiceProperties(String publicKey, String privateKey,

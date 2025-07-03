@@ -10,22 +10,27 @@ import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistr
 import io.quarkus.devservices.crossclassloader.runtime.RunningService;
 import io.quarkus.runtime.LaunchMode;
 
-public class DevServicesConfigSource implements ConfigSource {
+/**
+ * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
+ */
+@Deprecated(forRemoval = true)
+public class DevServicesOverrideConfigSource implements ConfigSource {
 
     private final LaunchMode launchMode;
 
-    public DevServicesConfigSource(LaunchMode launchMode) {
+    public DevServicesOverrideConfigSource(LaunchMode launchMode) {
         this.launchMode = launchMode;
     }
 
     @Override
     public Set<String> getPropertyNames() {
+        // We could make this more efficient by not invoking the supplier on the other end, but it would need a more complex interface
         Set<String> names = new HashSet<>();
 
         Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name());
         if (allConfig != null) {
             for (RunningService service : allConfig) {
-                Map<String, String> config = service.configs();
+                Map<String, String> config = service.overrideConfigs();
                 names.addAll(config.keySet());
             }
         }
@@ -37,7 +42,7 @@ public class DevServicesConfigSource implements ConfigSource {
         Set<RunningService> allConfig = RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name());
         if (allConfig != null) {
             for (RunningService service : allConfig) {
-                Map<String, String> config = service.configs();
+                Map<String, String> config = service.overrideConfigs();
                 String answer = config.get(propertyName);
                 if (answer != null) {
                     return answer;
@@ -49,11 +54,12 @@ public class DevServicesConfigSource implements ConfigSource {
 
     @Override
     public String getName() {
-        return "DevServicesConfigSource";
+        return "DevServicesOverrideConfigSource";
     }
 
     @Override
     public int getOrdinal() {
-        return 240; // a bit less than application properties, because this config should only take effect if nothing is set
+        // This is a dynamic override, so it needs a high priority to be able to override ephemeral port (0) with real values
+        return 410; // a bit more than system properties
     }
 }

@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -77,6 +78,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
      * A map of application config that is dependent on the started service
      */
     private final Map<String, Function<Startable, String>> applicationConfigProvider;
+    private final Set<String> highPriorityConfig;
 
     public static DiscoveredServiceBuilder discovered() {
         return new DiscoveredServiceBuilder();
@@ -106,6 +108,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.serviceName = null;
         this.serviceConfig = null;
         this.applicationConfigProvider = null;
+        this.highPriorityConfig = null;
         this.startableSupplier = null;
         this.postStartAction = null;
     }
@@ -121,7 +124,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             Map<String, String> config,
             Supplier<Startable> startableSupplier,
             Consumer<Startable> postStartAction,
-            Map<String, Function<Startable, String>> applicationConfigProvider) {
+            Map<String, Function<Startable, String>> applicationConfigProvider, Set<String> highPriorityConfig) {
         this.name = name;
         this.description = description;
         this.containerId = null;
@@ -131,6 +134,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         this.startableSupplier = startableSupplier;
         this.postStartAction = postStartAction;
         this.applicationConfigProvider = applicationConfigProvider;
+        this.highPriorityConfig = highPriorityConfig;
     }
 
     public String getName() {
@@ -175,12 +179,29 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
 
     public Map<String, String> getConfig(Startable startable) {
         SupplierMap<String, String> map = new SupplierMap<>();
+        // To make sure static config does make it into a config source, include it here
         if (config != null && !config.isEmpty()) {
             map.putAll(config);
         }
         if (applicationConfigProvider != null) {
             for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
                 map.put(entry.getKey(), () -> entry.getValue().apply(startable));
+            }
+        }
+        return map;
+    }
+
+    /**
+     * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
+     */
+    @Deprecated(forRemoval = true)
+    public Map<String, String> getOverrideConfig(Startable startable) {
+
+        SupplierMap<String, String> map = new SupplierMap<>();
+
+        if (highPriorityConfig != null) {
+            for (String key : highPriorityConfig) {
+                map.put(key, () -> applicationConfigProvider.get(key).apply(startable));
             }
         }
         return map;
@@ -226,10 +247,8 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     }
 
     public static class OwnedServiceBuilder<T extends Startable> {
-
         private static final String IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS = "io.quarkus.devservice.runtime.config.DevServicesConfigBuilder";
-        private static final boolean CONFIG_BUILDER_AVAILABLE = isClassAvailable(
-                IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS);
+        private static final boolean CONFIG_BUILDER_AVAILABLE = isClassAvailable(IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS);
 
         private String name;
         private String description;
@@ -239,6 +258,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Supplier<? extends Startable> startableSupplier;
         private Consumer<? extends Startable> postStartAction;
         private Map<String, Function<Startable, String>> applicationConfigProvider;
+        private Set<String> highPriorityConfig;
 
         public OwnedServiceBuilder<T> name(String name) {
             this.name = name;
@@ -287,6 +307,15 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         /**
+         * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
+         */
+        @Deprecated(forRemoval = true)
+        public OwnedServiceBuilder<T> highPriorityConfig(Set<String> highPriorityConfig) {
+            this.highPriorityConfig = highPriorityConfig;
+            return this;
+        }
+
+        /**
          * Provides config to inject into the config system. If you've got values that don't change, use config(), and if you've
          * got values that you'll only know after starting the container, use configProvider() and provide a map of
          * name->lambda. The key in the map is the name of a config property which is being injected.
@@ -306,7 +335,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
             return new DevServicesResultBuildItem(name, description, serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,
                     (Consumer<Startable>) postStartAction,
-                    applicationConfigProvider);
+                    applicationConfigProvider, highPriorityConfig);
         }
 
         private static boolean isClassAvailable(String className) {

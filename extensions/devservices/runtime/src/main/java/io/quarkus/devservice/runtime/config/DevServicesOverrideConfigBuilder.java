@@ -4,11 +4,15 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
-public class DevServicesConfigBuilder implements ConfigBuilder {
+/**
+ * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
+ */
+@Deprecated(forRemoval = true)
+public class DevServicesOverrideConfigBuilder implements ConfigBuilder {
 
     @Override
     public SmallRyeConfigBuilder configBuilder(SmallRyeConfigBuilder builder) {
-        return builder.withSources(new DevServicesConfigSource(LaunchMode.current()));
+        return builder.withSources(new DevServicesOverrideConfigSource(LaunchMode.current()));
     }
 
     @Override

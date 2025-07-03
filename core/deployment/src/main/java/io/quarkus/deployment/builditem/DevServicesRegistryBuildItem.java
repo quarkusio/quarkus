@@ -125,7 +125,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             startable.start();
 
             RunningService service = new RunningService(request.getName(), request.getDescription(),
-                    request.getConfig(startable), startable.getContainerId(), startable);
+                    request.getConfig(startable), request.getOverrideConfig(startable), startable.getContainerId(), startable);
             this.addRunningService(request.getName(), request.getServiceName(), request.getServiceConfig(), service);
 
             compressor.close();

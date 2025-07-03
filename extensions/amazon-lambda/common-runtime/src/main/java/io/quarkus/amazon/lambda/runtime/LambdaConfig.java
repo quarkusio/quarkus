@@ -1,10 +1,10 @@
-package io.quarkus.amazon.lambda.deployment;
+package io.quarkus.amazon.lambda.runtime;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 
-@ConfigRoot(phase = ConfigPhase.BUILD_TIME)
+@ConfigRoot(phase = ConfigPhase.RUN_TIME)
 @ConfigMapping(prefix = "quarkus.lambda")
 public interface LambdaConfig {
 
@@ -13,4 +13,5 @@ public interface LambdaConfig {
      * in dev mode and test mode
      */
     MockEventServerConfig mockEventServer();
+
 }

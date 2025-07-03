@@ -16,14 +16,17 @@ public final class RunningService implements Closeable {
     private final String feature;
     private final String description;
     private final Map<String, String> configs;
+    private final Map<String, String> overrideConfigs;
     private final String containerId;
     private final Closeable closeable;
 
-    public RunningService(String feature, String description, Map<String, String> configs, String containerId,
+    public RunningService(String feature, String description, Map<String, String> configs, Map<String, String> overrideConfig,
+            String containerId,
             Closeable closeable) {
         this.feature = feature;
         this.description = description;
         this.configs = configs;
+        this.overrideConfigs = overrideConfig;
         this.containerId = containerId;
         this.closeable = closeable;
     }
@@ -45,8 +48,15 @@ public final class RunningService implements Closeable {
         return configs;
     }
 
+    /**
+     * @deprecated Subject to changes due to <a href="https://github.com/quarkusio/quarkus/pull/51209">#51209</a>
+     */
+    @Deprecated(forRemoval = true)
+    public Map<String, String> overrideConfigs() {
+        return overrideConfigs;
+    }
+
     public String containerId() {
         return containerId;
     }
-
 }

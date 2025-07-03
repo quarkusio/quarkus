@@ -14,11 +14,6 @@ public class DevServicesConfigBuilder implements ConfigBuilder {
 
     @Override
     public int priority() {
-        // What's the right priority? This is a cheeky dynamic override, so a high priority seems correct, but dev services are supposed to fill in gaps in existing information.
-        // Dev services should be looking at those sources and not doing anything if there's existing config,
-        // so a very low priority is also arguably correct.
-        // In principle the priority actually shouldn't matter much, but in practice it needs to not be higher than Arquillian config overrides or some tests fail
-
         return 10;
     }
 }

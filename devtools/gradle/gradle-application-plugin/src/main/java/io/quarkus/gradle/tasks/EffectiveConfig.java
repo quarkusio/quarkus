@@ -49,6 +49,8 @@ public final class EffectiveConfig {
         // (see also https://quarkus.io/guides/config-reference#configuration-sources)
         // 600 -> forcedProperties
         // 500 -> taskProperties
+        // 420 -> RuntimeOverride (used by TestResource and other Startup actions)
+        // 410 -> Dev Service overrides
         // 400 -> System.getProperties() (provided by default sources)
         // 300 -> System.getenv() (provided by default sources)
         // 290 -> quarkusBuildProperties

@@ -686,14 +686,21 @@ public final class HibernateOrmProcessor {
         }
 
         Map<String, Set<String>> entityPersistenceUnitMapping = new HashMap<>();
+        boolean incomplete = false;
         for (PersistenceUnitDescriptorBuildItem descriptor : descriptors) {
+            if (descriptor.isFromPersistenceXml()) {
+                // In this case some entities might be detected by Hibernate on boot,
+                // so we need to let Panache know that this mapping may be incomplete.
+                incomplete = true;
+            }
             for (String entityClass : descriptor.getManagedClassNames()) {
                 entityPersistenceUnitMapping.putIfAbsent(entityClass, new HashSet<>());
                 entityPersistenceUnitMapping.get(entityClass).add(descriptor.getPersistenceUnitName());
             }
         }
 
-        jpaModelPersistenceUnitMapping.produce(new JpaModelPersistenceUnitMappingBuildItem(entityPersistenceUnitMapping));
+        jpaModelPersistenceUnitMapping
+                .produce(new JpaModelPersistenceUnitMappingBuildItem(entityPersistenceUnitMapping, incomplete));
     }
 
     @BuildStep

@@ -23,13 +23,10 @@ public class DefaultClientLogger implements ClientLogger {
 
     @Override
     public void logResponse(HttpClientResponse response, boolean redirect) {
-        if (!log.isDebugEnabled()) {
-            return;
-        }
         response.bodyHandler(new Handler<>() {
             @Override
             public void handle(Buffer body) {
-                log.debugf("%s: %s %s, Status[%d %s], Headers[%s], Body:\n%s",
+                log.infof("%s: %s %s, Status[%d %s], Headers[%s], Body:\n%s",
                         redirect ? "Redirect" : "Response",
                         response.request().getMethod(), response.request().absoluteURI(), response.statusCode(),
                         response.statusMessage(), asString(response.headers()), bodyToString(body));
@@ -39,17 +36,14 @@ public class DefaultClientLogger implements ClientLogger {
 
     @Override
     public void logRequest(HttpClientRequest request, Buffer body, boolean omitBody) {
-        if (!log.isDebugEnabled()) {
-            return;
-        }
         if (omitBody) {
-            log.debugf("Request: %s %s Headers[%s], Body omitted",
+            log.infof("Request: %s %s Headers[%s], Body omitted",
                     request.getMethod(), request.absoluteURI(), asString(request.headers()));
         } else if (body == null || body.length() == 0) {
-            log.debugf("Request: %s %s Headers[%s], Empty body",
+            log.infof("Request: %s %s Headers[%s], Empty body",
                     request.getMethod(), request.absoluteURI(), asString(request.headers()));
         } else {
-            log.debugf("Request: %s %s Headers[%s], Body:\n%s",
+            log.infof("Request: %s %s Headers[%s], Body:\n%s",
                     request.getMethod(), request.absoluteURI(), asString(request.headers()), bodyToString(body));
         }
     }

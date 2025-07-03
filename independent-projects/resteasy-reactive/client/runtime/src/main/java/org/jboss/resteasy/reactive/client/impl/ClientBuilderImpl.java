@@ -72,13 +72,13 @@ public class ClientBuilderImpl extends ClientBuilder {
     // overridden security settings
     private TlsConfig tlsConfig;
 
-    private LoggingScope loggingScope;
+    private ClientLogger clientLogger = new DefaultClientLogger();
+    private LoggingScope loggingScope = LoggingScope.NONE;
     private Integer loggingBodySize = 100;
 
     private int maxChunkSize = 8096;
     private MultiQueryParamMode multiQueryParamMode;
 
-    private ClientLogger clientLogger = new DefaultClientLogger();
     private String userAgent = RestClientRequestContext.DEFAULT_USER_AGENT_VALUE;
 
     private Boolean enableCompression;

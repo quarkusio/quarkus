@@ -127,6 +127,9 @@ export class JsonRpc {
             } else {
                 JsonRpc.serverUri = "ws:";
             }
+            
+            console.log("RouterController.getBasePath() = " + RouterController.getBasePath());
+            
             JsonRpc.serverUri += "//" + window.location.host + RouterController.getBasePath() + "/json-rpc-ws";
             JsonRpc.connect();
         }

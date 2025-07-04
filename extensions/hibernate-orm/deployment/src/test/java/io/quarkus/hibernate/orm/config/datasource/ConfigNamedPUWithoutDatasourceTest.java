@@ -10,21 +10,20 @@ import io.quarkus.hibernate.orm.config.namedpu.MyEntity;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class EntitiesInNamedPUWithExplicitDatasourceMissingTest {
+public class ConfigNamedPUWithoutDatasourceTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addPackage(MyEntity.class.getPackage().getName()))
-            .overrideConfigKey("quarkus.hibernate-orm.pu-1.datasource", "ds-1")
+            // There will still be a default datasource if dev services are enabled
+            .overrideConfigKey("quarkus.devservices.enabled", "false")
+            // We need at least one build-time property, otherwise the PU gets ignored...
+            .overrideConfigKey("quarkus.hibernate-orm.pu-1.packages", MyEntity.class.getPackageName())
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            "Unable to find datasource 'ds-1' for persistence unit 'pu-1'",
-                            "Datasource 'ds-1' is not configured.",
-                            "To solve this, configure datasource 'ds-1'.",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+                    .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'."));;
 
     @Test
     public void testInvalidConfiguration() {

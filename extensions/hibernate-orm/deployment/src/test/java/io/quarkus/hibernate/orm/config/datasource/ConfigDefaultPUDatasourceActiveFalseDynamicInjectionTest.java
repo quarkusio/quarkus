@@ -2,23 +2,27 @@ package io.quarkus.hibernate.orm.config.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.junit.jupiter.api.Assertions;
+import jakarta.inject.Inject;
+import jakarta.persistence.SchemaManager;
+
+import org.assertj.core.api.Assertions;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.hibernate.orm.config.MyEntity;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class EntitiesInDefaultPUWithImplicitDatasourceConfigActiveFalseTest {
+public class ConfigDefaultPUDatasourceActiveFalseDynamicInjectionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClass(MyEntity.class))
+            .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.active", "false")
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
+            .assertException(e -> assertThat(e)
                     .hasMessageContainingAll(
                             "Unable to find datasource '<default>' for persistence unit '<default>'",
                             "Datasource '<default>' was deactivated through configuration properties.",
@@ -27,10 +31,18 @@ public class EntitiesInDefaultPUWithImplicitDatasourceConfigActiveFalseTest {
                                     + " to 'true' and configure datasource '<default>'",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
-    @Test
-    public void testInvalidConfiguration() {
-        // deployment exception should happen first
-        Assertions.fail();
-    }
+    @Inject
+    InjectableInstance<SessionFactory> sessionFactory;
 
+    @Inject
+    InjectableInstance<Session> session;
+
+    // Just try another bean type, but not all of them...
+    @Inject
+    InjectableInstance<SchemaManager> schemaManager;
+
+    @Test
+    public void test() {
+        Assertions.fail("Startup should have failed");
+    }
 }

@@ -34,7 +34,7 @@ import io.quarkus.deployment.dev.ClassScanResult;
 import io.quarkus.deployment.dev.CompilationProvider;
 import io.quarkus.deployment.dev.DevModeContext;
 import io.quarkus.deployment.dev.DevModeContext.ModuleInfo;
-import io.quarkus.deployment.dev.QuarkusCompiler;
+import io.quarkus.deployment.dev.GradleCompiler;
 import io.quarkus.deployment.dev.RuntimeUpdatesProcessor;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.testing.TestWatchedFiles;
@@ -55,7 +55,7 @@ public class TestSupport implements TestController {
     final List<TestListener> testListeners = new CopyOnWriteArrayList<>();
     final DevModeType devModeType;
 
-    volatile QuarkusCompiler compiler;
+    volatile GradleCompiler compiler;
     volatile boolean started;
     volatile TestRunResults testRunResults;
     volatile List<String> includeTags = Collections.emptyList();
@@ -256,7 +256,7 @@ public class TestSupport implements TestController {
                         //compilation can fail
                         //note that we already have a similar issue with provided scoped deps, and so far nobody
                         //has complained much
-                        compiler = new QuarkusCompiler(testCuratedApplication, compilationProviders, context);
+                        compiler = new GradleCompiler(testCuratedApplication, compilationProviders, context);
                     }
                     var testRunner = new ModuleTestRunner(this, testCuratedApplication, module);
                     QuarkusClassLoader cl = (QuarkusClassLoader) getClass().getClassLoader();
@@ -579,7 +579,7 @@ public class TestSupport implements TestController {
         return started;
     }
 
-    public QuarkusCompiler getCompiler() {
+    public GradleCompiler getCompiler() {
         return compiler;
     }
 

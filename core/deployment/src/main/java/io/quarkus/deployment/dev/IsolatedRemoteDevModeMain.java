@@ -118,9 +118,9 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                 compilationProviders.add(provider);
                 context.getAllModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
             }
-            QuarkusCompiler compiler;
+            GradleCompiler compiler;
             try {
-                compiler = new QuarkusCompiler(curatedApplication, compilationProviders, context);
+                compiler = new GradleCompiler(curatedApplication, compilationProviders, context);
             } catch (Exception e) {
                 log.error("Failed to create compiler, runtime compilation will be unavailable", e);
                 return null;

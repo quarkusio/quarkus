@@ -22,7 +22,6 @@ import java.util.stream.Collectors;
 import com.google.common.annotations.VisibleForTesting;
 
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
-import io.quarkus.deployment.configuration.ConfigCompatibility;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -85,7 +84,6 @@ public final class EffectiveConfig {
                 .withProfile(builder.profile)
                 .withMapping(PackageConfig.class)
                 .withMapping(NativeConfig.class)
-                .withInterceptors(ConfigCompatibility.FrontEnd.instance(), ConfigCompatibility.BackEnd.instance())
                 .build();
         this.values = generateFullConfigMap(config);
     }

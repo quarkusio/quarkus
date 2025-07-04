@@ -36,7 +36,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
     private final DefaultTenantConfigResolver resolver;
     private volatile ImmutablePathMatcher<Handler<RoutingContext>> pathMatcher;
 
-    record NewBackChannelLogoutPath() {
+    public static record NewBackChannelLogoutPath() {
     }
 
     BackChannelLogoutHandler(DefaultTenantConfigResolver resolver) {
@@ -58,7 +58,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
         routingContext.next();
     }
 
-    // hook up to the router because then we the tenant config bean is surely ready
+    // hook up to the router because then the tenant config bean is surely ready
     void createPathMatcher(@Observes Router ignored) {
         createOrUpdatePathMatcher();
     }
@@ -120,7 +120,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
                     // maybe invalid state, but technically it could happen that some produces a static tenant with
                     // a same id as a dynamic tenant
                     if (!previousTenantId.equals(currentTenantId)) {
-                        String errorMessage = "OIDC tenants '%s' and '%s' shares same back-channel logout path '%s', which is not supported"
+                        String errorMessage = "OIDC tenants '%s' and '%s' share the same back-channel logout path '%s', which is not supported"
                                 .formatted(previousTenantId, currentTenantId, routePath);
                         LOG.error(errorMessage);
                         throw new OIDCException(errorMessage);

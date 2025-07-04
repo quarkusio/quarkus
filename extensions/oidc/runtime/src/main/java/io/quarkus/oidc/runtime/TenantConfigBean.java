@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.BeanDestroyer;
+import io.quarkus.oidc.LogoutUtils;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler.NewBackChannelLogoutPath;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -69,15 +70,7 @@ public final class TenantConfigBean {
             LOG.debugf("Updating the resolved tenant %s configuration with a new configuration", tenantId);
             var newTenant = new TenantConfigContextImpl(tenant, oidcConfig);
             dynamicTenantsConfig.put(tenantId, newTenant);
-            if (oidcConfig.logout().backchannel().path().isPresent()) {
-                boolean pathChanged = tenant.oidcConfig() == null || !oidcConfig.logout().backchannel().path().get()
-                        .equals(tenant.oidcConfig().logout().backchannel().path().orElse(null));
-                if (pathChanged) {
-                    Event<NewBackChannelLogoutPath> event = Arc.container().beanManager().getEvent()
-                            .select(NewBackChannelLogoutPath.class);
-                    event.fire(new NewBackChannelLogoutPath());
-                }
-            }
+            LogoutUtils.fireBackChannelLogoutChangedEvent(oidcConfig, tenant);
             return Uni.createFrom().item(newTenant);
         } else {
             return createDynamicTenantContext(oidcConfig);

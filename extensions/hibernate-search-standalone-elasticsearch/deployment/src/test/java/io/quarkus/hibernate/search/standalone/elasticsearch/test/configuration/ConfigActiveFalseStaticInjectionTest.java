@@ -5,16 +5,16 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.enterprise.inject.CreationException;
 
+import jakarta.inject.Inject;
 import org.hibernate.search.mapper.pojo.standalone.mapping.SearchMapping;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ConfigActiveFalseAndIndexedEntityTest {
+public class ConfigActiveFalseStaticInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
@@ -22,10 +22,11 @@ public class ConfigActiveFalseAndIndexedEntityTest {
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-search-standalone.active", "false");
 
+    @Inject
+    SearchMapping searchMapping;
+
     @Test
     public void searchMapping() {
-        SearchMapping searchMapping = Arc.container().instance(SearchMapping.class).get();
-
         // The bean is always available to be injected during static init
         // since we don't know whether HSearch will be active at runtime.
         // So the bean cannot be null.

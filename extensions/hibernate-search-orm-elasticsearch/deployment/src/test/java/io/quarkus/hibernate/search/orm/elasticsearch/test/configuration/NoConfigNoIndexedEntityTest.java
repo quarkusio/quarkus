@@ -1,12 +1,14 @@
 package io.quarkus.hibernate.search.orm.elasticsearch.test.configuration;
 
-import java.sql.SQLException;
+import static org.assertj.core.api.Assertions.assertThat;
 
+import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class NoConfigNoIndexedEntityTest {
@@ -16,8 +18,12 @@ public class NoConfigNoIndexedEntityTest {
             () -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application-nohsearchconfig.properties", "application.properties"));
 
+    // When having no indexed entities, no configuration, no datasource,
+    // as long as the Hibernate Search beans are not injected anywhere,
+    // we should still be able to start the application.
     @Test
-    public void testNoConfig() throws SQLException {
-        // we should be able to start the application, even with no configuration at all nor indexed entities
+    public void testBootSucceedsButHibernateSearchDeactivated() {
+        // ... but Hibernate Search's beans should not be available.
+        assertThat(Arc.container().instance(SearchMapping.class).get()).isNull();
     }
 }

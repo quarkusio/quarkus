@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import jakarta.enterprise.inject.CreationException;
-import jakarta.inject.Inject;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -21,16 +20,13 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class ConfigActiveFalseAndIndexedEntityTest {
+public class ConfigActiveFalseDynamicInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-search-orm.active", "false");
-
-    @Inject
-    SessionFactory sessionFactory;
 
     @Test
     public void searchMapping() {
@@ -50,7 +46,7 @@ public class ConfigActiveFalseAndIndexedEntityTest {
 
         // Hibernate Search APIs also throw exceptions,
         // even if the messages are less explicit (we can't really do better).
-        assertThatThrownBy(() -> Search.mapping(sessionFactory))
+        assertThatThrownBy(() -> Search.mapping(Arc.container().instance(SessionFactory.class).get()))
                 .isInstanceOf(SearchException.class)
                 .hasMessageContaining("Hibernate Search was not initialized");
     }
@@ -73,7 +69,7 @@ public class ConfigActiveFalseAndIndexedEntityTest {
 
         // Hibernate Search APIs also throw exceptions,
         // even if the messages are less explicit (we can't really do better).
-        try (Session session = sessionFactory.openSession()) {
+        try (Session session = Arc.container().instance(SessionFactory.class).get().openSession()) {
             assertThatThrownBy(() -> Search.session(session).search(IndexedEntity.class))
                     .isInstanceOf(SearchException.class)
                     .hasMessageContaining("Hibernate Search was not initialized");

@@ -17,7 +17,7 @@ import io.quarkus.test.ports.SocketKit;
 
 @QuarkusTest
 @TestProfile(DevServiceRedis.class)
-public class DevServicesRedisITest {
+public class DevServicesRedisTest {
 
     @Inject
     RedisClient redisClient;

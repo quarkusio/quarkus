@@ -63,6 +63,25 @@
         </plugins>
     </build>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+        <!-- Required by quarkus-platform-bom-maven-plugin -->
+        <pluginRepository>
+            <id>gradle</id>
+            <url>https://repo.gradle.org/artifactory/libs-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
     <!-- This module is a bit special in that it needs to depend on all extensions to ensure a proper build order.
          On the other hand for incremental builds, since all integration-tests depend on this module,
          a change to a single extension would trigger all IT modules which is a huge drop of efficiency.

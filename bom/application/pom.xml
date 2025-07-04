@@ -222,6 +222,25 @@
         <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
     </properties>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>central</id>
+            <name>Maven Central</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+        <!-- Required by quarkus-platform-bom-maven-plugin -->
+        <pluginRepository>
+            <id>gradle</id>
+            <url>https://repo.gradle.org/artifactory/libs-releases</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
     <dependencyManagement>
         <dependencies>
             <!-- Quarkus platform descriptor -->

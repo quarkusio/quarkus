@@ -26,6 +26,7 @@ import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
@@ -34,10 +35,11 @@ import io.quarkus.agroal.runtime.AgroalDataSourceUtil;
 import io.quarkus.arc.InactiveBeanException;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.logging.Log;
 import io.quarkus.runtime.LaunchMode;
 
 public final class DatabaseInspector {
+
+    private static final Logger LOG = Logger.getLogger(DatabaseInspector.class);
 
     @Inject
     Instance<AgroalDataSourceSupport> agroalDataSourceSupports;
@@ -426,7 +428,7 @@ public final class DatabaseInspector {
                     (allowedHost != null && !allowedHost.isBlank() && host.equalsIgnoreCase(allowedHost)));
 
         } catch (URISyntaxException e) {
-            Log.warn(e.getMessage());
+            LOG.warn(e.getMessage());
         } catch (InactiveBeanException ibe) {
             // The datasource is disabled.
         }

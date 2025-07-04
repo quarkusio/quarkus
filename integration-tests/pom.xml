@@ -21,6 +21,9 @@
         <gpg.skip>true</gpg.skip>
         <quarkus.build.skip>${skipTests}</quarkus.build.skip>
         <native.surefire.skip>${skipTests}</native.surefire.skip>
+
+        <!-- for now, relax forbiddenapis in ITs entirely, we will provide a specific configuration file later -->
+        <forbiddenapis-maven-plugin.phase>none</forbiddenapis-maven-plugin.phase>
     </properties>
 
     <!-- modules are in profile test-modules -->

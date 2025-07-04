@@ -40,7 +40,6 @@ import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.InvalidAlgorithmException;
 import org.jose4j.lang.UnresolvableKeyException;
 
-import io.quarkus.logging.Log;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcConfigurationMetadata;
@@ -565,7 +564,7 @@ public class OidcProvider implements Closeable {
                 try {
                     key = jwks.getKeyWithoutKeyIdAndThumbprint(jws.getKeyType());
                 } catch (InvalidAlgorithmException ex) {
-                    Log.debug("Token 'alg'(algorithm) header value is invalid", ex);
+                    LOG.debug("Token 'alg'(algorithm) header value is invalid", ex);
                 }
             }
 

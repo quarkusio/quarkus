@@ -62,7 +62,6 @@ import io.quarkus.kubernetes.spi.GeneratedKubernetesResourceBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesDeploymentClusterBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOptionalResourceDefinitionBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesOutputDirectoryBuildItem;
-import io.quarkus.logging.Log;
 
 public class KubernetesDeployer {
 
@@ -213,8 +212,8 @@ public class KubernetesDeployer {
                         + conflictingResource.get().getMetadata().getName() + " because a "
                         + conflictingResource.get().getKind() + " with the same name exists.";
                 log.warn(messsage);
-                Log.warn("This may occur when switching deployment targets, or when the default deployment target is changed.");
-                Log.warn("Please remove conflicting resource and try again.");
+                log.warn("This may occur when switching deployment targets, or when the default deployment target is changed.");
+                log.warn("Please remove conflicting resource and try again.");
                 throw new IllegalStateException(messsage);
             }
 
@@ -301,7 +300,7 @@ public class KubernetesDeployer {
                         .genericKubernetesResources(deploymentKind.getApiVersion(), deploymentKind.getKind()).withName(name)
                         .get();
                 if (resource != null) {
-                    Log.warn("Found conflicting resource:" + resource.getApiVersion() + "/" + resource.getKind() + ":"
+                    log.warn("Found conflicting resource:" + resource.getApiVersion() + "/" + resource.getKind() + ":"
                             + resource.getMetadata().getName());
                     return Optional.of(resource);
                 }

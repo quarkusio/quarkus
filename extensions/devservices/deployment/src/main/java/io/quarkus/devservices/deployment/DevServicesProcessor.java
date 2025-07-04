@@ -67,6 +67,7 @@ import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.devservices.crossclassloader.runtime.RunningService;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
+import io.quarkus.runtime.LaunchMode;
 
 public class DevServicesProcessor {
 
@@ -95,12 +96,16 @@ public class DevServicesProcessor {
             if (startable instanceof StartableContainer startableContainer) {
                 GenericContainer<?> container = startableContainer.getContainer();
                 ConfigureUtil.configureLabels(container, launchMode.getLaunchMode());
-                container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
+                if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+                    container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
+                }
                 globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
             } else if (startable instanceof GenericContainer container) {
                 ConfigureUtil.configureLabels(container, launchMode.getLaunchMode());
                 globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
-                container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
+                if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+                    container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
+                }
             }
             return startable;
         });

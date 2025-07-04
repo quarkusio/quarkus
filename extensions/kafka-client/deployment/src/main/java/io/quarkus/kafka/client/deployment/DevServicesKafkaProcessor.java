@@ -37,6 +37,7 @@ import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.StartableContainer;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
@@ -88,25 +89,24 @@ public class DevServicesKafkaProcessor {
                         .feature(Feature.KAFKA_CLIENT)
                         .serviceName(config.serviceName())
                         .serviceConfig(config)
-                        .startable(() -> createContainer(compose, config, useSharedNetwork))
+                        .startable(() -> createContainer(compose, config, useSharedNetwork, launchMode))
                         .postStartHook(s -> logStartedAndCreateTopicPartitions(s.getConnectionInfo(), config))
                         .configProvider(Map.of(KAFKA_BOOTSTRAP_SERVERS, Startable::getConnectionInfo))
                         .build());
     }
 
     private Startable createContainer(DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            KafkaDevServicesBuildTimeConfig config,
-            boolean useSharedNetwork) {
+            KafkaDevServicesBuildTimeConfig config, boolean useSharedNetwork,
+            LaunchModeBuildItem launchMode) {
         Startable startable = switch (config.provider()) {
             case REDPANDA -> new RedpandaKafkaContainer(DockerImageName.parse(config.effectiveImageName())
                     .asCompatibleSubstituteFor("redpandadata/redpanda"),
                     config.port().orElse(0),
                     composeProjectBuildItem.getDefaultNetworkId(),
-                    useSharedNetwork, config.redpanda())
-                    .withEnv(config.containerEnv())
-                    // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
-                    // for backwards compatibility we still add the custom label
-                    .withLabel(DEV_SERVICE_LABEL, config.serviceName());
+                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName() : null,
+                    useSharedNetwork,
+                    config.redpanda())
+                    .withEnv(config.containerEnv());
             case STRIMZI -> {
                 StrimziKafkaContainer strimzi = new StrimziKafkaContainer(config.effectiveImageName())
                         .withBrokerId(1)
@@ -120,6 +120,9 @@ public class DevServicesKafkaProcessor {
                 if (config.port().isPresent() && config.port().get() != 0) {
                     strimzi.withPort(config.port().get());
                 }
+                if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+                    strimzi.withLabel(DEV_SERVICE_LABEL, config.serviceName());
+                }
                 strimzi.withEnv(config.containerEnv());
                 strimzi.withLabel(DEV_SERVICE_LABEL, config.serviceName());
                 yield new StartableContainer<>(strimzi, StrimziKafkaContainer::getBootstrapServers);
@@ -127,9 +130,9 @@ public class DevServicesKafkaProcessor {
             case KAFKA_NATIVE -> new KafkaNativeContainer(DockerImageName.parse(config.effectiveImageName()),
                     config.port().orElse(0),
                     composeProjectBuildItem.getDefaultNetworkId(),
+                    launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? config.serviceName() : null,
                     useSharedNetwork)
-                    .withEnv(config.containerEnv())
-                    .withLabel(DEV_SERVICE_LABEL, config.serviceName());
+                    .withEnv(config.containerEnv());
         };
         return startable;
     }

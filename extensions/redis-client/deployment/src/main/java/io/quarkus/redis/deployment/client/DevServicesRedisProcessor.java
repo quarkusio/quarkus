@@ -90,6 +90,8 @@ public class DevServicesRedisProcessor {
                                             DockerImageName.parse(redisConfig.imageName().orElse(REDIS_IMAGE))
                                                     .asCompatibleSubstituteFor(REDIS_IMAGE),
                                             redisConfig.port(),
+                                            launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT ? redisConfig.serviceName()
+                                                    : null,
                                             composeProjectBuildItem.getDefaultNetworkId(),
                                             useSharedNetwork)
                                             .withEnv(redisConfig.containerEnv())
@@ -185,10 +187,16 @@ public class DevServicesRedisProcessor {
         private final String hostName;
 
         public QuarkusPortRedisContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort,
-                String defaultNetworkId, boolean useSharedNetwork) {
+                String serviceName, String defaultNetworkId, boolean useSharedNetwork) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
+            if (serviceName != null) {
+                // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
+                // for backwards compatibility we still add the custom label
+                // Only adds the label in dev mode.
+                withLabel(DEV_SERVICE_LABEL, serviceName);
+            }
 
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redis");
         }

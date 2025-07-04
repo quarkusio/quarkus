@@ -52,7 +52,12 @@ public class HibernateReactiveCdiProcessor {
                         // See https://github.com/quarkusio/quarkus/issues/16437
                         .scope(ApplicationScoped.class)
                         .unremovable()
-                        .setRuntimeInit();
+                        .setRuntimeInit()
+                        .startup()
+                        .checkActive(recorder.checkActiveSupplier(persistenceUnitName, persistenceUnitConfigName,
+                                persistenceUnitDescriptor.getConfig().getDataSource()))
+                        .createWith(recorder.mutinySessionFactory(persistenceUnitName))
+                        .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)));
 
                 for (DotName exposedType : MUTINY_SESSION_FACTORY_EXPOSED_TYPES) {
                     configurator.addType(exposedType);
@@ -64,11 +69,7 @@ public class HibernateReactiveCdiProcessor {
                     configurator.addQualifier(Default.class);
                 }
 
-                syntheticBeanBuildItemBuildProducer
-                        .produce(configurator
-                                .createWith(recorder.mutinySessionFactory(persistenceUnitName))
-                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                                .done());
+                syntheticBeanBuildItemBuildProducer.produce(configurator.done());
             }
 
         }

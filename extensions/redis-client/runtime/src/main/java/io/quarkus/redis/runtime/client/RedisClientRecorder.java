@@ -38,13 +38,13 @@ import io.vertx.mutiny.redis.client.Request;
 public class RedisClientRecorder {
 
     // Split client and DS recorders
-    private final RedisConfig config;
+    private final RuntimeValue<RedisConfig> config;
     private static final Map<String, RedisClientAndApi> clients = new HashMap<>();
     private static final Map<String, ReactiveRedisDataSourceImpl> dataSources = new HashMap<>();
     private Vertx vertx;
     private ObservableRedisMetrics metrics;
 
-    public RedisClientRecorder(RedisConfig rc) {
+    public RedisClientRecorder(RuntimeValue<RedisConfig> rc) {
         this.config = rc;
     }
 
@@ -78,7 +78,7 @@ public class RedisClientRecorder {
             // - if default -> Default
             // - if named -> Look for that config
             // - if not found -> ConfigurationException
-            Optional<RedisClientConfig> maybe = getConfigForName(config, name);
+            Optional<RedisClientConfig> maybe = getConfigForName(config.getValue(), name);
             if (!RedisConfig.isDefaultClient(name)) {
                 RedisClientConfig actualConfig = maybe
                         .orElseThrow(new Supplier<ConfigurationException>() {
@@ -195,9 +195,9 @@ public class RedisClientRecorder {
     private Duration getTimeoutForClient(String name) {
         Duration timeout;
         if (RedisConfig.isDefaultClient(name)) {
-            timeout = config.defaultRedisClient().timeout();
+            timeout = config.getValue().defaultRedisClient().timeout();
         } else {
-            timeout = config.namedRedisClients().get(name).timeout();
+            timeout = config.getValue().namedRedisClients().get(name).timeout();
         }
         return timeout;
     }

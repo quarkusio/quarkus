@@ -1172,7 +1172,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         protected void doClose() {
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             if (runningQuarkusApplication != null) {
-                Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
+                QuarkusClassLoader classLoader = (QuarkusClassLoader) runningQuarkusApplication.getClassLoader();
+                classLoader.getCuratedApplication().setEligibleForReuse(false);
+                Thread.currentThread().setContextClassLoader(classLoader);
             }
             try {
                 // this will close the application, the test resources, the class loader...

@@ -56,6 +56,7 @@ fixes, documentation, examples... But first, read this page (including the small
   * [Descriptions](#descriptions)
   * [Update dependencies to extensions](#update-dependencies-to-extensions)
   * [Check security vulnerabilities](#check-security-vulnerabilities)
+  * [External Maven repositories](#external-maven-repositories)
 - [The small print](#the-small-print)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
@@ -888,6 +889,22 @@ long as the extension artifact is still present in your local Maven repository.
 When adding a new extension or updating the dependencies of an existing one,
 it is recommended to run in the extension directory the [OWASP Dependency Check](https://jeremylong.github.io/DependencyCheck) with `mvn -Dowasp-check`
 so that known security vulnerabilities in the extension dependencies can be detected early.
+
+### External Maven repositories
+
+The Quarkus Platform build is using the `--ignore-transitive-repositories` option from Maven.
+It ignores remote repositories introduced by transitive dependencies.
+
+This option is used to make sure we know when one of our dependencies relies on a repository that is not Maven Central.
+
+When a dependency relies on an external repository that is not Maven Central, we have to be extra careful:
+
+- First discuss it with the Quarkus Core team as it is something we want to avoid
+- If everyone agrees it is something we should allow in this specific case:
+  - Add the repository to the Quarkus module requiring the external repository (for instance, a specific extension runtime module) - don't add it to the root `pom.xml`
+  - Make sure you declare Maven Central first in the added `<repositories>` element so that we only download dependencies that are not in Maven Central from the external repository - see existing examples in the code base
+  - Add a `.mvn/rrf/groupId-<REPOSITORY-ID>.txt` file containing the list of authorized ``groupIds`` for this repository (one per line) - see existing examples in the code base
+  - Make sure you can fully run the build with an empty Maven local repository using `./mvnw -Dquickly -Dmaven.repo.local=/tmp/my-temp-local-repository`
 
 ## LLM Usage Policy
 

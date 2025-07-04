@@ -74,11 +74,14 @@ public class MockEventServer implements Closeable {
         vertx = Vertx.vertx(new VertxOptions().setMaxWorkerExecuteTime(60).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES));
         HttpServerOptions options = new HttpServerOptions();
         options.setPort(port == 0 ? -1 : port);
+
         Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
                 .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
+
         if (maybeMaxHeadersSize.isPresent()) {
             options.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
         }
+
         httpServer = vertx.createHttpServer(options);
         router = Router.router(vertx);
         setupRoutes();

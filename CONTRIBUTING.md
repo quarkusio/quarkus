@@ -29,6 +29,9 @@ fixes, documentation, examples... But first, read this page (including the small
   * [Gitpod](#gitpod)
 - [Build](#build)
   * [Workflow tips](#workflow-tips)
+    + [Using mvnd](#using-mvnd)
+    + [Using aliases](#using-aliases)
+      - [Justfile](#justfile)
     + [Building all modules of an extension](#building-all-modules-of-an-extension)
     + [Building a single module of an extension](#building-a-single-module-of-an-extension)
     + [Building with relocations](#building-with-relocations)
@@ -46,7 +49,6 @@ fixes, documentation, examples... But first, read this page (including the small
 - [Release your own version](#release-your-own-version)
 - [Documentation](#documentation)
   * [Building the documentation](#building-the-documentation)
-  * [Referencing a new guide in the index](#referencing-a-new-guide-in-the-index)
 - [Usage](#usage)
     + [With Maven](#with-maven)
     + [With Gradle](#with-gradle)
@@ -57,10 +59,16 @@ fixes, documentation, examples... But first, read this page (including the small
   * [Update dependencies to extensions](#update-dependencies-to-extensions)
   * [Check security vulnerabilities](#check-security-vulnerabilities)
   * [External Maven repositories](#external-maven-repositories)
+- [LLM Usage Policy](#llm-usage-policy)
+  * [Acceptable Use of LLMs](#acceptable-use-of-llms)
+  * [Unacceptable Use](#unacceptable-use)
+  * [Consequences](#consequences)
+  * [If in Doubt](#if-in-doubt)
 - [The small print](#the-small-print)
 - [Frequently Asked Questions](#frequently-asked-questions)
 
 <!-- tocstop -->
+
 <small><i><a href='https://github.com/jonschlinkert/markdown-toc'>Table of contents generated with markdown-toc</a></i></small>
 
 ## Legal

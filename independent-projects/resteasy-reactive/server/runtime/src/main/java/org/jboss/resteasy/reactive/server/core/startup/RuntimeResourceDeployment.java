@@ -68,6 +68,7 @@ import org.jboss.resteasy.reactive.server.handlers.AbortChainHandler;
 import org.jboss.resteasy.reactive.server.handlers.BlockingHandler;
 import org.jboss.resteasy.reactive.server.handlers.ExceptionHandler;
 import org.jboss.resteasy.reactive.server.handlers.FixedProducesHandler;
+import org.jboss.resteasy.reactive.server.handlers.FixedProducesSetDefaultContentTypeResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.FormBodyHandler;
 import org.jboss.resteasy.reactive.server.handlers.InputHandler;
 import org.jboss.resteasy.reactive.server.handlers.InstanceHandler;
@@ -83,6 +84,7 @@ import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
 import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
 import org.jboss.resteasy.reactive.server.handlers.SseResponseWriterHandler;
 import org.jboss.resteasy.reactive.server.handlers.VariableProducesHandler;
+import org.jboss.resteasy.reactive.server.handlers.VariableProducesSetDefaultContentTypeResponseHandler;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
@@ -459,6 +461,18 @@ public class RuntimeResourceDeployment {
                         : ScoreSystem.Diagnostic.WriterNotRequired);
             }
         } else {
+            if (method.getProduces() != null && method.getProduces().length > 0) {
+                if (method.getProduces().length == 1) {
+                    MediaType mediaType = MediaType.valueOf(method.getProduces()[0]);
+                    if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
+                        handlers.add(new VariableProducesSetDefaultContentTypeResponseHandler(serverMediaType));
+                    } else {
+                        handlers.add(new FixedProducesSetDefaultContentTypeResponseHandler(mediaType));
+                    }
+                } else {
+                    handlers.add(new VariableProducesSetDefaultContentTypeResponseHandler(serverMediaType));
+                }
+            }
             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
         }
 

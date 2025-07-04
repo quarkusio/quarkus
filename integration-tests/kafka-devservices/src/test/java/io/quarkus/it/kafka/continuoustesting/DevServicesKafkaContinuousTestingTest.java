@@ -15,7 +15,6 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -61,12 +60,11 @@ public class DevServicesKafkaContinuousTestingTest extends BaseDevServiceTest {
         stopAllContainers();
     }
 
-    @Disabled("Not currently working")
     @Test
     public void testContinuousTestingDisablesDevServicesWhenPropertiesChange() {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         var result = utils.waitForNextCompletion();
-        assertEquals(1, result.getTotalTestsPassed());
+        assertEquals(2, result.getTotalTestsPassed());
         assertEquals(0, result.getTotalTestsFailed());
 
         // Now let's disable dev services globally ... BOOOOOM! Splat!
@@ -75,7 +73,12 @@ public class DevServicesKafkaContinuousTestingTest extends BaseDevServiceTest {
         assertEquals(0, result.getTotalTestsPassed());
         assertEquals(1, result.getTotalTestsFailed());
 
+        ping500();
+
         // We could check the container goes away, but we'd have to check slowly, because ryuk can be slow
+        List<Container> kafkaContainers = getKafkaContainers();
+        assertTrue(kafkaContainers.isEmpty(),
+                "Expected no containers, but got: " + prettyPrintContainerList(kafkaContainers));
     }
 
     // This tests behaviour in dev mode proper when combined with continuous testing. This creates a possibility of port conflicts, false sharing of state, and all sorts of race conditions.
@@ -117,7 +120,7 @@ public class DevServicesKafkaContinuousTestingTest extends BaseDevServiceTest {
                 "New containers: "
                         + prettyPrintContainerList(newContainers)
                         + "\n Old containers: " + prettyPrintContainerList(started) + "\n All containers: "
-                        + prettyPrintContainerList(getAllContainers())); // this can be wrong
+                        + prettyPrintContainerList(getKafkaContainers())); // this can be wrong
         // We need to inspect the dev-mode container; we don't have a non-brittle way of distinguishing them, so just look in them all
         boolean hasRightPort = newContainers.stream()
                 .anyMatch(newContainer -> hasPublicPort(newContainer, newPort));
@@ -136,6 +139,11 @@ public class DevServicesKafkaContinuousTestingTest extends BaseDevServiceTest {
         when().get("/kafka/partitions/test").then()
                 .statusCode(200)
                 .body(is("2"));
+    }
+
+    void ping500() {
+        when().get("/kafka/partitions/test").then()
+                .statusCode(500);
     }
 
     @Test
@@ -158,7 +166,7 @@ public class DevServicesKafkaContinuousTestingTest extends BaseDevServiceTest {
         List<Container> newContainers = getKafkaContainersExcludingExisting(kafkaContainers);
         assertEquals(0, newContainers.size(),
                 "New containers: " + newContainers + "\n Old containers: " + kafkaContainers + "\n All containers: "
-                        + getAllContainers());
+                        + getKafkaContainers());
     }
 
     @Test
@@ -181,7 +189,7 @@ public class DevServicesKafkaContinuousTestingTest extends BaseDevServiceTest {
             List<Container> newContainers = getKafkaContainersExcludingExisting(existingContainers);
             assertEquals(1, newContainers.size(),
                     "New containers: " + newContainers + "\n Old containers: " + existingContainers + "\n All containers: "
-                            + getAllContainers());
+                            + getKafkaContainers());
 
             List<Integer> existingPorts = Arrays.stream(existingContainers.get(0).getPorts())
                     .map(ContainerPort::getPublicPort)
@@ -207,7 +215,7 @@ public class DevServicesKafkaContinuousTestingTest extends BaseDevServiceTest {
             List<Container> newContainers = getKafkaContainersExcludingExisting(existingContainers);
             assertEquals(1, newContainers.size(),
                     "New containers: " + newContainers + "\n Old containers: " + existingContainers + "\n All containers: "
-                            + getAllContainers());
+                            + getKafkaContainers());
 
             // The new container should be on the new port
             List<Integer> ports = Arrays.stream(newContainers.get(0).getPorts())

@@ -2,12 +2,14 @@ package io.quarkus.devservices.crossclassloader.runtime;
 
 import static java.util.UUID.randomUUID;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -51,6 +53,31 @@ public final class RunningDevServicesRegistry {
             }
         }
         servicesIndexedByLaunchMode.remove(launchMode);
+    }
+
+    public void closeRemainingRunningServices(UUID uuid, String launchMode, Collection<DevServiceOwner> ownersToKeep) {
+        Set<RunningService> services = servicesIndexedByLaunchMode.get(launchMode);
+        var iterator = servicesIndexedByConfig.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<ComparableDevServicesConfig, RunningService> entry = iterator.next();
+            DevServiceOwner owner = entry.getKey().owner();
+            UUID serviceAppUuid = entry.getKey().applicationInstanceId();
+            if (owner.launchMode().equals(launchMode) && Objects.equals(serviceAppUuid, uuid)
+                    && !ownersToKeep.contains(owner)) {
+                iterator.remove();
+                RunningService serviceToClose = entry.getValue();
+                services.remove(serviceToClose);
+                try {
+                    System.out.println("Closing dev service for " + owner.featureName() + " in launch mode " + launchMode + " "
+                            + serviceToClose.containerId());
+                    serviceToClose.close();
+                } catch (Exception e) {
+                    // We don't want to fail the shutdown hook if a service fails to close
+                    e.printStackTrace();
+                }
+            }
+        }
+
     }
 
     public void closeAllRunningServices(DevServiceOwner owner) {

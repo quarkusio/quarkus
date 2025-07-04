@@ -77,7 +77,11 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
                 .filter(DevServicesResultBuildItem::isStartable)
                 .map(serv -> CompletableFuture.runAsync(() -> {
                     // We need to set the context classloader to the augment classloader, so that the dev services can be started with the right classloader
-                    Thread.currentThread().setContextClassLoader(augmentClassLoader);
+                    if (augmentClassLoader != null) {
+                        Thread.currentThread().setContextClassLoader(augmentClassLoader);
+                    } else {
+                        Thread.currentThread().setContextClassLoader(serv.getClass().getClassLoader());
+                    }
                     this.start(serv, customizers);
                 }))
                 .toArray(CompletableFuture[]::new)).join();

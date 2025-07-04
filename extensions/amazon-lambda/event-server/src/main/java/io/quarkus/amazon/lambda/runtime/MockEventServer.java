@@ -75,18 +75,13 @@ public class MockEventServer implements Closeable {
         HttpServerOptions options = new HttpServerOptions();
         options.setPort(port == 0 ? -1 : port);
 
-        ClassLoader original = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(MockEventServer.class.getClassLoader());
-            Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
-                    .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
+        Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
 
-            if (maybeMaxHeadersSize.isPresent()) {
-                options.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
-            }
-        } finally {
-            Thread.currentThread().setContextClassLoader(original);
+        if (maybeMaxHeadersSize.isPresent()) {
+            options.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
         }
+
         httpServer = vertx.createHttpServer(options);
         router = Router.router(vertx);
         setupRoutes();

@@ -201,7 +201,7 @@ public final class MultipartSupport {
         // this is only for the TCK and regular form params
         if (value.isFileItem()) {
             try {
-                return Files.readString(value.getFileItem().getFile(), Charset.defaultCharset());
+                return new String(value.getFileItem().getInputStream().readAllBytes());
             } catch (IOException e) {
                 throw new MultipartPartReadingException(e);
             }

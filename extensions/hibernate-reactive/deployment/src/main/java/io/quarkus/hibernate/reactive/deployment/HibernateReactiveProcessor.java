@@ -4,7 +4,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureProperties;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.configureSqlLoadScript;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.hasEntities;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.jsonMapperKind;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.setDialectAndStorageEngine;
@@ -97,8 +96,8 @@ public final class HibernateReactiveProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(HibernateReactiveRecorder recorder,
-            JpaModelBuildItem jpaModel) {
-        final boolean enableRx = hasEntities(jpaModel);
+            List<PersistenceUnitDescriptorBuildItem> descriptors) {
+        final boolean enableRx = !descriptors.isEmpty();
         recorder.callHibernateReactiveFeatureInit(enableRx);
     }
 
@@ -120,14 +119,6 @@ public final class HibernateReactiveProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
-
-        final boolean enableHR = hasEntities(jpaModel);
-        if (!enableHR) {
-            // we have to bail out early as we might not have a Vertx pool configuration
-            LOG.warn("Hibernate Reactive is disabled because no JPA entities were found");
-            return;
-        }
-
         // Block any reactive persistence units from using persistence.xml
         for (PersistenceXmlDescriptorBuildItem persistenceXmlDescriptorBuildItem : persistenceXmlDescriptors) {
             String provider = persistenceXmlDescriptorBuildItem.getDescriptor().getProviderClassName();
@@ -282,10 +273,6 @@ public final class HibernateReactiveProcessor {
         }
         Set<String> modelClassesAndPackages = modelClassesAndPackagesPerPersistencesUnits
                 .getOrDefault(persistenceUnitConfigName, Collections.emptySet());
-
-        if (modelClassesAndPackages.isEmpty()) {
-            LOG.warnf("Could not find any entities affected to the Hibernate Reactive persistence unit.");
-        }
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME, persistenceUnitConfigName,

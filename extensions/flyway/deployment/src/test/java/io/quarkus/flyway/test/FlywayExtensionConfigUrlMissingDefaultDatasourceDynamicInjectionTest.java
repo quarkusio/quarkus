@@ -18,7 +18,10 @@ public class FlywayExtensionConfigUrlMissingDefaultDatasourceDynamicInjectionTes
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             // The URL won't be missing if dev services are enabled
-            .overrideConfigKey("quarkus.devservices.enabled", "false");
+            .overrideConfigKey("quarkus.devservices.enabled", "false")
+            // Hibernate ORM is in the test classpath for other tests, but it's not useful here and would fail due to missing configuration.
+            // So we just disable it.
+            .overrideConfigKey("quarkus.hibernate-orm.enabled", "false");
 
     @Inject
     Instance<Flyway> flyway;

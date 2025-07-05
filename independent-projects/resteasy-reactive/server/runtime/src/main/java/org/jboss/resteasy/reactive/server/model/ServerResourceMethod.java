@@ -29,9 +29,9 @@ public class ServerResourceMethod extends ResourceMethod {
             boolean blocking, boolean suspended, boolean sse, boolean formParamRequired,
             List<ResourceMethod> subResourceMethods, Supplier<EndpointInvoker> invoker, Set<String> methodAnnotationNames,
             List<HandlerChainCustomizer> handlerChainCustomizers, ParameterExtractor customerParameterExtractor,
-            boolean encoded) {
+            boolean encoded, boolean staticMethod) {
         super(httpMethod, path, produces, streamElementType, consumes, nameBindingNames, name, returnType, simpleReturnType,
-                parameters, blocking, suspended, sse, formParamRequired, subResourceMethods, encoded);
+                parameters, blocking, suspended, sse, formParamRequired, subResourceMethods, encoded, staticMethod);
         this.invoker = invoker;
         this.methodAnnotationNames = methodAnnotationNames;
         this.handlerChainCustomizers = handlerChainCustomizers;

@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import io.quarkus.hibernate.orm.runtime.SchemaToolingUtil;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
@@ -244,7 +243,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     private void unzipZipFilesAndReplaceZipsInImportFiles(Builder runtimeSettingsBuilder) {
         String newValue = SchemaToolingUtil.unzipZipFilesAndReplaceZips(
-            (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
+                (String) runtimeSettingsBuilder.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, newValue);
     }
 

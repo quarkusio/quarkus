@@ -31,7 +31,6 @@ import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.ResolvableDependencies;
 import org.gradle.api.artifacts.component.ComponentArtifactIdentifier;
 import org.gradle.api.artifacts.component.ComponentIdentifier;
-import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
 import org.gradle.api.artifacts.result.DependencyResult;
 import org.gradle.api.artifacts.result.ResolvedArtifactResult;
 import org.gradle.api.artifacts.result.ResolvedComponentResult;
@@ -470,12 +469,6 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         @Internal
         public abstract Property<ArtifactCollection> getResolvedArtifactCollection();
 
-        /**
-         * TODO: Remove me
-         */
-        @Internal
-        public abstract ConfigurableFileCollection getProjectDescriptors();
-
         private FileCollection getAllResolvedFiles() {
             return getResolvedArtifactCollection().get().getArtifactFiles();
         }
@@ -500,14 +493,6 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             ResolvableDependencies resolvableDependencies = configuration.getIncoming();
             getRoot().set(resolvableDependencies.getResolutionResult().getRootComponent());
             getResolvedArtifactCollection().set(resolvableDependencies.getArtifacts());
-            // TODO: Remove me, since we don't apply workspace plugin anymore, so there are no project descriptors
-            getProjectDescriptors().setFrom(configuration.getIncoming().artifactView(viewConfiguration -> {
-                // Project descriptors make sense only for projects
-                viewConfiguration.withVariantReselection();
-                viewConfiguration.componentFilter(component -> component instanceof ProjectComponentIdentifier);
-                viewConfiguration.attributes(attributes -> attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE,
-                        QUARKUS_PROJECT_DESCRIPTOR_ARTIFACT_TYPE));
-            }).getFiles());
         }
     }
 

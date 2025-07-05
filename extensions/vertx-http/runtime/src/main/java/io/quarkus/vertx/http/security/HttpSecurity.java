@@ -78,7 +78,31 @@ import io.vertx.ext.web.RoutingContext;
 public interface HttpSecurity {
 
     /**
-     * Creates {@link HttpPermission}.
+     * Registers the Basic authentication mechanism in addition to all other global authentication mechanisms.
+     *
+     * @param basic {@link Basic} instance that replaces the configuration in the 'application.properties' file
+     * @return HttpSecurity
+     */
+    HttpSecurity mechanism(Basic basic);
+
+    /**
+     * Registers the Form authentication mechanism in addition to all other global authentication mechanisms.
+     *
+     * @param form {@link Form} instance that replaces the configuration in the 'application.properties' file
+     * @return HttpSecurity
+     */
+    HttpSecurity mechanism(Form form);
+
+    /**
+     * Registers given {@link HttpAuthenticationMechanism} in addition to all other global authentication mechanisms.
+     *
+     * @param mechanism {@link HttpAuthenticationMechanism}
+     * @return HttpSecurity
+     */
+    HttpSecurity mechanism(HttpAuthenticationMechanism mechanism);
+
+    /**
+     * Creates {@link HttpPermission} in addition to the permissions configured in the 'application.properties' file.
      *
      * @param paths path patterns; this is programmatic analogy to the 'quarkus.http.auth.permission."permissions".paths'
      *        configuration property, same rules apply
@@ -137,14 +161,26 @@ public interface HttpSecurity {
     interface HttpPermission {
 
         /**
-         * HTTP request must be authenticated using basic authentication.
+         * HTTP request must be authenticated using global basic authentication mechanism configuration from
+         * either the 'application.properties' file or the configuration registered with the {@link #mechanism(Basic)}.
          */
         HttpPermission basic();
 
         /**
-         * HTTP request must be authenticated using form-based authentication.
+         * HTTP request must be authenticated using given basic authentication mechanism configuration.
+         */
+        HttpPermission basic(Basic basic);
+
+        /**
+         * HTTP request must be authenticated using global form-based authentication mechanism configuration from
+         * either the 'application.properties' file or the configuration registered with the {@link #mechanism(Form)}.
          */
         HttpPermission form();
+
+        /**
+         * HTTP request must be authenticated using given form-based authentication mechanism configuration.
+         */
+        HttpPermission form(Form form);
 
         /**
          * HTTP request must be authenticated using mutual-TLS authentication.

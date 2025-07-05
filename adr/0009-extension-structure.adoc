@@ -1,0 +1,162 @@
+= Extension Structure Guidelines
+
+* Status: Proposed
+* Date: 2025-06-30
+* Authors: @cescoffier, @gsmet
+
+== Context
+
+The Quarkus ecosystem includes more than 700 extensions, many of which were developed without a consistent structure. The Quarkus core repository alone contains over 150 extensions.
+
+Most extensions follow the basic runtime/deployment split, but the boundaries between API and internal logic have often blurred. Additionally, without clear package structure rules, many split packages have emerged. This situation introduces several issues:
+
+* It is unclear which classes are intended as public APIs versus internal implementations.
+* There is no clear boundary between what an extension consumer can depend on and what they should not use.
+* Some extensions mix SPI and implementation code, reducing modularity and increasing the chance of unwanted coupling.
+* The need for build item re-use or coordination between extensions leads to ad-hoc patterns.
+
+More recently, we introduced dev-only dependencies, further increasing complexity.
+
+To address these issues and prepare for long-term maintainability (and possibly Java Platform Module System adoption), we propose a more structured layout for extension modules.
+
+== Decision
+
+Extensions may use a standardized structure composed of up to five optional modules, depending on their needs:
+
+* `runtime`: Contains the runtime implementation. It may expose public APIs if needed but should prefer delegation to the spi module.
+* `spi`: Contains public APIs intended to be consumed by other extensions or application code. This module should have minimal dependencies. Depending on a spi module does not transitively include the full extension (i.e., it avoids pulling in runtime or deployment logic).
+* `deployment`: Contains build-time logic, including BuildSteps and recorder logic. This module may define internal build items.
+* `deployment-spi`: Contains build-time APIs intended to be reused across multiple extensions. Extensions contributing to or using build items from other extensions should depend on deployment-spi modules.
+* `runtime-dev`: Contains runtime classes used exclusively in dev mode (e.g., for the Dev UI). This avoids shipping dev-only classes into production artifacts.
+
+All these modules are optional.
+
+=== Additional Rules
+
+	* Module dependencies must follow strict rules:
+	* `deployment` depends on `runtime`, `runtime-dev` (if defined) and `deployment-spi` (if defined).
+	* `runtime` depends on `spi` (if defined).
+	* External consumers should rely only on `spi` or `deployment-spi` to be loose-coupled.
+    * External consumers should rely only on `spi` or `deployment-spi` to be tightly-coupled (forcing the target extension to be present at execution).
+	* Public APIs must be explicitly documented, including build items meant for inter-extension use.
+	* Each module should provide an `Automatic-Module-Name` based on the root package:
+
+	    ** Runtime: `io.<quarkus|quarkiverse>.<extension-name>`
+	    ** Deployment: `io.<quarkus|quarkiverse>.<extension-name>.deployment`
+	    ** Runtime SPI: `io.<quarkus|quarkiverse>.<extension-name>.spi`
+	    ** Deployment SPI: `io.<quarkus|quarkiverse>.<extension-name>.deployment.spi`
+	    ** Runtime Dev: `io.<quarkus|quarkiverse>.<extension-name>.runtime.dev`
+
+=== Package Name Rules
+
+Extensions must use a well-defined package structure to avoid split packages.
+
+==== runtime module
+* `io.<quarkus|quarkiverse>.<extension-name>`: Public API. May include subpackages (excluding `spi`). Example: `io.quarkus.cache`.
+* `io.<quarkus|quarkiverse>.<extension-name>.runtime`: Internal implementation. Not part of the public API. May include subpackages (excluding dev).
+* `io.<quarkus|quarkiverse>.<extension-name>.runtime.graal`: GraalVM substitutions. Not part of the public API.
+
+==== deployment module
+* `io.<quarkus|quarkiverse>.<extension-name>.deployment`: Internal build logic (processors, build steps, internal build items). Public APIs must reside in the `deployment-spi` module. May include subpackages (excluding `spi`).
+
+==== deployment-spi module
+* `io.<quarkus|quarkiverse>.<extension-name>.deployment.spi`: Public build items and types. Considered public API and subject to compatibility guarantees.
+
+==== spi module
+* `io.<quarkus|quarkiverse>.<extension-name>.spi`: Public runtime SPI. Can be used independently of the full extension. Consumers should not expect the full extension to be available at runtime.
+
+==== runtime-dev module
+* `io.<quarkus|quarkiverse>.<extension-name>.runtime.dev`: Dev-mode-only runtime classes, e.g., for Dev UI contribution. Not included in production builds.
+
+=== Dependency Tree
+
+[mermaid]
+----
+flowchart TD
+subgraph Extension
+spi[“spi”]
+runtime[“runtime”]
+runtime_dev[“runtime-dev”]
+deployment_spi[“deployment-spi”]
+deployment[“deployment”]
+end
+
+subgraph “Another extension (loosely coupled)”
+o1[“deployment”]
+o2[“runtime”]
+end
+
+subgraph “Another extension (tightly coupled)”
+o3[“deployment”]
+o4[“runtime”]
+end
+
+runtime –> spi
+deployment –> runtime
+runtime_dev –> runtime
+deployment –> runtime_dev
+deployment –> deployment_spi
+
+o2 –> spi
+o1 –> deployment_spi
+
+o4 –> runtime
+o3 –> deployment
+----
+
+=== Module Summary Table
+
+[cols=“1,3,2”,options=“header”]
+|===
+| Module | Purpose | Intended Consumers
+
+| runtime
+| Runtime logic and extension internals
+| Application code, Quarkus runtime
+
+| spi
+| Public runtime APIs and service provider types
+| Other extensions, libraries
+
+| deployment
+| Build steps, processor logic, internal build items
+| Quarkus build system
+
+| deployment-spi
+| Shared build-time APIs (build items, metadata)
+| Other extensions
+
+| runtime-dev
+| Dev mode–only logic (e.g., Dev UI contributions)
+| Development-time only, not production
+|===
+
+== Consequences
+
+=== Positive
+
+	* Improves long-term maintainability and clarity of the codebase.
+	* Clarifies the public API surface and encourages proper separation of concerns.
+	* Avoids the creation of split packages and internal dependency leakage.
+	* Lays the groundwork for potential future adoption of JPMS (Java Platform Module System).
+
+=== Negative
+
+	* Adds structural complexity, which may feel unnecessary for simple extensions.
+	* Refactoring existing extensions to adopt this structure requires engineering effort.
+	* New contributors must become familiar with the module layout and associated conventions.
+
+== Alternatives Considered
+
+* Continuing the current loose structure:
+Rejected due to increasing maintenance costs and risk of regressions. After 7 years of evolution, Quarkus needs clearer extension boundaries to remain sustainable.
+* Immediate adoption of JPMS (Java Modules):
+Deemed too complex and premature. While structurally compatible with this proposal, full JPMS adoption is deferred to avoid breaking changes and complexity in build tooling.
+
+== Related Discussions
+	* https://github.com/quarkusio/quarkus/discussions/47074[Discussion: Modular Extension Structure]
+	* https://github.com/quarkusio/quarkus/pull/49280[First Implementation (TLS Registry)]
+
+== Notes
+
+This ADR is forward-looking and prescriptive for new extensions or extensions undergoing significant refactoring. It does not require retrofitting all existing extensions immediately. Tooling, documentation, and examples will progressively support the adoption of this structure. The goal is consistency, clarity, and better long-term modularity within the Quarkus ecosystem.

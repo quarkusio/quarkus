@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.runtime.dev;
 
-import static org.hibernate.cfg.AvailableSettings.HBM2DDL_IMPORT_FILES;
+import static org.hibernate.cfg.AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -36,7 +36,7 @@ public class HibernateOrmDevIntegrator implements Integrator {
                 name,
                 metadata,
                 sessionFactoryImplementor.getServiceRegistry(),
-                (String) sessionFactoryImplementor.getProperties().get(HBM2DDL_IMPORT_FILES));
+                (String) sessionFactoryImplementor.getProperties().get(JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE));
     }
 
     @Override

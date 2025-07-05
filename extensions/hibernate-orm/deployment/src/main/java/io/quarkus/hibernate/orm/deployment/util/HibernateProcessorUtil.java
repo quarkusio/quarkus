@@ -363,11 +363,12 @@ public final class HibernateProcessorUtil {
 
             // only set the found import files if configured
             if (persistenceUnitConfig.sqlLoadScript().isPresent()) {
-                descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, String.join(",", importFiles));
+                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
+                        String.join(",", importFiles));
             }
         } else {
             //Disable implicit loading of the default import script (import.sql)
-            descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_IMPORT_FILES, "");
+            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, "");
             descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
         }
     }

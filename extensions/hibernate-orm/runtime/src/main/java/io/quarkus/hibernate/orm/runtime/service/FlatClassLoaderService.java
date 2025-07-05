@@ -1,10 +1,8 @@
 package io.quarkus.hibernate.orm.runtime.service;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationHandler;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,17 +41,6 @@ public class FlatClassLoaderService implements ClassLoaderService {
 
     @Override
     public URL locateResource(String name) {
-        if (name.startsWith("file://")) {
-            try {
-                var file = new File(name.substring(7));
-                log.tracef("Successfully loaded resource '%s' from file", name);
-                return file.toURI().toURL();
-            } catch (MalformedURLException e) {
-                log.errorf("Error while trying to load resource %s from file", name);
-                throw new IllegalArgumentException(e);
-            }
-        }
-
         URL resource = getClassLoader().getResource(name);
         if (resource == null) {
             log.debugf(

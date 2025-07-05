@@ -5,24 +5,21 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-
-import org.jboss.logging.Logger;
+import java.util.Locale;
 
 import io.quarkus.fs.util.ZipUtils;
 
 public class SchemaToolingUtil {
-    private static final String COMMA = ",";
-    private static final String ZIP_FILE_EXTENSION = ".zip";
     private static final String SQL_LOAD_SCRIPT_UNZIPPED_DIR_PREFIX = "import-sql-unzip-";
 
     public static String unzipZipFilesAndReplaceZips(String commaSeparatedFileNames) {
-        List<String> unzippedFilesNames = new LinkedList<>();
+        List<String> unzippedFilesNames = new ArrayList<>();
         if (commaSeparatedFileNames != null) {
-            String[] fileNames = commaSeparatedFileNames.split(COMMA);
+            String[] fileNames = commaSeparatedFileNames.split(",");
             for (String fileName : fileNames) {
-                if (fileName.endsWith(ZIP_FILE_EXTENSION)) {
+                if (fileName.endsWith(".zip")) {
                     try {
                         Path unzipDir = Files.createTempDirectory(SQL_LOAD_SCRIPT_UNZIPPED_DIR_PREFIX);
                         URL resource = Thread.currentThread()
@@ -36,13 +33,14 @@ public class SchemaToolingUtil {
                             }
                         }
                     } catch (Exception e) {
-                        throw new IllegalStateException(String.format("Error unzipping import file %s: %s",
-                          fileName, e.getMessage()), e);                    }
+                        throw new IllegalStateException(String.format(Locale.ROOT, "Error unzipping import file %s: %s",
+                                fileName, e.getMessage()), e);
+                    }
                 } else {
                     unzippedFilesNames.add(fileName);
                 }
             }
-            return String.join(COMMA, unzippedFilesNames);
+            return String.join(",", unzippedFilesNames);
         } else {
             return null;
         }

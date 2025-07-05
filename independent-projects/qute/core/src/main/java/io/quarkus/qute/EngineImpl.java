@@ -20,6 +20,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.qute.Parser.StringReader;
 import io.quarkus.qute.TemplateInstance.Initializer;
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
+import io.quarkus.qute.trace.TraceListener;
 
 class EngineImpl implements Engine {
 
@@ -39,6 +40,8 @@ class EngineImpl implements Engine {
     final boolean removeStandaloneLines;
     private final long timeout;
     private final boolean useAsyncTimeout;
+    private final TraceManager traceManager;
+    private final boolean debuggable;
 
     EngineImpl(EngineBuilder builder) {
         this.sectionHelperFactories = Map.copyOf(builder.sectionHelperFactories);
@@ -55,6 +58,8 @@ class EngineImpl implements Engine {
         this.initializers = ImmutableList.copyOf(builder.initializers);
         this.timeout = builder.timeout;
         this.useAsyncTimeout = builder.useAsyncTimeout;
+        this.traceManager = new TraceManager();
+        this.debuggable = builder.debuggable;
     }
 
     @Override
@@ -234,6 +239,34 @@ class EngineImpl implements Engine {
         return reader instanceof BufferedReader ? reader
                 : new BufferedReader(
                         reader);
+    }
+
+    @Override
+    public boolean isDebuggable() {
+        return debuggable;
+    }
+
+    @Override
+    public boolean hasTraceListeners() {
+        return traceManager.hasTraceListeners();
+    }
+
+    @Override
+    public TraceManager getTraceManager() {
+        return traceManager;
+    }
+
+    @Override
+    public void addTraceListener(TraceListener listener) {
+        getTraceManager().addTraceListener(listener);
+    }
+
+    @Override
+    public void removeTraceListener(TraceListener listener) {
+        if (traceManager == null) {
+            return;
+        }
+        getTraceManager().removeTraceListener(listener);
     }
 
 }

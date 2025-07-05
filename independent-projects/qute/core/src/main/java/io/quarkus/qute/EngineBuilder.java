@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -29,6 +30,8 @@ public final class EngineBuilder {
 
     private static final Logger LOG = Logger.getLogger(EngineBuilder.class);
 
+    private static final List<EngineListener> engineListenerExtensions;
+
     final Map<String, SectionHelperFactory<?>> sectionHelperFactories;
     final List<ValueResolver> valueResolvers;
     final List<NamespaceResolver> namespaceResolvers;
@@ -42,7 +45,16 @@ public final class EngineBuilder {
     String iterationMetadataPrefix;
     long timeout;
     boolean useAsyncTimeout;
+    boolean debuggable;
     final List<EngineListener> listeners;
+
+    static {
+        // Load EngineListener implementations via Java SPI.
+        engineListenerExtensions = new ArrayList<>();
+        ServiceLoader.load(EngineListener.class).forEach(extension -> {
+            engineListenerExtensions.add(extension);
+        });
+    }
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -57,7 +69,10 @@ public final class EngineBuilder {
         this.iterationMetadataPrefix = LoopSectionHelper.Factory.ITERATION_METADATA_PREFIX_ALIAS_UNDERSCORE;
         this.timeout = 10_000;
         this.useAsyncTimeout = true;
+        this.debuggable = true;
         this.listeners = new ArrayList<>();
+        // Register EngineListener implementations from Java SPI.
+        listeners.addAll(engineListenerExtensions);
     }
 
     /**
@@ -322,6 +337,24 @@ public final class EngineBuilder {
      */
     public EngineBuilder useAsyncTimeout(boolean value) {
         this.useAsyncTimeout = value;
+        return this;
+    }
+
+    /**
+     * Enables or disables debugging support for templates created by the engine.
+     * <p>
+     * If set to {@code true}, all templates produced by the engine will support debugging,
+     * allowing tools such as debuggers to attach a {@link io.quarkus.qute.trace.TraceListener}
+     * and track the nodes visited during rendering.
+     * <p>
+     * This flag does not register any listeners itself; it only marks the engine as debuggable.
+     *
+     * @param value {@code true} to enable debugging support; {@code false} to disable it
+     * @return self
+     * @see Engine#isDebuggable()
+     */
+    public EngineBuilder debuggable(boolean value) {
+        this.debuggable = value;
         return this;
     }
 

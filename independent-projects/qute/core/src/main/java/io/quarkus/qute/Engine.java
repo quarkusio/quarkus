@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 import io.quarkus.qute.TemplateLocator.TemplateLocation;
+import io.quarkus.qute.trace.TraceListener;
 
 /**
  * Represents a central point for template management.
@@ -191,4 +192,55 @@ public interface Engine extends ErrorInitializer {
      * @return a new builder instance initialized from this engine
      */
     EngineBuilder newBuilder();
+
+    /**
+     * Indicates whether templates created by this engine should be exposed to debugging tools.
+     * <p>
+     * If {@code true}, a debugger is expected to register a {@link io.quarkus.qute.trace.TraceListener}
+     * to track visited template nodes during rendering.
+     * <p>
+     * This method is typically called by a debugger before attaching a trace listener
+     * via {@link #addTraceListener(io.quarkus.qute.trace.TraceListener)}.
+     *
+     * @return {@code true} if the templates rendered by this engine should be traceable for debugging purposes;
+     *         {@code false} otherwise
+     */
+    boolean isDebuggable();
+
+    /**
+     * Returns {@code true} if there are any trace listeners currently registered,
+     * {@code false} otherwise.
+     * <p>
+     * Trace listeners monitor and react to template rendering events.
+     *
+     * @return {@code true} if at least one trace listener is registered, {@code false} otherwise
+     */
+    boolean hasTraceListeners();
+
+    /**
+     * Returns the {@link TraceManager} responsible for managing trace listeners and
+     * firing trace events during template rendering.
+     *
+     * @return the trace manager instance
+     */
+    TraceManager getTraceManager();
+
+    /**
+     * Registers a new {@link TraceListener} to receive trace events.
+     * <p>
+     * The listener will be notified of template rendering and resolution events.
+     *
+     * @param listener the trace listener to add; must not be {@code null}
+     */
+    void addTraceListener(TraceListener listener);
+
+    /**
+     * Unregisters a previously registered {@link TraceListener}.
+     * <p>
+     * After removal, the listener will no longer receive trace events.
+     *
+     * @param listener the trace listener to remove; must not be {@code null}
+     */
+    void removeTraceListener(TraceListener listener);
+
 }

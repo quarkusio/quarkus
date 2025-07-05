@@ -28,6 +28,7 @@ public class TemplateException extends RuntimeException {
             .addValueResolver(ValueResolver.builder().applyToBaseClass(Origin.class).applyToName("hasNonGeneratedTemplateId")
                     .resolveSync(ec -> ((Origin) ec.getBase()).hasNonGeneratedTemplateId()).build())
             .addParserHook(new IndexedArgumentsParserHook(null))
+            .debuggable(false)
             .build();
 
     private final Origin origin;

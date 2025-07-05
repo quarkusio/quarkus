@@ -86,6 +86,7 @@ public class WebSocketServerRecorder {
                 if (!ctx.request().headers().contains(HandshakeRequest.SEC_WEBSOCKET_KEY)) {
                     LOG.debugf("Non-websocket client request ignored:\n%s", ctx.request().headers());
                     ctx.next();
+                    return;
                 }
                 if (httpUpgradeChecks != null) {
                     checkHttpUpgrade(ctx, endpointId).subscribe().with(result -> {

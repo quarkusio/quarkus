@@ -1,4 +1,5 @@
 import { Router } from '@vaadin/router';
+import { applicationInfo } from 'devui-data';
 
 let pageNode = document.querySelector('#page');
 pageNode.textContent = '';
@@ -283,9 +284,9 @@ export class RouterController {
     static getBasePath(){
         var base = window.location.pathname;
         if(base.endsWith("/dev-ui")){
-            return base.substring(0, base.lastIndexOf('/dev-ui')) + "/dev-ui";
+            return applicationInfo.devUIContext + base.substring(0, base.lastIndexOf('/dev-ui')) + "/dev-ui";
         }else{
-            return base.substring(0, base.lastIndexOf('/dev-ui/')) + "/dev-ui";
+            return applicationInfo.devUIContext + base.substring(0, base.lastIndexOf('/dev-ui/')) + "/dev-ui";
         }
     }
 

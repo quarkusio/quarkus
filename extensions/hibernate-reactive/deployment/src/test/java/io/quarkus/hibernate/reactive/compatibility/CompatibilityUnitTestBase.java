@@ -3,7 +3,6 @@ package io.quarkus.hibernate.reactive.compatibility;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
-import java.util.Optional;
 
 import jakarta.persistence.EntityManager;
 
@@ -22,7 +21,10 @@ public abstract class CompatibilityUnitTestBase {
 
     public void testReactiveWorks(UniAsserter asserter) {
         Mutiny.SessionFactory mutinySessionFactory = Arc.container().instance(Mutiny.SessionFactory.class).get();
+        testReactiveWorks(mutinySessionFactory, asserter);
+    }
 
+    public void testReactiveWorks(Mutiny.SessionFactory mutinySessionFactory, UniAsserter asserter) {
         asserter.assertThat(() -> mutinySessionFactory.withSession(s -> s.createQuery(
                 "from Hero h where h.name = :name", Hero.class)
                 .setParameter("name", "Galadriel").getResultList()),
@@ -30,13 +32,11 @@ public abstract class CompatibilityUnitTestBase {
     }
 
     public void testBlockingWorks() {
-        testBlockingWorks(Optional.empty());
+        SessionFactory sessionFactory = Arc.container().instance(SessionFactory.class).get();
+        testBlockingWorks(sessionFactory);
     }
 
-    public void testBlockingWorks(Optional<SessionFactory> injectedSessionFactory) {
-        SessionFactory hibernateSessionFactory = injectedSessionFactory
-                .orElseGet(() -> Arc.container().instance(SessionFactory.class).get());
-
+    public void testBlockingWorks(SessionFactory hibernateSessionFactory) {
         assertThat(hibernateSessionFactory).isNotNull();
 
         EntityManager entityManager = hibernateSessionFactory.createEntityManager();

@@ -49,7 +49,9 @@ class OidcPropertiesState extends LitState {
             propertiesStateId: null,
             testServiceResponses: null,
             webAppLoginObserver: null,
-            isWebApp: false
+            isWebApp: false,
+            logoutPath: null,
+            readSessionCookiePath: null
         };
     }
 
@@ -88,6 +90,8 @@ class OidcPropertiesState extends LitState {
             propertiesState.keycloakRealms = response.result.keycloakRealms;
             propertiesState.swaggerUiPath = response.result.swaggerUiPath;
             propertiesState.graphqlUiPath = response.result.graphqlUiPath;
+            propertiesState.logoutPath = response.result.logoutPath;
+            propertiesState.readSessionCookiePath = response.result.readSessionCookiePath;
 
             return {
                 // logout === true will trigger query params removal
@@ -257,7 +261,6 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     constructor() {
         super();
         this._devRoot = (devRoot?.replaceAll('/', '%2F') ?? '') + 'dev-ui'; // e.g. /q/dev-ui
-
         this._selectedRealm = null;
         this._servicePath = '/';
         this._selectedClientId = null;
@@ -390,7 +393,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     }
 
     _signInToService() {
-        window.open("http://localhost:" + propertiesState.httpPort + this._servicePath);
+        window.open(QwcOidcProvider._toServiceUrl(this._servicePath));
     }
 
     static _isServiceOrHybridApp() {
@@ -914,8 +917,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
     _getEncodedPath() {
         // this is the last part of this path: /q/dev-ui/io.quarkus.quarkus-oidc/keycloak-provider -> keycloak-provider
         const subPath = window.location.pathname.substring(window.location.pathname.lastIndexOf('/') + 1);
-        return "http%3A%2F%2Flocalhost%3A" + propertiesState.httpPort + this._devRoot
-            + "%2Fio.quarkus.quarkus-oidc%2F" + subPath;
+        return QwcOidcProvider._getEncodedCurrentBaseUrl() + this._devRoot + "%2Fio.quarkus.quarkus-oidc%2F" + subPath;
     }
 
     _getClientId() {
@@ -1091,7 +1093,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                 tokenUrl = tokenUrl.substring(0, index + 8) + parts[1] + "/protocol/openid-connect/token";
                 clientId = parts[2];
             }
-            const redirectUri = "http://localhost:" + propertiesState.httpPort + window.location.pathname;
+            const redirectUri = QwcOidcProvider._getCurrentBaseUrl() + window.location.pathname;
             const clientSecret = propertiesState.clientSecret;
             jsonRpc
                 .exchangeCodeForTokens({tokenUrl, clientId, clientSecret, authorizationCode, redirectUri})
@@ -1175,10 +1177,16 @@ export class QwcOidcProvider extends QwcHotReloadElement {
         });
     }
 
+    static _getEncodedCurrentBaseUrl() {
+        return QwcOidcProvider._getCurrentBaseUrl().replaceAll('/', '%2F').replaceAll(':', '%3A')
+    }
+
+    static _getCurrentBaseUrl() {
+        return window.location.origin
+    }
+
     static _checkSessionCookie(jsonRpc, onLoggedIn, onLoggedOut) {
-        // FIXME: hardcoded path?
-        const port = propertiesState.httpPort ?? 8080
-        fetch("http://localhost:" + port + "/q/io.quarkus.quarkus-oidc/readSessionCookie")
+        fetch(QwcOidcProvider._getCurrentBaseUrl() + propertiesState.readSessionCookiePath)
            .then(response => response.json())
                 .then(result => {
                     if ("id_token" in result || "access_token" in result) {
@@ -1194,7 +1202,7 @@ export class QwcOidcProvider extends QwcHotReloadElement {
                         } else {
                             propertiesState.idToken = null;
                         }
-                        propertiesState.logoutUrl = "http://localhost:8080/q/io.quarkus.quarkus-oidc/logout";
+                        propertiesState.logoutUrl = QwcOidcProvider._getCurrentBaseUrl() + propertiesState.logoutPath;
                         propertiesState.postLogoutUriParam = "redirect_uri";
                         onLoggedIn();
                     } else {

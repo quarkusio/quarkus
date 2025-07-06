@@ -27,21 +27,25 @@ public class GradleCompiler implements Closeable {
         var startTime = System.currentTimeMillis();
         var projectDir = new File(context.getApplicationRoot().getProjectDirectory());
         var connector = GradleConnector.newConnector().forProjectDirectory(projectDir);
+
+        // Connect to the Gradle project
         projectConnection = connector.connect();
         var connectedToProject = System.currentTimeMillis();
-        System.out.println("Connected to Gradle project took "
-                + (connectedToProject - startTime) + "ms");
+        System.out.printf("Connecting to Gradle project took %s ms%n", +connectedToProject - startTime);
+
+        // Test model retrieval
         var model = projectConnection.getModel(org.gradle.tooling.model.GradleProject.class);
         var modelTime = System.currentTimeMillis();
-        System.out.println("Retrieved Gradle model in "
-                + (modelTime - connectedToProject) + "ms");
-        // model.getTasks().forEach(t -> System.out.println("Task: " + t.getName() + " - " + t.getDescription()));
-        var classesTask = model.getTasks().stream()
+        System.out.printf("Retrieved Gradle model in %s ms%n", modelTime - connectedToProject);
+
+        // Make sure we have the 'classes' task
+        model.getTasks().stream()
                 .filter(t -> "classes".equals(t.getName()))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("No 'classes' task found in Gradle project"));
     }
 
+    // For now, only handle Java files
     public Set<String> allHandledExtensions() {
         return Set.of(".java");
     }
@@ -50,23 +54,25 @@ public class GradleCompiler implements Closeable {
         var startTime = System.currentTimeMillis();
         var newBuild = projectConnection.newBuild();
         var createdBuild = System.currentTimeMillis();
-        System.out.println("Created new Gradle build in "
-                + (createdBuild - startTime) + "ms");
-        // exclude quarkusGenerateCode
-        // quarkusGenerateDevAppModel
-        // quarkusGenerateCodeDev
+        System.out.printf("Created new Gradle build in %s ms%n", createdBuild - startTime);
+
+        // exclude quarkusGenerateCode, quarkusGenerateDevAppModel, quarkusGenerateCodeDev ->
+        // they seem to add substantial runtime.
+        String[] cmdArgs = { "classes",
+                "-x", "quarkusGenerateCode",
+                "-x", "quarkusGenerateDevAppModel",
+                "-x", "quarkusGenerateCodeDev" };
         newBuild
-                // .forTasks("classes")
-                .withArguments("classes", "-x", "quarkusGenerateCode",
-                        "-x", "quarkusGenerateDevAppModel", "-x", "quarkusGenerateCodeDev")
+                .withArguments(cmdArgs)
                 .setStandardOutput(System.out)
                 .setStandardError(System.err)
                 .run();
-        var runTime = System.currentTimeMillis();
-        System.out.println("Ran Gradle task in "
-                + (runTime - createdBuild) + "ms");
+
+        var endTime = System.currentTimeMillis();
+        System.out.printf("Raning 'classes' task took %s ms%n", +endTime - createdBuild);
     }
 
+    // Right now this is a duplicate of io.quarkus.deployment.dev.CompilationProvider.getSourcePath
     public Path findSourcePath(Path classFilePath, PathCollection sourcePaths, String classesPath) {
         Path sourceFilePath;
         final RuntimeUpdatesClassVisitor visitor = new RuntimeUpdatesClassVisitor(sourcePaths, classesPath);

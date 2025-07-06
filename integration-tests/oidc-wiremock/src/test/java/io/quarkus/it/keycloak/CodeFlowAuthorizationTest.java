@@ -356,6 +356,8 @@ public class CodeFlowAuthorizationTest {
         // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = false
         doTestCodeFlowUserInfo("code-flow-user-info-github-cache-disabled", 25200, false, false, 0, 4);
         clearCache();
+        doTestCodeFlowUserInfoDynamicGithubUpdate();
+        clearCache();
     }
 
     @Test

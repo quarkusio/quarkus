@@ -29,13 +29,16 @@ public class OidcDevUiRpcSvcPropertiesBean {
      * and web component needs to be updated.
      */
     private final String propertiesStateId;
+    private final String logoutPath;
+    private final String readSessionCookiePath;
 
     OidcDevUiRpcSvcPropertiesBean(String authorizationUrl, String tokenUrl, String logoutUrl,
             Duration webClientTimeout, Map<String, Map<String, String>> grantOptions,
             Map<String, String> oidcUsers, String oidcProviderName, String oidcApplicationType,
             String oidcGrantType, boolean introspectionIsAvailable, String keycloakAdminUrl,
             List<String> keycloakRealms, boolean swaggerIsAvailable, boolean graphqlIsAvailable,
-            String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload) {
+            String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload,
+            String devUiLogoutPath, String devUiReadSessionCookiePath) {
         this.authorizationUrl = authorizationUrl;
         this.tokenUrl = tokenUrl;
         this.logoutUrl = logoutUrl;
@@ -54,6 +57,8 @@ public class OidcDevUiRpcSvcPropertiesBean {
         this.graphqlUiPath = graphqlUiPath;
         this.alwaysLogoutUserInDevUiOnReload = alwaysLogoutUserInDevUiOnReload;
         this.propertiesStateId = Long.toString(UUID.randomUUID().getLeastSignificantBits());
+        this.logoutPath = devUiLogoutPath;
+        this.readSessionCookiePath = devUiReadSessionCookiePath;
     }
 
     String getAuthorizationUrl() {
@@ -134,5 +139,13 @@ public class OidcDevUiRpcSvcPropertiesBean {
 
     String getPropertiesStateId() {
         return propertiesStateId;
+    }
+
+    String getLogoutPath() {
+        return logoutPath;
+    }
+
+    String getReadSessionCookiePath() {
+        return readSessionCookiePath;
     }
 }

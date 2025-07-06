@@ -30,13 +30,10 @@ public class JPAConfig {
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
         for (QuarkusPersistenceUnitDescriptor descriptor : PersistenceUnitsHolder.getPersistenceUnitDescriptors()) {
             String puName = descriptor.getName();
-            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(descriptor.getConfigurationName());
-            if (puConfig.active().isPresent() && !puConfig.active().get()) {
-                LOGGER.infof("Hibernate ORM persistence unit '%s' was deactivated through configuration properties",
-                        puName);
-                deactivatedPersistenceUnitNames.add(puName);
-            } else {
+            if (descriptor.getProviderHelper().isActive(descriptor.getConfigurationName())) {
                 persistenceUnits.put(puName, new LazyPersistenceUnit(puName));
+            } else {
+                deactivatedPersistenceUnitNames.add(puName);
             }
         }
         this.requestScopedSessionEnabled = hibernateOrmRuntimeConfig.requestScopedSessionEnabled();

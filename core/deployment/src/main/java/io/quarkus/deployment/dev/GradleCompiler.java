@@ -69,7 +69,7 @@ public class GradleCompiler implements Closeable {
                 .run();
 
         var endTime = System.currentTimeMillis();
-        System.out.printf("Raning 'classes' task took %s ms%n", +endTime - createdBuild);
+        System.out.printf("Running 'classes' task took %s ms%n", +endTime - createdBuild);
     }
 
     // Right now this is a duplicate of io.quarkus.deployment.dev.CompilationProvider.getSourcePath

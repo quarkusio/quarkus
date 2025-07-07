@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Singleton;
 
@@ -13,10 +14,11 @@ import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OIDCException;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.SecurityEvent.Type;
-import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
@@ -32,7 +34,6 @@ import io.vertx.ext.web.RoutingContext;
 @Singleton
 public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
     private static final Logger LOG = Logger.getLogger(BackChannelLogoutHandler.class);
-    private static final String SLASH = "/";
     private final DefaultTenantConfigResolver resolver;
     private volatile ImmutablePathMatcher<Handler<RoutingContext>> pathMatcher;
 
@@ -58,7 +59,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
         routingContext.next();
     }
 
-    // hook up to the router because then we the tenant config bean is surely ready
+    // hook up to the router because then the tenant config bean is surely ready
     void createPathMatcher(@Observes Router ignored) {
         createOrUpdatePathMatcher();
     }
@@ -120,7 +121,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
                     // maybe invalid state, but technically it could happen that some produces a static tenant with
                     // a same id as a dynamic tenant
                     if (!previousTenantId.equals(currentTenantId)) {
-                        String errorMessage = "OIDC tenants '%s' and '%s' shares same back-channel logout path '%s', which is not supported"
+                        String errorMessage = "OIDC tenants '%s' and '%s' share the same back-channel logout path '%s', which is not supported"
                                 .formatted(previousTenantId, currentTenantId, routePath);
                         LOG.error(errorMessage);
                         throw new OIDCException(errorMessage);
@@ -137,18 +138,7 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
     }
 
     private String getTenantLogoutPath(TenantConfigContext tenant) {
-        return getRootPath() + tenant.oidcConfig().logout().backchannel().path().orElse(null);
-    }
-
-    private String getRootPath() {
-        // Prepend '/' if it is not present
-        String rootPath = OidcCommonUtils.prependSlash(resolver.getRootPath());
-        // Strip trailing '/' if the length is > 1
-        if (rootPath.length() > 1 && rootPath.endsWith("/")) {
-            rootPath = rootPath.substring(rootPath.length() - 1);
-        }
-        // if it is only '/' then return an empty value
-        return SLASH.equals(rootPath) ? "" : rootPath;
+        return OidcUtils.getRootPath(resolver.getRootPath()) + tenant.oidcConfig().logout().backchannel().path().orElse(null);
     }
 
     private static final class RouteHandler implements Handler<RoutingContext> {
@@ -244,4 +234,29 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
             return true;
         }
     }
+
+    public static void fireBackChannelLogoutChangedEvent(OidcTenantConfig oidcConfig, TenantConfigContext tenant) {
+        if (oidcConfig.logout().backchannel().path().isPresent()) {
+            boolean pathChanged = tenant.oidcConfig() == null || !oidcConfig.logout().backchannel().path().get()
+                    .equals(tenant.oidcConfig().logout().backchannel().path().orElse(null));
+            if (pathChanged) {
+                fireBackChannelLogoutEvent();
+            }
+        }
+
+    }
+
+    public static void fireBackChannelLogoutReadyEvent(OidcTenantConfig oidcConfig) {
+        if (oidcConfig.logout().backchannel().path().isPresent()) {
+            fireBackChannelLogoutEvent();
+        }
+
+    }
+
+    private static void fireBackChannelLogoutEvent() {
+        Event<NewBackChannelLogoutPath> event = Arc.container().beanManager().getEvent()
+                .select(NewBackChannelLogoutPath.class);
+        event.fire(new NewBackChannelLogoutPath());
+    }
+
 }

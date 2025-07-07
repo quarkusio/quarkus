@@ -7,16 +7,12 @@ import java.util.function.Supplier;
 
 import javax.crypto.SecretKey;
 
-import jakarta.enterprise.event.Event;
-
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.oidc.OidcConfigurationMetadata;
 import io.quarkus.oidc.OidcRedirectFilter;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.Redirect;
-import io.quarkus.oidc.runtime.BackChannelLogoutHandler.NewBackChannelLogoutPath;
 import io.smallrye.mutiny.Uni;
 
 final class LazyTenantConfigContext implements TenantConfigContext {
@@ -38,10 +34,9 @@ final class LazyTenantConfigContext implements TenantConfigContext {
                     delegate.oidcConfig().tenantId().get());
             return staticTenantCreator.get().invoke(ctx -> {
                 LazyTenantConfigContext.this.delegate = ctx;
-                if (ctx.ready() && ctx.oidcConfig().logout().backchannel().path().isPresent()) {
-                    Event<NewBackChannelLogoutPath> event = Arc.container().beanManager().getEvent()
-                            .select(NewBackChannelLogoutPath.class);
-                    event.fire(new NewBackChannelLogoutPath());
+                if (ctx.ready()) {
+                    BackChannelLogoutHandler.fireBackChannelLogoutReadyEvent(ctx.oidcConfig());
+                    ResourceMetadataHandler.fireResourceMetadataReadyEvent(ctx.oidcConfig());
                 }
             });
         }

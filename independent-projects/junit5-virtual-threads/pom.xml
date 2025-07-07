@@ -70,7 +70,6 @@
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-testkit</artifactId>
-            <version>${junit.testkit.version}</version>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>

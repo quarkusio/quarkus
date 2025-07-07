@@ -1,12 +1,7 @@
 package io.quarkus.kotlin.deployment;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.StringJoiner;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -48,6 +43,17 @@ public class KotlinCompilationProvider implements CompilationProvider {
         compilerArguments.setJavaParameters(true);
         compilerArguments.setSuppressWarnings(true);
 
+        compilerArguments.setIncrementalCompilation(true);
+
+        // use javac or koltinc to compile java
+        // compilerArguments.setUseJavac(true); // Kotlinc can compile java sources too
+        // compilerArguments.setCompileJava(true);
+
+        // optional
+        // compilerArguments.setNoReflect(true); // be careful
+        // compilerArguments.setNoOptimize(true); // safe for hot reload/dev mode
+        // compilerArguments.setUseFastJarFileSystem(true);
+
         if (context.getCompilePluginArtifacts() != null && !context.getCompilePluginArtifacts().isEmpty()) {
             compilerArguments.setPluginClasspaths(context.getCompilePluginArtifacts().toArray(new String[0]));
         }
@@ -68,6 +74,7 @@ public class KotlinCompilationProvider implements CompilationProvider {
                 final String key = matcher.group(2);
                 final String value = matcher.group(3);
                 sanitizedOptions.add("plugin:" + pluginId + ":" + key + "=" + value);
+                log.error("Sanitized option: " + sanitizedOptions);
                 compilerArguments.setPluginOptions(sanitizedOptions.toArray(new String[0]));
             }
         }

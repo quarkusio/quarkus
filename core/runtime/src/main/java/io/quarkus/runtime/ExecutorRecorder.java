@@ -117,8 +117,13 @@ public class ExecutorRecorder {
                                 // do some probing
                                 final int queueSize = executor.getQueueSize();
                                 final Thread[] runningThreads = executor.getRunningThreads();
-                                log.infof("Awaiting thread pool shutdown; %d thread(s) running with %d task(s) waiting",
-                                        runningThreads.length, queueSize);
+                                if (queueSize <= 0) {
+                                    log.infof("Awaiting thread pool shutdown; %d thread(s) running",
+                                            runningThreads.length);
+                                } else {
+                                    log.infof("Awaiting thread pool shutdown; %d thread(s) running with %d task(s) waiting",
+                                            runningThreads.length, queueSize);
+                                }
                                 // make sure no threads are stuck in {@code exit()}
                                 int realWaiting = runningThreads.length;
                                 for (Thread thr : runningThreads) {
@@ -138,7 +143,7 @@ public class ExecutorRecorder {
                                         }
                                     }
                                 }
-                                if (realWaiting == 0 && queueSize == 0) {
+                                if (realWaiting == 0) {
                                     // just exit
                                     executor.shutdownNow();
                                     break;

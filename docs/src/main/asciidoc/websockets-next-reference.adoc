@@ -1070,6 +1070,101 @@ When you plan to use bearer access tokens during the opening WebSocket handshake
 * Use a custom WebSocket ticket system which supplies a random token with the HTML page which hosts the JavaScript WebSockets client which must provide this token during the initial handshake request as a query parameter.
 ====
 
+Before the bearer access token sent on the initial HTTP request expires, you can send a new bearer access token as part of a message and update current `SecurityIdentity` attached to the WebSocket server connection:
+
+[source, java]
+----
+package io.quarkus.websockets.next.test.security;
+
+import io.quarkus.security.Authenticated;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.websockets.next.OnTextMessage;
+import io.quarkus.websockets.next.WebSocket;
+import io.quarkus.websockets.next.WebSocketSecurity;
+import jakarta.inject.Inject;
+
+@Authenticated
+@WebSocket(path = "/end")
+public class Endpoint {
+
+    record Metadata(String token) {}
+    record RequestDto(Metadata metadata, String message) {}
+
+    @Inject
+    SecurityIdentity securityIdentity;
+
+    @Inject
+    WebSocketSecurity webSocketSecurity;
+
+    @OnTextMessage
+    String echo(RequestDto request) {
+        if (request.metadata != null && request.metadata.token != null) {
+            webSocketSecurity.updateSecurityIdentity(request.metadata.token); <1>
+        }
+        String principalName = securityIdentity.getPrincipal().getName(); <2>
+        return request.message + " " + principalName;
+    }
+
+}
+----
+<1> Asynchronously update the `SecurityIdentity` attached to the WebSocket server connection.
+<2> The current `SecurityIdentity` instance is still available and can be used during the `SecurityIdentity` update.
+
+The xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication] mechanism has builtin support for the `SecurityIdentity` update.
+If you use other authentication mechanisms, you must implement the `io.quarkus.security.identity.IdentityProvider` provider that supports the `io.quarkus.websockets.next.runtime.spi.security.WebSocketIdentityUpdateRequest` authentication request.
+
+[IMPORTANT]
+====
+The new bearer access token must have the same `sub` claim value as the token used during the initial HTTP request.
+Please also make sure the `SecurityIdentity` is only updated when necessary and the WebSocket message with credentials do not appear in your application logs.
+Always use the `wss` protocol to enforce encrypted HTTP connection via TLS when sending credentials as part of the WebSocket message.
+====
+
+WebSocket client application have to send a new access token before previous one expires:
+
+[source,html]
+----
+<script type="module">
+    import Keycloak from 'https://cdn.jsdelivr.net/npm/keycloak-js@26.2.0/lib/keycloak.js'
+    const keycloak = new Keycloak({
+        url: 'http://localhost:39245',
+        realm: 'quarkus',
+        clientId: 'websockets-js-client'
+    });
+    function getToken() {
+        return keycloak.token
+    }
+
+    await keycloak
+        .init({onLoad: 'login-required'})
+        .then(() => console.log('User is now authenticated.'))
+        .catch(err => console.log('User is NOT authenticated.', err));
+
+    // open Web socket - reduced for brevity
+    let connectionOpened = true;
+    const subprotocols = [ "quarkus", encodeURI("quarkus-http-upgrade" + "#Authorization#Bearer " + getToken()) ]
+    const socket = new WebSocket("wss://" + location.host + "/chat/username", subprotocols);
+
+    setInterval(() => {
+        keycloak
+            .updateToken(15)
+            .then(result => {
+                if (result && connectionOpened) {
+                    console.log('Token updated, sending new token to the server')
+                    socket.send(JSON.stringify({
+                        metadata: {
+                            token: `${getToken()}`
+                        }
+                    }));
+                }
+            })
+            .catch(err => console.error(err))
+    }, 10000);
+</script>
+----
+
+Complete example is located in the `security-openid-connect-websockets-next-quickstart` link:{quickstarts-tree-url}/security-openid-connect-websockets-next-quickstart[directory].
+
 === Inspect and/or reject HTTP upgrade
 
 To inspect an HTTP upgrade, you must provide a CDI bean implementing the `io.quarkus.websockets.next.HttpUpgradeCheck` interface.

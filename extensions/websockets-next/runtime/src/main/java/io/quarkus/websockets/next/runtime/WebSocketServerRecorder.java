@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -25,6 +26,8 @@ import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
@@ -35,8 +38,10 @@ import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.HttpUpgradeCheck.CheckResult;
 import io.quarkus.websockets.next.HttpUpgradeCheck.HttpUpgradeContext;
+import io.quarkus.websockets.next.WebSocketSecurity;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
+import io.quarkus.websockets.next.runtime.spi.security.WebSocketIdentityUpdateRequest;
 import io.quarkus.websockets.next.runtime.telemetry.SendingInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.WebSocketTelemetryProvider;
 import io.smallrye.common.vertx.VertxContext;
@@ -131,18 +136,16 @@ public class WebSocketServerRecorder {
                     SendingInterceptor sendingInterceptor = telemetrySupport == null ? null
                             : telemetrySupport.getSendingInterceptor();
                     WebSocketConnectionImpl connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId, ws,
-                            connectionManager, codecs, ctx, trafficLogger, sendingInterceptor);
+                            connectionManager, codecs, ctx, trafficLogger, sendingInterceptor,
+                            getSecuritySupportCreator(container, ctx));
                     connectionManager.add(generatedEndpointClass, connection);
                     if (trafficLogger != null) {
                         trafficLogger.connectionOpened(connection);
                     }
 
-                    SecuritySupport securitySupport = initializeSecuritySupport(container, ctx, vertx, connection);
-
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
-                            runtimeConfig.getValue().autoPingInterval(), securitySupport,
-                            runtimeConfig.getValue().unhandledFailureStrategy(),
-                            trafficLogger,
+                            runtimeConfig.getValue().autoPingInterval(), connection.securitySupport(),
+                            runtimeConfig.getValue().unhandledFailureStrategy(), trafficLogger,
                             () -> connectionManager.remove(generatedEndpointClass, connection), activateRequestContext,
                             activateSessionContext, telemetrySupport);
                 });
@@ -191,18 +194,19 @@ public class WebSocketServerRecorder {
         return httpUpgradeChecks == null ? null : httpUpgradeChecks.toArray(new HttpUpgradeCheck[0]);
     }
 
-    SecuritySupport initializeSecuritySupport(ArcContainer container, RoutingContext ctx, Vertx vertx,
-            WebSocketConnectionImpl connection) {
+    private static Function<WebSocketConnectionImpl, SecuritySupport> getSecuritySupportCreator(ArcContainer container,
+            RoutingContext ctx) {
         Instance<CurrentIdentityAssociation> currentIdentityAssociation = container.select(CurrentIdentityAssociation.class);
         if (currentIdentityAssociation.isResolvable()) {
             // Security extension is present
             // Obtain the current security identity from the handshake request
             QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
             if (user != null) {
-                return new SecuritySupport(currentIdentityAssociation, user.getSecurityIdentity(), vertx, connection);
+                return connection -> new SecuritySupport(currentIdentityAssociation, user.getSecurityIdentity(), connection,
+                        ctx);
             }
         }
-        return SecuritySupport.NOOP;
+        return ignored -> SecuritySupport.NOOP;
     }
 
     public Function<SyntheticCreationalContext<SecurityHttpUpgradeCheck>, SecurityHttpUpgradeCheck> createSecurityHttpUpgradeCheck(
@@ -235,6 +239,44 @@ public class WebSocketServerRecorder {
                     endpointIdToInterceptor.put(endpointId, interceptor);
                 });
                 return new HttpUpgradeSecurityInterceptor(endpointIdToInterceptor);
+            }
+        };
+    }
+
+    public Function<SyntheticCreationalContext<WebSocketSecurity>, WebSocketSecurity> createWebSocketSecurity() {
+        final Supplier<Object> connectionSupplier = connectionSupplier();
+        return new Function<SyntheticCreationalContext<WebSocketSecurity>, WebSocketSecurity>() {
+            @Override
+            public WebSocketSecurity apply(SyntheticCreationalContext<WebSocketSecurity> ctx) {
+                Instance<IdentityProvider<?>> identityProviders = ctx.getInjectedReference(new TypeLiteral<>() {
+                });
+                boolean updateNotSupported = true;
+                for (IdentityProvider<?> identityProvider : identityProviders) {
+                    if (identityProvider.getRequestType() == WebSocketIdentityUpdateRequest.class) {
+                        updateNotSupported = false;
+                        break;
+                    }
+                }
+                if (updateNotSupported) {
+                    throw new WebSocketServerException("""
+                            The '%s' CDI bean injection point was detected, but there is no '%s' that supports '%s'.
+                            Either add Quarkus extension that supports SecurityIdentity update like Quarkus OIDC, or
+                            implement the provider yourself.
+                            """.formatted(WebSocketSecurity.class.getName(), IdentityProvider.class.getName(),
+                            WebSocketIdentityUpdateRequest.class.getName()));
+                }
+                final IdentityProviderManager identityProviderManager = ctx.getInjectedReference(IdentityProviderManager.class);
+                return new WebSocketSecurity() {
+                    @Override
+                    public CompletionStage<SecurityIdentity> updateSecurityIdentity(String accessToken) {
+                        if (connectionSupplier.get() instanceof WebSocketConnectionImpl connection) {
+                            SecuritySupport securitySupport = connection.securitySupport();
+                            return securitySupport.updateSecurityIdentity(accessToken, connection, identityProviderManager);
+                        }
+                        throw new WebSocketServerException(
+                                "Only SecurityIdentity attached to a WebSocket server connection can be updated");
+                    }
+                };
             }
         };
     }

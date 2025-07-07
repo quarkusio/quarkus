@@ -9,6 +9,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.VertxContextSupport;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * A check that controls which requests are allowed to upgrade the HTTP connection to a WebSocket connection.
@@ -44,6 +45,19 @@ public interface HttpUpgradeCheck {
     }
 
     interface HttpUpgradeContext {
+
+        /**
+         * @return userData {@link UserData}; mutable user data to associate with an upgraded connection
+         * @see WebSocketConnection#userData()
+         */
+        UserData userData();
+
+        /**
+         * @return pathParams {@link Map Map&lt;String, String&gt;}; a map of named parameters as defined in path
+         *         declaration with their actual values
+         * @see RoutingContext#pathParams()
+         */
+        Map<String, String> pathParams();
 
         /**
          * @return httpRequest {@link HttpServerRequest}; the HTTP 1.X request employing the 'Upgrade' header

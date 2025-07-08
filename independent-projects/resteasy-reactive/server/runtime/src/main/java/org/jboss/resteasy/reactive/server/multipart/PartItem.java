@@ -18,15 +18,24 @@ public final class PartItem {
     private final String filename;
 
     public PartItem(Object entity, String genericType, MediaType mediaType) {
-        this(entity, genericType, mediaType, null);
+        this(entity, genericType, mediaType, null, new QuarkusMultivaluedHashMap<>());
     }
 
     public PartItem(Object entity, String genericType, MediaType mediaType, String filename) {
-        this.headers = new QuarkusMultivaluedHashMap<>();
+        this(entity, genericType, mediaType, filename, new QuarkusMultivaluedHashMap<>());
+    }
+
+    public PartItem(Object entity, String genericType, MediaType mediaType, MultivaluedMap<String, Object> headers) {
+        this(entity, genericType, mediaType, null, headers);
+    }
+
+    public PartItem(Object entity, String genericType, MediaType mediaType, String filename,
+            MultivaluedMap<String, Object> headers) {
         this.entity = entity;
         this.genericType = genericType;
         this.mediaType = mediaType;
         this.filename = filename;
+        this.headers = headers != null ? headers : new QuarkusMultivaluedHashMap<>();
     }
 
     public MultivaluedMap<String, Object> getHeaders() {

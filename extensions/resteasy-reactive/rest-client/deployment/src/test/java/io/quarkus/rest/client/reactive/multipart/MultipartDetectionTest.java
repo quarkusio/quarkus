@@ -13,11 +13,13 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.annotation.RegisterProvider;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -110,6 +112,11 @@ public class MultipartDetectionTest {
             @Override
             public String charSet() {
                 return "";
+            }
+
+            @Override
+            public MultivaluedMap<String, String> getHeaders() {
+                return new QuarkusMultivaluedHashMap<>();
             }
         }))
                 .isEqualTo("Foo " + file.getName() + " Hello");

@@ -328,6 +328,7 @@
                 <module>smallrye-stork-registration</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
+                <module>quartz-deferred-datasource</module>
                 <module>redis-client</module>
                 <module>redis-cache</module>
                 <module>logging-gelf</module>

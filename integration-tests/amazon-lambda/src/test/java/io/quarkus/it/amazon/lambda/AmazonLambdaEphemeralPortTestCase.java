@@ -10,7 +10,7 @@ import io.quarkus.it.amazon.lambda.profiles.EphemeralPortProfile;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
 
-@Disabled("Failing since 3.22, should be fixed by by https://github.com/quarkusio/quarkus/issues/48006")
+@Disabled("Tracked by https://github.com/quarkusio/quarkus/issues/48784")
 @TestProfile(EphemeralPortProfile.class)
 @QuarkusTest
 public class AmazonLambdaEphemeralPortTestCase {

@@ -138,12 +138,16 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return tenantContext.onItem().transformToUni(new Function<TenantConfigContext, Uni<? extends ChallengeData>>() {
             @Override
             public Uni<ChallengeData> apply(TenantConfigContext tenantContext) {
-                final String wwwAuthHeaderValue;
+                String wwwAuthHeaderValue;
                 if (StepUpAuthenticationPolicy.isInsufficientUserAuthException(context)) {
                     wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme() +
                             StepUpAuthenticationPolicy.getAuthRequirementChallenge(context);
                 } else {
                     wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme();
+                    if (tenantContext.oidcConfig().resourceMetadata().enabled()) {
+                        wwwAuthHeaderValue += ResourceMetadataHandler.resourceMetadataAuthenticateParameter(context, resolver,
+                                tenantContext.oidcConfig());
+                    }
                 }
                 return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
                         HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue));

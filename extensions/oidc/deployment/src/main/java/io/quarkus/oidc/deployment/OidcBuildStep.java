@@ -97,6 +97,7 @@ import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTenantDefaultIdConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.runtime.ResourceMetadataHandler;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
 import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
@@ -208,6 +209,7 @@ public class OidcBuildStep {
                 .addBeanClass(DefaultTokenStateManager.class)
                 .addBeanClass(OidcSessionImpl.class)
                 .addBeanClass(BackChannelLogoutHandler.class)
+                .addBeanClass(ResourceMetadataHandler.class)
                 .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
     }
@@ -496,6 +498,13 @@ public class OidcBuildStep {
         if (capabilities.isPresent(Capability.WEBSOCKETS_NEXT)) {
             additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketIdentityUpdateProvider.class));
         }
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
+        return new FilterBuildItem(handler, FilterBuildItem.AUTHORIZATION - 50);
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -48,6 +49,7 @@ import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -146,6 +148,9 @@ public class CodeFlowTest {
             webClient.getCookieManager().clearCookies();
 
             checkHealth();
+
+            // Static default tenant
+            checkResourceMetadata(null, "quarkus");
         }
     }
 
@@ -459,6 +464,8 @@ public class CodeFlowTest {
         } catch (Exception ex) {
             assertEquals("Unexpected 401", ex.getMessage());
         }
+        // Static `tenant-nonce` tenant with custom resource path
+        checkResourceMetadata("metadata", "quarkus");
     }
 
     private void doTestCodeFlowNonce(boolean wrongRedirect) throws Exception {
@@ -860,6 +867,9 @@ public class CodeFlowTest {
             assertNull(getSessionCookie(webClient, "tenant-logout"));
             assertEquals("Sign in to logout-realm", page.getTitleText());
             webClient.getCookieManager().clearCookies();
+
+            // Static `tenant-refresh` tenant
+            checkResourceMetadata("tenant-refresh", "logout-realm");
         }
     }
 
@@ -1750,5 +1760,20 @@ public class CodeFlowTest {
 
     private String getIdToken(Cookie sessionCookie) {
         return sessionCookie.getValue().split("\\|")[0];
+    }
+
+    private static void checkResourceMetadata(String resource, String realm) {
+        Response metadataResponse = RestAssured.when()
+                .get("http://localhost:8081" + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH
+                        + (resource == null ? "" : "/" + resource));
+        JsonObject jsonMetadata = new JsonObject(metadataResponse.asString());
+        assertEquals("https://localhost:8081" + (resource == null ? "" : "/" + resource),
+                jsonMetadata.getString(OidcConstants.RESOURCE_METADATA_RESOURCE));
+        JsonArray jsonAuthorizarionServers = jsonMetadata.getJsonArray(OidcConstants.RESOURCE_METADATA_AUTHORIZATION_SERVERS);
+        assertEquals(1, jsonAuthorizarionServers.size());
+
+        String authorizationServer = jsonAuthorizarionServers.getString(0);
+        assertTrue(authorizationServer.startsWith("http://localhost:"));
+        assertTrue(authorizationServer.endsWith("/realms/" + realm));
     }
 }

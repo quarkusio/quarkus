@@ -178,4 +178,8 @@ public class OidcRecorder {
         return beanContainer.beanInstance(BackChannelLogoutHandler.class);
     }
 
+    public Handler<RoutingContext> getResourceMetadataHandler(BeanContainer beanContainer) {
+        return beanContainer.beanInstance(ResourceMetadataHandler.class);
+    }
+
 }

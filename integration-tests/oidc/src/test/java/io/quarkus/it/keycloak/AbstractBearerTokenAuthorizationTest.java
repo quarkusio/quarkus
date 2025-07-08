@@ -149,7 +149,7 @@ public abstract class AbstractBearerTokenAuthorizationTest {
         RestAssured.given().auth().oauth2("123")
                 .when().get("/api/users/me").then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("Bearer"));
+                .header("WWW-Authenticate", equalTo("Bearer resource_metadata=\"https://localhost:8081\""));
     }
 
     //see https://github.com/quarkusio/quarkus/issues/5809
@@ -187,7 +187,7 @@ public abstract class AbstractBearerTokenAuthorizationTest {
                 .when().get("/bearer-only")
                 .then()
                 .statusCode(401)
-                .header("WWW-Authenticate", equalTo("Bearer"));
+                .header("WWW-Authenticate", equalTo("Bearer resource_metadata=\"https://localhost:8081\""));
     }
 
     @Test

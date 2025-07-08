@@ -68,10 +68,10 @@ You can configure or create as many tenant configurations as you need and have t
 
 See the <<multi-tenancy>> section for more details.
 
-[[metadata-properties]]
+[[oidc-metadata-properties]]
 === Metadata
 
-.Metadata properties
+.OIDC Metadata properties
 [options="header"]
 |====
 |Property name |Default |Description
@@ -116,6 +116,8 @@ Applications xref:security-openid-connect-client-reference.adoc#revoke-access-to
 Applications that already work with `quarkus-oidc` can use `quarkus.oidc.registration-path` to xref:security-openid-connect-client-registration.adoc[dynamically register OIDC clients].
 
 But please remember, all or some of these OIDC endpoint specific URLs may be discoverable when your provider supports the metadata discovery.
+
+See also the <<resource-metadata-properties>> section about accessing the protected resource metadata.
 
 [[application-type]]
 === Application type
@@ -1277,6 +1279,37 @@ Use xref:security-openid-connect-client-reference.adoc#token-propagation-rest[Qu
 
 You may need to revoke access tokens, for example, in case of the local logout.
 See the xref:security-oidc-code-flow-authentication#oidc-token-revocation[Token revocation] section for more information.
+
+[[resource-metadata-properties]]
+=== Protected Resource Metadata
+
+https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Resource Metadata] specification defines a metadata format enabling OAuth 2.0 clients to obtain information needed to interact with an OAuth 2.0 protected resource.
+
+Quarkus OIDC provides an initial https://datatracker.ietf.org/doc/rfc9728/[Protected Resource Metadata] support allowing a Quarkus endpoint to return a URL of the OIDC or OAuth2 provider that secures this endpoint.
+In turn, a client that requested the protected resource metadata can use its properties, such as an authorization server URL, to discover the provider's metadata and bootstrap itself to work with this provider, for example, to login SPA users and access Quarkus on their behalf with bearer access tokens.
+
+.Resource Metadata properties
+[options="header"]
+|====
+|Property name |Default |Description
+
+|quarkus.oidc.resource-metadata.enabled |false|Enable resource metadata properties
+|quarkus.oidc.resource-metadata.resource ||Resource identifier
+|quarkus.oidc.resource-metadata.force-https-scheme |true|Force that a resource identifier URL has an HTTPS scheme
+|====
+
+`quarkus.oidc.resource-metadata.enabled` property allows Quarkus OIDC to return the protected resource metadata and it is disabled by default. The reason behind it is that letting public clients see a list of authorization server(s) that the endpoint is secured with can be considered a security information leak, therefore it should only be enabled when publishing such information is considered to be safe.
+
+`quarkus.oidc.resource-metadata.resource` represents a protected resource identifier.
+According to the https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Resource Metadata] specification, it must be presented as an HTTPS-based URL in the published metadata and the structure of this URL must be aligned with the well-known URL that the client used to access the protected resource metadata.
+
+`quarkus.oidc.resource-metadata.resource` can be configured as an absolute URL.
+
+If it is configured as a relative path then it is added to the current request URL's host and port to build a resource identifier URL. If it is not configured at all then, unless it is a default tenant id, the tenand id is added to the current request URL's host and port to build a resource identifier URL.
+
+In such cases, the `quarkus.oidc.resource-metadata.force-https-scheme` property can be used to set a correct URL scheme, which is set to HTTPS by default.
+
+See also the <<oidc-metadata-properties>> for details about the OIDC provider metadata that Quarkus OIDC uses for its work.
 
 == References
 

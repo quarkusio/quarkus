@@ -70,6 +70,27 @@ If `api-version` is not set, the latest version for the given flavor will be use
 
 Once the cluster is configured, you can access it easily as you normally would, for example, by injecting a client instance in your test.
 
+== Applying manifests to the cluster
+Within Quarkus it is possible to apply Kubernetes manifests to the cluster dev service on startup. This is especially useful if your application expects certain resources to be present in the cluster, such as for example a specific namespace or certain Custom Resource Definitions that the application interacts with.
+
+You can configure the manifests to be applied using the `quarkus.kubernetes-client.devservices.manifests` property. This property accepts a list of files within the application's `resources` directory.
+
+As an example, to ensure the `example-namespace` namespace is present in the dev service, create the file `/src/main/resources/kubernetes/namespace.yml`:
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: example-namespace
+```
+
+And then add the following property to your `application.properties`:
+```
+quarkus.kubernetes-client.devservices.manifests=kubernetes/namespace.yaml
+```
+
+=== Deploying helm charts
+`quarkus.kubernetes-client.devservices.manifests` only supports manifests. If you want to deploy a helm chart, you can use the `k3s` flavor and deploy a `HelmChart` manifest. See https://docs.k3s.io/helm for more information on how to use helm charts with k3s.
+
 == Configuration reference
 
 include::{generated-dir}/config/quarkus-kubernetes-client_quarkus.kubernetes-client.devservices.adoc[opts=optional, leveloffset=+1]

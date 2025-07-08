@@ -70,10 +70,6 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         this.removedArtifactKeys = removedArtifactKeys;
     }
 
-    protected static ArchiveCreator newArchiveCreator(Path archivePath, PackageConfig config) throws IOException {
-        return new ZipFileSystemArchiveCreator(archivePath, config.jar().compress());
-    }
-
     /**
      * Copy files from {@code archive} to {@code fs}, filtering out service providers into the given map.
      *

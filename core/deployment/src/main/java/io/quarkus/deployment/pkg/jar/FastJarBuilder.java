@@ -161,7 +161,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Path transformedZip = quarkus.resolve(FastJarFormat.TRANSFORMED_BYTECODE_JAR);
             fastJarJarsBuilder.setTransformedJar(transformedZip);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(transformedZip,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    outputTarget.getOutputDirectory(), executorService)) {
                 for (Set<TransformedClass> transformedSet : transformedClasses
                         .getTransformedClassesByJar().values()) {
                     for (TransformedClass transformed : transformedSet) {
@@ -179,7 +180,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         Path generatedZip = quarkus.resolve(FastJarFormat.GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGeneratedJar(generatedZip);
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(generatedZip,
-                packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
+                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null), outputTarget.getOutputDirectory(),
+                executorService)) {
             for (GeneratedClassBuildItem i : generatedClasses) {
                 String fileName = fromClassNameToResourceName(i.getName());
                 archiveCreator.addFile(i.getClassData(), fileName);
@@ -207,7 +209,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                     .setPath(runnerJar));
             Predicate<String> ignoredEntriesPredicate = getThinJarIgnoredEntriesPredicate(packageConfig);
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    outputTarget.getOutputDirectory(), executorService)) {
                 copyFiles(applicationArchives.getRootArchive(), archiveCreator, null, ignoredEntriesPredicate);
             }
         }
@@ -297,7 +300,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
         }
         if (!rebuild) {
             try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(initJar,
-                    packageConfig.jar().compress(), outputTarget.getOutputDirectory(), executorService)) {
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                    outputTarget.getOutputDirectory(), executorService)) {
                 ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
                 generateManifest(archiveCreator, classPath.toString(), packageConfig, appArtifact,
                         QuarkusEntryPoint.class.getName(),
@@ -453,7 +457,8 @@ public class FastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
     private static void packageClasses(Path resolvedDep, final Path targetPath, PackageConfig packageConfig,
             OutputTargetBuildItem outputTargetBuildItem, ExecutorService executorService) throws IOException {
         try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(targetPath,
-                packageConfig.jar().compress(), outputTargetBuildItem.getOutputDirectory(), executorService)) {
+                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null),
+                outputTargetBuildItem.getOutputDirectory(), executorService)) {
             Files.walkFileTree(resolvedDep, EnumSet.of(FileVisitOption.FOLLOW_LINKS), Integer.MAX_VALUE,
                     new SimpleFileVisitor<Path>() {
                         @Override

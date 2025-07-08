@@ -142,7 +142,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private void buildUberJar0(Path runnerJar) throws IOException {
         try (ZipFileSystemArchiveCreator archiveCreator = new ZipFileSystemArchiveCreator(runnerJar,
-                packageConfig.jar().compress())) {
+                packageConfig.jar().compress(), packageConfig.outputTimestamp().orElse(null))) {
             LOG.info("Building uber jar: " + runnerJar);
 
             final Map<String, String> seen = new HashMap<>();

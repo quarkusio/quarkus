@@ -10,6 +10,7 @@ import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,12 +30,13 @@ class ZipFileSystemArchiveCreator implements ArchiveCreator {
 
     private final Map<String, String> addedFiles = new HashMap<>();
 
-    public ZipFileSystemArchiveCreator(Path archivePath, boolean compressed) {
+    public ZipFileSystemArchiveCreator(Path archivePath, boolean compressed, Instant entryTimestamp) {
         try {
             if (compressed) {
-                zipFileSystem = ZipUtils.newZip(archivePath);
+                zipFileSystem = ZipUtils.createNewReproducibleZipFileSystem(archivePath, entryTimestamp);
             } else {
-                zipFileSystem = ZipUtils.newZip(archivePath, Map.of("compressionMethod", "STORED"));
+                zipFileSystem = ZipUtils.createNewReproducibleZipFileSystem(archivePath, Map.of("compressionMethod", "STORED"),
+                        entryTimestamp);
             }
         } catch (IOException e) {
             throw new RuntimeException("Unable to initialize ZipFileSystem: " + archivePath, e);

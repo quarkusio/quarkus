@@ -50,6 +50,7 @@ public class HibernateOrmDevUIProcessor {
                 .componentLink("hibernate-orm-hql-console.js")
                 .icon("font-awesome-solid:play")
                 .metadata("allowHql", String.valueOf(config.devui().allowHql())));
+
         return card;
     }
 

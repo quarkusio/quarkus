@@ -70,6 +70,7 @@ public abstract class NativeImageBuildRunner {
                             Runtime.getRuntime().removeShutdownHook(hook);
                         }
                     })
+                    .output().consumeLinesWith(8192, log::info)
                     .error().consumeWith(br -> new ErrorReplacingProcessReader(br, outputDir.resolve("reports").toFile()).run())
                     .run();
             boolean objcopyExists = objcopyExists();

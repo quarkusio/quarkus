@@ -38,6 +38,7 @@ public class WalkSubtreeTest {
         createFile("b/aa/aaa/aaaa/1.txt");
 
         testZip = testDir.resolve("archive.zip");
+        Files.deleteIfExists(testZip);
         ZipUtils.zip(testDir, testZip);
     }
 
@@ -46,14 +47,14 @@ public class WalkSubtreeTest {
         var list = new ArrayList<String>();
         PathTree.ofDirectoryOrArchive(testDir)
                 .walkIfContains("a/aa", visit -> list.add(visit.getRelativePath()));
-        assertThat(list).containsExactlyInAnyOrder(
+        assertThat(list).containsExactly(
                 "a/aa",
                 "a/aa/1.txt",
                 "a/aa/aaa",
                 "a/aa/aaa/1.txt",
+                "a/aa/aaa/2.txt",
                 "a/aa/aaa/aaaa",
-                "a/aa/aaa/aaaa/1.txt",
-                "a/aa/aaa/2.txt");
+                "a/aa/aaa/aaaa/1.txt");
     }
 
     @Test
@@ -61,14 +62,14 @@ public class WalkSubtreeTest {
         var list = new ArrayList<String>();
         PathTree.ofDirectoryOrArchive(testZip)
                 .walkIfContains("a/aa", visit -> list.add(visit.getRelativePath()));
-        assertThat(list).containsExactlyInAnyOrder(
+        assertThat(list).containsExactly(
                 "a/aa",
                 "a/aa/1.txt",
                 "a/aa/aaa",
                 "a/aa/aaa/1.txt",
+                "a/aa/aaa/2.txt",
                 "a/aa/aaa/aaaa",
-                "a/aa/aaa/aaaa/1.txt",
-                "a/aa/aaa/2.txt");
+                "a/aa/aaa/aaaa/1.txt");
     }
 
     @Test
@@ -78,20 +79,20 @@ public class WalkSubtreeTest {
                 PathTree.ofDirectoryOrArchive(testDir.resolve("a/aa")),
                 PathTree.ofDirectoryOrArchive(testDir.resolve("b/aa")))
                 .walk(visit -> list.add(ensureForwardSlash(testDir.relativize(visit.getPath()).toString())));
-        assertThat(list).containsExactlyInAnyOrder(
+        assertThat(list).containsExactly(
                 "a/aa",
                 "a/aa/1.txt",
                 "a/aa/aaa",
                 "a/aa/aaa/1.txt",
+                "a/aa/aaa/2.txt",
                 "a/aa/aaa/aaaa",
                 "a/aa/aaa/aaaa/1.txt",
-                "a/aa/aaa/2.txt",
                 "b/aa",
                 "b/aa/aaa",
                 "b/aa/aaa/1.txt",
+                "b/aa/aaa/2.txt",
                 "b/aa/aaa/aaaa",
-                "b/aa/aaa/aaaa/1.txt",
-                "b/aa/aaa/2.txt");
+                "b/aa/aaa/aaaa/1.txt");
     }
 
     @Test
@@ -101,7 +102,7 @@ public class WalkSubtreeTest {
                 PathTree.ofDirectoryOrArchive(testDir.resolve("a/aa")),
                 PathTree.ofDirectoryOrArchive(testDir.resolve("b/aa")))
                 .walkIfContains("aaa", visit -> list.add(ensureForwardSlash(testDir.relativize(visit.getPath()).toString())));
-        assertThat(list).containsExactlyInAnyOrder(
+        assertThat(list).containsExactly(
                 "a/aa/aaa",
                 "a/aa/aaa/1.txt",
                 "a/aa/aaa/2.txt",

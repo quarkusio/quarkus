@@ -17,7 +17,10 @@ class PathTreeVisit implements PathVisit {
             PathVisitor visitor) {
         final PathTreeVisit visit = new PathTreeVisit(root, rootDir, pathFilter, multiReleaseMapping);
         try (Stream<Path> files = Files.walk(walkDir)) {
-            final Iterator<Path> i = files.iterator();
+            final Iterator<Path> i = files
+                    // we sort the elements to be deterministic, we compare the toString() to make sure the order is the same on Linux and Windows
+                    .sorted((p1, p2) -> p1.toString().compareTo(p2.toString()))
+                    .iterator();
             while (i.hasNext()) {
                 if (!visit.setCurrent(i.next())) {
                     continue;

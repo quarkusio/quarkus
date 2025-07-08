@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -35,45 +35,46 @@ public class FilteredPathTreeTest {
         createFile("org/toolbox/Saw.class");
         createFile("README.md");
         testJar = testDir.resolve("test.jar");
+        Files.deleteIfExists(testJar);
         ZipUtils.zip(testDir, testJar);
     }
 
     @Test
     public void unfilteredTestDir() {
         var pathTree = PathTree.ofDirectoryOrArchive(testDir);
-        assertThat(getAllPaths(pathTree)).containsExactlyInAnyOrder(
+        assertThat(getAllPaths(pathTree)).containsExactly(
                 "",
                 "META-INF",
                 "META-INF/jandex.idx",
+                "README.md",
                 "org",
                 "org/toolbox",
                 "org/toolbox/Axe.class",
                 "org/toolbox/Hammer.class",
                 "org/toolbox/Saw.class",
-                "README.md",
                 "test.jar");
     }
 
     @Test
     public void unfilteredTestJar() {
         var pathTree = PathTree.ofDirectoryOrArchive(testJar);
-        assertThat(getAllPaths(pathTree)).containsExactlyInAnyOrder(
+        assertThat(getAllPaths(pathTree)).containsExactly(
                 "",
                 "META-INF",
                 "META-INF/jandex.idx",
+                "README.md",
                 "org",
                 "org/toolbox",
                 "org/toolbox/Axe.class",
                 "org/toolbox/Hammer.class",
                 "org/toolbox/Saw.class",
-                "README.md",
                 "test.jar");
     }
 
     @Test
     public void dirIncludeToolbox() {
         var pathTree = PathTree.ofDirectoryOrArchive(testDir, PathFilter.forIncludes(List.of("*/toolbox/**")));
-        assertThat(getAllPaths(pathTree)).containsExactlyInAnyOrder(
+        assertThat(getAllPaths(pathTree)).containsExactly(
                 "org/toolbox/Axe.class",
                 "org/toolbox/Hammer.class",
                 "org/toolbox/Saw.class");
@@ -82,7 +83,7 @@ public class FilteredPathTreeTest {
     @Test
     public void jarIncludeToolbox() {
         var pathTree = PathTree.ofDirectoryOrArchive(testJar, PathFilter.forIncludes(List.of("*/toolbox/**")));
-        assertThat(getAllPaths(pathTree)).containsExactlyInAnyOrder(
+        assertThat(getAllPaths(pathTree)).containsExactly(
                 "org/toolbox/Axe.class",
                 "org/toolbox/Hammer.class",
                 "org/toolbox/Saw.class");
@@ -93,7 +94,7 @@ public class FilteredPathTreeTest {
         var pathTree = PathTree.ofDirectoryOrArchive(testDir, new PathFilter(
                 List.of("*/toolbox/**"),
                 List.of("**/Hammer.class")));
-        assertThat(getAllPaths(pathTree)).containsExactlyInAnyOrder(
+        assertThat(getAllPaths(pathTree)).containsExactly(
                 "org/toolbox/Axe.class",
                 "org/toolbox/Saw.class");
     }
@@ -103,7 +104,7 @@ public class FilteredPathTreeTest {
         var pathTree = PathTree.ofDirectoryOrArchive(testJar, new PathFilter(
                 List.of("*/toolbox/**"),
                 List.of("**/Hammer.class")));
-        assertThat(getAllPaths(pathTree)).containsExactlyInAnyOrder(
+        assertThat(getAllPaths(pathTree)).containsExactly(
                 "org/toolbox/Axe.class",
                 "org/toolbox/Saw.class");
     }
@@ -133,7 +134,7 @@ public class FilteredPathTreeTest {
     }
 
     private static void assertFilteredPathTree(PathTree pathTree) {
-        assertThat(getAllPaths(pathTree)).containsExactlyInAnyOrder(
+        assertThat(getAllPaths(pathTree)).containsExactly(
                 "org/toolbox/Axe.class");
 
         assertThat(pathTree.isEmpty()).isFalse();
@@ -145,7 +146,7 @@ public class FilteredPathTreeTest {
     }
 
     private static Set<String> getAllPaths(PathTree pathTree) {
-        final Set<String> paths = new HashSet<>();
+        final Set<String> paths = new LinkedHashSet<>();
         pathTree.walk(visit -> paths.add(visit.getRelativePath("/")));
         return paths;
     }

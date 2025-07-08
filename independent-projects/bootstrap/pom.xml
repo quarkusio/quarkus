@@ -72,7 +72,7 @@
         <smallrye-common.version>2.13.5</smallrye-common.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
         <gradle-tooling.version>8.14</gradle-tooling.version>
-        <quarkus-fs-util.version>1.0.0</quarkus-fs-util.version>
+        <quarkus-fs-util.version>1.1.0</quarkus-fs-util.version>
         <crac.version>1.5.0</crac.version>
     </properties>
     <modules>

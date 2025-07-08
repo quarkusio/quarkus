@@ -73,6 +73,7 @@ public class CORSFilterTest {
         Assertions.assertFalse(isSameOrigin(request, "http://localhost:80"));
         Assertions.assertFalse(isSameOrigin(request, "http://localhost:8443"));
         Assertions.assertTrue(isSameOrigin(request, "https://localhost:8443"));
+        Assertions.assertFalse(isSameOrigin(request, "http://%s"));
 
     }
 

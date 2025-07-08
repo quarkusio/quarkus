@@ -91,6 +91,20 @@ participants:
           maxIssues: 10
       stale:
         maxIssues: 5
+  - username: "beikov"
+    timezone: "Europe/Berlin"
+    maintenance:
+      labels: [ "area/hibernate-orm", "area/jdbc" ]
+      days: [ "WEDNESDAY" ]
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 10
+        provided:
+          maxIssues: 10
+      stale:
+        maxIssues: 5
   - username: "gsmet"
     timezone: "Europe/Paris"
     triage:

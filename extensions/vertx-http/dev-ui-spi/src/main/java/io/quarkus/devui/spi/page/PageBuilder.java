@@ -23,6 +23,7 @@ public abstract class PageBuilder<T> {
     protected String staticLabel = null;
     protected String dynamicLabel = null;
     protected String streamingLabel = null;
+    protected String[] streamingLabelParams = null;
     protected String componentName;
     protected String componentLink;
     protected Map<String, String> metadata = new HashMap<>();
@@ -103,6 +104,13 @@ public abstract class PageBuilder<T> {
     }
 
     @SuppressWarnings("unchecked")
+    public T streamingLabelJsonRPCMethodName(String methodName, String... params) {
+        this.streamingLabel = methodName;
+        this.streamingLabelParams = params;
+        return (T) this;
+    }
+
+    @SuppressWarnings("unchecked")
     public T metadata(String key, String value) {
         this.metadata.put(key, value);
         return (T) this;
@@ -176,6 +184,7 @@ public abstract class PageBuilder<T> {
                 staticLabel,
                 dynamicLabel,
                 streamingLabel,
+                streamingLabelParams,
                 componentName,
                 componentLink,
                 metadata,

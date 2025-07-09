@@ -281,6 +281,11 @@ public class BearerTokenAuthorizationTest {
     }
 
     @Test
+    public void testOidcClientMultipleAudiences() throws IOException {
+        RestAssured.when().get("/oidc-client/multiple-audiences").then().body(equalTo("audience1,audience2"));
+    }
+
+    @Test
     public void testHybridService() {
         RestAssured.given().auth().oauth2(getAccessToken("alice", "hybrid"))
                 .when().get("/tenants/tenant-hybrid/api/user")

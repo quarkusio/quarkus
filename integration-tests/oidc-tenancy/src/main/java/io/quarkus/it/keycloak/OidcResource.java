@@ -5,6 +5,7 @@ import java.security.PublicKey;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.Set;
 
 import jakarta.annotation.PostConstruct;
@@ -272,6 +273,20 @@ public class OidcResource {
     }
 
     @POST
+    @Path("oidc-client-tokens")
+    @Produces("application/json")
+    public String oidcClientToken(@FormParam("grant_type") String grantType, @FormParam("audience") String audiences) {
+        if ("client_credentials".equals(grantType)) {
+            Set<String> audSet = new HashSet<>(Arrays.asList(audiences.split(" ")));
+            return "{\"access_token\": \"" + jwtWithMultipleAudiences(audSet) + "\"," +
+                    "   \"expires_in\": 300 }";
+        } else {
+            // unexpected grant request
+            throw new BadRequestException();
+        }
+    }
+
+    @POST
     @Path("accesstoken-with-acr")
     @Produces("application/json")
     public String testAccessTokenWithAcr(@QueryParam("acr") String acr, @QueryParam("auth_time") String authTime) {
@@ -418,6 +433,11 @@ public class OidcResource {
         }
 
         return builder.jws().keyId(kid)
+                .sign(key.getPrivateKey());
+    }
+
+    private String jwtWithMultipleAudiences(Set<String> audience) {
+        return Jwt.audience(audience)
                 .sign(key.getPrivateKey());
     }
 }

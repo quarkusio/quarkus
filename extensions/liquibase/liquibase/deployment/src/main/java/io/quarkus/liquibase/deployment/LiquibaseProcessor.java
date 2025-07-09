@@ -230,6 +230,11 @@ class LiquibaseProcessor {
                     .constructors().methods().fields().build());
         });
 
+        reflective.produce(ReflectiveClassBuildItem.builder(
+                liquibase.precondition.PreconditionLogic.class.getName())
+                .reason(getClass().getName())
+                .fields().build());
+
         var dependencies = curateOutcome.getApplicationModel().getRuntimeDependencies();
         resource.produce(NativeImageResourceBuildItem.ofDependencyResources(
                 dependencies, LIQUIBASE_ARTIFACT, LIQUIBASE_RESOURCE_FILTER));

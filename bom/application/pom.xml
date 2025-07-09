@@ -91,7 +91,7 @@
         <gizmo.version>1.9.0</gizmo.version>
         <jackson-bom.version>2.19.1</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <commons-lang3.version>3.17.0</commons-lang3.version>
+        <commons-lang3.version>3.18.0</commons-lang3.version>
         <commons-codec.version>1.18.0</commons-codec.version>
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,

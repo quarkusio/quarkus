@@ -11,7 +11,6 @@ import org.jose4j.jwt.consumer.InvalidJwtException;
 
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.SecurityEvent.Type;
-import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.vertx.core.Handler;
@@ -23,7 +22,6 @@ import io.vertx.ext.web.RoutingContext;
 
 public class BackChannelLogoutHandler {
     private static final Logger LOG = Logger.getLogger(BackChannelLogoutHandler.class);
-    private static final String SLASH = "/";
 
     void setup(@Observes Router router, DefaultTenantConfigResolver resolver) {
         final TenantConfigBean tenantConfigBean = resolver.getTenantConfigBean();
@@ -158,18 +156,9 @@ public class BackChannelLogoutHandler {
         private boolean isMatchingTenant(String requestPath, TenantConfigContext tenant) {
             return tenant.oidcConfig().tenantEnabled()
                     && tenant.oidcConfig().tenantId().get().equals(oidcTenantConfig.tenantId().get())
-                    && requestPath.equals(getRootPath() + tenant.oidcConfig().logout().backchannel().path().orElse(null));
+                    && requestPath.equals(OidcUtils.getRootPath(resolver.getRootPath())
+                            + tenant.oidcConfig().logout().backchannel().path().orElse(null));
         }
 
-        private String getRootPath() {
-            // Prepend '/' if it is not present
-            String rootPath = OidcCommonUtils.prependSlash(resolver.getRootPath());
-            // Strip trailing '/' if the length is > 1
-            if (rootPath.length() > 1 && rootPath.endsWith("/")) {
-                rootPath = rootPath.substring(rootPath.length() - 1);
-            }
-            // if it is only '/' then return an empty value
-            return SLASH.equals(rootPath) ? "" : rootPath;
-        }
     }
 }

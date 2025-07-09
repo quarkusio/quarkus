@@ -34,6 +34,15 @@ import io.vertx.core.json.JsonObject;
 public class OidcUtilsTest {
 
     @Test
+    public void getRoorPath() throws Exception {
+
+        assertEquals("", OidcUtils.getRootPath("/"));
+        assertEquals("/root", OidcUtils.getRootPath("/root"));
+        assertEquals("/root", OidcUtils.getRootPath("root"));
+        assertEquals("/root", OidcUtils.getRootPath("/root/"));
+    }
+
+    @Test
     public void testDpopScheme() throws Exception {
 
         assertTrue(OidcUtils.isDPoPScheme("DPoP"));

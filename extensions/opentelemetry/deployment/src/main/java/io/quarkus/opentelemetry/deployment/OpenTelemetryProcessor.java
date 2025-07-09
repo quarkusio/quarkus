@@ -67,7 +67,7 @@ import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.opentelemetry.OpenTelemetryDestroyer;
-import io.quarkus.opentelemetry.deployment.metric.MetricProcessor;
+import io.quarkus.opentelemetry.deployment.metric.MetricsEnabled;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 import io.quarkus.opentelemetry.runtime.DelayedAttributes;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryRecorder;
@@ -96,7 +96,7 @@ public class OpenTelemetryProcessor {
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
 
-    @BuildStep(onlyIfNot = MetricProcessor.MetricEnabled.class)
+    @BuildStep(onlyIfNot = MetricsEnabled.class)
     void registerForReflection(BuildProducer<ReflectiveMethodBuildItem> reflectiveItem) {
         if (isClassPresentAtRuntime(
                 "io.opentelemetry.exporter.logging.LoggingMetricExporter")) {

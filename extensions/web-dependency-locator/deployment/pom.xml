@@ -67,6 +67,12 @@
             <artifactId>dc.js</artifactId>
             <version>3.0.6</version>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.mvnpm</groupId>

@@ -64,6 +64,7 @@ public class MultipartInputWithAllUploadsTest extends AbstractMultipartTest {
         RestAssured.given()
                 .multiPart("name", "Alice")
                 .multiPart("active", "true")
+                .multiPart("stringWithFilename", "a-string", "application/xfdf")
                 .multiPart("num", "25")
                 .multiPart("status", "WORKING")
                 .multiPart("htmlFile", HTML_FILE, "text/html")
@@ -74,7 +75,7 @@ public class MultipartInputWithAllUploadsTest extends AbstractMultipartTest {
                 .post("/multipart-all/simple/2")
                 .then()
                 .statusCode(200)
-                .body(equalTo("Alice - true - 50 - WORKING - 3 - text/plain"));
+                .body(equalTo("Alice - true - 50 - WORKING - 4 - text/plain"));
 
         // ensure that the 3 uploaded files where created on disk
         Assertions.assertEquals(3, uploadDir.toFile().listFiles().length);

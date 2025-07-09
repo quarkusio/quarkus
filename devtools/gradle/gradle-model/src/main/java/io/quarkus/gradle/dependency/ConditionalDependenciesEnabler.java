@@ -180,9 +180,10 @@ public class ConditionalDependenciesEnabler {
         // (https://github.com/quarkusio/quarkus/issues/41825) and ./gradlew refreshVersions seems to break as well.
         Configuration conditionalDepConfiguration = project.getConfigurations().detachedConfiguration();
         enforcedPlatforms.getExcludeRules().forEach(rule -> {
-            conditionalDepConfiguration.exclude(Map.of(
-                    "group", rule.getGroup(),
-                    "module", rule.getModule()));
+            Map<String, String> excludeProperties = new HashMap<>();
+            excludeProperties.put("group", rule.getGroup());
+            excludeProperties.put("module", rule.getModule());
+            conditionalDepConfiguration.exclude(excludeProperties);
         });
         enforcedPlatforms.getAllDependencies().forEach(dependency -> {
             conditionalDepConfiguration.getDependencies().add(dependency);

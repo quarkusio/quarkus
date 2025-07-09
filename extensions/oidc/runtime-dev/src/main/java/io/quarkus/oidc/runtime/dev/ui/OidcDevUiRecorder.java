@@ -36,7 +36,7 @@ public class OidcDevUiRecorder {
             Map<String, String> oidcUsers, String oidcProviderName, String oidcApplicationType, String oidcGrantType,
             boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms, boolean swaggerIsAvailable,
             boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload,
-            boolean discoverMetadata, String authServerUrl) {
+            boolean discoverMetadata, String authServerUrl, String devUiLogoutPath, String devUiReadSessionCookiePath) {
         if (discoverMetadata) {
             JsonObject metadata = discoverMetadata(authServerUrl);
             if (metadata != null) {
@@ -51,7 +51,8 @@ public class OidcDevUiRecorder {
                 new OidcDevUiRpcSvcPropertiesBean(authorizationUrl, tokenUrl, logoutUrl,
                         webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
                         introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
-                        graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload));
+                        graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload,
+                        devUiLogoutPath, devUiReadSessionCookiePath));
     }
 
     public Handler<RoutingContext> readSessionCookieHandler() {

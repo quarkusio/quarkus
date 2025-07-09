@@ -76,6 +76,10 @@ public abstract class AbstractDevUIProcessor {
             graphqlUiPath = null;
         }
 
+        final String devUiLogoutPath = nonApplicationRootPathBuildItem.resolvePath("io.quarkus.quarkus-oidc/logout");
+        final String devUiReadSessionCookiePath = nonApplicationRootPathBuildItem
+                .resolvePath("io.quarkus.quarkus-oidc/readSessionCookie");
+
         cardPage.addBuildTimeData("devRoot", nonApplicationRootPathBuildItem.getNonApplicationRootPath());
 
         RuntimeValue<OidcDevUiRpcSvcPropertiesBean> runtimeProperties = recorder.getRpcServiceProperties(
@@ -83,7 +87,7 @@ public abstract class AbstractDevUIProcessor {
                 keycloakUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
                 introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
                 graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload, discoverMetadata,
-                authServerUrl);
+                authServerUrl, devUiLogoutPath, devUiReadSessionCookiePath);
 
         recorder.createJsonRPCService(beanContainer.getValue(), runtimeProperties, httpConfig);
 

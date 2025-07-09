@@ -19,6 +19,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.PackageConfig;
+import io.quarkus.deployment.pkg.steps.JarResultBuildStep;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.QuarkusPlugin;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -144,7 +145,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         }
 
         ApplicationModel appModel = resolveAppModelForBuild();
-        SmallRyeConfig config = getExtensionView()
+        SmallRyeConfig config = effectiveProvider()
                 .buildEffectiveConfiguration(appModel, new HashMap<>())
                 .getConfig();
 
@@ -184,7 +185,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
                     ResolvedDependency dep = depAndTarget.getValue();
                     Path targetDir = depAndTarget.getKey();
                     dep.getResolvedPaths().forEach(p -> {
-                        String file = dep.getGroupId() + '.' + p.getFileName();
+                        String file = JarResultBuildStep.getJarFileName(dep, p);
                         Path target = targetDir.resolve(file);
                         if (!Files.exists(target)) {
                             getLogger().debug("Dependency {} : copying {} to {}",

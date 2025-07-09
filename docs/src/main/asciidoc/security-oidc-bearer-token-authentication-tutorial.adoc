@@ -217,7 +217,7 @@ For more information, see the <<bearer-token-tutorial-keycloak-dev-mode>> sectio
 docker run --name keycloak -e KC_BOOTSTRAP_ADMIN_USERNAME=admin -e KC_BOOTSTRAP_ADMIN_PASSWORD=admin -p 8180:8080 quay.io/keycloak/keycloak:{keycloak.version} start-dev
 ----
 ====
-* Where the `keycloak.version` is set to version `26.2.4` or later.
+* Where the `keycloak.version` is set to version `26.3.0` or later.
 . You can access your Keycloak server at http://localhost:8180[localhost:8180].
 . To access the Keycloak Administration console, log in as the `admin` user by using the following login credentials:
 

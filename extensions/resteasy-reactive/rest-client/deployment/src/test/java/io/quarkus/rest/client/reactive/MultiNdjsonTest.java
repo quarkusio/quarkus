@@ -5,14 +5,16 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -34,7 +36,6 @@ import io.quarkus.vertx.web.Route;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
-import wiremock.org.apache.hc.client5.http.utils.Base64;
 
 public class MultiNdjsonTest {
     @RegisterExtension
@@ -111,6 +112,34 @@ public class MultiNdjsonTest {
     }
 
     @Test
+    void shouldReadNdjsonFromSingleMessageWithNoDelimiter() throws InterruptedException {
+        var client = createClient(uri);
+        var collected = new CopyOnWriteArrayList<Message>();
+        var completionLatch = new CountDownLatch(1);
+        client.readSingleMessageNoDelimiter().onCompletion().invoke(completionLatch::countDown)
+                .subscribe().with(collected::add);
+
+        if (!completionLatch.await(5, TimeUnit.SECONDS)) {
+            fail("Streaming did not complete in time");
+        }
+        assertThat(collected).singleElement().satisfies(m -> assertThat(m).isEqualTo(Message.of("foo", "bar")));
+    }
+
+    @Test
+    void shouldReadNdjsonFromMultipleMessagesWithNoEndingDelimiter() throws InterruptedException {
+        var client = createClient(uri);
+        var collected = new CopyOnWriteArrayList<Message>();
+        var completionLatch = new CountDownLatch(1);
+        client.readMultipleMessagesNoEndingDelimiter().onCompletion().invoke(completionLatch::countDown)
+                .subscribe().with(collected::add);
+
+        if (!completionLatch.await(5, TimeUnit.SECONDS)) {
+            fail("Streaming did not complete in time");
+        }
+        assertThat(collected).hasSize(100);
+    }
+
+    @Test
     void shouldReadLargeNdjsonPojoAsMulti() throws InterruptedException {
         var client = createClient(uri);
         var collected = new CopyOnWriteArrayList<Message>();
@@ -152,6 +181,18 @@ public class MultiNdjsonTest {
         Multi<Message> readPojoSingle();
 
         @GET
+        @Path("/single-message-no-delimiter")
+        @Produces(RestMediaType.APPLICATION_NDJSON)
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        Multi<Message> readSingleMessageNoDelimiter();
+
+        @GET
+        @Path("multiple-messages-no-ending-delimiter")
+        @Produces(RestMediaType.APPLICATION_NDJSON)
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        Multi<Message> readMultipleMessagesNoEndingDelimiter();
+
+        @GET
         @Path("/large-pojo")
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
@@ -172,8 +213,14 @@ public class MultiNdjsonTest {
 
     @Path("/stream")
     public static class StreamingResource {
-        @Inject
-        Vertx vertx;
+        private final ObjectMapper mapper = new ObjectMapper();
+        private final ObjectWriter messageWriter = mapper.writerFor(Message.class);
+
+        private final Vertx vertx;
+
+        public StreamingResource(Vertx vertx) {
+            this.vertx = vertx;
+        }
 
         @GET
         @Path("/string")
@@ -212,17 +259,39 @@ public class MultiNdjsonTest {
         @Produces(RestMediaType.APPLICATION_NDJSON)
         @RestStreamElementType(MediaType.APPLICATION_JSON)
         public String getPojosAsString() throws JsonProcessingException {
-            ObjectMapper mapper = new ObjectMapper();
             StringBuilder result = new StringBuilder();
-            ObjectWriter objectWriter = mapper.writerFor(Message.class);
             for (var msg : List.of(Message.of("zero", "0"),
                     Message.of("one", "1"),
                     Message.of("two", "2"),
                     Message.of("three", "3"))) {
-                result.append(objectWriter.writeValueAsString(msg));
+                result.append(messageWriter.writeValueAsString(msg));
                 result.append("\n");
             }
             return result.toString();
+        }
+
+        @GET
+        @Path("/single-message-no-delimiter")
+        @Produces(RestMediaType.APPLICATION_NDJSON)
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        public String singleMessageNoDelimiter() throws JsonProcessingException {
+            return messageWriter.writeValueAsString(Message.of("foo", "bar"));
+        }
+
+        @GET
+        @Path("/multiple-messages-no-ending-delimiter")
+        @Produces(RestMediaType.APPLICATION_NDJSON)
+        @RestStreamElementType(MediaType.APPLICATION_JSON)
+        public String multipleMessagesNoEndingDelimiter() throws JsonProcessingException {
+            return IntStream.range(0, 100)
+                    .mapToObj(i -> Message.of("foo", "bar"))
+                    .map(m -> {
+                        try {
+                            return messageWriter.writeValueAsString(m);
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }).collect(Collectors.joining("\n"));
         }
 
         @GET
@@ -235,7 +304,7 @@ public class MultiNdjsonTest {
                         byte[] bytes = new byte[4 * 1024];
                         Random random = new Random();
                         random.nextBytes(bytes);
-                        String value = Base64.encodeBase64String(bytes);
+                        String value = Base64.getEncoder().encodeToString(bytes);
                         em.emit(Message.of("one", value));
                         em.emit(Message.of("two", value));
                         em.emit(Message.of("three", value));

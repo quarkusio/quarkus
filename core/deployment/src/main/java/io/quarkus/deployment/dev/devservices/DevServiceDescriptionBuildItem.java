@@ -14,7 +14,12 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     private final Supplier<Map<String, String>> lazyConfigs;
 
     public DevServiceDescriptionBuildItem(String name, Map<String, String> configs) {
-        this(name, null, null, configs);
+        this(name, null, (Supplier<ContainerInfo>) null, configs);
+    }
+
+    public DevServiceDescriptionBuildItem(String name, String description, ContainerInfo containerInfo,
+            Map<String, String> configs) {
+        this(name, description, () -> containerInfo, configs);
     }
 
     public DevServiceDescriptionBuildItem(String name, Supplier<ContainerInfo> lazyContainerInfo,
@@ -23,7 +28,7 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     }
 
     public DevServiceDescriptionBuildItem(String name, String description, Map<String, String> config) {
-        this(name, description, null, config);
+        this(name, description, (Supplier<ContainerInfo>) null, config);
     }
 
     public DevServiceDescriptionBuildItem(String name, String description, Supplier<ContainerInfo> lazyContainerInfo,

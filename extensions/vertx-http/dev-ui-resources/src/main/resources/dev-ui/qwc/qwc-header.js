@@ -312,19 +312,21 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
         let relativePath = link.page.id.replace(link.page.namespace + "/", ""); 
 
         return html`<qwc-extension-link
+            streamingLabelParams="${link.page.streamingLabelParams}"
+            webcomponentTagName="${link.page.componentName}"
             namespace="${link.page.namespace}"
             extensionName="${link.page.extensionId}"
             iconName="${link.page.icon}"
             tooltipContent="${link.page.tooltip}"
             colorName="${link.page.color}"
             displayName="${link.page.title}"
-            staticLabel="${link.page.staticLabel}"
-            dynamicLabel="${link.page.dynamicLabel}"
-            streamingLabel="${link.page.streamingLabel}"
             path="${relativePath}"
             ?embed=${link.page.embed}
             externalUrl="${link.page.metadata.externalUrl}"
-            webcomponent="${link.page.componentLink}" >
+            webcomponent="${link.page.componentLink}"
+            staticLabel="${link.page.staticLabel}"
+            dynamicLabel="${link.page.dynamicLabel}"
+            streamingLabel="${link.page.streamingLabel}">
         </qwc-extension-link>`;
     }
 

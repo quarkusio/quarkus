@@ -40,7 +40,7 @@ public class SmallRyeHealthDevUiProcessor {
                 .icon("font-awesome-solid:stethoscope")
                 .componentLink("qwc-smallrye-health-ui.js")
                 .dynamicLabelJsonRPCMethodName("getStatus")
-                .streamingLabelJsonRPCMethodName("streamStatus"));
+                .streamingLabelJsonRPCMethodName("streamStatus", "interval"));
 
         pageBuildItem.addPage(Page.externalPageBuilder("Raw")
                 .icon("font-awesome-solid:heart-circle-bolt")

@@ -357,20 +357,22 @@ export class QwcExtensions extends observeState(LitElement) {
     _renderCardLink(extension, page){
         if(!page.assistantPage || assistantState.current.isConfigured){
             return html`<qwc-extension-link slot="link"
+                                streamingLabelParams="${page.streamingLabelParams}"
+                                webcomponentTagName="${page.componentName}"
                                 namespace="${extension.namespace}"
                                 extensionName="${extension.name}"
                                 iconName="${page.icon}"
                                 tooltipContent="${page.tooltip}"
                                 colorName="${page.color}"
                                 displayName="${page.title}"
-                                staticLabel="${page.staticLabel}"
-                                dynamicLabel="${page.dynamicLabel}"
-                                streamingLabel="${page.streamingLabel}"
                                 path="${page.id}"
                                 ?embed=${page.embed}
                                 externalUrl="${page.metadata.externalUrl}"
                                 dynamicUrlMethodName="${page.metadata.dynamicUrlMethodName}"
-                                webcomponent="${page.componentLink}" 
+                                webcomponent="${page.componentLink}"
+                                staticLabel="${page.staticLabel}" 
+                                dynamicLabel="${page.dynamicLabel}"
+                                streamingLabel="${page.streamingLabel}"
                                 draggable="true" @dragstart="${this._handleDragStart}">
                             </qwc-extension-link>
                         `;

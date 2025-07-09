@@ -111,6 +111,12 @@ class LiquibaseMongodbProcessor {
         reflective.produce(ReflectiveClassBuildItem.builder(
                 liquibase.change.AbstractSQLChange.class.getName(),
                 liquibase.ext.mongodb.change.AbstractMongoChange.class.getName(),
+                liquibase.ext.mongodb.change.CreateCollectionChange.class.getName(),
+                liquibase.ext.mongodb.change.CreateIndexChange.class.getName(),
+                liquibase.ext.mongodb.change.DropCollectionChange.class.getName(),
+                liquibase.ext.mongodb.change.DropIndexChange.class.getName(),
+                liquibase.ext.mongodb.change.InsertManyChange.class.getName(),
+                liquibase.ext.mongodb.change.InsertOneChange.class.getName(),
                 liquibase.database.jvm.JdbcConnection.class.getName())
                 .methods().build());
 

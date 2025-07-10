@@ -1,9 +1,11 @@
 package io.quarkus.annotation.processor.util;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UncheckedIOException;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.tools.Diagnostic;
@@ -56,10 +59,29 @@ public class FilerUtil {
         }
     }
 
+    public Set<String> readSet(String filePath) {
+        Set<String> output = new TreeSet<>();
+        try {
+            final FileObject listResource = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "",
+                    filePath);
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(listResource.openInputStream(), StandardCharsets.UTF_8))) {
+                while (reader.ready()) {
+                    output.add(reader.readLine());
+                }
+            }
+            return output;
+        } catch (IOException e) {
+            processingEnv.getMessager().printMessage(Kind.WARNING, "Failed to read " + filePath + ": " + e);
+            return Set.of();
+        }
+    }
+
     /**
      * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
      */
-    public void write(String filePath, Set<String> set) {
+    public void writeSet(String filePath, Set<String> set) {
         if (set.isEmpty()) {
             return;
         }
@@ -84,7 +106,7 @@ public class FilerUtil {
     /**
      * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
      */
-    public void write(String filePath, Properties properties) {
+    public void writeProperties(String filePath, Properties properties) {
         if (properties.isEmpty()) {
             return;
         }

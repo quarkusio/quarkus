@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client</artifactId>
+    <name>Quarkus - Relocations - quarkus-rest-client</name>
 
     <distributionManagement>
         <relocation>

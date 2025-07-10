@@ -155,21 +155,6 @@ participants:
           maxIssues: 2
       stale:
         maxIssues: 5
-  - username: "maxandersen"
-    timezone: "Europe/Paris"
-    triage:
-      days: ["WEDNESDAY", "FRIDAY"]
-      maxIssues: 3
-    maintenance:
-      labels: ["area/build", "area/cli", "area/devmode", "area/dev-ui", "area/gradle", "area/jbang", "area/devtools"]
-      days: ["WEDNESDAY", "FRIDAY"]
-      feedback:
-        needed:
-          maxIssues: 4
-        provided:
-          maxIssues: 2
-      stale:
-        maxIssues: 5
   - username: "geoand"
     timezone: "Europe/Athens"
     triage:

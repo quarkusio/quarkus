@@ -200,10 +200,8 @@ public class WebSocketServerRecorder {
         if (currentIdentityAssociation.isResolvable()) {
             // Security extension is present
             // Obtain the current security identity from the handshake request
-            QuarkusHttpUser user = (QuarkusHttpUser) ctx.user();
-            if (user != null) {
-                return connection -> new SecuritySupport(currentIdentityAssociation, user.getSecurityIdentity(), connection,
-                        ctx);
+            if (ctx.user() instanceof QuarkusHttpUser user) {
+                return connection -> new SecuritySupport(user.getSecurityIdentity(), connection, ctx);
             }
         }
         return ignored -> SecuritySupport.NOOP;

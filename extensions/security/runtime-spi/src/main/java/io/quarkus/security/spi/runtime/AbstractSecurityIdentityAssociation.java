@@ -15,6 +15,13 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
     private volatile SecurityIdentity identity;
     private volatile Uni<SecurityIdentity> deferredIdentity;
 
+    public AbstractSecurityIdentityAssociation() {
+    }
+
+    public AbstractSecurityIdentityAssociation(IdentityProviderManager identityProviderManager) {
+        this.identityProviderManager = identityProviderManager;
+    }
+
     @Inject
     IdentityProviderManager identityProviderManager;
 

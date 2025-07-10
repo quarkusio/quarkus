@@ -10,7 +10,6 @@ import java.io.File;
 import java.net.URL;
 import java.util.Set;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -53,7 +52,6 @@ public class FluentApiAuthenticationMechanismSelectionTest {
                     CustomSchemeAuthenticationMechanism.class, AbstractCustomAuthenticationMechanism.class)
             .addAsResource(new StringAsset("""
                     quarkus.http.auth.form.enabled=true
-                    quarkus.http.auth.basic=true
                     quarkus.http.ssl.client-auth=request
                     quarkus.http.ssl.certificate.key-store-file=server-keystore.p12
                     quarkus.http.ssl.certificate.key-store-password=secret
@@ -152,11 +150,6 @@ public class FluentApiAuthenticationMechanismSelectionTest {
     }
 
     @Test
-    public void testCustomAuthenticationMechanismInstance() {
-        basicAuthTest("/custom-instance/admin", "admin:/custom-instance/admin");
-    }
-
-    @Test
     public void testMutualTlsMechanism() {
         RestAssured.given()
                 .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
@@ -227,14 +220,16 @@ public class FluentApiAuthenticationMechanismSelectionTest {
 
         void configure(@Observes HttpSecurity httpSecurity) {
             httpSecurity
+                    .mechanism(new CustomSchemeAuthenticationMechanism())
+                    .basic()
                     .get("/form/admin").form().authorization()
                     .policy(identity -> "admin".equals(identity.getPrincipal().getName()))
                     .put("/form/admin").basic().authorization()
                     .policy(identity -> "admin".equals(identity.getPrincipal().getName()))
                     .path("/basic/admin").methods("GET").basic().authorization().permissions("openid", "email", "profile")
                     .path("/custom-scheme/admin").authenticatedWith("custom-scheme").policy(new CustomHttpSecurityPolicy())
-                    .path("/custom-instance/admin").authenticatedWith(new AbstractCustomAuthenticationMechanism() {
-                    }).authorization().policy((identity, event) -> identity.hasRole("admin")
+                    .path("/custom-instance/admin").authenticatedWith("custom-scheme").authorization()
+                    .policy((identity, event) -> identity.hasRole("admin")
                             && event.normalizedPath().endsWith("/custom-instance/admin"))
                     .path("/mtls").mTLS();
         }
@@ -254,7 +249,6 @@ public class FluentApiAuthenticationMechanismSelectionTest {
         }
     }
 
-    @ApplicationScoped
     public static class CustomSchemeAuthenticationMechanism extends AbstractCustomAuthenticationMechanism {
         @Override
         public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
@@ -264,7 +258,7 @@ public class FluentApiAuthenticationMechanismSelectionTest {
     }
 
     public static abstract class AbstractCustomAuthenticationMechanism implements HttpAuthenticationMechanism {
-        private final HttpAuthenticationMechanism delegate = new BasicAuthenticationMechanism(null);
+        private final HttpAuthenticationMechanism delegate = new BasicAuthenticationMechanism(null, false);
 
         @Override
         public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {

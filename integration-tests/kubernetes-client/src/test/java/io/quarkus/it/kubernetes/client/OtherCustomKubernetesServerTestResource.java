@@ -4,15 +4,17 @@ import java.util.Base64;
 
 import io.fabric8.kubernetes.api.model.ConfigMapBuilder;
 import io.fabric8.kubernetes.api.model.SecretBuilder;
-import io.fabric8.kubernetes.client.server.mock.KubernetesMockServer;
-import io.quarkus.test.kubernetes.client.KubernetesMockServerTestResource;
+import io.quarkus.test.kubernetes.client.KubernetesServerTestResource;
 
-public class CustomKubernetesMockServerTestResource extends KubernetesMockServerTestResource {
+/**
+ * This is similar to the OtherCustomKubernetesServerTestResource but has different data.
+ */
+public class OtherCustomKubernetesServerTestResource extends KubernetesServerTestResource {
 
     // setup the ConfigMap objects that the application expects to lookup configuration from
     @Override
-    public void configureMockServer(KubernetesMockServer mockServer) {
-        mockServer.expect().get().withPath("/api/v1/namespaces/test/configmaps/cmap1")
+    public void configureServer() {
+        server.expect().get().withPath("/api/v1/namespaces/test/configmaps/cmap1")
                 .andReturn(200, configMapBuilder("cmap1")
                         .addToData("dummy", "dummy")
                         .addToData("overridden.secret", "cm") // will be overridden since secrets have a higher priority
@@ -24,12 +26,12 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
                         .addToData("application.yaml", "some:\n  prop4: val4").build())
                 .once();
 
-        mockServer.expect().get().withPath("/api/v1/namespaces/test/configmaps/cmap2")
+        server.expect().get().withPath("/api/v1/namespaces/test/configmaps/cmap2")
                 .andReturn(200, configMapBuilder("cmap2")
                         .addToData("application.yaml", "some:\n  prop4: val4").build())
                 .once();
 
-        mockServer.expect().get().withPath("/api/v1/namespaces/demo/configmaps/cmap3")
+        server.expect().get().withPath("/api/v1/namespaces/demo/configmaps/cmap3")
                 .andReturn(200, configMapBuilder("cmap3")
                         .addToData("dummy", "dummyFromDemo")
                         .addToData("some.prop1", "val1FromDemo")
@@ -39,7 +41,7 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
                         .addToData("application.yaml", "some:\n  prop4: val4FromDemo").build())
                 .once();
 
-        mockServer.expect().get().withPath("/api/v1/namespaces/test/secrets/s1")
+        server.expect().get().withPath("/api/v1/namespaces/test/secrets/s1")
                 .andReturn(200, secretBuilder("s1")
                         .addToData("dummysecret", encodeValue("dummysecret"))
                         .addToData("overridden.secret", encodeValue("secret"))
@@ -49,7 +51,7 @@ public class CustomKubernetesMockServerTestResource extends KubernetesMockServer
                         .addToData("application.yaml", encodeValue("secret:\n  prop4: val4")).build())
                 .once();
 
-        mockServer.expect().get().withPath("/api/v1/namespaces/demo/secrets/s1")
+        server.expect().get().withPath("/api/v1/namespaces/demo/secrets/s1")
                 .andReturn(200, secretBuilder("s1")
                         .addToData("dummysecret", encodeValue("dummysecretFromDemo"))
                         .addToData("overridden.secret", encodeValue("secretFromDemo"))

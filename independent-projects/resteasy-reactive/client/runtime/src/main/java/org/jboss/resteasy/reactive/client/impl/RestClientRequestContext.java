@@ -541,6 +541,14 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         return InputStream.class.equals(rawType);
     }
 
+    public boolean isJakartaResponseDownload() {
+        if (responseType == null) {
+            return false;
+        }
+        Class<?> rawType = responseType.getRawType();
+        return Response.class.equals(rawType);
+    }
+
     public String getTmpFilePath() {
         return (String) getProperties().get(TMP_FILE_PATH_KEY);
     }

@@ -343,11 +343,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                         }
                                     });
 
-                        } else if (requestContext.isInputStreamDownload()) {
+                        } else if (requestContext.isInputStreamDownload() || requestContext.isJakartaResponseDownload()) {
                             if (loggingScope != LoggingScope.NONE) {
                                 clientLogger.logResponse(clientResponse, false);
                             }
-                            //TODO: make timeout configureable
+                            //TODO: make timeout configurable
                             requestContext
                                     .setResponseEntityStream(
                                             new VertxClientInputStream(clientResponse, 100000));

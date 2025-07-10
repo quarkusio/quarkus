@@ -16,7 +16,7 @@ import org.gradle.workers.WorkQueue;
 import org.gradle.workers.WorkerExecutor;
 
 import io.quarkus.gradle.extension.QuarkusPluginExtension;
-import io.quarkus.utilities.OS;
+import io.smallrye.common.os.OS;
 
 public abstract class QuarkusTask extends DefaultTask {
     private static final List<String> WORKER_BUILD_FORK_OPTIONS = List.of("quarkus.", "platform.quarkus.");
@@ -82,7 +82,7 @@ public abstract class QuarkusTask extends DefaultTask {
         // Pass all environment variables
         forkOptions.environment(System.getenv());
 
-        if (OS.determineOS() == OS.WINDOWS) {
+        if (OS.current() == OS.WINDOWS) {
             // On Windows, gRPC code generation is sometimes(?) unable to find "java.exe". Feels (not proven) that
             // the grpc code generation tool looks up "java.exe" instead of consulting the 'JAVA_HOME' environment.
             // Might be, that Gradle's process isolation "loses" some information down to the worker process, so add

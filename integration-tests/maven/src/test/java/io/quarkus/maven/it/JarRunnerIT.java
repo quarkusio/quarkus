@@ -48,7 +48,7 @@ import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 @DisableForNative
 public class JarRunnerIT extends MojoTestBase {
@@ -533,7 +533,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         //now reaugment
         List<String> commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
+        commands.add(ProcessUtil.pathOfJava().toString());
         commands.add("-Dquarkus.http.root-path=/moved");
         commands.add("-Dquarkus.launch.rebuild=true");
         commands.add("-jar");
@@ -572,7 +572,7 @@ public class JarRunnerIT extends MojoTestBase {
 
         //now reaugment
         commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
+        commands.add(ProcessUtil.pathOfJava().toString());
         commands.add("-Dquarkus.http.root-path=/anothermove");
         commands.add("-Dquarkus.launch.rebuild=true");
         commands.add("-jar");
@@ -702,7 +702,7 @@ public class JarRunnerIT extends MojoTestBase {
     static ProcessBuilder doLaunch(final File workingDir, final Path jar, File output, Collection<String> vmArgs)
             throws IOException {
         List<String> commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
+        commands.add(ProcessUtil.pathOfJava().toString());
         commands.addAll(vmArgs);
         commands.add("-jar");
         commands.add(jar.toString());

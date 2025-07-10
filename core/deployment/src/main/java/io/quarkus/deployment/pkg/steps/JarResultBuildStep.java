@@ -88,7 +88,8 @@ import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 /**
  * This build step builds both the thin jars and uber jars.
@@ -1631,36 +1632,26 @@ public class JarResultBuildStep {
 
             @Override
             public boolean decompile(Path jarToDecompile) {
-                int exitCode;
+                String jarFileName = jarToDecompile.getFileName().toString();
+                int dotIndex = jarFileName.indexOf('.');
+                String outputDirectory = jarFileName.substring(0, dotIndex);
+                var pb = ProcessBuilder.newBuilder(ProcessUtil.pathOfJava())
+                        .arguments(
+                                "-jar",
+                                decompilerJar.toAbsolutePath().toString(),
+                                "-rsy=0", // synthetic methods
+                                "-rbr=0", // bridge methods
+                                jarToDecompile.toAbsolutePath().toString(),
+                                context.decompiledOutputDir.resolve(outputDirectory).toAbsolutePath().toString());
+                if (log.isDebugEnabled()) {
+                    pb.output().consumeLinesWith(8192, log::debug);
+                }
                 try {
-                    int dotIndex = jarToDecompile.getFileName().toString().indexOf('.');
-                    String fileName = jarToDecompile.getFileName().toString().substring(0, dotIndex);
-                    ProcessBuilder processBuilder = new ProcessBuilder(
-                            Arrays.asList(
-                                    JavaBinFinder.findBin(),
-                                    "-jar",
-                                    decompilerJar.toAbsolutePath().toString(),
-                                    "-rsy=0", // synthetic methods
-                                    "-rbr=0", // bridge methods
-                                    jarToDecompile.toAbsolutePath().toString(),
-                                    context.decompiledOutputDir.resolve(fileName).toAbsolutePath().toString()));
-                    if (log.isDebugEnabled()) {
-                        processBuilder.inheritIO();
-                    } else {
-                        processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD.file())
-                                .redirectOutput(ProcessBuilder.Redirect.DISCARD.file());
-                    }
-                    exitCode = processBuilder.start().waitFor();
+                    pb.run();
                 } catch (Exception e) {
-                    log.error("Failed to launch decompiler.", e);
+                    log.error("Decompilation failed", e);
                     return false;
                 }
-
-                if (exitCode != 0) {
-                    log.errorf("Vineflower decompiler exited with error code: %d.", exitCode);
-                    return false;
-                }
-
                 return true;
             }
         }

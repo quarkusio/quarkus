@@ -11,7 +11,10 @@ import org.jboss.logging.Logger;
 
 /**
  * Utility for {@link Process} related operations
+ *
+ * @deprecated Use the {@code smallrye-common-process} API instead.
  */
+@Deprecated(forRemoval = true)
 public class ProcessUtil {
 
     private static final Logger logger = Logger.getLogger(ProcessUtil.class);

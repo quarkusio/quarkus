@@ -32,7 +32,8 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class JvmStartupOptimizerArchiveBuildStep {
 
@@ -72,7 +73,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         String javaBinPath = null;
         if (containerImage == null) {
             javaBinPath = System.getProperty("java.home") + File.separator + "bin" + File.separator
-                    + JavaBinFinder.simpleBinaryName();
+                    + ProcessUtil.nameOfJava();
             if (!new File(javaBinPath).canExecute()) {
                 log.warnf(
                         "In order to create AppCDS the JDK used to build the Quarkus application must contain an executable named '%s' in its 'bin' directory.",
@@ -322,26 +323,18 @@ public class JvmStartupOptimizerArchiveBuildStep {
             log.debugf("Launching command: '%s'", String.join(" ", command));
         }
 
-        int exitCode;
         try {
-            ProcessBuilder processBuilder = new ProcessBuilder(command)
-                    .directory(workingDirectory.toFile());
+            var pb = ProcessBuilder.newBuilder(command.get(0))
+                    .arguments(command.subList(1, command.size()))
+                    .directory(workingDirectory);
             if (log.isDebugEnabled()) {
-                processBuilder.inheritIO();
-            } else {
-                processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD).redirectOutput(ProcessBuilder.Redirect.DISCARD);
+                pb.output().consumeLinesWith(8192, log::debug)
+                        .error().consumeLinesWith(8192, log::debug);
             }
-            exitCode = processBuilder.start().waitFor();
+            pb.run();
         } catch (Exception e) {
-            log.debug("Failed to launch process used to create archive.", e);
-            return null;
+            log.debug("Failed to launch process used to create archive", e);
         }
-
-        if (exitCode != 0) {
-            log.debugf("The process that was supposed to create an archive exited with error code: %d.", exitCode);
-            return null;
-        }
-
         if (!archivePath.toFile().exists()) { // shouldn't happen, but let's avoid any surprises
             return null;
         }

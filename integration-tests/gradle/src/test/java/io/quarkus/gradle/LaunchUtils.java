@@ -10,7 +10,7 @@ import java.util.concurrent.Callable;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class LaunchUtils {
     private static final Logger log = Logger.getLogger(LaunchUtils.class);
@@ -21,7 +21,7 @@ public class LaunchUtils {
 
     protected static Process launch(Path jar, File output, Map<String, String> env) throws IOException {
         List<String> commands = new ArrayList<>();
-        commands.add(JavaBinFinder.findBin());
+        commands.add(ProcessUtil.pathOfJava().toString());
         commands.add("-jar");
         commands.add(jar.toString());
         ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));

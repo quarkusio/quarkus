@@ -23,7 +23,6 @@ import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
-import io.quarkus.deployment.util.ExecUtil;
 import io.quarkus.kubernetes.client.spi.KubernetesClientCapabilityBuildItem;
 import io.quarkus.kubernetes.deployment.AddPortToKubernetesConfig;
 import io.quarkus.kubernetes.deployment.DevClusterHelper;
@@ -54,6 +53,8 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
+import io.smallrye.common.process.AbnormalExitException;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class KindProcessor {
 
@@ -151,7 +152,10 @@ public class KindProcessor {
         //We used to only perform the action below when using known builders that play nicely with kind (e.g. docker)
         //However, this excluded users that are just using external tools for building including the cli (e.g. quarkus image build docker).
         //So, we now always perform this step
-        ExecUtil.exec("kind", "load", "docker-image", image.getImage());
+        try {
+            ProcessBuilder.exec("kind", "load", "docker-image", image.getImage());
+        } catch (AbnormalExitException ignored) {
+        }
     }
 
     @BuildStep

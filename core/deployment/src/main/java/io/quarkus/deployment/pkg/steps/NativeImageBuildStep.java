@@ -58,6 +58,9 @@ import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
 import io.smallrye.common.os.OS;
+import io.smallrye.common.process.AbnormalExitException;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class NativeImageBuildStep {
 
@@ -73,11 +76,6 @@ public class NativeImageBuildStep {
      * Name of the <em>environment</em> variable to retrieve JAVA_HOME
      */
     private static final String JAVA_HOME_ENV = "JAVA_HOME";
-
-    /**
-     * The name of the environment variable containing the system path.
-     */
-    private static final String PATH = "PATH";
 
     private static final int OOM_ERROR_VALUE = 137;
     private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
@@ -280,13 +278,14 @@ public class NativeImageBuildStep {
 
             List<String> nativeImageArgs = commandAndExecutable.args;
 
-            NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs,
-                    nativeImageName,
-                    resultingExecutableName, outputDir,
-                    graalVMVersion, nativeConfig.debug().enabled(),
-                    processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
-            if (buildNativeResult.getExitCode() != 0) {
-                throw imageGenerationFailed(buildNativeResult.getExitCode(), isContainerBuild);
+            try {
+                buildRunner.build(nativeImageArgs,
+                        nativeImageName,
+                        resultingExecutableName, outputDir,
+                        graalVMVersion, nativeConfig.debug().enabled(),
+                        processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
+            } catch (Throwable t) {
+                throw imageGenerationFailed(t, isContainerBuild);
             }
             IoUtils.copy(generatedExecutablePath, finalExecutablePath);
             Files.delete(generatedExecutablePath);
@@ -483,19 +482,19 @@ public class NativeImageBuildStep {
         }
     }
 
-    private RuntimeException imageGenerationFailed(int exitValue, boolean isContainerBuild) {
-        if (exitValue == OOM_ERROR_VALUE) {
+    private RuntimeException imageGenerationFailed(Throwable cause, boolean isContainerBuild) {
+        if (cause instanceof AbnormalExitException aee && aee.exitCode() == OOM_ERROR_VALUE) {
             if (isContainerBuild && !OS.LINUX.isCurrent()) {
-                return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
+                return new ImageGenerationFailureException("Image generation failed. Exit code was " + aee.exitCode()
                         + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
-                        + QUARKUS_XMX_PROPERTY + "\" property");
+                        + QUARKUS_XMX_PROPERTY + "\" property", cause);
             } else {
-                return new ImageGenerationFailureException("Image generation failed. Exit code was " + exitValue
+                return new ImageGenerationFailureException("Image generation failed. Exit code was " + aee.exitCode()
                         + " which indicates an out of memory error. Consider increasing the Xmx value for native image generation by setting the \""
-                        + QUARKUS_XMX_PROPERTY + "\" property");
+                        + QUARKUS_XMX_PROPERTY + "\" property", cause);
             }
         } else {
-            return new ImageGenerationFailureException("Image generation failed. Exit code: " + exitValue);
+            return new ImageGenerationFailureException("Image generation failed", cause);
         }
     }
 
@@ -546,22 +545,9 @@ public class NativeImageBuildStep {
             }
         }
 
-        // System path
-        String systemPath = System.getenv(PATH);
-        if (systemPath != null) {
-            String[] pathDirs = systemPath.split(File.pathSeparator);
-            for (String pathDir : pathDirs) {
-                File dir = new File(pathDir);
-                if (dir.isDirectory()) {
-                    File file = new File(dir, executableName);
-                    if (file.exists()) {
-                        return new NativeImageBuildLocalRunner(file.getAbsolutePath());
-                    }
-                }
-            }
-        }
-
-        return null;
+        return ProcessUtil.pathOfCommand(Path.of(executableName))
+                .map(value -> new NativeImageBuildLocalRunner(value.toString()))
+                .orElse(null);
     }
 
     private static String getNativeImageExecutableName() {
@@ -571,7 +557,7 @@ public class NativeImageBuildStep {
     private static String detectNoPIE() {
         String argument = testGCCArgument("-no-pie");
 
-        return argument.length() == 0 ? testGCCArgument("-nopie") : argument;
+        return argument.isEmpty() ? testGCCArgument("-nopie") : argument;
     }
 
     private static String detectPIE() {
@@ -580,17 +566,11 @@ public class NativeImageBuildStep {
 
     private static String testGCCArgument(String argument) {
         try {
-            Process gcc = new ProcessBuilder("cc", "-v", "-E", argument, "-").start();
-            gcc.getOutputStream().close();
-            if (gcc.waitFor() == 0) {
-                return argument;
-            }
-
-        } catch (IOException | InterruptedException e) {
-            // eat
+            ProcessBuilder.exec("cc", "-v", "-E", argument, "-");
+            return argument;
+        } catch (Exception ignored) {
+            return "";
         }
-
-        return "";
     }
 
     private static class NativeImageInvokerInfo {
@@ -1124,8 +1104,8 @@ public class NativeImageBuildStep {
 
     private static class ImageGenerationFailureException extends RuntimeException {
 
-        private ImageGenerationFailureException(String message) {
-            super(message);
+        private ImageGenerationFailureException(final String message, final Throwable cause) {
+            super(message, cause);
         }
     }
 }

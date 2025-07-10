@@ -3,6 +3,7 @@ package io.quarkus.devtools.project.update.rewrite;
 import static io.quarkus.devtools.project.update.rewrite.QuarkusUpdateRecipe.RECIPE_IO_QUARKUS_OPENREWRITE_QUARKUS;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,6 +29,8 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.qute.Qute;
 import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class QuarkusUpdateCommand {
 
@@ -226,66 +229,42 @@ public class QuarkusUpdateCommand {
 
         final List<String> effectiveCommand = prepareCommand(command);
 
-        ProcessBuilder processBuilder = new ProcessBuilder();
-        processBuilder.command(effectiveCommand);
+        var pb = ProcessBuilder.newBuilder(command.get(0))
+                .arguments(command.subList(1, command.size()));
 
         try {
             if (logFile != null) {
-                Files.writeString(logFile, "Running: " + String.join(" ", effectiveCommand) + "\n",
-                        StandardOpenOption.APPEND, StandardOpenOption.CREATE);
-            }
-
-            ProcessBuilder.Redirect redirect = logFile != null ? ProcessBuilder.Redirect.appendTo(logFile.toFile())
-                    : ProcessBuilder.Redirect.PIPE;
-            Process process = processBuilder.redirectOutput(redirect)
-                    .redirectError(redirect).start();
-
-            if (logFile == null) {
-                BufferedReader inputReader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-
-                String line;
-                LogLevel currentLogLevel = LogLevel.UNKNOWN;
-
-                while ((line = inputReader.readLine()) != null) {
-                    Optional<LogLevel> detectedLogLevel = LogLevel.of(line);
-                    if (detectedLogLevel.isPresent()) {
-                        currentLogLevel = detectedLogLevel.get();
-                    }
-                    switch (currentLogLevel) {
-                        case ERROR:
-                            log.error(currentLogLevel.clean(line));
-                            break;
-                        case WARNING:
-                            log.warn(currentLogLevel.clean(line));
-                            break;
-                        case INFO:
-                            log.info(currentLogLevel.clean(line));
-                            break;
-                        case UNKNOWN:
-                        default:
-                            log.info(line);
-                            break;
-                    }
+                try (BufferedWriter bw = Files.newBufferedWriter(logFile, StandardOpenOption.CREATE,
+                        StandardOpenOption.APPEND)) {
+                    bw.write("Running: ");
+                    bw.write(String.join(" ", effectiveCommand));
+                    bw.write(System.lineSeparator());
+                    pb.output().transferTo(bw)
+                            .error().transferTo(bw)
+                            .run();
+                    bw.write(System.lineSeparator());
+                    bw.write(System.lineSeparator());
+                    bw.write("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+                    bw.write(System.lineSeparator());
+                    bw.write(System.lineSeparator());
                 }
-                while ((line = errorReader.readLine()) != null) {
-                    log.error(line);
+            } else {
+                pb.output().consumeLinesWith(8192, line -> {
+                    LogLevel logLevel = LogLevel.of(line).orElse(LogLevel.UNKNOWN);
+                    switch (logLevel) {
+                        case ERROR -> log.error(logLevel.clean(line));
+                        case WARNING -> log.warn(logLevel.clean(line));
+                        case INFO -> log.info(logLevel.clean(line));
+                        default -> log.info(line);
+                    }
+                });
+                pb.error().consumeLinesWith(8192, log::error);
+                try {
+                    pb.run();
+                } finally {
+                    log.info("");
                 }
-
-                log.info("");
             }
-
-            int exitCode = process.waitFor();
-            if (exitCode != 0) {
-                log.info("");
-                throw new QuarkusUpdateExitErrorException("The %s command exited with an error. %s".formatted(name, logInfo));
-            }
-
-            if (logFile != null) {
-                Files.writeString(logFile, "\n\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n\n");
-            }
-        } catch (QuarkusUpdateException e) {
-            throw e;
         } catch (Exception e) {
             throw new QuarkusUpdateException("The %s command exited with an error. %s".formatted(name, logInfo), e);
         }
@@ -330,9 +309,7 @@ public class QuarkusUpdateCommand {
      * @return A Path to the executable, if found, null otherwise
      */
     public static Path searchPath(String cmd) {
-        String envPath = System.getenv("PATH");
-        envPath = envPath != null ? envPath : "";
-        return searchPath(cmd, envPath);
+        return ProcessUtil.pathOfCommand(Path.of(cmd)).orElse(null);
     }
 
     /**

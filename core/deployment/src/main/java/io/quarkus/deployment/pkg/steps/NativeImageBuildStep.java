@@ -970,11 +970,6 @@ public class NativeImageBuildStep {
                 }
 
                 Set<NativeConfig.MonitoringOption> monitoringOptions = new LinkedHashSet<>();
-                if (!OS.WINDOWS.isCurrent() || containerBuild) {
-                    // --enable-monitoring=heapdump is not supported on Windows
-                    monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
-                }
-
                 if (nativeMonitoringItems != null && !nativeMonitoringItems.isEmpty()) {
                     monitoringOptions.addAll(nativeMonitoringItems.stream()
                             .map(NativeMonitoringBuildItem::getOption)
@@ -984,6 +979,29 @@ public class NativeImageBuildStep {
                 if (nativeConfig.monitoring().isPresent()) {
                     monitoringOptions.addAll(nativeConfig.monitoring().get());
                 }
+
+                if (!monitoringOptions.isEmpty() && monitoringOptions.contains(NativeConfig.MonitoringOption.NONE)) {
+                    monitoringOptions.remove(NativeConfig.MonitoringOption.NONE);
+                    if (!monitoringOptions.isEmpty()) {
+                        String otherOpts = monitoringOptions.stream()
+                                .map(o -> o.name().toLowerCase(Locale.ROOT))
+                                .collect(Collectors.joining(","));
+                        log.warn(
+                                "Your application is setting monitoring option 'quarkus.native.monitoring' to 'none' AND '"
+                                        + otherOpts + "'"
+                                        + " Please consider removing options '" + otherOpts + "' as they will be ignored."
+                                        + " Monitoring option 'none' disables all monitoring options regardless of other settings.");
+                        // Explicitly clear all monitoring options otherwise specified
+                        monitoringOptions.clear();
+                    }
+                } else {
+                    // Only set heapdump monitoring option iff 'none' isn't included
+                    if (!OS.WINDOWS.isCurrent() || containerBuild) {
+                        // --enable-monitoring=heapdump is not supported on Windows
+                        monitoringOptions.add(NativeConfig.MonitoringOption.HEAPDUMP);
+                    }
+                }
+
                 if (!monitoringOptions.isEmpty()) {
                     nativeImageArgs.add("--enable-monitoring=" + monitoringOptions.stream()
                             .map(o -> o.name().toLowerCase(Locale.ROOT)).collect(Collectors.joining(",")));

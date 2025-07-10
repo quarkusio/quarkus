@@ -25,3 +25,9 @@ gradlePlugin {
 tasks.test {
   systemProperty("kotlin_version", libs.versions.kotlin.get())
 }
+
+// to generate reproducible jars
+tasks.withType<Jar>().configureEach {
+    isPreserveFileTimestamps = false 
+    isReproducibleFileOrder = true   
+}

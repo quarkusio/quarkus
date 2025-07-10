@@ -11,6 +11,7 @@ import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
@@ -27,29 +28,72 @@ public final class ValueResolvers {
     static final String COLON = ":";
     public static final String OR = "or";
 
+    private static abstract class AbstractValueResolver implements ValueResolver {
+
+        private final Set<String> supportedProperties;
+        private final Set<String> supportedMethods;
+
+        public AbstractValueResolver(Set<String> supportedProperties, Set<String> supportedMethods) {
+            this.supportedProperties = supportedProperties;
+            this.supportedMethods = supportedMethods;
+        }
+
+        @Override
+        public Set<String> getSupportedProperties() {
+            return supportedProperties;
+        }
+
+        @Override
+        public Set<String> getSupportedMethods() {
+            return supportedMethods;
+        }
+    }
+
     public static ValueResolver rawResolver() {
         return new RawResolver();
     }
 
-    public static final class RawResolver implements ValueResolver {
+    public static final class RawResolver extends AbstractValueResolver {
+
+        private static final String RAW = "raw";
+        private static final String SAFE = "safe";
+        private static final Set<String> SUPPORTED_PROPERTIES = Set.of(RAW, SAFE);
+
+        public RawResolver() {
+            super(SUPPORTED_PROPERTIES, Collections.emptySet());
+        }
 
         public boolean appliesTo(EvalContext context) {
-            return context.getBase() != null
-                    && (context.getName().equals("raw") || context.getName().equals("safe"));
+            if (context.getBase() == null) {
+                return false;
+            }
+            String name = context.getName();
+            return name.equals(RAW) || name.equals(SAFE);
         }
 
         @Override
         public CompletionStage<Object> resolve(EvalContext context) {
             return CompletedStage.of(new RawString(context.getBase().toString()));
         }
-
     }
 
     public static ValueResolver listResolver() {
         return new ListResolver();
     }
 
-    public static final class ListResolver implements ValueResolver {
+    public static final class ListResolver extends AbstractValueResolver {
+
+        static final String FIRST = "first";
+        static final String LAST = "last";
+        static final String GET = "get";
+        static final String TAKE = "take";
+        static final String TAKE_LAST = "takeLast";
+
+        public ListResolver() {
+            super(Set.of(FIRST, LAST, "${index}"),
+                    Set.of(GET + "(${index})", TAKE + "(${index})", TAKE_LAST + "(${index})"));
+        }
+
         @Override
         public int getPriority() {
             // Use this resolver before collectionResolver()
@@ -70,7 +114,17 @@ public final class ValueResolvers {
         return new CollectionResolver();
     }
 
-    public static final class CollectionResolver implements ValueResolver {
+    public static final class CollectionResolver extends AbstractValueResolver {
+
+        static final String SIZE = "size";
+        static final String IS_EMPTY = "isEmpty";
+        static final String EMPTY = "empty";
+        static final String CONTAINS = "contains";
+
+        public CollectionResolver() {
+            super(Set.of(SIZE, IS_EMPTY, EMPTY, CONTAINS), Collections.emptySet());
+        }
+
         public boolean appliesTo(EvalContext context) {
             return ValueResolvers.matchClass(context, Collection.class);
         }
@@ -85,7 +139,11 @@ public final class ValueResolvers {
         return new ThisResolver();
     }
 
-    public static final class ThisResolver implements ValueResolver {
+    public static final class ThisResolver extends AbstractValueResolver {
+
+        public ThisResolver() {
+            super(Set.of(THIS), Collections.emptySet());
+        }
 
         public boolean appliesTo(EvalContext context) {
             return context.getBase() != null && THIS.equals(context.getName());
@@ -95,12 +153,11 @@ public final class ValueResolvers {
         public CompletionStage<Object> resolve(EvalContext context) {
             return CompletedStage.of(context.getBase());
         }
-
     }
 
     /**
-     * Returns the default value if the base object is {@code null}, empty {@link Optional} or not found and the base object
-     * otherwise.
+     * Returns the default value if the base object is {@code null}, empty
+     * {@link Optional} or not found and the base object otherwise.
      *
      * {@code foo.or(bar)}, {@code foo or true}, {@code name ?: 'elvis'}
      */
@@ -108,7 +165,11 @@ public final class ValueResolvers {
         return new OrResolver();
     }
 
-    public static final class OrResolver implements ValueResolver {
+    public static final class OrResolver extends AbstractValueResolver {
+
+        public OrResolver() {
+            super(Set.of(ELVIS, OR, COLON), Collections.emptySet());
+        }
 
         public boolean appliesTo(EvalContext context) {
             if (context.getParams().size() != 1) {
@@ -121,7 +182,8 @@ public final class ValueResolvers {
         @Override
         public CompletionStage<Object> resolve(EvalContext context) {
             Object base = context.getBase();
-            if (base == null || Results.isNotFound(base) || (base instanceof Optional && ((Optional<?>) base).isEmpty())) {
+            if (base == null || Results.isNotFound(base)
+                    || (base instanceof Optional && ((Optional<?>) base).isEmpty())) {
                 return asLiteralOrEvaluate(context, 0);
             }
             return CompletedStage.of(base);
@@ -136,12 +198,18 @@ public final class ValueResolvers {
         return new OrEmptyResolver();
     }
 
-    public static final class OrEmptyResolver implements ValueResolver {
+    public static final class OrEmptyResolver extends AbstractValueResolver {
 
         private static final CompletionStage<Object> EMPTY = CompletedStage.of(Collections.emptyList());
 
+        static final String OR_EMPTY = "orEmpty";
+
+        public OrEmptyResolver() {
+            super(Set.of(OR_EMPTY), Collections.emptySet());
+        }
+
         public boolean appliesTo(EvalContext context) {
-            return context.getParams().isEmpty() && context.getName().equals("orEmpty");
+            return context.getParams().isEmpty() && context.getName().equals(OR_EMPTY);
         }
 
         @Override
@@ -154,7 +222,8 @@ public final class ValueResolvers {
     }
 
     /**
-     * Returns {@link Results#NotFound} if the base object is falsy and the base object otherwise.
+     * Returns {@link Results#NotFound} if the base object is falsy and the base
+     * object otherwise.
      * <p>
      * Can be used together with {@link #orResolver()} to form a ternary operator.
      *
@@ -223,8 +292,7 @@ public final class ValueResolvers {
     public static final class MapperResolver implements ValueResolver {
 
         public boolean appliesTo(EvalContext context) {
-            if (hasNoParams(context)
-                    && matchClass(context, Mapper.class)
+            if (hasNoParams(context) && matchClass(context, Mapper.class)
                     && context.getBase() instanceof Mapper mapper) {
                 return mapper.appliesTo(context.getName());
             }
@@ -244,8 +312,8 @@ public final class ValueResolvers {
     }
 
     /**
-     * Performs conditional AND on the base object and the first parameter.
-     * It's a short-circuiting operation - the parameter is only evaluated if needed.
+     * Performs conditional AND on the base object and the first parameter. It's a
+     * short-circuiting operation - the parameter is only evaluated if needed.
      *
      * @see Booleans#isFalsy(Object)
      */
@@ -256,8 +324,7 @@ public final class ValueResolvers {
     public static final class LogicalAndResolver implements ValueResolver {
 
         public boolean appliesTo(EvalContext context) {
-            return context.getBase() != null && context.getParams().size() == 1
-                    && ("&&".equals(context.getName()));
+            return context.getBase() != null && context.getParams().size() == 1 && ("&&".equals(context.getName()));
         }
 
         @Override
@@ -274,8 +341,8 @@ public final class ValueResolvers {
     }
 
     /**
-     * Performs conditional OR on the base object and the first parameter.
-     * It's a short-circuiting operation - the parameter is only evaluated if needed.
+     * Performs conditional OR on the base object and the first parameter. It's a
+     * short-circuiting operation - the parameter is only evaluated if needed.
      *
      * @see Booleans#isFalsy(Object)
      */
@@ -286,8 +353,7 @@ public final class ValueResolvers {
     public static final class LogicalOrResolver implements ValueResolver {
 
         public boolean appliesTo(EvalContext context) {
-            return context.getBase() != null && context.getParams().size() == 1
-                    && ("||".equals(context.getName()));
+            return context.getBase() != null && context.getParams().size() == 1 && ("||".equals(context.getName()));
         }
 
         @Override
@@ -308,7 +374,18 @@ public final class ValueResolvers {
         return new ArrayResolver();
     }
 
-    public static final class ArrayResolver implements ValueResolver {
+    public static final class ArrayResolver extends AbstractValueResolver {
+
+        static final String LENGTH = "length";
+        static final String SIZE = "size";
+        static final String TAKE = "take";
+        static final String TAKE_LAST = "takeLast";
+        static final String GET = "get";
+
+        public ArrayResolver() {
+            super(Set.of(LENGTH, SIZE, "${index}"), //
+                    Set.of(TAKE + "(${index})", TAKE_LAST + "(${index})", GET + "(${index})"));
+        }
 
         public boolean appliesTo(EvalContext context) {
             return context.getBase() != null && context.getBase().getClass().isArray();
@@ -317,9 +394,9 @@ public final class ValueResolvers {
         @Override
         public CompletionStage<Object> resolve(EvalContext context) {
             String name = context.getName();
-            if (name.equals("length") || name.equals("size")) {
+            if (name.equals(LENGTH) || name.equals(SIZE)) {
                 return CompletedStage.of(Array.getLength(context.getBase()));
-            } else if (name.equals("take")) {
+            } else if (name.equals(TAKE)) {
                 if (context.getParams().isEmpty()) {
                     throw new IllegalArgumentException("n-th parameter is missing");
                 }
@@ -338,7 +415,7 @@ public final class ValueResolvers {
                         return Results.notFound(context);
                     });
                 }
-            } else if (name.equals("takeLast")) {
+            } else if (name.equals(TAKE_LAST)) {
                 if (context.getParams().isEmpty()) {
                     throw new IllegalArgumentException("n-th parameter is missing");
                 }
@@ -357,7 +434,7 @@ public final class ValueResolvers {
                         return Results.notFound(context);
                     });
                 }
-            } else if (name.equals("get")) {
+            } else if (name.equals(GET)) {
                 if (context.getParams().isEmpty()) {
                     throw new IllegalArgumentException("Index parameter is missing");
                 }
@@ -399,9 +476,7 @@ public final class ValueResolvers {
         public boolean appliesTo(EvalContext context) {
             Object base = context.getBase();
             String name = context.getName();
-            return base != null
-                    && (base instanceof Number)
-                    && context.getParams().isEmpty()
+            return base != null && (base instanceof Number) && context.getParams().isEmpty()
                     && ("intValue".equals(name) || "longValue".equals(name) || "floatValue".equals(name)
                             || "doubleValue".equals(name) || "byteValue".equals(name) || "shortValue".equals(name));
         }
@@ -558,9 +633,7 @@ public final class ValueResolvers {
 
         public boolean appliesTo(EvalContext context) {
             Object base = context.getBase();
-            return base != null
-                    && (base instanceof Integer || base instanceof Long)
-                    && context.getParams().size() == 1
+            return base != null && (base instanceof Integer || base instanceof Long) && context.getParams().size() == 1
                     && appliesToName(context.getName());
         }
 
@@ -631,12 +704,12 @@ public final class ValueResolvers {
     private static CompletionStage<Object> collectionResolveAsync(EvalContext context) {
         Collection<?> collection = (Collection<?>) context.getBase();
         switch (context.getName()) {
-            case "size":
+            case CollectionResolver.SIZE:
                 return CompletedStage.of(collection.size());
-            case "isEmpty":
-            case "empty":
+            case CollectionResolver.IS_EMPTY:
+            case CollectionResolver.EMPTY:
                 return CompletedStage.of(collection.isEmpty());
-            case "contains":
+            case CollectionResolver.CONTAINS:
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenCompose(e -> {
                         return CompletedStage.of(collection.contains(e));
@@ -651,54 +724,51 @@ public final class ValueResolvers {
         List<?> list = (List<?>) context.getBase();
         String name = context.getName();
         switch (name) {
-            case "get":
+            case ListResolver.GET:
                 if (context.getParams().size() == 1) {
-                    return context.evaluate(context.getParams().get(0))
-                            .thenApply(r -> {
-                                try {
-                                    int n = r instanceof Integer ? (Integer) r : Integer.parseInt(r.toString());
-                                    return list.get(n);
-                                } catch (NumberFormatException e) {
-                                    return Results.NotFound.from(context);
-                                }
-                            });
+                    return context.evaluate(context.getParams().get(0)).thenApply(r -> {
+                        try {
+                            int n = r instanceof Integer ? (Integer) r : Integer.parseInt(r.toString());
+                            return list.get(n);
+                        } catch (NumberFormatException e) {
+                            return Results.NotFound.from(context);
+                        }
+                    });
                 }
-            case "take":
+            case ListResolver.TAKE:
                 if (context.getParams().size() == 1) {
-                    return context.evaluate(context.getParams().get(0))
-                            .thenApply(r -> {
-                                try {
-                                    int n = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
-                                    if (n < 1 || n > list.size()) {
-                                        throw new IndexOutOfBoundsException(n);
-                                    }
-                                    return list.subList(0, n);
-                                } catch (NumberFormatException e) {
-                                    return Results.NotFound.from(context);
-                                }
-                            });
+                    return context.evaluate(context.getParams().get(0)).thenApply(r -> {
+                        try {
+                            int n = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
+                            if (n < 1 || n > list.size()) {
+                                throw new IndexOutOfBoundsException(n);
+                            }
+                            return list.subList(0, n);
+                        } catch (NumberFormatException e) {
+                            return Results.NotFound.from(context);
+                        }
+                    });
                 }
-            case "takeLast":
+            case ListResolver.TAKE_LAST:
                 if (context.getParams().size() == 1) {
-                    return context.evaluate(context.getParams().get(0))
-                            .thenApply(r -> {
-                                try {
-                                    int n = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
-                                    if (n < 1 || n > list.size()) {
-                                        throw new IndexOutOfBoundsException(n);
-                                    }
-                                    return list.subList(list.size() - n, list.size());
-                                } catch (NumberFormatException e) {
-                                    return Results.NotFound.from(context);
-                                }
-                            });
+                    return context.evaluate(context.getParams().get(0)).thenApply(r -> {
+                        try {
+                            int n = r instanceof Integer ? (Integer) r : Integer.valueOf(r.toString());
+                            if (n < 1 || n > list.size()) {
+                                throw new IndexOutOfBoundsException(n);
+                            }
+                            return list.subList(list.size() - n, list.size());
+                        } catch (NumberFormatException e) {
+                            return Results.NotFound.from(context);
+                        }
+                    });
                 }
-            case "first":
+            case ListResolver.FIRST:
                 if (list.isEmpty()) {
                     throw new NoSuchElementException();
                 }
                 return CompletedStage.of(list.get(0));
-            case "last":
+            case ListResolver.LAST:
                 if (list.isEmpty()) {
                     throw new NoSuchElementException();
                 }
@@ -769,7 +839,8 @@ public final class ValueResolvers {
     /**
      *
      * @param ctx
-     * @return {@code true} if the context has no parameters; i.e it is not a virtual method call, {@code false} otherwise
+     * @return {@code true} if the context has no parameters; i.e it is not a
+     *         virtual method call, {@code false} otherwise
      */
     public static boolean hasNoParams(EvalContext ctx) {
         if (ctx instanceof TerminalEvalContextImpl terminal) {
@@ -784,7 +855,8 @@ public final class ValueResolvers {
     /**
      *
      * @param ctx
-     * @return {@code true} if the context has at least one parameter; i.e it is a virtual method call, {@code false} otherwise
+     * @return {@code true} if the context has at least one parameter; i.e it is a
+     *         virtual method call, {@code false} otherwise
      */
     public static boolean hasParams(EvalContext ctx) {
         return !hasNoParams(ctx);
@@ -794,7 +866,8 @@ public final class ValueResolvers {
      *
      * @param ctx
      * @param clazz
-     * @return {@code true} if the base object from the context is assignable from the clazz, {@code false} otherwise
+     * @return {@code true} if the base object from the context is assignable from
+     *         the clazz, {@code false} otherwise
      */
     public static boolean matchClass(EvalContext ctx, Class<?> clazz) {
         Object base;

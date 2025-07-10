@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
+import io.quarkus.qute.runtime.debug.QuteDebugConfig;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -104,6 +105,11 @@ public interface QuteConfig {
      * Test mode configuration.
      */
     QuteTestModeConfig testMode();
+
+    /**
+     * Qute debugger configuration.
+     */
+    QuteDebugConfig debug();
 
     public enum DuplicitTemplatesStrategy {
 

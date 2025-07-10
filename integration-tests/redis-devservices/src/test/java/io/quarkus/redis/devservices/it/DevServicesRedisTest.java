@@ -1,15 +1,13 @@
 package io.quarkus.redis.devservices.it;
 
-import java.util.Arrays;
-
-import jakarta.inject.Inject;
+import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.redis.client.RedisClient;
 import io.quarkus.redis.devservices.it.profiles.DevServiceRedis;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
@@ -19,12 +17,11 @@ import io.quarkus.test.ports.SocketKit;
 @TestProfile(DevServiceRedis.class)
 public class DevServicesRedisTest {
 
-    @Inject
-    RedisClient redisClient;
-
     @BeforeEach
     public void setUp() {
-        redisClient.set(Arrays.asList("anykey", "anyvalue"));
+        when().get("/set/anykey/anyvalue").then()
+                .statusCode(200)
+                .body(is("OK"));
     }
 
     @Test
@@ -36,7 +33,9 @@ public class DevServicesRedisTest {
     @Test
     @DisplayName("given redis container must communicate with it and return value by key")
     public void shouldReturnAllKeys() {
-        Assertions.assertEquals("anyvalue", redisClient.get("anykey").toString());
+        when().get("/get/anykey").then()
+                .statusCode(200)
+                .body(is("anyvalue"));
     }
 
 }

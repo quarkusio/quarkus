@@ -67,9 +67,6 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
     private LaunchResult doLaunch(ExtensionContext context, String[] arguments) throws Exception {
         JBossVersion.disableVersionLogging();
 
-        if (quarkusArtifactProperties == null) {
-            prepare(context);
-        }
         var result = doProcessStart(context, arguments);
         List<String> out = Arrays.asList(new String(result.getOutput(), StandardCharsets.UTF_8).split("\n"));
         List<String> err = Arrays.asList(new String(result.getStderror(), StandardCharsets.UTF_8).split("\n"));
@@ -109,8 +106,7 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
         boolean isDockerLaunch = isContainer(artifactType)
                 || (isJar(artifactType) && "test-with-native-agent".equals(testConfig.integrationTestProfile()));
 
-        devServicesLaunchResult = handleDevServices(extensionContext,
-                isDockerLaunch);
+        devServicesLaunchResult = handleDevServices(extensionContext, isDockerLaunch);
         devServicesProps = devServicesLaunchResult.properties();
 
         ExtensionContext root = extensionContext.getRoot();
@@ -122,12 +118,16 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
             Class<? extends QuarkusTestProfile> profile = IntegrationTestUtil.findProfile(context.getRequiredTestClass());
             TestResourceManager testResourceManager = null;
             Map<String, String> old = new HashMap<>();
-            String artifactType = quarkusArtifactProperties.getProperty("type");
             try {
                 Class<?> requiredTestClass = context.getRequiredTestClass();
 
                 Map<String, String> sysPropRestore = getSysPropsToRestore();
                 TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
+                // prepare dev services after profile and properties have been determined
+                if (quarkusArtifactProperties == null) {
+                    prepare(context);
+                }
+                String artifactType = quarkusArtifactProperties.getProperty("type");
 
                 testResourceManager = new TestResourceManager(requiredTestClass, profile,
                         copyEntriesFromProfile(testProfileAndProperties.testProfile,

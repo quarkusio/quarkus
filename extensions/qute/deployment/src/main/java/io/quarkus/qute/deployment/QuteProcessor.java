@@ -81,6 +81,7 @@ import io.quarkus.arc.processor.QualifierRegistrar;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -133,6 +134,7 @@ import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.Variant;
 import io.quarkus.qute.WhenSectionHelper;
+import io.quarkus.qute.debug.DebugQuteEngineObserver;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.TypeCheckExcludeBuildItem.TypeCheck;
 import io.quarkus.qute.deployment.TypeInfos.Info;
@@ -289,6 +291,12 @@ public class QuteProcessor {
                         TimeTemplateExtensions.class, StringTemplateExtensions.class, OrOperatorTemplateExtensions.class,
                         ObjectsTemplateExtensions.class)
                 .build();
+    }
+    
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    AdditionalBeanBuildItem quteDebuggerBean() {
+    	// Register the Qute debugger when Qute engine is created only in dev-mode
+        return AdditionalBeanBuildItem.unremovableOf(DebugQuteEngineObserver.class);
     }
 
     @BuildStep

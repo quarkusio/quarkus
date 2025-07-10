@@ -50,6 +50,7 @@
     <modules>
         <module>core</module>
         <module>generator</module>
+        <module>debug</module>
     </modules>
 
     <dependencyManagement>
@@ -90,6 +91,11 @@
             <dependency>
                 <groupId>io.quarkus.qute</groupId>
                 <artifactId>qute-generator</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus.qute</groupId>
+                <artifactId>qute-debug</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

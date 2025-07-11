@@ -163,7 +163,7 @@
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.29.1</liquibase.version>
-        <liquibase-mongodb.version>4.29.1</liquibase-mongodb.version>
+        <liquibase-mongodb.version>4.33.0.1</liquibase-mongodb.version>
         <snakeyaml.version>2.4</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>5.5.1</mongo-client.version>

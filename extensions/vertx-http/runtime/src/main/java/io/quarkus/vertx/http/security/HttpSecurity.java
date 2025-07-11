@@ -10,6 +10,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
+import io.smallrye.common.annotation.Experimental;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -75,10 +76,36 @@ import io.vertx.ext.web.RoutingContext;
  * }
  * </pre>
  */
+@Experimental("This API is currently experimental and might get changed")
 public interface HttpSecurity {
 
     /**
-     * Creates {@link HttpPermission}.
+     * Registers given {@link HttpAuthenticationMechanism} in addition to all other global authentication mechanisms.
+     *
+     * @param mechanism {@link HttpAuthenticationMechanism}
+     * @return HttpSecurity
+     */
+    HttpSecurity mechanism(HttpAuthenticationMechanism mechanism);
+
+    /**
+     * Registers the Basic authentication mechanism in addition to all other global authentication mechanisms.
+     * This method is a shortcut for {@code mechanism(Basic.create())}.
+     *
+     * @return HttpSecurity
+     */
+    HttpSecurity basic();
+
+    /**
+     * Registers the Basic authentication mechanism in addition to all other global authentication mechanisms.
+     * This method is a shortcut for {@code mechanism(Basic.realm(authenticationRealm))}.
+     *
+     * @param authenticationRealm see the 'quarkus.http.auth.realm' configuration property
+     * @return HttpSecurity
+     */
+    HttpSecurity basic(String authenticationRealm);
+
+    /**
+     * Creates {@link HttpPermission} in addition to the permissions configured in the 'application.properties' file.
      *
      * @param paths path patterns; this is programmatic analogy to the 'quarkus.http.auth.permission."permissions".paths'
      *        configuration property, same rules apply
@@ -137,12 +164,16 @@ public interface HttpSecurity {
     interface HttpPermission {
 
         /**
-         * HTTP request must be authenticated using basic authentication.
+         * HTTP request must be authenticated using basic authentication mechanism configured
+         * in the 'application.properties' file or the mechanism created with the {@link Basic} API and registered
+         * against the {@link HttpSecurity#mechanism(HttpAuthenticationMechanism)}.
          */
         HttpPermission basic();
 
         /**
-         * HTTP request must be authenticated using form-based authentication.
+         * HTTP request must be authenticated using form-based authentication mechanism configured
+         * in the 'application.properties' file or the mechanism created with the {@link Form} API and registered
+         * against the {@link HttpSecurity#mechanism(HttpAuthenticationMechanism)}.
          */
         HttpPermission form();
 
@@ -178,12 +209,6 @@ public interface HttpSecurity {
          * Please note that annotation-based mechanism selection has higher priority during the mechanism selection.
          */
         HttpPermission authenticatedWith(String scheme);
-
-        /**
-         * HTTP request must be authenticated with this mechanism.
-         * Please note that annotation-based mechanism selection has higher priority during the mechanism selection.
-         */
-        HttpPermission authenticatedWith(HttpAuthenticationMechanism mechanism);
 
         /**
          * Indicates that this policy always applies to the matched paths in addition to the policy with a winning path.

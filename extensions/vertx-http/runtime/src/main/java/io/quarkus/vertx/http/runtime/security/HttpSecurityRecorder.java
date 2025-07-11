@@ -55,6 +55,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 @Recorder
@@ -79,7 +80,7 @@ public class HttpSecurityRecorder {
     public void initializeHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue,
             BeanContainer beanContainer) {
         handlerRuntimeValue.getValue().init(beanContainer.beanInstance(PathMatchingHttpSecurityPolicy.class),
-                HttpSecurityConfiguration.get(httpConfig.getValue()).rolesMapping());
+                HttpSecurityConfiguration.get().rolesMapping());
     }
 
     public Handler<RoutingContext> permissionCheckHandler() {
@@ -100,37 +101,42 @@ public class HttpSecurityRecorder {
      * This handler resolves the identity, and will be mapped to the post location. Otherwise,
      * for lazy auth the post will not be evaluated if there is no security rule for the post location.
      */
-    public Handler<RoutingContext> formAuthPostHandler() {
-        return new Handler<RoutingContext>() {
-            @Override
-            public void handle(RoutingContext event) {
-                Uni<SecurityIdentity> user = event.get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
-                user.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
-                    @Override
-                    public void onSubscribe(UniSubscription uniSubscription) {
+    public void formAuthPostHandler(RuntimeValue<Router> httpRouter) {
+        HttpSecurityConfiguration config = HttpSecurityConfiguration.get();
+        if (config.formAuthEnabled()) {
+            httpRouter.getValue()
+                    .post(config.formPostLocation())
+                    .handler(new Handler<RoutingContext>() {
+                        @Override
+                        public void handle(RoutingContext event) {
+                            Uni<SecurityIdentity> user = event.get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY);
+                            user.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                                @Override
+                                public void onSubscribe(UniSubscription uniSubscription) {
 
-                    }
+                                }
 
-                    @Override
-                    public void onItem(SecurityIdentity securityIdentity) {
-                        // we expect that form-based authentication mechanism to recognize the post-location,
-                        // authenticate and if user provided credentials in form attribute, response will be ended
-                        if (!event.response().ended()) {
-                            event.response().end();
+                                @Override
+                                public void onItem(SecurityIdentity securityIdentity) {
+                                    // we expect that form-based authentication mechanism to recognize the post-location,
+                                    // authenticate and if user provided credentials in form attribute, response will be ended
+                                    if (!event.response().ended()) {
+                                        event.response().end();
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Throwable throwable) {
+                                    // with current builtin implementation if only form-based authentication mechanism the event here
+                                    // won't be ended or failed, but we check in case there is custom implementation that differs
+                                    if (!event.response().ended() && !event.failed()) {
+                                        event.fail(throwable);
+                                    }
+                                }
+                            });
                         }
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        // with current builtin implementation if only form-based authentication mechanism the event here
-                        // won't be ended or failed, but we check in case there is custom implementation that differs
-                        if (!event.response().ended() && !event.failed()) {
-                            event.fail(throwable);
-                        }
-                    }
-                });
-            }
-        };
+                    });
+        }
     }
 
     public Supplier<EagerSecurityInterceptorStorage> createSecurityInterceptorStorage(
@@ -176,7 +182,16 @@ public class HttpSecurityRecorder {
 
     public void prepareHttpSecurityConfiguration() {
         // this is done so that we prepare and validate HTTP Security config before the first incoming request
-        HttpSecurityConfiguration.get(httpConfig.getValue());
+        HttpSecurityConfiguration.get();
+    }
+
+    public Supplier<FormAuthenticationMechanism> createFormAuthMechanism() {
+        return new Supplier<FormAuthenticationMechanism>() {
+            @Override
+            public FormAuthenticationMechanism get() {
+                return HttpSecurityConfiguration.get().getFormAuthenticationMechanism(httpConfig.getValue());
+            }
+        };
     }
 
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
@@ -468,9 +483,9 @@ public class HttpSecurityRecorder {
 
     public void setMtlsCertificateRoleProperties() {
         InstanceHandle<MtlsAuthenticationMechanism> mtls = Arc.container().instance(MtlsAuthenticationMechanism.class);
-
-        if (mtls.isAvailable() && httpConfig.getValue().auth().certificateRoleProperties().isPresent()) {
-            Path rolesPath = httpConfig.getValue().auth().certificateRoleProperties().get();
+        VertxHttpConfig httpConfig = this.httpConfig.getValue();
+        if (mtls.isAvailable() && httpConfig.auth().certificateRoleProperties().isPresent()) {
+            Path rolesPath = httpConfig.auth().certificateRoleProperties().get();
             URL rolesResource = null;
             if (Files.exists(rolesPath)) {
                 try {
@@ -499,8 +514,7 @@ public class HttpSecurityRecorder {
                 }
 
                 if (!roles.isEmpty()) {
-                    var certRolesAttribute = new CertificateRoleAttribute(
-                            httpConfig.getValue().auth().certificateRoleAttribute(), roles);
+                    var certRolesAttribute = new CertificateRoleAttribute(httpConfig.auth().certificateRoleAttribute(), roles);
                     mtls.get().setCertificateToRolesMapper(certRolesAttribute.rolesMapper());
                 }
             } catch (Exception e) {
@@ -562,12 +576,13 @@ public class HttpSecurityRecorder {
         return Set.copyOf(roles);
     }
 
-    public Supplier<BasicAuthenticationMechanism> basicAuthenticationMechanismBean(boolean formAuthEnabled) {
+    public Supplier<BasicAuthenticationMechanism> basicAuthenticationMechanismBean() {
         return new Supplier<>() {
             @Override
             public BasicAuthenticationMechanism get() {
-                return new BasicAuthenticationMechanism(httpConfig.getValue().auth().realm().orElse(null), formAuthEnabled);
+                return HttpSecurityConfiguration.get().getBasicAuthenticationMechanism(httpConfig.getValue());
             }
         };
     }
+
 }

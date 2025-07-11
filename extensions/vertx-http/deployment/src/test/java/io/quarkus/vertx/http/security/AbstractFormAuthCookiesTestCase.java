@@ -36,7 +36,6 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
@@ -45,34 +44,23 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.restassured.RestAssured;
 import io.restassured.filter.cookie.CookieFilter;
 
-public class FormAuthCookiesTestCase {
+public abstract class AbstractFormAuthCookiesTestCase {
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.auth.form.enabled=true\n" +
-            "quarkus.http.auth.form.login-page=login\n" +
-            "quarkus.http.auth.form.error-page=error\n" +
-            "quarkus.http.auth.form.landing-page=landing\n" +
-            "quarkus.http.auth.policy.r1.roles-allowed=admin\n" +
-            "quarkus.http.auth.permission.roles1.paths=/admin%E2%9D%A4\n" +
-            "quarkus.http.auth.permission.roles1.policy=r1\n" +
-            "quarkus.http.auth.form.timeout=PT2S\n" +
-            "quarkus.http.auth.form.new-cookie-interval=PT1S\n" +
-            "quarkus.http.auth.form.cookie-name=laitnederc-sukrauq\n" +
-            "quarkus.http.auth.form.cookie-same-site=lax\n" +
-            "quarkus.http.auth.form.http-only-cookie=true\n" +
-            "quarkus.http.auth.form.cookie-max-age=PT2M\n" +
-            "quarkus.http.auth.session.encryption-key=CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT-CHANGEIT\n";
-
-    @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
-        @Override
-        public JavaArchive get() {
-            return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, TestTrustedIdentityProvider.class,
-                            PathHandler.class)
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties");
-        }
-    });
+    protected static QuarkusUnitTest createQuarkusApp(String applicationProperties, Class<?>... classes) {
+        return new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+            @Override
+            public JavaArchive get() {
+                var javaArchive = ShrinkWrap.create(JavaArchive.class)
+                        .addClasses(TestIdentityProvider.class, TestIdentityController.class, TestTrustedIdentityProvider.class,
+                                PathHandler.class)
+                        .addAsResource(new StringAsset(applicationProperties), "application.properties");
+                if (classes.length > 0) {
+                    javaArchive.addClasses(classes);
+                }
+                return javaArchive;
+            }
+        });
+    }
 
     @BeforeAll
     public static void setup() {

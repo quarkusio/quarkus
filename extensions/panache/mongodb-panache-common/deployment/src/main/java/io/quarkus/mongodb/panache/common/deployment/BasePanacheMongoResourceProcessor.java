@@ -1,5 +1,6 @@
 package io.quarkus.mongodb.panache.common.deployment;
 
+import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.util.JandexUtil.resolveTypeParameters;
 import static org.jboss.jandex.DotName.createSimple;
 
@@ -31,6 +32,8 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.builder.BuildException;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -40,6 +43,7 @@ import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
@@ -251,6 +255,17 @@ public abstract class BasePanacheMongoResourceProcessor {
             // see MongoOperations#mongoClient
             mongoClientName.produce(new MongoClientNameBuildItem(value, false));
         }
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    public void enableValidation(PanacheMongoRecorder recorder,
+            Capabilities capabilities,
+            ShutdownContextBuildItem shutdownContext) {
+
+        recorder.initializeValidator(
+                capabilities.isPresent(Capability.HIBERNATE_VALIDATOR),
+                shutdownContext);
     }
 
     protected void processEntities(CombinedIndexBuildItem index,

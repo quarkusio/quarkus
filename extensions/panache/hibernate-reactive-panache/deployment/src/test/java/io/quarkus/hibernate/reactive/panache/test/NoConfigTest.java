@@ -13,10 +13,11 @@ public class NoConfigTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
             .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class));
+                    () -> ShrinkWrap.create(JavaArchive.class)
+                            .addAsResource("application-datasource-only.properties", "application.properties"));
 
     @Test
     public void testNoConfig() {
-        // we should be able to start the application, even with no configuration at all
+        // we should be able to start the application, even with no (Hibernate/Panache) configuration at all
     }
 }

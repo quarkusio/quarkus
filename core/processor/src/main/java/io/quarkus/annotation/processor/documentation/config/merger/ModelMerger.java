@@ -204,9 +204,11 @@ public final class ModelMerger {
                 return null;
             }
 
+            String descriptionCandidate = trimFinalDot(javadocElement.get().description());
+
             if (description == null) {
-                description = trimFinalDot(javadocElement.get().description());
-            } else if (!description.equals(trimFinalDot(javadocElement.get().description()))) {
+                description = descriptionCandidate;
+            } else if (!description.equals(descriptionCandidate)) {
                 return null;
             }
         }

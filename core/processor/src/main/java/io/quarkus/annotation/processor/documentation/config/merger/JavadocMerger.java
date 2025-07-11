@@ -4,9 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import io.quarkus.annotation.processor.Outputs;
 import io.quarkus.annotation.processor.documentation.config.model.JavadocElements;
@@ -19,7 +19,7 @@ public final class JavadocMerger {
     }
 
     public static JavadocRepository mergeJavadocElements(List<Path> buildOutputDirectories) {
-        Map<String, JavadocElement> javadocElementsMap = new HashMap<>();
+        Map<String, JavadocElement> javadocElementsMap = new TreeMap<>();
 
         for (Path buildOutputDirectory : buildOutputDirectories) {
             Path javadocPath = buildOutputDirectory.resolve(Outputs.QUARKUS_CONFIG_DOC_JAVADOC);

@@ -2,8 +2,8 @@ package io.quarkus.annotation.processor.documentation.config.scanner;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigGroup;
 import io.quarkus.annotation.processor.documentation.config.discovery.DiscoveryConfigRoot;
@@ -15,22 +15,22 @@ public class ConfigCollector {
     /**
      * Key is qualified name of the class + "." + element name (for instance field or method name)
      */
-    private Map<String, JavadocElement> javadocElements = new HashMap<>();
+    private final Map<String, JavadocElement> javadocElements = new TreeMap<>();
 
     /**
      * Key is the qualified name of the class.
      */
-    private Map<String, DiscoveryConfigRoot> configRoots = new HashMap<>();
+    private final Map<String, DiscoveryConfigRoot> configRoots = new TreeMap<>();
 
     /**
      * Key is the qualified name of the class.
      */
-    private Map<String, DiscoveryConfigGroup> resolvedConfigGroups = new HashMap<>();
+    private final Map<String, DiscoveryConfigGroup> resolvedConfigGroups = new TreeMap<>();
 
     /**
      * Key is the qualified name of the class.
      */
-    private Map<String, EnumDefinition> resolvedEnums = new HashMap<>();
+    private final Map<String, EnumDefinition> resolvedEnums = new TreeMap<>();
 
     public void addJavadocElement(String key, JavadocElement element) {
         javadocElements.put(key, element);

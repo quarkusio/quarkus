@@ -49,7 +49,7 @@ public class RuntimeOverrideConfigSource implements ConfigSource {
 
     @Override
     public int getOrdinal() {
-        return 399; //one less that system properties
+        return 420; // higher than dev services config source
     }
 
     @Override

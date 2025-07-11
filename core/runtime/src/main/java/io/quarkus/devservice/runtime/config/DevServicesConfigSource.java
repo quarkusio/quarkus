@@ -56,7 +56,7 @@ public class DevServicesConfigSource implements ConfigSource {
 
     @Override
     public int getOrdinal() {
-        // See discussion on DevServicesConfigBuilder about what the right value here is
-        return 10;
+        // This is a dynamic override, so it needs a high priority to be able to override ephemeral port (0) with real values
+        return 410; // a bit more than system properties, but less than the TestResource config overrides done via RuntimeOverrideConfigSource
     }
 }

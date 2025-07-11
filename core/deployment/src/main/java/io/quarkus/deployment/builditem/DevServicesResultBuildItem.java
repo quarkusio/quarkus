@@ -174,9 +174,6 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
 
     public Map<String, String> getConfig(Startable startable) {
         SupplierMap<String, String> map = new SupplierMap<>();
-        if (config != null && !config.isEmpty()) {
-            map.putAll(config);
-        }
         for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
             map.put(entry.getKey(), () -> entry.getValue().apply(startable));
         }

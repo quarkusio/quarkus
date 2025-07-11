@@ -34,19 +34,19 @@ public class MCPProcessor {
                 .namespace(NS_MCP)
                 .title("MCP Server")
                 .icon("font-awesome-solid:robot")
-                .componentLink("qwc-mcp-server.js"));
+                .componentLink("qwc-dev-mcp-server.js"));
 
         mcpServerPage.addPage(Page.webComponentPageBuilder()
                 .namespace(NS_MCP)
                 .title("Tools")
                 .icon("font-awesome-solid:screwdriver-wrench")
-                .componentLink("qwc-mcp-tools.js"));
+                .componentLink("qwc-dev-mcp-tools.js"));
 
         mcpServerPage.addPage(Page.webComponentPageBuilder()
                 .namespace(NS_MCP)
                 .title("Resources")
                 .icon("font-awesome-solid:file-invoice")
-                .componentLink("qwc-mcp-resources.js"));
+                .componentLink("qwc-dev-mcp-resources.js"));
 
         return mcpServerPage;
     }

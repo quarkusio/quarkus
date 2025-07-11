@@ -120,9 +120,6 @@ public class DevUIProcessor {
     private static final String FOOTER_LOG_NAMESPACE = "devui-footer-log";
     private static final String DEVUI = "dev-ui";
     private static final String SLASH = "/";
-    private static final String DOT = ".";
-    private static final String DOUBLE_POINT = ":";
-    private static final String DASH_DEPLOYMENT = "-deployment";
     private static final String SLASH_ALL = SLASH + "*";
     private static final String JSONRPC = "json-rpc-ws";
 
@@ -288,9 +285,9 @@ public class DevUIProcessor {
     }
 
     private boolean hasOwnIndexHtml() {
-        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         try {
-            Enumeration<URL> jarsWithIndexHtml = tccl.getResources("META-INF/resources/index.html");
+            Enumeration<URL> jarsWithIndexHtml = Thread.currentThread().getContextClassLoader()
+                    .getResources("META-INF/resources/index.html");
             return jarsWithIndexHtml.hasMoreElements();
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -582,14 +579,14 @@ public class DevUIProcessor {
             devServiceLogs.add(devServiceLogActions);
 
             // Create the Footer in the Dev UI
-            WebComponentPageBuilder log = Page.webComponentPageBuilder().internal()
+            WebComponentPageBuilder footerLogComponent = Page.webComponentPageBuilder().internal()
                     .namespace(FOOTER_LOG_NAMESPACE)
                     .icon("font-awesome-regular:file-lines")
                     .title(capitalizeFirstLetter(footerLogBuildItem.getName()))
                     .metadata("jsonRpcMethodName", footerLogBuildItem.getName() + "Log")
                     .componentLink("qwc-footer-log.js");
 
-            FooterPageBuildItem footerPageBuildItem = new FooterPageBuildItem(FOOTER_LOG_NAMESPACE, log);
+            FooterPageBuildItem footerPageBuildItem = new FooterPageBuildItem(FOOTER_LOG_NAMESPACE, footerLogComponent);
             footers.add(footerPageBuildItem);
         }
 
@@ -1028,13 +1025,13 @@ public class DevUIProcessor {
         // TODO: Have a nice factory way to load this...
         // Some preprocessing for certain builds
         if (pageBuilder.getClass().equals(QuteDataPageBuilder.class)) {
-            return buildQutePage(pageBuilder, extension, buildTimeData);
+            return buildQutePage(pageBuilder, buildTimeData);
         }
 
         return pageBuilder.build();
     }
 
-    private Page buildQutePage(PageBuilder pageBuilder, Extension extension, Map<String, BuildTimeData> buildTimeData) {
+    private Page buildQutePage(PageBuilder pageBuilder, Map<String, BuildTimeData> buildTimeData) {
         try {
             QuteDataPageBuilder quteDataPageBuilder = (QuteDataPageBuilder) pageBuilder;
             String templatePath = quteDataPageBuilder.getTemplatePath();

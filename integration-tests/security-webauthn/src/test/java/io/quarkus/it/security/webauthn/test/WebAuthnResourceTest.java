@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.it.security.webauthn.AdminResource;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.webauthn.WebAuthnEndpointHelper;
@@ -140,6 +141,17 @@ public class WebAuthnResourceTest {
                     .then()
                     .statusCode(200)
                     .body(Matchers.is("admin"));
+
+            // verifies https://github.com/quarkusio/quarkus/issues/47259
+            // it's here because it requires security + hibernate reactive
+            RestAssured.given().filter(cookieFilter)
+                    .when()
+                    .body(new AdminResource.Dto("Woman of the World"))
+                    .post("/api/admin/payload")
+                    .then()
+                    .statusCode(200)
+                    .body(Matchers.containsString("Woman of the World"))
+                    .body(Matchers.containsString("admin"));
         } else {
             RestAssured.given().filter(cookieFilter)
                     .when()

@@ -635,8 +635,12 @@ public class HttpSecurityProcessor {
     }
 
     @BuildStep(onlyIf = AlwaysPropagateSecurityIdentity.class)
-    AdditionalBeanBuildItem createSecurityIdentityAssociation() {
-        return AdditionalBeanBuildItem.unremovableOf(VertxSecurityIdentityAssociation.class);
+    AdditionalBeanBuildItem createSecurityIdentityAssociation(Capabilities capabilities) {
+        if (capabilities.isMissing(Capability.WEBSOCKETS_NEXT)) {
+            return AdditionalBeanBuildItem.unremovableOf(VertxSecurityIdentityAssociation.class);
+        }
+        // the feature is implemented by WS Next
+        return null;
     }
 
     @Record(ExecutionTime.STATIC_INIT)

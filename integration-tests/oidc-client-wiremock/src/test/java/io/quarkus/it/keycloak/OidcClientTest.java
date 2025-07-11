@@ -21,6 +21,7 @@ import java.util.stream.IntStream;
 
 import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -46,6 +47,26 @@ public class OidcClientTest {
                 .body(equalTo("access_token_jwt_bearer"));
     }
 
+    @Order(14)
+    @Test
+    public void testEchoTokensJwtBearerAuthenticationForceNewToken() {
+        // This test uses a custom filter that forces new tokens to be requested
+        // regardless of the token expiration time.
+        // The corresponding stub will only return the access token if the body
+        // exactly matches the expected request body. If for example
+        // multiple form parameters are sent, as it was the case with previous
+        // implementations, the stub will not match and the test will fail.
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationForceNewToken")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer_always_new"));
+        RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationForceNewToken")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_jwt_bearer_always_new"));
+    }
+
+    @Order(8)
     @Test
     public void testEchoTokensJwtBearerAuthenticationFromFile() {
         RestAssured.when().get("/frontend/echoTokenJwtBearerAuthenticationFromFile")

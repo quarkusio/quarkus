@@ -16,7 +16,7 @@
         <vaadin.version>24.8.3</vaadin.version>
         <lit.version>3.2.1</lit.version>
         <lit-element.version>4.1.1</lit-element.version>
-        <lit-html.version>3.2.1</lit-html.version>
+        <lit-html.version>3.3.1</lit-html.version>
         <ssr-dom-shim.version>1.2.1</ssr-dom-shim.version>
         <trusted-types.version>2.0.7</trusted-types.version>
         <reactive-element.version>2.0.4</reactive-element.version>

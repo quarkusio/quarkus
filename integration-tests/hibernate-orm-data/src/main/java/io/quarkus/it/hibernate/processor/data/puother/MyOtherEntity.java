@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.jpamodelgen.data;
+package io.quarkus.it.hibernate.processor.data.puother;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -6,7 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 
 @Entity
-public class MyEntity {
+public class MyOtherEntity {
 
     @Id
     @GeneratedValue
@@ -15,10 +15,10 @@ public class MyEntity {
     @Column(unique = true)
     public String name;
 
-    MyEntity() {
+    MyOtherEntity() {
     }
 
-    public MyEntity(String name) {
+    public MyOtherEntity(String name) {
         this.name = name;
     }
 

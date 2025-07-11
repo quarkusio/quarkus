@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.jpamodelgen.data;
+package io.quarkus.it.hibernate.processor.data;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 

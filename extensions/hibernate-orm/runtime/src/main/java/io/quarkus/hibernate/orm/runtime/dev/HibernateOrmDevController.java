@@ -120,7 +120,7 @@ public class HibernateOrmDevController {
         Map<String, Object> config = new HashMap<>(ssr.getService(ConfigurationService.class).getSettings());
         config.put(AvailableSettings.HBM2DDL_DELIMITER, ";");
         config.put(AvailableSettings.FORMAT_SQL, true);
-        config.put(AvailableSettings.HBM2DDL_IMPORT_FILES, importFiles);
+        config.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, importFiles);
         ExceptionHandlerCollectingImpl exceptionHandler = new ExceptionHandlerCollectingImpl();
         try {
             final ExecutionOptions executionOptions = SchemaManagementToolCoordinator.buildExecutionOptions(

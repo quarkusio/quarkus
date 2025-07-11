@@ -4,7 +4,7 @@ plugins {
 
 dependencies {
     implementation project(':common')
-    implementation("io.quarkus:quarkus-bootstrap-maven-resolver:${quarkusPlatformVersion}") {
+    implementation("io.quarkus:quarkus-bootstrap-core:${quarkusPlatformVersion}") {
         exclude group: '*'
     }
 }

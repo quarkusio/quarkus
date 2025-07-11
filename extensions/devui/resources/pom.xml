@@ -3,12 +3,13 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-vertx-http-parent</artifactId>
+        <artifactId>quarkus-devui-parent</artifactId>
         <version>999-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
-    <artifactId>quarkus-vertx-http-dev-ui-resources</artifactId>
-    <name>Quarkus - Vert.x - HTTP - Dev UI Resources</name>
+    <artifactId>quarkus-devui-resources</artifactId>
+    <name>Quarkus - Dev UI - Resources</name>
+    <description>Quarkus Dev UI Resources (Javascript, CSS and HTML)</description>
     
     <dependencies>
         <!-- Vaadin Router -->

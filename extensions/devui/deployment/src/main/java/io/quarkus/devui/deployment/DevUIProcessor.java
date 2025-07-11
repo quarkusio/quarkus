@@ -113,7 +113,7 @@ public class DevUIProcessor {
     private final ClassLoader tccl = Thread.currentThread().getContextClassLoader();
 
     private static final String JAR = "jar";
-    private static final GACT UI_JAR = new GACT("io.quarkus", "quarkus-vertx-http-dev-ui-resources", null, JAR);
+    private static final GACT UI_JAR = new GACT("io.quarkus", "quarkus-devui-resources", null, JAR);
     private static final String NAME = "name";
     private static final String DESCRIPTION = "description";
     private static final String ARTIFACT = "artifact";
@@ -893,7 +893,7 @@ public class DevUIProcessor {
     private String getNamespace(ArtifactKey artifactKey) {
         String namespace = artifactKey.getGroupId() + "." + artifactKey.getArtifactId();
 
-        if (namespace.equals("io.quarkus.quarkus-vertx-http-dev-ui-resources")) {
+        if (namespace.equals("io.quarkus.quarkus-devui-resources")) {
             // Internal
             namespace = "";
         } else if (namespace.endsWith("-deployment")) {

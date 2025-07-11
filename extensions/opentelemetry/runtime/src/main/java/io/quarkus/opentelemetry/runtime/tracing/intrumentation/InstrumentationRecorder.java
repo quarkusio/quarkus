@@ -54,12 +54,12 @@ public class InstrumentationRecorder {
     /* RUNTIME INIT */
     @RuntimeInit
     public void setupVertxTracer(BeanContainer beanContainer, boolean sqlClientAvailable, boolean redisClientAvailable) {
+        OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class); // always force initialization of OTel
 
         if (runtimeConfig.getValue().sdkDisabled()) {
             return;
         }
 
-        OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
         List<InstrumenterVertxTracer<?, ?>> tracers = new ArrayList<>(4);
         if (runtimeConfig.getValue().instrument().vertxHttp()) {
             tracers.add(new HttpInstrumenterVertxTracer(openTelemetry, runtimeConfig.getValue(), buildConfig));

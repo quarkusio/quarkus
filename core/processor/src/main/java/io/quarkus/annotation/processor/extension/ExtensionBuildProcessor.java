@@ -26,7 +26,6 @@ import io.quarkus.annotation.processor.util.Utils;
 
 public class ExtensionBuildProcessor implements ExtensionProcessor {
 
-    private Config config;
     private Utils utils;
 
     private final Set<String> processorClassNames = new HashSet<>();
@@ -37,7 +36,6 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
 
     @Override
     public void init(Config config, Utils utils) {
-        this.config = config;
         this.utils = utils;
     }
 
@@ -155,22 +153,12 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
     private void processConfigRoot(RoundEnvironment roundEnv, TypeElement annotation) {
         for (TypeElement configRoot : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
             configRootClassNames.add(utils.element().getBinaryName(configRoot));
-
-            // TODO ideally we would use config.useConfigMapping() but core is currently a mess
-            // so using the annotations instead
-            if (!utils.element().isAnnotationPresent(configRoot, Types.ANNOTATION_CONFIG_MAPPING)) {
-                utils.accessorGenerator().generateAccessor(configRoot);
-            }
         }
     }
 
     private void processConfigGroup(RoundEnvironment roundEnv, TypeElement annotation) {
         for (TypeElement configGroup : typesIn(roundEnv.getElementsAnnotatedWith(annotation))) {
-            // TODO for config groups, we generate an accessor only if we don't use @ConfigMapping
-            // and for core and messaging which are still a mess
-            if (!config.useConfigMapping() || config.getExtension().isMixedModule()) {
-                utils.accessorGenerator().generateAccessor(configGroup);
-            }
+            // do nothing for now
         }
     }
 

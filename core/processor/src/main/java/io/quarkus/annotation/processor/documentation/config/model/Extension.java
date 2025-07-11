@@ -55,13 +55,6 @@ public record Extension(String groupId, String artifactId, String name,
         return Objects.equals(artifactId, other.artifactId) && Objects.equals(groupId, other.groupId);
     }
 
-    // TODO #42114 remove once fixed
-    @Deprecated(forRemoval = true)
-    @JsonIgnore
-    public boolean isMixedModule() {
-        return "io.quarkus".equals(groupId) && ("quarkus-core".equals(artifactId) || "quarkus-vertx-http".equals(artifactId));
-    }
-
     @JsonIgnore
     public Extension normalizeCommonOrInternal() {
         if (!commonOrInternal()) {

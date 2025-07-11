@@ -31,11 +31,15 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
     private static final int PANDAPROXY_PORT = 8082;
 
     RedpandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String defaultNetworkId,
-            boolean useSharedNetwork, RedpandaBuildTimeConfig redpandaConfig) {
+            String serviceName, boolean useSharedNetwork, RedpandaBuildTimeConfig redpandaConfig) {
         super(dockerImageName);
         this.fixedExposedPort = fixedExposedPort;
         this.useSharedNetwork = useSharedNetwork;
         this.redpandaConfig = redpandaConfig;
+
+        if (serviceName != null) { // Only adds the label in dev mode.
+            withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, serviceName);
+        }
 
         // For redpanda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/
         withCreateContainerCmdModifier(cmd -> {

@@ -25,10 +25,13 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
     private final String hostName;
 
     public KafkaNativeContainer(DockerImageName dockerImageName, int fixedExposedPort, String defaultNetworkId,
-            boolean useSharedNetwork) {
+            String serviceName, boolean useSharedNetwork) {
         super(dockerImageName);
         this.fixedExposedPort = fixedExposedPort;
         this.useSharedNetwork = useSharedNetwork;
+        if (serviceName != null) {
+            withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, serviceName);
+        }
         String cmd = String.format("while [ ! -f %s ]; do sleep 0.1; done; sleep 0.1; %s", STARTER_SCRIPT, STARTER_SCRIPT);
         withCommand("sh", "-c", cmd);
         waitingFor(Wait.forLogMessage(".*Kafka broker started.*", 1));

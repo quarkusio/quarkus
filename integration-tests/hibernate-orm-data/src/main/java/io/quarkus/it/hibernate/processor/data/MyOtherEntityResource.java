@@ -1,4 +1,4 @@
-package io.quarkus.it.hibernate.jpamodelgen.data;
+package io.quarkus.it.hibernate.processor.data;
 
 import java.util.List;
 
@@ -17,31 +17,35 @@ import jakarta.ws.rs.Produces;
 
 import org.jboss.resteasy.reactive.RestPath;
 
+import io.quarkus.it.hibernate.processor.data.puother.MyOtherEntity;
+import io.quarkus.it.hibernate.processor.data.puother.MyOtherEntity_;
+import io.quarkus.it.hibernate.processor.data.puother.MyOtherRepository;
+
 @ApplicationScoped
 @Produces("application/json")
 @Consumes("application/json")
-@Path("/data/")
-public class MyEntityResource {
+@Path("/data/other")
+public class MyOtherEntityResource {
 
     @Inject
-    MyRepository repository;
+    MyOtherRepository repository;
 
     @POST
     @Transactional
-    public void create(MyEntity entity) {
+    public void create(MyOtherEntity entity) {
         repository.insert(entity);
     }
 
     @GET
-    public List<MyEntity> get() {
-        return repository.findAll(Order.by(Sort.asc(MyEntity_.NAME))).toList();
+    public List<MyOtherEntity> get() {
+        return repository.findAll(Order.by(Sort.asc(MyOtherEntity_.NAME))).toList();
     }
 
     @GET
     @Transactional
     @Path("/by/name/{name}")
-    public MyEntity getByName(@RestPath String name) {
-        List<MyEntity> entities = repository.findByName(name);
+    public MyOtherEntity getByName(@RestPath String name) {
+        List<MyOtherEntity> entities = repository.findByName(name);
         if (entities.isEmpty()) {
             throw new NotFoundException();
         }
@@ -52,7 +56,7 @@ public class MyEntityResource {
     @Transactional
     @Path("/rename/{before}/to/{after}")
     public void rename(@RestPath String before, @RestPath String after) {
-        MyEntity byName = getByName(before);
+        MyOtherEntity byName = getByName(before);
         byName.name = after;
         repository.update(byName);
     }

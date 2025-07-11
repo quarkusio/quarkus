@@ -798,7 +798,7 @@ Or if you use a database schema migration tool like xref:flyway.adoc[Flyway] or 
 With this approach when making changes to an entity, make sure to adapt the database schema accordingly;
 you could also use `validate` to have Hibernate verify the schema matches its expectations.
 
-WARNING: Do not use `quarkus.hibernate-orm.database.generation` `drop-and-create` and `update` in your production environment.
+WARNING: Do not use `quarkus.hibernate-orm.schema-management.strategy` `drop-and-create` and `update` in your production environment.
 
 
 These approaches become really powerful when combined with Quarkus configuration profiles.
@@ -809,13 +809,13 @@ This is great because you can define different combinations of Hibernate ORM pro
 [source,properties]
 .application.properties
 ----
-%dev.quarkus.hibernate-orm.database.generation = drop-and-create
+%dev.quarkus.hibernate-orm.schema-management.strategy = drop-and-create
 %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
 
-%dev-with-data.quarkus.hibernate-orm.database.generation = update
+%dev-with-data.quarkus.hibernate-orm.schema-management.strategy = update
 %dev-with-data.quarkus.hibernate-orm.sql-load-script = no-file
 
-%prod.quarkus.hibernate-orm.database.generation = none
+%prod.quarkus.hibernate-orm.schema-management.strategy = none
 %prod.quarkus.hibernate-orm.sql-load-script = no-file
 ----
 
@@ -844,7 +844,7 @@ Add the following in your properties file.
 [source,properties]
 .application.properties
 ----
-%prod.quarkus.hibernate-orm.database.generation = none
+%prod.quarkus.hibernate-orm.schema-management.strategy = none
 %prod.quarkus.hibernate-orm.sql-load-script = no-file
 ----
 

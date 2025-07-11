@@ -1555,6 +1555,8 @@ And this config map resource will be integrated into the generated `kubernetes.j
 
 == Service Binding [[service_binding]]
 
+WARNING: Service Binding support has been deprecated
+
 Quarkus supports the link:https://github.com/servicebinding/spec[Service Binding Specification for Kubernetes] to bind services to applications.
 
 Specifically, Quarkus implements the link:https://github.com/servicebinding/spec#workload-projection[Workload Projection] part of the specification, therefore allowing applications to bind to services, such as a Database or a Broker, without the need for user configuration.
@@ -1599,6 +1601,8 @@ For an example of a workload projection where the directory structure is include
 
 
 == Introduction to the Service Binding Operator
+
+WARNING: Service Binding support has been deprecated
 
 The link:https://github.com/redhat-developer/service-binding-operator[Service Binding Operator] is an Operator that implements link:https://github.com/servicebinding/spec[Service Binding Specification for Kubernetes] and is meant to simplify the binding of services to an application. Containerized applications that support link:https://github.com/servicebinding/spec#workload-projection[Workload Projection] obtain service binding information in the form of volume mounts. The Service Binding Operator reads binding service information and mounts it to the application containers that need it.
 

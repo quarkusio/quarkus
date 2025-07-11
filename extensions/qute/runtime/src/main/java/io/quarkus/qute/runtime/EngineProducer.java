@@ -75,6 +75,7 @@ public class EngineProducer {
     public static final String INJECT_NAMESPACE = "inject";
     public static final String CDI_NAMESPACE = "cdi";
     public static final String DEPENDENT_INSTANCES = "q_dep_inst";
+    public static final Character ALTERNATIVE_EXPR_COMMAND = '=';
 
     private static final String TAGS = "tags/";
 
@@ -278,6 +279,10 @@ public class EngineProducer {
 
         builder.timeout(runtimeConfig.timeout());
         builder.useAsyncTimeout(runtimeConfig.useAsyncTimeout());
+
+        if (config.altExprSyntax()) {
+            builder.setExpressionCommand(ALTERNATIVE_EXPR_COMMAND);
+        }
 
         engine = builder.build();
 

@@ -43,6 +43,7 @@ public final class EngineBuilder {
     long timeout;
     boolean useAsyncTimeout;
     final List<EngineListener> listeners;
+    Character expressionCommand;
 
     EngineBuilder() {
         this.sectionHelperFactories = new HashMap<>();
@@ -333,6 +334,36 @@ public final class EngineBuilder {
      */
     public EngineBuilder addEngineListener(EngineListener listener) {
         this.listeners.add(Objects.requireNonNull(listener));
+        return this;
+    }
+
+    /**
+     * Set the command characted used to identify an output expression. By default, no special command is used.
+     * <p>
+     *
+     * The set of possible commands is limited.
+     * Only ASCII characters are allowed.
+     * Some characters are reserved: {@code #}, {@code /}, {@code @}, {@code _}, {@code |}, {@code !}.
+     * Digit/alphabetic chars are also disallowed.
+     *
+     * @param command
+     * @return self
+     */
+    public EngineBuilder setExpressionCommand(char command) {
+        if (command < 0 || command > 127) {
+            throw new IllegalArgumentException("Command must be an ASCII char: " + command);
+        }
+        if (Parser.Tag.isCommand(command, null)
+                || command == Parser.COMMENT_DELIMITER
+                || command == Parser.CDATA_START_DELIMITER
+                || command == Parser.UNDERSCORE) {
+            throw new IllegalArgumentException("Command is reserved: " + command);
+        }
+        if (Character.isDigit(command)
+                || Character.isAlphabetic(command)) {
+            throw new IllegalArgumentException("Command must not be a digit/alphabetic: " + command);
+        }
+        this.expressionCommand = command;
         return this;
     }
 

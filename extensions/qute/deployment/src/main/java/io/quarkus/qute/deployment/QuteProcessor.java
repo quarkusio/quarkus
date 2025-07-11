@@ -784,7 +784,11 @@ public class QuteProcessor {
                 }
             }
 
-        }).build();
+        });
+
+        if (config.altExprSyntax()) {
+            builder.setExpressionCommand(EngineProducer.ALTERNATIVE_EXPR_COMMAND);
+        }
 
         Engine dummyEngine = builder.build();
         List<CheckedTemplateBuildItem> checkedFragments = checkedTemplates.stream().filter(CheckedTemplateBuildItem::isFragment)

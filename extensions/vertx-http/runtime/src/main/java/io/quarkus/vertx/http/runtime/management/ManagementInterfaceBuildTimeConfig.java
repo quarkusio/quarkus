@@ -10,7 +10,7 @@ import io.smallrye.config.WithName;
 import io.vertx.core.http.ClientAuth;
 
 /**
- * Management interface configuration.
+ * Management interface.
  */
 @ConfigMapping(prefix = "quarkus.management")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)

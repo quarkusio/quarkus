@@ -37,6 +37,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.info.BuildInfo;
 import io.quarkus.info.GitInfo;
 import io.quarkus.info.JavaInfo;
@@ -46,6 +47,7 @@ import io.quarkus.info.deployment.spi.InfoBuildTimeValuesBuildItem;
 import io.quarkus.info.runtime.InfoRecorder;
 import io.quarkus.info.runtime.spi.InfoContributor;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 
@@ -279,6 +281,7 @@ public class InfoProcessor {
             List<InfoBuildTimeContributorBuildItem> contributors,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer,
+            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             InfoRecorder recorder) {
 
         LinkedHashMap<String, Object> buildTimeInfo = new LinkedHashMap<>();
@@ -296,9 +299,18 @@ public class InfoProcessor {
 
         unremovableBeanBuildItemBuildProducer.produce(UnremovableBeanBuildItem.beanTypes(InfoContributor.class));
 
+        RuntimeValue<Map<String, Object>> finalBuildInfo = recorder.getFinalBuildInfo(buildTimeInfo, infoContributors);
+
+        buildTimeActionProducer.produce(new BuildTimeActionBuildItem().actionBuilder()
+                .methodName("getApplicationAndEnvironmentInfo")
+                .description(
+                        "Information about the environment where this Quarkus application is running. "
+                                + "Things like Operating System, Java version Git information and application details is available")
+                .runtime(finalBuildInfo).build());
+
         return RouteBuildItem.newManagementRoute(buildTimeConfig.path())
                 .withRoutePathConfigKey("quarkus.info.path")
-                .withRequestHandler(recorder.handler(buildTimeInfo, infoContributors))
+                .withRequestHandler(recorder.handler(finalBuildInfo))
                 .displayOnNotFoundPage("Info")
                 .build();
     }

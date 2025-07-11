@@ -26,7 +26,7 @@ public class DevUIWebSocket implements Handler<RoutingContext> {
                         ServerWebSocket socket = event.result();
                         addSocket(socket);
                     } else {
-                        LOG.debug("Failed to connect to dev ui communication server", event.cause());
+                        LOG.debug("Failed to connect to dev ui ws server", event.cause());
                     }
                 }
             });
@@ -40,7 +40,7 @@ public class DevUIWebSocket implements Handler<RoutingContext> {
             JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
             jsonRpcRouter.addSocket(session);
         } catch (IllegalStateException ise) {
-            LOG.debug("Failed to connect to dev ui communication server, " + ise.getMessage());
+            LOG.debug("Failed to connect to dev ui ws server, " + ise.getMessage());
         }
     }
 

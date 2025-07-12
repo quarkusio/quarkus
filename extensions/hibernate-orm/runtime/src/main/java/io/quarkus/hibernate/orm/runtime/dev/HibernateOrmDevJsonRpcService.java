@@ -18,6 +18,7 @@ import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.query.Query;
 import org.hibernate.query.spi.SqmQuery;
+import org.jboss.logging.Logger;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
@@ -25,10 +26,12 @@ import io.quarkus.devui.runtime.comms.JsonRpcMessage;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.comms.MessageType;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
-import io.quarkus.logging.Log;
 import io.quarkus.runtime.LaunchMode;
 
 public class HibernateOrmDevJsonRpcService {
+
+    private static final Logger LOG = Logger.getLogger(HibernateOrmDevJsonRpcService.class);
+
     private boolean isDev;
     private String allowedHost;
 
@@ -196,7 +199,7 @@ public class HibernateOrmDevJsonRpcService {
                     (allowedHost != null && !allowedHost.isBlank() && host.equalsIgnoreCase(allowedHost)));
 
         } catch (URISyntaxException e) {
-            Log.warn(e.getMessage());
+            LOG.warn(e.getMessage());
         }
 
         return false;

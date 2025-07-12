@@ -23,6 +23,7 @@ import com.github.dockerjava.api.model.Container;
 import io.quarkus.it.kafka.BundledEndpoint;
 import io.quarkus.it.kafka.KafkaAdminManager;
 import io.quarkus.it.kafka.KafkaAdminTest;
+import io.quarkus.it.kafka.KafkaEndpoint;
 import io.quarkus.test.QuarkusDevModeTest;
 
 public class DevServicesDevModeTest {
@@ -30,11 +31,11 @@ public class DevServicesDevModeTest {
     @RegisterExtension
     public static QuarkusDevModeTest test = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(KafkaAdminManager.class)
+                    .deleteClass(KafkaEndpoint.class)
                     .addClass(BundledEndpoint.class)
+                    .addClass(KafkaAdminManager.class)
                     .addAsResource(new StringAsset("quarkus.kafka.devservices.provider=kafka-native\n" +
-                            "quarkus.kafka.devservices.topic-partitions.test=2\n"
-                            + "quarkus.kafka.devservices.provider=kafka-native\n"), "application.properties"))
+                            "quarkus.kafka.devservices.topic-partitions.test=2\n"), "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(KafkaAdminTest.class));
 
     @Test

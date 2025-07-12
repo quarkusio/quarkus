@@ -29,6 +29,7 @@ import io.quarkus.qute.deployment.TemplatePathBuildItem;
 import io.quarkus.qute.deployment.TemplateVariantsBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem;
 import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class QuteDevUIProcessor {
 
@@ -148,6 +149,7 @@ public class QuteDevUIProcessor {
         return data;
     }
 
+    @SuppressForbidden(reason = "Type#toString() is what we want to use here")
     private List<Map<String, String>> createExtensionMethodsJson(
             List<TemplateExtensionMethodBuildItem> sortedExtensionMethods) {
         List<Map<String, String>> extensionMethods = new ArrayList<>();

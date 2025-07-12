@@ -17,7 +17,7 @@ import org.junit.jupiter.api.AfterEach;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
 
@@ -102,7 +102,7 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
 
     private Process doLaunch(Path jar, File output) throws IOException {
         final String[] commands = {
-                JavaBinFinder.findBin(),
+                ProcessUtil.pathOfJava().toString(),
                 LIVE_RELOAD_PWD_ARG,
                 "-jar",
                 jar.toString()

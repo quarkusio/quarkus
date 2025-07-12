@@ -136,6 +136,10 @@ public class DevUIRecorder {
         return new LocalHostOnlyFilter(hosts);
     }
 
+    public Handler<RoutingContext> createDevUICorsFilter(List<String> hosts) {
+        return new DevUICORSFilter(hosts);
+    }
+
     private static final class DeleteDirectoryRunnable implements Runnable {
 
         private final Path directory;

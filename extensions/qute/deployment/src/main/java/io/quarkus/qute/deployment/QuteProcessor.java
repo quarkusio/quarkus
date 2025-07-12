@@ -98,7 +98,6 @@ import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.logging.Log;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -161,6 +160,7 @@ import io.quarkus.qute.runtime.extensions.StringTemplateExtensions;
 import io.quarkus.qute.runtime.extensions.TimeTemplateExtensions;
 import io.quarkus.qute.runtime.test.RenderedResultsCreator;
 import io.quarkus.runtime.util.StringUtil;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class QuteProcessor {
 
@@ -952,6 +952,7 @@ public class QuteProcessor {
     }
 
     @SuppressWarnings("incomplete-switch")
+    @SuppressForbidden(reason = "Type#toString() is what we want to use here")
     private static String getCheckedTemplateParameterTypeName(Type type) {
         switch (type.kind()) {
             case PARAMETERIZED_TYPE:
@@ -1196,6 +1197,7 @@ public class QuteProcessor {
         return pattern.toString();
     }
 
+    @SuppressForbidden(reason = "Type#toString() is what we want to use here")
     static MatchResult validateNestedExpressions(QuteConfig config, TemplateAnalysis templateAnalysis, ClassInfo rootClazz,
             Map<String, MatchResult> results,
             Iterable<Predicate<TypeCheck>> excludes, BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions,
@@ -3690,7 +3692,7 @@ public class QuteProcessor {
                 if (sorted.get(0).getPriority() > sorted.get(1).getPriority()) {
                     // Ambiguity resolved - templates with lower priority must be removed
                     List<TemplatePathBuildItem> ignored = sorted.subList(1, sorted.size());
-                    Log.debugf("Duplicity resolved: %s is used, templates ignored:\n\t- %s", sorted.get(0).getSourceInfo(),
+                    LOGGER.debugf("Duplicity resolved: %s is used, templates ignored:\n\t- %s", sorted.get(0).getSourceInfo(),
                             ignored.stream().map(TemplatePathBuildItem::getSourceInfo).collect(Collectors.joining("\n\t- ")));
                     it.remove();
                     ignored.forEach(toRemove::add);

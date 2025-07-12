@@ -45,6 +45,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         roles.addConfigMappingValues(mapping.roles());
         token.addConfigMappingValues(mapping.token());
         logout.addConfigMappingValues(mapping.logout());
+        resourceMetadata.addConfigMappingValues(mapping.resourceMetadata());
         certificateChain.addConfigMappingValues(mapping.certificateChain());
         authentication.addConfigMappingValues(mapping.authentication());
         codeGrant.addConfigMappingValues(mapping.codeGrant());
@@ -2742,6 +2743,38 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
     }
 
+    @Deprecated(since = "3.25", forRemoval = true)
+    ResourceMetadata resourceMetadata = new ResourceMetadata();
+
+    @Deprecated(since = "3.25", forRemoval = true)
+    public static class ResourceMetadata implements io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata {
+
+        public boolean enabled;
+        public Optional<String> resource = Optional.empty();
+        public boolean forceHttpsScheme = true;
+
+        @Override
+        public boolean enabled() {
+            return enabled;
+        }
+
+        @Override
+        public Optional<String> resource() {
+            return resource;
+        }
+
+        @Override
+        public boolean forceHttpsScheme() {
+            return forceHttpsScheme;
+        }
+
+        private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata mapping) {
+            enabled = mapping.enabled();
+            resource = mapping.resource();
+            forceHttpsScheme = mapping.forceHttpsScheme();
+        }
+    }
+
     public static enum ApplicationType {
         /**
          * A {@code WEB_APP} is a client that serves pages, usually a front-end application. For this type of client the
@@ -2986,6 +3019,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Override
     public io.quarkus.oidc.runtime.OidcTenantConfig.Logout logout() {
         return logout;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata resourceMetadata() {
+        return resourceMetadata;
     }
 
     @Override

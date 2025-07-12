@@ -56,6 +56,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -63,10 +64,12 @@ import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.response.Response;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
@@ -355,6 +358,8 @@ public class CodeFlowAuthorizationTest {
         clearCache();
         // Internal ID token, allow in memory cache = false, cacheUserInfoInIdtoken = false
         doTestCodeFlowUserInfo("code-flow-user-info-github-cache-disabled", 25200, false, false, 0, 4);
+        clearCache();
+        doTestCodeFlowUserInfoDynamicGithubUpdate();
         clearCache();
     }
 
@@ -672,8 +677,14 @@ public class CodeFlowAuthorizationTest {
             textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-dynamic-github");
             assertEquals("alice:alice:alice, cache size: 0, TenantConfigResolver: true", textPage.getContent());
 
+            // Dynamic `code-flow-user-info-dynamic-github` tenant, resource is `code-flow-user-info-dynamic-github`
+            checkResourceMetadata("code-flow-user-info-dynamic-github", "quarkus");
+
             textPage = webClient.getPage("http://localhost:8081/code-flow-user-info-dynamic-github?update=true");
             assertEquals("alice@somecompany.com:alice:alice, cache size: 0, TenantConfigResolver: true", textPage.getContent());
+
+            // Dynamic `code-flow-user-info-dynamic-github` tenant, resource is `github`
+            checkResourceMetadata("github", "quarkus");
 
             htmlPage = webClient.getPage("http://localhost:8081/code-flow-user-info-dynamic-github?reconnect=true");
             htmlForm = htmlPage.getFormByName("form");
@@ -970,5 +981,20 @@ public class CodeFlowAuthorizationTest {
         return webClient.getCookieManager().getCookies().stream()
                 .filter(c -> c.getName().startsWith("q_auth" + (tenantId == null ? "" : "_" + tenantId))).findFirst()
                 .orElse(null);
+    }
+
+    private static void checkResourceMetadata(String resource, String realm) {
+        Response metadataResponse = RestAssured.when()
+                .get("http://localhost:8081" + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH
+                        + (resource == null ? "" : "/" + resource));
+        JsonObject jsonMetadata = new JsonObject(metadataResponse.asString());
+        assertEquals("https://localhost:8081" + (resource == null ? "" : "/" + resource),
+                jsonMetadata.getString(OidcConstants.RESOURCE_METADATA_RESOURCE));
+        JsonArray jsonAuthorizationServers = jsonMetadata.getJsonArray(OidcConstants.RESOURCE_METADATA_AUTHORIZATION_SERVERS);
+        assertEquals(1, jsonAuthorizationServers.size());
+
+        String authorizationServer = jsonAuthorizationServers.getString(0);
+        assertTrue(authorizationServer.startsWith("http://localhost:"));
+        assertTrue(authorizationServer.endsWith("/realms/" + realm));
     }
 }

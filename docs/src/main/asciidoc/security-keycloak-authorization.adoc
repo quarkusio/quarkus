@@ -319,7 +319,7 @@ docker run --name keycloak \
   quay.io/keycloak/keycloak:{keycloak.version} \ <1>
   start --hostname-strict=false --https-key-store-file=/etc/keycloak-keystore.jks <2>
 ----
-<1> For `keycloak.version`, ensure the version is `26.2.4` or later.
+<1> For `keycloak.version`, ensure the version is `26.3.0` or later.
 <2> For Keycloak keystore, use the `keycloak-keystore.jks` file located at https://github.com/quarkusio/quarkus-quickstarts/blob/main/security-keycloak-authorization-quickstart/config/keycloak-keystore.jks[quarkus-quickstarts/security-keycloak-authorization-quickstart/config].
 
 .Accessing the Keycloak server

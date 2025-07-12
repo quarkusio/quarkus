@@ -110,10 +110,11 @@ public class ServerWebSocketProcessor {
         final IndexView index = indexBuildItem.getIndex();
         WebsocketClientProcessor.registerCodersForReflection(reflection, index.getAnnotations(SERVER_ENDPOINT));
 
+        int priority = 1 + FilterBuildItem.AUTHORIZATION;
         return new FilterBuildItem(
                 recorder.createHandler(webSocketDeploymentInfoBuildItem.get().getInfo(),
                         serverWebSocketContainerBuildItem.get().getContainer()),
-                100);
+                priority);
     }
 
     @BuildStep

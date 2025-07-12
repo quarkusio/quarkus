@@ -1,6 +1,7 @@
 package io.quarkus.devservices.oidc;
 
 import static io.quarkus.deployment.bean.JavaBeanUtil.capitalize;
+import static java.util.Base64.getDecoder;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,6 +42,7 @@ import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.jwt.build.Jwt;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.Vertx;
@@ -552,10 +554,8 @@ public class OidcDevServicesProcessor {
 
     private static void passwordTokenEndpoint(RoutingContext rc) {
         String scope = rc.request().formAttributes().get("scope");
-        String clientId = rc.request().formAttributes().get("client_id");
         String username = rc.request().formAttributes().get("username");
-        if (clientId == null || clientId.isEmpty()) {
-            LOG.warn("Client id is not present, denying token request");
+        if (clientCredentialsAreInvalid(rc, false)) {
             invalidTokenResponse(rc);
             return;
         }
@@ -583,9 +583,7 @@ public class OidcDevServicesProcessor {
 
     private static void clientCredentialsTokenEndpoint(RoutingContext rc) {
         String scope = rc.request().formAttributes().get("scope");
-        String clientId = rc.request().formAttributes().get("client_id");
-        if (clientId == null || clientId.isEmpty()) {
-            LOG.warn("Client id is not present, denying token request");
+        if (clientCredentialsAreInvalid(rc, false)) {
             invalidTokenResponse(rc);
             return;
         }
@@ -603,20 +601,60 @@ public class OidcDevServicesProcessor {
                 .endAndForget(data);
     }
 
-    private static void refreshTokenEndpoint(RoutingContext rc) {
-        String clientId = rc.request().formAttributes().get("client_id");
-        String clientSecret = rc.request().formAttributes().get("client_secret");
-        String scope = rc.request().formAttributes().get("scope");
-        if (clientId == null || clientId.isEmpty()) {
+    private static boolean clientCredentialsAreInvalid(RoutingContext rc, boolean requireClientSecret) {
+        // first try to get credentials form attributes
+        String reqClientId = rc.request().formAttributes().get("client_id");
+        String reqClientSecret = rc.request().formAttributes().get("client_secret");
+        // and fallback to basic authentication method
+        if (reqClientSecret == null || reqClientSecret.isEmpty()) {
+            String authorizationHeader = rc.request().getHeader(HttpHeaders.AUTHORIZATION);
+            if (authorizationHeader != null && authorizationHeader.startsWith("Basic ")) {
+                String encodedClientIdToSecret = authorizationHeader.substring("Basic ".length()).trim();
+                String[] clientIdAndSecret = decodeBasicCredentials(encodedClientIdToSecret).split(":");
+                if (clientIdAndSecret.length != 2) {
+                    LOG.warn("Malformed client credentials submitted with the HTTP Authorization Basic scheme");
+                    return true;
+                }
+                reqClientId = clientIdAndSecret[0];
+                reqClientSecret = clientIdAndSecret[1];
+            }
+        }
+
+        if (reqClientId == null || reqClientId.isEmpty()) {
             LOG.warn("Client id is not present, denying token request");
+            return true;
+        } else if (!reqClientId.equals(clientId)) {
+            LOG.warnf("Expected client id '%s', but got '%s', denying token request", clientId, reqClientId);
+            return true;
+        }
+
+        // TODO: this method verifies the client secret only when present or when required previously
+        //    we should extend client credentials verification
+        if (reqClientSecret == null || reqClientSecret.isEmpty()) {
+            if (requireClientSecret) {
+                LOG.warn("Client secret is not present, denying token request");
+                return true;
+            } else {
+                LOG.debug("Client secret is not present");
+            }
+        } else if (!reqClientSecret.equals(clientSecret)) {
+            LOG.warnf("Expected client secret '%s', but got '%s', denying token request", clientSecret, reqClientSecret);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static String decodeBasicCredentials(String basicCredentials) {
+        return new String(getDecoder().decode(basicCredentials.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
+    }
+
+    private static void refreshTokenEndpoint(RoutingContext rc) {
+        if (clientCredentialsAreInvalid(rc, true)) {
             invalidTokenResponse(rc);
             return;
         }
-        if (clientSecret == null || clientSecret.isEmpty()) {
-            LOG.warn("Client secret is not present, denying token request");
-            invalidTokenResponse(rc);
-            return;
-        }
+        String scope = rc.request().formAttributes().get("scope");
         String refreshToken = rc.request().formAttributes().get("refresh_token");
         UserAndRoles userAndRoles = decode(refreshToken);
         if (userAndRoles == null) {

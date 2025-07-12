@@ -11,12 +11,15 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
+import io.smallrye.common.annotation.SuppressForbidden;
+
 public class Name implements Comparable<Name> {
 
     public static Name from(DotName dotName) {
         return new Name(dotName.toString(), dotName.withoutPackagePrefix());
     }
 
+    @SuppressForbidden(reason = "Type.toString() is what we need here")
     public static Name from(Type type) {
         return new Name(type.toString(), createSimpleName(type));
     }
@@ -45,6 +48,7 @@ public class Name implements Comparable<Name> {
         return name;
     }
 
+    @SuppressForbidden(reason = "Type.toString() is what we need here, in the ARRAY case")
     static String createSimpleName(Type type) {
         switch (type.kind()) {
             case CLASS:

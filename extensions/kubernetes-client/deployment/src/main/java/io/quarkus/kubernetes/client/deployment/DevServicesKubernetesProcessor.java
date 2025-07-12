@@ -45,12 +45,14 @@ import com.dajudge.kindcontainer.client.config.UserSpec;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
-import io.fabric8.kubernetes.client.Config;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.client.*;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
@@ -58,6 +60,7 @@ import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevServ
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.console.ConsoleInstalledBuildItem;
 import io.quarkus.deployment.console.StartupLogCompressor;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -160,6 +163,68 @@ public class DevServicesKubernetesProcessor {
         }
 
         return devService.toBuildItem();
+    }
+
+    /**
+     * Deploys a set of manifests as files in the resources directory to the Kubernetes dev service.
+     * This build step produces a {@link ServiceStartBuildItem} that ensures the Build Step always runs even if no other build
+     * step consumes it.
+     *
+     * @param kubernetesDevServiceInfoBuildItem This ensures the manifests are deployed after the Kubernetes dev service is
+     *        started.
+     * @param kubernetesClientBuildTimeConfig This config is used to read the extension configuration for dev services.
+     */
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    public void applyManifests(
+            KubernetesDevServiceInfoBuildItem kubernetesDevServiceInfoBuildItem,
+            KubernetesClientBuildConfig kubernetesClientBuildTimeConfig) {
+        if (kubernetesDevServiceInfoBuildItem == null) {
+            // Gracefully return in case the Kubernetes dev service could not be spun up.
+            log.warn("Cannot apply manifests because the Kubernetes dev service is not running");
+            return;
+        }
+
+        var manifests = kubernetesClientBuildTimeConfig.devservices().manifests();
+
+        // Do not run the manifest deployment if no manifests are configured
+        if (manifests.isEmpty())
+            return;
+
+        try (KubernetesClient client = new KubernetesClientBuilder()
+                .withConfig(Config.fromKubeconfig(kubernetesDevServiceInfoBuildItem.getKubeConfig()))
+                .build()) {
+            for (String manifestPath : manifests.get()) {
+                // Load the manifest from the resources directory
+                InputStream manifestStream = Thread.currentThread()
+                        .getContextClassLoader()
+                        .getResourceAsStream(manifestPath);
+
+                if (manifestStream == null) {
+                    log.errorf("Could not find manifest file in resources: %s", manifestPath);
+                    continue;
+                }
+
+                try (manifestStream) {
+                    try {
+                        // A single manifest file may contain multiple resources to deploy
+                        List<HasMetadata> resources = client.load(manifestStream).items();
+
+                        if (resources.isEmpty()) {
+                            log.warnf("No resources found in manifest: %s", manifestPath);
+                        } else {
+                            resources.forEach(resource -> client.resource(resource).create());
+                        }
+                    } catch (Exception ex) {
+                        log.errorf("Failed to deploy manifest %s: %s", manifestPath, ex.getMessage());
+                    }
+                }
+
+                log.infof("Applied manifest %s.", manifestPath);
+            }
+        } catch (Exception e) {
+            log.error("Failed to create Kubernetes client while trying to deploy manifests.", e);
+        }
     }
 
     private void shutdownCluster() {
@@ -333,6 +398,7 @@ public class DevServicesKubernetesProcessor {
         public boolean shared;
         public String serviceName;
         public Map<String, String> containerEnv;
+        public Optional<List<String>> manifests;
 
         public KubernetesDevServiceCfg(KubernetesDevServicesBuildTimeConfig config) {
             this.devServicesEnabled = config.enabled();
@@ -344,6 +410,7 @@ public class DevServicesKubernetesProcessor {
             this.flavor = config.flavor();
             this.shared = config.shared();
             this.containerEnv = config.containerEnv();
+            this.manifests = config.manifests();
         }
 
         @Override

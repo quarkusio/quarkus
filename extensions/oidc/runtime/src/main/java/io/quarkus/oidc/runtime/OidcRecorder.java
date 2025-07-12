@@ -1,11 +1,8 @@
 package io.quarkus.oidc.runtime;
 
 import static io.quarkus.runtime.configuration.DurationConverter.parseDuration;
-import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -19,8 +16,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.oidc.AccessTokenCredential;
-import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantIdentityProvider;
@@ -29,13 +24,8 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.security.AuthenticationFailedException;
-import io.quarkus.security.identity.AuthenticationRequestContext;
-import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.identity.request.TokenAuthenticationRequest;
 import io.quarkus.security.runtime.SecurityConfig;
-import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.smallrye.mutiny.Uni;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
@@ -188,51 +178,8 @@ public class OidcRecorder {
         return beanContainer.beanInstance(BackChannelLogoutHandler.class);
     }
 
-    private static final class TenantSpecificOidcIdentityProvider extends OidcIdentityProvider
-            implements TenantIdentityProvider {
-
-        private final String tenantId;
-        private final BlockingSecurityExecutor blockingExecutor;
-
-        private TenantSpecificOidcIdentityProvider(String tenantId) {
-            super(Arc.container().instance(DefaultTenantConfigResolver.class).get(),
-                    Arc.container().instance(BlockingSecurityExecutor.class).get());
-            this.blockingExecutor = Arc.container().instance(BlockingSecurityExecutor.class).get();
-            this.tenantId = tenantId;
-        }
-
-        @Override
-        public Uni<SecurityIdentity> authenticate(AccessTokenCredential token) {
-            return authenticate(new TokenAuthenticationRequest(token));
-        }
-
-        @Override
-        protected Uni<TenantConfigContext> resolveTenantConfigContext(TokenAuthenticationRequest request,
-                AuthenticationRequestContext context) {
-            return tenantResolver.resolveContext(tenantId).onItem().ifNull().failWith(new Supplier<Throwable>() {
-                @Override
-                public Throwable get() {
-                    return new OIDCException("Failed to resolve tenant context");
-                }
-            });
-        }
-
-        @Override
-        protected Map<String, Object> getRequestData(TokenAuthenticationRequest request) {
-            RoutingContext context = getRoutingContextAttribute(request);
-            if (context != null) {
-                return context.data();
-            }
-            return new HashMap<>();
-        }
-
-        private Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request) {
-            return authenticate(request, new AuthenticationRequestContext() {
-                @Override
-                public Uni<SecurityIdentity> runBlocking(Supplier<SecurityIdentity> function) {
-                    return blockingExecutor.executeBlocking(function);
-                }
-            });
-        }
+    public Handler<RoutingContext> getResourceMetadataHandler(BeanContainer beanContainer) {
+        return beanContainer.beanInstance(ResourceMetadataHandler.class);
     }
+
 }

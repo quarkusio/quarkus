@@ -15,17 +15,20 @@ import java.util.function.Predicate;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.HttpPermissionCarrier;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.Policy;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
+import io.quarkus.vertx.http.security.Basic;
 import io.quarkus.vertx.http.security.HttpSecurity;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.ext.web.RoutingContext;
@@ -35,11 +38,52 @@ final class HttpSecurityImpl implements HttpSecurity {
     private static final Logger LOG = Logger.getLogger(HttpSecurityImpl.class.getName());
 
     private final List<HttpPermissionCarrier> httpPermissions;
+    private final List<HttpAuthenticationMechanism> mechanisms;
     private RolesMapping rolesMapping;
 
     HttpSecurityImpl() {
         this.rolesMapping = null;
         this.httpPermissions = new ArrayList<>();
+        this.mechanisms = new ArrayList<>();
+    }
+
+    @Override
+    public HttpSecurity mechanism(HttpAuthenticationMechanism mechanism) {
+        Objects.requireNonNull(mechanism);
+        if (mechanism.getClass() == FormAuthenticationMechanism.class) {
+            final FormAuthConfig defaults = new SmallRyeConfigBuilder()
+                    .addDiscoveredConverters()
+                    .withDefaultValue("quarkus.http.host", "8081")
+                    .withMapping(VertxHttpConfig.class)
+                    .build()
+                    .getConfigMapping(VertxHttpConfig.class)
+                    .auth().form();
+            final FormAuthConfig actualConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                    .getConfigMapping(VertxHttpConfig.class).auth().form();
+            if (!actualConfig.equals(defaults)) {
+                throw new IllegalArgumentException("Cannot configure form-based authentication programmatically "
+                        + "because it has already been configured in the 'application.properties' file");
+            }
+        } else if (mechanism.getClass() == BasicAuthenticationMechanism.class) {
+            String actualRealm = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                    .getConfigMapping(VertxHttpConfig.class).auth().realm().orElse(null);
+            if (actualRealm != null) {
+                throw new IllegalArgumentException("Cannot configure basic authentication programmatically because "
+                        + "the authentication realm has already been configured in the 'application.properties' file");
+            }
+        }
+        this.mechanisms.add(mechanism);
+        return this;
+    }
+
+    @Override
+    public HttpSecurity basic() {
+        return mechanism(Basic.create());
+    }
+
+    @Override
+    public HttpSecurity basic(String authenticationRealm) {
+        return mechanism(Basic.realm(authenticationRealm));
     }
 
     @Override
@@ -249,25 +293,11 @@ final class HttpSecurityImpl implements HttpSecurity {
 
         @Override
         public HttpPermission basic() {
-            // TODO: we can enable it automatically during the runtime instead of this
-            boolean isBasicAuthDisabled = !Arc.container().select(BasicAuthenticationMechanism.class).isResolvable();
-            if (isBasicAuthDisabled) {
-                LOG.debug("Basic authentication is not available, you can enable it by setting " +
-                        "the 'quarkus.http.auth.basic' configuration property to 'true'. " +
-                        "Please ignore this warning if you provided a custom basic authentication mechanism.");
-            }
             return authenticatedWith(BasicAuthentication.AUTH_MECHANISM_SCHEME);
         }
 
         @Override
         public HttpPermission form() {
-            // TODO: we can enable it automatically during the runtime instead of this
-            boolean isFormAuthDisabled = !Arc.container().select(FormAuthenticationMechanism.class).isResolvable();
-            if (isFormAuthDisabled) {
-                LOG.debug("Form-based authentication is not available, you can enable it by setting " +
-                        "the 'quarkus.http.auth.form.enabled' configuration property to 'true'. " +
-                        "Please ignore this warning if you provided a custom form-based authentication mechanism.");
-            }
             return authenticatedWith(FormAuthentication.AUTH_MECHANISM_SCHEME);
         }
 
@@ -310,17 +340,6 @@ final class HttpSecurityImpl implements HttpSecurity {
                 throw new IllegalArgumentException("Authentication mechanism must not be null or blank");
             }
             this.authMechanism = new HttpSecurityConfiguration.AuthenticationMechanism(mechanism, null);
-            return this;
-        }
-
-        @Override
-        public HttpPermission authenticatedWith(HttpAuthenticationMechanism mechanism) {
-            validateAuthenticationNotSetYet();
-            requireAuthenticationByDefault();
-            if (mechanism == null) {
-                throw new IllegalArgumentException("HttpAuthenticationMechanism must not be null");
-            }
-            this.authMechanism = new HttpSecurityConfiguration.AuthenticationMechanism(null, mechanism);
             return this;
         }
 
@@ -490,6 +509,10 @@ final class HttpSecurityImpl implements HttpSecurity {
 
     RolesMapping getRolesMapping() {
         return rolesMapping;
+    }
+
+    List<HttpAuthenticationMechanism> getMechanisms() {
+        return mechanisms.isEmpty() ? List.of() : List.copyOf(mechanisms);
     }
 
     private static VertxHttpBuildTimeConfig getHttpBuildTimeConfig() {

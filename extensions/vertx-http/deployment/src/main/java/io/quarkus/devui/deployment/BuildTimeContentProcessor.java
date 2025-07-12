@@ -98,9 +98,12 @@ public class BuildTimeContentProcessor {
      * This will be merged into the final importmap
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    InternalImportMapBuildItem createKnownInternalImportMap(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+    InternalImportMapBuildItem createKnownInternalImportMap(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            DevUIConfig config) {
 
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
+        String devUIContext = config.contextRoot().orElse("");
+        String contextRoot = devUIContext + nonApplicationRootPathBuildItem.getNonApplicationRootPath()
+                + EndpointsProcessor.DEV_UI + SLASH;
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
@@ -292,13 +295,15 @@ public class BuildTimeContentProcessor {
      * @param internalImportMapProducer
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    void createBuildTimeConstJsTemplate(CurateOutcomeBuildItem curateOutcomeBuildItem,
+    void createBuildTimeConstJsTemplate(DevUIConfig config,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             List<BuildTimeConstBuildItem> buildTimeConstBuildItems,
             BuildProducer<QuteTemplateBuildItem> quteTemplateProducer,
             BuildProducer<InternalImportMapBuildItem> internalImportMapProducer) {
 
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
+        String contextRoot = config.contextRoot().orElse("") + nonApplicationRootPathBuildItem.getNonApplicationRootPath()
+                + EndpointsProcessor.DEV_UI + SLASH;
 
         QuteTemplateBuildItem quteTemplateBuildItem = new QuteTemplateBuildItem(
                 QuteTemplateBuildItem.DEV_UI);
@@ -361,7 +366,7 @@ public class BuildTimeContentProcessor {
      * @return The QuteTemplate Build item that will create the end result
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    QuteTemplateBuildItem createIndexHtmlTemplate(
+    QuteTemplateBuildItem createIndexHtmlTemplate(DevUIConfig config,
             MvnpmBuildItem mvnpmBuildItem,
             ThemeVarsBuildItem themeVarsBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
@@ -376,7 +381,10 @@ public class BuildTimeContentProcessor {
             aggregator.addMappings(importMap);
         }
 
-        Imports imports = aggregator.aggregate(nonApplicationRootPathBuildItem.getNonApplicationRootPath(), false);
+        String devUIContext = config.contextRoot().orElse("");
+
+        Imports imports = aggregator.aggregate(devUIContext + nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
+                false);
         Map<String, String> currentImportMap = imports.getImports();
         Map<String, String> relocationMap = relocationImportMapBuildItem.getRelocationMap();
         for (Map.Entry<String, String> relocation : relocationMap.entrySet()) {
@@ -397,7 +405,7 @@ public class BuildTimeContentProcessor {
 
         String themeVars = themeVarsBuildItem.getTemplateValue();
         String nonApplicationRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
-        String contextRoot = nonApplicationRoot + EndpointsProcessor.DEV_UI + SLASH;
+        String contextRoot = devUIContext + nonApplicationRoot + EndpointsProcessor.DEV_UI + SLASH;
 
         Map<String, Object> data = Map.of(
                 "nonApplicationRoot", nonApplicationRoot,
@@ -588,9 +596,11 @@ public class BuildTimeContentProcessor {
         applicationInfo.put("groupId", groupId);
         String artifactId = appArtifact.getArtifactId();
         applicationInfo.put("artifactId", artifactId);
-        // Add version info
+
         String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
         applicationInfo.put("contextRoot", contextRoot);
+
+        // Add version info
         applicationInfo.put("quarkusVersion", Version.getVersion());
         applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         applicationInfo.put("applicationVersion",

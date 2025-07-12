@@ -2,7 +2,6 @@ package io.quarkus.it.kafka;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -12,7 +11,6 @@ import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.ports.SocketKit;
 import io.restassured.RestAssured;
 
-@Disabled("https://github.com/quarkusio/quarkus/issues/47627")
 @QuarkusTest
 @TestProfile(DevServicesCustomPortReusableServiceProfile.class)
 public class DevServicesKafkaCustomPortReusableServiceITest {

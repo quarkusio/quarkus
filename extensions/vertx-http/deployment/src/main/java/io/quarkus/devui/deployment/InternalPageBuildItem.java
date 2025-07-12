@@ -19,6 +19,7 @@ public final class InternalPageBuildItem extends MultiBuildItem {
     private final List<Page> pages = new ArrayList<>();
     private final Map<String, Object> buildTimeData = new HashMap<>();
     private final String menuActionComponent;
+    private String headlessComponentLink = null;
 
     public InternalPageBuildItem(String namespaceLabel, int position) {
         this(namespaceLabel, position, null);
@@ -57,5 +58,13 @@ public final class InternalPageBuildItem extends MultiBuildItem {
 
     public Map<String, Object> getBuildTimeData() {
         return buildTimeData;
+    }
+
+    public void setHeadlessComponentLink(String headlessComponentLink) {
+        this.headlessComponentLink = headlessComponentLink;
+    }
+
+    public String getHeadlessComponentLink() {
+        return this.headlessComponentLink;
     }
 }

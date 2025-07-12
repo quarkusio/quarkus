@@ -110,7 +110,7 @@ public class JsonbProcessor {
             if (value != null) {
                 // the Deserializers are constructed internally by JSON-B using a no-args constructor
                 reflectiveClass.produce(
-                        ReflectiveClassBuildItem.builder(value.asClass().toString()).build());
+                        ReflectiveClassBuildItem.builder(value.asClass().name().toString()).build());
             }
         }
     }

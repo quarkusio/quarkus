@@ -21,6 +21,9 @@
         <gpg.skip>true</gpg.skip>
         <quarkus.build.skip>${skipTests}</quarkus.build.skip>
         <native.surefire.skip>${skipTests}</native.surefire.skip>
+
+        <!-- for now, relax forbiddenapis in ITs entirely, we will provide a specific configuration file later -->
+        <forbiddenapis-maven-plugin.phase>none</forbiddenapis-maven-plugin.phase>
     </properties>
 
     <!-- modules are in profile test-modules -->
@@ -325,6 +328,7 @@
                 <module>smallrye-stork-registration</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
+                <module>quartz-deferred-datasource</module>
                 <module>redis-client</module>
                 <module>redis-cache</module>
                 <module>logging-gelf</module>

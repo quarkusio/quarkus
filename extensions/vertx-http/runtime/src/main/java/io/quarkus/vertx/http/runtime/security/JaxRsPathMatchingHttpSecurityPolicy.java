@@ -38,7 +38,7 @@ public class JaxRsPathMatchingHttpSecurityPolicy {
             VertxHttpBuildTimeConfig httpBuildTimeConfig, BlockingSecurityExecutor blockingSecurityExecutor) {
         this.storage = storage;
         this.delegate = new AbstractPathMatchingHttpSecurityPolicy(
-                HttpSecurityConfiguration.get(httpConfig).httpPermissions(),
+                HttpSecurityConfiguration.get().httpPermissions(),
                 httpConfig.auth().rolePolicy(), httpBuildTimeConfig.rootPath(), installedPolicies, JAXRS);
         this.foundNoAnnotatedMethods = storage.getMethodToPolicyName().isEmpty();
         this.requestContext = new DefaultAuthorizationRequestContext(blockingSecurityExecutor);

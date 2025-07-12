@@ -88,7 +88,8 @@ import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessBuilder;
+import io.smallrye.common.process.ProcessUtil;
 
 /**
  * This build step builds both the thin jars and uber jars.
@@ -920,10 +921,7 @@ public class JarResultBuildStep {
             return;
         }
         for (Path resolvedDep : appDep.getResolvedPaths()) {
-            final boolean isDirectory = Files.isDirectory(resolvedDep);
-            // we don't use getFileName() for directories, since directories would often be "classes" ending up merging content from multiple dependencies in the same package
-            final String fileName = isDirectory ? getFileNameForDirectory(appDep)
-                    : appDep.getGroupId() + "." + resolvedDep.getFileName();
+            final String fileName = getJarFileName(appDep, resolvedDep);
             final Path targetPath;
 
             if (allowParentFirst && parentFirstArtifacts.contains(appDep.getKey())) {
@@ -935,7 +933,7 @@ public class JarResultBuildStep {
             }
             runtimeArtifacts.computeIfAbsent(appDep.getKey(), (s) -> new ArrayList<>(1)).add(targetPath);
 
-            if (isDirectory) {
+            if (Files.isDirectory(resolvedDep)) {
                 // This case can happen when we are building a jar from inside the Quarkus repository
                 // and Quarkus Bootstrap's localProjectDiscovery has been set to true. In such a case
                 // the non-jar dependencies are the Quarkus dependencies picked up on the file system
@@ -976,12 +974,20 @@ public class JarResultBuildStep {
     }
 
     /**
-     * Returns a JAR file name to be used for a content of a dependency that is in a directory.
+     * Returns a JAR file name to be used for a content of a dependency, depending on whether the resolved path
+     * is a directory or not.
+     * We don't use getFileName() for directories, since directories would often be "classes" ending up merging
+     * content from multiple dependencies in the same package
      *
      * @param dep dependency
+     * @param resolvedPath path of the resolved dependency
      * @return JAR file name
      */
-    private static String getFileNameForDirectory(ResolvedDependency dep) {
+    public static String getJarFileName(ResolvedDependency dep, Path resolvedPath) {
+        boolean isDirectory = Files.isDirectory(resolvedPath);
+        if (!isDirectory) {
+            return dep.getGroupId() + "." + resolvedPath.getFileName();
+        }
         final StringBuilder sb = new StringBuilder();
         sb.append(dep.getGroupId()).append(".").append(dep.getArtifactId()).append("-");
         if (!dep.getClassifier().isEmpty()) {
@@ -1626,36 +1632,26 @@ public class JarResultBuildStep {
 
             @Override
             public boolean decompile(Path jarToDecompile) {
-                int exitCode;
+                String jarFileName = jarToDecompile.getFileName().toString();
+                int dotIndex = jarFileName.indexOf('.');
+                String outputDirectory = jarFileName.substring(0, dotIndex);
+                var pb = ProcessBuilder.newBuilder(ProcessUtil.pathOfJava())
+                        .arguments(
+                                "-jar",
+                                decompilerJar.toAbsolutePath().toString(),
+                                "-rsy=0", // synthetic methods
+                                "-rbr=0", // bridge methods
+                                jarToDecompile.toAbsolutePath().toString(),
+                                context.decompiledOutputDir.resolve(outputDirectory).toAbsolutePath().toString());
+                if (log.isDebugEnabled()) {
+                    pb.output().consumeLinesWith(8192, log::debug);
+                }
                 try {
-                    int dotIndex = jarToDecompile.getFileName().toString().indexOf('.');
-                    String fileName = jarToDecompile.getFileName().toString().substring(0, dotIndex);
-                    ProcessBuilder processBuilder = new ProcessBuilder(
-                            Arrays.asList(
-                                    JavaBinFinder.findBin(),
-                                    "-jar",
-                                    decompilerJar.toAbsolutePath().toString(),
-                                    "-rsy=0", // synthetic methods
-                                    "-rbr=0", // bridge methods
-                                    jarToDecompile.toAbsolutePath().toString(),
-                                    context.decompiledOutputDir.resolve(fileName).toAbsolutePath().toString()));
-                    if (log.isDebugEnabled()) {
-                        processBuilder.inheritIO();
-                    } else {
-                        processBuilder.redirectError(ProcessBuilder.Redirect.DISCARD.file())
-                                .redirectOutput(ProcessBuilder.Redirect.DISCARD.file());
-                    }
-                    exitCode = processBuilder.start().waitFor();
+                    pb.run();
                 } catch (Exception e) {
-                    log.error("Failed to launch decompiler.", e);
+                    log.error("Decompilation failed", e);
                     return false;
                 }
-
-                if (exitCode != 0) {
-                    log.errorf("Vineflower decompiler exited with error code: %d.", exitCode);
-                    return false;
-                }
-
                 return true;
             }
         }

@@ -21,6 +21,7 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Jwks;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Roles.Source;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
@@ -60,6 +61,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         private final Roles roles;
         private final Token token;
         private final Logout logout;
+        private final ResourceMetadata resourceMetadata;
         private final CertificateChain certificateChain;
         private final Authentication authentication;
         private final CodeGrant codeGrant;
@@ -87,6 +89,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
             this.token = builder.token;
             this.logout = builder.logout;
             this.certificateChain = builder.certificateChain;
+            this.resourceMetadata = builder.resourceMetadata;
             this.authentication = builder.authentication;
             this.codeGrant = builder.codeGrant;
             this.tokenStateManager = builder.tokenStateManager;
@@ -163,6 +166,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         @Override
+        public ResourceMetadata resourceMetadata() {
+            return resourceMetadata;
+        }
+
+        @Override
         public Logout logout() {
             return logout;
         }
@@ -225,6 +233,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     private Optional<String> publicKey;
     private IntrospectionCredentials introspectionCredentials;
     private Roles roles;
+    private ResourceMetadata resourceMetadata;
     private CertificateChain certificateChain;
     private CodeGrant codeGrant;
     private TokenStateManager tokenStateManager;
@@ -257,6 +266,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         this.token = mapping.token();
         this.logout = mapping.logout();
         this.certificateChain = mapping.certificateChain();
+        this.resourceMetadata = mapping.resourceMetadata();
         this.authentication = mapping.authentication();
         this.codeGrant = mapping.codeGrant();
         this.tokenStateManager = mapping.tokenStateManager();
@@ -497,6 +507,24 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public LogoutConfigBuilder logout() {
         return new LogoutConfigBuilder(this);
+    }
+
+    /**
+     * @param resourceMetadata {@link OidcTenantConfig#resourceMetadata()}
+     * @return this builder
+     */
+    public OidcTenantConfigBuilder resourceMetadata(ResourceMetadata resourceMetadata) {
+        this.resourceMetadata = Objects.requireNonNull(resourceMetadata);
+        return this;
+    }
+
+    /**
+     * Creates builder for the {@link OidcTenantConfig#resourceMetadata()}.
+     *
+     * @return ResourceMetadataConfigBuilder
+     */
+    public ResourceMetadataBuilder resourceMetadata() {
+        return new ResourceMetadataBuilder(this);
     }
 
     /**
@@ -826,6 +854,91 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         public CertificateChain build() {
             return new CertificateChainImpl(leafCertificateName, trustStoreFile, trustStorePassword, trustStoreCertAlias,
                     trustStoreFileType);
+        }
+    }
+
+    /**
+     * Builder for the {@link IntrospectionCredentials}.
+     */
+    public static final class ResourceMetadataBuilder {
+
+        private record ResourceMetadataImpl(boolean enabled, Optional<String> resource,
+                boolean forceHttpsScheme) implements ResourceMetadata {
+        }
+
+        private final OidcTenantConfigBuilder builder;
+        private boolean enabled;
+        private Optional<String> resource;
+        private boolean forceHttpsScheme;
+
+        public ResourceMetadataBuilder() {
+            this(new OidcTenantConfigBuilder());
+        }
+
+        public ResourceMetadataBuilder(OidcTenantConfigBuilder builder) {
+            this.builder = Objects.requireNonNull(builder);
+            this.enabled = builder.resourceMetadata.enabled();
+            this.resource = builder.resourceMetadata.resource();
+            this.forceHttpsScheme = builder.resourceMetadata.forceHttpsScheme();
+        }
+
+        /**
+         * {@link ResourceMetadata#enabled()}
+         *
+         * @return this builder
+         */
+        public ResourceMetadataBuilder enabled() {
+            return enabled(true);
+        }
+
+        /**
+         * @param enabled {@link ResourceMetadata#enabled()}
+         * @return this builder
+         */
+        public ResourceMetadataBuilder enabled(boolean enabled) {
+            this.enabled = enabled;
+            return this;
+        }
+
+        /**
+         * @param resource {@link ResourceMetadata#resource()}
+         * @return this builder
+         */
+        public ResourceMetadataBuilder resource(String resource) {
+            this.resource = Optional.ofNullable(resource);
+            return this;
+        }
+
+        /**
+         * forceHttpsScheme {@link ResourceMetadata#forceHttpsScheme()}
+         *
+         * @return this builder
+         */
+        public ResourceMetadataBuilder forceHttpsScheme() {
+            return forceHttpsScheme(true);
+        }
+
+        /**
+         * @param forceHttpsScheme {@link ResourceMetadata#forceHttpsScheme()}
+         * @return this builder
+         */
+        public ResourceMetadataBuilder forceHttpsScheme(boolean forceHttpsScheme) {
+            this.forceHttpsScheme = forceHttpsScheme;
+            return this;
+        }
+
+        /**
+         * @return OidcTenantConfigBuilder builder
+         */
+        public OidcTenantConfigBuilder end() {
+            return builder.resourceMetadata(build());
+        }
+
+        /**
+         * @return built ResourceMetadata
+         */
+        public ResourceMetadata build() {
+            return new ResourceMetadataImpl(enabled, resource, forceHttpsScheme);
         }
     }
 

@@ -2,51 +2,134 @@ package io.quarkus.deployment.builditem;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.SupplierMap;
 
 /**
- * BuildItem for running dev services.
- * Combines injected configs to the application with container id (if it exists).
+ * BuildItem for discovered (running) or to be started dev services.
  * <p>
  * Processors are expected to return this build item not only when the dev service first starts,
  * but also if a running dev service already exists.
  * <p>
- * {@link RunningDevService} helps to manage the lifecycle of the running dev service.
+ * Two builders are provided to create this build item:
+ * <p>
+ * - {@link DevServicesResultBuildItem#discovered()} for discovered dev services, provides config to be injected to the
+ * application with container id (if it exists).
+ * <p>
+ * - {@link DevServicesResultBuildItem#owned()} for owned dev services, that will be started before application start,
+ * provides the startable supplier and config injected to the application and post-start action.
+ * <p>
+ * {@link RunningDevService} is deprecated in favor of builder flavors.
  */
 public final class DevServicesResultBuildItem extends MultiBuildItem {
 
-    private static final Logger log = Logger.getLogger(DevServicesResultBuildItem.class);
-
+    /**
+     * The name of the dev service, usually feature name.
+     */
     private final String name;
-    private final String description;
-    // Will be null if there is a runnable dev service
-    private final String containerId;
-    protected final Map<String, String> config;
-    protected RunnableDevService runnableDevService;
 
+    /**
+     * A description of the dev service, usually feature name with additional information.
+     */
+    private final String description;
+
+    /**
+     * The container id of the dev service, if it is running in a container.
+     * If the dev service is not running in a container, this will be null.
+     */
+    private final String containerId;
+
+    /**
+     * The map of static application config
+     */
+    private final Map<String, String> config;
+
+    /**
+     * If the feature provides multiple dev services, this is the name of the service
+     */
+    private final String serviceName;
+
+    /**
+     * The config object that is used to identify the dev service
+     */
+    private final Object serviceConfig;
+
+    /**
+     * Supplier of a startable dev service
+     */
+    private final Supplier<Startable> startableSupplier;
+
+    /**
+     * An action to perform after the dev service has started.
+     */
+    private final Consumer<Startable> postStartAction;
+
+    /**
+     * A map of application config that is dependent on the started service
+     */
+    private final Map<String, Function<Startable, String>> applicationConfigProvider;
+
+    public static DiscoveredServiceBuilder discovered() {
+        return new DiscoveredServiceBuilder();
+    }
+
+    public static <T extends Startable> OwnedServiceBuilder<T> owned() {
+        return new OwnedServiceBuilder<>();
+    }
+
+    /**
+     * @deprecated use DevServicesResultBuildItem.builder() instead
+     */
+    @Deprecated
     public DevServicesResultBuildItem(String name, String containerId, Map<String, String> config) {
         this(name, null, containerId, config);
     }
 
+    /**
+     * @deprecated use DevServicesResultBuildItem.builder() instead
+     */
+    @Deprecated
     public DevServicesResultBuildItem(String name, String description, String containerId, Map<String, String> config) {
         this.name = name;
         this.description = description;
         this.containerId = containerId;
         this.config = config;
+        this.serviceName = null;
+        this.serviceConfig = null;
+        this.applicationConfigProvider = null;
+        this.startableSupplier = null;
+        this.postStartAction = null;
     }
 
-    public DevServicesResultBuildItem(String name, String description, Map<String, String> config,
-            RunnableDevService runnableDevService) {
-        this(name, description, null, config);
-        this.runnableDevService = runnableDevService;
+    /**
+     * @deprecated use DevServicesResultBuildItem.builder() instead
+     */
+    @Deprecated
+    public DevServicesResultBuildItem(String name,
+            String description,
+            String serviceName,
+            Object serviceConfig,
+            Map<String, String> config,
+            Supplier<Startable> startableSupplier,
+            Consumer<Startable> postStartAction,
+            Map<String, Function<Startable, String>> applicationConfigProvider) {
+        this.name = name;
+        this.description = description;
+        this.containerId = null;
+        this.config = config == null ? Collections.emptyMap() : Collections.unmodifiableMap(config);
+        this.serviceName = serviceName;
+        this.serviceConfig = serviceConfig;
+        this.startableSupplier = startableSupplier;
+        this.postStartAction = postStartAction;
+        this.applicationConfigProvider = applicationConfigProvider;
     }
 
     public String getName() {
@@ -58,34 +141,151 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     }
 
     public String getContainerId() {
-        if (runnableDevService != null) {
-            return runnableDevService.getContainerId();
-        } else {
-            return containerId;
-        }
+        return containerId;
+    }
+
+    public boolean isStartable() {
+        return startableSupplier != null;
     }
 
     public Map<String, String> getConfig() {
         return config;
     }
 
-    public void start() {
-        if (runnableDevService != null) {
-            runnableDevService.start();
-        } else {
-            log.debugf("Not starting %s because runnable dev service is null (it is probably a running dev service.", name);
+    public String getServiceName() {
+        return serviceName;
+    }
+
+    public Object getServiceConfig() {
+        return serviceConfig;
+    }
+
+    public Supplier<Startable> getStartableSupplier() {
+        return startableSupplier;
+    }
+
+    public Consumer<Startable> getPostStartAction() {
+        return postStartAction;
+    }
+
+    public Map<String, Function<Startable, String>> getApplicationConfigProvider() {
+        return applicationConfigProvider;
+    }
+
+    public Map<String, String> getConfig(Startable startable) {
+        SupplierMap<String, String> map = new SupplierMap<>();
+        if (config != null && !config.isEmpty()) {
+            map.putAll(config);
+        }
+        for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
+            map.put(entry.getKey(), () -> entry.getValue().apply(startable));
+        }
+        return map;
+    }
+
+    public static class DiscoveredServiceBuilder {
+        private String name;
+        private String containerId;
+        private Map<String, String> config;
+        private String description;
+
+        public DiscoveredServiceBuilder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public DiscoveredServiceBuilder feature(Feature feature) {
+            this.name = feature.getName();
+            return this;
+        }
+
+        public DiscoveredServiceBuilder containerId(String containerId) {
+            this.containerId = containerId;
+            return this;
+        }
+
+        public DiscoveredServiceBuilder config(Map<String, String> config) {
+            this.config = config;
+            return this;
+        }
+
+        public DiscoveredServiceBuilder description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public DevServicesResultBuildItem build() {
+            return new DevServicesResultBuildItem(name, description, containerId, config);
         }
     }
 
-    // Ideally everyone would use the config source, but if people need to ask for config directly, make it possible
-    public Map<String, String> getDynamicConfig() {
-        if (runnableDevService != null && runnableDevService.isRunning()) {
-            return runnableDevService.get();
-        } else {
-            return Collections.emptyMap();
+    public static class OwnedServiceBuilder<T extends Startable> {
+        private String name;
+        private String description;
+        private Map<String, String> config;
+        private String serviceName;
+        private Object serviceConfig;
+        private Supplier<? extends Startable> startableSupplier;
+        private Consumer<? extends Startable> postStartAction;
+        private Map<String, Function<Startable, String>> applicationConfigProvider;
+
+        public OwnedServiceBuilder<T> name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public OwnedServiceBuilder<T> feature(Feature feature) {
+            this.name = feature.getName();
+            return this;
+        }
+
+        public OwnedServiceBuilder<T> description(String description) {
+            this.description = description;
+            return this;
+        }
+
+        public OwnedServiceBuilder<T> config(Map<String, String> config) {
+            this.config = config;
+            return this;
+        }
+
+        public OwnedServiceBuilder<T> serviceName(String serviceName) {
+            this.serviceName = serviceName;
+            return this;
+        }
+
+        public OwnedServiceBuilder<T> serviceConfig(Object serviceConfig) {
+            this.serviceConfig = serviceConfig;
+            return this;
+        }
+
+        public <S extends Startable> OwnedServiceBuilder<S> startable(Supplier<S> startableSupplier) {
+            this.startableSupplier = startableSupplier;
+            return (OwnedServiceBuilder<S>) this;
+        }
+
+        public OwnedServiceBuilder<T> postStartHook(Consumer<T> postStartAction) {
+            this.postStartAction = postStartAction;
+            return this;
+        }
+
+        public OwnedServiceBuilder<T> configProvider(Map<String, Function<T, String>> applicationConfigProvider) {
+            this.applicationConfigProvider = (Map<String, Function<Startable, String>>) (Map) applicationConfigProvider;
+            return this;
+        }
+
+        public DevServicesResultBuildItem build() {
+            return new DevServicesResultBuildItem(name, description, serviceName, serviceConfig, config,
+                    (Supplier<Startable>) startableSupplier,
+                    (Consumer<Startable>) postStartAction,
+                    applicationConfigProvider);
         }
     }
 
+    /**
+     * @deprecated Use {@link DevServicesResultBuildItem#discovered()} instead.
+     */
+    @Deprecated
     public static class RunningDevService implements Closeable {
 
         protected final String name;
@@ -161,130 +361,13 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         public DevServicesResultBuildItem toBuildItem() {
-            return new DevServicesResultBuildItem(name, description, containerId, config);
+            return DevServicesResultBuildItem.discovered()
+                    .name(name)
+                    .description(description)
+                    .containerId(getContainerId())
+                    .config(getConfig())
+                    .build();
         }
     }
 
-    public static class RunnableDevService extends RunningDevService implements Supplier<Map<String, String>> {
-
-        private final DevServicesRegistryBuildItem tracker;
-        private final Startable container;
-        private final Object identifyingConfig;
-        private final String featureName;
-        private final String configName;
-        private final Map<String, Supplier<String>> lazyConfig;
-
-        /**
-         * There are several configs in this argument, but there's a reason! (For now, at least.)
-         * The identifying config object is the user-defined config, and are what we use to establish ownership and reusability.
-         * The config name is used to identify sub-configuration.
-         * The first feature name is generated by the processor.
-         */
-        public RunnableDevService(String featureName, String configName, Startable container,
-                Map lazyConfig,
-                Object identifyingConfig,
-                DevServicesRegistryBuildItem tracker) {
-            super(featureName, null, container::close, Collections.emptyMap());
-
-            this.featureName = featureName;
-            this.configName = configName;
-            this.container = container;
-            this.tracker = tracker;
-            isRunning = false;
-            this.lazyConfig = lazyConfig;
-            this.identifyingConfig = identifyingConfig;
-        }
-
-        public boolean isRunning() {
-            return isRunning;
-        }
-
-        @Override
-        public String getContainerId() {
-            return container != null ? container.getContainerId() : null;
-        }
-
-        /**
-         * Starts the service, after first checking for a compatible service in the tracker.
-         * Calling classes may wish to do their own checks for compatible services before calling start().
-         */
-        public void start() {
-            // We want to do two things; find things with the same config as us to reuse them, and find things with different config to close them
-            // We figure out if we need to shut down existing redis containers that might have been started in previous profiles or restarts
-
-            // These RunnableDevService classes could be from another classloader, so don't make assumptions about the class
-            Collection<?> matchedDevServices = tracker.getRunningServices(featureName, configName, identifyingConfig);
-            // if the redis containers have already started we just return; if we wanted to be very cautious we could check the entries for an isRunningStatus, but they might be in the wrong classloader, so that's hard work
-            if (matchedDevServices == null || matchedDevServices.isEmpty()) {
-                // There isn't a running container that has the right config, we need to do work
-                // Let's get all the running dev services associated with this feature (+ launch mode plus named section), so we can close them
-                closeOwnedServices();
-
-                reallyStart();
-            }
-        }
-
-        private void closeOwnedServices() {
-            Collection<Closeable> unusableDevServices = tracker.getAllRunningServices(featureName, configName);
-            if (unusableDevServices != null) {
-                for (Closeable closeable : unusableDevServices) {
-                    try {
-                        closeable.close();
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-
-        /**
-         * Starts, without doing any duplicate checking, and without doing any cleanup.
-         * The duplicate checking is optional, the cleanup is not.
-         */
-        private void reallyStart() {
-            if (container != null) {
-                synchronized (this) {
-                    container.start();
-
-                    //  tell the tracker that we started
-                    isRunning = true;
-                    tracker.addRunningService(featureName, configName, identifyingConfig, this);
-                }
-                // Ideally we'd print out a port number here, but we can only do that if we add a dependency on GenericContainer (or update startable to add a method)
-
-                log.infof("The %s dev service is ready to accept connections on %s", name, container.getConnectionInfo());
-            } else {
-                throw new IllegalStateException("Internal error: attempted to start a null container.");
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            tracker.removeRunningService(featureName, configName, identifyingConfig, this);
-            super.close();
-        }
-
-        public DevServicesResultBuildItem toBuildItem() {
-            return new DevServicesResultBuildItem(name, description, config, this);
-        }
-
-        /**
-         * This is a supplier interface to maintain type-compatibility across classloaders.
-         * What this is actually giving is an aggregate of the hardcoded and lazy (dynamic at runtime) config.
-         *
-         */
-        @Override
-        public Map<String, String> get() {
-            // printlns show this gets called super often, so want to be as efficient as we can in this code
-            Map<String, String> newConfig = new HashMap<>(getConfig());
-            // We don't want to be returning config while the container is in the process of starting, so synchronize
-            synchronized (this) {
-                for (Map.Entry<String, Supplier<String>> entry : lazyConfig.entrySet()) {
-                    newConfig.put(entry.getKey(), entry.getValue().get());
-                }
-            }
-            return newConfig;
-        }
-
-    }
 }

@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.CreationException;
 
@@ -200,7 +199,10 @@ public class OidcClientRecorder {
     private static void setGrantClientParams(OidcClientConfig oidcConfig, MultiMap grantParams, String grantType) {
         grantParams.add(OidcConstants.GRANT_TYPE, grantType);
         if (oidcConfig.scopes().isPresent()) {
-            grantParams.add(OidcConstants.TOKEN_SCOPE, oidcConfig.scopes().get().stream().collect(Collectors.joining(" ")));
+            grantParams.add(OidcConstants.TOKEN_SCOPE, String.join(" ", oidcConfig.scopes().get()));
+        }
+        if (oidcConfig.audience().isPresent()) {
+            grantParams.add(OidcConstants.TOKEN_AUDIENCE_GRANT_PROPERTY, String.join(" ", oidcConfig.audience().get()));
         }
     }
 

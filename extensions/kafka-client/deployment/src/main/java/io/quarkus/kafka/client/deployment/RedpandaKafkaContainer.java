@@ -11,15 +11,15 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
-import io.quarkus.devservices.common.Labels;
 
 /**
  * Container configuring and starting the Redpanda broker.
  * See <a href=
  * "https://docs.redpanda.com/current/get-started/quick-start/">https://docs.redpanda.com/current/get-started/quick-start/</a>
  */
-final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContainer> {
+final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContainer> implements Startable {
 
     private final Integer fixedExposedPort;
     private final boolean useSharedNetwork;
@@ -30,17 +30,12 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
     private static final String STARTER_SCRIPT = "/var/lib/redpanda/redpanda.sh";
     private static final int PANDAPROXY_PORT = 8082;
 
-    RedpandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-            String defaultNetworkId, boolean useSharedNetwork, RedpandaBuildTimeConfig redpandaConfig) {
+    RedpandaKafkaContainer(DockerImageName dockerImageName, int fixedExposedPort, String defaultNetworkId,
+            boolean useSharedNetwork, RedpandaBuildTimeConfig redpandaConfig) {
         super(dockerImageName);
         this.fixedExposedPort = fixedExposedPort;
         this.useSharedNetwork = useSharedNetwork;
         this.redpandaConfig = redpandaConfig;
-
-        if (serviceName != null) { // Only adds the label in dev mode.
-            withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, serviceName);
-            withLabel(Labels.QUARKUS_DEV_SERVICE, serviceName);
-        }
 
         // For redpanda, we need to start the broker - see https://vectorized.io/docs/quick-start-docker/
         withCreateContainerCmdModifier(cmd -> {
@@ -117,4 +112,13 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
         return getKafkaAdvertisedAddresses();
     }
 
+    @Override
+    public String getConnectionInfo() {
+        return getBootstrapServers();
+    }
+
+    @Override
+    public void close() {
+        super.close();
+    }
 }

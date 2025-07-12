@@ -41,15 +41,24 @@
         <compiler.plugin.version>3.14.0</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
         <surefire.plugin.version>3.5.2</surefire.plugin.version>
-        <jandex.version>3.3.1</jandex.version>
+        <jandex.version>3.3.2</jandex.version>
+        <smallrye-common.version>2.13.7</smallrye-common.version>
 
-        <junit5.version>5.13.2</junit5.version>
-        <junit.testkit.version>1.13.2</junit.testkit.version>
+        <junit5.version>5.13.3</junit5.version>
+        <junit.testkit.version>1.13.3</junit.testkit.version>
         <assertj.version>3.27.3</assertj.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.smallrye.common</groupId>
+                <artifactId>smallrye-common-bom</artifactId>
+                <version>${smallrye-common.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- JUnit 5 dependencies, imported as a BOM -->
             <dependency>
                 <groupId>org.junit</groupId>
@@ -70,7 +79,10 @@
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-testkit</artifactId>
-            <version>${junit.testkit.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-annotation</artifactId>
         </dependency>
         <dependency>
             <groupId>org.assertj</groupId>

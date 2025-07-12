@@ -4,11 +4,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
 import org.jboss.logging.Logger;
 
@@ -27,7 +25,7 @@ public class LocalHostOnlyFilter implements Handler<RoutingContext> {
 
     public LocalHostOnlyFilter(List<String> hosts) {
         this.hosts = hosts;
-        this.hostsPatterns = detectPatterns();
+        this.hostsPatterns = DevUIFilterHelper.detectPatterns(this.hosts);
     }
 
     @Override
@@ -67,29 +65,5 @@ public class LocalHostOnlyFilter implements Handler<RoutingContext> {
             LOG.error("Error while checking if Dev UI is localhost", e);
         }
         return false;
-    }
-
-    private List<Pattern> detectPatterns() {
-        if (this.hosts != null && !this.hosts.isEmpty()) {
-            List<Pattern> pat = new ArrayList<>();
-            for (String h : this.hosts) {
-                Pattern p = toPattern(h);
-                if (p != null) {
-                    pat.add(p);
-                }
-            }
-            if (!pat.isEmpty()) {
-                return pat;
-            }
-        }
-        return null;
-    }
-
-    private Pattern toPattern(String regex) {
-        try {
-            return Pattern.compile(regex);
-        } catch (PatternSyntaxException e) {
-            return null;
-        }
     }
 }

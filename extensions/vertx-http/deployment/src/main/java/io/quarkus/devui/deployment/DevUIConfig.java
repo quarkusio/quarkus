@@ -43,6 +43,13 @@ public interface DevUIConfig {
     Optional<List<String>> hosts();
 
     /**
+     * Set a context root for dev-ui. This is useful for remote environments or online IDEs
+     *
+     * @return The dev-ui context root
+     */
+    Optional<String> contextRoot();
+
+    /**
      * Workspace configuration.
      */
     Workspace workspace();

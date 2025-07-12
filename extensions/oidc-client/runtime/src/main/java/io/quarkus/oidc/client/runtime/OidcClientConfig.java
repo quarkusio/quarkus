@@ -33,6 +33,11 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     Optional<List<String>> scopes();
 
     /**
+     * List of access token audiences
+     */
+    Optional<List<String>> audience();
+
+    /**
      * Refresh token time skew.
      * If this property is enabled then the configured duration is converted to seconds and is added to the current time
      * when checking whether the access token should be refreshed. If the sum is greater than this access token's

@@ -3,7 +3,6 @@ package io.quarkus.it.keycloak;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -12,7 +11,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
@@ -61,6 +59,7 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                         // This is the original config
                         OidcTenantConfig updatedConfig = OidcTenantConfig.builder(currentTenantConfig)
                                 .token().principalClaim("email").end()
+                                .resourceMetadata().resource("github").end()
                                 .build();
                         return Uni.createFrom().item(updatedConfig);
                     }
@@ -92,21 +91,22 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             return null;
         }
         if (path.endsWith("code-flow-user-info-dynamic-github")) {
-            OidcTenantConfig config = new OidcTenantConfig();
-            config.setTenantId("code-flow-user-info-dynamic-github");
+            OidcTenantConfig config = OidcTenantConfig.authServerUrl(keycloakUrl + "/realms/quarkus")
+                    .clientId("quarkus-web-app")
+                    .credentials("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow")
+                    .tenantId("code-flow-user-info-dynamic-github")
+                    .provider(io.quarkus.oidc.runtime.OidcTenantConfig.Provider.GITHUB)
+                    .authorizationPath("/")
+                    .userInfoPath("protocol/openid-connect/userinfo")
+                    .codeGrant()
+                    .header("X-Custom", "XCustomHeaderValue")
+                    .extraParam("extra-param", "extra-param-value")
+                    .end()
+                    .allowUserInfoCache(false)
+                    .authentication().internalIdTokenLifespan(Duration.ofSeconds(301)).end()
+                    .resourceMetadata().enabled().end()
+                    .build();
 
-            config.setProvider(Provider.GITHUB);
-
-            config.setAuthServerUrl(keycloakUrl + "/realms/quarkus/");
-            config.setAuthorizationPath("/");
-            config.setUserInfoPath("protocol/openid-connect/userinfo");
-            config.setClientId("quarkus-web-app");
-            config.getCredentials()
-                    .setSecret("AyM1SysPpbyDfgZld3umj1qzKObwVMkoqQ-EstJQLr_T-1qS0gZH75aKtMN3Yj0iPS4hcgUuTwjAzZr1Z9CAow");
-            config.getCodeGrant().setHeaders(Map.of("X-Custom", "XCustomHeaderValue"));
-            config.getCodeGrant().setExtraParams(Map.of("extra-param", "extra-param-value"));
-            config.getAuthentication().setInternalIdTokenLifespan(Duration.ofSeconds(301));
-            config.setAllowUserInfoCache(false);
             return Uni.createFrom().item(config);
         } else if (path.endsWith("bearer-certificate-full-chain-root-only")) {
             OidcTenantConfig config = new OidcTenantConfig();

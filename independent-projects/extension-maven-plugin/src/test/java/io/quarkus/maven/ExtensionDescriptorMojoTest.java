@@ -312,7 +312,7 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
 
         Invoker invoker = new DefaultInvoker();
         invoker.setMavenHome(new File(basedir, "../"));
-        invoker.setMavenExecutable(new File(basedir, "../mvnw").getAbsoluteFile());
+        invoker.setMavenExecutable(new File(basedir, "../../mvnw").getAbsoluteFile());
 
         invoker.execute(request);
     }

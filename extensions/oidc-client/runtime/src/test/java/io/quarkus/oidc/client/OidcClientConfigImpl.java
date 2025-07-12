@@ -47,6 +47,7 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         GRANT_OPTIONS,
         CLIENT_ENABLED,
         SCOPES,
+        AUDIENCE,
         REFRESH_TOKEN_TIME_SKEW,
         ACCESS_TOKEN_EXPIRES_IN,
         ACCESS_TOKEN_EXPIRY_SKEW,
@@ -325,6 +326,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     @Override
     public Optional<List<String>> scopes() {
         invocationsRecorder.put(ConfigMappingMethods.SCOPES, true);
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<List<String>> audience() {
+        invocationsRecorder.put(ConfigMappingMethods.AUDIENCE, true);
         return Optional.empty();
     }
 

@@ -32,6 +32,7 @@ public class Extension {
     private List<LibraryLink> libraryLinks = null;
     private String darkLogo = null;
     private String lightLogo = null;
+    private String headlessComponent = null;
 
     public Extension() {
 
@@ -232,6 +233,21 @@ public class Extension {
         return this.card != null;
     }
 
+    public void setHeadlessComponent(String headlessComponent) {
+        this.headlessComponent = headlessComponent;
+    }
+
+    public String getHeadlessComponent() {
+        return this.headlessComponent;
+    }
+
+    public String getHeadlessComponentRef() {
+        if (headlessComponent != null) {
+            return DOT + SLASH + DOT + DOT + SLASH + this.namespace + SLASH + this.headlessComponent;
+        }
+        return null;
+    }
+
     @Override
     public String toString() {
         return "Extension{" + "namespace=" + namespace + ", artifact=" + artifact + ", name=" + name + ", shortName="
@@ -241,4 +257,6 @@ public class Extension {
                 + extensionDependencies + ", codestart=" + codestart + '}';
     }
 
+    private static final String SLASH = "/";
+    private static final String DOT = ".";
 }

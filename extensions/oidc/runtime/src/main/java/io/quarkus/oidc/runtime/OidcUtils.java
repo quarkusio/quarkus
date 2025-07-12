@@ -938,4 +938,15 @@ public final class OidcUtils {
     public static boolean isDPoPScheme(String authorizationScheme) {
         return OidcConstants.DPOP_SCHEME.equalsIgnoreCase(authorizationScheme);
     }
+
+    public static String getRootPath(String configuredRootPath) {
+        // Prepend '/' if it is not present
+        String rootPath = OidcCommonUtils.prependSlash(configuredRootPath);
+        // Strip trailing '/' if the length is > 1
+        if (rootPath.length() > 1 && rootPath.endsWith("/")) {
+            rootPath = rootPath.substring(0, rootPath.length() - 1);
+        }
+        // if it is only '/' then return an empty value
+        return "/".equals(rootPath) ? "" : rootPath;
+    }
 }

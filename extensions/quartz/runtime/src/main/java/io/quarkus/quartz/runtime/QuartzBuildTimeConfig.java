@@ -66,6 +66,18 @@ public interface QuartzBuildTimeConfig {
     Optional<String> dataSourceName();
 
     /**
+     * If set to true, defers datasource check to runtime.
+     * False by default.
+     * <p>
+     * Used in combination with runtime configuration {@link QuartzRuntimeConfig#deferredDatasourceName()}.
+     * <p>
+     * It is considered a configuration error to specify a datasource via {@link QuartzBuildTimeConfig#dataSourceName()} along
+     * with setting this property to {@code true}.
+     */
+    @WithDefault("false")
+    boolean deferDatasourceCheck();
+
+    /**
      * The prefix for quartz job store tables.
      * <p>
      * Ignored if using a `ram` store i.e {@link StoreType#RAM}

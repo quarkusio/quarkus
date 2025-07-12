@@ -99,7 +99,7 @@ triage:
     - id: jbang
       labels: [area/jbang]
       titleBody: "jbang"
-      notify: [quarkusio/devtools, maxandersen]
+      notify: [quarkusio/devtools, iocanel]
       directories:
         - "**/*JBang*"
         - "**/*jbang*"
@@ -459,7 +459,7 @@ triage:
       title: "\\b(cli)\\b"
       directories:
         - devtools/cli/
-      notify: [maxandersen,ebullient]
+      notify: [iocanel,ebullient]
     - id: picocli
       labels: [area/picocli]
       title: "picocli"
@@ -708,7 +708,7 @@ triage:
     - id: extension-proposal
       labels: [kind/extension-proposal,area/quarkiverse]
       title: "Extension Proposal"
-      notify: [gastaldi, gsmet, aloubyansky, maxandersen]
+      notify: [gastaldi, gsmet, aloubyansky]
     - id: mailer
       labels: [area/mailer]
       expression: |
@@ -782,6 +782,5 @@ triage:
     - id: podman
       labels: [env/podman]
       title: "podman"
-      notify: [maxandersen]
   qe:
     notify: [rsvoboda, mjurc]

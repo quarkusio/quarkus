@@ -15,6 +15,10 @@
     <description>SPI classes for Quarkus Development mode.</description>
 
     <dependencies>
+        <dependency>
+            <groupId>org.jboss.logging</groupId>
+            <artifactId>jboss-logging</artifactId>
+        </dependency>
     </dependencies>
 
 </project>

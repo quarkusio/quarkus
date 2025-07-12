@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -21,6 +22,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.SessionScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.invoke.Invoker;
@@ -40,6 +42,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.jandex.WildcardType;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -95,6 +98,8 @@ import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.quarkus.security.identity.IdentityProvider;
+import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.ClassSecurityCheckStorageBuildItem;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
@@ -113,6 +118,7 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.WebSocketConnection;
 import io.quarkus.websockets.next.WebSocketException;
+import io.quarkus.websockets.next.WebSocketSecurity;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.deployment.Callback.MessageType;
 import io.quarkus.websockets.next.deployment.Callback.Target;
@@ -161,6 +167,7 @@ public class WebSocketProcessor {
     static final String CLIENT_ENDPOINT_SUFFIX = "_WebSocketClientEndpoint";
     static final String NESTED_SEPARATOR = "$_";
     static final DotName HTTP_UPGRADE_CHECK_NAME = DotName.createSimple(HttpUpgradeCheck.class);
+    private static final DotName WEBSOCKET_SECURITY_NAME = DotName.createSimple(WebSocketSecurity.class);
 
     // Parameter names consist of alphanumeric characters and underscore
     private static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{[a-zA-Z0-9_]+\\}");
@@ -488,11 +495,14 @@ public class WebSocketProcessor {
             List<GeneratedEndpointBuildItem> generatedEndpoints, WebSocketsServerBuildConfig config,
             ValidationPhaseBuildItem validationPhase, BuildProducer<RouteBuildItem> routes,
             Optional<PermissionsAllowedMetaAnnotationBuildItem> metaPermissionsAllowed,
-            EndpointSecurityChecksBuildItem endpointSecurityChecks, Capabilities capabilities) {
+            EndpointSecurityChecksBuildItem endpointSecurityChecks, Capabilities capabilities,
+            CombinedIndexBuildItem indexBuildItem) {
         boolean securityEnabled = capabilities.isPresent(Capability.SECURITY);
         for (GeneratedEndpointBuildItem endpoint : generatedEndpoints.stream().filter(GeneratedEndpointBuildItem::isServer)
                 .toList()) {
-            boolean httpUpgradeSecured = endpointSecurityChecks.endpointIdToSecurityCheck.containsKey(endpoint.endpointId);
+            boolean httpUpgradeSecured = endpointSecurityChecks.endpointIdToSecurityCheck.containsKey(endpoint.endpointId)
+                    // if identity update is supported, we need to also perform checks on methods, not just during upgrade
+                    && identityUpdateNotSupported(indexBuildItem.getIndex());
             RouteBuildItem.Builder builder = RouteBuildItem.builder()
                     .route(endpoint.path)
                     .displayOnNotFoundPage("WebSocket Endpoint")
@@ -698,9 +708,9 @@ public class WebSocketProcessor {
     }
 
     @BuildStep
-    void preventRepeatedSecurityChecksForHttpUpgrade(Capabilities capabilities,
+    void preventRepeatedSecurityChecksForHttpUpgrade(Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
             BuildProducer<AnnotationsTransformerBuildItem> producer) {
-        if (capabilities.isPresent(Capability.SECURITY)) {
+        if (capabilities.isPresent(Capability.SECURITY) && identityUpdateNotSupported(indexBuildItem.getIndex())) {
             producer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation
                     .forClasses()
                     .whenAnyMatch(WebSocketDotNames.WEB_SOCKET)
@@ -788,6 +798,40 @@ public class WebSocketProcessor {
                     .done();
             syntheticBeanProducer.produce(syntheticBeanBuildItem);
         }
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    void supportSecurityIdentityUpdate(BeanDiscoveryFinishedBuildItem beanDiscoveryFinishedBuildItem,
+            WebSocketServerRecorder recorder, Capabilities capabilities, CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer) {
+        if (capabilities.isMissing(Capability.SECURITY)) {
+            return;
+        }
+        boolean isWsSecurityInjected = beanDiscoveryFinishedBuildItem.getInjectionPoints().stream()
+                .map(InjectionPointInfo::getType)
+                .filter(Objects::nonNull)
+                .map(Type::name)
+                .anyMatch(WEBSOCKET_SECURITY_NAME::equals);
+        if (isWsSecurityInjected) {
+            if (identityUpdateNotSupported(indexBuildItem.getIndex())) {
+                throw new IllegalStateException("Quarkus did not detect " + WEBSOCKET_SECURITY_NAME
+                        + " injection, please report this issue to Quarkus project");
+            }
+            syntheticBeanProducer.produce(SyntheticBeanBuildItem
+                    .configure(WEBSOCKET_SECURITY_NAME)
+                    .addInjectionPoint(ClassType.create(IdentityProviderManager.class))
+                    // Instance<IdentityProvider<?>>
+                    .addInjectionPoint(ParameterizedType.create(Instance.class,
+                            ParameterizedType.create(DotName.createSimple(IdentityProvider.class), WildcardType.UNBOUNDED)))
+                    .createWith(recorder.createWebSocketSecurity())
+                    .scope(ApplicationScoped.class)
+                    .done());
+        }
+    }
+
+    private static boolean identityUpdateNotSupported(IndexView index) {
+        return index.getKnownUsers(WEBSOCKET_SECURITY_NAME).isEmpty();
     }
 
     private static boolean isTracesSupportEnabled(Capabilities capabilities) {

@@ -506,6 +506,7 @@ quarkus.http.auth.permission.roles3.policy=role-policy3
 <2> The `/secured/*` path can only be accessed by authenticated users. This way, you have secured the `/secured/all` path and so on.
 <3> Shared permissions are always applied before unshared ones, therefore a `SecurityIdentity` with the `root` role will have the `user` role as well.
 
+[[path-specific-authz-programmatic-set-up]]
 === Set up path-specific authorization programmatically
 
 You can also configure the authorization policies presented by this guide so far programmatically.
@@ -562,12 +563,10 @@ public class HttpSecurityConfiguration {
     void configure(@Observes HttpSecurity httpSecurity, CustomHttpSecurityPolicy customHttpSecurityPolicy,
                         @ConfigProperty(name = "secured-path") String securedPath) {
 
-        httpSecurity.path("/api/*").authenticatedWith(new CustomAuthenticationMechanism());   <1>
-
-        httpSecurity.path("/other/*").basic().policy(customHttpSecurityPolicy); <2>
+        httpSecurity.path("/other/*").basic().policy(customHttpSecurityPolicy); <1>
 
         httpSecurity.path("/roles-secured/*").bearer().authorization()
-                .policy(identity -> identity.hasRole("user") || "root".equals(identity.getPrincipal().getName()));  <3>
+                .policy(identity -> identity.hasRole("user") || "root".equals(identity.getPrincipal().getName()));  <2>
 
         httpSecurity.path("/other/administration").authorizationCodeFlow()
                 .authorization().policy((identity, routingContext) -> {
@@ -576,21 +575,26 @@ public class HttpSecurityConfiguration {
                         return yourCustomAuthorizationCheck(customAuthorization);
                     }
                     return false;
-                });     <4>
+                });     <3>
 
-        httpSecurity.path(securedPath).form();  <5>
+        httpSecurity.path(securedPath).form();  <4>
 
-        httpSecurity.path("/user-info").bearer().authorization().permissions("openid", "email", "profile"); <6>
+        httpSecurity.path("/user-info").bearer().authorization().permissions("openid", "email", "profile"); <5>
     }
 }
 ----
-<1> Authenticate all the '/api/' sub-paths with your own `HttpAuthenticationMechanism` instance.
-<2> Use the Basic authentication and authorize the requests with a custom `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy`.
-<3> Use the Bearer token authentication and authorize the `SecurityIdentity` with your own policy.
-<4> Use Authorization Code Flow mechanism and write your own policy based on incoming request headers.
-<5> When Quarkus fires the `HttpSecurity` CDI event, the runtime configuration is ready.
-<6> Require that all the requests to the `/user-info` path have string permissions `openid`, `email` and `profile`.
+<1> Use the Basic authentication and authorize the requests with a custom `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy`.
+<2> Use the Bearer token authentication and authorize the `SecurityIdentity` with your own policy.
+<3> Use Authorization Code Flow mechanism and write your own policy based on incoming request headers.
+<4> When Quarkus fires the `HttpSecurity` CDI event, the runtime configuration is ready.
+<5> Require that all the requests to the `/user-info` path have string permissions `openid`, `email` and `profile`.
 The same authorization can be required with the `@PermissionsAllowed(value = { "openid", "email", "profile" }, inclusive = true)` annotation instance placed on an endpoint.
+
+==== Programmatic set up references
+
+* xref:security-basic-authentication.adoc#basic-auth-programmatic-set-up[Set up Basic authentication programmatically]
+* xref:security-openid-connect-multitenancy.adoc#programmatic-startup[Programmatic OIDC start-up for multitenant application]
+* xref:security-authentication-mechanisms.adoc#form-based-auth-programmatic-set-up[Set up Form-based authentication programmatically]
 
 [[standard-security-annotations]]
 == Authorization using annotations

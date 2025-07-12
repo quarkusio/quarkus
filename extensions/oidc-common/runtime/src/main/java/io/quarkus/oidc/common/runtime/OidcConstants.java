@@ -42,6 +42,7 @@ public final class OidcConstants {
     public static final String TOKEN_TYPE_HEADER = "typ";
     public static final String TOKEN_ALGORITHM_HEADER = "alg";
     public static final String TOKEN_SCOPE = "scope";
+    public static final String TOKEN_AUDIENCE_GRANT_PROPERTY = "audience";
     public static final String GRANT_TYPE = "grant_type";
 
     public static final String CLIENT_ID = "client_id";
@@ -105,4 +106,8 @@ public final class OidcConstants {
     public static final String ACR = "acr";
     public static final String ACR_VALUES = "acr_values";
     public static final String MAX_AGE = "max_age";
+
+    public static final String RESOURCE_METADATA_WELL_KNOWN_PATH = "/.well-known/oauth-protected-resource";
+    public static final String RESOURCE_METADATA_RESOURCE = "resource";
+    public static final String RESOURCE_METADATA_AUTHORIZATION_SERVERS = "authorization_servers";
 }

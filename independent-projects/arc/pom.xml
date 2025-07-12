@@ -45,15 +45,15 @@
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
         <version.gizmo>1.9.0</version.gizmo>
-        <version.jandex>3.3.1</version.jandex>
+        <version.jandex>3.3.2</version.jandex>
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
-        <version.mutiny>2.9.2</version.mutiny>
+        <version.mutiny>2.9.3</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
-        <version.smallrye-common>2.13.4</version.smallrye-common>
+        <version.smallrye-common>2.13.7</version.smallrye-common>
         <!-- test versions -->
         <version.assertj>3.27.3</version.assertj>
-        <version.junit5>5.13.2</version.junit5>
-        <version.kotlin>2.1.21</version.kotlin>
+        <version.junit5>5.13.3</version.junit5>
+        <version.kotlin>2.2.0</version.kotlin>
         <version.kotlin-coroutines>1.10.2</version.kotlin-coroutines>
         <version.mockito>5.18.0</version.mockito>
         <!-- TCK versions -->

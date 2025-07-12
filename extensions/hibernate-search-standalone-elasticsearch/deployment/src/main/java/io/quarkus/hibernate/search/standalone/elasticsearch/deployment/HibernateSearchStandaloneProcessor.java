@@ -43,7 +43,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
@@ -78,8 +77,6 @@ class HibernateSearchStandaloneProcessor {
 
     @BuildStep
     public void configure(CombinedIndexBuildItem combinedIndexBuildItem,
-            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HibernateSearchStandaloneEnabledBuildItem> enabled) {
         IndexView index = combinedIndexBuildItem.getIndex();
         Collection<AnnotationInstance> indexedAnnotations = index.getAnnotations(INDEXED);

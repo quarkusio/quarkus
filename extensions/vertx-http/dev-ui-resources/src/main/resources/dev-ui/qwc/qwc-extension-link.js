@@ -3,6 +3,7 @@ import { unsafeHTML } from 'lit-html/directives/unsafe-html.js';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import '@qomponent/qui-badge';
+import { StorageController } from 'storage-controller';
 
 /**
  * This component adds a custom link on the Extension card
@@ -48,20 +49,22 @@ export class QwcExtensionLink extends QwcHotReloadElement {
     `;
 
     static properties = {
+        streamingLabelParams: {type: String},
+        webcomponentTagName: {type: String},
         namespace: {type: String},
         extensionName: {type: String},
         iconName: {type: String},
         colorName: {type: String},
         tooltipContent: {type: String},
         displayName: {type: String},
-        staticLabel: {type: String},
-        dynamicLabel: {type: String},
-        streamingLabel: {type: String},
         path:  {type: String},
         webcomponent: {type: String},
         embed: {type: Boolean},
         externalUrl: {type: String},
         dynamicUrlMethodName: {type: String},
+        staticLabel: {type: String},
+        dynamicLabel: {type: String},
+        streamingLabel: {type: String},
         _effectiveLabel: {state: true},
         _effectiveExternalUrl: {state: true},
         _observer: {state: false},
@@ -134,11 +137,27 @@ export class QwcExtensionLink extends QwcHotReloadElement {
         this._effectiveLabel = null;
         if(this.streamingLabel){
             this.jsonRpc = new JsonRpc(this);
-            this._observer = this.jsonRpc[this.streamingLabel]().onNext(jsonRpcResponse => {
-                let oldVal = this._effectiveLabel;
-                this._effectiveLabel = jsonRpcResponse.result;
-                this.requestUpdate('_effectiveLabel', oldVal);
-            });
+            if(this.streamingLabelParams) {
+                let streamingLabelParamsArray = this.streamingLabelParams.split(',');
+                let storageController = new StorageController(this.webcomponentTagName);
+                let params = {};
+                for (const localParam of streamingLabelParamsArray){
+                    let val = storageController.get(localParam);
+                    if(!val)val="";
+                    params[localParam] = val;
+                }
+                this._observer = this.jsonRpc[this.streamingLabel](params).onNext(jsonRpcResponse => {
+                    let oldVal = this._effectiveLabel;
+                    this._effectiveLabel = jsonRpcResponse.result;
+                    this.requestUpdate('_effectiveLabel', oldVal);
+                });
+            }else {
+                this._observer = this.jsonRpc[this.streamingLabel]().onNext(jsonRpcResponse => {
+                    let oldVal = this._effectiveLabel;
+                    this._effectiveLabel = jsonRpcResponse.result;
+                    this.requestUpdate('_effectiveLabel', oldVal);
+                });
+            }
         }else if(this.dynamicLabel){
             this.jsonRpc = new JsonRpc(this);
             this.jsonRpc[this.dynamicLabel]().then(jsonRpcResponse => {

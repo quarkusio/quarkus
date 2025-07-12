@@ -252,7 +252,14 @@ public class CORSFilter implements Handler<RoutingContext> {
         String absUriString = request.absoluteURI();
         //we already know the scheme is correct, as the fast path will reject that
         URI baseUri = URI.create(absUriString);
-        URI originUri = URI.create(origin);
+        URI originUri;
+        try {
+            originUri = URI.create(origin);
+        } catch (IllegalArgumentException e) {
+            LOG.debugf("Malformed origin url: %s", origin);
+            return false;
+        }
+
         if (!originUri.getPath().isEmpty()) {
             //origin should not contain a path component
             //just reject it in this case

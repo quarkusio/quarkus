@@ -24,7 +24,6 @@ import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
-import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -38,7 +37,7 @@ import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.runtime.LaunchMode;
 
 @CacheableTask
-public abstract class QuarkusGenerateCode extends QuarkusTask {
+public abstract class QuarkusGenerateCode extends QuarkusTaskWithExtensionView {
 
     public static final String QUARKUS_GENERATED_SOURCES = "quarkus-generated-sources";
     public static final String QUARKUS_TEST_GENERATED_SOURCES = "quarkus-test-generated-sources";
@@ -49,7 +48,6 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
     private final LaunchMode launchMode;
     private final String inputSourceSetName;
 
-    private final QuarkusPluginExtensionView extensionView;
     private final List<String> codeGenInput;
 
     @Inject
@@ -57,14 +55,8 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
         super("Performs Quarkus pre-build preparations, such as sources generation", true);
         this.launchMode = launchMode;
         this.inputSourceSetName = inputSourceSetName;
-        this.extensionView = getProject().getObjects().newInstance(QuarkusPluginExtensionView.class, extension());
         this.codeGenInput = codeGenInput;
 
-    }
-
-    @Nested
-    protected QuarkusPluginExtensionView getExtensionView() {
-        return extensionView;
     }
 
     /**
@@ -118,7 +110,7 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
     @TaskAction
     public void generateCode() throws IOException {
         ApplicationModel appModel = ToolingUtils.deserializeAppModel(getApplicationModel().get().getAsFile().toPath());
-        Map<String, String> configMap = getExtensionView()
+        Map<String, String> configMap = effectiveProvider()
                 .buildEffectiveConfiguration(appModel, new HashMap<>()).getValues();
 
         File outputPath = getGeneratedOutputDirectory().get().getAsFile();

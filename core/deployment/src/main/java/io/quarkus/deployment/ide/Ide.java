@@ -2,15 +2,14 @@ package io.quarkus.deployment.ide;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.dev.console.DevConsoleManager;
+import io.smallrye.common.process.ProcessBuilder;
 
 public enum Ide {
 
@@ -55,14 +54,8 @@ public enum Ide {
                 return defaultCommand;
             } else {
                 try {
-                    List<String> command = new ArrayList<>(1 + markerArgs.size());
-                    command.add(defaultCommand);
-                    command.addAll(markerArgs);
-                    log.debugf("Checking if IDE available with %s", command);
-                    new ProcessBuilder(command).redirectError(ProcessBuilder.Redirect.DISCARD.file())
-                            .redirectOutput(ProcessBuilder.Redirect.DISCARD.file()).start()
-                            .waitFor(10,
-                                    TimeUnit.SECONDS);
+                    log.debugf("Checking if IDE available with %s %s", defaultCommand, markerArgs);
+                    ProcessBuilder.exec(defaultCommand, markerArgs);
                     return defaultCommand;
                 } catch (Exception e) {
                     return machineSpecificCommand;

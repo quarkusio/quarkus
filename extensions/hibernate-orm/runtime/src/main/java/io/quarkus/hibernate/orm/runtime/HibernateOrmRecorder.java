@@ -36,6 +36,7 @@ import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
@@ -106,8 +107,16 @@ public class HibernateOrmRecorder {
         return () -> new JPAConfig(runtimeConfig.getValue());
     }
 
-    public void startAllPersistenceUnits(BeanContainer beanContainer) {
-        beanContainer.beanInstance(JPAConfig.class).startAll();
+    public void startAllPersistenceUnits(BeanContainer beanContainer, ShutdownContext shutdownContext) {
+        JPAConfig jpaConfig = beanContainer.beanInstance(JPAConfig.class);
+        // NOTE:
+        //  - We register the shutdown task before we start any PUs,
+        //    This way we'll be able to clean up even if one of the PUs fails to start while others already did.
+        //  - The step that starts the PUs returns the ServiceStartBuildItem, this in turn ensures that
+        //    the shutdown task that triggers the ShutdownEvent will be registered after this one,
+        //    and users will have access to the "ORM stuff" in their listeners.
+        shutdownContext.addShutdownTask(jpaConfig::shutdown);
+        jpaConfig.startAll();
     }
 
     public Function<SyntheticCreationalContext<SessionFactory>, SessionFactory> sessionFactorySupplier(

@@ -7,8 +7,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.jboss.logging.Logger;
 
 public class BasicConsole extends QuarkusConsole {
 
@@ -83,7 +83,7 @@ public class BasicConsole extends QuarkusConsole {
                                 handler.accept(new int[] { val });
                             }
                         } catch (Exception e) {
-                            log.log(Level.SEVERE, "Failed to read user input", e);
+                            log.error("Failed to read user input", e);
                             return;
                         }
                     }

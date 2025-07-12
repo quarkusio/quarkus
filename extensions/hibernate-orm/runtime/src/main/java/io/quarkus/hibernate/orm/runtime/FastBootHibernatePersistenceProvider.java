@@ -436,6 +436,14 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
     private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
+
+        // Pass extraPhysicalTableTypes configuration
+        List<String> extraPhysicalTableTypes = persistenceUnitConfig.schemaManagement().extraPhysicalTableTypes();
+        if (extraPhysicalTableTypes != null && !extraPhysicalTableTypes.isEmpty()) {
+            String extraTableTypesStr = String.join(",", extraPhysicalTableTypes);
+            runtimeSettingsBuilder.put(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES, extraTableTypesStr);
+        }
+
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database().generation().generation()

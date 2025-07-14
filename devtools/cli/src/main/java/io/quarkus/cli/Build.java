@@ -9,9 +9,14 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.build.BaseBuildCommand;
 import io.quarkus.cli.build.BuildSystemRunner;
 import io.quarkus.cli.common.BuildOptions;
+import io.quarkus.cli.common.HelpOption;
+import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.cli.common.PropertiesOptions;
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.cli.registry.ToggleRegistryClientMixin;
 import io.quarkus.devtools.project.BuildTool;
 import picocli.CommandLine;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Parameters;
 
 @CommandLine.Command(name = "build", showEndOfOptionsDelimiterInUsageHelp = true, header = "Build the current project.")
@@ -25,6 +30,20 @@ public class Build extends BaseBuildCommand implements Callable<Integer> {
 
     @Parameters(description = "Additional parameters passed to the build system")
     List<String> params = new ArrayList<>();
+
+    public Build() {
+        super();
+    }
+
+    public Build(final RunModeOption runMode, final BuildOptions buildOptions, final List<String> params,
+            final CommandSpec spec,
+            final OutputOptionMixin output, final ToggleRegistryClientMixin registryClient, final HelpOption helpOption,
+            final PropertiesOptions propertiesOptions) {
+        super(spec, output, registryClient, helpOption, propertiesOptions);
+        this.runMode = runMode;
+        this.buildOptions = buildOptions;
+        this.params = params;
+    }
 
     @Override
     public Integer call() {

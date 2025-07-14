@@ -1,0 +1,39 @@
+---
+name: "RESTEasy Classic"
+artifact: "io.quarkus:quarkus-resteasy:999-SNAPSHOT"
+metadata:
+  short-name: "jax-rs"
+  keywords:
+  - "resteasy"
+  - "jaxrs"
+  - "web"
+  - "rest"
+  guide: "https://quarkus.io/guides/resteasy"
+  categories:
+  - "web"
+  status: "stable"
+  codestart:
+    name: "resteasy"
+    languages:
+    - "java"
+    - "kotlin"
+    - "scala"
+    artifact: "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
+  config:
+  - "quarkus.resteasy."
+  built-with-quarkus-core: "999-SNAPSHOT"
+  capabilities:
+    provides:
+    - "io.quarkus.rest"
+    - "io.quarkus.resteasy"
+  extension-dependencies:
+  - "io.quarkus:quarkus-vertx-http"
+  - "io.quarkus:quarkus-core"
+  - "io.quarkus:quarkus-mutiny"
+  - "io.quarkus:quarkus-smallrye-context-propagation"
+  - "io.quarkus:quarkus-vertx"
+  - "io.quarkus:quarkus-netty"
+  - "io.quarkus:quarkus-resteasy-server-common"
+  - "io.quarkus:quarkus-arc"
+  - "io.quarkus:quarkus-resteasy-common"
+description: "REST endpoint framework implementing JAX-RS and more"

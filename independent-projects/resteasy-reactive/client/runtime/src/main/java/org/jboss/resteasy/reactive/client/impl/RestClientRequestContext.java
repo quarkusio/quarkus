@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,6 +45,7 @@ import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
 import io.netty.handler.codec.http.multipart.InterfaceHttpData;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.stork.api.ServiceInstance;
 import io.vertx.core.Context;
 import io.vertx.core.MultiMap;
@@ -172,6 +174,16 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             return (Method) o;
         }
         return null;
+    }
+
+    public boolean invokedMethodReturnsAsyncType() {
+        Method invokedMethod = getInvokedMethod();
+        if (invokedMethod == null) {
+            return false;
+        }
+        Class<?> returnType = invokedMethod.getReturnType();
+        return Uni.class.isAssignableFrom(returnType) || Multi.class.isAssignableFrom(returnType)
+                || CompletionStage.class.isAssignableFrom(returnType);
     }
 
     public Annotation[] getMethodDeclaredAnnotationsSafe() {

@@ -36,7 +36,7 @@
         <!-- Not sure exactly why but the Maven plugins need to be compiled with Java 11 -->
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
-        <maven-core.version>3.9.9</maven-core.version>
+        <maven-core.version>3.9.11</maven-core.version>
         <jackson-bom.version>2.19.2</jackson-bom.version>
         <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
         <junit5.version>5.13.4</junit5.version>

@@ -49,6 +49,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-virtual-threads</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui</artifactId>
+            <optional>true</optional>
+        </dependency>
     </dependencies>
 
     <build>
@@ -63,6 +68,7 @@
                     </capabilities>
                     <conditionalDevDependencies>
                         <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                        <artifact>${project.groupId}:quarkus-devui:${project.version}</artifact>
                     </conditionalDevDependencies>
                 </configuration>
             </plugin>

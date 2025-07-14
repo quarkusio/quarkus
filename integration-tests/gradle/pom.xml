@@ -94,7 +94,7 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-maven-resolver</artifactId>
+            <artifactId>quarkus-bootstrap-core</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

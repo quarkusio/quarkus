@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.deployment.console;
 
-import static io.quarkus.devui.deployment.ide.IdeProcessor.openBrowser;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +39,7 @@ import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.IdeHelper;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
 
@@ -71,9 +70,9 @@ public class ConsoleProcessor {
 
         context.reset(
                 new ConsoleCommand('w', "Open the application in a browser", null,
-                        () -> openBrowser(rp, np, protocol, "/", host, port)),
+                        () -> IdeHelper.openBrowser(rp, np, protocol, "/", host, port)),
                 new ConsoleCommand('d', "Open the Dev UI in a browser", null,
-                        () -> openBrowser(rp, np, protocol, "/q/dev-ui", host, port)));
+                        () -> IdeHelper.openBrowser(rp, np, protocol, "/q/dev-ui", host, port)));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

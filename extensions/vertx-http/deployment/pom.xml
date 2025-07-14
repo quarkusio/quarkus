@@ -27,10 +27,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-assistant-dev</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http-deployment-spi</artifactId>
         </dependency>
         <dependency>
@@ -52,10 +48,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-spi</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-assistant-deployment-spi</artifactId>
         </dependency>
 
         <!-- Test dependencies -->

@@ -7,6 +7,7 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
+import io.quarkus.devui.spi.Constants;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
@@ -17,7 +18,6 @@ import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
  */
 public class EndpointsProcessor {
     private static final String NAMESPACE = "devui-endpoints";
-    public static final String DEV_UI = "dev-ui";
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createEndpointsPage(Capabilities capabilities,
@@ -32,7 +32,7 @@ public class EndpointsProcessor {
             swaggerUiPath = "";
         }
 
-        String basepath = nonApplicationRootPathBuildItem.resolvePath(DEV_UI);
+        String basepath = nonApplicationRootPathBuildItem.resolvePath(Constants.DEV_UI);
 
         InternalPageBuildItem endpointsPage = new InternalPageBuildItem("Endpoints", 25);
 

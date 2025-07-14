@@ -42,6 +42,15 @@ public class KeycloakRealmResourceManager implements QuarkusTestResourceLifecycl
                         .withHeader("Content-Type", MediaType.APPLICATION_JSON)
                         .withBody(
                                 "{\"access_token\":\"access_token_1\", \"expires_in\":4, \"refresh_token\":\"refresh_token_1\"}")));
+        server.stubFor(WireMock.post("/tokens-exchange")
+                .withRequestBody(containing("grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Atoken-exchange"))
+                .withRequestBody(containing("subject_token=token_to_be_exchanged"))
+                .withRequestBody(containing("subject_token_type=urn%3Aietf%3Aparams%3Aoauth%3Atoken-type%3Aaccess_token"))
+                .willReturn(WireMock
+                        .aResponse()
+                        .withHeader("Content-Type", MediaType.APPLICATION_JSON)
+                        .withBody(
+                                "{\"access_token\":\"access_token_exchanged\", \"expires_in\":4}")));
         server.stubFor(WireMock.post("/tokens-jwtbearer")
                 .withRequestBody(matching("grant_type=client_credentials&"
                         + "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer&"

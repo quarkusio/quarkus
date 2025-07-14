@@ -178,6 +178,11 @@ public class OidcClientRecorder {
                                         tokenGrantParams.addAll(grantOptions);
                                     }
                                 }
+                                if (oidcConfig.grant().type() == Grant.Type.EXCHANGE
+                                        && !tokenGrantParams.contains(OidcConstants.EXCHANGE_GRANT_SUBJECT_TOKEN_TYPE)) {
+                                    tokenGrantParams.add(OidcConstants.EXCHANGE_GRANT_SUBJECT_TOKEN_TYPE,
+                                            OidcConstants.EXCHANGE_GRANT_SUBJECT_ACCESS_TOKEN_TYPE);
+                                }
                             }
                         }
 

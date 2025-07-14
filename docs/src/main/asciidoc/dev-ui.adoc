@@ -182,7 +182,7 @@ Your extension needs to have the following dependency in it's deployment module:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+    <artifactId>quarkus-devui-deployment-spi</artifactId>
 </dependency>
 ----
 
@@ -1370,7 +1370,7 @@ You must add this to your pom:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+    <artifactId>quarkus-devui-test-spi</artifactId>
     <scope>test</scope>
 </dependency>
 ----

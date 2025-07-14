@@ -20,9 +20,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.NativeMonitoringBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.quarkus.opentelemetry.runtime.graal.UnsignedFeature;
 import io.quarkus.opentelemetry.runtime.metrics.cdi.MetricsProducer;
 import io.quarkus.opentelemetry.runtime.metrics.instrumentation.JvmMetricsService;
 
@@ -93,6 +95,11 @@ public class MetricProcessor {
         }
 
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(retainProducers));
+    }
+
+    @BuildStep
+    NativeImageFeatureBuildItem registerForReflection() {
+        return new NativeImageFeatureBuildItem(UnsignedFeature.class);
     }
 
     @BuildStep

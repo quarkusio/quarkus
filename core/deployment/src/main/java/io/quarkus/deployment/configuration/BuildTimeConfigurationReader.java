@@ -60,7 +60,6 @@ import io.quarkus.deployment.configuration.type.OptionalOf;
 import io.quarkus.deployment.configuration.type.PatternValidated;
 import io.quarkus.deployment.configuration.type.UpperBoundCheckOf;
 import io.quarkus.deployment.util.ServiceUtil;
-import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -406,15 +405,15 @@ public final class BuildTimeConfigurationReader {
     /**
      * Builds a new configuration instance.
      *
-     * @param launchMode target launch mode
      * @param buildSystemProps build system properties to add as a configuration source
+     * @param runtimeProperties runtime properties to add as a configuration source and to record
      * @param platformProperties Quarkus platform properties to add as a configuration source
      * @return configuration instance
      */
-    public SmallRyeConfig initConfiguration(LaunchMode launchMode, Properties buildSystemProps, Properties runtimeProperties,
+    public SmallRyeConfig initConfiguration(Properties buildSystemProps, Properties runtimeProperties,
             Map<String, String> platformProperties) {
         // now prepare & load the build configuration
-        SmallRyeConfigBuilder builder = ConfigUtils.configBuilder(false, launchMode);
+        SmallRyeConfigBuilder builder = ConfigUtils.configBuilder();
         if (classLoader != null) {
             builder.forClassLoader(classLoader);
         }

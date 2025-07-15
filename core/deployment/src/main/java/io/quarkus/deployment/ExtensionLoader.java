@@ -138,7 +138,7 @@ public final class ExtensionLoader {
             throws IOException, ClassNotFoundException {
 
         final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(classLoader);
-        final SmallRyeConfig src = reader.initConfiguration(launchMode, buildSystemProps, runtimeProperties,
+        final SmallRyeConfig src = reader.initConfiguration(buildSystemProps, runtimeProperties,
                 appModel.getPlatformProperties());
         // install globally
         QuarkusConfigFactory.setConfig(src);

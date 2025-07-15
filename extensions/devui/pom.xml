@@ -14,10 +14,10 @@
     <name>Quarkus - Dev UI</name>
     <packaging>pom</packaging>
     <modules>
-        <module>spi</module>
         <module>resources</module>
         <module>runtime</module>
         <module>deployment</module>
-        <module>tests</module>
+        <module>test-spi</module>
+        <module>deployment-spi</module>
     </modules>
 </project>

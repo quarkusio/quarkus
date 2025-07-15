@@ -62,8 +62,8 @@ import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devui.deployment.extension.Extension;
-import io.quarkus.devui.deployment.menu.EndpointsProcessor;
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devui.spi.Constants;
 import io.quarkus.devui.spi.DevUIContent;
 import io.quarkus.devui.spi.buildtime.BuildTimeAction;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
@@ -103,7 +103,7 @@ public class BuildTimeContentProcessor {
 
         String devUIContext = config.contextRoot().orElse("");
         String contextRoot = devUIContext + nonApplicationRootPathBuildItem.getNonApplicationRootPath()
-                + EndpointsProcessor.DEV_UI + SLASH;
+                + Constants.DEV_UI + SLASH;
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
@@ -303,7 +303,7 @@ public class BuildTimeContentProcessor {
             BuildProducer<InternalImportMapBuildItem> internalImportMapProducer) {
 
         String contextRoot = config.contextRoot().orElse("") + nonApplicationRootPathBuildItem.getNonApplicationRootPath()
-                + EndpointsProcessor.DEV_UI + SLASH;
+                + Constants.DEV_UI + SLASH;
 
         QuteTemplateBuildItem quteTemplateBuildItem = new QuteTemplateBuildItem(
                 QuteTemplateBuildItem.DEV_UI);
@@ -405,7 +405,7 @@ public class BuildTimeContentProcessor {
 
         String themeVars = themeVarsBuildItem.getTemplateValue();
         String nonApplicationRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
-        String contextRoot = devUIContext + nonApplicationRoot + EndpointsProcessor.DEV_UI + SLASH;
+        String contextRoot = devUIContext + nonApplicationRoot + Constants.DEV_UI + SLASH;
 
         Map<String, Object> data = Map.of(
                 "nonApplicationRoot", nonApplicationRoot,
@@ -597,7 +597,7 @@ public class BuildTimeContentProcessor {
         String artifactId = appArtifact.getArtifactId();
         applicationInfo.put("artifactId", artifactId);
 
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + Constants.DEV_UI + SLASH;
         applicationInfo.put("contextRoot", contextRoot);
 
         // Add version info

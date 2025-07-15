@@ -669,15 +669,14 @@
                 <artifactId>quarkus-devui-resources</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <!-- Below 2 should be renamed and relocated -->
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+                <artifactId>quarkus-devui-test-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+                <artifactId>quarkus-devui-deployment-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -6706,6 +6705,17 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-webjars-locator-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <!-- End of Relocations, please put new extensions above this list -->

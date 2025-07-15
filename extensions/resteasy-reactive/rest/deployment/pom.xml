@@ -28,6 +28,10 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-deployment-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
         <dependency>
@@ -61,11 +65,6 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-virtual-threads-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devui-deployment</artifactId>
-            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

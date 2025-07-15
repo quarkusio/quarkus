@@ -8,8 +8,8 @@
         <relativePath>../</relativePath>
     </parent>
     
-    <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
-    <name>Quarkus - Vert.x - HTTP - Dev UI Tests</name>
+    <artifactId>quarkus-devui-test-spi</artifactId>
+    <name>Quarkus - Dev UI - Test SPI</name>
     
     <dependencies>
         <dependency>

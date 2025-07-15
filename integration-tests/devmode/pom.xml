@@ -16,7 +16,7 @@
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+            <artifactId>quarkus-devui-test-spi</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

@@ -182,7 +182,7 @@ Your extension needs to have the following dependency in it's deployment module:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-vertx-http-dev-ui-spi</artifactId>
+    <artifactId>quarkus-devui-deployment-spi</artifactId>
 </dependency>
 ----
 
@@ -580,12 +580,11 @@ import 'qui-ide-link';
                         fileName='${sourceClassNameFull}'
                         lineNumber='${sourceLineNumber}'>[${sourceClassNameFull}]</qui-ide-link>;
 ----
-
-https://github.com/quarkusio/quarkus/blob/582f1f78806d2268885faea7aa8f5a4d2b3f5b98/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-server-log.js#L315[Example code]
+https://github.com/quarkusio/quarkus/blob/b84f13bb1a94073900328829e0b2224903179baf/extensions/devui/resources/src/main/resources/dev-ui/qwc/qwc-server-log.js#L334[Example code]
 
 ===== Using internal controllers
 
-Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller[internal controllers] are available to make certain things easier:
+Some https://github.com/quarkusio/quarkus/tree/main/extensions/devui/resources/src/main/resources/dev-ui/controller[internal controllers] are available to make certain things easier:
 
 - Notifier
 - Storage
@@ -596,7 +595,7 @@ Some https://github.com/quarkusio/quarkus/tree/main/extensions/vertx-http/dev-ui
 
 This is an easy way to show a toast message. The toast can be placed on the screen (default left bottom) and can have a level (Info, Success, Warning, Error). Any of the levels can also be primary, which will create a more prominent toast message.
 
-See the source of this controller https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/notifier.js[here].
+See the source of this controller https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/controller/notifier.js[here].
 
 Example usage:
 
@@ -646,7 +645,7 @@ const storedHeight = this.storageControl.get("height"); // Get some value
 this.storageControl.set('height', 123); // Set some val
 ----
 
-https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-footer.js[Example code]
+https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/qwc/qwc-footer.js[Example code]
 
 
 ====== Log
@@ -683,13 +682,13 @@ this.logControl
                 }).done();
 ----
 
-https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/qwc/qwc-server-log.js[Example code]
+https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/qwc/qwc-server-log.js[Example code]
 
 ====== Router
 
 The router is mostly used internally. This uses https://github.com/vaadin/router[Vaadin Router] under the covers to route URLs to the correct page/section within the SPA. It will update the navigation and allow history (back button). This also creates the sub-menu available on extensions that have multiple pages.
 
-See the https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/controller/router-controller.js[controller] for some methods that might be useful.
+See the https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/controller/router-controller.js[controller] for some methods that might be useful.
 
 
 ===== Global State
@@ -729,7 +728,7 @@ render() {
     }
 ----
 
-You can see all the properties of connection state https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/state/connection-state.js[here]
+You can see all the properties of connection state https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/state/connection-state.js[here]
 
 ====== Theme State
 
@@ -763,7 +762,7 @@ render() {
     }
 ----
 
-You can see all the properties of theme state https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/state/theme-state.js[here]
+You can see all the properties of theme state https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/state/theme-state.js[here]
 
 ====== Assistant State
 
@@ -795,7 +794,7 @@ render() {
 }
 ----
 
-You can see all the properties of assistant state https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/state/assistant-state.js[here]
+You can see all the properties of assistant state https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/state/assistant-state.js[here]
 
 ====== Dev UI State 
 
@@ -804,7 +803,7 @@ This state is a general state that contains global properties used in Dev UI, an
 A lot of the properties in this state is really build time data that auto reload when a hot-reload happens.
 
 You can see all the properties of dev ui state 
-https://github.com/quarkusio/quarkus/blob/main/extensions/vertx-http/dev-ui-resources/src/main/resources/dev-ui/state/devui-state.js[here]
+https://github.com/quarkusio/quarkus/blob/main/extensions/devui/resources/src/main/resources/dev-ui/state/devui-state.js[here]
 
 
 ==== Other ways to create pages
@@ -1370,7 +1369,7 @@ You must add this to your pom:
 ----
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-vertx-http-dev-ui-tests</artifactId>
+    <artifactId>quarkus-devui-test-spi</artifactId>
     <scope>test</scope>
 </dependency>
 ----

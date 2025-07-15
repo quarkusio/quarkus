@@ -20,7 +20,7 @@ public class Build extends BaseImageCommand {
     private static final String FALLBACK_BUILDER = "docker";
 
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:image-build",
-            BuildTool.GRADLE, "imageBuild");
+            BuildTool.GRADLE, "imageBuild", BuildTool.GRADLE_KOTLIN_DSL, "imageBuild");
 
     @Override
     public void populateContext(BuildToolContext context) {

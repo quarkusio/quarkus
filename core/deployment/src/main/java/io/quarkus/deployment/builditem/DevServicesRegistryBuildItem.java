@@ -4,10 +4,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
@@ -62,6 +64,13 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         RunningDevServicesRegistry.INSTANCE.closeAllRunningServices(launchMode.name());
     }
 
+    public void closeRemainingRunningServices(Collection<DevServicesResultBuildItem> services) {
+        Set<DevServiceOwner> ownersToKeep = services.stream()
+                .map(s -> new DevServiceOwner(s.getName(), launchMode.name(), s.getServiceName()))
+                .collect(Collectors.toSet());
+        RunningDevServicesRegistry.INSTANCE.closeRemainingRunningServices(uuid, launchMode.name(), ownersToKeep);
+    }
+
     public Map<String, String> getConfigForAllRunningServices() {
         Map<String, String> config = new HashMap<>();
         for (RunningService service : RunningDevServicesRegistry.INSTANCE.getAllRunningServices(launchMode.name())) {
@@ -73,6 +82,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
     public void startAll(Collection<DevServicesResultBuildItem> services,
             List<DevServicesCustomizerBuildItem> customizers,
             ClassLoader augmentClassLoader) {
+        closeRemainingRunningServices(services);
         CompletableFuture.allOf(services.stream()
                 .filter(DevServicesResultBuildItem::isStartable)
                 .map(serv -> CompletableFuture.runAsync(() -> {

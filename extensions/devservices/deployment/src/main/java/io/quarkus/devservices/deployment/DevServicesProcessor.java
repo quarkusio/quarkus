@@ -7,6 +7,8 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.NO_UNDERLINE;
 import static io.quarkus.deployment.dev.testing.MessageFormat.RED;
 import static io.quarkus.deployment.dev.testing.MessageFormat.RESET;
 import static io.quarkus.deployment.dev.testing.MessageFormat.UNDERLINE;
+import static io.quarkus.devservices.common.ConfigureUtil.configureLabels;
+import static io.quarkus.devservices.common.ConfigureUtil.shouldConfigureSharedServiceLabel;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -61,12 +63,12 @@ import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.devservice.runtime.config.DevServicesConfigBuilder;
-import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.devservices.crossclassloader.runtime.RunningService;
 import io.quarkus.devui.spi.buildtime.FooterLogBuildItem;
+import io.quarkus.runtime.LaunchMode;
 
 public class DevServicesProcessor {
 
@@ -89,18 +91,23 @@ public class DevServicesProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class)
     @Produce(ServiceStartBuildItem.class)
-    public DevServicesCustomizerBuildItem containerCustomizer(LaunchModeBuildItem launchMode,
+    public DevServicesCustomizerBuildItem containerCustomizer(LaunchModeBuildItem launchModeBuildItem,
             DevServicesConfig globalDevServicesConfig) {
         return new DevServicesCustomizerBuildItem((devService, startable) -> {
+            LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
             if (startable instanceof StartableContainer startableContainer) {
                 GenericContainer<?> container = startableContainer.getContainer();
-                ConfigureUtil.configureLabels(container, launchMode.getLaunchMode());
-                container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
+                configureLabels(container, launchMode);
+                if (shouldConfigureSharedServiceLabel(launchMode)) {
+                    container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
+                }
                 globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
             } else if (startable instanceof GenericContainer container) {
-                ConfigureUtil.configureLabels(container, launchMode.getLaunchMode());
+                configureLabels(container, launchMode);
                 globalDevServicesConfig.timeout().ifPresent(container::withStartupTimeout);
-                container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
+                if (shouldConfigureSharedServiceLabel(launchMode)) {
+                    container.withLabel(Labels.QUARKUS_DEV_SERVICE, devService.getServiceName());
+                }
             }
             return startable;
         });

@@ -16,7 +16,6 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.DockerClientFactory;
@@ -59,7 +58,7 @@ public class DevServicesRedisContinuousTestingTest {
         stopAllContainers();
     }
 
-    @Disabled("Not currently working")
+    //    @Disabled("Not currently working")
     @Test
     public void testContinuousTestingDisablesDevServicesWhenPropertiesChange() {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
@@ -73,7 +72,11 @@ public class DevServicesRedisContinuousTestingTest {
         assertEquals(0, result.getTotalTestsPassed());
         assertEquals(1, result.getTotalTestsFailed());
 
+        ping500();
+
         // We could check the container goes away, but we'd have to check slowly, because ryuk can be slow
+        List<Container> containers = getAllContainers();
+        assertTrue(containers.isEmpty(), "Expected no containers, but got: " + prettyPrintContainerList(containers));
     }
 
     @Test
@@ -212,6 +215,11 @@ public class DevServicesRedisContinuousTestingTest {
         when().get("/bundled/ping").then()
                 .statusCode(200)
                 .body(is("PONG"));
+    }
+
+    void ping500() {
+        when().get("/kafka/partitions/test").then()
+                .statusCode(500);
     }
 
     private static boolean hasPublicPort(Container newContainer, int newPort) {

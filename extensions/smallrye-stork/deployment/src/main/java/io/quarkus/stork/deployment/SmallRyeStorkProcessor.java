@@ -100,9 +100,8 @@ public class SmallRyeStorkProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Consume(StorkRegistrationBuildItem.class)
     @Produce(StorkInitializedBuildItem.class)
-    void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown, VertxBuildItem vertx,
-            StorkConfiguration configuration) {
-        storkRecorder.initialize(shutdown, vertx.getVertx(), configuration);
+    void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown, VertxBuildItem vertx) {
+        storkRecorder.initialize(shutdown, vertx.getVertx());
     }
 
     @BuildStep

@@ -288,7 +288,7 @@ public class InfinispanDevServiceProcessor {
                 log.warn(
                         "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing by setting `quarkus.infinispan-client.devservices.tracing.enabled=true` doesn't work anymore.\n"
                                 +
-                                "You need to use the `quarkus.infinispan-client.devservices.tracing.enabled` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
+                                "You need to use the `quarkus.infinispan-client.devservices.config-files` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
                 log.warn("infinispan:\n" +
                         "        cacheContainer:\n" +
                         "                tracing:\n" +

@@ -17,6 +17,7 @@ import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientException;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.Tokens;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.smallrye.mutiny.Uni;
 
 @Path("/frontend")
@@ -58,6 +59,10 @@ public class FrontendResource {
     OidcClient jwtBearerGrantClient;
 
     @Inject
+    @NamedOidcClient("exchange-grant")
+    OidcClient exchangeGrantClient;
+
+    @Inject
     @RestClient
     ProtectedResourceServiceRefreshIntervalTestClient tokenRefreshIntervalTestClient;
 
@@ -68,6 +73,13 @@ public class FrontendResource {
     @Path("echoToken")
     public String echoToken() {
         return protectedResourceServiceOidcClient.echoToken();
+    }
+
+    @GET
+    @Path("echoTokenExchangeGrant")
+    public String echoTokenExchangeGrant() {
+        return exchangeGrantClient.getTokens(Map.of(OidcConstants.EXCHANGE_GRANT_SUBJECT_TOKEN, "token_to_be_exchanged"))
+                .await().indefinitely().getAccessToken();
     }
 
     @GET

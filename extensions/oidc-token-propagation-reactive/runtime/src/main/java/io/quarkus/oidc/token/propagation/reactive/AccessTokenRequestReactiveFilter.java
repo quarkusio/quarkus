@@ -24,6 +24,7 @@ import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClients;
 import io.quarkus.oidc.client.runtime.DisabledOidcClientException;
 import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant;
+import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
@@ -59,9 +60,9 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
                                     + "grant.type",
                             Grant.Type.class);
             if (exchangeTokenGrantType == Grant.Type.EXCHANGE) {
-                exchangeTokenProperty = "subject_token";
+                exchangeTokenProperty = OidcConstants.EXCHANGE_GRANT_SUBJECT_TOKEN;
             } else if (exchangeTokenGrantType == Grant.Type.JWT) {
-                exchangeTokenProperty = "assertion";
+                exchangeTokenProperty = OidcConstants.JWT_BEARER_GRANT_ASSERTION;
             } else {
                 throw new ConfigurationException("Token exchange is required but OIDC client is configured "
                         + "to use the " + exchangeTokenGrantType.getGrantType() + " grantType");

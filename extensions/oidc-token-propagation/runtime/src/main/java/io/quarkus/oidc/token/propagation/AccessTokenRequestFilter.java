@@ -53,7 +53,7 @@ public class AccessTokenRequestFilter extends AbstractTokenRequestFilter {
                                     + "grant.type",
                             Grant.Type.class);
             if (exchangeTokenGrantType == Grant.Type.EXCHANGE) {
-                exchangeTokenProperty = "subject_token";
+                exchangeTokenProperty = OidcConstants.EXCHANGE_GRANT_SUBJECT_TOKEN;
             } else if (exchangeTokenGrantType == Grant.Type.JWT) {
                 exchangeTokenProperty = OidcConstants.JWT_BEARER_GRANT_ASSERTION;
             } else {

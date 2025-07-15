@@ -126,7 +126,7 @@ public class StorkConfigUtil {
     }
 
     public static int getOrDefaultPort(Map<String, String> parameters, Config quarkusConfig) {
-        String customPort =  parameters.getOrDefault("port", quarkusConfig.getValue("quarkus.http.port", String.class));
+        String customPort = parameters.getOrDefault("port", quarkusConfig.getValue("quarkus.http.port", String.class));
         return Integer.parseInt(customPort);
     }
 

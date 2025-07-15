@@ -17,6 +17,11 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
         this(name, null, (Supplier<ContainerInfo>) null, configs);
     }
 
+    public DevServiceDescriptionBuildItem(String name, ContainerInfo containerInfo,
+            Map<String, String> configs) {
+        this(name, null, () -> containerInfo, configs);
+    }
+
     public DevServiceDescriptionBuildItem(String name, String description, ContainerInfo containerInfo,
             Map<String, String> configs) {
         this(name, description, () -> containerInfo, configs);

@@ -297,6 +297,12 @@ NOTE: `@io.quarkus.test.component.TestConfigProperty` declared on a `@Nested` te
 
 CDI beans are also automatically registered for all injected https://smallrye.io/smallrye-config/Main/config/mappings/[Config Mappings]. The mappings are populated with the test configuration properties.
 
+=== Config sources
+
+By default, only the config properties from `application.properties` and properties set by the `@TestConfigProperty` annotation or with the `QuarkusComponentTestExtensionBuilder#configProperty(String, String)` method are included in the test config.
+System properties and ENV variables are _not_ included in the test config by default.
+However, you can use `@QuarkusComponentTest#useSystemConfigSources()` or `QuarkusComponentTestExtensionBuilder#useSystemConfigSources()` to configure this behavior.
+
 == Mocking CDI Interceptors
 
 If a tested component class declares an interceptor binding then you might need to mock the interception too.

@@ -234,7 +234,7 @@ public interface HibernateOrmConfig {
              * Only available to mitigate migration from the current Quarkus-preconfigured format mappers (that will be removed
              * in the future version).
              */
-            @WithDefault("warn")
+            @WithDefault("fail")
             BuiltinFormatMapperBehaviour global();
         }
     }

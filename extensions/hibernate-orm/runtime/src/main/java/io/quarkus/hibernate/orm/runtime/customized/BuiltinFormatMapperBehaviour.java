@@ -25,7 +25,7 @@ public enum BuiltinFormatMapperBehaviour {
         }
     },
     /**
-     * Currently the default one, uses a Quarkus preconfigured format mappers. If a format mapper operation is invoked a
+     * Uses a Quarkus preconfigured format mappers. If a format mapper operation is invoked a
      * warning is logged.
      */
     WARN {
@@ -35,8 +35,7 @@ public enum BuiltinFormatMapperBehaviour {
         }
     },
     /**
-     * If there is no user provided format mapper, a Quarkus preconfigured one will fail at runtime.
-     * Will become the default in the future versions of Quarkus.
+     * Currently the default one. If there is no user provided format mapper, a Quarkus preconfigured one will fail at runtime.
      */
     FAIL {
         @Override
@@ -60,7 +59,7 @@ public enum BuiltinFormatMapperBehaviour {
                         + (TYPE_JSON.equals(type) ? "@JsonFormat" : "@XmlFormat")
                         + " and @PersistenceUnitExtension"
                         + (PersistenceUnitUtil.isDefaultPersistenceUnit(puName) ? "" : "(\"%1$s\")")
-                        + "to address your database serialization/deserialization needs."
+                        + " to address your database serialization/deserialization needs."
                         + "\nSee the migration guide for more details and how to proceed.",
                 puName, type);
     }

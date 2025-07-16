@@ -39,6 +39,10 @@
             <artifactId>gizmo</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus.gizmo</groupId>
+            <artifactId>gizmo2</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.smallrye</groupId>
             <artifactId>jandex</artifactId>
         </dependency>

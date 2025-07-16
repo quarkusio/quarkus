@@ -71,7 +71,9 @@ public abstract class NativeImageBuildRunner {
                         }
                     })
                     .output().consumeLinesWith(8192, log::info)
-                    .error().consumeWith(br -> new ErrorReplacingProcessReader(br, outputDir.resolve("reports").toFile()).run())
+                    // Why logOnSuccess(false) and then consumeWith? Because we get the stdErr twice otherwise.
+                    .error().logOnSuccess(false)
+                    .consumeWith(br -> new ErrorReplacingProcessReader(br, outputDir.resolve("reports").toFile()).run())
                     .run();
             boolean objcopyExists = objcopyExists();
 
@@ -121,12 +123,13 @@ public abstract class NativeImageBuildRunner {
     static void runCommand(String[] command, String errorMsg, File workingDirectory) {
         log.info(String.join(" ", command).replace("$", "\\$"));
         try {
-            var pb = ProcessBuilder.newBuilder(command[0])
+            final ProcessBuilder<Void> pb = ProcessBuilder.newBuilder(command[0])
                     .arguments(Arrays.copyOfRange(command, 1, command.length));
             if (workingDirectory != null) {
                 pb.directory(workingDirectory.toPath());
             }
-            pb.run();
+            // Without logOnSuccess(false) the error stream is printed twice and with a "WARNING".
+            pb.error().logOnSuccess(false).run();
         } catch (Exception e) {
             if (errorMsg != null) {
                 log.errorf(e, errorMsg);

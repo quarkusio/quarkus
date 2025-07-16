@@ -7,9 +7,14 @@ import com.oracle.svm.core.annotate.TargetClass;
 import liquibase.Scope;
 import liquibase.ScopeManager;
 import liquibase.SingletonScopeManager;
+import liquibase.util.SmartMap;
 
 @TargetClass(value = Scope.class)
 public final class SubstituteScope {
+
+    @Alias
+    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.NewInstance, declClass = SmartMap.class)
+    private SmartMap values = new SmartMap();
 
     /**
      * All the following code is here to reset <a href=

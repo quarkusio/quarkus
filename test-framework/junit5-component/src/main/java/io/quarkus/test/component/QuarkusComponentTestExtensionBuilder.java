@@ -34,6 +34,7 @@ public class QuarkusComponentTestExtensionBuilder {
     private final List<AnnotationsTransformer> annotationsTransformers = new ArrayList<>();
     private final List<Converter<?>> configConverters = new ArrayList<>();
     private boolean useDefaultConfigProperties = false;
+    private boolean useSystemConfigSources = false;
     private boolean addNestedClassesAsComponents = true;
     private int configSourceOrdinal = QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL;
     private Consumer<SmallRyeConfigBuilder> configBuilderCustomizer;
@@ -140,6 +141,16 @@ public class QuarkusComponentTestExtensionBuilder {
     }
 
     /**
+     * Use config sources for system properties and ENV variables in the test config.
+     *
+     * @return self
+     */
+    public QuarkusComponentTestExtensionBuilder useSystemConfigSources(boolean value) {
+        this.useSystemConfigSources = value;
+        return this;
+    }
+
+    /**
      * Configure a new mock of a bean.
      * <p>
      * Note that a mock is created automatically for all unsatisfied dependencies in the test. This API provides full control
@@ -174,7 +185,8 @@ public class QuarkusComponentTestExtensionBuilder {
         return new QuarkusComponentTestExtension(new QuarkusComponentTestConfiguration(Map.copyOf(configProperties),
                 Set.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
                 addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer), buildShouldFail);
+                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer, useSystemConfigSources),
+                buildShouldFail);
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {

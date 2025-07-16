@@ -8,7 +8,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.UUID;
 import java.util.function.IntFunction;
 
 import org.eclipse.microprofile.config.Config;
@@ -16,7 +15,6 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
-import io.quarkus.runtime.LaunchMode;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
@@ -24,12 +22,6 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  *
  */
 public final class ConfigUtils {
-
-    /**
-     * The name of the property associated with a random UUID generated at launch time.
-     */
-    static final String UUID_KEY = "quarkus.uuid";
-
     private ConfigUtils() {
     }
 
@@ -45,31 +37,8 @@ public final class ConfigUtils {
         return size -> new TreeSet<>();
     }
 
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final LaunchMode launchMode) {
-        return configBuilder(runTime, true, launchMode);
-    }
-
-    /**
-     * Get the basic configuration builder.
-     *
-     * @param runTime {@code true} if the configuration is run time, {@code false} if build time
-     * @param addDiscovered {@code true} if the ConfigSource and Converter objects should be auto-discovered
-     * @return the configuration builder
-     */
-    public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered,
-            final LaunchMode launchMode) {
-        SmallRyeConfigBuilder builder = emptyConfigBuilder();
-
-        if (launchMode.isDevOrTest() && runTime) {
-            builder.withSources(new RuntimeOverrideConfigSource(builder.getClassLoader()));
-        }
-        if (runTime) {
-            builder.withDefaultValue(UUID_KEY, UUID.randomUUID().toString());
-        }
-        if (addDiscovered) {
-            builder.addDiscoveredCustomizers().addDiscoveredSources();
-        }
-        return builder;
+    public static SmallRyeConfigBuilder configBuilder() {
+        return emptyConfigBuilder().addDiscoveredCustomizers().addDiscoveredSources();
     }
 
     public static SmallRyeConfigBuilder emptyConfigBuilder() {

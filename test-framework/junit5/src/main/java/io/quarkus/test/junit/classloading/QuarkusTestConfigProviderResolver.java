@@ -16,7 +16,7 @@ public class QuarkusTestConfigProviderResolver extends SmallRyeConfigProviderRes
         ClassLoader original = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
-            SmallRyeConfig config = ConfigUtils.configBuilder(false, true, LaunchMode.TEST)
+            SmallRyeConfig config = ConfigUtils.configBuilder()
                     .forClassLoader(classLoader)
                     .withCustomizers(new TestConfigCustomizer(LaunchMode.TEST))
                     .build();

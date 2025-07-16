@@ -118,7 +118,7 @@ An extension can also decide to only support _tight-coupling_ and does not provi
 [#the-place-of-the-public-api]
 ==== The place of the public API
 
-Historically, extensions have often placed their public APIs in the `runtime` module.This forces a tight coupling between the extension and its consumers, as they must depend on the `runtime` module to access the public API.
+Historically, extensions have often placed their public APIs in the `runtime` module. This forces a tight coupling between the extension and its consumers, as they must depend on the `runtime` module to access the public API.
 To circumvent this, a `runtime-spi` module was introduced, initially limited to _SPIs_, but later expanded to include public APIs as well.
 
 This has led to confusion about the intended use of these modules and their separation.

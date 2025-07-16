@@ -1796,10 +1796,10 @@ public interface MyRepository extends CrudRepository<MyEntity, Integer> { // <1>
 
 }
 ----
-1. To skip the boilerplate definition of CRUD operations,
+<1> To skip the boilerplate definition of CRUD operations,
 we can use one of the available interfaces (e.g. `CrudRepository` or `BasicRepository`).
-2. Adding custom queries with parameters is as easy as providing your query string to the `@Query` annotation.
-3. If the basic CRUD operations from the Jakarta Data interfaces are not enough,
+<2> Adding custom queries with parameters is as easy as providing your query string to the `@Query` annotation.
+<3> If the basic CRUD operations from the Jakarta Data interfaces are not enough,
 we can always add a custom one, in this case a delete operation that removes `MyEntity`s by name.
 
 And then the repository can be used as any other bean:
@@ -1817,10 +1817,28 @@ public class MyEntityResource {
         repository.insert(entity);
     }
 
-	// ...
+    // ...
 
 }
 ----
+
+[NOTE]
+====
+When working with non-default persistence units, remember to specify the persistence unit name the repository is targeting
+in the `dataStore` attribute of the repository annotation:
+
+[source,java]
+----
+@Repository(dataStore = "other") // <1>
+public interface MyNonDefaultPURepository {
+    // ...
+}
+----
+<1> Pass the name of the non-default persistence unit to the repository annotation (`other` in this example).
+
+Review the https://jakarta.ee/specifications/data/1.0/apidocs/jakarta.data/jakarta/data/repository/repository#dataStore()[Javadoc of the `@Repository` annotation]
+to learn more about the `dataStore` attribute.
+====
 
 Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]
 and https://jakarta.ee/specifications/data/1.0/jakarta-data-1.0[Jakarta Data]

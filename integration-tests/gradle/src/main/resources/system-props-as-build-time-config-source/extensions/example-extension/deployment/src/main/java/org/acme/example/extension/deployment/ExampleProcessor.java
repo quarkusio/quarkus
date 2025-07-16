@@ -24,7 +24,7 @@ class ExampleProcessor {
     SyntheticBeanBuildItem syntheticBean(ExampleRecorder recorder, ExampleConfig config) {
         return SyntheticBeanBuildItem.configure(ExampleBuildOptions.class)
                 .scope(Singleton.class)
-                .runtimeValue(recorder.buildOptions(config.name))
+                .runtimeValue(recorder.buildOptions(config.name()))
                 .done();
     }
 }

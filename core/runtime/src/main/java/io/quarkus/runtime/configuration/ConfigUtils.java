@@ -1,14 +1,8 @@
 package io.quarkus.runtime.configuration;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.function.IntFunction;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -23,18 +17,6 @@ import io.smallrye.config.SmallRyeConfigBuilder;
  */
 public final class ConfigUtils {
     private ConfigUtils() {
-    }
-
-    public static <T> IntFunction<List<T>> listFactory() {
-        return ArrayList::new;
-    }
-
-    public static <T> IntFunction<Set<T>> setFactory() {
-        return LinkedHashSet::new;
-    }
-
-    public static <T> IntFunction<SortedSet<T>> sortedSetFactory() {
-        return size -> new TreeSet<>();
     }
 
     public static SmallRyeConfigBuilder configBuilder() {

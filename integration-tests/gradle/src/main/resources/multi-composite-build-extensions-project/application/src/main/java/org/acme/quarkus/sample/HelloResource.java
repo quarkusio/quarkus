@@ -24,6 +24,6 @@ public class HelloResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String hello() {
-        return "hello from " + libB.getName()+" and "+libA.getName()+" extension enabled: "+config.enabled;
+        return "hello from " + libB.getName()+" and "+libA.getName()+" extension enabled: "+config.enabled();
     }
 }

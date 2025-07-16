@@ -25,7 +25,6 @@ import com.microsoft.azure.toolkit.lib.common.model.Region;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
-import io.quarkus.runtime.annotations.ConfigItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -112,7 +111,6 @@ public interface AzureFunctionsConfig {
     /**
      * Specifies the application settings for your Azure Functions, which are defined in name-value pairs
      */
-    @ConfigItem
     @ConfigDocMapKey("setting-name")
     Map<String, String> appSettings = Collections.emptyMap();
 

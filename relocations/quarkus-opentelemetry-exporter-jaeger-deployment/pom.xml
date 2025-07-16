@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-opentelemetry-exporter-jaeger-deployment</artifactId>
+    <name>Quarkus - Relocations - quarkus-opentelemetry-exporter-jaeger-deployment</name>
 
     <distributionManagement>
         <relocation>

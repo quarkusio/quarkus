@@ -16,7 +16,7 @@ import picocli.CommandLine;
 public class Deploy extends BuildToolDelegatingCommand {
 
     private static final Map<BuildTool, String> ACTION_MAPPING = Map.of(BuildTool.MAVEN, "quarkus:deploy",
-            BuildTool.GRADLE, "deploy");
+            BuildTool.GRADLE, "deploy", BuildTool.GRADLE_KOTLIN_DSL, "deploy");
 
     @Override
     public Map<BuildTool, String> getActionMapping() {

@@ -125,7 +125,7 @@ quarkus.datasource.password = connor
 quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost:5432/mydatabase
 
 # drop and create the database at startup (use `update` to only update the schema)
-quarkus.hibernate-orm.database.generation = drop-and-create
+quarkus.hibernate-orm.schema-management.strategy = drop-and-create
 ----
 
 == Solution 1: using the active record pattern

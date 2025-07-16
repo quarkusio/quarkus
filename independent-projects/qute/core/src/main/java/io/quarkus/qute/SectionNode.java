@@ -31,9 +31,9 @@ public class SectionNode implements TemplateNode {
     final SectionHelper helper;
     private final Origin origin;
     private final boolean traceLevel;
-    private final Engine engine;
+    private final EngineImpl engine;
 
-    SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin, Engine engine) {
+    SectionNode(String name, List<SectionBlock> blocks, SectionHelper helper, Origin origin, EngineImpl engine) {
         this.name = name;
         this.blocks = blocks;
         this.helper = helper;
@@ -224,9 +224,10 @@ public class SectionNode implements TemplateNode {
 
         private final Map<String, Object> params;
         private final ResolutionContext resolutionContext;
-        private final Engine engine;
+        private final EngineImpl engine;
 
-        public SectionResolutionContextImpl(ResolutionContext resolutionContext, Map<String, Object> params, Engine engine) {
+        public SectionResolutionContextImpl(ResolutionContext resolutionContext, Map<String, Object> params,
+                EngineImpl engine) {
             this.resolutionContext = resolutionContext;
             this.params = params;
             this.engine = engine;

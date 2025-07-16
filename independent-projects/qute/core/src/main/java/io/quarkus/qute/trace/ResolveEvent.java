@@ -18,7 +18,7 @@ import io.quarkus.qute.TemplateNode;
  * Used by trace listeners to monitor or inspect the evaluation of template
  * nodes.
  */
-public class ResolveEvent extends BaseEvent {
+public final class ResolveEvent extends BaseEvent {
 
     private final TemplateNode templateNode;
     private final ResolutionContext context;

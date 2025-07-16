@@ -17,7 +17,7 @@ import io.quarkus.qute.TemplateInstance;
  * @param templateInstance the template instance involved in the event
  * @param engine the engine managing the template rendering
  */
-public class TemplateEvent extends BaseEvent {
+public final class TemplateEvent extends BaseEvent {
 
     private final TemplateInstance templateInstance;
 

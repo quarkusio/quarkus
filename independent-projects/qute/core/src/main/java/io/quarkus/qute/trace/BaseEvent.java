@@ -7,7 +7,7 @@ import io.quarkus.qute.Engine;
  * <p>
  * Captures the engine instance and tracks execution duration.
  */
-public class BaseEvent {
+public abstract class BaseEvent {
 
     private final Engine engine;
     private final long startTime;

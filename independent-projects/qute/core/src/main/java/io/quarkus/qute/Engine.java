@@ -184,30 +184,11 @@ public interface Engine extends ErrorInitializer {
     boolean removeStandaloneLines();
 
     /**
-     * Initializes a new {@link EngineBuilder} instance from this engine.
-     * <p>
-     * The {@link EngineBuilder#iterationMetadataPrefix(String) is not set but if a
-     * {@link io.quarkus.qute.LoopSectionHelper.Factory} is registered then the original prefix should be honored.
-     *
-     * @return a new builder instance initialized from this engine
-     */
-    EngineBuilder newBuilder();
-
-    /**
-     * Returns {@code true} if there are any trace listeners currently registered,
-     * {@code false} otherwise.
-     * <p>
-     * Trace listeners monitor and react to template rendering events.
-     *
-     * @return {@code true} if at least one trace listener is registered, {@code false} otherwise
-     */
-    boolean hasTraceListeners();
-
-    /**
      * Returns the {@link TraceManager} responsible for managing trace listeners and
      * firing trace events during template rendering.
      *
-     * @return the trace manager instance
+     * @return the trace manager instance or {@code null} if tracing is disabled
+     * @see EngineBuilder#enableTracing(boolean)
      */
     TraceManager getTraceManager();
 
@@ -218,7 +199,13 @@ public interface Engine extends ErrorInitializer {
      *
      * @param listener the trace listener to add; must not be {@code null}
      */
-    void addTraceListener(TraceListener listener);
+    default void addTraceListener(TraceListener listener) {
+        TraceManager manager = getTraceManager();
+        if (manager == null) {
+            throw new IllegalStateException("Tracing not enabled");
+        }
+        manager.addTraceListener(listener);
+    }
 
     /**
      * Unregisters a previously registered {@link TraceListener}.
@@ -227,6 +214,22 @@ public interface Engine extends ErrorInitializer {
      *
      * @param listener the trace listener to remove; must not be {@code null}
      */
-    void removeTraceListener(TraceListener listener);
+    default void removeTraceListener(TraceListener listener) {
+        TraceManager manager = getTraceManager();
+        if (manager == null) {
+            throw new IllegalStateException("Tracing not enabled");
+        }
+        manager.removeTraceListener(listener);
+    }
+
+    /**
+     * Initializes a new {@link EngineBuilder} instance from this engine.
+     * <p>
+     * The {@link EngineBuilder#iterationMetadataPrefix(String) is not set but if a
+     * {@link io.quarkus.qute.LoopSectionHelper.Factory} is registered then the original prefix should be honored.
+     *
+     * @return a new builder instance initialized from this engine
+     */
+    EngineBuilder newBuilder();
 
 }

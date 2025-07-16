@@ -1,10 +1,5 @@
 package io.quarkus.qute;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import io.quarkus.qute.trace.ResolveEvent;
-import io.quarkus.qute.trace.TemplateEvent;
 import io.quarkus.qute.trace.TraceListener;
 
 /**
@@ -14,90 +9,34 @@ import io.quarkus.qute.trace.TraceListener;
  * Each {@link Engine} instance has its own {@code TraceManager} to coordinate
  * tracing callbacks during template rendering.
  */
-public class TraceManager {
-
-    private final List<TraceListener> listeners;
-
-    public TraceManager() {
-        listeners = new CopyOnWriteArrayList<>();
-    }
+public interface TraceManager {
 
     /**
-     * Registers a new trace listener.
+     * Registers a new {@link TraceListener} to receive trace events.
+     * <p>
+     * The listener will be notified of template rendering and resolution events.
      *
-     * @param listener the listener to add
+     * @param listener the trace listener to add; must not be {@code null}
      */
-    public void addTraceListener(TraceListener listener) {
-        listeners.add(listener);
-    }
+    void addTraceListener(TraceListener listener);
 
     /**
-     * Removes a previously registered trace listener.
+     * Unregisters a previously registered {@link TraceListener}.
+     * <p>
+     * After removal, the listener will no longer receive trace events.
      *
-     * @param listener the listener to remove
+     * @param listener the trace listener to remove; must not be {@code null}
      */
-    public void removeTraceListener(TraceListener listener) {
-        listeners.remove(listener);
-    }
+    void removeTraceListener(TraceListener listener);
 
     /**
-     * Fires an event to all listeners indicating the start of a template rendering.
+     * Returns {@code true} if there are any trace listeners currently registered,
+     * {@code false} otherwise.
+     * <p>
+     * Trace listeners monitor and react to template rendering events.
      *
-     * @param event the template event
+     * @return {@code true} if at least one trace listener is registered, {@code false} otherwise
      */
-    void fireStartTemplate(TemplateEvent event) {
-        if (hasTraceListeners()) {
-            for (TraceListener listener : listeners) {
-                listener.onStartTemplate(event);
-            }
-        }
-    }
+    boolean hasTraceListeners();
 
-    /**
-     * Fires an event to all listeners before a template node is resolved.
-     *
-     * @param event the resolve event
-     */
-    void fireBeforeResolveEvent(ResolveEvent event) {
-        if (hasTraceListeners()) {
-            for (TraceListener listener : listeners) {
-                listener.onBeforeResolve(event);
-            }
-        }
-    }
-
-    /**
-     * Fires an event to all listeners after a template node has been resolved.
-     *
-     * @param event the resolve event
-     */
-    void fireAfterResolveEvent(ResolveEvent event) {
-        if (hasTraceListeners()) {
-            for (TraceListener listener : listeners) {
-                listener.onAfterResolve(event);
-            }
-        }
-    }
-
-    /**
-     * Fires an event to all listeners indicating the end of a template rendering.
-     *
-     * @param event the template event
-     */
-    void fireEndTemplate(TemplateEvent event) {
-        if (hasTraceListeners()) {
-            for (TraceListener listener : listeners) {
-                listener.onEndTemplate(event);
-            }
-        }
-    }
-
-    /**
-     * Returns {@code true} if there is at least one registered listener.
-     *
-     * @return whether any trace listeners are registered
-     */
-    public boolean hasTraceListeners() {
-        return !listeners.isEmpty();
-    }
 }

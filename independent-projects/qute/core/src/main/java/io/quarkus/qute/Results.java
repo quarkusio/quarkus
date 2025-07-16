@@ -45,7 +45,8 @@ public final class Results {
         return CompletedStage.of(NotFound.EMPTY);
     }
 
-    static CompletionStage<ResultNode> resolveAndProcess(List<TemplateNode> nodes, ResolutionContext context, Engine engine) {
+    static CompletionStage<ResultNode> resolveAndProcess(List<TemplateNode> nodes, ResolutionContext context,
+            EngineImpl engine) {
         int nodesCount = nodes.size();
         if (nodesCount == 1) {
             // Single node in the block
@@ -102,13 +103,13 @@ public final class Results {
      * the performance of trivial implementations like TextNode::resolve, which is as simple as a field access.
      */
     private static CompletionStage<ResultNode> resolveWith(TemplateNode templateNode, ResolutionContext context,
-            Engine engine) {
-        if (!engine.hasTraceListeners()) {
+            EngineImpl engine) {
+        TraceManagerImpl traceManager = engine.traceManager;
+        if (traceManager == null) {
             return doResolveWith(templateNode, context);
         }
 
         // Notify trace listeners before resolving the template node.
-        TraceManager traceManager = engine.getTraceManager();
         final ResolveEvent event = new ResolveEvent(templateNode, context, engine);
         traceManager.fireBeforeResolveEvent(event);
 

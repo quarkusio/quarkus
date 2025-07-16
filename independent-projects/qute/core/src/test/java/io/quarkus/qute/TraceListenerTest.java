@@ -2,6 +2,9 @@ package io.quarkus.qute;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,7 +23,11 @@ public class TraceListenerTest {
 
     @Test
     public void trackTemplate() {
-        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .enableTracing(true)
+                .build();
 
         String templateId = "hello";
         Template template = engine.parse("""
@@ -57,7 +64,11 @@ public class TraceListenerTest {
 
     @Test
     public void trackNodes() {
-        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build();
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .enableTracing(true)
+                .build();
 
         Template template = engine.parse("""
                 <html>
@@ -95,7 +106,24 @@ public class TraceListenerTest {
         assertEquals(sortedAfterResolve, sortedAfterResolve);
 
         assertArrayEquals(expectedBeforeResolve().toArray(), actualBeforeResolve.toArray());
+    }
 
+    @Test
+    public void testRegistration() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addValueResolver(new ReflectionValueResolver())
+                .enableTracing(true)
+                .build();
+
+        TraceListener empty = new TraceListener() {
+        };
+        engine.addTraceListener(empty);
+        assertTrue(engine.getTraceManager().hasTraceListeners());
+        engine.removeTraceListener(empty);
+        assertFalse(engine.getTraceManager().hasTraceListeners());
+
+        assertNull(Engine.builder().addDefaults().enableTracing(false).build().getTraceManager());
     }
 
     private static List<String> expectedBeforeResolve() {

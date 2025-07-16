@@ -39,7 +39,8 @@ public class MicroProfileRestClientResponseFilter implements ClientResponseFilte
                 RestClientRequestContext restClientContext = ((ClientRequestContextImpl) requestContext)
                         .getRestClientRequestContext();
 
-                boolean requiresBlocking = RestClientRecorder.isClassBlocking(exceptionMapper.getClass());
+                boolean requiresBlocking = RestClientRecorder.isClassBlocking(exceptionMapper.getClass())
+                        || restClientContext.isJakartaResponseDownload();
                 if (Context.isOnEventLoopThread() && requiresBlocking) {
                     switchToWorkerThreadPoolAndRetry(restClientContext);
                     break;

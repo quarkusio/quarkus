@@ -138,7 +138,7 @@ public static class MyApplication extends Application {
 ----
 
 This will cause all rest endpoints to be resolve relative to `/api`, so the endpoint above with `@Path("rest")` would
-be accessible at `/api/rest/`. You can also set the `quarkus.rest.path` build time property to set the root path if you
+be accessible at `/api/rest/`. You can also set the <<quarkus-rest-common_quarkus-rest-path,`quarkus.rest.path`>> build time property to set the root path if you
 don't want to use an annotation.
 
 === Declaring endpoints: HTTP methods
@@ -1652,7 +1652,7 @@ This feature is introduced as a Technology Preview and is disabled by default.
 By eliminating reliance on reflection during deserialization, applications can achieve better performance and reduced memory consumption, particularly for native applications where reflection can introduce overhead.
 If you implement this feature, run tests to assess its effect on your applications.
 
-To enable this feature, set the following configuration property to `true`:
+To enable this feature, set the <<quarkus-rest-jackson_quarkus-rest-jackson-optimization-enable-reflection-free-serializers,`quarkus.rest.jackson.optimization.enable-reflection-free-serializers`>> configuration property to `true`:
 
 `quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true`.
 
@@ -3374,3 +3374,9 @@ In addition to the Server side, Quarkus REST comes with a new MicroProfile REST 
 Please note that the `quarkus-resteasy-client` extension may not be used with Quarkus REST, use `quarkus-rest-client` instead.
 
 See the xref:rest-client.adoc[REST Client Guide] for more information about the REST client.
+
+[[rest-configuration-reference]]
+== Quarkus REST Configuration Reference
+
+include::{generated-dir}/config/quarkus-rest-common_quarkus.rest.adoc[leveloffset=+1, opts=optional]
+include::{generated-dir}/config/quarkus-rest-jackson.adoc[leveloffset=+1, opts=optional]

@@ -33,7 +33,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -210,7 +210,7 @@ class HibernateSearchStandaloneProcessor {
         serviceStart.produce(new ServiceStartBuildItem("Hibernate Search Standalone"));
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
     void devServices(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
             HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
             BuildProducer<DevservicesElasticsearchBuildItem> buildItemBuildProducer,

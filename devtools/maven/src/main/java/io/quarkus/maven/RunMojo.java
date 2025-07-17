@@ -55,12 +55,12 @@ public class RunMojo extends QuarkusBootstrapMojo {
             }
         }
 
-        try (CuratedApplication curatedApplication = bootstrapApplication(LaunchMode.NORMAL,
+        try (CuratedApplication curatedApplication = bootstrapApplication(LaunchMode.RUN,
                 new Consumer<QuarkusBootstrap.Builder>() {
                     @Override
                     public void accept(QuarkusBootstrap.Builder builder) {
                         // we need this for dev services
-                        builder.setMode(QuarkusBootstrap.Mode.TEST);
+                        builder.setMode(QuarkusBootstrap.Mode.RUN);
                     }
                 })) {
             AugmentAction action = curatedApplication.createAugmentor();

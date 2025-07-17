@@ -8,8 +8,8 @@ import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.representations.idm.ComponentExportRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -19,7 +19,7 @@ import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.client.registration.deployment.OidcClientRegistrationBuildStep;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { OidcClientRegistrationBuildStep.IsEnabled.class,
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, OidcClientRegistrationBuildStep.IsEnabled.class,
         DevServicesConfig.Enabled.class })
 public class KeycloakDevServiceRequiredBuildStep {
 

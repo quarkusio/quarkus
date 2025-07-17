@@ -21,7 +21,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -48,7 +48,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 /**
  * Starts an Elasticsearch server as dev service if needed.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesElasticsearchProcessor {
     private static final Logger log = Logger.getLogger(DevServicesElasticsearchProcessor.class);
 

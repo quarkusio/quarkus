@@ -17,7 +17,7 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.apicurio.registry.devservice.ApicurioRegistryBuildTimeConfig.ApicurioRegistryDevServicesBuildTimeConfig;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -40,7 +40,7 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 /**
  * Starts Apicurio Registry as dev service if needed.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesApicurioRegistryProcessor {
 
     private static final Logger log = Logger.getLogger(DevServicesApicurioRegistryProcessor.class);

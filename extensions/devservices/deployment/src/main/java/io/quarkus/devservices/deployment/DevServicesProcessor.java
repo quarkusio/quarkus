@@ -36,8 +36,8 @@ import com.github.dockerjava.api.command.LogContainerCmd;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerNetworkSettings;
 
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
@@ -89,7 +89,7 @@ public class DevServicesProcessor {
         return new DevServicesNetworkIdBuildItem(networkId);
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
     @Produce(ServiceStartBuildItem.class)
     public DevServicesCustomizerBuildItem containerCustomizer(LaunchModeBuildItem launchModeBuildItem,
             DevServicesConfig globalDevServicesConfig) {
@@ -140,7 +140,7 @@ public class DevServicesProcessor {
         }
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
     @Produce(ServiceStartBuildItem.class)
     DevServicesRegistryBuildItem devServicesRegistry(LaunchModeBuildItem launchMode,
             ApplicationInstanceIdBuildItem applicationId,

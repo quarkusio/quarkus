@@ -24,7 +24,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
@@ -76,7 +76,7 @@ public class SmallryeJwtDevModeProcessor {
      * @throws NoSuchAlgorithmException if RSA-256 key generation fails.
      * @throws IOException if persistent key storage fails
      */
-    @BuildStep(onlyIfNot = { IsNormal.class })
+    @BuildStep(onlyIf = { IsDevServicesSupportedByLaunchMode.class })
     void generateSignKeys(BuildProducer<DevServicesResultBuildItem> devServices,
             LiveReloadBuildItem liveReloadBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,

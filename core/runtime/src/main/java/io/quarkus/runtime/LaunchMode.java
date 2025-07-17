@@ -5,15 +5,20 @@ public enum LaunchMode {
      * A normal production build. At the moment this can be both native image or
      * JVM mode, but eventually these will likely be split
      */
-    NORMAL(LaunchMode.PROD_PROFILE, "quarkus.profile"),
+    NORMAL(LaunchMode.PROD_PROFILE, "quarkus.profile", false, false),
+    /**
+     * A normal production build. At the moment this can be both native image or
+     * JVM mode, but eventually these will likely be split
+     */
+    RUN(LaunchMode.PROD_PROFILE, "quarkus.profile", true, false),
     /**
      * quarkus:dev or an IDE launch (when we support IDE launch)
      */
-    DEVELOPMENT(LaunchMode.DEV_PROFILE, "quarkus.profile"),
+    DEVELOPMENT(LaunchMode.DEV_PROFILE, "quarkus.profile", true, true),
     /**
      * a test run
      */
-    TEST(LaunchMode.TEST_PROFILE, "quarkus.test.profile");
+    TEST(LaunchMode.TEST_PROFILE, "quarkus.test.profile", true, true);
 
     public static final String DEV_PROFILE = "dev";
     public static final String PROD_PROFILE = "prod";
@@ -36,10 +41,15 @@ public enum LaunchMode {
 
     private final String defaultProfile;
     private final String profileKey;
+    private final boolean devServicesSupported;
+    private final boolean liveReloadSupported;
 
-    LaunchMode(final String defaultProfile, final String profileKey) {
+    LaunchMode(final String defaultProfile, final String profileKey, final boolean devServicesSupported,
+            final boolean liveReloadSupported) {
         this.defaultProfile = defaultProfile;
         this.profileKey = profileKey;
+        this.devServicesSupported = devServicesSupported;
+        this.liveReloadSupported = liveReloadSupported;
     }
 
     public String getDefaultProfile() {
@@ -48,6 +58,19 @@ public enum LaunchMode {
 
     public String getProfileKey() {
         return profileKey;
+    }
+
+    public boolean isDevServicesSupported() {
+        return devServicesSupported;
+    }
+
+    public boolean isDevResourcesSupported() {
+        // for now, we support Dev Resources when Dev Services are supported but we have the option to split it later
+        return devServicesSupported;
+    }
+
+    public boolean isLiveReloadSupported() {
+        return liveReloadSupported;
     }
 
     private static volatile LaunchMode launchMode = LaunchMode.NORMAL;

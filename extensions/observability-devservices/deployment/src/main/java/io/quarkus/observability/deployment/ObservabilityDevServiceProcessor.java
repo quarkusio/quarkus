@@ -20,7 +20,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -51,7 +51,7 @@ import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class,
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class,
         ObservabilityDevServiceProcessor.IsEnabled.class })
 class ObservabilityDevServiceProcessor {
     private static final Logger log = Logger.getLogger(ObservabilityDevServiceProcessor.class);

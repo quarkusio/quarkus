@@ -11,7 +11,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.spi.JdbcDataSourceSchemaReadyBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -23,7 +23,7 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-@BuildSteps(onlyIf = HibernateOrmEnabled.class, onlyIfNot = IsNormal.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, HibernateOrmEnabled.class })
 public class HibernateOrmDevServicesProcessor {
 
     private static final Logger LOG = Logger.getLogger(HibernateOrmDevServicesProcessor.class);

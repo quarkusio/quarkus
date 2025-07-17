@@ -15,7 +15,6 @@ import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
-import javax.tools.Diagnostic;
 import javax.tools.Diagnostic.Kind;
 
 import org.jboss.jdeparser.JDeparser;
@@ -54,12 +53,7 @@ public class ExtensionAnnotationProcessor extends AbstractProcessor {
 
         ExtensionModule extensionModule = utils.extension().getExtensionModule();
 
-        Config config = new Config(extensionModule, useConfigMapping, debug);
-
-        if (!useConfigMapping) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, "Extension module " + extensionModule.artifactId()
-                    + " config implementation is deprecated. Please migrate to use @ConfigMapping: https://quarkus.io/guides/writing-extensions#configuration");
-        }
+        Config config = new Config(extensionModule, debug);
 
         List<ExtensionProcessor> extensionProcessors = new ArrayList<>();
         extensionProcessors.add(new ExtensionBuildProcessor());

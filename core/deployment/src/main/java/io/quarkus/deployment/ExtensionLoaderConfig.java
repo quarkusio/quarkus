@@ -10,7 +10,7 @@ public interface ExtensionLoaderConfig {
     /**
      * Report runtime Config objects used during deployment time.
      */
-    @WithDefault("warn")
+    @WithDefault("fail")
     ReportRuntimeConfigAtDeployment reportRuntimeConfigAtDeployment();
 
     enum ReportRuntimeConfigAtDeployment {

@@ -12,6 +12,8 @@ import io.quarkus.deployment.TestClassLoader;
 
 public class SimpleClassProxyTest {
 
+    private static final int EXPECTED_INVOCATION_COUNT = 4;
+
     @Test
     public void testProxyCreation() throws InstantiationException, IllegalAccessException {
         SimpleInvocationHandler invocationHandler = new SimpleInvocationHandler();
@@ -27,7 +29,7 @@ public class SimpleClassProxyTest {
         assertMethod3(instance);
         assertMethod4(instance);
 
-        assertThat(invocationHandler.invocationCount).isEqualTo(4);
+        assertThat(invocationHandler.invocationCount).isEqualTo(EXPECTED_INVOCATION_COUNT);
     }
 
     private void assertMethod1(SimpleClass instance) {

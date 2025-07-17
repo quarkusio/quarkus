@@ -8,6 +8,8 @@ import io.quarkus.deployment.TestClassLoader;
 
 public class SimpleInterfaceProxyTest {
 
+    private static final int EXPECTED_INVOCATION_COUNT = 2;
+
     @Test
     public void testProxyCreation() throws InstantiationException, IllegalAccessException {
         FirstArgInvocationHandler invocationHandler = new FirstArgInvocationHandler();
@@ -24,7 +26,7 @@ public class SimpleInterfaceProxyTest {
 
         instance.doNothing();
 
-        assertThat(invocationHandler.invocationCount).isEqualTo(2);
+        assertThat(invocationHandler.invocationCount).isEqualTo(EXPECTED_INVOCATION_COUNT);
     }
 
 }

@@ -963,7 +963,7 @@ include at build time.
 
 |threaddump
 |Adds support for dumping thread stacks on SIGQUIT/SIGBREAK.
-|GraalVM for JDK 24 Mandrel 24.2
+|GraalVM for JDK 22 Mandrel 24.0
 
 |all
 |Adds all monitoring options.

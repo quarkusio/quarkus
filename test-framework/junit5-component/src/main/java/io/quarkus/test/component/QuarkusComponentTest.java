@@ -80,4 +80,13 @@ public @interface QuarkusComponentTest {
      */
     Class<? extends Converter<?>>[] configConverters() default {};
 
+    /**
+     * If set to {@code true} then config sources for system properties and ENV variables are included in the test config.
+     * <p>
+     * This will default to {@code true} in Quarkus 3.26.0
+     *
+     * @see QuarkusComponentTestExtensionBuilder#useSystemConfigSources(boolean)
+     */
+    boolean useSystemConfigSources() default true;
+
 }

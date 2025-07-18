@@ -13,7 +13,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.component.QuarkusComponentTest;
 import io.quarkus.test.component.TestConfigProperty;
 
-@QuarkusComponentTest(configSourceOrdinal = 275)
+@QuarkusComponentTest(configSourceOrdinal = 275, useSystemConfigSources = true)
 @TestConfigProperty(key = "foo", value = "baz")
 public class ConfigSourceOrdinalTest {
 

@@ -298,6 +298,14 @@ public interface TestConfig {
         Map<String, String> volumeMounts();
     }
 
+    interface RestAssured {
+        /**
+         * Enable logging of both the request and the response if REST Assureds test validation fails
+         */
+        @WithDefault("true")
+        boolean enableLoggingOnFailure();
+    }
+
     enum Mode {
         PAUSED,
         ENABLED,

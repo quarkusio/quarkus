@@ -11,13 +11,11 @@ import io.quarkus.panache.common.deployment.visitors.KotlinPanacheClassOperation
 public class KotlinPanacheRepositoryEnhancer extends PanacheRepositoryEnhancer {
 
     private List<PanacheMethodCustomizer> methodCustomizers;
-    private TypeBundle bundle;
 
     public KotlinPanacheRepositoryEnhancer(IndexView index, List<PanacheMethodCustomizer> methodCustomizers,
             TypeBundle bundle) {
-        super(index);
+        super(index, bundle);
         this.methodCustomizers = methodCustomizers;
-        this.bundle = bundle;
     }
 
     @Override

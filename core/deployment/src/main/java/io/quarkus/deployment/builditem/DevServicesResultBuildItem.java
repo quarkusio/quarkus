@@ -220,6 +220,11 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     }
 
     public static class OwnedServiceBuilder<T extends Startable> {
+
+        private static final String IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS = "io.quarkus.devservice.runtime.config.DevServicesConfigBuilder";
+        private static final boolean CONFIG_BUILDER_AVAILABLE = isClassAvailable(
+                IO_QUARKUS_DEVSERVICES_CONFIG_BUILDER_CLASS);
+
         private String name;
         private String description;
         private Map<String, String> config;
@@ -275,10 +280,23 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         }
 
         public DevServicesResultBuildItem build() {
+            if (!CONFIG_BUILDER_AVAILABLE) {
+                throw new IllegalStateException(
+                        "Extension error. Please add the io.quarkus:quarkus-devservices runtime dependency to the extension's runtime module.");
+            }
             return new DevServicesResultBuildItem(name, description, serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,
                     (Consumer<Startable>) postStartAction,
                     applicationConfigProvider);
+        }
+
+        private static boolean isClassAvailable(String className) {
+            try {
+                Class.forName(className);
+                return true;
+            } catch (ClassNotFoundException e) {
+                return false;
+            }
         }
     }
 

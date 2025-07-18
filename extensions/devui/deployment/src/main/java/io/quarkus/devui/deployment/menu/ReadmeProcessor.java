@@ -30,8 +30,7 @@ public class ReadmeProcessor {
         if (readme != null) {
             InternalPageBuildItem readmePage = new InternalPageBuildItem("Readme", 51);
 
-            readmePage.addBuildTimeData("readme", readme);
-
+            readmePage.addBuildTimeData("readme", readme, "The current readme of this Quarkus Application.");
             readmePage.addPage(Page.webComponentPageBuilder()
                     .namespace(NS)
                     .title("Readme")

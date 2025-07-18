@@ -112,6 +112,10 @@ public class AugmentActionImpl implements AugmentAction {
                 launchMode = LaunchMode.NORMAL;
                 devModeType = null;
                 break;
+            case RUN:
+                launchMode = LaunchMode.RUN;
+                devModeType = null;
+                break;
             case TEST:
                 launchMode = LaunchMode.TEST;
                 devModeType = null;

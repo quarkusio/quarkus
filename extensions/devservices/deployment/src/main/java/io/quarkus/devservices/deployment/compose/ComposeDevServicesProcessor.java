@@ -27,7 +27,7 @@ import org.apache.commons.lang3.SystemUtils;
 import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -56,7 +56,7 @@ import io.smallrye.mutiny.unchecked.Unchecked;
 /**
  * Processor that starts the Compose dev services.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class ComposeDevServicesProcessor {
 
     private static final Logger log = Logger.getLogger(ComposeDevServicesProcessor.class);

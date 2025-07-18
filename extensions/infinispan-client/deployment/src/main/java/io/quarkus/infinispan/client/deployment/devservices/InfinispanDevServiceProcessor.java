@@ -23,7 +23,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.BindMode;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
@@ -49,7 +49,7 @@ import io.quarkus.infinispan.client.runtime.InfinispanDevServicesConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class InfinispanDevServiceProcessor {
     private static final Logger log = Logger.getLogger(InfinispanDevServiceProcessor.class);
 

@@ -5,8 +5,8 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.IsDevelopment;
-import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -20,7 +20,7 @@ import io.quarkus.devui.spi.page.WebComponentPageBuilder;
 /**
  * Dev UI card for displaying important details such LGTM embedded UI.
  */
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class })
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class ObservabilityDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)

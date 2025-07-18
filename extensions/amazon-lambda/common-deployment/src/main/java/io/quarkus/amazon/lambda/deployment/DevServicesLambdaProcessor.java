@@ -12,6 +12,7 @@ import io.quarkus.amazon.lambda.runtime.AmazonLambdaApi;
 import io.quarkus.amazon.lambda.runtime.LambdaHotReplacementRecorder;
 import io.quarkus.amazon.lambda.runtime.MockEventServer;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.IsLiveReloadSupportedByLaunchMode;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -26,7 +27,7 @@ import io.quarkus.runtime.LaunchMode;
 public class DevServicesLambdaProcessor {
     private static final Logger log = Logger.getLogger(DevServicesLambdaProcessor.class);
 
-    @BuildStep(onlyIfNot = IsNormal.class)
+    @BuildStep(onlyIf = IsLiveReloadSupportedByLaunchMode.class)
     @Record(STATIC_INIT)
     public void enableHotReplacementChecker(LaunchModeBuildItem launchMode,
             LambdaHotReplacementRecorder recorder,

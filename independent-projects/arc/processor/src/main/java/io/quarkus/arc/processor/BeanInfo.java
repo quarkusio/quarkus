@@ -978,9 +978,13 @@ public class BeanInfo implements InjectionTargetInfo {
         StringBuilder builder = new StringBuilder();
         builder.append(getType());
         builder.append(" bean [types=");
-        builder.append(types);
+        List<Type> sortedTypes = new ArrayList<>(types);
+        sortedTypes.sort(ToStringComparator.INSTANCE);
+        builder.append(sortedTypes);
         builder.append(", qualifiers=");
-        builder.append(qualifiers);
+        List<AnnotationInstance> sortedQualifiers = new ArrayList<>(qualifiers);
+        sortedQualifiers.sort(ToStringComparator.INSTANCE);
+        builder.append(sortedQualifiers);
         builder.append(", target=");
         builder.append(target.isPresent() ? target.get() : "n/a");
         if (declaringBean != null) {
@@ -1295,6 +1299,16 @@ public class BeanInfo implements InjectionTargetInfo {
         public Builder forceApplicationClass(boolean forceApplicationClass) {
             this.forceApplicationClass = forceApplicationClass;
             return this;
+        }
+    }
+
+    private static class ToStringComparator implements Comparator<Object> {
+
+        private static final ToStringComparator INSTANCE = new ToStringComparator();
+
+        @Override
+        public int compare(Object o1, Object o2) {
+            return o1.toString().compareTo(o2.toString());
         }
     }
 

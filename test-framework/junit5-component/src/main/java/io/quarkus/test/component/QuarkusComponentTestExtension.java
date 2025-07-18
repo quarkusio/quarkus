@@ -212,7 +212,7 @@ public class QuarkusComponentTestExtension
     public QuarkusComponentTestExtension(Class<?>... additionalComponentClasses) {
         this(new QuarkusComponentTestConfiguration(Map.of(), Set.of(additionalComponentClasses),
                 List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL,
-                List.of(), List.of(), null, false), false);
+                List.of(), List.of(), null, true), false);
     }
 
     QuarkusComponentTestExtension(QuarkusComponentTestConfiguration baseConfiguration, boolean startShouldFail) {

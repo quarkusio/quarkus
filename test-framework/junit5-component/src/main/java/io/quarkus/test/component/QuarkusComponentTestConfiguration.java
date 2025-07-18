@@ -63,7 +63,7 @@ class QuarkusComponentTestConfiguration {
 
     static final QuarkusComponentTestConfiguration DEFAULT = new QuarkusComponentTestConfiguration(Map.of(), Set.of(),
             List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL, List.of(),
-            DEFAULT_CONVERTERS, null, false);
+            DEFAULT_CONVERTERS, null, true);
 
     private static final Logger LOG = Logger.getLogger(QuarkusComponentTestConfiguration.class);
 

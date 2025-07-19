@@ -90,7 +90,7 @@
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.9.0</gizmo.version>
         <gizmo2.version>2.0.0.Beta2</gizmo2.version>
-        <jackson-bom.version>2.19.1</jackson-bom.version>
+        <jackson-bom.version>2.19.2</jackson-bom.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.18.0</commons-lang3.version>
         <commons-codec.version>1.18.0</commons-codec.version>

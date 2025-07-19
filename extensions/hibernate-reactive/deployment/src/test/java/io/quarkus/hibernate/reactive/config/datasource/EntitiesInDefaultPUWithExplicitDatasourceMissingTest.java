@@ -30,9 +30,9 @@ public class EntitiesInDefaultPUWithExplicitDatasourceMissingTest {
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            // Hibernate Reactive doesn't support explicitly setting the datasource (yet),
-                            // so it will just notice the datasource is not configured!
-                            "The datasource must be configured for Hibernate Reactive",
+                            "Unable to find datasource 'ds-1' for persistence unit '<default>'",
+                            "Datasource 'ds-1' is not configured.",
+                            "To solve this, configure datasource 'ds-1'.",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test

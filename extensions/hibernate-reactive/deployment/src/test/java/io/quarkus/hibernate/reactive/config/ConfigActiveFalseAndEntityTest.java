@@ -32,7 +32,7 @@ public class ConfigActiveFalseAndEntityTest {
         assertThatThrownBy(sessionFactory::getMetamodel)
                 .isInstanceOf(CreationException.class)
                 .hasMessageContainingAll(
-                        "Cannot retrieve the Mutiny.SessionFactory for persistence unit default-reactive",
+                        "Cannot retrieve the Mutiny.SessionFactory for persistence unit <default>",
                         "Hibernate Reactive was deactivated through configuration properties");
     }
 

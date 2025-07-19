@@ -24,7 +24,7 @@ public class DevUIHibernateReactiveSmokeTest extends AbstractDevUIHibernateOrmTe
                             "application.properties"));
 
     public DevUIHibernateReactiveSmokeTest() {
-        super("default-reactive", "MyEntity", "io.quarkus.test.devui.MyEntity", null, true);
+        super("<default>", "MyEntity", "io.quarkus.test.devui.MyEntity", null, true);
     }
 
     @Test

@@ -15,6 +15,9 @@
     <properties>
         <postgres.reactive.url>vertx-reactive:postgresql://localhost:5431/hibernate_orm_test</postgres.reactive.url>
         <postgres.blocking.url>jdbc:postgresql://localhost:5431/hibernate_orm_test</postgres.blocking.url>
+        <postgres.dbkind>postgresql</postgres.dbkind>
+        <postgres.username>hibernate_orm_test</postgres.username>
+        <postgres.password>hibernate_orm_test</postgres.password>
     </properties>
 
     <dependencies>

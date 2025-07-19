@@ -22,12 +22,9 @@ import org.wildfly.common.lock.Locks;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.runner.RunnerClassLoader;
 import io.quarkus.runtime.configuration.ConfigurationException;
-import io.quarkus.runtime.graal.DiagnosticPrinter;
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.runtime.util.StringUtil;
 import io.smallrye.config.ConfigValidationException;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
 /**
  * Manages the lifecycle of a Quarkus application.
@@ -70,8 +67,6 @@ public class ApplicationLifecycleManager {
 
     }
     // WARNING: do not inject a logger here, it's too early: the log manager has not been properly set up yet
-
-    private static final String DISABLE_SIGNAL_HANDLERS = "DISABLE_SIGNAL_HANDLERS";
 
     //guard for all state
     private static final Lock stateLock = Locks.reentrantLock();
@@ -279,27 +274,8 @@ public class ApplicationLifecycleManager {
     }
 
     private static void registerHooks(final BiConsumer<Integer, Throwable> exitCodeHandler) {
-        if (ImageMode.current() == ImageMode.NATIVE_RUN && System.getenv(DISABLE_SIGNAL_HANDLERS) == null) {
-            registerSignalHandlers(exitCodeHandler);
-        }
         shutdownHookThread = new ShutdownHookThread();
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
-    }
-
-    private static void registerSignalHandlers(final BiConsumer<Integer, Throwable> exitCodeHandler) {
-        final SignalHandler diagnosticsHandler = new SignalHandler() {
-            @Override
-            public void handle(Signal signal) {
-                DiagnosticPrinter.printDiagnostics(System.out);
-            }
-        };
-        // the HUP and QUIT signals are not defined for the Windows OpenJDK implementation:
-        // https://hg.openjdk.java.net/jdk8u/jdk8u-dev/hotspot/file/7d5c800dae75/src/os/windows/vm/jvm_windows.cpp
-        if (IS_WINDOWS) {
-            handleSignal("BREAK", diagnosticsHandler);
-        } else {
-            handleSignal("QUIT", diagnosticsHandler);
-        }
     }
 
     public static Application getCurrentApplication() {
@@ -454,14 +430,6 @@ public class ApplicationLifecycleManager {
         @Override
         public String toString() {
             return getName();
-        }
-    }
-
-    private static void handleSignal(final String signal, final SignalHandler handler) {
-        try {
-            Signal.handle(new Signal(signal), handler);
-        } catch (IllegalArgumentException ignored) {
-            // Do nothing
         }
     }
 

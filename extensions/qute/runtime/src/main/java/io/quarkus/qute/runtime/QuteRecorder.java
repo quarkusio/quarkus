@@ -6,13 +6,15 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.qute.ParserConfig;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class QuteRecorder {
 
     public Supplier<Object> createContext(List<String> templatePaths, List<String> tags, Map<String, List<String>> variants,
-            Set<String> templateRoots, Map<String, String> templateContents, List<String> excludePatterns) {
+            Set<String> templateRoots, Map<String, String> templateContents, List<String> excludePatterns,
+            Map<ParserConfig, Set<String>> nonDefaultParserConfigs) {
         return new Supplier<Object>() {
 
             @Override
@@ -69,6 +71,11 @@ public class QuteRecorder {
                     }
 
                     @Override
+                    public Map<ParserConfig, Set<String>> getNonDefaultParserConfigs() {
+                        return nonDefaultParserConfigs;
+                    }
+
+                    @Override
                     public void setGeneratedClasses(List<String> resolverClasses, List<String> templateGlobalProviderClasses) {
                         this.resolverClasses = resolverClasses;
                         this.templateGlobalProviderClasses = templateGlobalProviderClasses;
@@ -105,6 +112,11 @@ public class QuteRecorder {
         Map<String, String> getTemplateContents();
 
         List<String> getExcludePatterns();
+
+        /**
+         * @return the map of non-default parser configs to template ids
+         */
+        Map<ParserConfig, Set<String>> getNonDefaultParserConfigs();
 
         /**
          * The generated classes must be initialized after the template expressions are validated (later during the STATIC_INIT

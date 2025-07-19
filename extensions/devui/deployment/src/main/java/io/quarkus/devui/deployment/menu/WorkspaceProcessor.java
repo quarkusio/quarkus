@@ -168,61 +168,93 @@ public class WorkspaceProcessor {
                                     .build()))
                     .collect(Collectors.toMap(Action::getId, action -> action, (a, b) -> a));
 
-            buildItemActions.addAction("getWorkspaceItems", (t) -> {
-                return workspaceBuildItem.get().getWorkspaceItems();
-            });
+            buildItemActions.actionBuilder()
+                    .methodName("getWorkspaceItems")
+                    .description(
+                            "Gets all the items in the current workspace of the Quarkus project. This will return a list of workspace items, where a workspace item has a name and a path to the file")
+                    .function((t) -> {
+                        return workspaceBuildItem.get().getWorkspaceItems();
+                    })
+                    .build();
 
-            buildItemActions.addAction("getWorkspaceActions", (t) -> {
-                return actionMap.values().stream()
-                        .filter(action -> assistantIsAvailable || !action.isAssistant())
-                        .map(action -> new WorkspaceAction(action.getId(), action.getLabel(), action.getFilter(),
-                                action.getDisplay(), action.getDisplayType(), action.isAssistant()))
-                        .sorted(Comparator.comparing(WorkspaceAction::label))
-                        .collect(Collectors.toList());
-            });
+            buildItemActions.actionBuilder()
+                    .methodName("getWorkspaceActions")
+                    .description("Gets all the actions that can be performed on a item in the workspace")
+                    .function((t) -> {
+                        return actionMap.values().stream()
+                                .map(action -> new WorkspaceAction(action.getId(), action.getLabel(), action.getFilter(),
+                                        action.getDisplay(), action.getDisplayType(), action.isAssistant()))
+                                .sorted(Comparator.comparing(WorkspaceAction::label))
+                                .collect(Collectors.toList());
+                    })
+                    .build();
 
-            buildItemActions.addAction("executeAction", (Map<String, String> t) -> {
-                String actionId = t.get("actionId");
-                if (actionId != null) {
-                    Path path = Path.of(URI.create(t.get("path")));
-                    Action actionToExecute = actionMap.get(actionId);
-                    Path convertedPath = (Path) actionToExecute.getPathConverter().apply(path);
+            buildItemActions.actionBuilder()
+                    .methodName("executeAction")
+                    .description("Execute a certain action on a workspace item")
+                    .parameter("actionId",
+                            "The actionId as defined in the `getWorkspaceActions`. Each workspace action has a unique id")
+                    .parameter("path",
+                            "The path, as a URI in String format, to the workspace item that this action should be peformed on")
+                    .function((Map<String, String> t) -> {
+                        String actionId = t.get("actionId");
+                        if (actionId != null) {
+                            Path path = Path.of(URI.create(t.get("path")));
+                            Action actionToExecute = actionMap.get(actionId);
+                            Path convertedPath = (Path) actionToExecute.getPathConverter().apply(path);
 
-                    Object result;
-                    if (actionToExecute.isAssistant()) {
-                        Assistant assistant = DevConsoleManager.getGlobal(DevConsoleManager.DEV_MANAGER_GLOBALS_ASSISTANT);
-                        result = actionToExecute.getAssistantFunction().apply(assistant, t);
-                    } else {
-                        result = actionToExecute.getFunction().apply(t);
-                    }
+                            Object result;
+                            if (actionToExecute.isAssistant()) {
+                                Assistant assistant = DevConsoleManager
+                                        .getGlobal(DevConsoleManager.DEV_MANAGER_GLOBALS_ASSISTANT);
+                                result = actionToExecute.getAssistantFunction().apply(assistant, t);
+                            } else {
+                                result = actionToExecute.getFunction().apply(t);
+                            }
 
-                    if (result != null && result instanceof CompletionStage<?> stage) {
-                        return stage
-                                .thenApply(res -> new WorkspaceActionResult(convertedPath, res, actionToExecute.isAssistant()));
-                    } else {
-                        return new WorkspaceActionResult(convertedPath, result, actionToExecute.isAssistant());
-                    }
-                }
-                return null;
-            });
+                            if (result != null && result instanceof CompletionStage<?> stage) {
+                                return stage
+                                        .thenApply(res -> new WorkspaceActionResult(convertedPath, res,
+                                                actionToExecute.isAssistant()));
+                            } else {
+                                return new WorkspaceActionResult(convertedPath, result, actionToExecute.isAssistant());
+                            }
+                        }
+                        return null;
+                    })
+                    .build();
 
-            buildItemActions.addAction("getWorkspaceItemContent", (Map<String, String> params) -> {
-                if (params.containsKey("path")) {
-                    Path path = Paths.get(URI.create(params.get("path")));
-                    return readContents(path);
-                }
-                return null;
-            });
+            buildItemActions.actionBuilder()
+                    .methodName("getWorkspaceItemContent")
+                    .description(
+                            "The the content of a certain workspace item. This returns a WorkspaceContent that has String type, String content, boolean isBinary fields")
+                    .parameter("path", "The path, as a URI in String format, to the workspace item that content is requested")
+                    .function((Map<String, String> params) -> {
+                        if (params.containsKey("path")) {
+                            Path path = Paths.get(URI.create(params.get("path")));
+                            return readContents(path);
+                        }
+                        return null;
+                    })
+                    .build();
 
-            buildItemActions.addAction("saveWorkspaceItemContent", (Map<String, String> params) -> {
-                if (params.containsKey("content")) {
-                    String content = params.get("content");
-                    Path path = Paths.get(URI.create(params.get("path")));
-                    writeContent(path, content);
-                    return new SavedResult(workspaceBuildItem.get().getRootPath().relativize(path).toString(), true, null);
-                }
-                return new SavedResult(null, false, "Invalid input");
-            });
+            buildItemActions.actionBuilder()
+                    .methodName("saveWorkspaceItemContent")
+                    .description("This will add or update an item in the workspace")
+                    .parameter("content", "The new or updated content in String format")
+                    .parameter("path",
+                            "The path, as a URI in String format, to the workspace item that should be created or updated")
+                    .function((Map<String, String> params) -> {
+                        if (params.containsKey("content")) {
+                            String content = params.get("content");
+                            Path path = Paths.get(URI.create(params.get("path")));
+                            writeContent(path, content);
+                            return new SavedResult(workspaceBuildItem.get().getRootPath().relativize(path).toString(), true,
+                                    null);
+                        }
+                        return new SavedResult(null, false, "Invalid input");
+                    })
+                    .build();
 
             buildTimeActionProducer.produce(buildItemActions);
         }

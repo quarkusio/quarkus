@@ -6,8 +6,14 @@ public final class JsonRpcResponse {
 
     // Public for serialization
     public final int id;
-    public final Result result;
+    public final Object result;
     public final Error error;
+
+    public JsonRpcResponse(int id, Object result) {
+        this.id = id;
+        this.result = result;
+        this.error = null;
+    }
 
     public JsonRpcResponse(int id, Result result) {
         this.id = id;

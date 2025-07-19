@@ -105,15 +105,6 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             justify-content: end;
             padding-right: 10px;
         }
-
-        .assistant {
-            position: absolute;
-            top: 0;
-            right: 0;
-            padding-top: 8px;
-            padding-right: 16px;
-            z-index:9;
-        }
     
         .actionResult {
             display: flex;
@@ -177,6 +168,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     }
 
     disconnectedCallback() {
+        document.body.style.cursor = 'default';
         RouterController.unregisterGuardedComponent(this);
         window.removeEventListener('beforeunload', this._beforeUnloadHandler);
         super.disconnectedCallback();      
@@ -296,7 +288,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     _renderResultDialog(){
         if(this._actionResult && this._actionResult.content && this._actionResult.display === "dialog"){
-            return html`<vaadin-dialog style="min-width=50vw;"
+            return html`<vaadin-dialog style="min-width: 50vw;"
                             header-title="${this._actionResult?.name ?? this._actionResult?.path}"
                             resizable
                             draggable
@@ -360,7 +352,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     _renderActions(){
         if(this._filteredActions){
             if(this._showActionProgress){
-                return html`<vaadin-progress-bar style="width:400px;" indeterminate></vaadin-progress-bar>`;
+                return html`<vaadin-progress-bar style="width:75px;" indeterminate></vaadin-progress-bar>`;
             }else{
                 return html`<div class="actions">
                             <vaadin-menu-bar .items="${this._filteredActions}" theme="dropdown-indicators tertiary" @item-selected="${(e) => this._actionSelected(e)}"></vaadin-menu-bar>
@@ -394,24 +386,19 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     }
     
     _renderTextContent(){
-        return html`<qui-themed-code-block id="code" class='codeBlock' @keydown="${this._onKeyDown}"
+        return html`${this._renderAssistantWarning()}
+                    <qui-themed-code-block id="code" class='codeBlock' @keydown="${this._onKeyDown}"
                         mode='${this._getMode(this._selectedWorkspaceItem.name)}'
                         .content='${this._selectedWorkspaceItem.content}'
                         value='${this._selectedWorkspaceItem.content}'
                         showLineNumbers
                         editable>
                     </qui-themed-code-block>
-                    ${this._renderAssistantWarningInline()}`;
-    }
-
-    _renderAssistantWarningInline(){
-        if(this._selectedWorkspaceItem.isAssistant){
-            return html`<qui-assistant-warning class="assistant"></qui-assistant-warning>`;
-        }
+                    `;
     }
 
     _renderAssistantWarning(){
-        if(this._actionResult.isAssistant){
+        if((this._selectedWorkspaceItem && this._selectedWorkspaceItem.isAssistant) || this._actionResult && this._actionResult.isAssistant){
              return html`<qui-assistant-warning></qui-assistant-warning>`;
         }   
     }
@@ -465,6 +452,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     _actionSelected(e){
         this._showActionProgress = true;
+        document.body.style.cursor = 'progress'; 
         this._clearActionResult();
         let actionId = e.detail.value.id;
         
@@ -515,6 +503,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                 this._actionResult.displayType = e.detail.value.displayType;
             }
             this._showActionProgress = false;
+            document.body.style.cursor = 'default';
         });
     }
     
@@ -647,6 +636,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
 
         this._clearActionResult();
         this._showActionProgress = false;
+        document.body.style.cursor = 'default';
     }
     
     shouldConfirmAwayNavigation(){

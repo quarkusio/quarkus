@@ -7,13 +7,14 @@ import java.util.List;
 import java.util.Map;
 
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeData;
 
 /**
  * Any of card, menu or footer pages
  */
 public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
 
-    protected final Map<String, Object> buildTimeData;
+    protected final Map<String, BuildTimeData> buildTimeData;
     protected final List<PageBuilder> pageBuilders;
     protected String headlessComponentLink = null;
 
@@ -54,10 +55,14 @@ public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
     }
 
     public void addBuildTimeData(String fieldName, Object fieldData) {
-        this.buildTimeData.put(fieldName, fieldData);
+        this.addBuildTimeData(fieldName, fieldData, null);
     }
 
-    public Map<String, Object> getBuildTimeData() {
+    public void addBuildTimeData(String fieldName, Object fieldData, String description) {
+        this.buildTimeData.put(fieldName, new BuildTimeData(fieldData, description));
+    }
+
+    public Map<String, BuildTimeData> getBuildTimeData() {
         return this.buildTimeData;
     }
 

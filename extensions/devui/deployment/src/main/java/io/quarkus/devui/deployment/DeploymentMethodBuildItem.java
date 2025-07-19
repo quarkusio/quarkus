@@ -1,28 +1,33 @@
 package io.quarkus.devui.deployment;
 
-import java.util.List;
 import java.util.Map;
 
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.devui.spi.buildtime.jsonrpc.DeploymentJsonRpcMethod;
+import io.quarkus.devui.spi.buildtime.jsonrpc.RecordedJsonRpcMethod;
 
 /**
  * Hold add discovered build time methods that can be executed via json-rpc
  */
 public final class DeploymentMethodBuildItem extends SimpleBuildItem {
 
-    private final List<String> methods;
-    private final List<String> subscriptions;
-    private final Map<String, RuntimeValue> recordedValues;
+    private final Map<String, DeploymentJsonRpcMethod> methods;
+    private final Map<String, DeploymentJsonRpcMethod> subscriptions;
+    private final Map<String, RecordedJsonRpcMethod> recordedMethods;
+    private final Map<String, RecordedJsonRpcMethod> recordedSubscriptions;
 
-    public DeploymentMethodBuildItem(List<String> methods, List<String> subscriptions,
-            Map<String, RuntimeValue> recordedValues) {
+    public DeploymentMethodBuildItem(Map<String, DeploymentJsonRpcMethod> methods,
+            Map<String, DeploymentJsonRpcMethod> subscriptions,
+            Map<String, RecordedJsonRpcMethod> recordedMethods, Map<String, RecordedJsonRpcMethod> recordedSubscriptions) {
         this.methods = methods;
         this.subscriptions = subscriptions;
-        this.recordedValues = recordedValues;
+        this.recordedMethods = recordedMethods;
+        this.recordedSubscriptions = recordedSubscriptions;
     }
 
-    public List<String> getMethods() {
+    // Methods
+
+    public Map<String, DeploymentJsonRpcMethod> getMethods() {
         return this.methods;
     }
 
@@ -30,7 +35,9 @@ public final class DeploymentMethodBuildItem extends SimpleBuildItem {
         return this.methods != null && !this.methods.isEmpty();
     }
 
-    public List<String> getSubscriptions() {
+    // Subscriptions
+
+    public Map<String, DeploymentJsonRpcMethod> getSubscriptions() {
         return this.subscriptions;
     }
 
@@ -38,11 +45,23 @@ public final class DeploymentMethodBuildItem extends SimpleBuildItem {
         return this.subscriptions != null && !this.subscriptions.isEmpty();
     }
 
-    public Map<String, RuntimeValue> getRecordedValues() {
-        return this.recordedValues;
+    // Recorded Methods
+
+    public Map<String, RecordedJsonRpcMethod> getRecordedMethods() {
+        return this.recordedMethods;
     }
 
-    public boolean hasRecordedValues() {
-        return this.recordedValues != null && !this.recordedValues.isEmpty();
+    public boolean hasRecordedMethods() {
+        return this.recordedMethods != null && !this.recordedMethods.isEmpty();
+    }
+
+    // Recorded Subscriptions
+
+    public Map<String, RecordedJsonRpcMethod> getRecordedSubscriptions() {
+        return this.recordedSubscriptions;
+    }
+
+    public boolean hasRecordedSubscriptions() {
+        return this.recordedSubscriptions != null && !this.recordedSubscriptions.isEmpty();
     }
 }

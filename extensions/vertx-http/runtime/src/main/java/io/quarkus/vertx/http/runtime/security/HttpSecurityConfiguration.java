@@ -18,7 +18,9 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.ClientProxy;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.security.identity.IdentityProvider;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
@@ -45,18 +47,23 @@ public final class HttpSecurityConfiguration {
     private final boolean formAuthEnabled;
     private final String formPostLocation;
     private final List<HttpAuthenticationMechanism> additionalMechanisms;
+    private final ClientAuth tlsClientAuth;
     private final VertxHttpConfig httpConfig;
+    private final Optional<String> httpServerTlsConfigName;
 
     private HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionCarrier> httpPermissions,
             Optional<Boolean> basicAuthEnabled, boolean formAuthEnabled, String formPostLocation,
-            List<HttpAuthenticationMechanism> additionalMechanisms, VertxHttpConfig httpConfig) {
+            List<HttpAuthenticationMechanism> additionalMechanisms, ClientAuth tlsClientAuth, VertxHttpConfig httpConfig,
+            Optional<String> httpServerTlsConfigName) {
         this.rolesMapping = rolesMapping;
         this.httpPermissions = httpPermissions;
         this.basicAuthEnabled = basicAuthEnabled;
         this.formAuthEnabled = formAuthEnabled;
         this.formPostLocation = formPostLocation;
         this.additionalMechanisms = additionalMechanisms;
+        this.tlsClientAuth = tlsClientAuth;
         this.httpConfig = httpConfig;
+        this.httpServerTlsConfigName = httpServerTlsConfigName;
     }
 
     record Policy(String name, HttpSecurityPolicy instance) {
@@ -102,6 +109,24 @@ public final class HttpSecurityConfiguration {
         return new FormAuthenticationMechanism(httpConfig.auth().form(), httpConfig.encryptionKey());
     }
 
+    MtlsAuthenticationMechanism getMtlsAuthenticationMechanism() {
+        if (ClientAuth.NONE.equals(tlsClientAuth)) {
+            return null;
+        }
+        for (HttpAuthenticationMechanism additionalMechanism : additionalMechanisms) {
+            if (additionalMechanism.getClass() == MtlsAuthenticationMechanism.class) {
+                return (MtlsAuthenticationMechanism) additionalMechanism;
+            }
+        }
+        var mTLS = Arc.container().select(MtlsAuthenticationMechanism.class).orNull();
+        if (mTLS == null) {
+            // this would be a bug in Quarkus, nothing for users to do
+            throw new IllegalStateException("TLS client authentication mechanism is required but no "
+                    + "HttpAuthenticationMechanism which supports it was found");
+        }
+        return mTLS;
+    }
+
     HttpAuthenticationMechanism[] getMechanisms(Instance<IdentityProvider<?>> providers, boolean inclusiveAuth) {
         Instance<HttpAuthenticationMechanism> mechanismsFromCdi = Arc.container().select(HttpAuthenticationMechanism.class);
         final HttpAuthenticationMechanism[] result;
@@ -126,7 +151,7 @@ public final class HttpSecurityConfiguration {
             result = mechanisms.toArray(new HttpAuthenticationMechanism[mechanisms.size()]);
 
             // if inclusive auth and mTLS are enabled, the mTLS must have the highest priority
-            if (inclusiveAuth && mechanismsFromCdi.select(MtlsAuthenticationMechanism.class).isResolvable()) {
+            if (inclusiveAuth && getMtlsAuthenticationMechanism() != null) {
                 var topMechanism = ClientProxy.unwrap(result[0]);
                 boolean isMutualTls = topMechanism instanceof MtlsAuthenticationMechanism;
                 if (!isMutualTls) {
@@ -174,8 +199,7 @@ public final class HttpSecurityConfiguration {
                 vertxHttpConfig = httpConfig;
                 vertxHttpBuildTimeConfig = Objects.requireNonNull(httpBuildTimeConfig);
             }
-            HttpSecurityImpl httpSecurity = prepareHttpSecurity(vertxHttpConfig,
-                    vertxHttpBuildTimeConfig.tlsClientAuth());
+            HttpSecurityImpl httpSecurity = prepareHttpSecurity(vertxHttpConfig, vertxHttpBuildTimeConfig.tlsClientAuth());
             List<HttpAuthenticationMechanism> mechanisms = httpSecurity.getMechanisms();
 
             Optional<Boolean> basicAuthEnabled = vertxHttpBuildTimeConfig.auth().basic();
@@ -203,13 +227,14 @@ public final class HttpSecurityConfiguration {
             }
 
             instance = new HttpSecurityConfiguration(httpSecurity.getRolesMapping(), httpSecurity.getHttpPermissions(),
-                    basicAuthEnabled, formAuthEnabled, formPostLocation, mechanisms, httpConfig);
+                    basicAuthEnabled, formAuthEnabled, formPostLocation, mechanisms, httpSecurity.getClientAuth(),
+                    httpConfig, httpSecurity.getHttpServerTlsConfigName());
         }
         return instance;
     }
 
     private static HttpSecurityImpl prepareHttpSecurity(VertxHttpConfig httpConfig, ClientAuth clientAuth) {
-        HttpSecurityImpl httpSecurity = new HttpSecurityImpl(clientAuth, httpConfig);
+        HttpSecurityImpl httpSecurity = new HttpSecurityImpl(clientAuth, httpConfig, httpConfig.tlsConfigurationName());
         addAuthRuntimeConfigToHttpSecurity(httpConfig.auth(), httpSecurity);
         Event<HttpSecurity> httpSecurityEvent = Arc.container().beanManager().getEvent().select(HttpSecurity.class);
         httpSecurityEvent.fire(httpSecurity);
@@ -388,4 +413,53 @@ public final class HttpSecurityConfiguration {
         return formPostLocation;
     }
 
+    public static ClientAuth getTlsClientAuth(VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            LaunchMode launchMode) {
+        var container = Arc.container();
+        if (container != null && isHttpSecurityEventNotObserved(container)) {
+            return httpBuildTimeConfig.tlsClientAuth();
+        }
+
+        if (instance == null && container == null) {
+            if (launchMode == LaunchMode.DEVELOPMENT) {
+                // right now, it is possible that when server starts after a failed start, Arc container is null
+                // we can't really handle such a situation, because we have no way to get user input (fire CDI event)
+                LOG.debug("CDI container is not, Quarkus will ignore (possible) programmatic TLS client authentication"
+                        + " configuration and default to the 'quarkus.http.ssl.client-auth' configuration property value");
+                return httpBuildTimeConfig.tlsClientAuth();
+            } else {
+                throw new IllegalStateException(
+                        " CDI container is not available, cannot initialize HTTP Security configuration");
+            }
+        }
+
+        return get(httpConfig, httpBuildTimeConfig).tlsClientAuth;
+    }
+
+    public static Optional<String> getHttpServerTlsConfigName(VertxHttpConfig httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, LaunchMode launchMode) {
+        var container = Arc.container();
+        if (container != null && isHttpSecurityEventNotObserved(container)) {
+            return httpConfig.tlsConfigurationName();
+        }
+
+        if (instance == null && container == null) {
+            if (launchMode == LaunchMode.DEVELOPMENT) {
+                // right now, it is possible that when server starts after a failed start, Arc container is null
+                // we can't really handle such a situation, because we have no way to get user input (fire CDI event)
+                LOG.debug("CDI container is not, Quarkus will ignore (possible) programmatic TLS configuration name"
+                        + " configuration and default to the 'quarkus.http.tls-configuration-name' configuration property value");
+                return httpConfig.tlsConfigurationName();
+            } else {
+                throw new IllegalStateException(
+                        " CDI container is not available, cannot initialize HTTP Security configuration");
+            }
+        }
+
+        return get(httpConfig, httpBuildTimeConfig).httpServerTlsConfigName;
+    }
+
+    private static boolean isHttpSecurityEventNotObserved(ArcContainer container) {
+        return container.beanManager().resolveObserverMethods(new HttpSecurityImpl(null, null, Optional.empty())).isEmpty();
+    }
 }

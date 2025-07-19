@@ -957,6 +957,10 @@ include at build time.
 |Adds support for native memory tracking.
 |GraalVM for JDK 23 Mandrel 24.1
 
+|none
+|Disables support for all monitoring options that would be enabled by default in Quarkus
+|Pseudo option used by Quarkus
+
 |all
 |Adds all monitoring options.
 |GraalVM 22.3, GraalVM CE 17.0.7 Mandrel 22.3 Mandrel 23.0 (17.0.7)

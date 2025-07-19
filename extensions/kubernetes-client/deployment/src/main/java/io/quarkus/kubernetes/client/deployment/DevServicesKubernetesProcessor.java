@@ -11,12 +11,10 @@ import static java.util.Collections.singletonList;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.time.Duration;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -45,8 +43,12 @@ import com.dajudge.kindcontainer.client.config.UserSpec;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
-import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.apps.Deployment;
+import io.fabric8.kubernetes.api.model.apps.ReplicaSet;
+import io.fabric8.kubernetes.api.model.apps.StatefulSet;
 import io.fabric8.kubernetes.client.*;
+import io.fabric8.kubernetes.client.Config;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -196,10 +198,7 @@ public class DevServicesKubernetesProcessor {
                 .withConfig(Config.fromKubeconfig(kubernetesDevServiceInfoBuildItem.getKubeConfig()))
                 .build()) {
             for (String manifestPath : manifests.get()) {
-                // Load the manifest from the resources directory
-                InputStream manifestStream = Thread.currentThread()
-                        .getContextClassLoader()
-                        .getResourceAsStream(manifestPath);
+                InputStream manifestStream = getManifestStream(manifestPath);
 
                 if (manifestStream == null) {
                     log.errorf("Could not find manifest file in resources: %s", manifestPath);
@@ -210,11 +209,25 @@ public class DevServicesKubernetesProcessor {
                     try {
                         // A single manifest file may contain multiple resources to deploy
                         List<HasMetadata> resources = client.load(manifestStream).items();
+                        List<HasMetadata> resourcesWithReadiness = new ArrayList<>();
 
                         if (resources.isEmpty()) {
                             log.warnf("No resources found in manifest: %s", manifestPath);
                         } else {
-                            resources.forEach(resource -> client.resource(resource).create());
+                            resources.forEach(resource -> {
+                                client.resource(resource).create();
+
+                                if (isReadinessApplicable(resource)) {
+                                    resourcesWithReadiness.add(resource);
+                                }
+                            });
+
+                            resourcesWithReadiness.forEach(resource -> {
+                                log.info("Waiting for " + resource.getClass().getSimpleName() + " "
+                                        + resource.getMetadata().getName()
+                                        + " to be ready...");
+                                client.resource(resource).waitUntilReady(60, TimeUnit.SECONDS);
+                            });
                         }
                     } catch (Exception ex) {
                         log.errorf("Failed to deploy manifest %s: %s", manifestPath, ex.getMessage());
@@ -225,6 +238,29 @@ public class DevServicesKubernetesProcessor {
             }
         } catch (Exception e) {
             log.error("Failed to create Kubernetes client while trying to deploy manifests.", e);
+        }
+    }
+
+    private boolean isReadinessApplicable(HasMetadata item) {
+        return (item instanceof Deployment ||
+                item instanceof io.fabric8.kubernetes.api.model.extensions.Deployment ||
+                item instanceof ReplicaSet ||
+                item instanceof Pod ||
+                item instanceof ReplicationController ||
+                item instanceof Endpoints ||
+                item instanceof Node ||
+                item instanceof StatefulSet);
+    }
+
+    private InputStream getManifestStream(String manifestPath) throws IOException {
+        if (manifestPath.startsWith("http://") || manifestPath.startsWith("https://")) {
+            // Option 1: The manifest is a URL, in which case we download it
+            return new URL(manifestPath).openStream();
+        } else {
+            // Option 2: The manifest is a file in the resources directory
+            return Thread.currentThread()
+                    .getContextClassLoader()
+                    .getResourceAsStream(manifestPath);
         }
     }
 

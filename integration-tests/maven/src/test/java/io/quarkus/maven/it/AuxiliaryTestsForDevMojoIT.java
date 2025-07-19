@@ -19,7 +19,7 @@ import io.quarkus.test.devmode.util.DevModeClient;
  * This test has been isolated as it is very flaky and causing issues with Develocity PTS.
  */
 @DisableForNative
-public class FlakyDevMojoIT extends RunAndCheckMojoTestBase {
+public class AuxiliaryTestsForDevMojoIT extends RunAndCheckMojoTestBase {
 
     protected DevModeClient devModeClient = new DevModeClient(getPort());
 

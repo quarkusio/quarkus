@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -86,6 +85,7 @@ import jakarta.ws.rs.sse.SseEventSink;
 import org.jboss.jandex.DotName;
 import org.jboss.resteasy.reactive.DummyElementType;
 import org.jboss.resteasy.reactive.MultipartForm;
+import org.jboss.resteasy.reactive.Parameter;
 import org.jboss.resteasy.reactive.PartFilename;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestCookie;
@@ -227,6 +227,7 @@ public final class ResteasyReactiveDotNames {
     public static final DotName BIG_INTEGER = DotName.createSimple(BigInteger.class.getName());
     public static final DotName VOID = DotName.createSimple(Void.class.getName());
     public static final DotName OPTIONAL = DotName.createSimple(Optional.class.getName());
+    public static final DotName TRI_PARAMETER = DotName.createSimple(Parameter.class.getName());
 
     public static final DotName PRIMITIVE_INTEGER = DotName.createSimple(int.class.getName());
     public static final DotName PRIMITIVE_LONG = DotName.createSimple(long.class.getName());

@@ -15,6 +15,8 @@ import org.hibernate.bytecode.spi.ClassTransformer;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.internal.util.PersistenceUnitTransactionTypeHelper;
 
+import io.quarkus.hibernate.orm.runtime.HibernateOrmPersistenceUnitProviderHelper;
+import io.quarkus.hibernate.orm.runtime.QuarkusPersistenceUnitProviderHelper;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
 public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDescriptor {
@@ -24,6 +26,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     // but everything related to configuration (e.g. getAllPersistenceUnitConfigsAsMap() still
     // use the name "<default>", so we need to convert between those.
     private final String configurationName;
+    private final QuarkusPersistenceUnitProviderHelper providerHelper;
     private final String providerClassName;
     private final boolean useQuotedIdentifiers;
     private final PersistenceUnitTransactionType persistenceUnitTransactionType;
@@ -34,11 +37,13 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     private final boolean reactive;
 
     public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
+            QuarkusPersistenceUnitProviderHelper providerHelper,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
             List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.configurationName = configurationName;
+        this.providerHelper = providerHelper;
         this.providerClassName = null;
         this.useQuotedIdentifiers = false;
         this.persistenceUnitTransactionType = persistenceUnitTransactionType;
@@ -57,12 +62,14 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     @Deprecated
     @RecordableConstructor
     public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
+            QuarkusPersistenceUnitProviderHelper providerHelper,
             String providerClassName, boolean useQuotedIdentifiers,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
             ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.configurationName = configurationName;
+        this.providerHelper = providerHelper;
         this.providerClassName = providerClassName;
         this.useQuotedIdentifiers = useQuotedIdentifiers;
         this.persistenceUnitTransactionType = persistenceUnitTransactionType;
@@ -88,7 +95,9 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         }
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
-        return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getName(), toClone.getProviderClassName(),
+        return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getName(),
+                new HibernateOrmPersistenceUnitProviderHelper(),
+                toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
                 toClone.getPersistenceUnitTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties(), false);
@@ -106,6 +115,10 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
 
     public String getConfigurationName() {
         return configurationName;
+    }
+
+    public QuarkusPersistenceUnitProviderHelper getProviderHelper() {
+        return providerHelper;
     }
 
     @Override

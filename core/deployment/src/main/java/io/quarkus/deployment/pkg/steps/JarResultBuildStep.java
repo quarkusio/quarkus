@@ -669,8 +669,10 @@ public class JarResultBuildStep {
         Path generatedZip = quarkus.resolve(GENERATED_BYTECODE_JAR);
         fastJarJarsBuilder.setGenerated(generatedZip);
         try (FileSystem out = createNewReproducibleZipFileSystem(generatedZip, packageConfig)) {
-            for (GeneratedClassBuildItem i : generatedClasses) {
-                String fileName = fromClassNameToResourceName(i.getName());
+            // make sure we write the elements in order
+            for (GeneratedClassBuildItem i : generatedClasses.stream()
+                    .sorted(Comparator.comparing(GeneratedClassBuildItem::binaryName)).toList()) {
+                String fileName = fromClassNameToResourceName(i.internalName());
                 Path target = out.getPath(fileName);
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());
@@ -678,7 +680,9 @@ public class JarResultBuildStep {
                 Files.write(target, i.getClassData());
             }
 
-            for (GeneratedResourceBuildItem i : generatedResources) {
+            // make sure we write the elements in order
+            for (GeneratedResourceBuildItem i : generatedResources.stream()
+                    .sorted(Comparator.comparing(GeneratedResourceBuildItem::getName)).toList()) {
                 Path target = out.getPath(i.getName());
                 if (target.getParent() != null) {
                     Files.createDirectories(target.getParent());

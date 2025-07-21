@@ -62,7 +62,7 @@ Configuration can be done directly in Dev UI via the assistant settings pane. Yo
 - An API key (for OpenAI)
 - A local running model (for Ollama or Podman AI)
 
-Settings are stored in local storage per browser.
+Settings are stored in `~/.quarkus/chappie/chappie-assistant.properties`.
 
 image::dev_assistant_configuration.png[Dev Assistant Configuration, width=100%]
 
@@ -94,6 +94,23 @@ This provides a fast and focused troubleshooting workflow without needing to cop
 
 image::dev_assistant_errorpage.png[Dev Assistant Error page, width=100%]
 
+===== Exception Help in the Log
+
+In addition to error page support, the Dev Assistant can also help with exceptions via the quarkus log.
+
+When an exception is detected, you can press the `h` key in the quarkus log to open the *shortcut menu*. Under the `Assistant` heading, you'll see a new option like:
+
+[source,text]
+----
+== Assistant
+
+[a] - Help with the latest exception (Cannot invoke "String.length()" because "str" is null)
+----
+
+Press `a` to send the exception to the assistant for analysis.
+
+This is especially useful if the exception occurred outside a visible page or during startup. The assistant will analyze the error and suggest potential causes or fixes — without needing to navigate elsewhere.
+
 == Assistant log
 
 You can access the log of the assistant in the Dev UI Footer:
@@ -108,6 +125,7 @@ Quarkus extensions can enhance the developer experience by contributing to the D
 - Assistant-specific pages
 - Backend integration via JSON-RPC
 - UI features for assistant-aware components
+- Quarkus log participation
 
 An extension can define Assistant features without depending on Chappie directly. The interfaces and associated structures are located in the `assistant` extension.
 
@@ -244,6 +262,65 @@ To maintain visual consistency with other Dev Assistant features, use the follow
 - `<qui-assistant-warning>`: A standard warning message with the text: `"Quarkus assistant can make mistakes. Check responses."`
 
 You can also use the CSS var `--quarkus-assistant` anywhere you want to apply the assistant's theme color.
+
+=== Quarkus Log Participation
+
+Extensions can contribute entries to the interactive *Quarkus log menu* by integrating with the Dev Assistant. 
+This allows developers to invoke assistant-powered actions directly from the quarkus log using keyboard shortcuts.
+
+First, add the `quarkus-assistant-deployment-spi` to the *deployment* module of your extension:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-assistant-deployment-spi</artifactId>
+</dependency>
+----
+
+Next, produce a `AssistantConsoleBuildItem` in a `@BuildStep`:
+
+[source,java]
+----
+@BuildStep
+AssistantConsoleBuildItem createCliAssistantEntry() {
+    return AssistantConsoleBuildItem.builder()
+            .description("Let assistant tell you a joke") // <1>
+            .key('@')                                     // <2>
+            .function((a) -> {
+                return a.assistBuilder()
+                        .userMessage("Tell a funny joke")
+                        .assist();
+            })
+            .build();
+}
+----
+<1> This is the description that appears in the Assistant section of the log menu.  
+<2> This is the keyboard shortcut that triggers the assistant function.
+
+When added, this will result in a new entry under the `Assistant` heading in the log shortcut menu:
+
+[source,text]
+----
+== Assistant
+
+[a] - Help with the latest exception (none)
+[@] - Let assistant tell you a joke
+----
+
+When the user presses `@`, the Dev Assistant is invoked and responds in the log:
+
+[source,text]
+----
+=========================================
+Talking to Quarkus Assistant, please wait
+..
+  .
+
+Why do programmers prefer dark mode? Because light attracts bugs!
+----
+
+This feature provides a simple and delightful way to offer quick-access AI actions through the Quarkus log.
 
 == Feedback
 

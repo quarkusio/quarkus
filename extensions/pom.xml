@@ -36,6 +36,7 @@
 
         <!-- HTTP -->
         <module>vertx-http</module>
+        <module>devui</module>
         <module>undertow</module>
         <module>websockets</module>
         <module>websockets-next</module>

@@ -15,21 +15,23 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.DevServicesConfigResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.extest.runtime.classpath.ClasspathEntriesRecorder;
+import io.quarkus.extest.runtime.classpath.ClasspathRecordingConfig;
 import io.quarkus.extest.runtime.classpath.RecordedClasspathEntries;
 import io.quarkus.extest.runtime.classpath.RecordedClasspathEntries.Phase;
-import io.quarkus.extest.runtime.config.TestBuildTimeConfig;
 
 public class ClasspathEntryRecordingBuildStep {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void registerRecordedClasspathEntries(ClasspathEntriesRecorder classpathEntriesRecorder,
-            TestBuildTimeConfig config, BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        Optional<Path> recordFilePath = config.classpathRecording.recordFile;
+    void registerRecordedClasspathEntries(
+            ClasspathEntriesRecorder classpathEntriesRecorder,
+            ClasspathRecordingConfig config,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+        Optional<Path> recordFilePath = config.recordFile();
         if (recordFilePath.isEmpty()) {
             return;
         }
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(RecordedClasspathEntries.class)
-                .runtimeValue(classpathEntriesRecorder.recordedClasspathEntries(recordFilePath.get().toString().toString()))
+                .runtimeValue(classpathEntriesRecorder.recordedClasspathEntries(recordFilePath.get().toString()))
                 .done());
     }
 
@@ -40,7 +42,7 @@ public class ClasspathEntryRecordingBuildStep {
     // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
     // so that we can reproduce a problem that happens in the Hibernate ORM extension.
     @Produce(DevServicesConfigResultBuildItem.class)
-    void recordDuringAugmentation(TestBuildTimeConfig config)
+    void recordDuringAugmentation(ClasspathRecordingConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);
         if (resourcesToRecord.isEmpty()) {
@@ -55,7 +57,7 @@ public class ClasspathEntryRecordingBuildStep {
     // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
     // so that we can reproduce a problem that happens in the Hibernate ORM extension.
     @Produce(DevServicesConfigResultBuildItem.class)
-    void recordDuringStaticInit(ClasspathEntriesRecorder classpathEntriesRecorder, TestBuildTimeConfig config)
+    void recordDuringStaticInit(ClasspathEntriesRecorder classpathEntriesRecorder, ClasspathRecordingConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);
         if (resourcesToRecord.isEmpty()) {
@@ -70,7 +72,7 @@ public class ClasspathEntryRecordingBuildStep {
     // This makes sure we execute this in io.quarkus.test.junit.IntegrationTestUtil.handleDevDb,
     // so that we can reproduce a problem that happens in the Hibernate ORM extension.
     @Produce(DevServicesConfigResultBuildItem.class)
-    void recordDuringRuntimeInit(ClasspathEntriesRecorder classpathEntriesRecorder, TestBuildTimeConfig config)
+    void recordDuringRuntimeInit(ClasspathEntriesRecorder classpathEntriesRecorder, ClasspathRecordingConfig config)
             throws IOException {
         List<String> resourcesToRecord = getResourcesToRecord(config);
         if (resourcesToRecord.isEmpty()) {
@@ -80,16 +82,16 @@ public class ClasspathEntryRecordingBuildStep {
                 Phase.RUNTIME_INIT, resourcesToRecord);
     }
 
-    private static List<String> getResourcesToRecord(TestBuildTimeConfig config) {
-        return config.classpathRecording.resources.orElse(Collections.emptyList());
+    private static List<String> getResourcesToRecord(ClasspathRecordingConfig config) {
+        return config.resources().orElse(Collections.emptyList());
     }
 
     /*
      * We need to record classpath entries in an external file,
      * because the application may be started multiple times with different classloaders.
      */
-    public static Path getRecordFilePath(TestBuildTimeConfig config) {
-        return config.classpathRecording.recordFile
+    public static Path getRecordFilePath(ClasspathRecordingConfig config) {
+        return config.recordFile()
                 .orElseThrow(() -> new IllegalStateException("Classpath entries cannot be recorded"
                         + " because application property 'quarkus.bt.classpath-recording.record-file' was not set."));
     }

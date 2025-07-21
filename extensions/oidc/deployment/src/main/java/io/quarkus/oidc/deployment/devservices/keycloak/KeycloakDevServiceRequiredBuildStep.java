@@ -7,7 +7,7 @@ import java.util.HashMap;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -15,7 +15,8 @@ import io.quarkus.devservices.keycloak.KeycloakDevServicesConfig;
 import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
 import io.quarkus.oidc.deployment.OidcBuildStep;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { OidcBuildStep.IsEnabled.class, DevServicesConfig.Enabled.class })
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, OidcBuildStep.IsEnabled.class,
+        DevServicesConfig.Enabled.class })
 public class KeycloakDevServiceRequiredBuildStep {
 
     private static final Logger LOG = Logger.getLogger(KeycloakDevServiceRequiredBuildStep.class);

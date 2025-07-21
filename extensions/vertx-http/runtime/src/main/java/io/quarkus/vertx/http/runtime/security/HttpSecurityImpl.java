@@ -12,13 +12,11 @@ import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
-import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.HttpPermissionCarrier;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.Policy;
@@ -27,7 +25,6 @@ import io.quarkus.vertx.http.runtime.security.annotation.FormAuthentication;
 import io.quarkus.vertx.http.runtime.security.annotation.MTLSAuthentication;
 import io.quarkus.vertx.http.security.Basic;
 import io.quarkus.vertx.http.security.HttpSecurity;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.ClientAuth;
@@ -39,12 +36,16 @@ final class HttpSecurityImpl implements HttpSecurity {
 
     private final List<HttpPermissionCarrier> httpPermissions;
     private final List<HttpAuthenticationMechanism> mechanisms;
+    private final VertxHttpConfig vertxHttpConfig;
     private RolesMapping rolesMapping;
+    private ClientAuth clientAuth;
 
-    HttpSecurityImpl() {
+    HttpSecurityImpl(ClientAuth clientAuth, VertxHttpConfig vertxHttpConfig) {
         this.rolesMapping = null;
         this.httpPermissions = new ArrayList<>();
         this.mechanisms = new ArrayList<>();
+        this.clientAuth = clientAuth;
+        this.vertxHttpConfig = vertxHttpConfig;
     }
 
     @Override
@@ -58,15 +59,13 @@ final class HttpSecurityImpl implements HttpSecurity {
                     .build()
                     .getConfigMapping(VertxHttpConfig.class)
                     .auth().form();
-            final FormAuthConfig actualConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
-                    .getConfigMapping(VertxHttpConfig.class).auth().form();
+            final FormAuthConfig actualConfig = vertxHttpConfig.auth().form();
             if (!actualConfig.equals(defaults)) {
                 throw new IllegalArgumentException("Cannot configure form-based authentication programmatically "
                         + "because it has already been configured in the 'application.properties' file");
             }
         } else if (mechanism.getClass() == BasicAuthenticationMechanism.class) {
-            String actualRealm = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
-                    .getConfigMapping(VertxHttpConfig.class).auth().realm().orElse(null);
+            String actualRealm = vertxHttpConfig.auth().realm().orElse(null);
             if (actualRealm != null) {
                 throw new IllegalArgumentException("Cannot configure basic authentication programmatically because "
                         + "the authentication realm has already been configured in the 'application.properties' file");
@@ -303,7 +302,7 @@ final class HttpSecurityImpl implements HttpSecurity {
 
         @Override
         public HttpPermission mTLS() {
-            boolean mTlsDisabled = ClientAuth.NONE.equals(getHttpBuildTimeConfig().tlsClientAuth());
+            boolean mTlsDisabled = ClientAuth.NONE.equals(clientAuth);
             if (mTlsDisabled) {
                 throw new IllegalStateException(
                         "TLS client authentication is not available, please set the 'quarkus.http.ssl.client-auth'"
@@ -515,8 +514,7 @@ final class HttpSecurityImpl implements HttpSecurity {
         return mechanisms.isEmpty() ? List.of() : List.copyOf(mechanisms);
     }
 
-    private static VertxHttpBuildTimeConfig getHttpBuildTimeConfig() {
-        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
-                .getConfigMapping(VertxHttpBuildTimeConfig.class);
+    ClientAuth getClientAuth() {
+        return clientAuth;
     }
 }

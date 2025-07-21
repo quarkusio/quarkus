@@ -1,5 +1,6 @@
 package io.quarkus.redis.deployment.client;
 
+import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 
 import java.util.HashMap;
@@ -13,7 +14,7 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
@@ -32,7 +33,7 @@ import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { DevServicesConfig.Enabled.class })
+@BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesRedisProcessor {
     private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
 
@@ -95,7 +96,7 @@ public class DevServicesRedisProcessor {
                                             .withEnv(redisConfig.containerEnv())
                                             // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
                                             // for backwards compatibility we still add the custom label
-                                            .withLabel(DEV_SERVICE_LABEL, redisConfig.serviceName()))
+                                            .withSharedServiceLabel(launchMode.getLaunchMode(), redisConfig.serviceName()))
                                     .configProvider(Map.of(configPrefix + RedisConfig.HOSTS_CONFIG_NAME,
                                             s -> REDIS_SCHEME + s.getConnectionInfo()))
                                     .build());
@@ -191,6 +192,10 @@ public class DevServicesRedisProcessor {
             this.useSharedNetwork = useSharedNetwork;
 
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redis");
+        }
+
+        public QuarkusPortRedisContainer withSharedServiceLabel(LaunchMode launchMode, String serviceName) {
+            return configureSharedServiceLabel(this, launchMode, DEV_SERVICE_LABEL, serviceName);
         }
 
         @Override

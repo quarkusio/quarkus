@@ -122,7 +122,10 @@ public class RestAssuredURLManager {
         configureTimeouts(timeout);
 
         oldRequestSpecification = RestAssured.requestSpecification;
-        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        if (ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.test.rest-assured.enable-logging-on-failure", Boolean.class).orElse(true)) {
+            RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        }
     }
 
     private static void configureTimeouts(Duration d) {

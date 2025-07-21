@@ -20,9 +20,9 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.console.QuarkusCommand;
-import io.quarkus.devui.deployment.ide.IdeProcessor;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.IdeHelper;
 
 public class ResteasyReactiveDevModeProcessor {
 
@@ -87,7 +87,7 @@ public class ResteasyReactiveDevModeProcessor {
 
         @Override
         public CommandResult doExecute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            IdeProcessor.openBrowser(rp, np, url.startsWith("/") ? url : "/" + url, host, port);
+            IdeHelper.openBrowser(rp, np, url.startsWith("/") ? url : "/" + url, host, port);
             return CommandResult.SUCCESS;
         }
     }

@@ -27,4 +27,14 @@ public interface JfrRuntimeConfig {
     @WithName("rest.enabled")
     @WithDefault("true")
     boolean restEnabled();
+
+    /**
+     * If false, only Runtime events in quarkus-jfr are not recorded even if JFR is enabled.
+     * In this case, other quarkus-jfr, Java standard API and virtual machine information will be recorded according to the
+     * setting.
+     * Default value is <code>true</code>
+     */
+    @WithName("runtime.enabled")
+    @WithDefault("true")
+    boolean runtimeEnabled();
 }

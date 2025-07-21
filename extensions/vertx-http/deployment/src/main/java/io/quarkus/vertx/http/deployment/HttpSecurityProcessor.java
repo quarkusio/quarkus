@@ -60,6 +60,7 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.DescriptorUtils;
@@ -292,9 +293,10 @@ public class HttpSecurityProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void initializeHttpSecurity(Optional<HttpAuthenticationHandlerBuildItem> authenticationHandler,
-            HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem) {
+            HttpSecurityRecorder recorder, BeanContainerBuildItem beanContainerBuildItem,
+            ShutdownContextBuildItem shutdown) {
         if (authenticationHandler.isPresent()) {
-            recorder.prepareHttpSecurityConfiguration();
+            recorder.prepareHttpSecurityConfiguration(shutdown);
             recorder.initializeHttpAuthenticatorHandler(authenticationHandler.get().handler,
                     beanContainerBuildItem.getValue());
         }

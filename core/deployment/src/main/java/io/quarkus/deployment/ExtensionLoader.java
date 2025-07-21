@@ -84,7 +84,6 @@ import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.StaticBytecodeRecorderBuildItem;
 import io.quarkus.deployment.configuration.BuildTimeConfigurationReader;
 import io.quarkus.deployment.configuration.ConfigMappingUtils;
-import io.quarkus.deployment.configuration.definition.RootDefinition;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 import io.quarkus.deployment.recording.ObjectLoader;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -138,12 +137,12 @@ public final class ExtensionLoader {
             throws IOException, ClassNotFoundException {
 
         final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(classLoader);
-        final SmallRyeConfig src = reader.initConfiguration(launchMode, buildSystemProps, runtimeProperties,
+        final SmallRyeConfig src = reader.initConfiguration(buildSystemProps, runtimeProperties,
                 appModel.getPlatformProperties());
         // install globally
         QuarkusConfigFactory.setConfig(src);
         final BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
-        final BooleanSupplierFactoryBuildItem bsf = new BooleanSupplierFactoryBuildItem(readResult, launchMode, devModeType);
+        final BooleanSupplierFactoryBuildItem bsf = new BooleanSupplierFactoryBuildItem(launchMode, devModeType);
 
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
         // BooleanSupplier factory
@@ -174,13 +173,6 @@ public final class ExtensionLoader {
         Map<Object, FieldDescriptor> rootFields = new IdentityHashMap<>();
         Map<Object, ConfigClass> mappingClasses = new IdentityHashMap<>();
         for (Map.Entry<Class<?>, Object> entry : proxies.entrySet()) {
-            // ConfigRoot
-            RootDefinition root = readResult.getAllRootsByClass().get(entry.getKey());
-            if (root != null) {
-                rootFields.put(entry.getValue(), root.getDescriptor());
-                continue;
-            }
-
             // ConfigMapping
             ConfigClass mapping = readResult.getAllMappingsByClass().get(entry.getKey());
             if (mapping != null) {
@@ -216,7 +208,7 @@ public final class ExtensionLoader {
                         ResultHandle config = body.invokeStaticMethod(getConfig);
                         MethodDescriptor getMapping = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConfigMapping",
                                 Object.class, Class.class, String.class);
-                        return body.invokeVirtualMethod(getMapping, config, body.loadClass(mapping.getKlass()),
+                        return body.invokeVirtualMethod(getMapping, config, body.loadClass(mapping.getType()),
                                 body.load(mapping.getPrefix()));
                     }
 
@@ -269,8 +261,8 @@ public final class ExtensionLoader {
             throw reportError(clazz, "Build step classes must have exactly one constructor");
         }
 
-        ExtensionLoaderConfig extensionLoaderConfig = (ExtensionLoaderConfig) readResult.getObjectsByClass()
-                .get(ExtensionLoaderConfig.class);
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        ExtensionLoaderConfig extensionLoaderConfig = config.getConfigMapping(ExtensionLoaderConfig.class);
         EnumSet<ConfigPhase> consumingConfigPhases = EnumSet.noneOf(ConfigPhase.class);
 
         final Constructor<?> constructor = constructors[0];
@@ -328,10 +320,9 @@ public final class ExtensionLoader {
                     consumingConfigPhases.add(phase);
 
                     if (phase.isAvailableAtBuild()) {
-                        ctorParamFns.add(bc -> bc.consume(ConfigurationBuildItem.class).getReadResult()
-                                .requireObjectForClass(parameterClass));
+                        ctorParamFns.add(buildContext -> config.getConfigMapping(parameterClass));
                         if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                            runTimeProxies.computeIfAbsent(parameterClass, readResult::requireObjectForClass);
+                            runTimeProxies.computeIfAbsent(parameterClass, config::getConfigMapping);
                         }
                     } else if (phase.isReadAtMain()) {
                         throw reportError(parameter, phase + " configuration cannot be consumed here");
@@ -409,13 +400,10 @@ public final class ExtensionLoader {
 
                 if (phase.isAvailableAtBuild()) {
                     stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
-                        final ConfigurationBuildItem configurationBuildItem = bc
-                                .consume(ConfigurationBuildItem.class);
-                        ReflectUtil.setFieldVal(field, o,
-                                configurationBuildItem.getReadResult().requireObjectForClass(fieldClass));
+                        ReflectUtil.setFieldVal(field, o, config.getConfigMapping(fieldClass));
                     });
                     if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                        runTimeProxies.computeIfAbsent(fieldClass, readResult::requireObjectForClass);
+                        runTimeProxies.computeIfAbsent(fieldClass, config::getConfigMapping);
                     }
                 } else if (phase.isReadAtMain()) {
                     throw reportError(field, phase + " configuration cannot be consumed here");
@@ -584,13 +572,9 @@ public final class ExtensionLoader {
                         methodConsumingConfigPhases.add(phase);
 
                         if (phase.isAvailableAtBuild()) {
-                            methodParamFns.add((bc, bri) -> {
-                                final ConfigurationBuildItem configurationBuildItem = bc
-                                        .consume(ConfigurationBuildItem.class);
-                                return configurationBuildItem.getReadResult().requireObjectForClass(parameterClass);
-                            });
+                            methodParamFns.add((bc, bri) -> config.getConfigMapping(parameterClass));
                             if (isRecorder && phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
-                                runTimeProxies.computeIfAbsent(parameterClass, readResult::requireObjectForClass);
+                                runTimeProxies.computeIfAbsent(parameterClass, config::getConfigMapping);
                             }
                         } else if (phase.isReadAtMain()) {
                             if (isRecorder) {
@@ -673,7 +657,7 @@ public final class ExtensionLoader {
                                             // TODO - Remove once we disallow the injection of runtime objects in build steps
                                             runTimeProxies.computeIfAbsent(theType, ConfigMappingUtils::newInstance);
                                         } else {
-                                            runTimeProxies.computeIfAbsent(theType, readResult::requireObjectForClass);
+                                            runTimeProxies.computeIfAbsent(theType, config::getConfigMapping);
                                         }
                                     }
                                 }

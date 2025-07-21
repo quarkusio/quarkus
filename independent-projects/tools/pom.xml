@@ -51,7 +51,7 @@
 
         <!-- Versions -->
         <assertj.version>3.27.3</assertj.version>
-        <jackson-bom.version>2.19.1</jackson-bom.version>
+        <jackson-bom.version>2.19.2</jackson-bom.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <junit5.version>5.13.3</junit5.version>
         <commons-compress.version>1.27.1</commons-compress.version>
@@ -59,7 +59,7 @@
         <mockito.version>5.18.0</mockito.version>
         <quarkus.version>${project.version}</quarkus.version>
         <maven-model-helper.version>37</maven-model-helper.version>
-        <jandex.version>3.3.2</jandex.version>
+        <jandex.version>3.4.0</jandex.version>
         <system-stubs-jupiter.version>2.0.2</system-stubs-jupiter.version>
         <awaitility.version>4.3.0</awaitility.version>
         <java-properties.version>0.0.7</java-properties.version>

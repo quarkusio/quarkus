@@ -1,11 +1,15 @@
 package io.quarkus.jfr.runtime;
 
+import java.util.List;
+import java.util.function.Supplier;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.jfr.runtime.config.JfrRuntimeConfig;
 import io.quarkus.jfr.runtime.http.rest.RestEndEvent;
 import io.quarkus.jfr.runtime.http.rest.RestPeriodEvent;
 import io.quarkus.jfr.runtime.http.rest.RestStartEvent;
+import io.quarkus.jfr.runtime.runtime.QuarkusRuntimeInfo;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import jdk.jfr.FlightRecorder;
@@ -41,5 +45,35 @@ public class JfrRecorder {
 
     public void disabledQuarkusJfr() {
         this.disabledRestJfr();
+    }
+
+    public Supplier<QuarkusRuntimeInfo> quarkusInfoSupplier(String version, List<String> features, String imageMode,
+            String profiles) {
+        return new Supplier<>() {
+            @Override
+            public QuarkusRuntimeInfo get() {
+                return new QuarkusRuntimeInfo() {
+                    @Override
+                    public String imageMode() {
+                        return imageMode;
+                    }
+
+                    @Override
+                    public String profiles() {
+                        return profiles;
+                    }
+
+                    @Override
+                    public String version() {
+                        return version;
+                    }
+
+                    @Override
+                    public List<String> features() {
+                        return features;
+                    }
+                };
+            }
+        };
     }
 }

@@ -227,7 +227,7 @@ public class CodeGenerator {
         if (previouslyRecordedProperties.isEmpty()) {
             try {
                 readConfig(appModel, mode, buildSystemProps, deploymentClassLoader, configReader -> {
-                    var config = configReader.initConfiguration(mode, buildSystemProps, new Properties(),
+                    var config = configReader.initConfiguration(buildSystemProps, new Properties(),
                             appModel.getPlatformProperties());
                     final Map<String, String> allProps = new HashMap<>();
                     for (String name : config.getPropertyNames()) {
@@ -288,7 +288,7 @@ public class CodeGenerator {
     public static Config getConfig(ApplicationModel appModel, LaunchMode launchMode, Properties buildSystemProps,
             QuarkusClassLoader deploymentClassLoader) throws CodeGenException {
         return readConfig(appModel, launchMode, buildSystemProps, deploymentClassLoader,
-                configReader -> configReader.initConfiguration(launchMode, buildSystemProps, new Properties(),
+                configReader -> configReader.initConfiguration(buildSystemProps, new Properties(),
                         appModel.getPlatformProperties()));
     }
 

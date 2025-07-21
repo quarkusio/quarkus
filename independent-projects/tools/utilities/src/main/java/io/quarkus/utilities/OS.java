@@ -7,7 +7,7 @@ import io.smallrye.common.cpu.CPU;
  *
  * @deprecated Use {@link io.smallrye.common.os.OS} and {@link io.smallrye.common.cpu.CPU} instead.
  */
-@Deprecated(forRemoval = true)
+@Deprecated(forRemoval = true, since = "3.25")
 public enum OS {
     WINDOWS,
     LINUX,
@@ -19,7 +19,7 @@ public enum OS {
      *
      * @deprecated Use {@link io.smallrye.common.os.OS#current} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(forRemoval = true, since = "3.25")
     public static OS determineOS() {
         return switch (io.smallrye.common.os.OS.current()) {
             case WINDOWS -> WINDOWS;
@@ -36,7 +36,7 @@ public enum OS {
      * @return the string, or {@code null} if the architecture is unknown
      * @deprecated Use {@link io.smallrye.common.cpu.CPU#host} instead (but beware of differing string values).
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(forRemoval = true, since = "3.25")
     public static String getArchitecture() {
         return switch (CPU.host()) {
             case x64 -> "x86_64";

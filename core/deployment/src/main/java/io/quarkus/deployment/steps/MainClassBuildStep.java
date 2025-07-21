@@ -8,6 +8,7 @@ import java.io.File;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,8 +168,10 @@ public class MainClassBuildStep {
             mv.invokeStaticMethod(ofMethod(DisabledInitialContextManager.class, "register", void.class));
         }
 
-        //very first thing is to set system props (for build time)
-        for (SystemPropertyBuildItem i : properties) {
+        // very first thing is to set system props (for build time)
+        // make sure we record the system properties in order for build reproducibility
+        for (SystemPropertyBuildItem i : properties.stream().sorted(Comparator.comparing(SystemPropertyBuildItem::getKey))
+                .toList()) {
             mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
                     mv.load(i.getKey()), mv.load(i.getValue()));
         }
@@ -219,9 +222,11 @@ public class MainClassBuildStep {
         mv.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
 
         // Make sure we set properties in doStartup as well. This is necessary because setting them in the static-init
-        // sets them at build-time, on the host JVM, while SVM has substitutions for System. get/ setProperty at
+        // sets them at build-time, on the host JVM, while SVM has substitutions for System. get/setProperty at
         // run-time which will never see those properties unless we also set them at run-time.
-        for (SystemPropertyBuildItem i : properties) {
+        // make sure we record the system properties in order for build reproducibility
+        for (SystemPropertyBuildItem i : properties.stream().sorted(Comparator.comparing(SystemPropertyBuildItem::getKey))
+                .toList()) {
             mv.invokeStaticMethod(ofMethod(System.class, "setProperty", String.class, String.class, String.class),
                     mv.load(i.getKey()), mv.load(i.getValue()));
         }

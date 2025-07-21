@@ -66,29 +66,9 @@ public class ConfigAnnotationScanner {
         List<ConfigAnnotationListener> configRootListeners = new ArrayList<>();
         List<ConfigAnnotationListener> configMappingWithoutConfigRootListeners = new ArrayList<>();
 
-        if (!config.getExtension().isMixedModule()) {
-            // This is what we aim for. We have an exception for Quarkus Core and Quarkus Messaging though.
-            if (config.useConfigMapping()) {
-                configRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
-                configRootListeners.add(new ConfigMappingListener(config, utils, configCollector));
-
-                configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
-            } else {
-                configRootListeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
-                configRootListeners.add(new LegacyConfigRootListener(config, utils, configCollector));
-            }
-        } else {
-            // TODO #42114 remove once fixed
-            // we handle both traditional config roots and config mappings
-            if (config.getExtension().isMixedModule()) {
-                configRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
-                configRootListeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
-                configRootListeners.add(new ConfigMappingListener(config, utils, configCollector));
-                configRootListeners.add(new LegacyConfigRootListener(config, utils, configCollector));
-
-                configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
-            }
-        }
+        configRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
+        configRootListeners.add(new ConfigMappingListener(config, utils, configCollector));
+        configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
 
         this.configRootListeners = Collections.unmodifiableList(configRootListeners);
         this.configMappingWithoutConfigRootListeners = Collections.unmodifiableList(configMappingWithoutConfigRootListeners);
@@ -481,28 +461,10 @@ public class ConfigAnnotationScanner {
     }
 
     private void checkConfigRootAnnotationConsistency(TypeElement configRoot) {
-        // for now quarkus-core is a mix of both @ConfigRoot and @ConfigMapping
-        // see https://github.com/quarkusio/quarkus/issues/42114
-        // same for Quarkus Messaging
-        // TODO #42114 remove once fixed
-        if (config.getExtension().isMixedModule()) {
-            return;
-        }
-
-        if (config.useConfigMapping()) {
-            if (!utils.element().isAnnotationPresent(configRoot, Types.ANNOTATION_CONFIG_MAPPING)) {
-                throw new IllegalStateException(
-                        "This module is configured to use @ConfigMapping annotations but we found a @ConfigRoot without a corresponding @ConfigMapping annotation in: "
-                                + configRoot + "."
-                                + " Either add the annotation or add the -AlegacyConfigRoot=true argument to the annotation processor config in the pom.xml");
-            }
-        } else {
-            if (utils.element().isAnnotationPresent(configRoot, Types.ANNOTATION_CONFIG_MAPPING)) {
-                throw new IllegalStateException(
-                        "This module is configured to use legacy @ConfigRoot annotations but we found a @ConfigMapping annotation in: "
-                                + configRoot + "."
-                                + " Check the configuration of the annotation processor and drop the -AlegacyConfigRoot=true argument from the pom.xml if needed");
-            }
+        if (!utils.element().isAnnotationPresent(configRoot, Types.ANNOTATION_CONFIG_MAPPING)) {
+            throw new IllegalStateException(
+                    "We found a @ConfigRoot without a corresponding @ConfigMapping annotation in: " + configRoot + "."
+                            + " Make sure your configuration interfaces are annotated with @ConfigMapping.");
         }
     }
 

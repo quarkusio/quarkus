@@ -31,12 +31,12 @@ public class RenameConfigTest {
 
     @Test
     void rename() {
-        assertEquals("1234", renameConfig.prop);
+        assertEquals("1234", renameConfig.prop());
         assertEquals("1234", config.getRawValue("quarkus.rename.prop"));
 
-        assertEquals("only-in-new", renameConfig.onlyInNew);
-        assertEquals("only-in-old", renameConfig.onlyInOld);
-        assertEquals("new", renameConfig.inBoth);
+        assertEquals("only-in-new", renameConfig.onlyInNew());
+        assertEquals("only-in-old", renameConfig.onlyInOld());
+        assertEquals("new", renameConfig.inBoth());
 
         // This will always return values. It lookups on "rename" first and "rename-old" next
         assertEquals("only-in-new", config.getRawValue("quarkus.rename.only-in-new"));
@@ -49,7 +49,7 @@ public class RenameConfigTest {
 
         assertEquals("old-default", config.getRawValue("quarkus.rename.with-default"));
         assertEquals("old-default", config.getRawValue("quarkus.rename-old.with-default"));
-        assertEquals("old-default", renameConfig.withDefault);
+        assertEquals("old-default", renameConfig.withDefault());
 
         // Make sure we only record the actual properties in the sources (and not renamed properties)
         Optional<ConfigSource> configSource = config.getConfigSource("BuildTime RunTime Fixed");

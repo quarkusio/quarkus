@@ -318,6 +318,15 @@ public class OidcClientTest {
         }
     }
 
+    @Order(15)
+    @Test
+    public void testEchoTokensExchangeGrant() {
+        RestAssured.when().get("/frontend/echoTokenExchangeGrant")
+                .then()
+                .statusCode(200)
+                .body(equalTo("access_token_exchanged"));
+    }
+
     private void checkLog() {
         final Path logDirectory = Paths.get(".", "target");
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)

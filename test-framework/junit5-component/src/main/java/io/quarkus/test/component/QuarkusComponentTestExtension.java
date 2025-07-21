@@ -212,7 +212,7 @@ public class QuarkusComponentTestExtension
     public QuarkusComponentTestExtension(Class<?>... additionalComponentClasses) {
         this(new QuarkusComponentTestConfiguration(Map.of(), Set.of(additionalComponentClasses),
                 List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL,
-                List.of(), List.of(), null), false);
+                List.of(), List.of(), null, false), false);
     }
 
     QuarkusComponentTestExtension(QuarkusComponentTestConfiguration baseConfiguration, boolean startShouldFail) {
@@ -506,10 +506,17 @@ public class QuarkusComponentTestExtension
         SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder().forClassLoader(tccl)
                 .addDefaultInterceptors()
                 .withConverters(configuration.configConverters.toArray(new Converter<?>[] {}))
-                .addDefaultSources()
+                // We intentionally skip system properties and ENV variables by default
+                // See https://github.com/quarkusio/quarkus/issues/48899 for more details
+                .addPropertiesSources()
                 .withSources(
                         new QuarkusComponentTestConfigSource(configuration.configProperties,
                                 configuration.configSourceOrdinal));
+
+        if (configuration.useSystemConfigSources) {
+            configBuilder.addSystemSources();
+        }
+
         @SuppressWarnings("unchecked")
         Set<ConfigClass> configMappings = store(context).get(KEY_CONFIG_MAPPINGS, Set.class);
         if (configMappings != null) {

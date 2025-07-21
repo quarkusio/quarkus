@@ -1,5 +1,8 @@
 package io.quarkus.kafka.client.deployment;
 
+import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
+import static io.quarkus.kafka.client.deployment.DevServicesKafkaProcessor.DEV_SERVICE_LABEL;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +16,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * Container configuring and starting the Redpanda broker.
@@ -45,6 +49,10 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
                 STARTER_SCRIPT);
         waitingFor(Wait.forLogMessage(".*Started Kafka API server.*", 1));
         this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redpanda");
+    }
+
+    public RedpandaKafkaContainer withSharedServiceLabel(LaunchMode launchMode, String serviceName) {
+        return configureSharedServiceLabel(this, launchMode, DEV_SERVICE_LABEL, serviceName);
     }
 
     @Override

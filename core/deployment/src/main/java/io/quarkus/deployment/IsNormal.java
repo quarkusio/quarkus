@@ -19,6 +19,6 @@ public class IsNormal implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
-        return launchMode == LaunchMode.NORMAL;
+        return launchMode == LaunchMode.NORMAL || launchMode == LaunchMode.RUN;
     }
 }

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -23,21 +24,40 @@ import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
 import io.quarkus.vertx.http.runtime.AuthRuntimeConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.security.HttpSecurity;
 import io.smallrye.config.SmallRyeConfig;
+import io.vertx.core.http.ClientAuth;
 
 /**
  * This singleton carries final HTTP Security configuration and act as a single source of truth for it.
+ * This class is not part of the public API and is subject to change.
  */
-record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionCarrier> httpPermissions,
-        Optional<Boolean> basicAuthEnabled, boolean formAuthEnabled, String formPostLocation,
-        List<HttpAuthenticationMechanism> additionalMechanisms) {
+public final class HttpSecurityConfiguration {
 
     private static final Logger LOG = Logger.getLogger(HttpSecurityConfiguration.class);
-
     private static volatile HttpSecurityConfiguration instance = null;
+    private final RolesMapping rolesMapping;
+    private final List<HttpPermissionCarrier> httpPermissions;
+    private final Optional<Boolean> basicAuthEnabled;
+    private final boolean formAuthEnabled;
+    private final String formPostLocation;
+    private final List<HttpAuthenticationMechanism> additionalMechanisms;
+    private final VertxHttpConfig httpConfig;
+
+    private HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionCarrier> httpPermissions,
+            Optional<Boolean> basicAuthEnabled, boolean formAuthEnabled, String formPostLocation,
+            List<HttpAuthenticationMechanism> additionalMechanisms, VertxHttpConfig httpConfig) {
+        this.rolesMapping = rolesMapping;
+        this.httpPermissions = httpPermissions;
+        this.basicAuthEnabled = basicAuthEnabled;
+        this.formAuthEnabled = formAuthEnabled;
+        this.formPostLocation = formPostLocation;
+        this.additionalMechanisms = additionalMechanisms;
+        this.httpConfig = httpConfig;
+    }
 
     record Policy(String name, HttpSecurityPolicy instance) {
     }
@@ -64,7 +84,7 @@ record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionC
         }
     }
 
-    BasicAuthenticationMechanism getBasicAuthenticationMechanism(VertxHttpConfig httpConfig) {
+    BasicAuthenticationMechanism getBasicAuthenticationMechanism() {
         for (HttpAuthenticationMechanism additionalMechanism : additionalMechanisms) {
             if (additionalMechanism.getClass() == BasicAuthenticationMechanism.class) {
                 return (BasicAuthenticationMechanism) additionalMechanism;
@@ -73,7 +93,7 @@ record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionC
         return new BasicAuthenticationMechanism(httpConfig.auth().realm().orElse(null), formAuthEnabled);
     }
 
-    FormAuthenticationMechanism getFormAuthenticationMechanism(VertxHttpConfig httpConfig) {
+    FormAuthenticationMechanism getFormAuthenticationMechanism() {
         for (HttpAuthenticationMechanism additionalMechanism : additionalMechanisms) {
             if (additionalMechanism.getClass() == FormAuthenticationMechanism.class) {
                 return (FormAuthenticationMechanism) additionalMechanism;
@@ -123,52 +143,74 @@ record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionC
         return result;
     }
 
+    static HttpSecurityConfiguration get() {
+        return get(null, null);
+    }
+
     // this instance is not in the CDI container to avoid "potential" (I am guessing) circular dependencies
     // during the bean instantiation as we can't be sure what users will inject when they observe the HTTP Security
-    static HttpSecurityConfiguration get() {
+    static HttpSecurityConfiguration get(VertxHttpConfig httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+        var configInstance = instance;
+        if (configInstance == null) {
+            return initializeHttpSecurityConfiguration(httpConfig, httpBuildTimeConfig);
+        }
+        return configInstance;
+    }
+
+    static void clear() {
+        instance = null;
+    }
+
+    private static synchronized HttpSecurityConfiguration initializeHttpSecurityConfiguration(VertxHttpConfig httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (instance == null) {
-            synchronized (HttpSecurityConfiguration.class) {
-                if (instance == null) {
-                    SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-                    VertxHttpConfig vertxHttpConfig = config.getConfigMapping(VertxHttpConfig.class);
-                    HttpSecurityImpl httpSecurity = prepareHttpSecurity(vertxHttpConfig.auth());
-                    List<HttpAuthenticationMechanism> mechanisms = httpSecurity.getMechanisms();
+            final VertxHttpConfig vertxHttpConfig;
+            final VertxHttpBuildTimeConfig vertxHttpBuildTimeConfig;
+            if (httpConfig == null) {
+                SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                vertxHttpConfig = config.getConfigMapping(VertxHttpConfig.class);
+                vertxHttpBuildTimeConfig = config.getConfigMapping(VertxHttpBuildTimeConfig.class);
+            } else {
+                vertxHttpConfig = httpConfig;
+                vertxHttpBuildTimeConfig = Objects.requireNonNull(httpBuildTimeConfig);
+            }
+            HttpSecurityImpl httpSecurity = prepareHttpSecurity(vertxHttpConfig,
+                    vertxHttpBuildTimeConfig.tlsClientAuth());
+            List<HttpAuthenticationMechanism> mechanisms = httpSecurity.getMechanisms();
 
-                    Optional<Boolean> basicAuthEnabled = config.getOptionalValue("quarkus.http.auth.basic", boolean.class);
-                    if (basicAuthEnabled.isEmpty() || !basicAuthEnabled.get()) {
-                        for (HttpAuthenticationMechanism mechanism : mechanisms) {
-                            // not using instance of as we are not considering subclasses
-                            if (mechanism.getClass() == BasicAuthenticationMechanism.class) {
-                                basicAuthEnabled = Optional.of(Boolean.TRUE);
-                                break;
-                            }
-                        }
+            Optional<Boolean> basicAuthEnabled = vertxHttpBuildTimeConfig.auth().basic();
+            if (basicAuthEnabled.isEmpty() || !basicAuthEnabled.get()) {
+                for (HttpAuthenticationMechanism mechanism : mechanisms) {
+                    // not using instance of as we are not considering subclasses
+                    if (mechanism.getClass() == BasicAuthenticationMechanism.class) {
+                        basicAuthEnabled = Optional.of(Boolean.TRUE);
+                        break;
                     }
-
-                    boolean formAuthEnabled = config.getValue("quarkus.http.auth.form.enabled", Boolean.class);
-                    String formPostLocation = vertxHttpConfig.auth().form().postLocation();
-                    if (!formAuthEnabled) {
-                        for (HttpAuthenticationMechanism mechanism : mechanisms) {
-                            // not using instance of as we are not considering subclasses
-                            if (mechanism.getClass() == FormAuthenticationMechanism.class) {
-                                formAuthEnabled = true;
-                                formPostLocation = ((FormAuthenticationMechanism) mechanism).getPostLocation();
-                                break;
-                            }
-                        }
-                    }
-
-                    instance = new HttpSecurityConfiguration(httpSecurity.getRolesMapping(), httpSecurity.getHttpPermissions(),
-                            basicAuthEnabled, formAuthEnabled, formPostLocation, mechanisms);
                 }
             }
+
+            boolean formAuthEnabled = vertxHttpBuildTimeConfig.auth().form();
+            String formPostLocation = vertxHttpConfig.auth().form().postLocation();
+            if (!formAuthEnabled) {
+                for (HttpAuthenticationMechanism mechanism : mechanisms) {
+                    // not using instance of as we are not considering subclasses
+                    if (mechanism.getClass() == FormAuthenticationMechanism.class) {
+                        formAuthEnabled = true;
+                        formPostLocation = ((FormAuthenticationMechanism) mechanism).getPostLocation();
+                        break;
+                    }
+                }
+            }
+
+            instance = new HttpSecurityConfiguration(httpSecurity.getRolesMapping(), httpSecurity.getHttpPermissions(),
+                    basicAuthEnabled, formAuthEnabled, formPostLocation, mechanisms, httpConfig);
         }
         return instance;
     }
 
-    private static HttpSecurityImpl prepareHttpSecurity(AuthRuntimeConfig authConfig) {
-        HttpSecurityImpl httpSecurity = new HttpSecurityImpl();
-        addAuthRuntimeConfigToHttpSecurity(authConfig, httpSecurity);
+    private static HttpSecurityImpl prepareHttpSecurity(VertxHttpConfig httpConfig, ClientAuth clientAuth) {
+        HttpSecurityImpl httpSecurity = new HttpSecurityImpl(clientAuth, httpConfig);
+        addAuthRuntimeConfigToHttpSecurity(httpConfig.auth(), httpSecurity);
         Event<HttpSecurity> httpSecurityEvent = Arc.container().beanManager().getEvent().select(HttpSecurity.class);
         httpSecurityEvent.fire(httpSecurity);
         return httpSecurity;
@@ -317,12 +359,10 @@ record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionC
         }
     }
 
-    private static boolean isBasicAuthNotRequired() {
+    private boolean isBasicAuthNotRequired() {
         if (Boolean.getBoolean(BASIC_AUTH_ANNOTATION_DETECTED)) {
             return false;
         }
-        List<HttpSecurityConfiguration.HttpPermissionCarrier> httpPermissions = HttpSecurityConfiguration
-                .get().httpPermissions();
         for (var permission : httpPermissions) {
             if (permission.getAuthMechanism() != null
                     && BasicAuthentication.AUTH_MECHANISM_SCHEME.equals(permission.getAuthMechanism().name())) {
@@ -331,4 +371,21 @@ record HttpSecurityConfiguration(RolesMapping rolesMapping, List<HttpPermissionC
         }
         return true;
     }
+
+    RolesMapping rolesMapping() {
+        return rolesMapping;
+    }
+
+    List<HttpPermissionCarrier> httpPermissions() {
+        return httpPermissions;
+    }
+
+    boolean formAuthEnabled() {
+        return formAuthEnabled;
+    }
+
+    String formPostLocation() {
+        return formPostLocation;
+    }
+
 }

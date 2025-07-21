@@ -138,4 +138,12 @@ public class MultipartResource {
                 + (formData.txtFile != null);
     }
 
+    @POST
+    @Produces(MediaType.TEXT_PLAIN)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Path("/extra-header")
+    public String extraHeader(@RestForm("file") FileUpload file) {
+        return file.getHeaders().get("extra-header").get(0);
+    }
+
 }

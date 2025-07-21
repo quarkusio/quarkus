@@ -33,6 +33,7 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.AuthenticationCompletionException;
@@ -43,6 +44,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.CompositeException;
@@ -63,9 +65,11 @@ public class HttpSecurityRecorder {
     private static final Logger log = Logger.getLogger(HttpSecurityRecorder.class);
 
     private final RuntimeValue<VertxHttpConfig> httpConfig;
+    private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
-    public HttpSecurityRecorder(final RuntimeValue<VertxHttpConfig> httpConfig) {
+    public HttpSecurityRecorder(final RuntimeValue<VertxHttpConfig> httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         this.httpConfig = httpConfig;
+        this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
 
     public RuntimeValue<AuthenticationHandler> authenticationMechanismHandler(boolean proactiveAuthentication,
@@ -180,16 +184,17 @@ public class HttpSecurityRecorder {
         };
     }
 
-    public void prepareHttpSecurityConfiguration() {
+    public void prepareHttpSecurityConfiguration(ShutdownContext shutdownContext) {
         // this is done so that we prepare and validate HTTP Security config before the first incoming request
-        HttpSecurityConfiguration.get();
+        HttpSecurityConfiguration.get(httpConfig.getValue(), httpBuildTimeConfig);
+        shutdownContext.addShutdownTask(HttpSecurityConfiguration::clear);
     }
 
     public Supplier<FormAuthenticationMechanism> createFormAuthMechanism() {
         return new Supplier<FormAuthenticationMechanism>() {
             @Override
             public FormAuthenticationMechanism get() {
-                return HttpSecurityConfiguration.get().getFormAuthenticationMechanism(httpConfig.getValue());
+                return HttpSecurityConfiguration.get().getFormAuthenticationMechanism();
             }
         };
     }
@@ -580,7 +585,7 @@ public class HttpSecurityRecorder {
         return new Supplier<>() {
             @Override
             public BasicAuthenticationMechanism get() {
-                return HttpSecurityConfiguration.get().getBasicAuthenticationMechanism(httpConfig.getValue());
+                return HttpSecurityConfiguration.get().getBasicAuthenticationMechanism();
             }
         };
     }

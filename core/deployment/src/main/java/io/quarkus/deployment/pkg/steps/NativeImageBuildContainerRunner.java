@@ -104,7 +104,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
             pb.output().inherited().error().inherited();
         }
         try {
-            pb.run();
+            // logOnSuccess(false) avoids WARNING from io.smallrye.common.process.Logging
+            pb.error().logOnSuccess(false).run();
         } catch (Exception e) {
             throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'", e);
         }

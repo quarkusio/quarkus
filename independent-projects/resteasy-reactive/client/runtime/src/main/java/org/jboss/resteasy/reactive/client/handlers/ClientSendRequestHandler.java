@@ -343,7 +343,12 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                         }
                                     });
 
-                        } else if (requestContext.isInputStreamDownload() || requestContext.isJakartaResponseDownload()) {
+                        } else if (requestContext.isInputStreamDownload() ||
+                        // when returning Response (and not Uni<Response>) we don't buffer the result
+                        // but instead set up the proper InputStream
+                        // for Uni<Response> we can't buffer because setting up the InputSteam would result in blocking the event loop
+                                (requestContext.isJakartaResponseDownload()
+                                        && !requestContext.invokedMethodReturnsAsyncType())) {
                             if (loggingScope != LoggingScope.NONE) {
                                 clientLogger.logResponse(clientResponse, false);
                             }

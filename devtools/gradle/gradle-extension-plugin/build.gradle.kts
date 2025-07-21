@@ -22,3 +22,9 @@ gradlePlugin {
 tasks.withType<Test>().configureEach {
     environment("GITHUB_REPOSITORY", "some/repo")
 }
+
+// to generate reproducible jars
+tasks.withType<Jar>().configureEach {
+    isPreserveFileTimestamps = false 
+    isReproducibleFileOrder = true   
+}

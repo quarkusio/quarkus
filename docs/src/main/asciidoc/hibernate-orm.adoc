@@ -774,6 +774,7 @@ your entity changes or any change to your `import.sql` is immediately picked up 
 ====
 By default, in `dev` and `test` modes, Hibernate ORM, upon boot, will read and execute the SQL statements in the `/import.sql` file (if present).
 You can change the file name by changing the property `quarkus.hibernate-orm.sql-load-script` in `application.properties`.
+You can also provide a `.zip` file in the same way which should contain only the files containing the SQL statements to be executed.
 ====
 
 The second approach is to use `quarkus.hibernate-orm.schema-management.strategy=update`.

@@ -69,6 +69,14 @@ public class ComposeFileTest {
     }
 
     @Test
+    void testEmptyComposeFile() {
+        File emptyCompose = new File(getClass().getResource("/empty-compose.yml").getFile());
+        ComposeFile composeFile = new ComposeFile(emptyCompose);
+        assertNull(composeFile.getProjectName());
+        assertTrue(composeFile.getServiceDefinitions().isEmpty());
+    }
+
+    @Test
     void testServiceDefinitionExtraction() {
         File validCompose = new File(getClass().getResource("/valid-compose.yml").getFile());
         ComposeFile composeFile = new ComposeFile(validCompose);

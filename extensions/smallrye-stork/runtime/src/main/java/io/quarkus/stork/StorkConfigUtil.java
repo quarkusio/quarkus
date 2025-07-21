@@ -1,8 +1,10 @@
 package io.quarkus.stork;
 
 import java.io.IOException;
+import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -55,27 +57,30 @@ public class StorkConfigUtil {
     public static ServiceConfiguration buildDefaultRegistrarConfiguration(String serviceRegistrarType, String healthCheckPath) {
         Map<String, String> parameters = new HashMap<>();
         Config quarkusConfig = ConfigProvider.getConfig();
-        String defaultHost = quarkusConfig.getValue(QUARKUS_HTTP_HOST, String.class);
         if (healthCheckPath != null && !healthCheckPath.isBlank()) {
             healthCheckPath = HTTPS + getOrDefaultHost(parameters, quarkusConfig) + ":"
                     + getOrDefaultPort(parameters, quarkusConfig) + healthCheckPath;
             parameters.put("health-check-url", healthCheckPath);
         }
-        return buildServiceConfigurationWithRegistrar(serviceRegistrarType, parameters);
+        return buildServiceConfigurationWithRegistrar(serviceRegistrarType, true, parameters);
     }
 
     public static ServiceConfiguration addRegistrarTypeIfAbsent(String serviceRegistrarType,
             ServiceConfiguration serviceConfiguration, String healthCheckUrl) {
-        Map<String, String> parameters = serviceConfiguration.serviceRegistrar()
+        Optional<StorkServiceRegistrarConfiguration> storkServiceRegistrarConfiguration = serviceConfiguration
+                .serviceRegistrar();
+        Map<String, String> parameters = storkServiceRegistrarConfiguration
                 .map(StorkServiceRegistrarConfiguration::parameters)
                 .orElse(new HashMap<>());
         if (healthCheckUrl != null && !healthCheckUrl.isBlank()) {
             parameters.put("health-check-url", healthCheckUrl);
         }
-        return buildServiceConfigurationWithRegistrar(serviceRegistrarType, parameters);
+        boolean enabled = storkServiceRegistrarConfiguration.map(StorkServiceRegistrarConfiguration::enabled).orElse(true);
+        return buildServiceConfigurationWithRegistrar(serviceRegistrarType, enabled, parameters);
     }
 
-    private static ServiceConfiguration buildServiceConfigurationWithRegistrar(String type, Map<String, String> parameters) {
+    private static ServiceConfiguration buildServiceConfigurationWithRegistrar(String type, boolean enabled,
+            Map<String, String> parameters) {
         return new ServiceConfiguration() {
             @Override
             public Optional<StorkServiceDiscoveryConfiguration> serviceDiscovery() {
@@ -89,17 +94,17 @@ public class StorkConfigUtil {
 
             @Override
             public Optional<StorkServiceRegistrarConfiguration> serviceRegistrar() {
-                return Optional.of(buildServiceRegistrarConfiguration(type, parameters));
+                return Optional.of(buildServiceRegistrarConfiguration(type, enabled, parameters));
             }
         };
     }
 
-    private static StorkServiceRegistrarConfiguration buildServiceRegistrarConfiguration(String type,
+    private static StorkServiceRegistrarConfiguration buildServiceRegistrarConfiguration(String type, boolean enabled,
             Map<String, String> parameters) {
         return new StorkServiceRegistrarConfiguration() {
             @Override
             public boolean enabled() {
-                return true;
+                return enabled;
             }
 
             @Override
@@ -117,7 +122,7 @@ public class StorkConfigUtil {
     public static String getOrDefaultHost(Map<String, String> parameters, Config quarkusConfig) {
         String customHost = parameters.containsKey("ip-address") ? parameters.get("ip-address")
                 : null;
-        String defaultHost = quarkusConfig.getValue("quarkus.http.host", String.class);
+        String defaultHost = quarkusConfig.getValue(QUARKUS_HTTP_HOST, String.class);
         if (customHost == null || customHost.isEmpty()) {
             InetAddress inetAddress = StorkConfigUtil.detectAddress();
             customHost = inetAddress != null ? inetAddress.getHostAddress() : defaultHost;
@@ -130,29 +135,143 @@ public class StorkConfigUtil {
         return Integer.parseInt(customPort);
     }
 
+    //    public static InetAddress detectAddress() {
+    //        InetAddress result = null;
+    //        try {
+    //            int lowest = Integer.MAX_VALUE;
+    //            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+    //            while (networkInterfaces.hasMoreElements()) {
+    //                NetworkInterface networkInterface = networkInterfaces.nextElement();
+    //                if (networkInterface.isUp()) {
+    //                    LOGGER.debug("Testing interface: {}" + networkInterface.getDisplayName());
+    //                    if (networkInterface.getIndex() < lowest || result == null) {
+    //                        lowest = networkInterface.getIndex();
+    //                    } else if (result != null) {
+    //                        continue;
+    //                    }
+    //                }
+    //            }
+    //        } catch (IOException ex) {
+    //            LOGGER.error("Unable to get first non-loopback address", ex);
+    //        }
+    //        try {
+    //            return InetAddress.getLocalHost();
+    //        } catch (UnknownHostException e) {
+    //            LOGGER.error("Unable to detect address", e);
+    //        }
+    //
+    //        return null;
+    //    }
+
+    //    public static InetAddress detectAddress() {
+    //        try {
+    //            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+    //            while (interfaces.hasMoreElements()) {
+    //                NetworkInterface iface = interfaces.nextElement();
+    //                if (!iface.isUp() || iface.isLoopback())
+    //                    continue;
+    //
+    //                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+    //                while (addresses.hasMoreElements()) {
+    //                    InetAddress addr = addresses.nextElement();
+    //                    if (!addr.isLoopbackAddress() && addr instanceof Inet4Address) {
+    //                        return addr;
+    //                    }
+    //                }
+    //            }
+    //        } catch (IOException e) {
+    //            LOGGER.error("Failed to detect IP address", e);
+    //        }
+    //
+    //        try {
+    //            return InetAddress.getLocalHost();
+    //        } catch (UnknownHostException e) {
+    //            LOGGER.error("Fallback to localhost failed", e);
+    //            return null;
+    //        }
+    //    }
+    //
+    //    public static InetAddress detectAddress() {
+    //        try {
+    //            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+    //            return findFirstValidAddress(interfaces);
+    //        } catch (IOException e) {
+    //            LOGGER.error("Failed to detect IP address", e);
+    //        }
+    //
+    //        try {
+    //            return InetAddress.getLocalHost();
+    //        } catch (UnknownHostException e) {
+    //            LOGGER.error("Fallback to localhost failed", e);
+    //            return null;
+    //        }
+    //    }
+
+    //    static InetAddress findFirstValidAddress(Enumeration<NetworkInterface> interfaces) {
+    //        try {
+    //            while (interfaces.hasMoreElements()) {
+    //                NetworkInterface iface = interfaces.nextElement();
+    //                if (!iface.isUp() || iface.isLoopback()) {
+    //                    continue;
+    //                }
+    //
+    //                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+    //                while (addresses.hasMoreElements()) {
+    //                    InetAddress addr = addresses.nextElement();
+    //                    if (!addr.isLoopbackAddress() && addr instanceof Inet4Address) {
+    //                        return addr;
+    //                    }
+    //                }
+    //            }
+    //        } catch (IOException e) {
+    //            LOGGER.error("Error processing network interfaces", e);
+    //        }
+    //
+    //        return null;
+    //    }
+
     public static InetAddress detectAddress() {
-        InetAddress result = null;
         try {
-            int lowest = Integer.MAX_VALUE;
-            Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
-            while (networkInterfaces.hasMoreElements()) {
-                NetworkInterface networkInterface = networkInterfaces.nextElement();
-                if (networkInterface.isUp()) {
-                    LOGGER.debug("Testing interface: {}" + networkInterface.getDisplayName());
-                    if (networkInterface.getIndex() < lowest || result == null) {
-                        lowest = networkInterface.getIndex();
-                    } else if (result != null) {
-                        continue;
-                    }
-                }
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            List<NetworkInterfaceWrapper> wrappedInterfaces = new ArrayList<>();
+
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface ni = interfaces.nextElement();
+                wrappedInterfaces.add(new StorkNetworkInterfaceWrapper(ni));
             }
-        } catch (IOException ex) {
-            LOGGER.error("Unable to get first non-loopback address", ex);
+
+            InetAddress addr = findFirstValidAddress(wrappedInterfaces);
+            if (addr != null) {
+                return addr;
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to detect IP address", e);
         }
+
         try {
             return InetAddress.getLocalHost();
         } catch (UnknownHostException e) {
-            LOGGER.error("Unable to detect address", e);
+            LOGGER.error("Fallback to localhost failed", e);
+            return null;
+        }
+    }
+
+    static InetAddress findFirstValidAddress(List<NetworkInterfaceWrapper> interfaces) {
+        try {
+            for (NetworkInterfaceWrapper iface : interfaces) {
+                if (!iface.isUp() || iface.isLoopback())
+                    continue;
+
+                Enumeration<InetAddress> addresses = iface.getInetAddresses();
+                while (addresses.hasMoreElements()) {
+                    InetAddress addr = addresses.nextElement();
+                    if (!addr.isLoopbackAddress() && addr instanceof Inet4Address) {
+                        return addr;
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            LOGGER.error("Error checking network interfaces", e);
         }
 
         return null;

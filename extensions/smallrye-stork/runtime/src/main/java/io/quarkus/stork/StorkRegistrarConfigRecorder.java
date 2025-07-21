@@ -25,6 +25,7 @@ public class StorkRegistrarConfigRecorder {
             config.serviceConfiguration().put(serviceName,
                     StorkConfigUtil.buildDefaultRegistrarConfiguration(serviceRegistrarType, healthCheckUrl));
         } else if (registrationConfigs.size() == 1) {
+            serviceName = registrationConfigs.get(0).serviceName();
             config.serviceConfiguration().computeIfPresent(serviceName,
                     (k, serviceConfiguration) -> StorkConfigUtil.addRegistrarTypeIfAbsent(serviceRegistrarType,
                             serviceConfiguration, healthCheckUrl));
@@ -44,8 +45,9 @@ public class StorkRegistrarConfigRecorder {
 
         }
         if (!servicesWithMissingType.isEmpty()) {
-            throw new IllegalArgumentException("Missing required 'type' for the following services: " +
-                    String.join(", ", servicesWithMissingType));
+            throw new IllegalArgumentException(
+                    "Impossible to register service. Missing required 'type' for the following services: " +
+                            String.join(", ", servicesWithMissingType));
         }
     }
 

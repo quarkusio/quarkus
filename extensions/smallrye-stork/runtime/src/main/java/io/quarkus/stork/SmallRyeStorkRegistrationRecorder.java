@@ -2,6 +2,7 @@ package io.quarkus.stork;
 
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -14,6 +15,8 @@ import io.smallrye.stork.api.config.ServiceConfig;
 @Recorder
 public class SmallRyeStorkRegistrationRecorder {
 
+    private static final Logger LOGGER = Logger.getLogger(StorkRegistrarConfigRecorder.class.getName());
+
     public void registerServiceInstance(StorkConfiguration configuration) {
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
         Config quarkusConfig = ConfigProvider.getConfig();
@@ -23,6 +26,7 @@ public class SmallRyeStorkRegistrationRecorder {
                 StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = configuration.serviceConfiguration()
                         .get(serviceName).serviceRegistrar().get();
                 if (!storkServiceRegistrarConfiguration.enabled()) {
+                    LOGGER.info("Service registering disabled for  '" + serviceName + "'.");
                     continue;
                 }
             }
